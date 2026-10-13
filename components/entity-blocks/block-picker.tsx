@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import type { EntityBlockDef } from '@/lib/entity-blocks/registry'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE SEARCHABLE BLOCK PICKER (ADR-516 Phase C). A command-list that fills an empty column slot: it lists
 // the member blocks from the registry that are NOT already placed (or hidden), grouped "Suggested" (the
@@ -68,7 +69,7 @@ export function BlockPicker({
   const group = (label: string, blocks: EntityBlockDef[]) =>
     blocks.length > 0 ? (
       <div className="space-y-0.5">
-        <p className="px-2.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+        <p className={capsLabel('px-2.5 pt-1 text-2xs font-semibold text-muted')}>{label}</p>
         {blocks.map(option)}
       </div>
     ) : null

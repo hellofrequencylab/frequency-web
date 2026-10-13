@@ -145,7 +145,7 @@ export function EntryPointShare({
         {hasSplash ? (
           <div>
             <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Incoming point</p>
-            <div className="inline-flex rounded-lg border border-border bg-surface-elevated p-0.5">
+            <div className="inline-flex rounded-control border border-border bg-surface-elevated p-0.5">
               {tab('splash', 'Splash page')}
               {tab('induction', 'Skip to induction')}
             </div>
@@ -163,7 +163,7 @@ export function EntryPointShare({
 
         {/* Shareable link */}
         <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-meta text-muted">
+          <code className="min-w-0 flex-1 truncate rounded-control border border-border bg-surface px-2.5 py-1.5 font-mono text-meta text-muted">
             {shareUrl}
           </code>
           <button type="button" onClick={copy} className={btn} title={`Copy ${shareUrl}`}>

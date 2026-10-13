@@ -10,6 +10,7 @@ import {
   publishSpaceProfileLayout,
   setProfilePublished,
 } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
+import { Button } from '@/components/ui/button'
 
 // THE SPACE PAGE PUBLISH BAR. A bottom-docked overlay strip that opens whenever the owner is in live-page
 // edit mode. It is rendered by the LiveProfileGrid (the page body), NOT the admin rail: the rail slides in on
@@ -307,12 +308,12 @@ export function SpacePublishFab({
           >
             Save draft
           </button>
-          <button
+          <Button
             type="button"
             onClick={() => void onPublish()}
             disabled={publishBusy}
             title="Go live now"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-body-sm font-bold text-on-primary lift-1 transition-colors hover:bg-primary-strong disabled:opacity-60"
+            size="lg"
           >
             {publishBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -320,7 +321,7 @@ export function SpacePublishFab({
               <Globe className="h-4 w-4" aria-hidden />
             )}
             Publish
-          </button>
+          </Button>
         </div>
       </div>
     </div>

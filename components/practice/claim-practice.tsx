@@ -215,14 +215,10 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                   <button onClick={() => setStep(1)} className="inline-flex items-center gap-1.5 text-body-sm font-medium text-subtle hover:text-text">
                     <ArrowLeft className="h-4 w-4" /> Back
                   </button>
-                  <button
-                    onClick={claim}
-                    disabled={pending || !title.trim()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
-                  >
+                  <Button size="lg" onClick={claim} disabled={pending || !title.trim()}>
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-on-primary" />}
                     {pending ? 'Claiming…' : 'Claim it'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

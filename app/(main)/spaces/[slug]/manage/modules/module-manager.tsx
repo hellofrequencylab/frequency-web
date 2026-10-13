@@ -215,7 +215,7 @@ export function ModuleManager({
   return (
     <div className="space-y-6">
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -247,7 +247,7 @@ export function ModuleManager({
                     }`}
                   >
                     <div className="flex min-w-0 items-start gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                         {Icon ? <Icon className="h-4 w-4" aria-hidden /> : null}
                       </span>
                       <div className="min-w-0">
@@ -332,7 +332,7 @@ export function ModuleManager({
                         row.locked ? (
                           <Link
                             href={`/spaces/${slug}/settings/billing`}
-                            className="flex h-7 items-center gap-1 rounded-lg bg-surface-elevated px-2 text-2xs font-semibold text-muted hover:bg-surface-elevated/70"
+                            className="flex h-7 items-center gap-1 rounded-control bg-surface-elevated px-2 text-2xs font-semibold text-muted hover:bg-surface-elevated/70"
                           >
                             <Lock className="h-3.5 w-3.5" aria-hidden /> Move up a plan
                           </Link>
@@ -364,7 +364,7 @@ export function ModuleManager({
                           </>
                         )
                       ) : (
-                        <span className="flex h-7 items-center rounded-lg px-2 text-2xs font-medium text-muted">
+                        <span className="flex h-7 items-center rounded-control px-2 text-2xs font-medium text-muted">
                           Always on
                         </span>
                       )}

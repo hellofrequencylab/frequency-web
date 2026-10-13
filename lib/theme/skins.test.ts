@@ -64,10 +64,17 @@ describe('skin CSS contract (every skin id has its [data-skin] blocks)', () => {
 // that separation, so a later cleanup cannot quietly turn "not offered" into "not there".
 // ─────────────────────────────────────────────────────────────────────────────
 describe('skin selectability is separate from skin existence', () => {
-  it('keeps midnight registered and resolvable while not offering it', () => {
+  it('offers midnight to members under DAWN (owner, 2026-10-13, ADR-1737)', () => {
     expect(SKINS.some((s) => s.id === 'midnight')).toBe(true)
-    expect(resolveSkin('midnight')).toBe('midnight') // a stored value still resolves
-    expect(SELECTABLE_SKINS.some((s) => s.id === 'midnight')).toBe(false)
+    expect(resolveSkin('midnight', 'dawn')).toBe('midnight') // a stored value still resolves
+    expect(SKINS.find((s) => s.id === 'midnight')?.selectable).toBe(true)
+  })
+
+  it('never applies a skin under a design it was not authored for', () => {
+    // Midnight retunes DAWN's tokens; under Frequency it would paint DAWN's palette over Frequency.
+    expect(resolveSkin('midnight', 'frequency')).toBe(DEFAULT_SKIN)
+    for (const s of SKINS) expect(s.designs.length).toBeGreaterThan(0)
+    expect(SKINS.find((s) => s.id === DEFAULT_SKIN)?.designs).toEqual(['dawn', 'frequency'])
   })
 
   it('always offers at least one skin, and the default is always offered', () => {

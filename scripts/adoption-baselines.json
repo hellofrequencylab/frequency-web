@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2139,
+      "baseline": 1868,
       "frozen": {
         "at": "2026-10-13",
-        "value": 2139,
+        "value": 1868,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "LIVE-904 (#3414): the Wildheart site chrome and blocks now read their shapes from the theme sheet (components/sites/wildheart-css.ts), retiring 7 rounded-[...] literals. 2146 to 2139.",
-        "from": 2146
+        "reason": "ADR-1737 design-switch fan-out (2026-10-13): literal-radius sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
+        "from": 2139
       },
       "history": [
         {
@@ -308,6 +308,13 @@
           "to": 2139,
           "direction": "lowered",
           "reason": "LIVE-904 (#3414): the Wildheart site chrome and blocks now read their shapes from the theme sheet (components/sites/wildheart-css.ts), retiring 7 rounded-[...] literals. 2146 to 2139."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 2139,
+          "to": 1868,
+          "direction": "lowered",
+          "reason": "ADR-1737 design-switch fan-out (2026-10-13): literal-radius sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
         }
       ]
     },
@@ -386,14 +393,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 47,
+      "baseline": 42,
       "frozen": {
-        "at": "2026-09-19",
-        "value": 47,
-        "direction": "rebased",
+        "at": "2026-10-13",
+        "value": 42,
+        "direction": "lowered",
         "basis": "fa00e74e05ee",
-        "reason": "HYG-071 / ADR-1425. Instrument correction, not a sweep: (?<!drop-) so drop-shadow-* (a CSS filter) is no longer counted as a box-shadow literal. The lift-* language cannot express a filter on a transparent wordmark. Marketing-header drop-shadow-md stays. 48 to 47.",
-        "from": 48
+        "reason": "ADR-1737 design-switch fan-out (2026-10-13): shadow-literals sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
+        "from": 47
       },
       "history": [
         {
@@ -465,6 +472,13 @@
           "to": 47,
           "direction": "rebased",
           "reason": "HYG-071 / ADR-1425. Instrument correction, not a sweep: (?<!drop-) so drop-shadow-* (a CSS filter) is no longer counted as a box-shadow literal. The lift-* language cannot express a filter on a transparent wordmark. Marketing-header drop-shadow-md stays. 48 to 47."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 47,
+          "to": 42,
+          "direction": "lowered",
+          "reason": "ADR-1737 design-switch fan-out (2026-10-13): shadow-literals sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
         }
       ]
     },
@@ -646,14 +660,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 402,
+      "baseline": 309,
       "frozen": {
         "at": "2026-10-13",
-        "value": 402,
+        "value": 309,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "LIVE-904 (#3414): the Wildheart header's admin chip and the site's buttons are drawn by the theme sheet, retiring one raw bg-primary button. 403 to 402.",
-        "from": 403
+        "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-button-bg sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
+        "from": 402
       },
       "history": [
         {
@@ -830,6 +844,13 @@
           "to": 402,
           "direction": "lowered",
           "reason": "LIVE-904 (#3414): the Wildheart header's admin chip and the site's buttons are drawn by the theme sheet, retiring one raw bg-primary button. 403 to 402."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 402,
+          "to": 309,
+          "direction": "lowered",
+          "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-button-bg sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
         }
       ]
     },
@@ -1572,7 +1593,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 88,
+      "baseline": 69,
       "history": [
         {
           "at": "2026-08-05",
@@ -1643,15 +1664,22 @@
           "to": 88,
           "direction": "raised",
           "reason": "A RAISE, banked as debt and not as a win: +1 raw <input> opening tag merged after the 2026-08-17 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Attributed by per-file count diff against 0458ce676 to components/spaces/contact-form-block.tsx (#2893), the new Space contact-form block. Moving it onto the field primitive (components/ui/field.tsx) is a refactor of a live lead-capture form, not a literal rename, so it is not done here. No pattern or scope moved, so no credit is owed; the class stays flagged until that site adopts the primitive."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 88,
+          "to": 69,
+          "direction": "lowered",
+          "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-input sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
         }
       ],
       "frozen": {
-        "at": "2026-09-28",
-        "value": 88,
-        "direction": "raised",
+        "at": "2026-10-13",
+        "value": 69,
+        "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "A RAISE, banked as debt and not as a win: +1 raw <input> opening tag merged after the 2026-08-17 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Attributed by per-file count diff against 0458ce676 to components/spaces/contact-form-block.tsx (#2893), the new Space contact-form block. Moving it onto the field primitive (components/ui/field.tsx) is a refactor of a live lead-capture form, not a literal rename, so it is not done here. No pattern or scope moved, so no credit is owed; the class stays flagged until that site adopts the primitive.",
-        "from": 87
+        "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-input sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
+        "from": 88
       }
     },
     {
@@ -1740,14 +1768,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 477,
+      "baseline": 232,
       "frozen": {
-        "at": "2026-10-05",
-        "value": 477,
+        "at": "2026-10-13",
+        "value": 232,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
-        "from": 478
+        "reason": "ADR-1737 design-switch fan-out (2026-10-13): handrolled-eyebrow sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
+        "from": 477
       },
       "history": [
         {
@@ -1819,6 +1847,13 @@
           "to": 477,
           "direction": "lowered",
           "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 477,
+          "to": 232,
+          "direction": "lowered",
+          "reason": "ADR-1737 design-switch fan-out (2026-10-13): handrolled-eyebrow sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
         }
       ]
     }

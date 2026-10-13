@@ -2,6 +2,7 @@ import { getPublicCircle } from '@/lib/discover'
 import { SITE_NAME } from '@/lib/site'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A circle on ${SITE_NAME}`
@@ -58,14 +59,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                 fontSize: 24,
                 fontWeight: 700,
                 letterSpacing: '0.04em',
-                color: '#c7d2fe',
+                color: palette.ogAccentSoft,
                 backgroundColor: 'rgba(99,102,241,0.22)',
               }}
             >
               {where}
             </div>
           )}
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: '#6366f1', marginBottom: 28 }} />
+          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: palette.ogAccent, marginBottom: 28 }} />
           <div
             style={{
               display: 'flex',

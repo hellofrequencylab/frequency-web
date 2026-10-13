@@ -51,7 +51,7 @@ export default async function OnAirPage({
           </p>
           <Link
             href="/practices"
-            className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+            className="mt-4 inline-block rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
           >
             Browse practices
           </Link>

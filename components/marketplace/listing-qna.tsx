@@ -13,6 +13,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -210,14 +211,15 @@ export function ListingQna({
             >
               <ImagePlus className="h-4 w-4" />
             </button>
-            <button
+            <Button
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              size="sm"
+              className="shrink-0"
             >
               {pending ? 'Posting...' : 'Post'}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

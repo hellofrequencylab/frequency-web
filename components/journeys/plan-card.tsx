@@ -18,6 +18,7 @@ export function PlanFace({ plan }: { plan: JourneyPlan }) {
   return (
     <div
       className="flex h-11 w-11 items-center justify-center rounded-2xl"
+      // data-driven: member-chosen Journey accent colour
       style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
     >
       <Icon className="h-5 w-5" />

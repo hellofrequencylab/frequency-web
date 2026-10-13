@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowRight, Check } from 'lucide-react'
 import { requestSubscribe } from '@/app/(marketing)/subscribe/actions'
 import { Input } from '@/components/ui/field'
+import { buttonClasses, cardClasses } from '@/components/marketing/marketing-ui'
 
 export function SubscribeForm() {
   const [name, setName] = useState('')
@@ -28,7 +29,7 @@ export function SubscribeForm() {
 
   if (status === 'done') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-8 text-center lift-1" role="status">
+      <div className={cardClasses({ tone: 'feature', pad: 'p-8', className: 'text-center' })} role="status">
         <div className="mx-auto w-12 h-12 rounded-pill bg-success-bg text-success flex items-center justify-center mb-4">
           <Check className="w-6 h-6" strokeWidth={2.5} aria-hidden />
         </div>
@@ -43,7 +44,7 @@ export function SubscribeForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-surface p-7 sm:p-8 lift-1 text-left">
+    <form onSubmit={onSubmit} className={cardClasses({ tone: 'feature', pad: 'p-7 sm:p-8', className: 'text-left' })}>
       <div className="space-y-4">
         <div>
           <label htmlFor="subscribe-name" className="block text-body-sm font-semibold text-text mb-1.5">
@@ -87,7 +88,7 @@ export function SubscribeForm() {
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-body font-bold hover:bg-primary-hover transition-colors disabled:opacity-60"
+        className={buttonClasses({ flat: true, className: 'mt-6 w-full disabled:opacity-60' })}
       >
         {status === 'loading' ? 'Sending the link…' : 'Send me the confirm link'}
         {status !== 'loading' && <ArrowRight className="w-4 h-4" aria-hidden />}

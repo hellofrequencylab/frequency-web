@@ -292,7 +292,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'vera'}
                 title="Vera draws a clean house-style line mark, instant, no cost"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-control px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'vera' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -306,7 +306,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'studio'}
                 title="The Image Studio generates a richer result (uses the paid engine)"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-control px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'studio' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >

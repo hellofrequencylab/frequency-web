@@ -299,7 +299,7 @@ function MobileLeftDrawer({
               that reaches the end of this box chains into the nav and then into the page. */}
           {mobileStats && (
             <div
-              className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
+              className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-out motion-reduce:transition-none ${
                 vaultOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
               }`}
             >

@@ -12,6 +12,8 @@
 // the client toggles, the middleware-adjacent code and the unit test can all read one file. The DOM
 // half lives beside it in apply-mode.ts.
 
+import { DESIGNS, DESIGN_PREVIEW_KEY, SITE_DESIGN, designDef } from './design'
+
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
 /** Where the member's chosen mode lives. Established the `freq-*` namespace (see lib/layout/rail-fold.ts). */
@@ -30,10 +32,12 @@ export const SKIN_STORAGE_KEY = 'freq-skin'
 // the root layout's viewport metadata, the bootstrap script and the induction's light lock. They
 // mirror --color-canvas and --color-ink in app/globals.css.
 
-/** Mirrors `--color-canvas` (light). */
-export const THEME_COLOR_LIGHT = '#FBFAF6' // token-ok: browser chrome; set before CSS applies
-/** Mirrors `--color-ink` (dark). */
-export const THEME_COLOR_DARK = '#16130E' // token-ok: browser chrome; set before CSS applies
+// The pair now belongs to the design system this deploy wears (lib/theme/design.ts, ADR-1737), so a
+// switch of design carries the browser chrome with it.
+/** Mirrors `--color-canvas` (light) of the active design. */
+export const THEME_COLOR_LIGHT = designDef(SITE_DESIGN).chrome.light
+/** Mirrors `--color-ink` (dark) of the active design. */
+export const THEME_COLOR_DARK = designDef(SITE_DESIGN).chrome.dark
 
 /** The browser-chrome colour for a resolved mode. */
 export function themeColorFor(dark: boolean): string {
@@ -221,4 +225,7 @@ var m=document.querySelector('meta[name="theme-color"]');
 if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}
 m.setAttribute('content',dark?${JSON.stringify(THEME_COLOR_DARK)}:${JSON.stringify(THEME_COLOR_LIGHT)});
 var skin=localStorage.getItem(${JSON.stringify(SKIN_STORAGE_KEY)});if(skin){d.setAttribute('data-skin',skin);}
+var dq=(location.search.match(/[?&]design=([a-z]+)/)||[])[1];
+if(dq==='off'){localStorage.removeItem(${JSON.stringify(DESIGN_PREVIEW_KEY)});}else if(dq&&${JSON.stringify(DESIGNS.map((x) => x.id))}.indexOf(dq)>-1){localStorage.setItem(${JSON.stringify(DESIGN_PREVIEW_KEY)},dq);}
+var ds=localStorage.getItem(${JSON.stringify(DESIGN_PREVIEW_KEY)});if(ds&&${JSON.stringify(DESIGNS.map((x) => x.id))}.indexOf(ds)>-1){d.setAttribute('data-design',ds);}
 }catch(e){}})();`

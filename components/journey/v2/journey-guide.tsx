@@ -10,6 +10,7 @@
 // only progress and choices. Publishing goes through the one setJourneyVisibility
 // chokepoint; this component never re-implements the caps.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -279,7 +280,7 @@ export function JourneyGuide({
                     <span className="min-w-0 flex-1">
                       <span className="block text-body-sm font-semibold text-text">{t.name}</span>
                       <span className="block text-meta leading-snug text-muted">{t.description}</span>
-                      <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
+                      <span className={capsLabel('mt-1 block text-2xs font-medium text-muted')}>
                         {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
                       </span>
                     </span>
@@ -348,13 +349,13 @@ export function JourneyGuide({
           {phase === 'schedule' && (
             <div className="space-y-5">
               <div>
-                <p className="mb-1.5 inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+                <p className={capsLabel('mb-1.5 inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                   <CalendarRange className="h-3.5 w-3.5" /> Run window
                 </p>
                 <p className="mb-2 text-meta text-muted">Run it between dates, or leave both empty to keep it open anytime.</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex flex-col gap-1">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
+                    <span className={capsLabel('text-2xs font-semibold text-muted')}>Opens</span>
                     <Input
                       type="date"
                       value={windowStart}
@@ -363,7 +364,7 @@ export function JourneyGuide({
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Closes</span>
+                    <span className={capsLabel('text-2xs font-semibold text-muted')}>Closes</span>
                     <Input
                       type="date"
                       value={windowEnd}
@@ -382,7 +383,7 @@ export function JourneyGuide({
 
               {access.dripAllowed ? (
                 <div>
-                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Phase drip</p>
+                  <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>Phase drip</p>
                   <p className="mb-2 text-meta text-muted">How fast the phases unlock once someone starts.</p>
                   <div className="flex flex-wrap items-center gap-2">
                     {DRIP_CHOICES.map(([days, label]) => (
@@ -465,7 +466,7 @@ export function JourneyGuide({
               </ul>
 
               <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Who can see it</p>
+                <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>Who can see it</p>
                 {live ? (
                   <p className="text-body-sm text-muted">{whoCanSee(plan.visibility)}</p>
                 ) : (

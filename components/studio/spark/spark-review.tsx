@@ -26,6 +26,8 @@ import { Input, Textarea } from '@/components/ui/field'
 import { SIGNAL_GLYPH, type ReviewSignal } from '@/lib/studio/kernel/ledger'
 import type { FieldModel, FieldState } from '@/lib/studio/kernel/review-kernel'
 import { SparkOffers, type SparkCoverOffer, type SparkQualityCheck } from './spark-offers'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button } from '@/components/ui/button'
 
 // The two offers live in ./spark-offers so the four wizards that keep a bespoke review step can
 // render the SAME cards without copying them (ADR-995). Re-exported here because this is where
@@ -152,7 +154,7 @@ function Row({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{field.label}</span>
+            <span className={capsLabel('text-2xs font-semibold text-muted')}>{field.label}</span>
             {field.generated && (
               <span className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">
                 <Sparkles className="h-2.5 w-2.5" aria-hidden />{' '}
@@ -174,14 +176,14 @@ function Row({
                 <Input aria-label={field.label} value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
               )}
               <div className="mt-2 flex gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={commit}
                   disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-2xs font-semibold text-on-primary disabled:opacity-60"
+                  size="xs"
                 >
                   <Check className="h-3 w-3" aria-hidden /> Save
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => {

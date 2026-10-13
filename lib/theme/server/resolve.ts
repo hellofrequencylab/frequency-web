@@ -1,6 +1,7 @@
 import 'server-only'
 import { cookies } from 'next/headers'
-import { type GenerationId, resolveGeneration } from '../generations'
+import { type GenerationId, DEFAULT_GENERATION, resolveGeneration } from '../generations'
+import { LEGACY_THEME_AXES } from '../design'
 import { communityDefaultGeneration } from './default-generation'
 import { type SkinId, DEFAULT_SKIN, resolveSkin } from '../skins'
 import { type OccasionId, resolveOccasionForDate } from '../occasions'
@@ -52,6 +53,13 @@ export async function resolveTheme(input?: {
 }): Promise<ResolvedTheme> {
   const cookie = await readThemeCookie()
   const now = input?.now ?? new Date()
+
+  // A design that overrides everything (Frequency, ADR-1737): no Space skin, no Space or community
+  // generation, no occasion. Only the member's own skin survives, and only if it is authored for this
+  // design (resolveSkin checks SkinDef.designs). `balanced` is the generation with no overrides.
+  if (!LEGACY_THEME_AXES) {
+    return { skin: resolveSkin(cookie.skin ?? null), generation: DEFAULT_GENERATION, occasion: 'none' }
+  }
 
   // generation: member cookie → Space default → community default (Theme Studio, LIVE-658).
   // The community read only happens when neither of the first two answered.

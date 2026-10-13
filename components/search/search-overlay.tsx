@@ -10,6 +10,7 @@ import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
 import { railIconFor } from '@/components/layout/nav-icons'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Live, full-screen search overlay. Opens from the header search affordance (and
 // ⌘K); types → debounced fetch to /api/search → results appear without a page
@@ -182,7 +183,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
                         {(pg.group || pg.mode === 'studio') && (
                           <span className="mt-0.5 flex items-center gap-1.5 truncate text-meta text-subtle">
                             {pg.mode === 'studio' && (
-                              <span className="shrink-0 rounded bg-surface-elevated px-1 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
+                              <span className={capsLabel('shrink-0 rounded bg-surface-elevated px-1 py-0.5 text-3xs font-semibold text-muted')}>
                                 Studio
                               </span>
                             )}
@@ -252,7 +253,7 @@ function ResultGroup({ label, icon: Icon, count, children }: { label: string; ic
   if (count === 0) return null
   return (
     <div className="mb-1">
-      <p className="flex items-center gap-1.5 px-4 pb-1 pt-3 text-2xs font-semibold uppercase tracking-wider text-muted">
+      <p className={capsLabel('flex items-center gap-1.5 px-4 pb-1 pt-3 text-2xs font-semibold text-muted', 'wider')}>
         <Icon className="h-3.5 w-3.5" />
         {label}
       </p>

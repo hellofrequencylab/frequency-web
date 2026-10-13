@@ -1260,7 +1260,7 @@
    Every font set names its own reading face here (Frequency reads in Space Grotesk). Fonts, weight, case, tracking and leading still differ per theme:
    the TYPE TREATMENT rules further down are untouched, and they are what makes the themes distinct. */
 [data-space-theme] {
-  font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
+  font-family: var(--font-body, var(--design-font-body)), system-ui, sans-serif;
   --radius-card: 24px;
   --radius-control: 14px;
   --radius-cover: 24px;
@@ -1341,7 +1341,7 @@
    the body stack these headings already inherit — a computed no-op outside the five
    styled themes. */
 .font-section {
-  font-family: var(--font-heading, var(--font-body, var(--font-nunito))), system-ui, sans-serif;
+  font-family: var(--font-heading, var(--font-body, var(--design-font-body))), system-ui, sans-serif;
 }
 
 /* frequency — Playfair at medium weight in sentence case, the house website's headline voice. */
@@ -1563,28 +1563,28 @@
   --color-rank-rose-bright:   var(--rank-rose-bright);
 
   /* Fonts wired the same way they were. */
-  --font-sans: var(--font-nunito);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--design-font-body);
+  --font-mono: var(--design-font-mono);
 
   /* Soft, warm-tinted elevation. Overrides Tailwind's hard pure-black defaults so
      every shadow-sm/md/lg reads as gentle, diffused depth instead of a crisp
      template-y box edge. Warm shadow color (near-espresso), low alpha, wide blur.
      See docs/DESIGN.md (warm-editorial direction). */
-  --shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
-  --shadow-xs:  0 1px 3px rgb(40 30 16 / 0.05);
-  --shadow-sm:  0 1px 2px rgb(40 30 16 / 0.04), 0 2px 6px -1px rgb(40 30 16 / 0.06);
-  --shadow-md:  0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
-  --shadow-lg:  0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
-  --shadow-xl:  0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+  --shadow-2xs: var(--design-shadow-2xs);
+  --shadow-xs:  var(--design-shadow-xs);
+  --shadow-sm:  var(--design-shadow-sm);
+  --shadow-md:  var(--design-shadow-md);
+  --shadow-lg:  var(--design-shadow-lg);
+  --shadow-xl:  var(--design-shadow-xl);
 
   /* Marketing "pop" elevation — a deliberate step stronger than the soft in-app
      scale above, for the splash hero card, pricing tiers, and the demo device
      frame. Use `shadow-pop` / `shadow-pop-lg`. The in-app UI keeps the soft set. */
-  --shadow-pop:    0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
-  --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+  --shadow-pop:    var(--design-shadow-pop);
+  --shadow-pop-lg: var(--design-shadow-pop-lg);
   /* Mega-menu panel — downward-only depth (no upward bleed), so the panel reads as sliding
      out from UNDER the opaque bar above it instead of floating on top of the header. */
-  --shadow-menu:   0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
+  --shadow-menu:   var(--design-shadow-menu);
 
   /* Feel axis → utilities. Tailwind v4 generates `rounded-control`, `rounded-card`,
      and `rounded-pill` from these --radius-* keys; because they reference the :root
@@ -1609,14 +1609,18 @@
      encoded is the wrong one.
 
      The three ROLE tokens above stay the contract a skin retunes. These steps are
-     deliberately FIXED rather than skin-bridged: a skin should change corners by
-     moving the roles, not by redefining what `rounded-lg` means, or two skins stop
-     being able to share a component. */
-  --radius-sm:   6px;
-  --radius-md:   10px;
-  --radius-lg:   14px;
-  --radius-xl:   16px;
-  --radius-2xl:  24px;
+     deliberately NOT skin-bridged: a skin should change corners by moving the roles,
+     not by redefining what `rounded-lg` means, or two skins stop being able to share a
+     component. A DESIGN SYSTEM may redefine them (ADR-1737): the values live in the
+     design layer (`--design-radius-*`, "THE DESIGN LAYER" below), DAWN's unchanged. */
+  --radius-sm:   var(--design-radius-sm);
+  --radius-md:   var(--design-radius-md);
+  --radius-lg:   var(--design-radius-lg);
+  --radius-xl:   var(--design-radius-xl);
+  --radius-2xl:  var(--design-radius-2xl);
+  --radius-xs:   var(--design-radius-xs);
+  --radius-3xl:  var(--design-radius-3xl);
+  --radius-4xl:  var(--design-radius-4xl);
   --radius-full: 9999px;
 
   /* Named size for the profile hero-stat skeleton tile. A `--spacing-*` key, so
@@ -1719,6 +1723,21 @@
   --tracking-tight-display: var(--tracking-tight-display);
   --tracking-eyebrow:       var(--tracking-eyebrow);
   --tracking-eyebrow-soft:  var(--tracking-eyebrow-soft);
+  /* Tailwind's default steps, bridged to the design layer at Tailwind's own values (ADR-1737): about
+     500 `tracking-wide/wider/widest` and 5,000 `font-semibold/bold/…` call sites follow a design
+     without a codemod. */
+  --tracking-tighter: var(--design-tracking-tighter);
+  --tracking-normal:  var(--design-tracking-normal);
+  --tracking-wide:    var(--design-tracking-wide);
+  --tracking-wider:   var(--design-tracking-wider);
+  --tracking-widest:  var(--design-tracking-widest);
+  --leading-tight:    var(--design-leading-tight);
+  --leading-loose:    var(--design-leading-loose);
+  --font-weight-light:    var(--design-weight-light);
+  --font-weight-normal:   var(--design-weight-normal);
+  --font-weight-medium:   var(--design-weight-medium);
+  --font-weight-semibold: var(--design-weight-semibold);
+  --font-weight-bold:     var(--design-weight-bold);
   --ease-out:               var(--ease-out);
 }
 
@@ -1835,7 +1854,7 @@
    so a hand-rolled .mk-cont-soft section rendered edge-to-edge; latent only because the
    marketing <Section> also emits px-6. */
 .mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight {
-  padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-right));
+  padding-inline: max(var(--design-fx-mk-gutter), env(safe-area-inset-left)) max(var(--design-fx-mk-gutter), env(safe-area-inset-right));
 }
 .mk-band  { padding-block: var(--space-section-loose); }
 .mk-beat  { padding-block: var(--space-section); }
@@ -1884,9 +1903,9 @@
    bottom; the last section on the page keeps all of it, because below it is the end
    of the document rather than a neighbour. */
 :is(.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight):has(+ :is(.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight)) {
-  padding-bottom: calc(var(--space-section) * 0.62);
+  padding-bottom: calc(var(--space-section) * var(--design-fx-mk-pair-keep));
 }
-.mk-arc   { padding-top: calc(var(--space-section) + 1.5rem); }
+.mk-arc   { padding-top: calc(var(--space-section) + var(--design-fx-mk-arc-clear)); }
 /* A SectionHeading closes with `mb-9` — the gap between the heading block and the content it
    introduces. When a page adds its own intro <p> straight after it (16 sites across 8 pages:
    /discover ×4, the three discover hubs, /pricing, /the-lab, /the-quest, /the-community), that
@@ -1902,7 +1921,7 @@
    have silently overridden them, and any future page that wants a different closing gap. Layered,
    an explicit `mb-*` utility still wins and this only fills in the 14 that say nothing. */
 @layer components {
-  .mk-section-heading + p { margin-bottom: 2.25rem; }
+  .mk-section-heading + p { margin-bottom: var(--design-fx-mk-heading-gap); }
 }
 /* The hero already carries its own bottom room; a beat straight after it must not
    add a second gap.
@@ -1942,7 +1961,7 @@
   .mk-hero-dock + section,
   .mk-hero-dock + .mk-beat,
   .mk-hero-dock + .mk-band,
-  .mk-hero-dock + .mk-cont { padding-top: calc(var(--space-section) / 2 + 3rem); }
+  .mk-hero-dock + .mk-cont { padding-top: calc(var(--space-section) / 2 + var(--design-fx-mk-dock-clear)); }
 }
 
 /* Text-shadow presets (ADR-569 C1) — the two shadow steps the block text-style control offers.
@@ -2072,9 +2091,250 @@
   --spacing-hero-stat: 58px;
 }
 
+/* ── THE DESIGN LAYER (ADR-1737) ───────────────────────────────────────────
+   The values `@theme inline` used to hold as literals, lifted to variables so a design system can
+   replace them. `@theme inline` compiles its value INTO each utility, so a literal there (a shadow, a
+   radius step, a font) could never change per design; `var(--design-*)` can. These are DAWN's values,
+   byte for byte; app/themes/<design>.css overrides them under `:root[data-design="<id>"]`
+   (lib/theme/design.ts). Skins still retune the ROLE tokens (--radius-card, --radius-control); a
+   design is the only thing that redefines what `rounded-lg` or `shadow-md` means. */
+:root {
+  --design-font-body:    var(--font-nunito);
+  --design-font-display: var(--font-anton);
+  --design-font-mono:    var(--font-geist-mono);
+
+  /* Map paint (lib/maps/css-color.ts): MapLibre layers and popups on the Circle, Discover and scan maps. */
+  --design-map-pin:          #E2912F;
+  --design-map-pin-ring:     #FFFFFF;
+  --design-map-count:        #2A1B06;
+  --design-map-link:         #A8631B;
+  --design-map-meta:         #8a7a66;
+  --design-map-starter:      #7C5CD6;
+  --design-map-starter-link: #5B3FB0;
+
+  --design-radius-sm:  6px;
+  --design-radius-md:  10px;
+  --design-radius-lg:  14px;
+  --design-radius-xl:  16px;
+  --design-radius-2xl: 24px;
+  /* Tailwind's own values for the steps DAWN never redefined. */
+  --design-radius-xs:  0.125rem;
+  --design-radius-3xl: 1.5rem;
+  --design-radius-4xl: 2rem;
+
+  /* Tailwind's default tracking, leading and weight steps, at Tailwind's values. */
+  --design-tracking-tighter: -0.05em;
+  --design-tracking-normal:  0em;
+  --design-tracking-wide:    0.025em;
+  --design-tracking-wider:   0.05em;
+  --design-tracking-widest:  0.1em;
+  --design-leading-tight:    1.25;
+  --design-leading-loose:    2;
+  --design-weight-light:     300;
+  --design-weight-normal:    400;
+  --design-weight-medium:    500;
+  --design-weight-semibold:  600;
+  --design-weight-bold:      700;
+
+  --design-shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
+  --design-shadow-xs: 0 1px 3px rgb(40 30 16 / 0.05);
+  --design-shadow-sm: 0 1px 2px rgb(40 30 16 / 0.04), 0 2px 6px -1px rgb(40 30 16 / 0.06);
+  --design-shadow-md: 0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
+  --design-shadow-lg: 0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
+  --design-shadow-xl: 0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+  --design-shadow-pop: 0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
+  --design-shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+  --design-shadow-menu: 0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
+
+  /* ── Base typography: DAWN's heading and body taste (the `body`, `h1–h6` and `.font-display`
+     rules below read these). */
+  --design-body-leading:        1.65;
+  --design-heading-weight:      800;
+  --design-heading-leading:     1.2;
+  --design-heading-tracking:    -0.01em;
+  --design-display-weight:      400;
+  --design-display-tracking:    0.012em;
+  --design-display-leading:     1.0;
+  --design-font-display-fallback: 'Arial Narrow', system-ui, sans-serif;
+
+  /* ── THE EFFECT LAYER (--design-fx-*). Every literal inside DAWN's signature effect classes,
+     lifted so a design retunes the effect WITHOUT writing a class rule. Each is a LEAF value (a
+     length, percentage, angle, duration, number): never a colour that reads a token, because a
+     custom property resolves where it is declared (here, on :root), and a token a skin, an
+     occasion or a generation re-points on a descendant would be frozen at the :root value. The
+     colours stay `var(--color-*)` in the class rule; only their alpha and geometry live here.
+
+     THE LEVERS. One per family a different design would plausibly not want at all. Each is a
+     multiplier at 1 (or the effect's own opacity / iteration count); set it to 0 and the effect
+     paints nothing, without touching the layout:
+       --design-fx-slat-opacity        .bg-slat texture (the ink background stays)
+       --design-fx-strip-opacity       .light-strip hairline + glow
+       --design-fx-amber-glow-opacity  .amber-glow wash
+       --design-fx-lift-strength       .lift-1/2/3 shadows (and --design-fx-lift-travel for hover)
+       --design-fx-sheen-opacity       .sheen sweep
+       --design-fx-spot-opacity        .spot overhead light
+       --design-fx-dot-grid-opacity    .dot-grid lattice
+       --design-fx-rule-opacity        .rule-amber hairline
+       --design-fx-glow-iterations     freq-glow breath (.freq-glow, .animate-glow); `0` holds it still
+       --design-fx-brand-shine-iterations / --design-fx-brand-wiggle-iterations   the wordmark idle
+     The alpha levers multiply INTO the colour-mix (not `opacity`), because an unlayered `opacity`
+     here would beat every `opacity-*` utility a call site sets on the same element. */
+
+  /* .bg-slat — wood-slat ink texture */
+  --design-fx-slat-opacity:     1;
+  --design-fx-slat-sheen:       7%;
+  --design-fx-slat-sheen-stop:  22%;
+  --design-fx-slat-line:        6%;
+  --design-fx-slat-line-width:  1px;
+  --design-fx-slat-pitch:       11px;
+  --design-fx-slat-angle:       90deg;
+
+  /* .light-strip — the LED seam */
+  --design-fx-strip-opacity:    1;
+  --design-fx-strip-height:     2px;
+  --design-fx-strip-glow:       55%;
+  --design-fx-strip-glow-blur:  16px;
+  --design-fx-strip-glow-spread: 1px;
+
+  /* .amber-glow — the radial wash behind a hero */
+  --design-fx-amber-glow-opacity: 1;
+  --design-fx-amber-glow-shape: ellipse 60% 55% at 50% 42%;
+  --design-fx-amber-glow:       28%;
+  --design-fx-amber-glow-stop:  70%;
+
+  /* .rank-badge */
+  --design-fx-rank-gap:         6px;
+  --design-fx-rank-padding:     2px 8px;
+  --design-fx-rank-font-size:   12px;
+  --design-fx-rank-weight:      500;
+  --design-fx-rank-fill:        14%;
+  --design-fx-rank-fill-dark:   24%;
+  --design-fx-rank-border-width: 0.5px;
+  --design-fx-rank-border:      32%;
+  --design-fx-rank-dot:         8px;
+
+  /* .brandmark / .brandmark-link — the engraved wordmark and its idle shine + wiggle */
+  --design-fx-brand-opacity:          0.9;
+  --design-fx-brand-shine-angle:      105deg;
+  --design-fx-brand-shine-from:       28%;
+  --design-fx-brand-shine-in:         43%;
+  --design-fx-brand-shine-mid:        50%;
+  --design-fx-brand-shine-out:        57%;
+  --design-fx-brand-shine-to:         72%;
+  --design-fx-brand-shine-size:       240% 100%;
+  --design-fx-brand-shine-start:      240%;
+  --design-fx-brand-shine-end:        -140%;
+  --design-fx-brand-shine-duration:   6s;
+  --design-fx-brand-shine-delay:      2.5s;
+  --design-fx-brand-shine-iterations: infinite;
+  --design-fx-brand-wiggle-iterations: infinite;
+  --design-fx-brand-wiggle-a:         -1.1deg;
+  --design-fx-brand-wiggle-b:         0.9deg;
+  --design-fx-brand-wiggle-c:         -0.5deg;
+  --design-fx-brand-wiggle-shift:     -0.3px;
+  --design-fx-brand-emboss-catch:     -0.5px;
+  --design-fx-brand-emboss-drop:      1px;
+  --design-fx-brand-emboss-blur:      1px;
+  --design-fx-brand-hover-drop:       1.5px;
+  --design-fx-brand-hover-blur:       1.5px;
+  --design-fx-brand-hover-filter:     brightness(1.12) saturate(1.06);
+  --design-fx-brand-press-filter:     brightness(0.9);
+  --design-fx-brand-press-transform:  translateY(0.5px) scale(0.99);
+  --design-fx-brand-press-blur:       1.5px;
+  --design-fx-brand-burn-blur:        3px;
+  --design-fx-brand-fade:             280ms;
+  --design-fx-brand-press:            130ms;
+
+  /* freq-glow (.freq-glow, .animate-glow) — the halo's breath */
+  --design-fx-glow-iterations:  infinite;
+  --design-fx-glow-duration:    6s;
+  --design-fx-glow-min:         0.985;
+  --design-fx-glow-max:         1.015;
+
+  /* .animate-marquee */
+  --design-fx-marquee-duration: 32s;
+
+  /* lift-1/2/3, sheen, spot, dot-grid, arc-top, rule-amber, glass */
+  --design-fx-lift-strength:    1;
+  --design-fx-lift-travel:      -2px;
+  --design-fx-lift-1-contact:   0 1px 2px;
+  --design-fx-lift-1-contact-alpha: 7%;
+  --design-fx-lift-1-depth:     0 6px 16px -8px;
+  --design-fx-lift-1-depth-alpha: 14%;
+  --design-fx-lift-2-contact:   0 1px 2px;
+  --design-fx-lift-2-contact-alpha: 8%;
+  --design-fx-lift-2-depth:     0 18px 40px -12px;
+  --design-fx-lift-2-depth-alpha: 22%;
+  --design-fx-lift-2-hover-contact: 0 1px 2px;
+  --design-fx-lift-2-hover-contact-alpha: 10%;
+  --design-fx-lift-2-hover-depth: 0 26px 60px -14px;
+  --design-fx-lift-2-hover-depth-alpha: 30%;
+  --design-fx-lift-3-contact:   0 2px 4px;
+  --design-fx-lift-3-contact-alpha: 10%;
+  --design-fx-lift-3-depth:     0 40px 80px -24px;
+  --design-fx-lift-3-depth-alpha: 34%;
+
+  --design-fx-sheen-opacity:    1;
+  --design-fx-sheen:            16%;
+  --design-fx-sheen-angle:      105deg;
+  --design-fx-sheen-width:      45%;
+  --design-fx-sheen-skew:       -14deg;
+  --design-fx-sheen-from:       -60%;
+  --design-fx-sheen-to:         120%;
+  --design-fx-sheen-duration:   820ms;
+
+  --design-fx-spot-opacity:     1;
+  --design-fx-spot-shape:       ellipse 70% 44% at 50% 0%;
+  --design-fx-spot:             13%;
+  --design-fx-spot-stop:        72%;
+
+  --design-fx-dot-grid-opacity: 0.5;
+  --design-fx-dot-grid:         16%;
+  --design-fx-dot-grid-dot:     1px;
+  --design-fx-dot-grid-pitch:   22px;
+  --design-fx-dot-grid-mask-shape: ellipse 76% 70% at 50% 50%;
+  --design-fx-dot-grid-mask-from: 30%;
+  --design-fx-dot-grid-mask-to: 78%;
+
+  --design-fx-arc-rise:         3.2rem;
+
+  --design-fx-rule-opacity:     1;
+  --design-fx-rule-edge:        90%;
+  --design-fx-rule-centre:      55%;
+  --design-fx-rule-in:          18%;
+  --design-fx-rule-out:         82%;
+
+  --design-fx-glass:            72%;
+  --design-fx-glass-filter:     saturate(1.4) blur(14px);
+  --design-fx-glass-border:     80%;
+  --design-fx-glass-ink:        58%;
+  --design-fx-glass-ink-filter: saturate(1.3) blur(16px);
+  --design-fx-glass-ink-border: 14%;
+
+  /* .mk-* marketing rhythm (the --space-section* steps are already tokens, above) */
+  --design-fx-mk-gutter:        1.5rem;
+  --design-fx-mk-pair-keep:     0.62;
+  --design-fx-mk-arc-clear:     1.5rem;
+  --design-fx-mk-dock-clear:    3rem;
+  --design-fx-mk-heading-gap:   2.25rem;
+}
+
+/* Primary-tinted elevation. Tailwind recolours a shadow (`shadow-primary/25`) by rewriting the colour
+   stops of a LITERAL theme shadow; the design layer turned those into `var(--design-shadow-*)`, which it
+   cannot rewrite, so the four tinted CTAs name their glow here instead (ADR-1737). Same geometry as
+   shadow-sm / shadow-lg, the stops in the primary at the alpha the call sites used. */
+@utility shadow-glow-primary-sm {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-primary) 25%, transparent),
+    0 2px 6px -1px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+@utility shadow-glow-primary-lg {
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary) 20%, transparent),
+    0 12px 28px -6px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
-  font-family: var(--font-nunito, 'Nunito', sans-serif);
+  font-family: var(--design-font-body, 'Nunito', sans-serif);
   /* SCROLLBAR GUTTER: RESERVED (LIVE-479, shipped 2026-09-28; held back by LIVE-477 on 2026-09-23).
      The DOCUMENT is what scrolls in the member shell (components/layout/app-shell.tsx), and the
      sticky header and the rail track are laid out against its width. Six overlays take a body
@@ -2106,14 +2366,14 @@ html {
 body {
   background: var(--color-canvas);
   color: var(--color-text);
-  font-family: var(--font-nunito, 'Nunito', sans-serif);
-  line-height: 1.65;
+  font-family: var(--design-font-body, 'Nunito', sans-serif);
+  line-height: var(--design-body-leading);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-weight: var(--design-heading-weight);
+  line-height: var(--design-heading-leading);
+  letter-spacing: var(--design-heading-tracking);
 }
 
 /* Opt a heading OUT of the display treatment above, so it renders as ordinary text.
@@ -2253,23 +2513,23 @@ h1, h2, h3, h4, h5, h6 {
 .rank-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  background: color-mix(in srgb, var(--rank) 14%, var(--color-surface));
+  gap: var(--design-fx-rank-gap);
+  padding: var(--design-fx-rank-padding);
+  border-radius: var(--design-radius-sm);
+  font-size: var(--design-fx-rank-font-size);
+  font-weight: var(--design-fx-rank-weight);
+  background: color-mix(in srgb, var(--rank) var(--design-fx-rank-fill), var(--color-surface));
   color: var(--rank-deep);
-  border: 0.5px solid color-mix(in srgb, var(--rank) 32%, transparent);
+  border: var(--design-fx-rank-border-width) solid color-mix(in srgb, var(--rank) var(--design-fx-rank-border), transparent);
 }
 .rank-badge .rank-dot {
-  width: 8px;
-  height: 8px;
+  width: var(--design-fx-rank-dot);
+  height: var(--design-fx-rank-dot);
   border-radius: 50%;
   background: var(--rank);
 }
 .dark .rank-badge {
-  background: color-mix(in srgb, var(--rank) 24%, var(--color-surface));
+  background: color-mix(in srgb, var(--rank) var(--design-fx-rank-fill-dark), var(--color-surface));
   color: var(--rank-bright);
 }
 
@@ -2359,7 +2619,7 @@ h1, h2, h3, h4, h5, h6 {
   to   { transform: translateX(-50%); }
 }
 .animate-marquee {
-  animation: marquee 32s linear infinite;
+  animation: marquee var(--design-fx-marquee-duration) linear infinite;
   will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2427,13 +2687,13 @@ h1, h2, h3, h4, h5, h6 {
    element's inline opacity (fill-scaled), so we never override it here. Reduced
    motion simply holds the halo steady — still lit, just not pulsing. */
 @keyframes freq-glow {
-  0%, 100% { transform: scale(0.985); }
-  50%      { transform: scale(1.015); }
+  0%, 100% { transform: scale(var(--design-fx-glow-min)); }
+  50%      { transform: scale(var(--design-fx-glow-max)); }
 }
 .freq-glow {
   transform-origin: center;
   transform-box: fill-box;
-  animation: freq-glow 6s ease-in-out infinite;
+  animation: freq-glow var(--design-fx-glow-duration) ease-in-out var(--design-fx-glow-iterations);
   will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2451,13 +2711,13 @@ h1, h2, h3, h4, h5, h6 {
 .bg-slat {
   background-color: var(--color-ink);
   background-image:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) calc(7% * var(--ornament, 1) / 0.6) , transparent) 0%, transparent 22%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) calc(var(--design-fx-slat-sheen) * var(--design-fx-slat-opacity) * var(--ornament, 1) / 0.6) , transparent) 0%, transparent var(--design-fx-slat-sheen-stop)),
     repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--color-on-ink) 6%, transparent) 0,
-      color-mix(in srgb, var(--color-on-ink) 6%, transparent) 1px,
-      transparent 1px,
-      transparent 11px
+      var(--design-fx-slat-angle),
+      color-mix(in srgb, var(--color-on-ink) calc(var(--design-fx-slat-line) * var(--design-fx-slat-opacity)), transparent) 0,
+      color-mix(in srgb, var(--color-on-ink) calc(var(--design-fx-slat-line) * var(--design-fx-slat-opacity)), transparent) var(--design-fx-slat-line-width),
+      transparent var(--design-fx-slat-line-width),
+      transparent var(--design-fx-slat-pitch)
     );
 }
 
@@ -2465,11 +2725,11 @@ h1, h2, h3, h4, h5, h6 {
    spaces. Drop between sections (especially at a dark↔light seam) for a crisp,
    intentional transition. */
 .light-strip {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  height: var(--design-fx-strip-height);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) calc(100% * var(--design-fx-strip-opacity)), transparent), transparent);
   /* Glow strength scales with the active --ornament (baseline 0.6): a flat preset
      (spacious) dims the strip, a rich one (playful / solstice) lifts it. */
-  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--color-primary) calc(55% * var(--ornament, 0.6) / 0.6), transparent);
+  box-shadow: 0 0 var(--design-fx-strip-glow-blur) var(--design-fx-strip-glow-spread) color-mix(in srgb, var(--color-primary) calc(var(--design-fx-strip-glow) * var(--design-fx-strip-opacity) * var(--ornament, 0.6) / 0.6), transparent);
 }
 
 /* Legible overlaid text when a header runs WITHOUT the ink overlay (PageHero overlay={false}): a
@@ -2625,9 +2885,9 @@ h1, h2, h3, h4, h5, h6 {
   /* Glow intensity scales with --ornament (baseline 0.6) so the generation/occasion
      axes can calm it (spacious) or lift it (playful / solstice) without a JS toggle. */
   background: radial-gradient(
-    ellipse 60% 55% at 50% 42%,
-    color-mix(in srgb, var(--color-primary) calc(28% * var(--ornament, 0.6) / 0.6), transparent) 0%,
-    transparent 70%
+    var(--design-fx-amber-glow-shape),
+    color-mix(in srgb, var(--color-primary) calc(var(--design-fx-amber-glow) * var(--design-fx-amber-glow-opacity) * var(--ornament, 0.6) / 0.6), transparent) 0%,
+    transparent var(--design-fx-amber-glow-stop)
   );
 }
 
@@ -2647,16 +2907,16 @@ h1, h2, h3, h4, h5, h6 {
   /* A warm catch-light streak, clipped to the letters by the mask, that the
      `brand-shine` keyframes sweep across once a cycle. */
   background-image: linear-gradient(
-    105deg,
-    transparent 28%,
-    var(--brand-shine) 43%,
-    var(--brand-wash) 50%,
-    var(--brand-shine) 57%,
-    transparent 72%
+    var(--design-fx-brand-shine-angle),
+    transparent var(--design-fx-brand-shine-from),
+    var(--brand-shine) var(--design-fx-brand-shine-in),
+    var(--brand-wash) var(--design-fx-brand-shine-mid),
+    var(--brand-shine) var(--design-fx-brand-shine-out),
+    transparent var(--design-fx-brand-shine-to)
   );
   background-repeat: no-repeat;
-  background-size: 240% 100%;
-  background-position: 240% 0;
+  background-size: var(--design-fx-brand-shine-size);
+  background-position: var(--design-fx-brand-shine-start) 0;
   /* The WORDMARK crop, not the full logo: the original had the retired tagline baked in, and
      this mask painted it onto the in-app header.
      THE ASPECT LIVES HERE, with the asset. It used to be an `aspect-[963/170]` class repeated at
@@ -2668,28 +2928,28 @@ h1, h2, h3, h4, h5, h6 {
   aspect-ratio: 963 / 130;
   -webkit-mask: url('/frequency-wordmark.png') left center / contain no-repeat;
           mask: url('/frequency-wordmark.png') left center / contain no-repeat;
-  opacity: 0.9;
+  opacity: var(--design-fx-brand-opacity);
   /* Light/rest state = raised EMBOSS: a catch-light on the top edge, a soft
      shadow beneath, so the wordmark reads as pressed UP out of the surface. */
   filter:
-    drop-shadow(0 -0.5px 0 var(--brand-emboss-light))
-    drop-shadow(0 1px 1px var(--brand-emboss-dark));
-  transition: opacity 280ms ease, filter 280ms ease, transform 130ms ease;
+    drop-shadow(0 var(--design-fx-brand-emboss-catch) 0 var(--brand-emboss-light))
+    drop-shadow(0 var(--design-fx-brand-emboss-drop) var(--design-fx-brand-emboss-blur) var(--brand-emboss-dark));
+  transition: opacity var(--design-fx-brand-fade) ease, filter var(--design-fx-brand-fade) ease, transform var(--design-fx-brand-press) ease;
   will-change: opacity, filter, transform, background-position;
   /* A dark-orange wash sweeps across ~once every 6s (idles off-screen between). */
-  animation: brand-shine 6s ease-in-out 2.5s infinite;
+  animation: brand-shine var(--design-fx-brand-shine-duration) ease-in-out var(--design-fx-brand-shine-delay) var(--design-fx-brand-shine-iterations);
 }
 /* The wiggle rides the link wrapper so it never fights the press transform on
    the mark itself; synced to the same cadence as the shine. */
 .brandmark-link {
-  animation: brand-wiggle 6s ease-in-out 2.5s infinite;
+  animation: brand-wiggle var(--design-fx-brand-shine-duration) ease-in-out var(--design-fx-brand-shine-delay) var(--design-fx-brand-wiggle-iterations);
 }
 .brandmark-link:hover .brandmark {
   opacity: 1;
   filter:
-    brightness(1.12) saturate(1.06)
-    drop-shadow(0 -0.5px 0 var(--brand-emboss-light))
-    drop-shadow(0 1.5px 1.5px var(--brand-emboss-dark));
+    var(--design-fx-brand-hover-filter)
+    drop-shadow(0 var(--design-fx-brand-emboss-catch) 0 var(--brand-emboss-light))
+    drop-shadow(0 var(--design-fx-brand-hover-drop) var(--design-fx-brand-hover-blur) var(--brand-emboss-dark));
 }
 /* Hover holds it steady — pause the idle motion so it reads as deliberate. */
 .brandmark-link:hover,
@@ -2698,24 +2958,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 .brandmark-link:active .brandmark {
   opacity: 1;
-  transform: translateY(0.5px) scale(0.99);
-  /* Pressed IN: the emboss inverts to a deep, burnt-in engrave. */
+  transform: var(--design-fx-brand-press-transform);
+  /* Pressed IN: the emboss inverts to a deep, burnt-in engrave (the rest emboss, mirrored). */
   filter:
-    brightness(0.9)
-    drop-shadow(0 0.5px 0 var(--brand-emboss-light))
-    drop-shadow(0 -1px 1.5px var(--brand-emboss-dark))
-    drop-shadow(0 0 3px var(--brand-burn));
+    var(--design-fx-brand-press-filter)
+    drop-shadow(0 calc(-1 * var(--design-fx-brand-emboss-catch)) 0 var(--brand-emboss-light))
+    drop-shadow(0 calc(-1 * var(--design-fx-brand-emboss-drop)) var(--design-fx-brand-press-blur) var(--brand-emboss-dark))
+    drop-shadow(0 0 var(--design-fx-brand-burn-blur) var(--brand-burn));
 }
 @keyframes brand-shine {
-  0%   { background-position: 240% 0; }
-  20%  { background-position: -140% 0; }
-  100% { background-position: -140% 0; }
+  0%   { background-position: var(--design-fx-brand-shine-start) 0; }
+  20%  { background-position: var(--design-fx-brand-shine-end) 0; }
+  100% { background-position: var(--design-fx-brand-shine-end) 0; }
 }
 @keyframes brand-wiggle {
   0%, 4%    { transform: rotate(0deg) translateX(0); }
-  7%        { transform: rotate(-1.1deg) translateX(-0.3px); }
-  9%        { transform: rotate(0.9deg); }
-  11%       { transform: rotate(-0.5deg); }
+  7%        { transform: rotate(var(--design-fx-brand-wiggle-a)) translateX(var(--design-fx-brand-wiggle-shift)); }
+  9%        { transform: rotate(var(--design-fx-brand-wiggle-b)); }
+  11%       { transform: rotate(var(--design-fx-brand-wiggle-c)); }
   13%, 100% { transform: rotate(0deg) translateX(0); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2756,10 +3016,10 @@ h1, h2, h3, h4, h5, h6 {
 .font-display {
   /* `--font-display` lets a scope (a Space page theme, ADR-578) re-point the display face; unset
      everywhere else, it falls back to Anton, so marketing + member headings are unchanged. */
-  font-family: var(--font-display, var(--font-anton)), 'Arial Narrow', system-ui, sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.012em;
-  line-height: 1.0;
+  font-family: var(--font-display, var(--design-font-display)), var(--design-font-display-fallback);
+  font-weight: var(--design-display-weight);
+  letter-spacing: var(--design-display-tracking);
+  line-height: var(--design-display-leading);
 }
 
 /* ══ The unified light-and-lift layer (DAWN 2026-08-03) ══════════════════════════
@@ -2782,24 +3042,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 /* lift-1 — rests on the page. Rows, chips, inline panels. No hover travel. */
 .lift-1 {
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 7%, transparent),
-              0 6px 16px -8px color-mix(in srgb, var(--color-ink) 14%, transparent);
+  box-shadow: var(--design-fx-lift-1-contact) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-1-contact-alpha) * var(--design-fx-lift-strength)), transparent),
+              var(--design-fx-lift-1-depth) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-1-depth-alpha) * var(--design-fx-lift-strength)), transparent);
 }
 /* lift-2 — the card. THE default for anything clickable on a marketing page. */
 .lift-2 {
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent),
-              0 18px 40px -12px color-mix(in srgb, var(--color-ink) 22%, transparent);
+  box-shadow: var(--design-fx-lift-2-contact) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-2-contact-alpha) * var(--design-fx-lift-strength)), transparent),
+              var(--design-fx-lift-2-depth) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-2-depth-alpha) * var(--design-fx-lift-strength)), transparent);
 }
 .lift-2:hover {
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 10%, transparent),
-              0 26px 60px -14px color-mix(in srgb, var(--color-ink) 30%, transparent);
-  transform: translateY(-2px);
+  box-shadow: var(--design-fx-lift-2-hover-contact) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-2-hover-contact-alpha) * var(--design-fx-lift-strength)), transparent),
+              var(--design-fx-lift-2-hover-depth) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-2-hover-depth-alpha) * var(--design-fx-lift-strength)), transparent);
+  transform: translateY(var(--design-fx-lift-travel));
 }
 /* lift-3 — floats. Reserve for ONE object per page: the hero object, the sticky
    action card, an open sheet. Three floating things read as none. */
 .lift-3 {
-  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-ink) 10%, transparent),
-              0 40px 80px -24px color-mix(in srgb, var(--color-ink) 34%, transparent);
+  box-shadow: var(--design-fx-lift-3-contact) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-3-contact-alpha) * var(--design-fx-lift-strength)), transparent),
+              var(--design-fx-lift-3-depth) color-mix(in srgb, var(--color-ink) calc(var(--design-fx-lift-3-depth-alpha) * var(--design-fx-lift-strength)), transparent);
 }
 
 /* ── ring-focus — the focus indicator for a LIFTED surface ─────────────────────
@@ -2859,46 +3119,46 @@ h1, h2, h3, h4, h5, h6 {
    light, not the object. Needs position:relative + overflow:hidden on the host. */
 .sheen { position: relative; overflow: hidden; }
 .sheen::after {
-  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
-  background: linear-gradient(105deg, transparent, color-mix(in srgb, var(--color-on-ink) 16%, transparent), transparent);
-  transform: skewX(-14deg); opacity: 0; transition: none;
+  content: ''; position: absolute; top: 0; bottom: 0; left: var(--design-fx-sheen-from); width: var(--design-fx-sheen-width); pointer-events: none;
+  background: linear-gradient(var(--design-fx-sheen-angle), transparent, color-mix(in srgb, var(--color-on-ink) calc(var(--design-fx-sheen) * var(--design-fx-sheen-opacity)), transparent), transparent);
+  transform: skewX(var(--design-fx-sheen-skew)); opacity: 0; transition: none;
 }
-.sheen:hover::after { animation: sheen-pass 820ms var(--ease-out) both; }
+.sheen:hover::after { animation: sheen-pass var(--design-fx-sheen-duration) var(--ease-out) both; }
 @keyframes sheen-pass {
-  from { left: -60%; opacity: 0; }
+  from { left: var(--design-fx-sheen-from); opacity: 0; }
   35%  { opacity: 1; }
-  to   { left: 120%; opacity: 0; }
+  to   { left: var(--design-fx-sheen-to); opacity: 0; }
 }
 
 /* ── spot — a wide overhead spotlight, cooler and higher than amber-glow. For a
    dark band that needs a centre of gravity without an amber wash. */
 .spot::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 70% 44% at 50% 0%,
-    color-mix(in srgb, var(--color-on-ink) 13%, transparent) 0%, transparent 72%);
+  background: radial-gradient(var(--design-fx-spot-shape),
+    color-mix(in srgb, var(--color-on-ink) calc(var(--design-fx-spot) * var(--design-fx-spot-opacity)), transparent) 0%, transparent var(--design-fx-spot-stop));
 }
 
 /* ── dot-grid — a sparse dot lattice. The cream-surface texture, for the surfaces
    where grain would read as noise: schematics, plans, operator pages. */
 .dot-grid::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 16%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(ellipse 76% 70% at 50% 50%, #000 30%, transparent 78%);
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: var(--design-fx-dot-grid-opacity);
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) var(--design-fx-dot-grid), transparent) var(--design-fx-dot-grid-dot), transparent var(--design-fx-dot-grid-dot));
+  background-size: var(--design-fx-dot-grid-pitch) var(--design-fx-dot-grid-pitch);
+  mask-image: radial-gradient(var(--design-fx-dot-grid-mask-shape), #000 var(--design-fx-dot-grid-mask-from), transparent var(--design-fx-dot-grid-mask-to));
 }
 
 /* ── arc-top — the soft shoulder. A band whose top edge is a wide arc instead of a
    ruled line, so a cream section can rise out of ink without a seam. ONE per page. */
-.arc-top { border-radius: 50% 50% 0 0 / 3.2rem 3.2rem 0 0; }
+.arc-top { border-radius: 50% 50% 0 0 / var(--design-fx-arc-rise) var(--design-fx-arc-rise) 0 0; }
 
 /* ── rule-amber — a hairline divider that warms at the centre. Between beats of the
    same tone, where the light-strip would be too loud. */
 .rule-amber {
   height: 1px; border: 0; margin: 0;
   background: linear-gradient(90deg, transparent,
-    color-mix(in srgb, var(--color-border-strong) 90%, transparent) 18%,
-    color-mix(in srgb, var(--color-primary) 55%, transparent) 50%,
-    color-mix(in srgb, var(--color-border-strong) 90%, transparent) 82%, transparent);
+    color-mix(in srgb, var(--color-border-strong) calc(var(--design-fx-rule-edge) * var(--design-fx-rule-opacity)), transparent) var(--design-fx-rule-in),
+    color-mix(in srgb, var(--color-primary) calc(var(--design-fx-rule-centre) * var(--design-fx-rule-opacity)), transparent) 50%,
+    color-mix(in srgb, var(--color-border-strong) calc(var(--design-fx-rule-edge) * var(--design-fx-rule-opacity)), transparent) var(--design-fx-rule-out), transparent);
 }
 
 /* ── THE TEXTURE LAYER (DAWN effects.css, ported 2026-08-04) ──────────────────
@@ -2969,7 +3229,7 @@ h1, h2, h3, h4, h5, h6 {
 /* animate-glow — the slow amber pulse. Its `freq-glow` keyframes were already
    ported; the class that uses them was not, so the animation existed and nothing
    could reach it. */
-.animate-glow { animation: freq-glow 6s ease-in-out infinite; }
+.animate-glow { animation: freq-glow var(--design-fx-glow-duration) ease-in-out var(--design-fx-glow-iterations); }
 
 /* DAWN names this `.animate-warmup`; this codebase shipped it as
    `.animate-warmup-flash`. Aliased rather than renamed, so a DAWN screen pasted in
@@ -2986,16 +3246,16 @@ h1, h2, h3, h4, h5, h6 {
    Only ever over an image or a scrolling surface; over flat colour it is just a
    tint with a cost. */
 .glass {
-  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
-  backdrop-filter: saturate(1.4) blur(14px);
-  -webkit-backdrop-filter: saturate(1.4) blur(14px);
-  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  background: color-mix(in srgb, var(--color-surface) var(--design-fx-glass), transparent);
+  backdrop-filter: var(--design-fx-glass-filter);
+  -webkit-backdrop-filter: var(--design-fx-glass-filter);
+  border: 1px solid color-mix(in srgb, var(--color-border) var(--design-fx-glass-border), transparent);
 }
 .glass-ink {
-  background: color-mix(in srgb, var(--color-ink) 58%, transparent);
-  backdrop-filter: saturate(1.3) blur(16px);
-  -webkit-backdrop-filter: saturate(1.3) blur(16px);
-  border: 1px solid color-mix(in srgb, var(--color-on-ink) 14%, transparent);
+  background: color-mix(in srgb, var(--color-ink) var(--design-fx-glass-ink), transparent);
+  backdrop-filter: var(--design-fx-glass-ink-filter);
+  -webkit-backdrop-filter: var(--design-fx-glass-ink-filter);
+  border: 1px solid color-mix(in srgb, var(--color-on-ink) var(--design-fx-glass-ink-border), transparent);
   color: var(--color-on-ink);
 }
 

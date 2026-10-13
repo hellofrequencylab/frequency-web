@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { buttonClasses } from '@/components/ui/button'
 import { useState, useEffect, useRef } from 'react'
@@ -100,7 +101,7 @@ export function CircleCreateMenu({
       {open && (
         <div className="absolute right-0 top-full mt-2 w-64 rounded-card border border-border bg-surface lift-3 py-1 z-50">
           <div className="px-3 py-2 border-b border-border">
-            <p className="text-3xs font-semibold uppercase tracking-wider text-muted">Create</p>
+            <p className={capsLabel('text-3xs font-semibold text-muted', 'wider')}>Create</p>
           </div>
           <div className="py-1">
             {items.map(({ href, label, hint, Icon }) => (

@@ -1,0 +1,79 @@
+/* ══ FREQUENCY — the platform design system beside DAWN (ADR-1737) ══════════════════════════════
+   Applies when <html data-design="frequency">: NEXT_PUBLIC_SITE_DESIGN=frequency at build, or the
+   `?design=frequency` local preview (lib/theme/design.ts).
+
+   THE CONTRACT. DAWN is the unscoped `:root` / `.dark` blocks and the design layer
+   (`--design-*`) in app/globals.css. This file redefines those SAME names under the scopes below,
+   and nothing else: lib/theme/design.test.ts fails on a name DAWN does not define, so a typo can
+   never ship a token nobody reads. A name left out here keeps DAWN's value.
+
+   `:root[data-design="frequency"]` outranks `:root`, and `.dark[data-design="frequency"]` outranks
+   `.dark`, so no !important is needed. Under Frequency the skin, generation, occasion, Space font set
+   and Theme Studio layers are not stamped at all (LEGACY_THEME_AXES), so nothing below the shell
+   re-points these values.
+
+   Raw values live ONLY here and in app/globals.css (check:tokens holds TS and TSX to tokens).
+
+   ── CONTRACT CHECKLIST ──────────────────────────────────────────────────────────────────────────
+   Every family a design has to DECIDE. Tick each one: either set it below, or write "keeps DAWN"
+   beside it so the next reader knows it was a choice and not an omission. Names are DAWN's, in
+   app/globals.css; the first `:root` block is light, `.dark` is dark.
+
+   COLOUR, light (`:root[data-design="frequency"]`) AND dark (`.dark[data-design="frequency"]`)
+   [ ] --color-canvas*, --color-marketing-*      page grounds (app + public site)
+   [ ] --color-surface*, --color-chrome-*        cards, sheets, header, rail
+   [ ] --color-border*                           hairlines, strong rules
+   [ ] --color-text*                             body, muted, subtle, on-* text roles
+   [ ] --color-ink*, --color-on-*                the dark band and what reads on it, on media
+   [ ] --color-primary*                          brand fill, hover, strong, soft, -bg washes
+   [ ] --color-signal*, --color-broadcast*, --color-move*   the three action hues
+   [ ] --color-success*, --warning*, --danger*, --info*      status
+   [ ] --color-focus-ring*                       keyboard focus (check:contrast measures it)
+   [ ] --rank-*  (core / -deep / -bright)        the rank spectrum (mode-invariant in DAWN)
+   [ ] --brand-* (mark, emboss, burn, shine, wash)          the engraved wordmark
+   [ ] lib/theme/design.ts `chrome` (light/dark hex) and lib/theme/palette.ts (OG/email/wallet):
+       these cannot read CSS, so they are set in TS beside this file. The PWA manifest follows
+       `chrome.light` at build (scripts/write-design-assets.mjs).
+
+   THE DESIGN LAYER (`--design-*`, app/globals.css "THE DESIGN LAYER")
+   [ ] --design-radius-sm/md/lg/xl/2xl           what rounded-* means
+   [ ] --design-shadow-2xs … menu                what shadow-* means
+   [ ] --design-font-body / -display / -mono, --design-font-display-fallback
+       New faces register in lib/theme/design-fonts/frequency.ts (never app/layout.tsx); the OG
+       card face is lib/og/design-font.ts.
+   [ ] --design-body-leading, --design-heading-weight/-leading/-tracking,
+       --design-display-weight/-tracking/-leading                 base typography
+   [ ] --design-map-*                            MapLibre pins, counts, popup links
+   [ ] --weight-*, --leading-*, --tracking-*, --text-*           the type roles, if they change
+
+   THE EFFECT LAYER (`--design-fx-*`). DAWN's signature effects. Each family has a LEVER: set it
+   to 0 to switch the effect off without a class rule. Then retune, or leave, its geometry.
+   [ ] .bg-slat        --design-fx-slat-opacity      + -sheen, -line, -pitch, -angle …
+   [ ] .light-strip    --design-fx-strip-opacity     + -height, -glow, -glow-blur …
+   [ ] .amber-glow     --design-fx-amber-glow-opacity + -shape, -stop
+   [ ] .lift-1/2/3     --design-fx-lift-strength     + -travel, -lift-N-contact/-depth(+alpha)
+   [ ] .sheen          --design-fx-sheen-opacity     + -angle, -width, -skew, -duration …
+   [ ] .spot           --design-fx-spot-opacity      + -shape, -stop
+   [ ] .dot-grid       --design-fx-dot-grid-opacity  + -pitch, -dot, -mask-*
+   [ ] .rule-amber     --design-fx-rule-opacity      + -edge, -centre, -in, -out
+   [ ] .arc-top        --design-fx-arc-rise (0 = a flat edge)
+   [ ] .glass / -ink   --design-fx-glass*, --design-fx-glass-ink*  (fill, backdrop filter, border)
+   [ ] .rank-badge     --design-fx-rank-*  (its corner reads --design-radius-sm)
+   [ ] .brandmark      --design-fx-brand-shine-iterations / -wiggle-iterations (0 = still)
+                       + the shine gradient, emboss offsets, hover/press filters and timing
+   [ ] freq-glow       --design-fx-glow-iterations (0 = still) + -min, -max, -duration
+   [ ] marquee         --design-fx-marquee-duration
+   [ ] .mk-* rhythm    --space-section* (the three beats) + --design-fx-mk-gutter, -pair-keep,
+                       -arc-clear, -dock-clear, -heading-gap
+
+   NOT YET A VARIABLE (a design needs an asset or a code change for these): the wordmark mask and
+   its 963/130 aspect (`.brandmark`, pinned by components/layout/header-fit.test.ts), and the
+   orphan texture classes (.grain, .halo, .slat-fade, .amber-underline: zero adopters).
+
+   STATUS: scaffold. The values arrive with the Frequency design system export. */
+
+:root[data-design="frequency"] {
+}
+
+.dark[data-design="frequency"] {
+}

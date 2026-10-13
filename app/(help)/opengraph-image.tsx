@@ -4,6 +4,7 @@ import { SITE_NAME } from "@/lib/site";
 import { loadNunito } from "@/lib/og/load-nunito";
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
+import { palette } from '@/lib/theme/palette';
 
 export const runtime = "nodejs";
 export const alt = `${SITE_NAME} Help Center`;
@@ -100,7 +101,7 @@ export default async function Image() {
               width: 84,
               height: 8,
               borderRadius: 9999,
-              backgroundColor: "#6366f1",
+              backgroundColor: palette.ogAccent,
               marginBottom: 28,
             }}
           />

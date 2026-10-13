@@ -7,6 +7,7 @@ import { buildPracticeWithVeraAction, applyVeraPracticeChangeAction } from '@/ap
 import { isError } from '@/lib/action-result'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The Vera composer in the Practice editor (ADR-358), the atom-level twin of the Journey composer
 // (components/journey/v2/journey-composer.tsx). Two modes, by whether the Practice has a guide yet:
@@ -87,7 +88,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
             </Button>
           </div>
           <div className="mt-4">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">What you&apos;ll get</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>What you&apos;ll get</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-control border border-border bg-surface px-3 py-2">

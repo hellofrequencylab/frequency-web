@@ -137,7 +137,7 @@ export default async function UpgradePage({
     >
       {/* Beta banner, shown while billing is off, which is exactly when the beta toggle works. */}
       {betaOpen && (
-        <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
+        <div className="rounded-card bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-meta font-black uppercase tracking-widest text-primary-strong">
               Free Beta
@@ -160,7 +160,7 @@ export default async function UpgradePage({
       <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-br bg-primary px-6 py-8 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-on-primary/20 backdrop-blur-sm mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-card bg-on-primary/20 backdrop-blur-sm mb-4">
             <Zap className="w-7 h-7 text-on-primary" />
           </div>
           <p className="text-page-title font-bold text-on-primary mb-1">Join the Crew</p>
@@ -204,7 +204,7 @@ export default async function UpgradePage({
           <ul className="space-y-3.5">
             {benefits.map(({ label }) => (
               <li key={label} className="flex items-center gap-3">
-                <div className="shrink-0 w-8 h-8 rounded-lg bg-success-bg/30 flex items-center justify-center">
+                <div className="shrink-0 w-8 h-8 rounded-control bg-success-bg/30 flex items-center justify-center">
                   <Check className="w-4 h-4 text-success" />
                 </div>
                 <span className="text-body-sm text-text">{label}</span>

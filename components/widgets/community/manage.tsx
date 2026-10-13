@@ -15,6 +15,7 @@ import { isOpenStatus } from '@/lib/support/types'
 import { SERIES_COLUMNS, SERIES_WIDE_READ, countSeries, type SeriesRow } from '@/lib/events/series'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Community layout module (LP7): "Manage" — one card per working sub-page, each a live stat plus a
 // link straight to the surface that edits it. Self-fetching RSC; the page owns the gate and every
@@ -209,7 +210,7 @@ export async function CommunityManage() {
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
               {card.stat && <span className="text-body-lg font-bold tabular-nums text-text">{card.stat}</span>}
-              <span className="text-2xs font-medium uppercase tracking-wide text-muted">{card.statLabel}</span>
+              <span className={capsLabel('text-2xs font-medium text-muted')}>{card.statLabel}</span>
             </p>
           </Link>
         ))}

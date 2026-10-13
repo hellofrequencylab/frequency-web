@@ -16,6 +16,7 @@ import { LoomPicker } from '@/components/loom/loom-picker'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import type { ElementKey } from '@/lib/elements/registry'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The header element's SECTION PRESETS: each real surface header shares the one PageHero base but has
 // its own unique feature set. The console shows them as a see-and-sort gallery (owner ask) so an
@@ -77,7 +78,7 @@ function HeaderPreview() {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <ArrowDownUp className="h-3.5 w-3.5 text-subtle" aria-hidden />
-        <span className="text-2xs uppercase tracking-wide text-muted">Sort</span>
+        <span className={capsLabel('text-2xs text-muted')}>Sort</span>
         {(['name', 'type'] as const).map((s) => (
           <button
             key={s}
@@ -94,7 +95,7 @@ function HeaderPreview() {
           <div key={p.key} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-body-sm font-semibold text-text">{p.name}</p>
-              <span className="text-2xs uppercase tracking-wide text-muted">{p.type}</span>
+              <span className={capsLabel('text-2xs text-muted')}>{p.type}</span>
             </div>
             <PageHero
               variant={p.variant}
@@ -167,7 +168,7 @@ export function ElementPreview({ elementKey }: { elementKey: ElementKey }) {
   if (!body) return null
   return (
     <div className="mt-4 rounded-card border border-border bg-surface-elevated/40 p-3">
-      <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Preview</p>
+      <p className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Preview</p>
       {body}
     </div>
   )

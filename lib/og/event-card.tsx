@@ -4,6 +4,7 @@ import { siteMarkDataUrl } from '@/lib/og/local-image'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { cardResponse } from '@/lib/og/deliver'
 import { SITE_NAME } from '@/lib/site'
+import { palette } from '@/lib/theme/palette'
 
 // ── THE ONE EVENT SHARE CARD, drawn once and rendered by both event surfaces ──────────────────
 //
@@ -28,12 +29,12 @@ import { SITE_NAME } from '@/lib/site'
 // Everything below is presentation. If a rule ever needs to live in one place for both callers, it
 // belongs in the module that owns the rule, not in this one.
 //
-// Satori has NO access to the CSS token system, so the few colors it needs are literals mirroring
-// the existing event cards: events indigo #6366f1 accent, near-black ground, white display type.
+// Satori has NO access to the CSS token system, so the accent comes from the design-keyed palette
+// (lib/theme/palette.ts ogAccent, the events indigo), on a near-black ground with white display type.
 
 const EVENT_CARD_SIZE = { width: 1200, height: 630 } as const
 
-const INDIGO = '#6366f1'
+const INDIGO = palette.ogAccent
 
 /** The one focal point a card falls back to when the operator set none. */
 const DEFAULT_COVER_FOCUS = '50% 50%'
@@ -70,7 +71,7 @@ function chipElement(input: EventCardInput) {
         fontSize: 24,
         fontWeight: 700,
         letterSpacing: '0.04em',
-        color: input.isCancelled ? '#fca5a5' : '#c7d2fe',
+        color: input.isCancelled ? '#fca5a5' : palette.ogAccentSoft,
         backgroundColor: input.isCancelled ? 'rgba(248,113,113,0.16)' : 'rgba(99,102,241,0.22)',
       }}
     >

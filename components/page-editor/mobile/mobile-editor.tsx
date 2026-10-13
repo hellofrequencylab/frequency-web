@@ -38,6 +38,7 @@ import { FieldForm, type FieldsSchema, type PushRequest } from './field-form'
 import { BlockList } from './block-list'
 import { BottomSheet } from './bottom-sheet'
 import { Snackbar, type SnackbarState } from './snackbar'
+import { capsLabel } from '@/components/ui/caps-label'
 
 /** An extra control surface injected into the dock (e.g. Spotlight's Theme). Each panel
  *  becomes its own dock tab that opens `render()` inside the expandable bottom sheet —
@@ -334,7 +335,7 @@ export function MobileEditor({
         ) : (
           <>
             <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border/60 bg-canvas/80 py-1 backdrop-blur">
-              <span className="text-meta font-medium uppercase tracking-wide text-subtle">Preview</span>
+              <span className={capsLabel('text-meta font-medium text-subtle')}>Preview</span>
             </div>
             <div className="pointer-events-none">
               {/* `isEditing`: the authoring canvas, so an unfilled section shows its

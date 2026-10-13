@@ -3,6 +3,8 @@ import { Palette, Plus, Star } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { GateNotice } from '@/components/ui/gate-notice'
+import { LEGACY_THEME_AXES, SITE_DESIGN, designDef } from '@/lib/theme/design'
 import { buttonClasses } from '@/components/ui/button'
 import { listThemes } from '@/lib/theme/server/admin-themes'
 import type { ThemeRow, ThemeStatus } from '@/lib/theme/admin-types'
@@ -99,6 +101,18 @@ export default async function ThemeStudioPage() {
       width="wide"
       actions={<NewThemeLink />}
     >
+      {/* Under a design that overrides everything (Frequency, ADR-1737) nothing here reaches the site, so
+          the operator is told before they edit a theme that will not show. */}
+      {!LEGACY_THEME_AXES ? (
+        <AdminSection>
+          <GateNotice kind="dormant" title="Paused while the Frequency design is on">
+            The site is wearing the {designDef(SITE_DESIGN).label} design, which sets every colour, corner and
+            font itself. Skins, occasions and the community feel saved here come back if the site returns to
+            DAWN.
+          </GateNotice>
+        </AdminSection>
+      ) : null}
+
       {/* How a theme goes live — the operator's first question. */}
       <AdminSection>
         <div className="rounded-2xl border border-border bg-surface-elevated/50 px-4 py-3 text-body-sm text-muted">

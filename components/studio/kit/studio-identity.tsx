@@ -25,6 +25,7 @@ export function IconAccentFace({
   const Icon = JOURNEY_ICON_MAP[icon ?? ''] ?? DefaultJourneyIcon
   const dim = size === 'lg' ? 'h-16 w-16' : 'h-11 w-11'
   const glyph = size === 'lg' ? 'h-7 w-7' : 'h-5 w-5'
+  // data-driven: the tile paints the member-chosen journey accent (tint + glyph colour).
   const style = { backgroundColor: accentTint(accent, 16), color: accentColor(accent) }
   const cls = `flex ${dim} shrink-0 items-center justify-center rounded-card`
   if (onClick) {
@@ -65,6 +66,7 @@ export function AccentPicker({
             title={a.label}
             onClick={() => onChange(a.key)}
             className={`${dim} rounded-pill ring-offset-2 ring-offset-canvas transition-transform hover:scale-110 ${selected ? 'scale-110 ring-2' : ''}`}
+            // data-driven: each swatch paints its own accent; the ring reads --brand-mark, which has no Tailwind colour token.
             style={{ backgroundColor: accentColor(a.key), ['--tw-ring-color' as string]: 'var(--brand-mark)' }}
           />
         )

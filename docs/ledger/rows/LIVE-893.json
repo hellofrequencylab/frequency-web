@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-893",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-11",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const ss=r('lib/theme/site-style.ts');if(!/id: 'frequency',\\s*label: '(?:Frequency|Default)'/.test(ss)||!/id: 'bold',\\s*label: 'Bold'/.test(ss))miss.push('the two themes are not named Default (Frequency until ADR-1736) and Bold');const st=r('lib/theme/space-themes.ts');if(!/DEFAULT_SPACE_THEME: SpaceThemeId = 'frequency'/.test(st))miss.push('Frequency is not the default');if(!/id: 'menswork',\\s*label: 'Bold'/.test(st))miss.push('Menswork is not labelled Bold');if(!/synced/.test(ss)||!/spacePageFonts/.test(r('app/(main)/spaces/[slug]/layout.tsx')))miss.push('the Space page does not follow the website style');if(!/Use the same style on my Space page/.test(r('components/spaces/space-branding-form.tsx')))miss.push('no sync toggle');if(/data-space-theme=\\\"bold\\\"\\]/.test(r('app/globals.css')))miss.push('the retired Anton set is still styled');if(miss.length){console.error('LIVE-893: '+miss.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nProbe re-pointed 2026-10-13: ADR-1736 labels the frequency id Default, so the theme name assertion accepts Default."
+  }
+}

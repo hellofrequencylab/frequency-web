@@ -1,10 +1,11 @@
+import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { Trophy, Brain, Dumbbell, Sun, Megaphone, type LucideIcon } from 'lucide-react'
 import {
   SEASON_RANKS,
   RANK_LABELS,
   seasonRankStyle,
-  RANK_TO_KEY,
+  getRankDef,
   type SeasonRank,
 } from '@/lib/season-ranks'
 import type { PillarSlug } from '@/lib/pillars'
@@ -93,9 +94,10 @@ function PillarGauge({ pillar }: { pillar: PillarProgress }) {
 
       <div className="w-full text-center">
         <p
-          className={`text-2xs font-bold uppercase tracking-widest ${
-            active ? 'text-primary-strong' : 'text-muted'
-          }`}
+          className={capsLabel(
+            `text-2xs font-bold ${active ? 'text-primary-strong' : 'text-muted'}`,
+            'widest',
+          )}
         >
           {pillar.name}
         </p>
@@ -149,7 +151,7 @@ export function SeasonMap({
           the rank crest the member is climbing toward. */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 pt-6 sm:px-7">
         <div className="min-w-0">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+          <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>
             {seasonName ? `The Quest · ${seasonName}` : 'The Quest'}
           </p>
           {/* Title + (when the season hasn't started) a quiet inline countdown, same row. */}
@@ -167,8 +169,7 @@ export function SeasonMap({
           style={seasonRankStyle(rank)}
         >
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-on-rank lift-1"
-            style={{ background: `var(--rank-${RANK_TO_KEY[rank]})` }}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-on-rank lift-1 ${getRankDef(rank).color}`}
             aria-hidden
           >
             <Trophy className="h-4 w-4" />
@@ -203,6 +204,7 @@ export function SeasonMap({
                       isCurrent ? 'ring-2 ring-offset-1 ring-offset-surface' : ''
                     }`}
                     style={{
+                      // data-driven: --rank / --rank-deep are scoped per element by seasonRankStyle (rank from data)
                       background: achieved ? 'var(--rank)' : 'var(--color-border-strong)',
                       ['--tw-ring-color' as string]: 'var(--rank)',
                     }}
@@ -228,6 +230,7 @@ export function SeasonMap({
         {masterReached && (
           <p
             className="mt-2 text-meta font-semibold"
+            // data-driven: --rank / --rank-deep are scoped per element by seasonRankStyle (rank from data)
             style={{ ...seasonRankStyle('master'), color: 'var(--rank-deep)' }}
           >
             All three Journeys finished. Master, the season top. Your Trophies keep. The next

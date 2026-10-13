@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Mail, MousePointerClick, Inbox } from 'lucide-react'
 import { PageHero, Section, FaqList } from '@/components/marketing/marketing-ui'
 import { SubscribeForm } from '@/components/marketing/subscribe-form'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
@@ -87,7 +88,7 @@ export default function SubscribePage() {
           <p className="eyebrow text-primary-strong mb-4">
             How it works
           </p>
-          <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">
+          <h2 className={`font-display uppercase text-text ${DISPLAY_TYPE.section}`}>
             Three steps. No surprises.
           </h2>
         </div>
@@ -110,7 +111,7 @@ export default function SubscribePage() {
           <p className="eyebrow text-primary-strong mb-4">
             Straight answers
           </p>
-          <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">
+          <h2 className={`font-display uppercase text-text ${DISPLAY_TYPE.section}`}>
             Questions before you sign up.
           </h2>
         </div>

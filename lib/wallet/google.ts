@@ -10,6 +10,7 @@
 // nothing. NOTE: end-to-end signing can't be verified without real credentials.
 
 import { createSign } from 'node:crypto'
+import { palette } from '@/lib/theme/palette'
 
 interface PassMember {
   /** Stable per-member suffix for the wallet object id. */
@@ -48,7 +49,7 @@ export function buildGoogleWalletSaveUrl(member: PassMember): string | null {
     cardTitle: { defaultValue: { language: 'en', value: 'Frequency' } },
     header: { defaultValue: { language: 'en', value: member.displayName || `@${member.handle}` } },
     subheader: { defaultValue: { language: 'en', value: `@${member.handle}` } },
-    hexBackgroundColor: '#0f172a',
+    hexBackgroundColor: palette.walletBackground,
     barcode: { type: 'QR_CODE', value: member.url, alternateText: `@${member.handle}` },
   }
 

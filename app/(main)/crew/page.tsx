@@ -9,7 +9,7 @@ import { getPageHeaderImage } from '@/lib/page-settings/store'
 // Map hero, Your Journeys, Tasks, Explore, the circle Leaderboard, the finish celebration) in the
 // operator-chosen template + order. Staff arrange it from the on-page Settings → Layout panel
 // (the route is registered in lib/widgets/module-routes.ts so the panel appears here); each block
-// is a self-fetching RSC in components/widgets/quest/*. The header still needs the viewer's
+// is a self-fetching RSC in components/widgets/quest/. The header still needs the viewer's
 // crew-lead badge + circle name, so the page reads the shared getCrewContext (request-cached, so
 // the modules reuse it). notFound() when there is no signed-in member.
 
@@ -36,7 +36,7 @@ export default async function CrewPage() {
           <img
             src={headerImage}
             alt=""
-            className="mb-6 h-auto w-full rounded-2xl border border-border"
+            className="mb-6 h-auto w-full rounded-card border border-border"
           />
         )
       }

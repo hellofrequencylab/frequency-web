@@ -28,7 +28,7 @@ import { CrmTrust } from '@/components/widgets/crm/trust'
 //   3. THE PLAYS       — the saved Vera plays behind the moves + how they have been landing.
 //   4. THE GRAPH       — the consent-first relationship graph (insights-gated as a whole phase).
 //   5. MODEL TRUST     — the churn-risk backtest: can you trust the scores.
-// Each block is an existing self-fetching, fail-safe RSC (components/widgets/crm/*), isolated in its
+// Each block is an existing self-fetching, fail-safe RSC (components/widgets/crm), isolated in its
 // own <Suspense> so a slow read never blocks the shell (PAGE-FRAMEWORK §5). Composed directly (not
 // <PageModules>) because the Graph phase carries an ADDITIONAL staff 'insights' gate the per-route
 // module engine cannot express per block.

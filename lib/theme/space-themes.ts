@@ -51,7 +51,7 @@ export interface SpaceThemeDef {
 export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   {
     id: 'frequency',
-    label: 'Frequency',
+    label: 'Default', // ADR-1736: the id stays, the label follows the site theme it belongs to
     description: 'The house look: an elegant serif headline over clean, modern body text.',
     displayFont: 'Playfair Display',
     bodyFont: 'Space Grotesk',

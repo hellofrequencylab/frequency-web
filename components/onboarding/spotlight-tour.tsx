@@ -4,6 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Sparkles, ArrowRight, ArrowLeft, Pause, X } from 'lucide-react'
 import type { SpotlightStop } from '@/lib/onboarding/spotlight'
 import { setSpotlightTourState } from '@/app/onboarding/tour-actions'
+import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The guided spotlight tour (the "site tour" Vera walks new members through). It
 // dims the whole page and cuts a lit window around one real surface at a time
@@ -165,7 +167,7 @@ export function SpotlightTour({
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-2xs font-semibold uppercase tracking-wider text-primary-strong">Vera</p>
+            <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'wider')}>Vera</p>
             <h2 id="spotlight-title" className="mt-0.5 text-body-sm font-bold text-text">{stop.title}</h2>
             <p className="mt-1 text-body-sm leading-snug text-muted">{stop.body}</p>
           </div>
@@ -207,13 +209,13 @@ export function SpotlightTour({
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
               </button>
             )}
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               {last ? 'Done' : 'Next'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </button>
+            </Button>
           </div>
         </div>
         <p className="mt-1.5 text-center text-2xs tabular-nums text-muted">

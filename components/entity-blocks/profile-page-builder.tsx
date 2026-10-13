@@ -60,6 +60,7 @@ import { BlockPicker } from './block-picker'
 import { BlockEditPanel } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -694,7 +695,7 @@ export function EntityPageBuilder({
       {/* Starters — schematic wireframe thumbnails, shown on a default / empty layout (no lock). */}
       {showStarters && (
         <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-3">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Start with a layout</p>
+          <p className={capsLabel('text-2xs font-semibold text-muted')}>Start with a layout</p>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(STARTER_LAYOUTS[kind]) as StarterId[]).map((id) => (
               <button
@@ -773,7 +774,7 @@ export function EntityPageBuilder({
               aria-label="Add a block"
               className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-2"
             >
-              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
+              <p className={capsLabel('px-1 text-2xs font-semibold text-muted')}>Add a block</p>
               <ul className="flex flex-wrap gap-1.5">
                 {bench.map((id) => (
                   <li key={id}>
@@ -939,7 +940,7 @@ export function EntityPageBuilder({
                       {/* The row layout (Full · 50/50 · Main/Side) is the strip's own picker now; the menu
                           carries the per-row SPACING control (ADR-569 C3) + the destructive action. */}
                       <div className="space-y-1.5 px-2.5 py-2">
-                        <p className="text-3xs font-semibold uppercase tracking-wide text-muted">Spacing</p>
+                        <p className={capsLabel('text-3xs font-semibold text-muted')}>Spacing</p>
                         <MarginControl
                           top={row.mt ?? 'none'}
                           bottom={row.mb ?? 'none'}
@@ -1276,7 +1277,7 @@ function BlockPill({
               <>
                 {sections.length > 0 && (
                   <>
-                    <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">Move to section</p>
+                    <p className={capsLabel('px-2.5 pt-1.5 text-3xs font-semibold text-muted')}>Move to section</p>
                     {sections
                       .filter((s) => s.rowId !== currentRowId)
                       .map((s) => (
@@ -1374,7 +1375,7 @@ function BlocksTray({
                   </div>
                   {openMenu === `bench:${id}` && (
                     <Menu>
-                      <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">Place in</p>
+                      <p className={capsLabel('px-2.5 pt-1.5 text-3xs font-semibold text-muted')}>Place in</p>
                       {emptySlots.length === 0 ? (
                         <p className="px-2.5 py-1.5 text-2xs text-muted">No empty slots. Add a row or widen one.</p>
                       ) : (

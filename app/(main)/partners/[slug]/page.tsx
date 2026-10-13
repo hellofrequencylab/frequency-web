@@ -117,7 +117,7 @@ export default async function PartnerPage({
                     key={c.id}
                     href={`/sign-in?next=/partners/${partner.slug}`}
                     anchor={
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                         <Ticket className="h-4 w-4" />
                       </div>
                     }
@@ -155,7 +155,7 @@ export default async function PartnerPage({
                   key={o.id}
                   href="/partners"
                   anchor={
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                       <Ticket className="h-4 w-4" />
                     </div>
                   }

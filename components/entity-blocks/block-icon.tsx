@@ -65,6 +65,7 @@ export function BlockIcon({
     const Cmp = ICON_MAP[name]
     if (Cmp) return <Cmp size={size} className={className} aria-hidden />
   }
+  // data-driven: the emoji glyph is sized to the caller's numeric `size` prop, matching the Lucide branch.
   return (
     <span className={className} style={{ fontSize: size, lineHeight: 1 }} aria-hidden>
       {name}

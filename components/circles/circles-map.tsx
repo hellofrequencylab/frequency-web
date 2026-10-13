@@ -143,7 +143,7 @@ export function MapBanner() {
         )}
         {ctx.starters.length > 0 && (
           <span className="inline-flex items-center gap-1.5 text-meta text-subtle">
-            <span className="h-2.5 w-2.5 rounded-pill" style={{ backgroundColor: '#7C5CD6' }} />
+            <span className="h-2.5 w-2.5 rounded-pill" style={{ backgroundColor: 'var(--design-map-starter)' }} />
             {ctx.starters.length} {ctx.starters.length === 1 ? 'Starter to claim' : 'Starters to claim'}
           </span>
         )}

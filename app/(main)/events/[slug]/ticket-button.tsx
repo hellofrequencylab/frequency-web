@@ -648,7 +648,7 @@ export function TicketButton({
           with a join pointer, instead of a surprise refusal at checkout. The link carries return_to
           so joining loops straight back to this event. Server gate stays authoritative. */}
       {selected && selected.spaceMembersOnly && !unlocked(selected) && membershipSpace && (
-        <p className="rounded-lg bg-surface-elevated px-3 py-2 text-meta text-muted">
+        <p className="rounded-control bg-surface-elevated px-3 py-2 text-meta text-muted">
           This ticket is included with a {membershipSpace.name} membership.{' '}
           <a
             href={`/spaces/${membershipSpace.slug}${eventSlug ? `?return_to=${encodeURIComponent(`/events/${eventSlug}`)}` : ''}`}

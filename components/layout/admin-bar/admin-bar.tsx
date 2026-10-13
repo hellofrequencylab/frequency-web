@@ -7,6 +7,7 @@ import { Search, X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
 import { hasUnpublishedWork, subscribeUnpublishedWork, UNPUBLISHED_WARNING } from '@/lib/layout/unpublished-work'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/field'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
@@ -36,7 +37,7 @@ function AdminBarTopBar({
     <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3">
       <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-        <input
+        <Input
           type="search"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -49,7 +50,9 @@ function AdminBarTopBar({
           }}
           aria-label="Search settings"
           placeholder="Search settings"
-          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+          // The kit field (rounded-control, the calm focus halo, bg-surface, px-3 py-2); `pl-9` clears the
+          // search glyph and is emitted after `px-3`, so it wins the left inset.
+          className="pl-9"
         />
       </div>
       <button

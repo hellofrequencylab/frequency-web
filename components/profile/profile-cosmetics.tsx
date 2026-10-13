@@ -1,5 +1,6 @@
 import { Flame, Star, Gem, Crown, Zap } from 'lucide-react'
 import { resolveBorder, resolveFlair, resolveTitle } from '@/lib/store/cosmetics'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE COSMETIC RENDER (backlog LIVE-013). What a member bought, finally visible.
 //
@@ -92,7 +93,7 @@ export function CosmeticTitle({ value, className = '' }: { value: string | null 
   if (!title) return null
   return (
     <span
-      className={`inline-flex items-center rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted ${className}`}
+      className={capsLabel(`inline-flex items-center rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-3xs font-semibold text-muted ${className}`)}
     >
       {title}
     </span>

@@ -18,7 +18,7 @@ import { getContactPreferences, CONTACT_TOPICS } from '@/lib/comms/contact-prefe
 import type { NotificationCategory, NotificationTopic } from '@/lib/notification-preferences'
 import { PreferenceCenter, type ContactTopicState } from './preference-center'
 import { ConfirmUnsubscribe } from './confirm-unsubscribe'
-import { Layout, ManageLink } from './card'
+import { UnsubscribeFrame, ManageLink } from './card'
 
 // Token-authorised transactional landing (reached from an email link, never crawled). Already in
 // robots.ts DISALLOW; this page-level noindex is defense-in-depth so the URL can never enter the index.
@@ -55,9 +55,9 @@ export default async function UnsubscribePage({
   // suppression for the inbox "unsubscribe" button.)
   if (s || e) {
     if (!s || !e || !t || !verifySpaceUnsubscribeToken(s, e, t)) {
-      return <Layout title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
+      return <UnsubscribeFrame title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
         <ManageLink />
-      </Layout>
+      </UnsubscribeFrame>
     }
 
     const spaceName = await loadSpaceName(s)
@@ -67,25 +67,25 @@ export default async function UnsubscribePage({
       return { topic, subscribed: row ? row.state === 'subscribed' : true }
     })
 
-    return <Layout title={`Email from ${spaceName}`} description="Choose what you'd like to keep. This only affects this one sender, not Frequency itself.">
+    return <UnsubscribeFrame title={`Email from ${spaceName}`} description="Choose what you'd like to keep. This only affects this one sender, not Frequency itself.">
       <PreferenceCenter spaceId={s} email={e} token={t} spaceName={spaceName} initial={initial} />
       <ManageLink />
-    </Layout>
+    </UnsubscribeFrame>
   }
 
   if (!p || !c || !t) {
-    return <Layout title="Missing unsubscribe details." description="This link looks incomplete. If you got here from an email, please reply to it and we'll help.">
+    return <UnsubscribeFrame title="Missing unsubscribe details." description="This link looks incomplete. If you got here from an email, please reply to it and we'll help.">
       <ManageLink />
-    </Layout>
+    </UnsubscribeFrame>
   }
 
   // GET only VERIFIES. The same HMAC check `processUnsubscribe` runs (a token is minted over
   // profileId + category, so an unknown category fails here too), but nothing is written: a bad
   // link gets the invalid layout, a good one gets a button. The write happens in the action.
   if (!verifyUnsubscribeToken(p, c as NotificationCategory, t)) {
-    return <Layout title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
+    return <UnsubscribeFrame title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
       <ManageLink />
-    </Layout>
+    </UnsubscribeFrame>
   }
 
   const label = CATEGORY_LABELS[c] ?? c
@@ -107,4 +107,4 @@ async function loadSpaceName(spaceId: string): Promise<string> {
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────
-// `Layout`, `Body` and `ManageLink` live in ./card.tsx now, shared with the client confirm step.
+// `UnsubscribeFrame`, `Body` and `ManageLink` live in ./card.tsx now, shared with the client confirm step.

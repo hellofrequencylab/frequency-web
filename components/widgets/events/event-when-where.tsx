@@ -3,6 +3,7 @@ import { getEventContext } from '@/lib/events/active-event'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recurrenceLineFor } from '@/lib/events/recurrence'
 import { AddToCalendar } from '@/components/events/add-to-calendar'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The EVENT DETAILS card (the `event-when-where` layout module, paired with the Place & Time
 // editor). Owner spec: the one place the schedule facts live — the date and time each on their
@@ -61,7 +62,7 @@ function readWindow(details: Record<string, unknown> | null): { opensAt: string 
 function FactRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-3">
-      <dt className="w-14 shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">
+      <dt className={capsLabel('w-14 shrink-0 text-2xs font-semibold text-muted')}>
         {label}
       </dt>
       <dd className="min-w-0 text-body-sm font-medium text-text">{children}</dd>

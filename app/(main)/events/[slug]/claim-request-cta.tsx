@@ -43,7 +43,7 @@ export function ClaimRequestCta({
   }
 
   return (
-    <div className="mb-5 rounded-2xl border border-primary/40 bg-primary-bg/50 px-5 py-4">
+    <div className="mb-5 rounded-card border border-primary/40 bg-primary-bg/50 px-5 py-4">
       <p className="text-body font-bold text-text">Is this your event?</p>
       <p className="mt-1 text-body-sm text-muted">
         Frequency put this page up so people nearby could find it.{' '}

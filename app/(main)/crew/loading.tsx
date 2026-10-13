@@ -25,7 +25,7 @@ export default function CrewLoading() {
           <Skeleton className="h-4 w-16" />
           <div className="space-y-1.5">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex items-start gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
+              <div key={i} className="flex items-start gap-3 rounded-card bg-surface-elevated/60 px-4 py-3">
                 <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
                 <div className="flex-1">
                   <Skeleton className="mb-2 h-4 w-40" />

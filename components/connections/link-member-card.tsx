@@ -9,6 +9,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { mergeWithMember, unmergeFromMember, searchMembersToLink } from '@/app/(main)/connections/actions'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 interface MemberHit {
   id: string
@@ -144,14 +145,15 @@ export function LinkMemberCard({
                     <p className="truncate text-body-sm font-medium text-text">{h.displayName ?? 'Member'}</p>
                     {h.handle && <p className="truncate text-meta text-subtle">@{h.handle}</p>}
                   </div>
-                  <button
+                  <Button
+                    size="sm"
                     type="button"
                     onClick={() => link(h.id)}
                     disabled={pending}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    className="shrink-0"
                   >
                     <UserRoundCheck className="h-3.5 w-3.5" /> Link
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

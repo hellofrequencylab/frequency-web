@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { MessageSquare, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { sendSmsCode, verifySmsCode, saveSmsPreferences, type SmsPreferences } from './sms-actions'
@@ -135,14 +136,9 @@ export function SmsForm({
                   placeholder="Your mobile number"
                   className="flex-1"
                 />
-                <button
-                  type="button"
-                  onClick={onSendCode}
-                  disabled={isPending || !phone.trim()}
-                  className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
-                >
+                <Button type="button" onClick={onSendCode} disabled={isPending || !phone.trim()}>
                   {isPending ? 'Sending…' : 'Send code'}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -160,14 +156,9 @@ export function SmsForm({
                     placeholder="6-digit code"
                     className="flex-1"
                   />
-                  <button
-                    type="button"
-                    onClick={onVerify}
-                    disabled={isPending || !code.trim()}
-                    className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
-                  >
+                  <Button type="button" onClick={onVerify} disabled={isPending || !code.trim()}>
                     {isPending ? 'Verifying…' : 'Verify'}
-                  </button>
+                  </Button>
                 </div>
                 <button
                   type="button"

@@ -43,7 +43,7 @@ export default async function LeaderTrainingPage() {
           {start && (
             <Link
               href={trainingHref(start.category, start.slug)}
-              className="group flex items-start gap-4 rounded-2xl border border-primary/30 bg-primary-bg/40 p-5 transition-colors hover:border-primary/50"
+              className="group flex items-start gap-4 rounded-card border border-primary/30 bg-primary-bg/40 p-5 transition-colors hover:border-primary/50"
             >
               <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary-strong">
                 <GraduationCap className="h-5 w-5" />

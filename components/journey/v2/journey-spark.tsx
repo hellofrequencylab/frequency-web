@@ -40,6 +40,7 @@
 // payloads. This is a front-door rebuild, not a pipeline change.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Compass, LayoutTemplate, Loader2, Sparkles } from 'lucide-react'
@@ -523,7 +524,7 @@ export function JourneySpark({
                   The proven shape, with no AI: a welcome, weekly practices across the Pillars, an Expression
                   Challenge each week, and a capstone.
                 </span>
-                <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
+                <span className={capsLabel('mt-1 block text-2xs font-medium text-muted')}>
                   You choose the length
                 </span>
               </span>
@@ -543,7 +544,7 @@ export function JourneySpark({
                 <span className="min-w-0 flex-1">
                   <span className="block text-body-sm font-semibold text-text">{t.name}</span>
                   <span className="block text-meta leading-snug text-muted">{t.description}</span>
-                  <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
+                  <span className={capsLabel('mt-1 block text-2xs font-medium text-muted')}>
                     {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
                   </span>
                 </span>
@@ -703,7 +704,7 @@ export function JourneySpark({
 
           {arc.length > 0 && (
             <div>
-              <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('mb-1 text-2xs font-semibold text-muted')}>
                 Your {arc.length} {arc.length === 1 ? 'week' : 'weeks'}
               </p>
               <ol className="space-y-1.5">
@@ -723,7 +724,7 @@ export function JourneySpark({
           {/* How the group meets (ADR-302). Optional and pre-filled from Vera's read of the
               outline; the full editor lives in the Journey's Settings panel later. */}
           <div className="space-y-3 rounded-card border border-border bg-canvas px-3.5 py-3">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">How will you meet?</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>How will you meet?</p>
             {reviewField('meeting.format', meeting.format ?? '', (next) =>
               patchMeeting({ format: (next || null) as SparkMeeting['format'] }),
             )}

@@ -17,6 +17,8 @@ import {
 } from '@/lib/page-editor/fields'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
 import { safeHref } from '@/lib/page-editor/richtext'
+import { buttonClasses, type MarketingButtonVariant } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 
 // Re-export the full helper set so block files can import everything they need
 // from one place (`@/components/page-editor/blocks/kit`).
@@ -127,10 +129,7 @@ export function DisplayHeading({
 }) {
   // Fluid scale, matching lib/page-editor/fields.tsx EMPHASIS_SCALE (clamp min→max):
   // unchanged on desktop, smaller mobile floor so headlines stay balanced on phones.
-  const scale =
-    size === 'lg'
-      ? 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]'
-      : 'text-[clamp(1.875rem,5.5vw,3rem)]'
+  const scale = size === 'lg' ? DISPLAY_TYPE.feature : DISPLAY_TYPE.section
   return (
     <Tag className={`font-display uppercase text-balance ${scale} ${ink ? 'text-on-ink' : 'text-text'}`}>
       {children}
@@ -144,11 +143,18 @@ export function Kicker({ children, ink }: { children: React.ReactNode; ink?: boo
 
 export type CtaVariant = 'primary' | 'secondary' | 'ghost'
 
-// One canonical CTA button — locked padding, three variants. `onInk` recolors the secondary/ghost
-// outlines for dark backgrounds. `rounded-card` (was rounded-2xl, the same 1rem at baseline): inside a
-// Space subtree the page theme shapes it (ADR-578) while the [data-space-theme] baseline pin keeps
-// `bold` at exactly today's 16px — kept on the CARD token, not rounded-control, precisely because
-// mapping this big CTA to the 0.5rem control baseline would shrink bold's corners.
+// One canonical CTA button — a THIN WRAPPER over the marketing `buttonClasses`
+// (components/marketing/marketing-ui.tsx), so the public site and the block library paint one button
+// and a design switch restyles it once. It used to carry its own copy of the look; the only thing it
+// adds now is the block vocabulary: three variants, and `onInk` to recolour the secondary/ghost for a
+// dark band (`outlineInk` / `ghostInk` there). `rounded-card` lives in `buttonClasses` for the reason
+// this comment used to give: inside a Space subtree the page theme shapes it (ADR-578).
+const CTA_VARIANT: Record<CtaVariant, { light: MarketingButtonVariant; ink: MarketingButtonVariant }> = {
+  primary: { light: 'primary', ink: 'primary' },
+  secondary: { light: 'outline', ink: 'outlineInk' },
+  ghost: { light: 'ghost', ink: 'ghostInk' },
+}
+
 export function CtaButton({
   href,
   label,
@@ -162,19 +168,9 @@ export function CtaButton({
   onInk?: boolean
   withArrow?: boolean
 }) {
-  const base = 'inline-flex items-center gap-2 rounded-card px-8 py-3.5 text-body font-bold transition-colors'
-  const styles =
-    variant === 'primary'
-      ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
-      : variant === 'secondary'
-        ? onInk
-          ? 'border border-on-ink/30 text-on-ink hover:bg-on-ink/10 hover:border-on-ink/50'
-          : 'border border-border-strong text-text hover:bg-surface-elevated'
-        : onInk
-          ? 'text-on-ink/80 hover:text-on-ink'
-          : 'text-primary-strong hover:underline'
+  const v = CTA_VARIANT[variant]
   return (
-    <Link href={safeHref(href) ?? '#'} className={`${base} ${styles}`}>
+    <Link href={safeHref(href) ?? '#'} className={buttonClasses({ variant: onInk ? v.ink : v.light, size: 'md' })}>
       {label}
       {withArrow && <ArrowRight className="w-5 h-5" aria-hidden />}
     </Link>

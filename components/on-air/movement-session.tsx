@@ -96,6 +96,7 @@ import {
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { liveDepthCue } from '@/lib/practices/tiers'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // What a saved Movement run carries beyond the shared record fields: the config the plan is
 // rebuilt from. Everything else (startedAt, pausedAt, practiceId, banked, target) is on the record.
@@ -1180,7 +1181,7 @@ export function MovementSession({
 
               {/* The phase chip — color-coded, with the round counter for Strength. */}
               <span
-                className={`rounded-pill px-3 py-1 text-meta font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
+                className={capsLabel(`rounded-pill px-3 py-1 text-meta font-bold ${tone.bg} ${tone.text}`, 'widest')}
               >
                 {pos.phase.label}
                 {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
@@ -1695,7 +1696,7 @@ function Tune({
 }) {
   return (
     <div>
-      <p className="mb-1 text-center text-2xs font-medium uppercase tracking-wider text-muted">{label}</p>
+      <p className={capsLabel('mb-1 text-center text-2xs font-medium text-muted', 'wider')}>{label}</p>
       <Stepper label={value} onLess={onLess} onMore={onMore} />
     </div>
   )

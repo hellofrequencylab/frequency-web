@@ -7,6 +7,7 @@ import type { SpaceEmailStyle } from '@/lib/spaces/email-colors'
 import { setSpaceEmailStyle } from '@/lib/spaces/email-style-actions'
 import { isError } from '@/lib/action-result'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // EMAIL STYLE EDITOR (Email in the Business CRM, P1 · deliverable 3). Tunes the brand-derived email palette a
 // Space's emails default to. A short, plain list of the colors that matter, each a swatch + hex you can reset to
@@ -174,7 +175,7 @@ export function EmailStyleEditor({
           followed the operator's skin would show a shape the recipient never receives. Left literal on
           purpose; do not move these onto the role tokens. */}
       <div>
-        <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Preview</p>
+        <p className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Preview</p>
         <div className="rounded-2xl p-4" style={{ background: preview.canvas }}>
           <div
             className="mx-auto max-w-[18rem] rounded-xl p-5"

@@ -36,6 +36,7 @@ import {
 } from '@/app/support-chat/actions'
 import { useSupportChat } from './use-support-chat'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { ChatComposer } from '@/components/ui/chat-composer'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 
@@ -172,13 +173,9 @@ function SentConfirmation({
         We will reply to your email, and the conversation stays right here whenever you want to check it.
       </p>
       {sessionExists && (
-        <button
-          type="button"
-          onClick={onView}
-          className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" onClick={onView} className="mt-1">
           View conversation
-        </button>
+        </Button>
       )}
       <button type="button" onClick={onNew} className="text-meta font-medium text-muted hover:text-text">
         Send another message
@@ -264,14 +261,10 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-      >
+      <Button type="submit" size="lg" disabled={pending} className="mt-auto">
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Send message
-      </button>
+      </Button>
     </form>
   )
 }

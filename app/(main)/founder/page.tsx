@@ -90,7 +90,7 @@ export default async function FounderPage() {
             <li key={t.key}>
               <Link
                 href={t.href}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
+                className="group flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
               >
                 <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill border border-broadcast-bg text-broadcast-strong">
                   <span className="h-2 w-2 rounded-pill bg-current" />

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { Plus, Check, X, ArrowLeftRight } from 'lucide-react'
 import { adoptPracticeAction, swapPracticeAction, dropPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
+import { Button, buttonGeometry } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 import { TERM_PRESETS, ACTIVE_PRACTICE_CAP } from '@/lib/practices/adoption'
 
 // Toggle a practice in/out of your personal practices — with the COMMITMENT picker (ADR-920).
@@ -76,18 +78,18 @@ export function AdoptPracticeButton({
     }
   }, [panel])
 
-  const base = `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-60 ${
-    fullWidth ? 'w-full' : ''
-  }`
+  // The adopt control's two states share the button GEOMETRY (shape, padding, tap floor); each
+  // state supplies its own palette. `min-h-9` keeps the original height floor.
+  const layout = `min-h-9 ${fullWidth ? 'w-full' : ''}`
 
   if (adopted) {
     return (
-      <button
+      <Button
         type="button"
         disabled={pending}
         title="Remove from your practices"
         onClick={() => start(async () => void (await dropPracticeAction(practiceId)))}
-        className={`${base} bg-primary text-on-primary hover:bg-primary-hover`}
+        className={layout}
       >
         {pending ? (
           <>
@@ -98,7 +100,7 @@ export function AdoptPracticeButton({
             <Check className="h-4 w-4 shrink-0" /> Adopted
           </>
         )}
-      </button>
+      </Button>
     )
   }
 
@@ -142,7 +144,10 @@ export function AdoptPracticeButton({
         aria-expanded={!!panel}
         aria-haspopup="dialog"
         onClick={() => (panel ? setPanel(null) : openPanel())}
-        className={`${base} border border-border bg-surface text-text hover:border-primary hover:text-primary-strong ${fullWidth ? 'w-full' : ''}`}
+        className={buttonGeometry(
+          'md',
+          `${layout} border border-border bg-surface text-text hover:border-primary hover:text-primary-strong`,
+        )}
       >
         <Plus className="h-4 w-4 shrink-0" /> {pending ? 'Adding…' : 'Adopt'}
       </button>
@@ -224,13 +229,13 @@ export function AdoptPracticeButton({
             <span className="text-2xs text-muted">
               When will you do it? Optional. Tying it to something you already do makes it far more likely to happen.
             </span>
-            <input
+            <Input
               type="text"
               value={cue}
               maxLength={140}
               onChange={(e) => setCue(e.target.value)}
               placeholder="After my morning coffee"
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+              className="mt-1 text-meta"
             />
           </label>
         </div>

@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function BoardRowSkeleton() {
   return (
-    <div className="flex min-h-[3.25rem] items-center gap-3 rounded-2xl bg-surface-elevated/40 px-3 py-2">
+    <div className="flex min-h-[3.25rem] items-center gap-3 rounded-card bg-surface-elevated/40 px-3 py-2">
       <Skeleton className="h-4 w-4 shrink-0" />
       <Skeleton className="h-9 w-9 shrink-0 rounded-pill" />
       <div className="flex-1 space-y-1.5">

@@ -174,7 +174,7 @@ async function ForumPreview({
         <Link
           key={p.id}
           href={feedHref}
-          className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+          className="block rounded-card border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
         >
           <div className="flex items-center gap-2 text-meta text-muted">
             <span className="font-medium text-text">{p.author?.display_name ?? 'Someone'}</span>
@@ -444,7 +444,7 @@ export default async function ChannelPage({
           <PageHero
             {...hero}
             leading={
-              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow ring-1 ring-on-ink/10 backdrop-blur ${accent}`}>
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-card shadow ring-1 ring-on-ink/10 backdrop-blur ${accent}`}>
                 <Icon className="h-6 w-6" />
               </span>
             }
@@ -526,7 +526,7 @@ export default async function ChannelPage({
                 />
                 <Link
                   href={`${base}/manage`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
                 >
                   <LayoutDashboard className="h-4 w-4 text-subtle" />
                   Manage
@@ -596,7 +596,7 @@ export default async function ChannelPage({
                   beside it, so neither column repeats the other (pattern 7). */}
               <section>
                 <SectionHeader title="Latest in the forum" href={feedHref} />
-                <Suspense fallback={<div className="h-24 rounded-2xl bg-surface animate-pulse" />}>
+                <Suspense fallback={<div className="h-24 rounded-card bg-surface animate-pulse" />}>
                   <ForumPreview
                     channelId={channel.id}
                     myProfileId={myProfileId}
@@ -633,7 +633,7 @@ export default async function ChannelPage({
                   </div>
                 )
               )}
-              <Suspense fallback={<div className="h-32 rounded-2xl bg-surface animate-pulse" />}>
+              <Suspense fallback={<div className="h-32 rounded-card bg-surface animate-pulse" />}>
                 <FeedList
                   circleIds={[channel.id]}
                   showPublicLayer={false}

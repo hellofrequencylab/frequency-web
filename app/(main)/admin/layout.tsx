@@ -51,13 +51,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               in ONE opaque sticky container (search on top since ADR-790 swapped the two — the comment
               here used to describe the old order), so page content scrolls cleanly UNDERNEATH
               the whole band like header chrome — nothing bleeds through the padding (the old bug was a
-              transparent gap above the input). bg-[var(--color-canvas)] at FULL opacity spans the whole
+              transparent gap above the input). `bg-canvas` at FULL opacity spans the whole
               band height; a hairline border-b reads the scroll seam as chrome. The old shell-rendered
               admin sub-header is gone, so this band now pins directly under the main header (3.5rem) at
               EVERY breakpoint — the sub-nav row it absorbed is inside this same container. */}
           {/* Owner directive (ADR-790): the search command bar sits ON TOP, the world sub-nav menu BELOW
               it — so the Resonance CRM (and every world) reads "search, then the tab menu under it". */}
-          <div className="sticky top-[var(--app-header-h)] z-20 mb-6 border-b border-border bg-[var(--color-canvas)]">
+          <div className="sticky top-[var(--app-header-h)] z-20 mb-6 border-b border-border bg-canvas">
             <div className="py-2.5">
               <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
             </div>

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Radio, Check, TriangleAlert, ShieldCheck } from 'lucide-react'
 import { setLiveLocation } from '@/lib/connections/connection-settings-actions'
 import { isError } from '@/lib/action-result'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Live-location opt-in (ADR-186). Turning it on captures the device position ONCE
 // via the browser and stores it as the member's live point; it's still only ever
@@ -101,7 +102,7 @@ export function LiveLocationToggle({
 
       {/* The safety write-up — the limitations of live data, said plainly. */}
       <div className="mt-3 rounded-card border border-border bg-surface-elevated/50 p-3">
-        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+        <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
           <ShieldCheck className="h-3.5 w-3.5 text-primary-strong" /> What live location does (and doesn’t) do
         </p>
         <ul className="mt-2 space-y-1.5 text-meta leading-relaxed text-muted">

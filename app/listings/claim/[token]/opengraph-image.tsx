@@ -5,6 +5,7 @@ import { getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `Claim your listing on ${SITE_NAME}`
@@ -18,9 +19,9 @@ export const contentType = OG_CONTENT_TYPE
 // marketing pitch aimed at the real poster: the listing's own photo + title, the category pill (the
 // classifieds kind or the housing property type), and the Frequency watermark. Only a still-claimable
 // token resolves; anything else falls back to a neutral pitch card, so a guessed / used token reveals
-// nothing. Marketplace primary accent (#E2912F).
+// nothing. Marketplace primary accent (palette.primary).
 
-const ACCENT = '#E2912F'
+const ACCENT = palette.primary
 
 /** First image only when it is an absolute URL (seed inputs carry public library-media URLs). */
 function coverUrl(images: string[] | undefined): string | null {

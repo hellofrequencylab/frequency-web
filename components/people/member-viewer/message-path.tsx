@@ -24,6 +24,7 @@ import { relativeTime } from '@/lib/crm/timeline'
 // Type-only imports: the assembler module is pure, but keep the client bundle to types.
 import type { MessagePath, PathEntry, PathEventRef, PathThread } from '@/lib/crm/message-path'
 import type { Milestone } from '@/lib/crm/member-network'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE PATH FOLD-DOWN (CRM Everywhere plan 2.5 / ADR-827 ruling 3). The member detail pane's message
 // history: COLLAPSED by default to one line (the latest touch), expanding to the thread-grouped
@@ -77,7 +78,7 @@ function MilestoneStrip({ milestones }: { milestones: Milestone[] }) {
   if (milestones.length === 0) return null
   return (
     <div>
-      <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Milestones</p>
+      <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>Milestones</p>
       <ul className="flex gap-2 overflow-x-auto pb-1">
         {milestones.map((m, i) => (
           <li

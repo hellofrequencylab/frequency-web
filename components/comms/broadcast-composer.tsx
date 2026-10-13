@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Mail, MessageSquare, Radio, Smartphone, Megaphone, CheckCircle2, AlertCircle, CalendarPlus } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import type { ActionResult } from '@/lib/action-result'
 import type {
   BroadcastChannelKey,
@@ -240,17 +241,16 @@ export function BroadcastComposer({
                   )
                 })}
               </Select>
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={submitReinvite}
                 disabled={pending || !reinviteTarget || listCount === 0}
-                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+                className="shrink-0"
               >
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarPlus className="h-3.5 w-3.5" aria-hidden />
-                  {pending ? 'Inviting…' : 'Invite to your next event'}
-                </span>
-              </button>
+                <CalendarPlus className="h-3.5 w-3.5" aria-hidden />
+                {pending ? 'Inviting…' : 'Invite to your next event'}
+              </Button>
             </>
           ) : (
             <p className="text-2xs text-muted">{locked.reinvite.emptyNote}</p>
@@ -383,14 +383,9 @@ export function BroadcastComposer({
           )
         })}
 
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className="ml-auto shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <Button type="button" size="sm" onClick={submit} disabled={!canSubmit} className="ml-auto shrink-0">
           {pending ? 'Sending…' : 'Send'}
-        </button>
+        </Button>
       </div>
 
       {/* Per-channel expectation lines while composing (only for selected channels). */}

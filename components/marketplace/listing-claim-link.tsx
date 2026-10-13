@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Link2, Send } from 'lucide-react'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The shareable "Claim Listing" link, shown to platform staff on a SEEDED, still-unclaimed listing
 // (Housing here; the Classifieds twin renders the same block inside ListingOwnerControls). Staff copy
@@ -22,7 +23,7 @@ export function ListingClaimLink({ claimShareUrl }: { claimShareUrl: string }) {
 
   return (
     <div className="rounded-card border border-border bg-surface p-4">
-      <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+      <p className={capsLabel('mb-1.5 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
         <Send className="h-3.5 w-3.5" aria-hidden /> Claim Listing link
       </p>
       <p className="mb-2 text-meta text-muted">

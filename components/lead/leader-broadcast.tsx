@@ -45,17 +45,16 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
 
   return (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => {
           setResult(null)
           setError(null)
           setOpen(true)
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <Send className="h-4 w-4" /> Message my group
-      </button>
+      </Button>
 
       <Dialog open={open} onClose={() => setOpen(false)} align="sheet" ariaLabel="Message my group">
         <div className="space-y-3 p-4">

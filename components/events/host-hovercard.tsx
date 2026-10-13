@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The event host's name in the page header, with a hover/focus PROFILE PREVIEW popover
 // (Event page overhaul, item 3). Reserved for an IN-NETWORK host — one with a Frequency
@@ -48,7 +49,7 @@ export function HostHovercard({
           <span className="min-w-0 flex-1">
             <span className="block truncate text-body-sm font-bold text-text">{host.display_name}</span>
             <span className="block truncate text-meta text-subtle">@{host.handle}</span>
-            <span className="mt-0.5 block text-2xs font-semibold uppercase tracking-wide text-primary-strong">
+            <span className={capsLabel('mt-0.5 block text-2xs font-semibold text-primary-strong')}>
               Host
             </span>
           </span>

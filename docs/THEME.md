@@ -20,6 +20,33 @@ the code wins.
 
 ---
 
+## 0. The design axis, above the four (ADR-1737)
+
+The platform wears ONE design system per deploy: **DAWN** or **Frequency**. It is chosen by
+`NEXT_PUBLIC_SITE_DESIGN` (unset reads as DAWN), stamped as `data-design` on `<html>` by the root
+layout, and defined in `lib/theme/design.ts`. It is the one-button change-over: set the variable,
+redeploy.
+
+| Piece | Where |
+|---|---|
+| The switch, the browser-chrome colours, `LEGACY_THEME_AXES` | `lib/theme/design.ts` |
+| DAWN's tokens (the base every design falls back to) | `app/globals.css`, unscoped `:root` / `.dark` |
+| The design layer: radius steps, shadows, fonts, map paint | `app/globals.css`, `--design-*` |
+| Another design's tokens | `app/themes/<id>.css`, under `:root[data-design="<id>"]` and `.dark[data-design="<id>"]` |
+| The contract (scope, known names, loaded by the layout) | `lib/theme/design.test.ts` |
+
+**Frequency overrides everything.** Under it the four axes below collapse: no Space skin, no
+generation (`balanced`), no occasion, no Space font set or accent, no Theme Studio `<style>`. A
+member's own skin applies only when it is authored for the active design (`SkinDef.designs`);
+**Midnight** is a member theme under DAWN until a Frequency Midnight exists.
+
+**Preview locally.** `?design=frequency` on any URL stamps a token-only preview (stored in
+`localStorage['freq-design']`); `?design=off` clears it. For the whole behaviour, put
+`NEXT_PUBLIC_SITE_DESIGN=frequency` in `.env.local` and restart `pnpm dev`.
+
+**Adding a design** = an id in `DesignId` and `DESIGNS`, a sheet in `app/themes/`, and its import in
+`app/layout.tsx`. The test fails until all three agree.
+
 ## 1. The four axes
 
 Each axis is a single attribute (or class) on `<html>` or the shell root. They compose by the

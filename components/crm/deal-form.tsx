@@ -6,6 +6,7 @@ import { createDeal, updateDeal, moveDeal } from '@/app/(main)/admin/crm/actions
 import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline-core'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The label TEXT class. Every field below wraps its control in a native <label>, which is HTML's
 // own implicit association: no id to mint, no htmlFor to thread. The previous shape put the
@@ -99,14 +100,14 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
         <button type="button" onClick={() => router.push('/admin/growth?tab=crm')} className="rounded-lg px-4 py-2 text-body-sm font-medium text-subtle hover:text-text">
           Cancel
         </button>
-        <button
+        <Button
+          size="lg"
           type="button"
           onClick={submit}
           disabled={!title.trim() || pending}
-          className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : deal ? 'Save deal' : 'Create deal'}
-        </button>
+        </Button>
       </div>
     </div>
   )

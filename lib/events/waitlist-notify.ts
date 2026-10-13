@@ -12,6 +12,7 @@ import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { mintGuestSeatUrl, type SeatRpcClient } from '@/lib/events/guest-seat'
 import type { PromotedSeat } from './capacity'
+import { palette } from '@/lib/theme/palette'
 
 // ── "A spot opened up and you're in." ────────────────────────────────────────────────────────────
 //
@@ -276,23 +277,23 @@ function hostLine(hostName: string | null, circleName: string | null): string | 
 function promotedSeatHtml(p: PromotedSeatEmailParts): string {
   const host = hostLine(p.hostName, p.circleName)
   return `
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#3D352A;">
-  <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:0 0 8px;">You're in</p>
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:${palette.text};">
+  <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:0 0 8px;">You're in</p>
   <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">${escapeHtml(p.eventTitle)}</h1>
   <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(PROMOTED_SEAT_LINE)} You were on the waitlist for this one and a seat just freed up, so it is yours. We'll send a reminder as it gets close.</p>
   <p style="font-size:15px;line-height:1.6;margin:0 0 4px;"><strong>When:</strong> ${escapeHtml(p.whenAbsolute)}</p>
   ${p.location ? `<p style="font-size:15px;line-height:1.6;margin:0 0 4px;"><strong>Where:</strong> ${escapeHtml(p.location)}</p>` : ''}
   ${host ? `<p style="font-size:15px;line-height:1.6;margin:0 0 4px;">${escapeHtml(host)}</p>` : ''}
   <p style="margin:24px 0;">
-    <a href="${p.eventUrl}" style="display:inline-block;background:#3D352A;color:#FAF6EC;font-size:15px;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:8px;">Open the event</a>
+    <a href="${p.eventUrl}" style="display:inline-block;background:${palette.text};color:${palette.emailSurfaceElevated};font-size:15px;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:8px;">Open the event</a>
   </p>
-  <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:24px 0 8px;">Add to your calendar</p>
+  <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">Add to your calendar</p>
   <p style="margin:0 0 8px;">
-    <a href="${p.googleCalUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>
-    <a href="${p.icsUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>
+    <a href="${p.googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>
+    <a href="${p.icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>
   </p>
   <p style="font-size:14px;line-height:1.5;color:#6B6252;margin:24px 0 0;">Plans changed? Open the event and tap Going again to give the seat back.</p>
-  <p style="font-size:12px;color:#8F8675;margin:32px 0 0;"><a href="${p.unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event emails</a></p>
+  <p style="font-size:12px;color:${palette.emailSubtle};margin:32px 0 0;"><a href="${p.unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a></p>
 </div>`.trim()
 }
 

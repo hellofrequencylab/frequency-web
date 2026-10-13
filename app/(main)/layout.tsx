@@ -16,6 +16,7 @@ import { scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
 import { loadCachedChromeOverrides, loadCachedAppOverrides } from '@/lib/layout/chrome-sources'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
+import { LEGACY_THEME_AXES } from '@/lib/theme/design'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { RAIL_FOLD_COOKIE, readRailFoldCookie } from '@/lib/layout/rail-fold'
@@ -644,15 +645,18 @@ export default async function MainLayout({
       !atLeastRole(effectiveRole, pageGate.visibility_role as CommunityRole)
     if (draftHidden || roleHidden) redirect('/feed')
   }
-  const occasion =
-    occasionPinned || theme.occasion !== 'none' ? theme.occasion : autoOccasion
+  // Under a design that overrides everything (Frequency, ADR-1737) no occasion and no Theme Studio
+  // <style> apply: both would re-point tokens the design owns.
+  const occasion = !LEGACY_THEME_AXES
+    ? 'none'
+    : occasionPinned || theme.occasion !== 'none' ? theme.occasion : autoOccasion
   // The STRUCTURE axis (docs/THEME.md): the coarse layout variant the resolved generation maps to
   // (simple / standard / dense). The shell sets it as [data-structure] alongside [data-generation],
   // so the calm/kids ends get a roomier composition and the bold preset a denser one. This is the
   // real (non-test) caller structureFor() was missing (BUILD-CATALOG §A.13 #1).
   const structure = structureFor(theme.generation)
   // The active DB skin/occasion theme as a scoped <style> (fail-safe '' until theme rows exist).
-  const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion })
+  const themeCss = LEGACY_THEME_AXES ? await loadActiveThemeCss({ skin: theme.skin, occasion }) : ''
 
   return (
     <>

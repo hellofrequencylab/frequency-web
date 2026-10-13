@@ -88,6 +88,7 @@ import {
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { Field, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -1368,13 +1369,9 @@ export function OnAirSession({
               Finish the sit any time today and the rest of the Zaps are yours.
             </p>
             {(practice?.durationMin ?? 0) > 0 && (
-              <button
-                type="button"
-                onClick={finishTheRest}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-              >
+              <Button type="button" onClick={finishTheRest} className="mt-2">
                 Finish the sit <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -1552,13 +1549,9 @@ export function OnAirSession({
           <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
             <p className="text-body-sm font-semibold text-text">Still practicing?</p>
             <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
-            <button
-              type="button"
-              onClick={confirmRunOver}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
+            <Button type="button" onClick={confirmRunOver} className="mt-2.5">
               Still here
-            </button>
+            </Button>
           </div>
         )}
         {/* Docked controls (P10 + item #5): Pause ⇄ Resume while running, Finish once the
@@ -2085,32 +2078,36 @@ export function OnAirSession({
           // An unfinished practice today: the button SPLITS into Continue (resume the remaining
           // time) and New Practice (start the full length fresh, dropping the banked partial).
           <div className="flex gap-2 lg:mx-auto lg:max-w-sm">
-            <button
+            <Button
               type="button"
+              size="lg"
               onClick={() => beginResolved(false)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="flex-1"
             >
               <OnAirIcon className="h-4 w-4" /> Continue
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              size="lg"
               onClick={() => beginResolved(true)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex-1"
             >
               New Practice
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
+          <Button
             type="button"
+            size="lg"
             onClick={() => beginResolved(false)}
             disabled={!runPracticeId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+            className="w-full lg:mx-auto lg:max-w-sm"
           >
             <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Start Practice'}
-          </button>
+          </Button>
         )}
       </div>
       </div>
@@ -2174,13 +2171,9 @@ function InstructionsPopup({
         </button>
         <h2 className="pr-6 text-body-lg font-semibold text-text">{pattern.name}</h2>
         <p className="mt-3 text-body-sm leading-relaxed text-muted">{pattern.instructions}</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" size="lg" onClick={onClose} className="mt-5 w-full">
           Close
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -2235,7 +2228,7 @@ function Group({
 }
 
 function SubLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-2xs font-medium uppercase tracking-wider text-muted">{children}</p>
+  return <p className={capsLabel('text-2xs font-medium text-muted', 'wider')}>{children}</p>
 }
 
 function ModeButton({

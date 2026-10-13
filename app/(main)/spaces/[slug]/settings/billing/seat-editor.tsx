@@ -76,7 +76,7 @@ export function SeatEditor({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-1 rounded-lg border border-border">
+          <div className="inline-flex items-center gap-1 rounded-control border border-border">
             <IconButton
               label="Remove a seat"
               onClick={() => setSeats((n) => Math.max(floor, n - 1))}

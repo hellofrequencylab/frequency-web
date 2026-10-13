@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ImageIcon, Loader2, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { capsLabel } from '@/components/ui/caps-label'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
@@ -240,7 +241,7 @@ export function MultiImageUpload({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+      <span className={capsLabel('inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
         <ImageIcon className="h-3.5 w-3.5" /> {label}
         {value.length > 0 && <span className="font-normal text-muted">· {value.length}</span>}
       </span>
@@ -252,7 +253,7 @@ export function MultiImageUpload({
           <div className="group relative aspect-square overflow-hidden rounded-card border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={leading.url} alt={leading.alt ?? ''} className="h-full w-full object-cover" />
-            <span className="absolute bottom-1 left-1 rounded bg-ink/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-on-ink">
+            <span className={capsLabel('absolute bottom-1 left-1 rounded bg-ink/60 px-1.5 py-0.5 text-3xs font-semibold text-on-ink')}>
               {leading.label}
             </span>
             {leading.onRemove && (
@@ -301,7 +302,7 @@ export function MultiImageUpload({
             />
             {/* The first gallery photo IS the header/cover, so mark it plainly. */}
             {reorderable && !leading && i === 0 && (
-              <span className="absolute bottom-1 left-1 rounded bg-ink/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-on-ink">
+              <span className={capsLabel('absolute bottom-1 left-1 rounded bg-ink/60 px-1.5 py-0.5 text-3xs font-semibold text-on-ink')}>
                 Header
               </span>
             )}

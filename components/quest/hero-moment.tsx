@@ -1,11 +1,13 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Trophy, Zap, X, Sparkles, ArrowRight, Check } from 'lucide-react'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { keepPracticeAction } from '@/app/(main)/practices/actions'
 import { IconButton } from '@/components/ui/icon-button'
+import { Button } from '@/components/ui/button'
 import { RankBadge } from '@/components/ui/rank-badge'
 
 // HeroMoment — the landmark celebration for the real Journey landmarks: a Journey
@@ -140,7 +142,7 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
         <span className="font-semibold">{anchor.title}</span> carried you through this Journey.
         Keep it as your own?
       </p>
-      <button
+      <Button
         type="button"
         disabled={pending}
         onClick={() =>
@@ -154,10 +156,10 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
             setKept(true)
           })
         }
-        className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+        className="mt-2.5 min-h-9"
       >
         {pending ? 'Keeping…' : 'Keep it'}
-      </button>
+      </Button>
       {error && <p className="mt-2 text-meta font-medium text-danger">{error}</p>}
     </div>
   )
@@ -201,14 +203,13 @@ function FinishMoment({
 
       <div className="flex items-start gap-4">
         <span
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-control text-on-primary lift-1"
-          style={{ background: 'var(--rank-gold)' }}
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-control bg-rank-gold text-on-primary lift-1"
           aria-hidden
         >
           <Trophy className="h-7 w-7" />
         </span>
         <div className="min-w-0 pr-6">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-rank-gold">
+          <p className={capsLabel('text-2xs font-semibold text-rank-gold', 'widest')}>
             Journey finished
           </p>
           <p className="mt-0.5 text-body-lg font-bold leading-tight text-text">
@@ -287,14 +288,13 @@ function SeasonCompleteMoment({
 
       <div className="max-w-xl pr-6">
         <span
-          className="mb-4 flex h-16 w-16 items-center justify-center rounded-control text-on-primary lift-1"
-          style={{ background: 'var(--rank-gold)' }}
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-control bg-rank-gold text-on-primary lift-1"
           aria-hidden
         >
           <Trophy className="h-8 w-8" />
         </span>
 
-        <p className="text-2xs font-semibold uppercase tracking-widest text-rank-gold">
+        <p className={capsLabel('text-2xs font-semibold text-rank-gold', 'widest')}>
           Season complete · Master
         </p>
         <p className="mt-1 text-page-title font-bold leading-tight text-text">
@@ -323,7 +323,7 @@ function SeasonCompleteMoment({
         {/* The re-light — what comes next, so the apex opens a door. The Trophy Case keeps
             the win across the reset; the next Quest is the goal to climb again. */}
         <div className="mt-5 rounded-card border border-border bg-surface/70 p-4">
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+          <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-primary-strong', 'widest')}>
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             What comes next
           </p>

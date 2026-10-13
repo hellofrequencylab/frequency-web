@@ -1,6 +1,7 @@
 import { TrendingUp } from 'lucide-react'
 import { DashArea, TileGrid, Tile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { getDensitySignal, type DensitySignal } from '@/lib/analytics/density'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Growth layout module (LP7): "Expansion" — where local member density is crossing the threshold that
 // justifies opening the next Lab. Self-fetching RSC; the page owns the marketing-staff gate, so this
@@ -53,7 +54,7 @@ export async function GrowthExpansion() {
               <span className="text-body-sm text-subtle">/100</span>
             </p>
             <p className="mt-2 text-body-sm font-semibold text-text">{topSignal.city}</p>
-            <p className="mt-0.5 text-meta uppercase tracking-wide text-subtle">{topSignal.stage} stage</p>
+            <p className={capsLabel('mt-0.5 text-meta text-subtle')}>{topSignal.stage} stage</p>
           </Tile>
         )}
       </TileGrid>

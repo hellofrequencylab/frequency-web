@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { UserPlus, ScanLine, Check } from 'lucide-react'
 import { createProfile } from '@/app/(main)/connections/actions'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // Contact capture — the headline of Capture (the rework): get a person's details
 // into your personal CRM in seconds. On web this is manual entry (you won't shoot
@@ -80,14 +81,15 @@ export function ContactCaptureForm() {
         >
           <ScanLine className="h-3.5 w-3.5" aria-hidden /> Scan a card instead
         </Link>
-        <button
+        <Button
+          size="sm"
           type="button"
           onClick={save}
           disabled={!name.trim() || pending}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0"
         >
           <UserPlus className="h-3.5 w-3.5" aria-hidden /> {pending ? 'Saving…' : 'Capture'}
-        </button>
+        </Button>
       </div>
     </div>
   )

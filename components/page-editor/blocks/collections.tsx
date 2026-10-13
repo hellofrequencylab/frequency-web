@@ -37,7 +37,8 @@ import {
 } from '@/lib/page-editor/fields'
 import { richParagraphs, richPlainText } from '@/lib/page-editor/richtext'
 import { SiteImage } from '@/components/marketing/site-image'
-import { FaqList, Marquee } from '@/components/marketing/marketing-ui'
+import { FaqList, Marquee, arrowLinkClasses } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
@@ -151,7 +152,7 @@ export function FeatureGridBlock({
                   {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                   {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                   {item.href && (
-                    <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                    <Link href={safeHref(item.href) ?? '#'} className={arrowLinkClasses({ ink, className: 'mt-4' })}>
                       Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                     </Link>
                   )}
@@ -173,7 +174,7 @@ export function FeatureGridBlock({
                 {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                 {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (
-                  <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                  <Link href={safeHref(item.href) ?? '#'} className={arrowLinkClasses({ ink, className: 'mt-4' })}>
                     Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 )}
@@ -192,7 +193,7 @@ export function FeatureGridBlock({
               {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
               {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
               {item.href && (
-                <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                <Link href={safeHref(item.href) ?? '#'} className={arrowLinkClasses({ ink, className: 'mt-4' })}>
                   Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                 </Link>
               )}
@@ -397,13 +398,13 @@ export function ShowcaseBlock({
                 />
               </div>
               <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
-                <h3 className="font-display uppercase text-on-ink text-[clamp(1.875rem,5.5vw,3rem)] mb-5 px-2 text-center sm:text-left">
+                <h3 className={`font-display uppercase text-on-ink ${DISPLAY_TYPE.section} mb-5 px-2 text-center sm:text-left`}>
                   {p.title}
                 </h3>
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
                   <div className="text-body text-muted leading-relaxed space-y-3">{richParagraphs(p.body)}</div>
                   {p.href && (
-                    <Link href={safeHref(p.href) ?? '#'} className="mt-5 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
+                    <Link href={safeHref(p.href) ?? '#'} className={arrowLinkClasses({ className: 'mt-5' })}>
                       Learn more <ArrowRight className="w-4 h-4" aria-hidden />
                     </Link>
                   )}

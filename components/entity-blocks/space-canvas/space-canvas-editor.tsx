@@ -22,6 +22,7 @@ import { useProfileLayout } from '@/components/entity-blocks/profile-layout-cont
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
 // surface over the SHARED entity-layout store (same provider, seed, debounced save + sanitize as the
@@ -227,7 +228,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
               <li key={row.id} className="rounded-card border border-border bg-surface">
                 {/* Section header: reorder, layout picker, remove. */}
                 <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
-                  <span className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <span className={capsLabel('min-w-0 flex-1 truncate text-2xs font-semibold text-muted')}>
                     Section {ri + 1}
                   </span>
                   <SplitPicker active={activeSplit(row.columns, row.ratio)} onChoose={(s) => onSplit(row.id, s)} />
@@ -497,7 +498,7 @@ function AddBlockPalette({
   return (
     <div className="space-y-1.5 rounded-lg border border-border bg-surface-elevated/40 p-2">
       <div className="flex items-center justify-between">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>Add a block</p>
         <button type="button" onClick={onClose} className="text-2xs font-semibold text-muted hover:text-text">
           Close
         </button>

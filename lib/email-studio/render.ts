@@ -30,6 +30,7 @@ import {
   type MarginStep,
 } from '@/lib/entity-blocks/block-content'
 import { isLucideIconName } from '@/lib/entity-blocks/icon-tokens'
+import { palette } from '@/lib/theme/palette'
 
 // ── Brand palette → literal hex (mirrors app/globals.css DAWN tokens) ─────────────────────────────────────
 
@@ -56,26 +57,26 @@ export interface EmailColors {
   danger: string
 }
 
-/** The default DAWN email palette (literal hex, copied from app/globals.css). */
+/** The default email palette, read from the design-keyed palette (lib/theme/palette.ts) as literal hex. */
 export const DEFAULT_EMAIL_COLORS: EmailColors = {
-  canvas: '#FBF8F1',
-  surface: '#FFFFFF',
-  surfaceElevated: '#FAF6EC',
-  border: '#E9E1D4',
-  text: '#3D352A',
+  canvas: palette.emailCanvas,
+  surface: palette.surface,
+  surfaceElevated: palette.emailSurfaceElevated,
+  border: palette.emailBorder,
+  text: palette.text,
   // Heading ink: a slightly LIFTED warm charcoal, sitting between DAWN --color-text (#3D352A) and
   // --color-text-muted (#6B6253). Softer than the body ink so a headline reads as charcoal, not a heavy
   // near-black slab, while staying well past WCAG AA on the cream/white email background (~9:1 on #FFFFFF).
-  heading: '#4A4234',
-  muted: '#6B6253',
-  subtle: '#8F8675',
-  primary: '#E2912F',
-  primaryStrong: '#9A5E12',
-  primaryBg: '#FBEFD9',
-  onPrimary: '#FFFFFF',
-  success: '#11827A',
-  info: '#2F6FB0',
-  danger: '#BA3B30',
+  heading: palette.emailHeading,
+  muted: palette.textMuted,
+  subtle: palette.emailSubtle,
+  primary: palette.primary,
+  primaryStrong: palette.emailPrimaryStrong,
+  primaryBg: palette.primaryBg,
+  onPrimary: palette.onPrimary,
+  success: palette.emailSuccess,
+  info: palette.emailInfo,
+  danger: palette.danger,
 }
 
 /** A TextColorToken (block-content C1) → its concrete hex, given the palette. `default` is the body ink. */

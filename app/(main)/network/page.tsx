@@ -409,7 +409,7 @@ export default async function CommunityPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -514,7 +514,7 @@ export default async function CommunityPage({
                   <Link
                     key={l.id}
                     href={l.href ?? '#'}
-                    className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
+                    className="flex items-center gap-3 rounded-card border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none">
                       {getInitials(l.displayName)}

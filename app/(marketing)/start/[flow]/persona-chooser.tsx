@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { buttonClasses } from '@/components/marketing/marketing-ui'
 import { getPersona, type PersonaId } from '@/lib/onboarding/personas'
 import { captureLead } from '../actions'
 import { ArrivalFollowUp } from '@/components/onboarding/arrival-follow-up'
@@ -130,7 +131,7 @@ export function PersonaChooser({
             <button
               onClick={go}
               disabled={busy || (captureEmail && !email.trim())}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+              className={buttonClasses({ className: 'disabled:opacity-40 disabled:cursor-not-allowed' })}
             >
               {busy ? 'One sec…' : `Continue as ${chosen.label}`}
               {!busy && <ArrowRight />}

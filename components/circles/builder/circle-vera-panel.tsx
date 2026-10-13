@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition } from 'react'
 import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import type { CircleComposeSection } from '@/lib/ai/circle-compose'
@@ -84,7 +85,7 @@ export function CircleVeraPanel({
 
       {open && (
         <>
-          <p className="mt-2 text-2xs font-semibold uppercase tracking-wide text-muted">Fill a section</p>
+          <p className={capsLabel('mt-2 text-2xs font-semibold text-muted')}>Fill a section</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {SECTIONS.map((s) => (
               <button
@@ -100,7 +101,7 @@ export function CircleVeraPanel({
             ))}
           </div>
 
-          <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Tell Vera what to change</p>
+          <p className={capsLabel('mt-4 text-2xs font-semibold text-muted')}>Tell Vera what to change</p>
           <Textarea
             value={change}
             disabled={pending}
