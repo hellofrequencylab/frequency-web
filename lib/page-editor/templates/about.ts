@@ -44,7 +44,7 @@ export const data: Data = {
         facts: [
           { value: '2020', label: 'A cliff at dawn' },
           { value: '1,000', label: 'Strangers at sunrise' },
-          { value: '0%', label: 'On your own bookings' },
+          { value: '0%', label: 'On your own bookings, plus card processing' },
         ],
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: '/start',

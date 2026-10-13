@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 const source = (path) => readFileSync(path, 'utf8').replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '')
 const banned = {
   'lib/email.ts': [/you both earn/i, /connected to your community/i, /earn as you go/i],
+  'app/(main)/codes/member-codes.tsx': [/you both earn/i],
   'app/api/cron/lifecycle-triggers/route.ts': [
     /Welcome to \$\{circleName\}!/, /circle feed/, /earn some Zaps!/, /One week in \$\{circleName\}!/, /leaderboard/i,
   ],

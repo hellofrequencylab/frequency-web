@@ -26,6 +26,9 @@ const BANNED = {
   'lib/page-editor/templates/about.ts': [
     [/never behind a plan/i, 'About says taking money is never behind a plan'],
   ],
+  'components/page-editor/blocks/dawn.tsx': [
+    [/never behind a plan/i, 'a block default says taking money is never behind a plan'],
+  ],
 }
 
 for (const [file, rules] of Object.entries(BANNED)) {

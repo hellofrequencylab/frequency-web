@@ -1401,7 +1401,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         {
           icon: 'HandHeart',
           title: 'One honest price',
-          body: 'Zero percent on your own bookings, always, and taking money is never behind a plan. One price, no surprise invoices.',
+          body: 'Zero percent on your own bookings, plus card processing. Hosting is free and selling starts at Business. One price, no surprise invoices.',
         },
         {
           icon: 'Home',
