@@ -153,7 +153,8 @@ describe('the website admin links', () => {
   it('the one menu ends with the blue admin links, after the pages', () => {
     const nav = navOf(chrome(true))
     expect(nav.indexOf('About')).toBeLessThan(nav.indexOf('class="hs-nav-admin"'))
-    expect(nav).toContain('Admin:')
+    // The colon is its own span so a theme (Wildheart's chip) can drop it; the other themes still read "Admin:".
+    expect(nav).toMatch(/hs-nav-admin-tag">Admin<span class="hs-nav-admin-colon">:<\/span>/)
     expect(nav).toContain('href="/admin/overview"')
     expect(nav).toMatch(/href="\/admin\/calendar" aria-current="page">Yearly Calendar/)
   })

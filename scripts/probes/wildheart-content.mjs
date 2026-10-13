@@ -21,7 +21,9 @@ if (!handoff) {
 }
 const html = readFileSync(join(handoff, 'Website.html'), 'utf8')
 
-const decode = (s) => s.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+// One pass over the six entities the template uses, so a decoded "&amp;lt;" stays "&lt;" (never unescaped twice).
+const ENTITIES = { '&#39;': "'", '&quot;': '"', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&nbsp;': ' ' }
+const decode = (s) => s.replace(/&(?:#39|quot|amp|lt|gt|nbsp);/g, (m) => ENTITIES[m])
 const clean = (s) => decode(s).replace(/\s+/g, ' ').trim()
 /** Every string a stretch of template shows: text nodes, alt and label attributes, split at the template's
  *  own expressions. */
@@ -30,8 +32,8 @@ function strings(fragment) {
   const attrs = /\b(?:alt|aria-label|label|title)="([^"]*)"/g
   for (const m of fragment.matchAll(attrs)) if (!/\{\{/.test(m[1])) out.push(m[1])
   const text = fragment
-    .replace(/<script[\s\S]*?<\/script>/g, ' ')
-    .replace(/<style[\s\S]*?<\/style>/g, ' ')
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
     .replace(/\{\{[^}]*\}\}/g, '|')
     .replace(/<[^>]+>/g, '|')
   out.push(...text.split('|'))

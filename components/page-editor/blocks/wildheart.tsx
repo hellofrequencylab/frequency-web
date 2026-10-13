@@ -17,6 +17,7 @@ import {
 } from '@/lib/theme/astrology-wheel'
 import { ZODIAC } from '@/lib/theme/wildheart-symbols'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { slugify } from '@/lib/utils'
 import { safeImageUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
@@ -61,7 +62,8 @@ const whenOf = (e: SpaceEvent): string => {
   const { day, time } = dateLabel(e.startsAt)
   return time ? `${day.slice(0, 3)} · ${time}` : ''
 }
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+/** A title as a comparison key: the shared slug rule (lib/utils.ts slugify, the one copy) with spaces. */
+const norm = (s: string) => slugify(s).replace(/-/g, ' ')
 
 /** The sky's own items beside the Space's events, the Space's winning where both name the same day (a
  *  Space that lists its festivals and moons as events shows them once, with their links). */
@@ -453,7 +455,9 @@ function SpaceEventRow({ e, metadata, festivalsOf }: { e: SpaceEventLite; metada
   const href = eventHref(e, metadata)
   const s = day ? sky(day) : null
   const t = norm(e.title)
-  const mark = !s ? <WhGlyph name="spark" size={14} /> : /moon/.test(t) ? <WhMoon phase={/new/.test(t) ? 0 : /full|moon$/.test(t) ? 4 : s.phase} size={16} /> : festivalsOf.has(t) ? <WhGlyph name="star" size={15} /> : /circle night/.test(t) ? <WhGlyph name={s.sign} size={15} /> : <span className="wh-seed" data-season={s.season} aria-hidden="true" />
+  // A "new moon" title is the dark phase, a "full moon" or a bare "... moon" the full one, else the sky's.
+  const moonPhase = t.includes('new') ? 0 : t.includes('full') || t.endsWith('moon') ? 4 : s?.phase ?? 0
+  const mark = !s ? <WhGlyph name="spark" size={14} /> : t.includes('moon') ? <WhMoon phase={moonPhase} size={16} /> : festivalsOf.has(t) ? <WhGlyph name="star" size={15} /> : /circle night/.test(t) ? <WhGlyph name={s.sign} size={15} /> : <span className="wh-seed" data-season={s.season} aria-hidden="true" />
   const note = noteOf(e)
   const body = (
     <>
