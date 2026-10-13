@@ -8,6 +8,8 @@ import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
 import { OG_SITE, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
 
@@ -148,6 +150,23 @@ export default async function RootPage() {
   // the 21 marketing pages already rely on. The page BODY and all SEO output are identical for
   // signed-in and signed-out viewers, so there is nothing viewer-specific to cache wrongly.
 
+  const published = await getPublishedData('home')
+  const template = getTemplate('home')
+  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
+
+  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency the front door wears the public site
+  // shell (components/frequency/site/shell): the kit root, header v4, the ft2 footer and the FX island.
+  // `/` is the one page whose side is not locked: its Browse Community / Host Community toggle is
+  // remembered (lib/frequency/site-pages.ts). The body below is the same document either way.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <SiteShell>
+        <BlockDocJsonLd data={data} path="/" schemaType="WebPage" />
+        <BlockRender config={config} data={data} />
+      </SiteShell>
+    )
+  }
+
   // DB-backed nav megas for the header (lib/menus); fall back to code defaults on any miss, so
   // safe pre-migration.
   const [headerMenu, footerMenu, menuTimings] = await Promise.all([
@@ -155,10 +174,6 @@ export default async function RootPage() {
     getMenu('footer'),
     getMenuSettings(),
   ])
-
-  const published = await getPublishedData('home')
-  const template = getTemplate('home')
-  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
 
   return (
     <div data-surface="stage" className="contents">
