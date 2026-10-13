@@ -18,6 +18,7 @@ import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { LEGACY_THEME_AXES, SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyMembersShell } from '@/components/frequency/members/shell/members-shell'
+import { FrequencyRightMicro, FrequencyRightRail } from '@/components/frequency/members/shell/right-rail'
 import type { DockData } from '@/components/sidebar/game-stats-dock'
 // The Frequency members kit and the shell's own rules. Both are scoped to
 // [data-design="frequency"] [data-kit="members"], so under DAWN they match nothing.
@@ -783,7 +784,15 @@ export default async function MainLayout({
         previewVisitor={previewVisitor}
         crew={!previewingDown && isPaid(realHats.tier)}
         stats={fqStats ?? Promise.resolve(null)}
-        sidebar={sidebar}
+        sidebar={
+          <FrequencyRightRail
+            profileId={profile.id}
+            role={effectiveRole}
+            pathname={reqPath ?? ''}
+            stats={fqStats ?? Promise.resolve(null)}
+          />
+        }
+        sidebarMicro={<FrequencyRightMicro profileId={profile.id} stats={fqStats ?? Promise.resolve(null)} />}
         banner={
           announcement ? (
             <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />

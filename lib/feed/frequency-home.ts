@@ -9,6 +9,8 @@ import { listDueReminders } from '@/lib/connections/store'
 import { getCurrentSeason } from '@/lib/seasons'
 import { zapAmountForAction } from '@/lib/zaps'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { STREAK_MILESTONES } from '@/lib/streak'
+import { listListings } from '@/lib/marketplace'
 import {
   milesBetween,
   rankHomeEvents,
@@ -320,4 +322,66 @@ export async function loadZapBreakdown(profileId: string): Promise<ZapRow[]> {
     { label: 'Practices', zaps: sums.practices },
     { label: 'Everything else', zaps: sums.other },
   ].filter((r) => r.zaps > 0)
+}
+
+// ── Milestones (stream item) ─────────────────────────────────────────────────
+
+export interface StreakMilestoneItem {
+  profileId: string
+  name: string
+  handle: string
+  avatarUrl: string | null
+  day: number
+}
+
+/** People in the member's orbit sitting exactly on a streak checkpoint (lib/streak.ts, a week or
+ *  more) who logged on the home zone's today or yesterday, so the number is fresh rather than a
+ *  counter nobody has touched since. Closest people first (the orbit's own order). */
+export async function loadStreakMilestones(
+  orbit: { profileId: string; displayName: string; handle: string; avatarUrl: string | null }[],
+): Promise<StreakMilestoneItem[]> {
+  const checkpoints = STREAK_MILESTONES.map((m) => m.day).filter((d) => d >= 7)
+  const ids = orbit.slice(0, 200).map((m) => m.profileId)
+  if (ids.length === 0) return []
+  const admin = createAdminClient()
+  const today = dayInZone(new Date(), HOME_TZ)
+  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  const [{ data: profiles, error: e1 }, { data: logs, error: e2 }] = await Promise.all([
+    admin.from('profiles').select('id, current_streak').in('id', ids).in('current_streak', checkpoints),
+    admin.from('practice_logs').select('profile_id').in('profile_id', ids).gte('logged_for', yesterday).limit(500),
+  ])
+  note('streak milestones', e1)
+  note('recent practice logs', e2)
+  const fresh = new Set(((logs ?? []) as { profile_id: string }[]).map((l) => l.profile_id))
+  const day = new Map(((profiles ?? []) as { id: string; current_streak: number | null }[]).map((p) => [p.id, p.current_streak ?? 0]))
+  return orbit
+    .filter((m) => fresh.has(m.profileId) && (day.get(m.profileId) ?? 0) > 0)
+    .map((m) => ({ profileId: m.profileId, name: m.displayName, handle: m.handle, avatarUrl: m.avatarUrl, day: day.get(m.profileId) ?? 0 }))
+}
+
+// ── Classifieds (stream item) ────────────────────────────────────────────────
+
+export interface ClassifiedTile {
+  id: string
+  title: string
+  image: string | null
+  line: string
+}
+
+const KIND_WORD: Record<string, string> = { free: 'Free', lend: 'To lend', request: 'Wanted' }
+
+/** The three newest active Classifieds listings, for the stream's 3-up row. */
+export async function loadClassifiedTiles(hideDemo: boolean): Promise<ClassifiedTile[]> {
+  try {
+    const rows = await listListings({ hideDemo, limit: 3 })
+    return rows.map((l) => ({
+      id: l.id,
+      title: l.title,
+      image: l.images?.[0] ?? null,
+      line: [l.price_note ?? KIND_WORD[l.kind] ?? null, l.neighborhood ?? l.city].filter(Boolean).join(' · '),
+    }))
+  } catch (e) {
+    note('classifieds', e)
+    return []
+  }
 }

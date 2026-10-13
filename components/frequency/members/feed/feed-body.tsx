@@ -7,7 +7,6 @@ import { SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
-import { FqToaster } from '../shared/toast'
 import { Standing } from './standing'
 import { FeedPlanner } from './planner'
 import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type GsStep } from './islands'
@@ -90,7 +89,6 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
 
   return (
     <div className="fa-col">
-      <FqToaster />
       <div className="fa-greet" data-visual-mask="feed-greeting">
         <div className="fa-greet-txt">
           <span className="meta">{[dateLine, clock, p.locationLabel].filter(Boolean).join(' · ')}</span>
@@ -129,7 +127,9 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         todayDow={todayDow}
       />
 
-      {p.onboarding && <GetStarted steps={p.onboarding} />}
+      {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
+          Feed carries the same box inline there and nowhere else (.fqm-gs-inline). */}
+      {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
 
       <Suspense fallback={<section className="fa-hero" aria-busy="true"><div className="fa-hero-body"><span className="k">Up next for you</span></div></section>}>
         <PlannerSection eventsP={eventsP} hasHome={!!p.home} />

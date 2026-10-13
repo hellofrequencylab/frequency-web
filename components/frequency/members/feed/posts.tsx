@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Suspense, type CSSProperties } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { loadFeedPage, type FeedRow } from '@/lib/feed/feed-page'
+import { loadClassifiedTiles, loadStreakMilestones, type ClassifiedTile, type StreakMilestoneItem } from '@/lib/feed/frequency-home'
 import { buildScopeContextResolver } from '@/lib/feed/post-origin'
 import { getMyOrbit } from '@/lib/connections/resonance'
 import { viewerHidesDemo } from '@/lib/demo-preference'
@@ -21,8 +22,11 @@ import { FqAvatar, phStyle } from '../shared/avatar'
 // (feed_for_viewer through lib/feed/feed-page.ts, the same reach model and ranking the web feed
 // uses); reactions, comments, polls and the post menu are the existing live components.
 //
-// The design's Milestone and Classifieds items have no post type behind them yet, so they are not
-// drawn. The Journey Run card is the member's own active Journey (lib/member-progress.ts).
+// The design's Milestone and Classifieds items have no post type behind them, so they are drawn from
+// their real sources instead: a Milestone is someone in the member's orbit sitting on a streak
+// checkpoint they reached today or yesterday, and Classifieds is the three newest active listings
+// (lib/feed/frequency-home.ts). Neither is drawn when its source is empty. The Journey Run card is the
+// member's own active Journey (lib/member-progress.ts).
 
 export type FeedSort = 'recent' | 'relevant' | 'nearby' | 'story' | 'popular'
 
@@ -68,6 +72,12 @@ export async function FeedStream({
       </div>
     )
   }
+
+  const story = sort === 'story'
+  const [milestones, classifieds] = story
+    ? [[] as StreakMilestoneItem[], [] as ClassifiedTile[]]
+    : await Promise.all([loadStreakMilestones(orbit), loadClassifiedTiles(hideDemo)])
+  const milestone = milestones[0] ?? null
 
   let posts = loaded.items
   if (hideDemo) posts = posts.filter((p) => !p.is_demo)
@@ -115,8 +125,10 @@ export async function FeedStream({
     <div data-visual-mask="feed-stream">
       {pinned.map(render)}
       {rest.slice(0, 2).map(render)}
+      {milestone && <MilestoneItem m={milestone} />}
       {journey && <JourneyRunItem journey={journey} />}
       {rest.slice(2, 5).map(render)}
+      {classifieds.length >= 2 && <ClassifiedsItem tiles={classifieds} />}
       {dispatch && <DispatchItemRow d={dispatch} />}
       {rest.slice(5).map(render)}
     </div>
@@ -261,6 +273,61 @@ function JourneyRunItem({ journey }: { journey: JourneyRun }) {
           </Link>
         </div>
       )}
+    </article>
+  )
+}
+
+function MilestoneItem({ m }: { m: StreakMilestoneItem }) {
+  const first = m.name.trim().split(/\s+/)[0] || m.name
+  return (
+    <article className="fa-post fa-milestone">
+      <div className="fa-post-h">
+        <Link href={`/people/${m.handle}`} aria-label={m.name}>
+          <FqAvatar url={m.avatarUrl} name={m.name} />
+        </Link>
+        <span className="grow">
+          <span className="t1">
+            {first} hit {m.day} days in a row
+          </span>
+          <span className="fa-src">Practice streak</span>
+        </span>
+        <span className="fa-whytag">From your people</span>
+      </div>
+      <div className="row wrap" style={{ gap: 12 }}>
+        <Link href={`/people/${m.handle}`} className="btn">
+          Say congrats
+        </Link>
+      </div>
+    </article>
+  )
+}
+
+function ClassifiedsItem({ tiles }: { tiles: ClassifiedTile[] }) {
+  return (
+    <article className="fa-post">
+      <div className="fa-post-h">
+        <span className="fa-icav" aria-hidden>
+          <FqIcon name="tag" />
+        </span>
+        <span className="grow">
+          <span className="t1">New in Classifieds</span>
+          <span className="fa-src">The newest listings</span>
+        </span>
+      </div>
+      <div className="fa-listings">
+        {tiles.map((t) => (
+          <Link key={t.id} href={`/classifieds/${t.id}`} className="fa-listing">
+            <span className="ph" style={phStyle(t.image)} role="img" aria-label={t.title} />
+            <b>{t.title}</b>
+            {t.line && <small>{t.line}</small>}
+          </Link>
+        ))}
+      </div>
+      <div className="row wrap" style={{ gap: 12 }}>
+        <Link href="/classifieds" className="btn">
+          See all Classifieds
+        </Link>
+      </div>
     </article>
   )
 }

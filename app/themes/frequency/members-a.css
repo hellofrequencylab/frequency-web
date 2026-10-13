@@ -134,28 +134,7 @@
 [data-design="frequency"] [data-kit="members"] .fa-btns{display:flex;gap:6px}
 [data-design="frequency"] [data-kit="members"] .fa-allclear{padding:22px 0;border-bottom:1px solid var(--fq-border-hair)}
 
-/* Get started */
-[data-design="frequency"] [data-kit="members"] .fa-gs{position:relative;overflow:hidden;margin-top:44px;background:linear-gradient(150deg,rgba(255,255,255,.86),rgba(255,255,255,.5))}
-[data-design="frequency"] [data-kit="members"] .fa-gs>.fq-aura{opacity:.28}
-[data-design="frequency"] [data-kit="members"] .fa-gs>*{position:relative}
-[data-design="frequency"] [data-kit="members"] .fa-gs-h{display:flex;align-items:center;gap:14px}
-[data-design="frequency"] [data-kit="members"] .fa-gs-ring{position:relative;width:46px;height:46px;flex:none;border-radius:50%;background:conic-gradient(var(--fq-accent) 0 var(--p),var(--fq-track) var(--p) 100%);display:flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fa-gs-ring::after{content:attr(data-n);position:absolute;inset:4px;border-radius:50%;background:var(--fq-surface-raised);display:flex;align-items:center;justify-content:center;font:500 12px/1 var(--fq-font-display);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fa-gs-h b{display:block;font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fa-x{width:32px;height:32px;border:none;border-radius:50%;background:none;color:var(--fq-text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fa-x:hover{background:var(--fq-border-hair);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fa-x .fq-icon{width:16px;height:16px}
-[data-design="frequency"] [data-kit="members"] .fa-steps{display:flex;flex-direction:column;margin-top:10px}
-[data-design="frequency"] [data-kit="members"] .fa-step{display:flex;flex-direction:column;border-top:1px solid var(--fq-border-hair)}
-[data-design="frequency"] [data-kit="members"] .fa-step>button{min-height:44px;display:flex;align-items:center;gap:12px;padding:0;border:none;background:none;text-align:left;cursor:pointer;font:500 14px/1.25 var(--fq-font-sans);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fa-step.done>button{color:var(--fq-text-faint);cursor:default;font-weight:400}
-[data-design="frequency"] [data-kit="members"] .fa-mark{width:22px;height:22px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--fq-border-strong);display:flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fa-step.done .fa-mark{background:var(--fq-pa);box-shadow:none;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fa-step.done .fa-mark .fq-icon{width:13px;height:13px}
-[data-design="frequency"] [data-kit="members"] .fa-step.now .fa-mark{background:var(--fq-surface-raised);box-shadow:0 0 0 3px var(--fq-accent-soft)}
-[data-design="frequency"] [data-kit="members"] .fa-step-open{display:flex;flex-direction:column;gap:12px;padding:0 0 16px 34px}
-[data-design="frequency"] [data-kit="members"] .fa-step-open p{margin:0;font:400 13px/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
-[data-design="frequency"] [data-kit="members"] .fa-step-open .btn.pa{height:40px}
+/* Get started lives with the shell (members-shell.css .fqm-gs): it leads the right rail. */
 
 /* Composer */
 [data-design="frequency"] [data-kit="members"] .fa-composer{display:flex;align-items:center;gap:14px;margin-top:48px;padding:8px;border-radius:999px;background:linear-gradient(140deg,rgba(255,255,255,.8),rgba(255,255,255,.5));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 18px 44px -30px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.9)}
@@ -190,6 +169,12 @@
 [data-design="frequency"] [data-kit="members"] .fa-run>*{position:relative}
 [data-design="frequency"] [data-kit="members"] .fa-run-ring{width:76px;height:76px;flex:none;border-radius:50%;background:conic-gradient(var(--fq-accent) 0 var(--p),var(--fq-track) var(--p) 100%)}
 [data-design="frequency"] [data-kit="members"] .fa-run-ring>span{position:absolute;inset:3px;border-radius:50%;background:color-mix(in oklab,var(--fq-surface-card) 88%,transparent);display:flex;align-items:center;justify-content:center;font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+/* Classifieds: a 3-up row of listings, 4/5 images at radius 20 (README §4.9). */
+[data-design="frequency"] [data-kit="members"] .fa-listings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+[data-design="frequency"] [data-kit="members"] .fa-listing{display:flex;flex-direction:column;gap:8px;min-width:0;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fa-listing .ph{aspect-ratio:4/5;border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .fa-listing b{font:500 15px/1.25 var(--fq-font-sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fa-listing small{font:400 13px/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fa-run-t{font:500 24px/1.05 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fa-replies{font-size:14px}
 
