@@ -7,6 +7,7 @@
 //   04 Features   six ways to be in the room / six things you can make
 //   05 Weave      how both sides' steps thread together (client island, ./weave.tsx)
 //   06 Manifesto  "Sacred, not serious."
+//   Dock          the Browse / Host switch, pinned once the hero has gone
 //
 // The owner's call (2026-10-13): under Frequency, `/` renders the design's content, not the published
 // page-editor document. DAWN still renders that document; app/page.tsx picks between them.
@@ -16,7 +17,8 @@
 //
 // SAMPLE DATA REPLACED (../shared/data.ts): the hero pill's "San Diego · 48 Circles and events this week",
 // the Find chapter's map, the "Live this week" strip and its map read the real calendar and the Spaces
-// directory. The design's "212 people checked in at a Circle near you last week" has no public figure
+// directory; with eight or more events a second strip runs the other way, as the design's does. The
+// design's "212 people checked in at a Circle near you last week" has no public figure
 // behind it; the stat shows the network's active Circle count instead, and drops out if that read fails.
 
 import '@/app/themes/frequency/site-pages-a.css'
@@ -84,6 +86,7 @@ export async function FrequencyHome() {
   // The strip scrolls as a seamless loop (the track is two copies, translated -50%). With only a few
   // events a loop just repeats them in view, so a short list sits still instead.
   const loop = strip.length >= 4
+  const strip2 = on.events.length >= 8 ? [...on.events.slice(4), ...on.events.slice(0, 4)].slice(0, 8) : []
   const listTitle = on.city ? `This week in ${on.city}` : 'Coming up'
 
   return (
@@ -269,8 +272,8 @@ export async function FrequencyHome() {
               className="e-only"
               items={[
                 { href: SITE.spaces, icon: 'space', title: 'Open your Space', sub: 'Free, takes ten minutes' },
-                { href: feature('f-doorqr'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
-                { href: feature('f-doorqr'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
+                { href: feature('f-page'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
+                { href: feature('f-events-s'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
               ]}
             />
           </div>
@@ -316,8 +319,8 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: SITE.peopleFirstNight, icon: 'ticket', title: 'RSVP to an event', sub: 'Or just turn up' },
-                { href: feature('f-zaps'), icon: 'checkin', title: 'Check in at the door', sub: '+25 Zaps for being there' },
+                { href: feature('f-events'), icon: 'ticket', title: 'RSVP to an event', sub: 'Or just turn up' },
+                { href: feature('f-checkin'), icon: 'checkin', title: 'Check in at the door', sub: '+25 Zaps for being there' },
                 { href: SITE.peopleFirstNight, icon: 'contacts', title: 'Meet your Circle', sub: 'See who else came' },
               ]}
             />
@@ -325,8 +328,8 @@ export async function FrequencyHome() {
               className="e-only"
               items={[
                 { href: feature('f-doorqr'), icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
-                { href: feature('f-doorqr'), icon: 'ticket', title: 'Run your guest list', sub: 'Tickets, refunds, walk-ins' },
-                { href: feature('f-doorqr'), icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re still in the room' },
+                { href: feature('f-tickets'), icon: 'ticket', title: 'Run your guest list', sub: 'Tickets, refunds, walk-ins' },
+                { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re still in the room' },
               ]}
             />
           </div>
@@ -385,6 +388,17 @@ export async function FrequencyHome() {
               </div>
             </div>
           )}
+          {/* The design's second strip runs the other way, starting further into the week. Only when there
+              are enough real events that the two rows do not read as one list twice. */}
+          {strip2.length > 0 && (
+            <div className="lv-row rev" aria-hidden="true">
+              <div className="lv-track">
+                {[...strip2, ...strip2].map((ev, i) => (
+                  <LiveCard key={`${ev.id}-r${i}`} ev={ev} hidden />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <Chapter label="03c Come back">
@@ -406,16 +420,16 @@ export async function FrequencyHome() {
               className="p-only"
               items={[
                 { href: SITE.people, icon: 'circle', title: 'Join a Circle', sub: 'A place to keep coming back' },
-                { href: SITE.peopleFirstNight, icon: 'program', title: 'Start a program', sub: 'Six weeks, same group' },
+                { href: feature('f-programs'), icon: 'program', title: 'Start a program', sub: 'Six weeks, same group' },
                 { href: feature('f-zaps'), icon: 'zap', title: 'Keep your streak', sub: 'Zaps for showing up again' },
               ]}
             />
             <Acts
               className="e-only"
               items={[
-                { href: feature('f-doorqr'), icon: 'circle', title: 'Run a Circle', sub: 'The heartbeat of a Space' },
-                { href: feature('f-doorqr'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
-                { href: feature('f-doorqr'), icon: 'membership', title: 'Sell memberships', sub: 'Members land in their Circle' },
+                { href: feature('f-circles-s'), icon: 'circle', title: 'Run a Circle', sub: 'The heartbeat of a Space' },
+                { href: feature('f-programs-s'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
+                { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Members land in their Circle' },
               ]}
             />
           </div>
@@ -452,7 +466,7 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: SITE.people, icon: 'message', title: 'Invite a friend', sub: 'Invites anyone can open' },
+                { href: feature('f-invites'), icon: 'message', title: 'Invite a friend', sub: 'Invites anyone can open' },
                 { href: feature('f-host'), icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
                 { href: feature('f-host'), icon: 'circle', title: 'Start a Circle', sub: 'Become somebody’s regular' },
               ]}
@@ -461,7 +475,7 @@ export async function FrequencyHome() {
               className="e-only"
               items={[
                 { href: feature('f-standing'), icon: 'standing', title: 'Watch your standing', sub: 'Earned, never bought' },
-                { href: feature('f-doorqr'), icon: 'host', title: 'Hand a Circle to a regular', sub: 'Grow without burning out' },
+                { href: feature('f-handoff'), icon: 'host', title: 'Hand a Circle to a regular', sub: 'Grow without burning out' },
                 { href: SITE.pricing, icon: 'gem', title: 'See how it pays', sub: '0% on your own regulars' },
               ]}
             />
@@ -544,6 +558,22 @@ export async function FrequencyHome() {
           </div>
         </div>
       </section>
+
+      {/* The dock: the Browse / Host switch, pinned to the bottom once the hero has scrolled away (the
+          shell's FX loop toggles `.on`). */}
+      <div className="dock">
+        <div className="sw" role="group" aria-label="Browse or host">
+          <span className="thumb" />
+          <button type="button" data-set="p" aria-pressed="true">
+            <i />
+            Browse Community
+          </button>
+          <button type="button" data-set="e" aria-pressed="false">
+            <i />
+            Host Community
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

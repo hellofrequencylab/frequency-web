@@ -5,9 +5,10 @@
 //      fade through in turn, and the two path doors spring in. Marks the section `data-live`, which is
 //      what switches site-pages-a.css from the static (no-JS, reduced-motion) layout to the pinned one.
 //   2. the hero lifts and fades as it scrolls away, its backdrop scaling up.
-//   3. `#story [data-px]` parallax (the chapter rings and photos; `.rings.big` stays centred).
-//   4. the "Live this week" figure counts up once when it comes into view.
-//   5. a path door (`[data-go]`) scrolls to the story once the shell has switched side.
+//   3. the "Live this week" figure counts up once when it comes into view.
+//   4. a path door (`[data-go]`) scrolls to the story once the shell has switched side.
+// `[data-px]` parallax (chapter rings and photos, `.rings.big` kept centred) and the dock are the shell's
+// FX loop (components/frequency/site/shell/site-fx.tsx), so they are not run twice here.
 // Renders nothing; all of it is skipped under prefers-reduced-motion except the door scroll.
 //
 // NOT PORTED: the design's "gate" (body.gated), which hid everything below the fold until a door was
@@ -49,7 +50,6 @@ export function HomeMotion() {
       const tx = fold ? Array.from(fold.querySelectorAll<HTMLElement>('[data-in]')) : []
       const fork = fold?.querySelector<HTMLElement>('.fl-fork') ?? null
       const doors = fold ? Array.from(fold.querySelectorAll<HTMLElement>('.pdw')) : []
-      const px = Array.from(scope.querySelectorAll<HTMLElement>('#story [data-px]'))
       fold?.setAttribute('data-live', '')
 
       const tick = () => {
@@ -89,12 +89,6 @@ export function HomeMotion() {
             hw.style.transform = `translate3d(0,${-y * 0.35}px,0) scale(${1 - k * 0.06})`
           }
           hb.forEach((b) => (b.style.transform = `scale(${1 + k * 0.12})`))
-        }
-        for (const el of px) {
-          const r = el.getBoundingClientRect()
-          if (r.bottom < -200 || r.top > vh + 200) continue
-          const c = (r.top + r.height / 2 - vh / 2) / vh
-          el.style.translate = `${el.classList.contains('big') ? '-50% ' : '0 '}${(c * -Number(el.dataset.px) * 100).toFixed(1)}px`
         }
       }
       let queued = false
