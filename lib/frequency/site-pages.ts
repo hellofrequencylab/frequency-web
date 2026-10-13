@@ -44,19 +44,34 @@ export interface SitePageState {
 
 export const DEFAULT_PAGE: SitePageState = { mood: 'page', energy: 'flow', hues: ['v', 'm', 'a'], side: 'p', locked: true }
 
-/** The README's table, by route. Features / Stories / Join / Help rows join when their routes do. */
+/** The README's table, by route. The Features row joins when its route does. */
 export const SITE_PAGES: Record<string, SitePageState> = {
   [ROUTES.home]: { mood: 'home', energy: 'charge', hues: ['m', 'a', 's'], side: 'p', locked: false },
   [ROUTES.people]: { mood: 'people', energy: 'flow', hues: ['a', 'v', 'c'], side: 'p', locked: true },
   [ROUTES.spaces]: { mood: 'spaces', energy: 'flow', hues: ['s', 'm', 'v'], side: 'e', locked: true },
   [ROUTES.pricing]: { mood: 'pricing', energy: 'still', hues: ['s', 'v', 'a'], side: 'e', locked: true, quiet: 1 },
+  '/stories': { mood: 'stories', energy: 'flow', hues: ['m', 's', 'v'], side: 'p', locked: true },
+  // Join is the one page besides Home that is not locked: its Looking / Hosting switch is the side
+  // switch (`data-set`), as Join.html runs it, and it reads `#people` / `#spaces` on arrival. Its
+  // header carries no primary action, as in the reference: the page IS the action.
+  [ROUTES.join]: { mood: 'join', energy: 'flow', hues: ['side', 'm', 'v'], side: 'p', locked: false, cta: 'none' },
+  // Help: orbs in the hero only, and the header's action is Get started (Help.html).
+  [ROUTES.help]: {
+    mood: 'help',
+    energy: 'still',
+    hues: ['v', 'a', 'v'],
+    side: 'p',
+    locked: true,
+    quiet: 2,
+    cta: { href: ROUTES.join, label: 'Get started' },
+  },
   [ROUTES.vision]: {
     mood: 'vision',
     energy: 'still',
     hues: ['v', 'c', 'l'],
     side: 'p',
     locked: true,
-    cta: { href: ROUTES.help, label: 'Talk to us' },
+    cta: { href: `${ROUTES.help}#contact`, label: 'Talk to us' },
   },
 }
 

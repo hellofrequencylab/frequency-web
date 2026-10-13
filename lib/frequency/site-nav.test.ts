@@ -106,8 +106,17 @@ describe('search behaves like megamenu.js', () => {
 })
 
 describe('the page table', () => {
-  it('only the front door leaves the side unlocked', () => {
-    expect(Object.entries(SITE_PAGES).filter(([, p]) => !p.locked).map(([r]) => r)).toEqual(['/'])
+  it('only the front door and Get started leave the side unlocked (Join.html carries no data-lock)', () => {
+    expect(Object.entries(SITE_PAGES).filter(([, p]) => !p.locked).map(([r]) => r)).toEqual(['/', '/join'])
+  })
+  it('pins Pricing to the Spaces side, as Pricing.html does', () => {
+    expect(resolveSitePage('/pricing')).toMatchObject({ side: 'e', locked: true })
+  })
+  it('gives Stories, Vision, Join and Help their rows, and every help article the Help row', () => {
+    expect(resolveSitePage('/stories').mood).toBe('stories')
+    expect(resolveSitePage('/vision').mood).toBe('vision')
+    expect(resolveSitePage('/join').mood).toBe('join')
+    expect(resolveSitePage('/help/getting-started/what-happens-at-a-gathering')).toMatchObject({ mood: 'help', quiet: 2 })
   })
   it('resolves exact routes, section prefixes and the default', () => {
     expect(resolveSitePage('/').mood).toBe('home')

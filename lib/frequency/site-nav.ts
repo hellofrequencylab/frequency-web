@@ -6,9 +6,9 @@
 // are ported here line for line, with every design-file link (People.html, Features.html#f-zaps, …)
 // mapped to a route that exists in app/. site-nav.test.ts walks app/ and fails if one does not.
 //
-// THREE DESIGN PAGES HAVE NO ROUTE YET: Features, Stories and the Help accessibility statement. Each is
-// one entry in ROUTES below. While it is null, the items that point at it either fall back to the
-// nearest real page (every feature has one, listed in FEATURE_FALLBACK) or are left out (Stories), so
+// DESIGN PAGES WITH NO ROUTE YET (Features, the Help accessibility statement) are each one entry in
+// ROUTES below. While it is null, the items that point at it either fall back to the
+// nearest real page (every feature has one, listed in FEATURE_FALLBACK) or are left out, so
 // the header never links to a 404. When a page lane ships the route, set it here and every menu,
 // the search, the sheet and the footer follow.
 //
@@ -26,10 +26,11 @@ export const ROUTES = {
   /** Features.html. No route yet: features fall back to FEATURE_FALLBACK. */
   features: null as string | null,
   pricing: '/pricing',
-  /** Stories.html. No route yet: Stories items are left out until it exists. */
-  stories: null as string | null,
-  /** Vision.html, the third-space vision (footer and search only, per the website strategy). */
-  vision: '/the-lab',
+  /** Stories.html: a Frequency-only route, app/(marketing)/stories. */
+  stories: '/stories' as string | null,
+  /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
+   *  Frequency-only route, app/(marketing)/vision, which points on to /the-lab, the full plan. */
+  vision: '/vision',
   join: '/join',
   help: '/help',
   privacy: '/privacy',
@@ -243,7 +244,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
-  { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2027', icon: 'breath' },
+  { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
   { href: '/help/getting-started/what-happens-at-a-gathering', label: 'Your first night', hint: 'What to expect', icon: 'checkin' },
   { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, non-profits', icon: 'contacts' },
@@ -314,7 +315,6 @@ export const FOOTER_LEGAL: SiteLink[] = [
 export const UNROUTED: { design: string; meanwhile: string }[] = [
   { design: 'People.html (the people wing home)', meanwhile: `${ROUTES.people} (nearest people page)` },
   { design: 'Features.html and every #f-<id>', meanwhile: 'FEATURE_FALLBACK (help articles, /discover, /spaces)' },
-  { design: 'Stories.html (nav, both menus, search, footer)', meanwhile: 'left out' },
   { design: 'Help.html#accessibility', meanwhile: ROUTES.help },
   { design: 'People.html#first-night', meanwhile: '/help/getting-started/what-happens-at-a-gathering' },
   { design: 'People.html#near', meanwhile: `${ROUTES.happening} (What's happening)` },
