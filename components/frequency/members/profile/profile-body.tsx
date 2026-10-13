@@ -126,12 +126,13 @@ export function ProfilePhoto({ src, initials, name }: { src: string | null; init
   )
 }
 
-/** Circles tab: the Circles a stranger could find by browsing (the page narrows the read). */
+/** Circles tab: the Circles a stranger could find by browsing (the page narrows the read), each with
+ *  its photo, when this member joined, and how many of its gatherings they were marked at. */
 export function ProfileCircles({
   circles,
   emptyLine,
 }: {
-  circles: { id: string; name: string; slug: string }[]
+  circles: { id: string; name: string; slug: string; imageUrl?: string | null; since?: string | null; checkins?: number }[]
   emptyLine: string
 }) {
   if (circles.length === 0) {
@@ -143,16 +144,85 @@ export function ProfileCircles({
   }
   return (
     <div className="list">
-      {circles.map((c) => (
-        <Link key={c.id} href={`/circles/${c.slug}`}>
-          <span className="ic">
-            <FqIcon name="circle" />
-          </span>
-          <span className="grow">
-            <span className="t1 mc-block">{c.name}</span>
-          </span>
-        </Link>
-      ))}
+      {circles.map((c) => {
+        const sub = [c.since ?? null, c.checkins ? `${c.checkins} ${c.checkins === 1 ? 'check-in' : 'check-ins'}` : null]
+          .filter(Boolean)
+          .join(' · ')
+        return (
+          <Link key={c.id} href={`/circles/${c.slug}`}>
+            {c.imageUrl ? (
+              <span className="av m" style={{ backgroundImage: `url(${JSON.stringify(c.imageUrl)})` }} aria-hidden />
+            ) : (
+              <span className="ic">
+                <FqIcon name="circle" />
+              </span>
+            )}
+            <span className="grow">
+              <span className="t1 mc-block">{c.name}</span>
+              {sub && <span className="t2">{sub}</span>}
+            </span>
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Practice tab, the owner's own view: the Journeys they are on (progress) and their practices by
+ *  sessions, as the reference's meter panels. Visitors see the Signature alone. */
+export function ProfilePractice({
+  journeys,
+  practices,
+  children,
+}: {
+  journeys: { slug: string; title: string; percent: number; line: string }[]
+  practices: { id: string; title: string; href: string | null; sessions: number }[]
+  /** The Frequency Signature, beneath. */
+  children: React.ReactNode
+}) {
+  const most = practices.reduce((n, p) => Math.max(n, p.sessions), 0)
+  return (
+    <div className="stack mc-gap-24">
+      {(journeys.length > 0 || practices.length > 0) && (
+        <div className="stack">
+          {journeys.map((j) => (
+            <Link key={j.slug} className="panel stack" href={`/journeys/${j.slug}/learn`}>
+              <div className="row">
+                <span className="t1 grow">{j.title}</span>
+                <span className="t2">{j.line}</span>
+              </div>
+              <div className="meter" role="img" aria-label={`${j.percent}% done`}>
+                <i style={{ width: `${j.percent}%` }} />
+              </div>
+            </Link>
+          ))}
+          {practices.map((p) => {
+            const inner = (
+              <>
+                <div className="row">
+                  <span className="t1 grow">{p.title}</span>
+                  <span className="t2">
+                    {p.sessions} {p.sessions === 1 ? 'session' : 'sessions'}
+                  </span>
+                </div>
+                <div className="meter" aria-hidden>
+                  <i style={{ width: `${most > 0 ? Math.round((p.sessions / most) * 100) : 0}%` }} />
+                </div>
+              </>
+            )
+            return p.href ? (
+              <Link key={p.id} className="panel stack" href={p.href}>
+                {inner}
+              </Link>
+            ) : (
+              <div key={p.id} className="panel stack">
+                {inner}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {children}
     </div>
   )
 }
