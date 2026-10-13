@@ -33,11 +33,11 @@ export const BRAND_ASSETS: Record<DesignId, BrandAssets> = {
     wordmark: { src: DEFAULT_WORDMARK_SRC, width: 963, height: 130 },
     icon: { src: '/icons/icon-512.png', size: 512 },
   },
-  // Frequency wears DAWN's files until the Frequency export lands with its own marks: replace the
-  // paths (and the wordmark's real width/height) here, and nothing else needs to move.
+  // Frequency's own marks, copied from the export by `pnpm design:install` (ADR-1740). The wordmark's
+  // aspect is the export's own (1920 x 389, its .fq-logo aspect-ratio).
   frequency: {
-    wordmark: { src: DEFAULT_WORDMARK_SRC, width: 963, height: 130 },
-    icon: { src: '/icons/icon-512.png', size: 512 },
+    wordmark: { src: '/brand/frequency/frequency-wordmark.png', width: 1920, height: 389 },
+    icon: { src: '/brand/frequency/frequency-icon-round.png', size: 600 },
   },
 }
 

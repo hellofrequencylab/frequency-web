@@ -1,79 +1,162 @@
-/* ══ FREQUENCY — the platform design system beside DAWN (ADR-1737) ══════════════════════════════
-   Applies when <html data-design="frequency">: NEXT_PUBLIC_SITE_DESIGN=frequency at build, or the
-   `?design=frequency` local preview (lib/theme/design.ts).
+/* ══ FREQUENCY · the alias layer (ADR-1737, ADR-1740) ══════════════════════════════════════════════
+   Applies when <html data-design="frequency"> (NEXT_PUBLIC_SITE_DESIGN=frequency, or the
+   `?design=frequency` preview). Two files make the Frequency design:
 
-   THE CONTRACT. DAWN is the unscoped `:root` / `.dark` blocks and the design layer
-   (`--design-*`) in app/globals.css. This file redefines those SAME names under the scopes below,
-   and nothing else: lib/theme/design.test.ts fails on a name DAWN does not define, so a typo can
-   never ship a token nobody reads. A name left out here keeps DAWN's value.
+     app/themes/frequency/core.css   GENERATED from the Claude Design export by
+                                     `pnpm design:install <export>`. Frequency's own vocabulary, renamed
+                                     into --fq-* (its names collide with the app's: `--text-body` is a
+                                     colour there and a font size here). Never edit it; re-install.
+     app/themes/frequency.css        THIS FILE, kept by hand. It points every name the app reads
+                                     (DAWN's --color-*, --design-*, roles) at a --fq- token, so every
+                                     component wears Frequency without learning a new word.
 
-   `:root[data-design="frequency"]` outranks `:root`, and `.dark[data-design="frequency"]` outranks
-   `.dark`, so no !important is needed. Under Frequency the skin, generation, occasion, Space font set
-   and Theme Studio layers are not stamped at all (LEGACY_THEME_AXES), so nothing below the shell
-   re-points these values.
+   Frequency is its own system (docs/THEME.md §0): when the export changes, this file changes only if a
+   ROLE moves, never because a value did. Every value below is a var(--fq-*) unless the export has no
+   token for it, and each of those few literals says which export value it mirrors.
 
-   Raw values live ONLY here and in app/globals.css (check:tokens holds TS and TSX to tokens).
+   ONE RULE, TWO SURFACES. A custom property that reads var() resolves where it is declared, so an alias
+   set on <html> would freeze Commons values into Stage sections. The aliases are therefore declared on
+   every element that redefines --fq-*: the root (Commons, and Commons-at-night under .dark) and each
+   Stage surface (`data-surface="stage"`, the marketing site).
 
-   ── CONTRACT CHECKLIST ──────────────────────────────────────────────────────────────────────────
-   Every family a design has to DECIDE. Tick each one: either set it below, or write "keeps DAWN"
-   beside it so the next reader knows it was a choice and not an omission. Names are DAWN's, in
-   app/globals.css; the first `:root` block is light, `.dark` is dark.
+   lib/theme/design.test.ts holds the contract: every rule here is scoped to [data-design="frequency"],
+   and every name declared is either a DAWN name or an --fq- name the core declares. */
 
-   COLOUR, light (`:root[data-design="frequency"]`) AND dark (`.dark[data-design="frequency"]`)
-   [ ] --color-canvas*, --color-marketing-*      page grounds (app + public site)
-   [ ] --color-surface*, --color-chrome-*        cards, sheets, header, rail
-   [ ] --color-border*                           hairlines, strong rules
-   [ ] --color-text*                             body, muted, subtle, on-* text roles
-   [ ] --color-ink*, --color-on-*                the dark band and what reads on it, on media
-   [ ] --color-primary*                          brand fill, hover, strong, soft, -bg washes
-   [ ] --color-signal*, --color-broadcast*, --color-move*   the three action hues
-   [ ] --color-success*, --warning*, --danger*, --info*      status
-   [ ] --color-focus-ring*                       keyboard focus (check:contrast measures it)
-   [ ] --rank-*  (core / -deep / -bright)        the rank spectrum (mode-invariant in DAWN)
-   [ ] --brand-* (mark, emboss, burn, shine, wash)          the engraved wordmark
-   [ ] lib/theme/design.ts `chrome` (light/dark hex) and lib/theme/palette.ts (OG/email/wallet):
-       these cannot read CSS, so they are set in TS beside this file. The PWA manifest follows
-       `chrome.light` at build (scripts/write-design-assets.mjs).
+:root[data-design="frequency"],
+[data-design="frequency"] [data-surface="stage"],
+[data-design="frequency"][data-surface="stage"] {
+  /* ── Faces (lib/theme/design-fonts/frequency.ts registers them through next/font) ── */
+  --fq-font-display: var(--font-unbounded, 'Unbounded'), var(--font-hanken, 'Hanken Grotesk'), system-ui, sans-serif;
+  --fq-font-serif: var(--font-instrument-serif, 'Instrument Serif'), Georgia, serif;
+  --fq-font-sans: var(--font-hanken, 'Hanken Grotesk'), system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-   THE DESIGN LAYER (`--design-*`, app/globals.css "THE DESIGN LAYER")
-   [ ] --design-radius-sm/md/lg/xl/2xl           what rounded-* means
-   [ ] --design-shadow-2xs … menu                what shadow-* means
-   [ ] --design-font-body / -display / -mono, --design-font-display-fallback
-       New faces register in lib/theme/design-fonts/frequency.ts (never app/layout.tsx); the OG
-       card face is lib/og/design-font.ts.
-   [ ] --design-body-leading, --design-heading-weight/-leading/-tracking,
-       --design-display-weight/-tracking/-leading                 base typography
-   [ ] --design-map-*                            MapLibre pins, counts, popup links
-   [ ] --weight-*, --leading-*, --tracking-*, --text-*           the type roles, if they change
+  /* ── Surfaces ── */
+  --color-canvas: var(--fq-bg-canvas);
+  --color-marketing-canvas: var(--fq-bg-canvas);
+  --color-surface: var(--fq-surface-card);
+  --color-surface-elevated: var(--fq-bg-sunken);
+  --color-surface-post: var(--fq-surface-card);
+  --color-chrome: var(--fq-bg-sunken);
+  --color-chrome-border: var(--fq-border-hair);
+  --color-chrome-hover: var(--fq-surface-raised);
+  --color-border: var(--fq-border-hair);
+  --color-border-strong: var(--fq-border-strong);
 
-   THE EFFECT LAYER (`--design-fx-*`). DAWN's signature effects. Each family has a LEVER: set it
-   to 0 to switch the effect off without a class rule. Then retune, or leave, its geometry.
-   [ ] .bg-slat        --design-fx-slat-opacity      + -sheen, -line, -pitch, -angle …
-   [ ] .light-strip    --design-fx-strip-opacity     + -height, -glow, -glow-blur …
-   [ ] .amber-glow     --design-fx-amber-glow-opacity + -shape, -stop
-   [ ] .lift-1/2/3     --design-fx-lift-strength     + -travel, -lift-N-contact/-depth(+alpha)
-   [ ] .sheen          --design-fx-sheen-opacity     + -angle, -width, -skew, -duration …
-   [ ] .spot           --design-fx-spot-opacity      + -shape, -stop
-   [ ] .dot-grid       --design-fx-dot-grid-opacity  + -pitch, -dot, -mask-*
-   [ ] .rule-amber     --design-fx-rule-opacity      + -edge, -centre, -in, -out
-   [ ] .arc-top        --design-fx-arc-rise (0 = a flat edge)
-   [ ] .glass / -ink   --design-fx-glass*, --design-fx-glass-ink*  (fill, backdrop filter, border)
-   [ ] .rank-badge     --design-fx-rank-*  (its corner reads --design-radius-sm)
-   [ ] .brandmark      --design-fx-brand-shine-iterations / -wiggle-iterations (0 = still)
-                       + the shine gradient, emboss offsets, hover/press filters and timing
-   [ ] freq-glow       --design-fx-glow-iterations (0 = still) + -min, -max, -duration
-   [ ] marquee         --design-fx-marquee-duration
-   [ ] .mk-* rhythm    --space-section* (the three beats) + --design-fx-mk-gutter, -pair-keep,
-                       -arc-clear, -dock-clear, -heading-gap
+  /* ── Text ── */
+  --color-text: var(--fq-text-body);
+  --color-text-muted: var(--fq-text-muted);
+  /* `faint` misses AA on Commons sand; subtle text is read, so it takes muted. */
+  --color-text-subtle: var(--fq-text-muted);
 
-   NOT YET A VARIABLE (a design needs an asset or a code change for these): the wordmark mask and
-   its 963/130 aspect (`.brandmark`, pinned by components/layout/header-fit.test.ts), and the
-   orphan texture classes (.grain, .halo, .slat-fade, .amber-underline: zero adopters).
+  /* ── The dark band: Stage's UV void, the same in both modes ── */
+  --color-ink: var(--fq-uv-void);
+  --color-ink-elevated: var(--fq-uv-900);
+  --color-ink-border: var(--fq-uv-700);
+  --color-on-ink: #F6F0FF;        /* Stage --text-strong */
+  --color-on-ink-muted: #D9CFEA;  /* Stage --text-body */
+  --color-on-ink-subtle: #A89BC2; /* Stage --text-muted */
 
-   STATUS: scaffold. The values arrive with the Frequency design system export. */
+  /* ── Crossover hues by meaning: violet act, magenta live, aqua presence, sun reward ── */
+  --color-primary: var(--fq-action-primary);
+  --color-primary-hover: var(--fq-action-primary-hover);
+  --color-primary-strong: var(--fq-accent);
+  --color-primary-bg: var(--fq-accent-soft);
+  --color-text-on-primary: var(--fq-action-primary-text);
+  --color-signal: var(--fq-presence);
+  --color-signal-strong: var(--fq-presence);
+  --color-signal-bg: var(--fq-presence-soft);
+  --color-text-on-signal: var(--fq-text-on-accent);
+  --color-broadcast: var(--fq-live);
+  --color-broadcast-strong: var(--fq-live);
+  --color-broadcast-bg: var(--fq-live-soft);
+  --color-text-on-broadcast: var(--fq-text-on-accent);
+  --color-move: var(--fq-accent-2);
+  --color-move-hover: var(--fq-accent-2);
+  --color-move-strong: var(--fq-accent-2);
+  --color-move-bg: var(--fq-presence-soft);
+  --color-text-on-move: var(--fq-text-on-accent);
 
-:root[data-design="frequency"] {
+  /* ── Status (the export defines the hue; the chip fill is a 14% wash on the canvas) ── */
+  --color-success: var(--fq-success);
+  --color-success-bg: color-mix(in srgb, var(--fq-success) 14%, var(--fq-bg-canvas));
+  --color-warning: var(--fq-warning);
+  --color-warning-bg: color-mix(in srgb, var(--fq-warning) 14%, var(--fq-bg-canvas));
+  --color-danger: var(--fq-danger);
+  --color-danger-bg: color-mix(in srgb, var(--fq-danger) 14%, var(--fq-bg-canvas));
+  --color-info: var(--fq-info);
+  --color-info-bg: color-mix(in srgb, var(--fq-info) 14%, var(--fq-bg-canvas));
+  --color-text-on-danger: #FFFFFF;
+  --color-text-on-warning: #FFFFFF;
+  --color-text-on-success: #FFFFFF;
+  --color-focus-ring: var(--fq-focus-ring);
+
+  /* ── Shape ── */
+  --radius-card: var(--fq-radius-l);
+  --radius-control: var(--fq-radius-m);
+  --radius-control-nested: var(--fq-radius-s);
+  --radius-pill: var(--fq-radius-orb);
+  --radius-cover: var(--fq-radius-l);
+
+  /* ── The design layer: what rounded-*, shadow-*, font-* and the type steps mean ── */
+  --design-font-body: var(--fq-font-sans);
+  --design-font-display: var(--fq-font-display);
+  --design-font-display-fallback: var(--fq-font-sans);
+  --design-heading-weight: 600;
+  --design-display-weight: 600;
+  --design-display-tracking: var(--fq-track-h1);
+  --design-display-leading: var(--fq-lh-h1);
+  --design-radius-sm: var(--fq-radius-s);
+  --design-radius-md: var(--fq-radius-s);
+  --design-radius-lg: var(--fq-radius-m);
+  --design-radius-xl: var(--fq-radius-m);
+  --design-radius-2xl: var(--fq-radius-l);
+  --design-radius-3xl: var(--fq-radius-xl);
+  --design-shadow-2xs: var(--fq-shadow-1);
+  --design-shadow-xs: var(--fq-shadow-1);
+  --design-shadow-sm: var(--fq-shadow-1);
+  --design-shadow-md: var(--fq-shadow-1);
+  --design-shadow-lg: var(--fq-shadow-2);
+  --design-shadow-xl: var(--fq-shadow-float);
+  --design-shadow-pop: var(--fq-shadow-2);
+  --design-shadow-pop-lg: var(--fq-shadow-float);
+  --design-shadow-menu: var(--fq-shadow-2);
+  --ease-out: var(--fq-ease-out);
+  --motion-fast: var(--fq-dur-fast);
+  --motion-base: var(--fq-dur-base);
+  --motion-slow: var(--fq-dur-slow);
+  --tap-min: var(--fq-hit-min);
+
+  /* ── DAWN's signature effects are DAWN's: off under Frequency, one lever each ── */
+  --design-fx-slat-opacity: 0;
+  --design-fx-strip-opacity: 0;
+  --design-fx-amber-glow-opacity: 0;
+  --design-fx-sheen-opacity: 0;
+  --design-fx-dot-grid-opacity: 0;
+  --design-fx-rule-opacity: 0;
+  --design-fx-brand-shine-iterations: 0;
+  --design-fx-brand-wiggle-iterations: 0;
+  --design-fx-glow-iterations: 0;
+
+  /* ── Map paint (the three MapLibre maps) ── */
+  --design-map-pin: var(--fq-action-primary);
+  --design-map-pin-ring: var(--fq-surface-card);
+  --design-map-count: var(--fq-action-primary-text);
+  --design-map-link: var(--fq-text-link);
+  --design-map-meta: var(--fq-text-muted);
+  --design-map-starter: var(--fq-live);
+  --design-map-starter-link: var(--fq-live);
+
+  color-scheme: light;
 }
 
-.dark[data-design="frequency"] {
+/* Commons at night and Stage are dark rooms: native controls and scrollbars follow. */
+.dark[data-design="frequency"],
+[data-design="frequency"] [data-surface="stage"],
+[data-design="frequency"][data-surface="stage"] {
+  color-scheme: dark;
+}
+
+/* The wordmark is an image: the export's --logo-filter turns it light on Stage and at night. */
+[data-design="frequency"] [data-brand-wordmark] {
+  filter: var(--fq-logo-filter, none);
 }

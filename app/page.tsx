@@ -161,7 +161,9 @@ export default async function RootPage() {
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
 
   return (
-    <>
+    <div data-surface="stage" className="contents">
+      {/* Stage surface (ADR-1740): under the Frequency design the public site wears Stage, always dark;
+          under DAWN the attribute matches nothing. `contents` keeps the box out of layout. */}
       {/* The page node comes from the rendered document via BlockDocJsonLd, as a WebPage rather than
           an Article (SCAN-802): the front door is not an editorial piece headlined by its hero line,
           and Organization + WebSite already come from the root layout. No breadcrumb: this IS the
@@ -178,6 +180,6 @@ export default async function RootPage() {
         <BlockRender config={config} data={data} />
       </main>
       <MarketingFooter menu={footerMenu} />
-    </>
+    </div>
   )
 }

@@ -1,0 +1,38 @@
+/* Mood layer: each page gets an energy and a three-hue palette. Glowing spheres in heroes, halo orbs and jewels in sections, gradient seams, a fixed mood wash. */
+body[data-mood]{background:transparent;--m1:var(--x-violet-neon);--m2:var(--x-magenta-neon);--m3:var(--x-aqua-neon)}
+body[data-mood]::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60% 50% at 0% 100%,color-mix(in oklab,var(--m1) 16%,transparent),transparent 70%),radial-gradient(50% 45% at 100% 0%,color-mix(in oklab,var(--m2) 12%,transparent),transparent 70%),radial-gradient(40% 40% at 80% 90%,color-mix(in oklab,var(--m3) 8%,transparent),transparent 70%)}
+body[data-energy-page="still"]{--tx-d:26s;--tx-b:8s;--tx-o:.3}
+body[data-energy-page="flow"]{--tx-d:14s;--tx-b:5s;--tx-o:.4}
+body[data-energy-page="charge"]{--tx-d:8s;--tx-b:2.5s;--tx-o:.5}
+
+.tx-host{isolation:isolate}
+.tx-field{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.tx-field.under{z-index:-1}
+.tx-halo{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle,var(--c) 0,color-mix(in oklab,var(--c) 45%,transparent) 32%,transparent 68%);opacity:var(--o,var(--tx-o));will-change:transform;animation:tx-float var(--tx-d) var(--ease-breath) infinite alternate;animation-delay:var(--dl,0s)}
+.tx-jewel{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0,color-mix(in oklab,var(--c) 70%,#fff) 18%,var(--c) 45%,color-mix(in oklab,var(--c) 55%,#0A0612) 100%);box-shadow:0 0 calc(var(--s)*.8) var(--c),0 0 calc(var(--s)*2.4) color-mix(in oklab,var(--c) 45%,transparent);animation:tx-bob var(--tx-b) var(--ease-breath) infinite;animation-delay:var(--dl,0s);will-change:transform}
+.tx-sphere{position:absolute;mix-blend-mode:screen;opacity:.55;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1;translate:-50% -50%;border-radius:50%;animation:tx-sph var(--tx-d) var(--ease-breath) infinite alternate}
+.tx-sphere>i{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,color-mix(in oklab,var(--c1) 60%,#fff) 10%,var(--c1) 30%,var(--c2) 64%,color-mix(in oklab,var(--c2) 35%,#0A0612) 100%);box-shadow:0 0 70px -6px var(--c1),0 0 200px 20px color-mix(in oklab,var(--c2) 38%,transparent),inset -24px -36px 70px rgba(10,6,18,.5)}
+.tx-sphere>i::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--iridescent-sweep);background-size:220% 100%;mix-blend-mode:soft-light;opacity:.6;animation:fq-sweep 10s linear infinite}
+.tx-sphere::before{content:"";position:absolute;inset:-22%;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(246,240,255,.12);animation:tx-ring var(--tx-b) var(--ease-breath) infinite}
+.tx-sphere::after{content:"";position:absolute;inset:-14% -40%;border-radius:50%;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--c1) 40%,transparent);transform:rotate(-18deg) scaleY(.32);opacity:.7}
+.tx-sphere>b{position:absolute;inset:-14% -40%;transform:rotate(-18deg) scaleY(.32);pointer-events:none}
+.tx-sphere>b::before{content:"";position:absolute;left:50%;top:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;box-shadow:0 0 14px var(--c1),0 0 30px var(--c1);offset-path:ellipse(50% 50% at 50% 50%);offset-rotate:0deg;transform:scaleY(3.1);animation:tx-orbit calc(var(--tx-d)*1.4) linear infinite}
+.tx-seam{position:absolute;left:0;right:0;top:0;height:1px;z-index:2;pointer-events:none;background:linear-gradient(90deg,transparent,var(--m1) 25%,var(--m2) 55%,var(--m3) 80%,transparent);opacity:.55}
+.tx-seam::after{content:"";position:absolute;left:15%;right:15%;top:0;height:60px;background:radial-gradient(50% 100% at 50% 0%,color-mix(in oklab,var(--m2) 18%,transparent),transparent)}
+@keyframes tx-float{0%{transform:translate3d(-4%,-3%,0) scale(1)}100%{transform:translate3d(5%,4%,0) scale(1.12)}}
+@keyframes tx-bob{0%,100%{transform:translate3d(0,0,0) scale(1);opacity:.85}50%{transform:translate3d(0,-10px,0) scale(1.12);opacity:1}}
+@keyframes tx-sph{0%{transform:translate3d(0,-10px,0)}100%{transform:translate3d(-12px,14px,0)}}
+@keyframes tx-ring{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.08);opacity:.25}}
+@keyframes tx-orbit{to{offset-distance:100%}}
+
+/* glow on icon tiles and gradient sheen on cards, tuned to the page side */
+.fx .ic,.acts a .ic,.lv-i,.fqm-it .ic,.mm-ic{box-shadow:0 0 26px -8px var(--side,var(--wing)),inset 0 0 0 1px color-mix(in oklab,var(--side,var(--wing)) 28%,transparent)}
+.fx,.block,.door,.ledger>div,.panel,.half,.stub,.wv-cap{background-image:linear-gradient(155deg,color-mix(in oklab,var(--side,var(--m1)) 10%,transparent),transparent 42%),radial-gradient(120% 80% at 100% 100%,color-mix(in oklab,var(--m2,var(--x-magenta-neon)) 6%,transparent),transparent 60%)}
+
+@media (max-width:860px){.tx-sphere{opacity:.45}.tx-jewel{display:none}.tx-jewel.keep{display:block}}
+@media (prefers-reduced-motion:reduce){.tx-halo,.tx-jewel,.tx-sphere,.tx-sphere>i::after,.tx-sphere::before,.tx-sphere>b::before{animation:none}}
+
+/* Home: soften the hero → photo scroll seam */
+.fold::before{content:"";position:absolute;left:0;right:0;top:-38vh;height:38vh;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(10,6,18,0) 0%,rgba(10,6,18,.35) 35%,rgba(10,6,18,.8) 70%,var(--bg-canvas) 100%)}
+.fold-stage>.tx-field .tx-jewel{opacity:.9}
+.hero>.wrap{z-index:3}

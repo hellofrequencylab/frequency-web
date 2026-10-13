@@ -19,6 +19,7 @@ import {
 import "./globals.css";
 // The design systems beside DAWN (ADR-1737). Each is scoped to <html data-design="<id>">, so it costs
 // nothing until the attribute names it; lib/theme/design.ts is the switch.
+import "./themes/frequency/core.css";
 import "./themes/frequency.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'

@@ -1,0 +1,47 @@
+/* CORE · locked. Edit only in the Frequency design system; products import, never override. */
+/* Frequency site themes. Two intentional themes sharing four crossover hues.
+   STAGE (dark): marketing, Labs vision, campaigns. Loud, iridescent, cinematic. Always dark.
+   COMMONS (light): the signed-in network. Calm, legible, content-first. Dims to Thermal at night / system dark.
+   Crossover hues: same hue family in both, at two volumes: neon on Stage, deep on Commons. */
+:root{
+--x-violet-neon:#8B5CFF;--x-violet-deep:#5B3FD0;
+--x-magenta-neon:#FF2BD6;--x-magenta-deep:#B0287F;
+--x-aqua-neon:#3DF2FF;--x-aqua-deep:#17788A;
+--x-sun-neon:#FFC46B;--x-sun-deep:#9A6200;
+}
+/* COMMONS: default for the app */
+:root,[data-theme="commons"]{
+--bg-canvas:#FBF7F0;--bg-sunken:#F3ECE1;--surface-card:#FFFFFF;--surface-raised:#FFFFFF;--surface-glass:rgba(255,255,255,.72);
+--text-strong:#1E1B18;--text-body:#38322D;--text-muted:#675E56;--text-faint:#8F857B;--text-on-accent:#FFFFFF;
+--border-hair:rgba(30,27,24,.09);--border-strong:rgba(30,27,24,.2);
+--action-primary:var(--x-violet-deep);--action-primary-text:#FFFFFF;--action-primary-hover:#4A31B8;--action-glow:0 6px 18px -8px rgba(91,63,208,.55);
+--accent:var(--x-violet-deep);--accent-soft:#ECE6FF;--accent-2:var(--x-aqua-deep);
+--live:var(--x-magenta-deep);--live-soft:#FBE3F1;--presence:var(--x-aqua-deep);--presence-soft:#DDF3F5;--reward:var(--x-sun-deep);--reward-soft:#FFF0D6;
+--focus-ring:var(--x-violet-deep);--text-link:var(--x-violet-deep);--text-link-hover:#1E1B18;
+--logo-filter:none;/* @kind other */
+}
+/* COMMONS at night (system dark or after sunset): Thermal room, same crossover hues lifted */
+[data-theme="commons"][data-time="night"]{
+--bg-canvas:#0E0B09;--bg-sunken:#090706;--surface-card:#18120E;--surface-raised:#221A14;--surface-glass:rgba(34,26,20,.7);
+--text-strong:#FBF2E6;--text-body:#E3D6C6;--text-muted:#B3A391;--text-faint:#857767;--text-on-accent:#120C08;
+--border-hair:rgba(251,242,230,.09);--border-strong:rgba(251,242,230,.2);
+--action-primary:#A68BFF;--action-primary-text:#120C08;--action-primary-hover:#BBA6FF;--action-glow:0 0 22px rgba(166,139,255,.35);
+--accent:#A68BFF;--accent-soft:rgba(166,139,255,.14);--accent-2:#5FD9E6;
+--live:#FF6FD8;--live-soft:rgba(255,111,216,.14);--presence:#5FD9E6;--presence-soft:rgba(95,217,230,.12);--reward:#FFC46B;--reward-soft:rgba(255,196,107,.12);
+--focus-ring:#5FD9E6;--text-link:#BBA6FF;--text-link-hover:#FFFFFF;--logo-filter:invert(1);/* @kind other */
+--aura-1:#3A2414;--aura-2:#8A4A1C;--aura-3:#145A55;
+}
+/* STAGE: marketing, always dark */
+[data-theme="stage"]{
+--bg-canvas:#0A0612;--bg-sunken:#06030C;--surface-card:#140B22;--surface-raised:#1E1232;--surface-glass:rgba(30,18,50,.55);
+--text-strong:#F6F0FF;--text-body:#D9CFEA;--text-muted:#A89BC2;--text-faint:#7A6E93;--text-on-accent:#0A0612;
+--border-hair:rgba(246,240,255,.09);--border-strong:rgba(246,240,255,.22);
+--action-primary:var(--x-magenta-neon);--action-primary-text:#0A0612;--action-primary-hover:#FF5BE0;--action-glow:0 0 24px rgba(255,43,214,.5),0 0 64px rgba(139,92,255,.32);
+--accent:var(--x-magenta-neon);--accent-soft:rgba(255,43,214,.16);--accent-2:var(--x-aqua-neon);
+--live:var(--x-magenta-neon);--live-soft:rgba(255,43,214,.16);--presence:var(--x-aqua-neon);--presence-soft:rgba(61,242,255,.14);--reward:var(--x-sun-neon);--reward-soft:rgba(255,196,107,.14);
+--focus-ring:var(--x-aqua-neon);--text-link:var(--x-aqua-neon);--text-link-hover:#FFFFFF;--logo-filter:invert(1);/* @kind other */
+--aura-1:var(--x-violet-neon);--aura-2:var(--x-magenta-neon);--aura-3:var(--x-aqua-neon);--aura-opacity:.6;/* @kind other */--glow-strength:1;/* @kind other */
+}
+[data-theme="stage"][data-energy="still"]{--aura-1:#3B2A7A;--aura-2:var(--x-violet-neon);--aura-3:#1F5C7A;--aura-speed:20s;/* @kind other */--aura-opacity:.5;/* @kind other */}
+[data-theme="stage"][data-energy="flow"]{--aura-1:var(--x-violet-neon);--aura-2:#C24BFF;--aura-3:var(--x-aqua-neon);--aura-speed:11s;/* @kind other */}
+[data-theme="stage"][data-energy="charge"]{--aura-1:var(--x-magenta-neon);--aura-2:var(--x-aqua-neon);--aura-3:#C6FF3D;--aura-speed:4s;/* @kind other */--aura-opacity:.8;/* @kind other */}

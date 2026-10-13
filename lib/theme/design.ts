@@ -52,8 +52,8 @@ export const DESIGNS: readonly DesignDef[] = [
   {
     id: 'frequency',
     label: 'Frequency',
-    // Mirrors DAWN until the Frequency tokens land (app/themes/frequency.css); replace with its canvas and ink.
-    chrome: { light: '#FBFAF6', dark: '#16130E' }, // token-ok: browser chrome; set before CSS applies
+    // Commons canvas (sand) and Commons-at-night canvas (Thermal), from the installed export (ADR-1740).
+    chrome: { light: '#FBF7F0', dark: '#0E0B09' }, // token-ok: browser chrome; set before CSS applies
     legacyAxes: false,
   },
 ]

@@ -46,10 +46,40 @@ describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) 
     for (const sel of selectors) expect(sel, sel).toContain(`[data-design="${id}"]`)
   })
 
-  it('redefines only names DAWN defines', () => {
+  // ADR-1740: a design is its OWN vocabulary in a generated core sheet (app/themes/<id>/core.css, every
+  // name in a `--<prefix>-` namespace), plus this alias layer pointing DAWN's names at it.
+  const corePath = `app/themes/${id}/core.css`
+  const core = existsSync(corePath) ? readFileSync(corePath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') : ''
+  const coreNames = new Set([...core.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1]))
+
+  it('declares only DAWN names, or names its installed core declares', () => {
     const declared = [...sheet.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1])
-    const unknown = declared.filter((n) => !dawnNames.has(n))
-    expect(unknown, `not a DAWN token: ${unknown.join(', ')}`).toEqual([])
+    const unknown = declared.filter((n) => !dawnNames.has(n) && !coreNames.has(n))
+    expect(unknown, `neither a DAWN token nor one the core declares: ${unknown.join(', ')}`).toEqual([])
+  })
+
+  it('reads only --fq- names its core declares (a typo would silently fall back to nothing)', () => {
+    const read = [...sheet.matchAll(/var\((--fq-[a-z0-9-]+)/gi)].map((m) => m[1])
+    const missing = [...new Set(read)].filter((n) => !coreNames.has(n))
+    expect(missing, `read but never declared by the core: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('loads the generated core before the alias layer', () => {
+    const coreAt = layout.indexOf(`import "./themes/${id}/core.css"`)
+    const aliasAt = layout.indexOf(`import "./themes/${id}.css"`)
+    expect(coreAt, 'core.css is imported by the root layout').toBeGreaterThan(-1)
+    expect(coreAt).toBeLessThan(aliasAt)
+  })
+
+  it('keeps the generated core inert outside the design and inside its own namespace', () => {
+    const heads = [...core.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter(Boolean)
+    for (const h of heads) {
+      if (/^(@keyframes|@media|@layer|from$|to$|\d+%|\.fq-)/.test(h)) continue
+      expect(h, h).toContain(`[data-design="${id}"]`)
+    }
+    const declared = [...core.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1])
+    expect(declared.filter((n) => !n.startsWith('--fq-'))).toEqual([])
+    expect(core).not.toMatch(/@import/)
   })
 })
 

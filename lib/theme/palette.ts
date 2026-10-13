@@ -122,7 +122,37 @@ const DAWN: Palette = {
 export const PALETTES: Record<DesignId, Palette> = {
   dawn: DAWN,
   // A copy of DAWN until the Frequency export lands; its values arrive with app/themes/frequency.css.
-  frequency: { ...DAWN },
+  // Frequency's Commons values from the installed export (design_handoff/frequency/tokens, ADR-1740).
+  // Email, share cards and the Wallet pass cannot read CSS, so these mirror the --fq- tokens by hand.
+  frequency: {
+    canvas: '#FBF7F0', // token-ok: palette source, mirrors the Frequency export
+    surface: '#FFFFFF', // token-ok: palette source, mirrors the Frequency export
+    border: '#E6E1DA', // token-ok: palette source, mirrors the Frequency export
+    text: '#38322D', // token-ok: palette source, mirrors the Frequency export
+    textMuted: '#675E56', // token-ok: palette source, mirrors the Frequency export
+    ink: '#0A0612', // token-ok: palette source, mirrors the Frequency export
+    inkElevated: '#140B22', // token-ok: palette source, mirrors the Frequency export
+    onInk: '#F6F0FF', // token-ok: palette source, mirrors the Frequency export
+    primary: '#5B3FD0', // token-ok: palette source, mirrors the Frequency export
+    primaryBg: '#ECE6FF', // token-ok: palette source, mirrors the Frequency export
+    onPrimary: '#FFFFFF', // token-ok: palette source, mirrors the Frequency export
+    signal: '#17788A', // token-ok: palette source, mirrors the Frequency export
+    broadcast: '#B0287F', // token-ok: palette source, mirrors the Frequency export
+    danger: '#C2362B', // token-ok: palette source, mirrors the Frequency export
+    emailCanvas: '#F3ECE1', // token-ok: palette source, mirrors the Frequency export
+    emailSurfaceElevated: '#F3ECE1', // token-ok: palette source, mirrors the Frequency export
+    emailBorder: '#E6E1DA', // token-ok: palette source, mirrors the Frequency export
+    emailHeading: '#1E1B18', // token-ok: palette source, mirrors the Frequency export
+    emailSubtle: '#675E56', // token-ok: palette source, mirrors the Frequency export
+    emailFaint: '#8F857B', // token-ok: palette source, mirrors the Frequency export
+    emailPrimaryStrong: '#4A31B8', // token-ok: palette source, mirrors the Frequency export
+    emailSuccess: '#2F7F5A', // token-ok: palette source, mirrors the Frequency export
+    emailInfo: '#2F6F8F', // token-ok: palette source, mirrors the Frequency export
+    emailAlert: '#C2362B', // token-ok: palette source, mirrors the Frequency export
+    ogAccent: '#8B5CFF', // token-ok: palette source, mirrors the Frequency export
+    ogAccentSoft: '#ECE6FF', // token-ok: palette source, mirrors the Frequency export
+    walletBackground: '#0A0612', // token-ok: palette source, mirrors the Frequency export
+  },
 }
 
 /** The palette this deploy wears (SITE_DESIGN is read once, at build). */

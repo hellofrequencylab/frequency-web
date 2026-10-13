@@ -1,0 +1,63 @@
+/* CORE · locked. Edit only in the Frequency design system; products import, never override. */
+/* Frequency color + energy tokens.
+   Two axes: time (day | night) and energy (still | flow | charge).
+   Night has two candidate palettes for review: data-night="uv" (A) | "thermal" (B). */
+:root{
+/* Day: the coast at golden hour */
+--sand-50:#FBF7F0;--sand-100:#F5EDE1;--sand-200:#EADDCA;--sand-300:#D8C4A6;--sand-400:#B9A283;--linen:#FFFDF9;
+--haze:#F7D9C4;--terracotta:#D2693C;--terracotta-deep:#A84A22;--seaglass:#A3D2C9;--seaglass-deep:#2F7F74;--sage:#B4C2A2;--sky-haze:#CFDCE3;--sun:#FFC46B;
+--ink:#1E1B18;--ink-2:#3B3530;--ink-3:#6B625A;--ink-4:#978C82;
+/* Night A: UV temple (yoga rave) */
+--uv-void:#0A0612;--uv-900:#140B22;--uv-800:#1E1232;--uv-700:#2A1A45;--uv-magenta:#FF2BD6;--uv-violet:#8B5CFF;--uv-cyan:#3DF2FF;--uv-lime:#C6FF3D;
+/* Night B: Thermal (slat wall, amber LED, teal water) */
+--th-void:#0B0907;--th-900:#15100C;--th-800:#201812;--th-700:#2D221A;--th-amber:#FFA33A;--th-ember:#FF6A2B;--th-teal:#3FD6C8;--th-leaf:#7CC97F;
+/* Iridescent (shared): the marketing signature + earned things (trophies, tickets, Crew) */
+--iridescent:conic-gradient(from 200deg,#FF9BD8,#B8A2FF,#8FE9FF,#C9FFB8,#FFE7A3,#FF9BD8);/* @kind other */--iridescent-sweep-deep:linear-gradient(100deg,#B0287F 0%,#6A4BD6 22%,#1F8FA8 44%,#3F8F4A 64%,#A86A00 82%,#B0287F 100%);/* @kind other */--iridescent-sweep:linear-gradient(100deg,#FF9BD8 0%,#B8A2FF 18%,#8FE9FF 36%,#C9FFB8 54%,#FFE7A3 72%,#FF9BD8 90%,#B8A2FF 100%);/* @kind other */
+
+/* Semantic, day default */
+--bg-canvas:var(--sand-50);--bg-sunken:var(--sand-100);--surface-card:var(--linen);--surface-raised:#FFFFFF;--surface-glass:rgba(255,253,249,.62);
+--text-strong:var(--ink);--text-body:var(--ink-2);--text-muted:var(--ink-3);--text-faint:var(--ink-4);--text-on-accent:#FFFFFF;
+--border-hair:rgba(30,27,24,.10);--border-strong:rgba(30,27,24,.22);
+--accent:var(--terracotta-deep);--accent-soft:var(--haze);--accent-2:var(--seaglass-deep);
+--action-primary:var(--ink);--action-primary-text:var(--sand-50);--action-primary-hover:#000000;
+--action-glow:0 0 0 rgba(0,0,0,0);
+--focus-ring:var(--terracotta);--text-link:var(--terracotta-deep);--text-link-hover:var(--ink);
+--success:#2F7F5A;--warning:#A86A00;--danger:#C2362B;--info:#2F6F8F;
+/* Aura (the living background); three stops + speed, set by energy */
+--aura-1:var(--haze);--aura-2:var(--seaglass);--aura-3:var(--sun);--aura-speed:14s;/* @kind other */--aura-opacity:.85;/* @kind other */
+--pulse:var(--breath-still);/* @kind other */--glow-strength:0;/* @kind other */
+}
+/* Energy states (day) */
+[data-energy="still"]{--aura-1:var(--sky-haze);--aura-2:var(--seaglass);--aura-3:var(--sand-200);--aura-speed:18s;/* @kind other */--pulse:var(--breath-still)}
+[data-energy="flow"]{--aura-1:var(--haze);/* @kind other */--aura-2:var(--sage);--aura-3:var(--sun);--aura-speed:10s;/* @kind other */--pulse:var(--breath-flow)}
+[data-energy="charge"]{--aura-1:var(--terracotta);/* @kind other */--aura-2:var(--sun);--aura-3:#FF8FB1;--aura-speed:5s;/* @kind other */--pulse:var(--beat-charge)}
+
+/* Night A: UV */
+[data-time="night"],[data-time="night"][data-night="uv"]{
+--bg-canvas:var(--uv-void);/* @kind other */--bg-sunken:#06030C;--surface-card:var(--uv-900);--surface-raised:var(--uv-800);--surface-glass:rgba(30,18,50,.55);
+--text-strong:#F6F0FF;--text-body:#D9CFEA;--text-muted:#A89BC2;--text-faint:#7A6E93;--text-on-accent:#0A0612;
+--border-hair:rgba(246,240,255,.09);--border-strong:rgba(246,240,255,.2);
+--accent:var(--uv-magenta);--accent-soft:rgba(255,43,214,.16);--accent-2:var(--uv-cyan);
+--action-primary:var(--uv-magenta);--action-primary-text:#0A0612;--action-primary-hover:#FF5BE0;
+--action-glow:0 0 24px rgba(255,43,214,.55),0 0 64px rgba(139,92,255,.35);
+--focus-ring:var(--uv-cyan);--text-link:var(--uv-cyan);--text-link-hover:#FFFFFF;
+--aura-1:var(--uv-violet);--aura-2:var(--uv-magenta);--aura-3:var(--uv-cyan);--aura-opacity:.7;/* @kind other */--glow-strength:1;/* @kind other */--logo-filter:invert(1);/* @kind other */
+}
+[data-time="night"][data-energy="still"],[data-time="night"][data-night="uv"][data-energy="still"]{--aura-1:#3B2A7A;--aura-2:var(--uv-violet);--aura-3:#1F5C7A;--aura-speed:20s;/* @kind other */--aura-opacity:.55;/* @kind other */}
+[data-time="night"][data-energy="flow"],[data-time="night"][data-night="uv"][data-energy="flow"]{--aura-1:var(--uv-violet);/* @kind other */--aura-2:#C24BFF;--aura-3:var(--uv-cyan);--aura-speed:11s;/* @kind other */}
+[data-time="night"][data-energy="charge"],[data-time="night"][data-night="uv"][data-energy="charge"]{--aura-1:var(--uv-magenta);/* @kind other */--aura-2:var(--uv-cyan);--aura-3:var(--uv-lime);--aura-speed:4s;/* @kind other */--aura-opacity:.85;/* @kind other */}
+
+/* Night B: Thermal */
+[data-time="night"][data-night="thermal"]{
+--bg-canvas:var(--th-void);/* @kind other */--bg-sunken:#060504;--surface-card:var(--th-900);--surface-raised:var(--th-800);--surface-glass:rgba(32,24,18,.55);
+--text-strong:#FBF2E6;--text-body:#E3D6C6;--text-muted:#B3A391;--text-faint:#857767;--text-on-accent:#0B0907;
+--border-hair:rgba(251,242,230,.09);--border-strong:rgba(251,242,230,.2);
+--accent:var(--th-amber);--accent-soft:rgba(255,163,58,.16);--accent-2:var(--th-teal);
+--action-primary:var(--th-amber);--action-primary-text:#0B0907;--action-primary-hover:#FFB75E;
+--action-glow:0 0 24px rgba(255,163,58,.5),0 0 64px rgba(255,106,43,.3);
+--focus-ring:var(--th-teal);--text-link:var(--th-teal);--text-link-hover:#FFFFFF;
+--aura-1:var(--th-ember);--aura-2:var(--th-amber);--aura-3:var(--th-teal);--aura-opacity:.6;/* @kind other */--glow-strength:1;/* @kind other */--logo-filter:invert(1);/* @kind other */
+}
+[data-time="night"][data-night="thermal"][data-energy="still"]{--aura-1:#3A2414;--aura-2:#8A4A1C;--aura-3:#145A55;--aura-speed:20s;/* @kind other */--aura-opacity:.6;/* @kind other */}
+[data-time="night"][data-night="thermal"][data-energy="flow"]{--aura-1:var(--th-amber);/* @kind other */--aura-2:#B5541F;--aura-3:var(--th-teal);--aura-speed:11s;/* @kind other */}
+[data-time="night"][data-night="thermal"][data-energy="charge"]{--aura-1:var(--th-ember);/* @kind other */--aura-2:var(--th-amber);--aura-3:var(--th-teal);--aura-speed:4s;/* @kind other */--aura-opacity:.8;/* @kind other */}

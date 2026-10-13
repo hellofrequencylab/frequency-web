@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frequency · Find local groups near you, or host experiences people come back to</title>
+<meta name="description" content="Frequency is a community network. Find local Circles, events and programs that meet every week near you, free. Studios, cafés, coaches and venues host experiences and get found by people looking for a community.">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Frequency Community Collective","description":"A local community network where people find groups that meet every week, and Spaces host experiences people come back to."},{"@type":"WebSite","name":"Frequency","description":"Find local groups and events near you, or host experiences as a studio, café, coach or venue."}]}</script>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="web/site.css">
+<link rel="stylesheet" href="web/texture.css">
+<link rel="stylesheet" href="web/mood.css">
+<style>
+body[data-side="p"]{--side:var(--x-aqua-neon);--side-soft:rgba(61,242,255,.14);--other:var(--x-sun-neon)}
+body[data-side="e"]{--side:var(--x-sun-neon);--side-soft:rgba(255,196,107,.14);--other:var(--x-aqua-neon)}
+a{color:var(--text-strong)}a:not(.btn):not(.mm-link):not(.mm-card):hover{color:var(--side)}
+[data-side="p"] .e-only,[data-side="e"] .p-only{display:none!important}
+[data-side="p"] .p-only,[data-side="e"] .e-only{animation:sideIn .5s var(--ease-out)}
+@keyframes sideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sw{display:inline-grid;grid-template-columns:1fr 1fr;position:relative;padding:5px;border-radius:999px;background:rgba(20,11,34,.6);box-shadow:inset 0 0 0 1px rgba(246,240,255,.14);backdrop-filter:blur(14px)}
+.sw button{position:relative;z-index:1;border:0;background:transparent;cursor:pointer;padding:0 22px;height:48px;border-radius:999px;font:600 15px/1 var(--font-sans);color:#B9AED0;display:flex;gap:10px;align-items:center;justify-content:center;transition:color var(--dur-base)}
+.sw button[aria-pressed="true"]{color:#140B22}
+.sw button i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.sw .thumb{position:absolute;top:5px;bottom:5px;left:5px;width:calc(50% - 5px);border-radius:999px;background:var(--side);box-shadow:0 0 28px -4px var(--side);transition:transform var(--dur-slow) var(--ease-out),background var(--dur-slow)}
+[data-side="e"] .sw .thumb{transform:translateX(100%)}
+.sw.big button{height:44px;padding:0 20px;font-size:14px;flex-direction:column;gap:6px}
+.sw.big button small{font:500 12px/1 var(--font-sans);opacity:.75}
+.hero .bg{transition:opacity 1s var(--ease-out)}
+.hero .bg.p{background-image:url('../../assets/photos/day-meditation-circle.jpg')}
+.hero .bg.e{background-image:url('../../assets/broll/yoga-rave-uv-swirl-web.jpg')}
+[data-side="p"] .hero .bg.e,[data-side="e"] .hero .bg.p{opacity:0}
+.hero .h-xl{max-width:15ch;font-size:clamp(44px,6.4vw,94px)}.hero .eyebrow{margin:34px 0 18px;font:400 italic clamp(22px,2.2vw,30px)/1 var(--font-serif,serif);color:#E6DDF5}
+.hero .lede{min-height:5.2em}
+.hero .wrap{display:flex;flex-direction:column;min-height:max(680px,100vh);padding-top:clamp(108px,13vh,140px)}
+.hero .wrap{padding-bottom:0!important}
+.h-top{display:flex;justify-content:space-between;align-items:center;gap:16px 24px;flex-wrap:wrap}
+.h-ctl{display:contents}.h-top .locpill{margin:0}
+.h-main{margin-top:auto;padding-top:48px}
+.hero .h-main .h-xl{max-width:14ch;font-size:clamp(40px,5.4vw,84px);text-wrap:balance}
+.h-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px 48px;align-items:end;margin-top:28px;position:relative}
+.h-foot::before{display:none}
+.hero .h-foot p{margin:0}.hero .h-foot .lede{min-height:4.7em;max-width:46ch;font-size:17px}.hero .h-foot .ctas{justify-content:flex-end}
+.h-sig{position:relative;margin:clamp(32px,5vh,56px) calc(50% - 50vw) 0;padding:14px 0;opacity:.6;overflow:hidden;border-top:1px solid rgba(246,240,255,.12);background:linear-gradient(180deg,rgba(10,6,18,0),rgba(10,6,18,.55));-webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.h-sig-track{display:flex;width:max-content;animation:h-sig 80s linear infinite}
+.h-sig:hover .h-sig-track{animation-play-state:paused}
+.h-sig-run{display:flex;align-items:center;gap:clamp(20px,2.4vw,36px);padding-right:clamp(20px,2.4vw,36px);font:400 italic clamp(18px,1.7vw,24px)/1 var(--font-serif,serif);letter-spacing:-0.015em;white-space:nowrap}
+.h-sig-run .fill{color:rgba(246,240,255,.82);background:linear-gradient(90deg,rgba(246,240,255,.9) 0%,color-mix(in oklab,var(--x-magenta-neon) 55%,#F6F0FF) 20%,rgba(246,240,255,.9) 40%,color-mix(in oklab,var(--x-aqua-neon) 55%,#F6F0FF) 60%,rgba(246,240,255,.9) 80%,color-mix(in oklab,var(--x-sun-neon) 50%,#F6F0FF) 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;opacity:.88;animation:h-sig-iri 14s linear infinite}
+@keyframes h-sig-iri{to{background-position:-300% 0}}
+.h-sig-run .fq-logo-icon{width:18px;height:18px;flex:none;background:var(--iridescent-sweep);background-size:220% 100%;animation:fq-sweep 10s linear infinite}
+@keyframes h-sig{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.h-sig-track,.h-sig-run .fill{animation:none}}
+@media (max-width:860px){.h-foot{grid-template-columns:1fr}.hero .h-foot .ctas{justify-content:flex-start}}
+.dock{position:fixed;left:50%;bottom:18px;z-index:40;transform:translate(-50%,140%);transition:transform var(--dur-slow) var(--ease-out);display:flex;align-items:center;gap:12px;padding:6px;border-radius:999px;background:rgba(12,7,22,.82);backdrop-filter:blur(18px);box-shadow:0 20px 60px -20px rgba(0,0,0,.8),inset 0 0 0 1px rgba(246,240,255,.12)}
+.dock.on{transform:translate(-50%,0)}
+.dock .k{font:600 11px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:#8E82A8;white-space:nowrap}
+.dock .sw{background:transparent;box-shadow:none;padding:0}.dock .sw .thumb{top:0;bottom:0;left:0;width:50%}.dock .sw button{height:40px;padding:0 16px;font-size:14px}
+.intro{padding:clamp(80px,10vw,128px) 0 0}
+.intro .h-l{max-width:20ch}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:44px}
+.half{all:unset;box-sizing:border-box;cursor:pointer;position:relative;overflow:hidden;border-radius:var(--radius-xl);padding:clamp(24px,3vw,36px);background:var(--surface-card);display:flex;flex-direction:column;gap:14px;min-height:240px;box-shadow:inset 0 0 0 1px var(--border-hair);transition:box-shadow var(--dur-base),opacity var(--dur-base)}
+.half .k{font:600 11px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--hc)}
+.half h3{font:600 clamp(26px,2.8vw,38px)/1.02 var(--font-display);letter-spacing:-0.04em;color:var(--text-strong);margin:0}
+.half p{margin:0;font-size:16.5px;line-height:1.55;color:var(--text-body);max-width:44ch}
+.half[data-h="p"]{--hc:var(--x-aqua-neon)}.half[data-h="e"]{--hc:var(--x-sun-neon)}
+[data-side="p"] .half[data-h="p"],[data-side="e"] .half[data-h="e"]{box-shadow:inset 0 0 0 1.5px var(--hc),0 0 60px -30px var(--hc)}
+[data-side="p"] .half[data-h="e"],[data-side="e"] .half[data-h="p"]{opacity:.55}
+.chap{padding:clamp(72px,9vw,120px) 0;border-top:1px solid var(--border-hair)}
+.chap .split{align-items:center}
+.chap .n{font:600 13px/1 var(--font-display);letter-spacing:.1em;color:var(--side);display:flex;gap:12px;align-items:center;text-transform:uppercase}
+.chap .n::after{content:"";height:1px;width:56px;background:var(--side);opacity:.5}
+.chap h2{margin:22px 0 26px}
+.acts{display:flex;flex-direction:column;gap:8px;margin-top:30px;max-width:520px}
+.acts a{display:grid;grid-template-columns:40px 1fr 20px;gap:14px;align-items:center;padding:12px 16px 12px 12px;border-radius:16px;text-decoration:none;background:var(--surface-glass);box-shadow:inset 0 0 0 1px var(--border-hair);transition:box-shadow var(--dur-fast),transform var(--dur-fast) var(--ease-out)}
+.acts a:hover{box-shadow:inset 0 0 0 1.5px var(--side);transform:translateX(3px)}
+.acts a .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--side-soft);color:var(--side)}
+.acts a .ic svg{width:20px;height:20px}
+.acts a b{font:600 15.5px/1.2 var(--font-sans);color:var(--text-strong);display:block}
+.acts a small{font-size:13px;color:var(--text-muted)}
+.acts a .ar{color:var(--text-faint)}
+.chap .photo{aspect-ratio:5/4}
+.feats6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:44px}
+.fx{border-radius:var(--radius-l);padding:24px;background:var(--surface-card);box-shadow:inset 0 0 0 1px var(--border-hair);display:flex;flex-direction:column;gap:12px;min-height:200px}
+.fx .ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:var(--side);background:var(--side-soft);transition:color var(--dur-slow),background var(--dur-slow)}
+.fx .ic svg{width:22px;height:22px}
+.fx h3{margin:6px 0 0;font:600 24px/1.05 var(--font-display);letter-spacing:-0.03em;color:var(--text-strong)}
+.fx .v{font:600 11px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--side)}
+.fx p{margin:0;font-size:15.5px;line-height:1.5;color:var(--text-body)}
+.fold{pointer-events:none;position:relative;z-index:2;height:440vh;background:var(--bg-canvas);overflow:visible!important;padding:0!important}
+.hero>.wrap,.hero .bg{will-change:transform,opacity}
+.fold-stage{position:sticky;top:0;width:100%;height:100vh;overflow:hidden;pointer-events:none}
+.fl-ph{pointer-events:none;position:absolute;border-radius:var(--radius-l);overflow:hidden;box-shadow:0 30px 80px -30px rgba(0,0,0,.9);will-change:transform,opacity}
+.fl-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.fl-shade{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 50%,rgba(12,7,22,.82),rgba(12,7,22,.35) 75%,rgba(12,7,22,.1));pointer-events:none}
+.fl-txt,.fl-fork{position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 clamp(20px,5vw,64px);text-align:center;opacity:0;pointer-events:none;will-change:transform,opacity}
+.fl-big{margin:22px 0 0;font:600 clamp(32px,4.6vw,68px)/1.04 var(--font-display);letter-spacing:-0.045em;color:var(--text-strong);max-width:17ch;text-wrap:balance}
+.fl-big em{font-family:var(--font-serif,serif);font-style:italic;font-weight:400;letter-spacing:-0.02em}
+.fl-fork.fl-on{pointer-events:auto}
+.pds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:min(980px,100%);margin-top:clamp(18px,4vh,36px);perspective:1600px}
+.pd{all:unset;box-sizing:border-box;cursor:pointer;position:relative;overflow:hidden;border-radius:var(--radius-xl);min-height:clamp(180px,40vh,420px);padding:clamp(22px,2.6vw,32px);display:flex;flex-direction:column;justify-content:flex-end;gap:10px;text-align:left;background:#140B22;box-shadow:inset 0 0 0 1px rgba(246,240,255,.14);will-change:transform;transition:box-shadow var(--dur-base)}
+.pdw{position:relative;display:grid;opacity:0;transform:translateY(70px) scale(.82);transition:opacity .2s,transform .2s}
+.pdw.l{--dc:var(--x-aqua-neon)}.pdw.r{--dc:var(--x-sun-neon)}
+.pdw.in{opacity:1;transform:none;transition:opacity .25s ease-out,transform .9s cubic-bezier(.18,1.55,.4,1)}
+.pdg{position:absolute;inset:-14% -8%;border-radius:60px;pointer-events:none;background:radial-gradient(closest-side,var(--dc),transparent);filter:blur(36px);opacity:0;z-index:0}
+.pdg::after{content:"";position:absolute;inset:18%;border-radius:50%;background:radial-gradient(closest-side,#fff,transparent);opacity:0}
+.pdw.in .pdg{animation:pdflash 1.6s cubic-bezier(.2,.7,.3,1) forwards}
+.pdw.in .pdg::after{animation:pdwhite .9s ease-out forwards}
+@keyframes pdflash{0%{opacity:0;transform:scale(.5)}14%{opacity:1;transform:scale(1.18)}100%{opacity:.26;transform:scale(1)}}
+@keyframes pdwhite{0%{opacity:0}10%{opacity:.95}100%{opacity:0}}
+.pdw .pd{position:relative;z-index:1}
+.pdw.in .pd{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--dc) 45%,transparent),0 0 44px -18px var(--dc)}
+.pd-hint{margin:22px 0 0;font:500 14px/1.4 var(--font-sans);color:#B9AED0;opacity:0;transition:opacity .6s}
+body.gated .pd-hint.on{opacity:1}body:not(.gated) .pd-hint{display:none}
+body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body.gated footer,body.gated .dock{display:none!important}
+.pd img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity var(--dur-slow),transform var(--dur-slow) var(--ease-out)}
+.pd::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(12,7,22,.95) 15%,rgba(12,7,22,.3) 70%)}
+.pd>span,.pd>b{position:relative;z-index:1}
+.pd .dk{font:600 11px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--dc)}
+.pd b{font:600 clamp(24px,2.5vw,34px)/1.04 var(--font-display);letter-spacing:-0.04em;color:#F6F0FF;max-width:14ch}
+.pd .dp{font-size:15.5px;line-height:1.5;color:#D9CFEA;max-width:38ch}
+.pd .dg{margin-top:8px;font:600 14px/1 var(--font-sans);color:var(--dc)}
+.pd:hover{box-shadow:inset 0 0 0 1.5px var(--dc),0 0 70px -24px var(--dc)}
+.pd:hover img{opacity:.75;transform:scale(1.04)}
+.fl-fork .h-l{margin-top:clamp(8px,2vh,18px)!important}
+@media (max-height:700px){.fl-fork .h-l{font-size:clamp(28px,6vh,44px)}.pd .dp{display:none}}
+@media (max-width:760px){.fold{height:400vh}.pds{grid-template-columns:1fr;gap:10px}.pd{min-height:clamp(130px,22vh,200px)}.pd .dp{display:none}.fl-ph{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.pdw{opacity:1!important;transform:none!important}.pdg{opacity:.26!important;animation:none!important}.fold{height:auto}.fold-stage{position:relative;height:auto;padding:120px 0}.fl-ph,.fl-txt:not(:first-of-type){display:none}.fl-txt,.fl-fork{position:relative;opacity:1!important;pointer-events:auto}}
+.chap{position:relative}
+.chap>.wrap{position:relative;z-index:1}
+.rings{position:absolute;z-index:0;width:min(720px,90vw);aspect-ratio:1;border-radius:50%;pointer-events:none;top:50%;margin-top:calc(min(720px,90vw)/-2);right:-14%;background:repeating-radial-gradient(circle,transparent 0 46px,rgba(246,240,255,.06) 47px 48px);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%);will-change:translate}
+.chap:has(.split.rev)>.rings{right:auto;left:-14%}
+.rings::after{content:"";position:absolute;inset:34%;border-radius:50%;background:radial-gradient(circle,var(--side-soft),transparent 70%);animation:fq-breath-ring 8s ease-in-out infinite}
+@keyframes fq-breath-ring{50%{transform:scale(1.25);opacity:.6}}
+.chap .photo{will-change:translate}
+.chap .n{font-size:14px}
+.lv{position:relative;overflow:hidden;margin:clamp(24px,4vw,56px) 0;padding:clamp(56px,7vw,96px) 0 clamp(44px,5vw,72px);background:var(--bg-sunken);border-block:1px solid var(--border-hair)}
+.lv>.wrap,.lv-row{position:relative;z-index:1}
+.lv .rings.big{width:min(1100px,130vw);margin-top:calc(min(1100px,130vw)/-2);right:auto;left:50%;translate:-50% 0;margin-left:0}
+.lv-head{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;margin-bottom:40px}
+.lv-head .h-l{margin-top:16px;max-width:14ch}
+.lv-live{display:inline-flex;align-items:center;gap:10px;font:600 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--side)}
+.lv-live i{width:8px;height:8px;border-radius:50%;background:var(--side);box-shadow:0 0 14px var(--side)}
+.lv-stat{display:grid;grid-template-columns:auto minmax(0,220px);gap:6px 18px;align-items:center;max-width:460px}
+.lv-stat b{grid-row:span 2;font:600 clamp(64px,8vw,112px)/.9 var(--font-display);letter-spacing:-0.06em;background:var(--iridescent-sweep);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fq-sweep 9s linear infinite}
+.lv-stat span{font-size:15px;line-height:1.4;color:var(--text-body)}
+.lv-stat .btn{justify-self:start;height:44px;font-size:14px}
+.lv-row{overflow:hidden;padding:6px 0;-webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.lv-track{display:flex;gap:12px;width:max-content;animation:lvscroll 60s linear infinite}
+.lv-row.rev .lv-track{animation-direction:reverse;animation-duration:70s}
+.lv-row:hover .lv-track{animation-play-state:paused}
+@keyframes lvscroll{to{transform:translateX(-50%)}}
+.lv-c{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;width:340px;padding:14px 16px 14px 14px;border-radius:20px;text-decoration:none;background:var(--surface-glass);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px var(--border-hair);transition:box-shadow var(--dur-fast),transform var(--dur-fast) var(--ease-out)}
+.lv-c:hover{box-shadow:inset 0 0 0 1.5px var(--side),0 0 40px -18px var(--side);transform:translateY(-2px)}
+.lv-i{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:var(--side);background:var(--side-soft)}.lv-i svg{width:22px;height:22px}
+.lv-t small{display:block;font:600 11px/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.lv-t b{display:block;margin-top:6px;font:600 17px/1.15 var(--font-display);letter-spacing:-0.02em;color:var(--text-strong)}
+.lv-t em{display:block;margin-top:3px;font-style:normal;font-size:13.5px;color:var(--text-body)}
+.lv-c>i{font-style:normal;font:600 11.5px/1 var(--font-sans);padding:7px 10px;border-radius:999px;color:var(--side);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--side) 40%,transparent);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.lv-track{animation:none}.lv-row{overflow-x:auto}.rings::after{animation:none}}
+@media (max-width:760px){.lv-stat{grid-template-columns:1fr}.lv-stat b{grid-row:auto}.lv-c{width:280px}}
+/* weave */
+.weave{position:relative;margin-top:48px;padding:56px 0}
+.wv-grid{position:relative;z-index:1;display:grid;grid-template-columns:120px repeat(6,minmax(0,1fr));grid-template-rows:auto auto auto;gap:56px 14px;align-items:center}
+.wv-row{font:600 11px/1.3 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
+.wv-row b{display:block;font-size:15px;letter-spacing:-0.01em;text-transform:none;color:var(--rc)}
+.wv-stage{font:600 11px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);text-align:center;position:absolute;top:0}
+.wn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px;font-size:14px;line-height:1.25;border-radius:16px;background:var(--surface-card);box-shadow:inset 0 0 0 1px var(--border-hair);font:600 14px/1.2 var(--font-sans);color:var(--text-strong);transition:opacity var(--dur-base),box-shadow var(--dur-base),transform var(--dur-fast)}
+.wn svg{flex:none;width:18px;height:18px;color:var(--rc)}
+.wn[data-r="p"],.wv-row[data-r="p"]{--rc:var(--x-aqua-neon)}
+.wn[data-r="e"],.wv-row[data-r="e"]{--rc:var(--x-sun-neon)}
+.wn[data-r="m"],.wv-row[data-r="m"]{--rc:var(--x-magenta-neon)}
+.wn[data-r="m"]{justify-content:center;border-radius:999px;background:var(--surface-raised)}
+[data-side="p"] .wn[data-r="e"],[data-side="e"] .wn[data-r="p"]{opacity:.5}
+.wn.hot,.wn:hover{box-shadow:inset 0 0 0 1.5px var(--rc),0 0 28px -8px var(--rc);opacity:1!important;transform:translateY(-2px)}
+.wv-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:0;pointer-events:none}
+.wv-svg path{fill:none;stroke-width:1.5;stroke-linecap:round;opacity:.35;transition:opacity var(--dur-base),stroke-width var(--dur-base)}
+.wv-svg path.flow{stroke-dasharray:4 8;animation:wvflow 1.6s linear infinite}
+.wv-svg path.on{opacity:1;stroke-width:2.2}
+@keyframes wvflow{to{stroke-dashoffset:-24}}
+.wv-loop{position:absolute;z-index:2;left:50%;transform:translate(-50%,-50%);font:600 12.5px/1.2 var(--font-sans);padding:8px 14px;border-radius:999px;background:var(--bg-canvas);box-shadow:inset 0 0 0 1px var(--lc);color:var(--text-strong);white-space:nowrap}
+.wv-loop.top{--lc:var(--x-aqua-neon);top:0}.wv-loop.bot{--lc:var(--x-sun-neon);bottom:-36px;transform:translate(-50%,0)}
+.wv-cap{margin-top:52px;display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:14px;align-items:center;padding:22px 24px;border-radius:var(--radius-l);background:var(--surface-card);box-shadow:inset 0 0 0 1px var(--border-hair)}
+.wv-cap .k{font:600 11px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--side)}
+.wv-cap p{margin:0;font:500 18px/1.45 var(--font-sans);color:var(--text-strong);text-wrap:pretty}
+.wv-cap .btn{height:44px;font-size:14px}
+@media (max-width:960px){.pair,.feats6{grid-template-columns:1fr}.chap .split .photo{order:-1}
+.weave{padding:0}.wv-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-flow:column;grid-template-rows:auto repeat(6,auto);gap:22px 12px}.wv-stage,.wv-loop{display:none}.wv-row{text-align:center}.wn{flex-direction:column;text-align:center;font-size:13px;padding:12px 8px}.wv-cap{grid-template-columns:1fr}}
+@media (max-width:560px){.dock .k{display:none}.sw.big button{padding:0 16px;font-size:15px}}
+</style></head>
+<body data-theme="stage" data-side="p">
+
+<header class="nav dark" id="nav">
+<a href="Home.html"><img class="logo" src="../../assets/logo/frequency-wordmark.png" alt="Frequency Community Collective"></a>
+<ul><li><a href="People.html">For people</a></li><li><a href="Spaces.html">For spaces</a></li><li><a href="Stories.html">Stories</a></li><li><a href="Pricing.html#spaces">The deal</a></li></ul>
+<a class="btn fq-iri-btn" href="#story"><span class="p-only">Find your Circle</span><span class="e-only">Open your Space</span></a>
+</header>
+
+<section class="hero" data-time="night" data-night="uv" data-energy="charge" data-screen-label="01 Hero">
+<div class="bg p"></div><div class="bg e"></div><div class="fq-aura" style="--aura-opacity:.3"></div><div class="shade"></div><div class="fq-grain"></div>
+<div class="wrap">
+<div class="h-top"><div class="h-ctl"><div class="sw big" role="group" aria-label="Browse or host"><span class="thumb"></span><button data-set="p" aria-pressed="true">Browse Community</button><button data-set="e" aria-pressed="false">Host Community</button></div>
+<a class="locpill" href="Join.html"><svg aria-hidden="true"><use href="../../assets/icons/frequency-icons.svg#pin"/></svg><b>San Diego</b><span>48 Circles and events this week</span><em>Change</em></a></div></div>
+<div class="h-main"><h1 class="h-xl"><span class="p-only">Find local groups and events <em class="fq-iri-text">near you.</em></span><span class="e-only">Host local events and groups people <em class="fq-iri-text">come back to.</em></span></h1>
+<div class="h-foot"><div class="lede">
+<p class="p-only">A hundred contacts. No one to call on a Tuesday. Frequency is where the people near you meet every week, around something you like doing. Free to join, and built to get you off your phone.</p>
+<p class="e-only">Studios, cafés, coaches, clubs and venues: every Space is making an experience. Frequency puts your Circles and events on the calendar your town reads, remembers who came, and gives them a reason to come back.</p>
+</div>
+<div class="ctas"><a class="btn fq-iri-btn p-only" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim p-only" href="#weave">See how it works</a><a class="btn fq-iri-btn e-only" href="Spaces.html">Open your Space</a><a class="btn btn-ghost fq-iri-rim e-only" href="#weave">See how it works</a></div></div></div>
+<div class="h-sig" role="text" aria-label="Gather like it matters."><div class="h-sig-track" aria-hidden="true"><span class="h-sig-run"><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span></span><span class="h-sig-run"><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span><span class="fill">Gather like it matters.</span><span class="fq-logo-icon fq-iridescent"></span></span></div></div>
+</div>
+</section>
+
+<section class="fold" id="fold" data-screen-label="02 Vision + choose your path">
+<div class="fold-stage">
+<div class="fl-ph" data-d="1.4" style="left:4%;top:14%;width:clamp(150px,17vw,260px);aspect-ratio:3/4"><img src="../../assets/photos/day-park-yoga.jpg" alt=""></div>
+<div class="fl-ph" data-d="0.7" style="right:6%;top:8%;width:clamp(170px,20vw,300px);aspect-ratio:4/3"><img src="../../assets/photos/night-string-lights-web.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.9" style="left:12%;bottom:6%;width:clamp(140px,15vw,230px);aspect-ratio:1"><img src="../../assets/photos/gathering-03.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.1" style="right:12%;bottom:10%;width:clamp(150px,16vw,240px);aspect-ratio:3/4"><img src="../../assets/photos/day-meditation-circle.jpg" alt=""></div>
+<div class="fl-ph" data-d="2.4" style="left:40%;top:4%;width:clamp(110px,11vw,170px);aspect-ratio:1"><img src="../../assets/photos/gathering-05.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.6" style="left:46%;bottom:2%;width:clamp(120px,12vw,190px);aspect-ratio:4/3"><img src="../../assets/photos/night-yoga-rave-web.jpg" alt=""></div>
+<div class="fl-shade"></div>
+<div class="fl-txt" data-in="-1 -.5" data-out=".14 .2"><span class="label" style="justify-content:center"><b>Frequency</b>The vision</span><p class="fl-big">Somewhere in your town, people are gathering <em class="fq-iri-text">on purpose.</em></p></div>
+<div class="fl-txt" data-in=".18 .26" data-out=".36 .42"><p class="fl-big">A Thursday Circle. A long table. A night that runs late.</p></div>
+<div class="fl-txt" data-in=".38 .45" data-out=".5 .56"><p class="fl-big">Frequency is how they find each other, and why they keep <em class="fq-iri-text">coming back.</em></p></div>
+<div class="fl-fork" data-in=".54 .62">
+<span class="label" style="justify-content:center"><b>Your move</b>Choose your path</span>
+<h2 class="h-l" style="text-align:center;margin:18px auto 0">Where do you come in?</h2>
+<div class="pds">
+<div class="pdw l"><span class="pdg"></span><button class="pd l" data-set="p" data-go="story"><img src="../../assets/photos/day-parachute-play.jpg" alt=""><span class="dk">Path one</span><b>I’m looking for an experience.</b><span class="dp">Find a Circle, a night, a few weeks with the same people. Free, forever.</span><span class="dg">Start here →</span></button></div>
+<div class="pdw r"><span class="pdg"></span><button class="pd r" data-set="e" data-go="story"><img src="../../assets/photos/gathering-07.jpg" alt=""><span class="dk">Path two</span><b>I want to host an experience.</b><span class="dp">Studios, cafés, clubs and hosts. Make the thing people come back for.</span><span class="dg">Start here →</span></button></div>
+</div>
+<p class="pd-hint">Pick one to keep going. You can switch sides anytime.</p>
+</div>
+</div>
+</section>
+
+<section class="sec" id="story" style="padding-bottom:0" data-screen-label="03 Story">
+<div class="fq-aura" style="--aura-opacity:.25"></div>
+<div class="wrap">
+<div class="label"><b>The story</b><span class="p-only">Told from your side of the door</span><span class="e-only">Told from behind the door</span></div>
+</div>
+
+<div class="chap" data-screen-label="03a Find"><span class="rings" data-px="-.12" aria-hidden="true"></span><div class="wrap split">
+<div>
+<span class="n">01 · <span class="p-only">Find</span><span class="e-only">Be found</span></span>
+<h2 class="h-l"><span class="p-only">See what’s happening near you.</span><span class="e-only">Land where your town looks.</span></h2>
+<p class="body-l p-only">One calendar for your town. Circles that meet every week, events, programs, experiences. Pick something you like doing and a time you’re free.</p>
+<p class="body-l e-only">Open a Space for free and post what you run. It lands on the calendar your whole town reads, ranked by how often you gather, never by who paid.</p>
+<div class="acts p-only"><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#pin"/></svg></span><span><b>Set your town</b><small>See what meets near you</small></span><span class="ar">→</span></a><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><span><b>Browse this week</b><small>Circles, events, programs</small></span><span class="ar">→</span></a><a href="People.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Pick a Circle</b><small>Same people, same time</small></span><span class="ar">→</span></a></div>
+<div class="acts e-only"><a href="Spaces.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#space"/></svg></span><span><b>Open your Space</b><small>Free, takes ten minutes</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#page"/></svg></span><span><b>Set up your page</b><small>Change it yourself, anytime</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><span><b>Post your first experience</b><small>A Circle, an event or a program</small></span><span class="ar">→</span></a></div>
+</div>
+<div class="chap-map"><div class="p-only" data-fqmap="people" data-list="off" style="height:100%"></div><div class="e-only" data-fqmap="spaces" data-list="off" style="height:100%"></div></div>
+</div></div>
+
+<div class="chap" data-screen-label="03b Show up"><span class="rings" data-px="-.12" aria-hidden="true"></span><div class="wrap split rev">
+<div class="photo fq-iri-rim" data-px=".08"><img class="p-only" src="../../assets/photos/day-parachute-play.jpg" alt="Adults playing with a parachute in a park"><img class="e-only" src="../../assets/photos/gathering-07.jpg" alt="Guests arriving at a local venue"></div>
+<div>
+<span class="n">02 · <span class="p-only">Show up</span><span class="e-only">Open the door</span></span>
+<h2 class="h-l"><span class="p-only">Walk in. Check in.</span><span class="e-only">Know who came.</span></h2>
+<p class="body-l p-only">Scan at the door and you’re counted. Being in the room is the only thing that earns Zaps here. Scrolling all evening earns nothing.</p>
+<p class="body-l e-only">One QR at the door remembers everyone who walked in. First-timers get flagged, so you can say hi before they slip out.</p>
+<div class="acts p-only"><a href="People.html#first-night"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span><b>RSVP to an event</b><small>Or just turn up</small></span><span class="ar">→</span></a><a href="Features.html#f-zaps"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#checkin"/></svg></span><span><b>Check in at the door</b><small>+25 Zaps for being there</small></span><span class="ar">→</span></a><a href="People.html#first-night"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#contacts"/></svg></span><span><b>Meet your Circle</b><small>See who else came</small></span><span class="ar">→</span></a></div>
+<div class="acts e-only"><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#qr"/></svg></span><span><b>Print your door QR</b><small>One code for every experience</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span><b>Run your guest list</b><small>Tickets, refunds, walk-ins</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#nudge"/></svg></span><span><b>Greet first-timers</b><small>Nudges while they’re still in the room</small></span><span class="ar">→</span></a></div>
+</div>
+</div></div>
+
+<div class="lv" data-time="night" data-night="uv" data-energy="charge" data-screen-label="03x This week">
+<div class="fq-aura" style="--aura-opacity:.4"></div><div class="fq-grain"></div><span class="rings big" data-px="-.18" aria-hidden="true"></span>
+<div class="wrap lv-head"><div><span class="lv-live"><i class="fq-breathe"></i>Live this week</span><h2 class="h-l"><span class="p-only">This week, <em class="fq-iri-text">near you.</em></span><span class="e-only">What your town is <em class="fq-iri-text">looking for.</em></span></h2></div>
+<div class="lv-stat"><b data-count="212">212</b><span>people checked in at a Circle near you last week</span><a class="btn fq-iri-btn p-only" href="People.html#near">Browse this week</a><a class="btn fq-iri-btn e-only" href="Spaces.html">Put yours on the calendar</a></div></div>
+<div class="wrap" style="position:relative;z-index:1;margin-bottom:28px"><div data-fqmap="people" style="height:min(560px,72vh)"></div></div>
+<div class="lv-row"><div class="lv-track"><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Thu 7:00pm</small><b>Breathwork Circle</b><em>Saltwater Studio</em></span><i>4 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span class="lv-t"><small>Fri 6:30pm</small><b>Supper club</b><em>Ember Café</em></span><i>Event</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Sat 8:00am</small><b>Run Club</b><em>Shoreline Park</em></span><i>Weekly</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><span class="lv-t"><small>Sat 9:00pm</small><b>Yoga rave</b><em>The Warehouse</em></span><i>32 going</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><span class="lv-t"><small>Sun 10:00am</small><b>Sunday potluck</b><em>Garden House</em></span><i>Host: Ana</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Mon 6:00pm</small><b>Clay night</b><em>Kiln Collective</em></span><i>2 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Thu 7:00pm</small><b>Breathwork Circle</b><em>Saltwater Studio</em></span><i>4 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span class="lv-t"><small>Fri 6:30pm</small><b>Supper club</b><em>Ember Café</em></span><i>Event</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Sat 8:00am</small><b>Run Club</b><em>Shoreline Park</em></span><i>Weekly</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><span class="lv-t"><small>Sat 9:00pm</small><b>Yoga rave</b><em>The Warehouse</em></span><i>32 going</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><span class="lv-t"><small>Sun 10:00am</small><b>Sunday potluck</b><em>Garden House</em></span><i>Host: Ana</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Mon 6:00pm</small><b>Clay night</b><em>Kiln Collective</em></span><i>2 spots left</i></a></div></div><div class="lv-row rev"><div class="lv-track"><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><span class="lv-t"><small>Sun 10:00am</small><b>Sunday potluck</b><em>Garden House</em></span><i>Host: Ana</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Mon 6:00pm</small><b>Clay night</b><em>Kiln Collective</em></span><i>2 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Tue 7:30pm</small><b>Book Circle</b><em>Tidepool Books</em></span><i>Weekly</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#breath"/></svg></span><span class="lv-t"><small>Wed 6:00am</small><b>Sunrise sit</b><em>North Beach</em></span><i>Free</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Thu 7:00pm</small><b>Breathwork Circle</b><em>Saltwater Studio</em></span><i>4 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span class="lv-t"><small>Fri 6:30pm</small><b>Supper club</b><em>Ember Café</em></span><i>Event</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><span class="lv-t"><small>Sun 10:00am</small><b>Sunday potluck</b><em>Garden House</em></span><i>Host: Ana</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Mon 6:00pm</small><b>Clay night</b><em>Kiln Collective</em></span><i>2 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Tue 7:30pm</small><b>Book Circle</b><em>Tidepool Books</em></span><i>Weekly</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#breath"/></svg></span><span class="lv-t"><small>Wed 6:00am</small><b>Sunrise sit</b><em>North Beach</em></span><i>Free</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span class="lv-t"><small>Thu 7:00pm</small><b>Breathwork Circle</b><em>Saltwater Studio</em></span><i>4 spots left</i></a><a class="lv-c" href="People.html#near"><span class="lv-i"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span class="lv-t"><small>Fri 6:30pm</small><b>Supper club</b><em>Ember Café</em></span><i>Event</i></a></div></div>
+</div>
+<div class="chap" data-screen-label="03c Come back"><span class="rings" data-px="-.12" aria-hidden="true"></span><div class="wrap split">
+<div>
+<span class="n">03 · <span class="p-only">Come back</span><span class="e-only">Bring them back</span></span>
+<h2 class="h-l"><span class="p-only">Same people, same time.</span><span class="e-only">Give them a rhythm.</span></h2>
+<p class="body-l p-only">Keep coming and the faces start to know yours. One week you’re new, a month later someone saves you a spot.</p>
+<p class="body-l e-only">Weekly Circles, programs people move through together, memberships that drop them straight into their group. Experiences that repeat are the ones that hold.</p>
+<div class="acts p-only"><a href="People.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Join a weekly Circle</b><small>Your regular slot</small></span><span class="ar">→</span></a><a href="People.html#first-night"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><span><b>Start a program</b><small>Six weeks, same group</small></span><span class="ar">→</span></a><a href="Features.html#f-zaps"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#zap"/></svg></span><span><b>Keep your streak</b><small>Zaps for showing up again</small></span><span class="ar">→</span></a></div>
+<div class="acts e-only"><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Run a weekly Circle</b><small>The heartbeat of a Space</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><span><b>Build a program</b><small>A path your Circle walks together</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#membership"/></svg></span><span><b>Sell memberships</b><small>Members land in their Circle</small></span><span class="ar">→</span></a></div>
+</div>
+<div class="photo fq-iri-rim" data-px=".08"><img class="p-only" src="../../assets/photos/day-meditation-circle.jpg" alt="A circle of people sitting together outdoors"><img class="e-only" src="../../assets/photos/gathering-09.jpg" alt="A regular group mid-session at a studio"></div>
+</div></div>
+
+<div class="chap" data-screen-label="03d Pass it on"><span class="rings" data-px="-.12" aria-hidden="true"></span><div class="wrap split rev">
+<div class="photo fq-iri-rim" data-px=".08"><img class="p-only" src="../../assets/photos/day-beach-hoop.jpg" alt="Someone dancing on the beach"><img class="e-only" src="../../assets/photos/night-yoga-rave-web.jpg" alt="A full room at night"></div>
+<div>
+<span class="n">04 · <span class="p-only">Pass it on</span><span class="e-only">Grow</span></span>
+<h2 class="h-l"><span class="p-only">Bring someone. Then host.</span><span class="e-only">Rise by how often you gather.</span></h2>
+<p class="body-l p-only">The best nights get passed along. Keep coming and someone will ask you to host. That’s how a town gets a scene it didn’t have last year.</p>
+<p class="body-l e-only">Your standing climbs every time your community meets. Hand a Circle to a regular and you’re running two experiences. When someone we bring you buys, we take a small share. Your own regulars, you keep all of it.</p>
+<div class="acts p-only"><a href="People.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#message"/></svg></span><span><b>Invite a friend</b><small>Invites anyone can open</small></span><span class="ar">→</span></a><a href="Features.html#f-host"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><span><b>Host an experience</b><small>Your living room counts</small></span><span class="ar">→</span></a><a href="Features.html#f-host"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Start a Circle</b><small>Become somebody’s regular</small></span><span class="ar">→</span></a></div>
+<div class="acts e-only"><a href="Features.html#f-standing"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#standing"/></svg></span><span><b>Watch your standing</b><small>Earned, never bought</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><span><b>Hand a Circle to a regular</b><small>Grow without burning out</small></span><span class="ar">→</span></a><a href="Pricing.html#spaces"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#gem"/></svg></span><span><b>See how it pays</b><small>0% on your own regulars</small></span><span class="ar">→</span></a></div>
+</div>
+</div></div>
+</section>
+
+<section class="sec" id="features" data-screen-label="04 Every feature is an experience">
+<div class="wrap">
+<div class="label"><b>What’s inside</b>Every feature is an experience</div>
+<h2 class="h-l" style="margin-top:24px;max-width:18ch"><span class="p-only">Six ways to be in the room.</span><span class="e-only">Six things you can make.</span></h2>
+<div class="feats6">
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><h3>Circle</h3><span class="v p-only">You join</span><span class="v e-only">You run</span><p class="p-only">A small group that meets every week around one thing.</p><p class="e-only">Your weekly heartbeat. Members, a time, a door.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><h3>Event</h3><span class="v p-only">You go</span><span class="v e-only">You throw</span><p class="p-only">One-off gatherings worth staying out for.</p><p class="e-only">Tickets, a guest list and refunds in one place.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><h3>Program</h3><span class="v p-only">You move through</span><span class="v e-only">You design</span><p class="p-only">A few weeks with the same group, start to finish.</p><p class="e-only">A path your Circle walks together, step by step.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><h3>Experience</h3><span class="v p-only">You host</span><span class="v e-only">You hand off</span><p class="p-only">Open your living room, garden or local park.</p><p class="e-only">Regulars running gatherings under your Space.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#checkin"/></svg></span><h3>Check-in</h3><span class="v p-only">You arrive</span><span class="v e-only">You remember</span><p class="p-only">Scan at the door. Zaps for being there.</p><p class="e-only">Everyone who came, kept in your contact list.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#membership"/></svg></span><h3>Membership</h3><span class="v p-only">You belong</span><span class="v e-only">You sustain</span><p class="p-only">Your spot, saved every week.</p><p class="e-only">Recurring support that drops people into their Circle.</p></div>
+</div>
+</div>
+</section>
+
+<section class="sec" id="weave" style="background:var(--bg-sunken)" data-screen-label="05 The weave">
+<div class="fq-aura" style="--aura-opacity:.3"></div>
+<div class="wrap">
+<div class="label"><b>How it weaves</b>People and experiences, one loop</div>
+<h2 class="h-l" style="margin-top:24px;max-width:20ch">Every step on one side is a step on the other.</h2>
+<p class="body-l" style="margin-top:22px">Hover a step to follow the thread. Toggle sides to change who’s telling it.</p>
+<div class="weave" id="wv">
+<svg class="wv-svg" id="wvsvg" aria-hidden="true"></svg>
+<span class="wv-loop top">↺ Regulars host new Circles, and new people find them</span>
+<span class="wv-loop bot">↺ The more you gather, the higher you rank on the calendar</span>
+<div class="wv-grid" id="wvgrid">
+<div class="wv-row" data-r="p"><b>People</b>Looking</div>
+<div class="wv-row" data-r="m"><b>Together</b>In the room</div>
+<div class="wv-row" data-r="e"><b>Spaces</b>Hosting</div>
+</div>
+</div>
+<div class="wv-cap" aria-live="polite"><span class="k" id="wvk">01 · Find</span><p id="wvp"></p><a class="btn fq-iri-btn" id="wva" href="#"></a></div>
+</div>
+</section>
+
+<section class="closer" data-time="night" data-night="uv" data-energy="charge" data-screen-label="06 Manifesto">
+<div class="bg"></div><div class="fq-aura" style="--aura-opacity:.35"></div><div class="shade"></div><div class="fq-grain"></div>
+<div class="wrap">
+<p class="label" style="justify-content:center;color:#A89BC2">Build circles, not walls</p>
+<h2 class="h-xl" style="margin-top:22px">Sacred, <em class="fq-iri-text">not serious.</em></h2>
+<p style="color:#D9CFEA;font-size:clamp(18px,1.7vw,22px);line-height:1.55;max-width:46ch;margin:28px auto 0">The quiet morning and the loud night. The long table and the dance floor. Different communities, same reason: being with your people, on purpose. We measure success by who showed up this week.</p>
+<div class="ctas"><a class="btn fq-iri-btn" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim" href="Spaces.html">Open your Space</a></div>
+</div>
+</section>
+
+<footer class="ft2"><div class="wrap"><div class="ft2-top"><div class="ft2-brand"><a href="Home.html" aria-label="Frequency home"><img class="w" src="../../assets/logo/frequency-wordmark.png" alt="Frequency Community Collective"></a><p>Build circles, not walls. A community network where people find the groups that meet near them every week, and Spaces host experiences people come back to.</p><div class="ctas"><a class="btn fq-iri-btn" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim" href="Spaces.html">Open your Space</a></div></div><nav class="ft2-cols" aria-label="Footer"><div><b>For people</b><a href="People.html">Find your people</a><a href="People.html#first-night">Your first night</a><a href="People.html#near">What’s happening near you</a><a href="Features.html#people">Features for people</a></div><div><b>For spaces</b><a href="Spaces.html">Open your Space</a><a href="Spaces.html#types">For your type</a><a href="Features.html#spaces">Features for Spaces</a><a href="Pricing.html">Pricing</a></div><div><b>Frequency</b><a href="Stories.html">Stories</a><a href="Vision.html">Vision</a><a href="Join.html">Get started</a><a href="Home.html">What we believe</a><a href="Help.html">Help</a></div></nav></div><div class="ft2-bot"><span>© 2026 Frequency Community Collective</span><span class="ft2-legal"><a href="Help.html#privacy">Privacy</a><a href="Help.html#terms">Terms</a><a href="Help.html#accessibility">Accessibility</a></span><em>Your people stay yours.</em></div></div></footer>
+
+<div class="dock" id="dock"><div class="sw" role="group" aria-label="Browse or host"><span class="thumb"></span><button data-set="p" aria-pressed="true"><i></i>Browse Community</button><button data-set="e" aria-pressed="false"><i></i>Host Community</button></div></div>
+
+<script>
+(function(){
+const I='../../assets/icons/frequency-icons.svg#';
+const W=[
+{s:'Find',se:'Be found',p:['Picks a Circle nearby','pin'],m:['The town calendar','event'],e:['Opens a Space, free','space'],
+ cp:'Someone new in town opens the calendar and finds a Circle that meets Thursdays, ten minutes away.',ce:'A studio opens a Space for free. Its page, Circles and events land on the calendar the whole town reads.',ap:['Browse this week','People.html#near'],ae:['Open your Space','Spaces.html']},
+{s:'Show up',se:'Open the door',p:['Scans in at the door','checkin'],m:['The door QR','qr'],e:['Sees who came','contacts'],
+ cp:'They walk in and scan the Space’s QR code. They’re checked in, and the Zaps land.',ce:'Every scan lands in your contacts. First-timers get flagged, so you can say hi before they leave.',ap:['How check-in works','Features.html#f-checkin'],ae:['See Door QR','Features.html#f-doorqr']},
+{s:'Gather',se:'Gather',p:['Meets their Circle','contacts'],m:['The Circle','circle'],e:['Runs the Circle','breath'],
+ cp:'Same people, same time, around one thing. The phone stays in the bag.',ce:'Run it yourself or with a Host. Reminders go out automatically, so the room fills itself.',ap:['See Circles','Features.html#f-circles'],ae:['Start a Circle','Features.html#f-circles-s']},
+{s:'Come back',se:'Bring them back',p:['Becomes a regular','zap'],m:['The rhythm','program'],e:['Brings them back','nudge'],
+ cp:'Every check-in earns Zaps and fills the Circle’s meter. Seasons reset every 13 weeks, so there’s no streak to protect.',ce:'Programs give your Circle a path to walk together. Win-back emails reach the people who drifted.',ap:['How Zaps work','Features.html#f-zaps'],ae:['Build a program','Features.html#f-programs-s']},
+{s:'Support',se:'Get paid',p:['Buys a ticket or joins','ticket'],m:['Fair pay','membership'],e:['Gets paid','tip'],
+ cp:'Free stays free. When a Space charges, they buy a ticket or a membership, and can tip after a good night.',ce:'Sell tickets, run memberships and take tips in one place. Tips are 0%, and payouts arrive on schedule.',ap:['See pricing','Pricing.html'],ae:['How you get paid','Features.html#f-tickets']},
+{s:'Pass it on',se:'Pass it on',p:['Brings a friend, then hosts','host'],m:['The handoff','arrow'],e:['Hands a Circle to a regular','standing'],
+ cp:'They send an invite link, and both earn Zaps when the friend checks in. Later, they host a Circle of their own.',ce:'Invite a regular to host under your Space. You see check-ins from every Circle, and your standing rises.',ap:['Host an experience','Features.html#f-host'],ae:['How Hosts work','Features.html#f-handoff']}
+];
+const grid=document.getElementById('wvgrid'),svg=document.getElementById('wvsvg'),wv=document.getElementById('wv');
+const rows=['p','m','e'];const rowEls={};
+rows.forEach((r,ri)=>{const lab=grid.children[ri];lab.style.gridRow=ri+1;lab.style.gridColumn=1;});
+W.forEach((w,c)=>{
+ const st=document.createElement('span');st.className='wv-stage';st.dataset.c=c;st.textContent=String(c+1).padStart(2,'0')+' · '+w.s;wv.appendChild(st);
+ rows.forEach((r,ri)=>{const b=document.createElement('button');b.className='wn';b.dataset.r=r;b.dataset.c=c;b.style.gridRow=ri+1;b.style.gridColumn=c+2;
+ b.innerHTML='<svg><use href="'+I+w[r][1]+'"/></svg><span>'+w[r][0]+'</span>';grid.appendChild(b);(rowEls[r]=rowEls[r]||[])[c]=b;});
+});
+const mobile=()=>matchMedia('(max-width:960px)').matches;
+function place(){if(mobile()){rows.forEach((r,ri)=>{grid.children[ri].style.gridRow=1;grid.children[ri].style.gridColumn=ri+1;W.forEach((w,c)=>{const b=rowEls[r][c];b.style.gridRow=c+2;b.style.gridColumn=ri+1})})}
+ else{rows.forEach((r,ri)=>{grid.children[ri].style.gridRow=ri+1;grid.children[ri].style.gridColumn=1;W.forEach((w,c)=>{const b=rowEls[r][c];b.style.gridRow=ri+1;b.style.gridColumn=c+2})})}}
+let paths=[];
+function draw(){place();const R=wv.getBoundingClientRect();svg.innerHTML='';paths=[];
+ const box=el=>{const r=el.getBoundingClientRect();return{x:r.left-R.left,y:r.top-R.top,w:r.width,h:r.height,cx:r.left-R.left+r.width/2,cy:r.top-R.top+r.height/2}};
+ const col={p:'var(--x-aqua-neon)',m:'var(--x-magenta-neon)',e:'var(--x-sun-neon)'};
+ function link(a,b,color,cols,flow,lane){const A=box(a),B=box(b);let d;
+  if(Math.abs(A.cy-B.cy)>Math.abs(A.cx-B.cx)*.6){const k=(B.cy-A.cy)/2;d=`M${A.cx} ${A.cy}C${A.cx} ${A.cy+k} ${B.cx} ${B.cy-k} ${B.cx} ${B.cy}`}
+  else{const k=(B.cx-A.cx)/2;d=`M${A.cx} ${A.cy}C${A.cx+k} ${A.cy} ${B.cx-k} ${B.cy} ${B.cx} ${B.cy}`}
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);p.setAttribute('stroke',color);if(flow)p.classList.add('flow');p.dataset.cols=cols.join(',');p.dataset.lane=lane;svg.appendChild(p);paths.push(p)}
+ W.forEach((w,c)=>{link(rowEls.p[c],rowEls.m[c],col.p,[c],1,'p');link(rowEls.m[c],rowEls.e[c],col.e,[c],1,'e');
+  if(c<W.length-1){link(rowEls.p[c],rowEls.p[c+1],col.p,[c,c+1],0,'p');link(rowEls.e[c],rowEls.e[c+1],col.e,[c,c+1],0,'e');
+   if(!mobile()){link(rowEls.p[c],rowEls.m[c+1],col.m,[c,c+1],0,'p');link(rowEls.e[c],rowEls.m[c+1],col.m,[c,c+1],0,'e')}}});
+ if(!mobile()){const ns='http://www.w3.org/2000/svg';
+  const N=W.length-1,P4=box(rowEls.p[N]),E4=box(rowEls.e[N]),E0=box(rowEls.p[0]),H=R.height;
+  const lp=document.createElementNS(ns,'path');lp.setAttribute('d',`M${P4.cx} ${P4.y}V${24}H${E0.cx}V${E0.y}`);lp.setAttribute('stroke',col.p);lp.classList.add('flow','loop');lp.dataset.lane='p';lp.dataset.cols=N+',0';
+  const le=document.createElementNS(ns,'path');le.setAttribute('d',`M${E4.cx} ${E4.y+E4.h}V${H-24}H${box(rowEls.e[0]).cx}V${box(rowEls.e[0]).y+box(rowEls.e[0]).h}`);le.setAttribute('stroke',col.e);le.classList.add('flow','loop');le.dataset.lane='e';le.dataset.cols=N+',0';
+  svg.append(lp,le);paths.push(lp,le);
+  wv.querySelectorAll('.wv-stage').forEach(s=>{const b=box(rowEls.p[+s.dataset.c]);s.style.left=b.x+'px';s.style.width=b.w+'px';s.style.top='-8px'});
+  wv.querySelector('.wv-loop.top').style.top='24px';wv.querySelector('.wv-loop.bot').style.top=(H-24)+'px';wv.querySelector('.wv-loop.bot').style.bottom='auto';wv.querySelector('.wv-loop.bot').style.transform='translate(-50%,-50%)';}
+ hl(cur)}
+let cur=0;const side=()=>document.body.dataset.side;
+function hl(c){cur=c;grid.querySelectorAll('.wn').forEach(b=>b.classList.toggle('hot',+b.dataset.c===c));
+ paths.forEach(p=>{const cs=p.dataset.cols.split(',').map(Number);p.classList.toggle('on',cs.includes(c)&&(p.dataset.lane===side()||cs.length===1&&cs[0]===c&&!p.classList.contains('loop')))});
+ const w=W[c],s=side();wv.querySelectorAll('.wv-stage').forEach(st=>{const x=W[+st.dataset.c];st.textContent=String(+st.dataset.c+1).padStart(2,'0')+' · '+(s==='e'?x.se:x.s)});document.getElementById('wvk').textContent=String(c+1).padStart(2,'0')+' · '+(s==='e'?w.se:w.s);document.getElementById('wvp').textContent=s==='p'?w.cp:w.ce;const a=document.getElementById('wva');const ac=s==='p'?w.ap:w.ae;a.textContent=ac[0];a.href=ac[1];}
+grid.addEventListener('mouseover',e=>{const b=e.target.closest('.wn');if(b)hl(+b.dataset.c)});
+grid.addEventListener('click',e=>{const b=e.target.closest('.wn');if(b){hl(+b.dataset.c);if(b.dataset.r!=='m')setSide(b.dataset.r)}});
+function setSide(s){document.body.dataset.side=s;document.querySelectorAll('[data-set]').forEach(b=>{if(b.hasAttribute('aria-pressed'))b.setAttribute('aria-pressed',String(b.dataset.set===s))});try{localStorage.setItem('fq-home-side',s)}catch(e){}if(location.hash!=='#'+(s==='p'?'people':'experiences'))history.replaceState(null,'','#'+(s==='p'?'people':'experiences'));hl(cur)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(b&&!b.classList.contains('wn'))setSide(b.dataset.set)});
+let init=location.hash==='#experiences'?'e':location.hash==='#people'?'p':(localStorage.getItem('fq-home-side')||'p');setSide(init);
+const dock=document.getElementById('dock'),hero=document.querySelector('.hero'),closer=document.querySelector('.closer');
+addEventListener('scroll',()=>{const h=hero.getBoundingClientRect().bottom<80,c=closer.getBoundingClientRect().top<innerHeight*.6;dock.classList.toggle('on',h&&!c)},{passive:true});
+let t;addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(draw,120)});
+document.fonts&&document.fonts.ready.then(draw);addEventListener('load',draw);draw();
+})();
+</script>
+<script>(function(){const f=document.getElementById('fold');if(!f)return;const ph=[...f.querySelectorAll('.fl-ph')],tx=[...f.querySelectorAll('[data-in]')],fork=f.querySelector('.fl-fork'),doors=f.querySelectorAll('.pdw'),hint=f.querySelector('.pd-hint');
+const cl=v=>Math.max(0,Math.min(1,v)),rng=(p,a,b)=>cl((p-a)/(b-a)),ease=x=>1-Math.pow(1-x,3);
+const rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function tick(){if(rm)return;const r=f.getBoundingClientRect(),p=cl(-r.top/(r.height-innerHeight));
+ph.forEach(el=>{const d=+el.dataset.d;const y=(0.08-p)*d*innerHeight*.55;const s=1+p*d*.06;el.style.transform='translate3d(0,'+y+'px,0) scale('+s+')';el.style.opacity=String(1-rng(p,.55,.7)*.85)});
+tx.forEach(el=>{const[a,b]=el.dataset.in.split(' ').map(Number);let o=ease(rng(p,a,b));let y=(1-o)*40;if(el.dataset.out){const[c,d]=el.dataset.out.split(' ').map(Number);const q=rng(p,c,d);o*=1-q;y-=q*40}el.style.opacity=o;el.style.transform='translate3d(0,'+y+'px,0)'});
+doors.forEach((d,i)=>{const at=i?.72:.64;d.classList.toggle('in',p>at);d.style.translate='0 '+((0.9-p)*(i?190:110))+'px'});hint.classList.toggle('on',p>.8);
+fork.classList.toggle('fl-on',p>.6)}
+const hero=document.querySelector('.hero'),hw=hero.querySelector('.wrap'),hb=hero.querySelectorAll('.bg');
+function heroTick(){if(rm)return;const y=Math.max(0,-hero.getBoundingClientRect().top),k=cl(y/(hero.offsetHeight*.55));hw.style.opacity=1-k;hw.style.transform='translate3d(0,'+(-y*.35)+'px,0) scale('+(1-k*.06)+')';hb.forEach(b=>b.style.transform='scale('+(1+k*.12)+')')}
+addEventListener('scroll',()=>{tick();heroTick()},{passive:true});heroTick();addEventListener('resize',tick);tick();
+let chosen=null;try{chosen=localStorage.getItem('fq-home-chosen')}catch(e){}if(!chosen)document.body.classList.add('gated');
+function ungate(){if(!document.body.classList.contains('gated'))return;document.body.classList.remove('gated');try{localStorage.setItem('fq-home-chosen','1')}catch(e){}dispatchEvent(new Event('resize'))}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#"]');if(a&&document.body.classList.contains('gated')&&a.getAttribute('href')!=='#')ungate()},true);
+f.addEventListener('click',e=>{const d=e.target.closest('[data-go]');if(!d)return;ungate();const s=document.getElementById(d.dataset.go);setTimeout(()=>window.scrollTo({top:s.getBoundingClientRect().top+scrollY-40,behavior:'smooth'}),60)});
+})();
+</script>
+<script>(function(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;var px=[].slice.call(document.querySelectorAll('#story [data-px]'));
+function t(){var vh=innerHeight;px.forEach(function(el){var r=el.getBoundingClientRect();if(r.bottom<-200||r.top>vh+200)return;var c=(r.top+r.height/2-vh/2)/vh;el.style.translate=(el.classList.contains('big')?'-50% ':'0 ')+(c*-(+el.dataset.px)*100).toFixed(1)+'px'})}
+addEventListener('scroll',t,{passive:true});addEventListener('resize',t);t();
+var n=document.querySelector('[data-count]');if(n){var done=false,io=new IntersectionObserver(function(es){if(es[0].isIntersecting&&!done){done=true;var to=+n.dataset.count,s=performance.now();(function f(now){var k=Math.min(1,(now-s)/1400);n.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(s)}},{threshold:.5});io.observe(n)}})();</script>
+<script src="../../assets/icons/icons.js"></script>
+<script src="web/eventmap.js"></script>
+<script src="web/megamenu.js"></script>
+<script src="web/mood.js"></script>
+<script src="web/texture.js"></script>
+</body></html>

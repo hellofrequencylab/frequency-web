@@ -83,6 +83,8 @@
     "backlog": "node scripts/check-backlog.mjs --report",
     "packets": "node scripts/agent-packets.mjs",
     "fold": "node scripts/maintenance/fold-ledger-docs.mjs",
+    "design:install": "node scripts/install-frequency-design.mjs",
+    "design:use": "node scripts/use-design.mjs",
     "ledger:view": "node scripts/ledger.mjs view",
     "ledger:from-diff": "node scripts/ledger.mjs from-diff",
     "ledger:close": "node scripts/ledger.mjs close",

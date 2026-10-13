@@ -25,7 +25,9 @@ export default async function MarketingLayout({ children }: { children: React.Re
     getMenuSettings(),
   ])
   return (
-    <>
+    <div data-surface="stage" className="contents">
+      {/* Stage surface (ADR-1740): under the Frequency design the public site wears Stage, always dark;
+          under DAWN the attribute matches nothing. `contents` keeps the box out of layout. */}
       <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
@@ -41,6 +43,6 @@ export default async function MarketingLayout({ children }: { children: React.Re
           not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
           every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
       {supportChatFlagEnabled() && isSupportChatAvailable() && <SupportChatLauncher />}
-    </>
+    </div>
   )
 }

@@ -54,9 +54,14 @@ truth: `--bg-canvas`, `--bg-sunken`, `--surface-card`, `--surface-raised`, `--su
 `--text-strong/-body/-muted/-faint`, `--action-primary*`, `--accent`, `--accent-2`, `--live`,
 `--presence`, `--reward` (each with `-soft`), the crossover hues `--x-<hue>-neon/-deep`, the type roles
 (`--font-display` Unbounded, `--font-serif` Instrument Serif italic, `--font-sans` Hanken Grotesk), the
-space, radius, shadow and motion scales. `app/themes/frequency.css` declares those names first; DAWN's
-semantic names (`--color-*`, `--design-*`) are then **aliases that point at them**, so every component
-works under Frequency while Frequency keeps its own words. The locked core is "edit only in the
+space, radius, shadow and motion scales. They are installed under the `--fq-` prefix (ADR-1740: the
+export's `--text-body`, `--accent`, `--ease-out` and others collide with the app's names) into the
+generated `app/themes/frequency/core.css`; DAWN's semantic names (`--color-*`, `--design-*`) are then
+**aliases in `app/themes/frequency.css` that point at them**, so every component works under Frequency
+while Frequency keeps its own words.
+
+**Install and switch locally:** `pnpm design:install "<export>.zip"`, then `pnpm design:use frequency`
+and restart `pnpm dev`. `pnpm design:use dawn` switches back. The locked core is "edit only in the
 Frequency design system; products import, never override".
 
 Two surfaces, one family:

@@ -86,6 +86,7 @@ export function Wordmark({ className, priority = false, tagline = false, mark }:
         height={WORDMARK_H}
         priority={priority}
         className={className}
+        data-brand-wordmark
       />
     )
   }
@@ -121,6 +122,7 @@ export function Wordmark({ className, priority = false, tagline = false, mark }:
         height={WORDMARK_H}
         priority={priority}
         className="h-[1em] w-auto"
+        data-brand-wordmark
       />
       <span
         aria-hidden
