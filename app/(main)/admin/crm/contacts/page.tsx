@@ -24,7 +24,7 @@ import { ScanInviteToggle } from './scan-invite-toggle'
 // on the surviving roster could find, or clear, an opt-out.
 //
 // STAFF-GATED: requireAdmin('janitor', { staff: 'marketing' }), matching the sibling CRM tabs. The
-// /admin/* group mounts its own info rail (page-chrome 'none'), so no rail registration is needed.
+// /admin group mounts its own info rail (page-chrome 'none'), so no rail registration is needed.
 export const dynamic = 'force-dynamic'
 
 export default async function CrmContactsPage() {

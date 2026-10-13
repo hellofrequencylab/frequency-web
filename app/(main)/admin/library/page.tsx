@@ -317,7 +317,7 @@ export default async function LoomStudioPage({
                     href={hrefWith({ view: value === 'cards' ? undefined : value, page: undefined })}
                     aria-label={`${label} view`}
                     aria-current={view === value ? 'true' : undefined}
-                    className={`rounded-[14px] p-1.5 ${
+                    className={`rounded-control p-1.5 ${
                       view === value ? 'bg-primary text-on-primary' : 'text-subtle hover:bg-surface-elevated'
                     }`}
                   >

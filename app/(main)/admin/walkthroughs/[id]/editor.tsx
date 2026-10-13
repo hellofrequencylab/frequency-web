@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Check, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
+  Check, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AdminTemplate } from '@/components/templates'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
@@ -154,23 +154,22 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
   const step = wt.steps[selected] as WalkthroughStep | undefined
 
+  // The header COMPOSES AdminTemplate (PAGE-FRAMEWORK §3/§8.1) instead of hand-rolling a back-link +
+  // <h1> band, the same move the Theme Studio editor made. The title tracks the live name and the
+  // save state rides the actions slot, which is why the shell lives here and not in the server page.
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      {/* Header band */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href="/admin/walkthroughs"
-            className="inline-flex items-center gap-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to Walkthroughs
-          </Link>
-          <h1 className="mt-1 text-lead font-bold text-text">{wt.name || 'Untitled walkthrough'}</h1>
-          {!persisted && (
-            <p className="text-2xs text-warning">Draft. Save to create it (the table appears once migrated).</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
+    <AdminTemplate
+      title={wt.name || 'Untitled walkthrough'}
+      back={{ href: '/admin/walkthroughs', label: 'Back to Walkthroughs' }}
+      description={
+        !persisted ? (
+          <span className="text-warning">Draft. Save to create it (the table appears once migrated).</span>
+        ) : undefined
+      }
+      adminBar={false}
+      width="wide"
+      actions={
+        <>
           {dirty && <span className="text-2xs font-medium text-warning">Unsaved</span>}
           {saved && (
             <span className="inline-flex items-center gap-1 text-2xs font-semibold text-success">
@@ -181,9 +180,9 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             {pending ? 'Saving…' : 'Save'}
           </Button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       <div className="grid gap-5 lg:grid-cols-2">
         {/* ── LEFT: controls ── */}
         <div className="space-y-5">
@@ -521,6 +520,6 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           </p>
         </div>
       </div>
-    </div>
+    </AdminTemplate>
   )
 }

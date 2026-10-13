@@ -5,7 +5,7 @@ import {
   Library,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -19,9 +19,9 @@ import { getLibraryHealth, type FunnelMetrics } from '@/lib/practices/health'
 // review SLA, and the contributor leaderboard. Every
 // number is computed from existing tables by lib/practices/health.ts (no writes, no migration).
 //
-// Composes the shared DashboardTemplate (PAGE-FRAMEWORK §8.1) + the kit primitives (StatCard,
+// Composes the shared AdminTemplate (PAGE-FRAMEWORK §8.1) + the kit primitives (StatCard,
 // SectionHeader, the pure-SVG spark-charts) on DAWN tokens — no hand-rolled stat tiles, no hex.
-// /admin/* already resolves to the no-rail operator chrome (page-chrome.ts), so there is nothing
+// /admin already resolves to the no-rail operator chrome (page-chrome.ts), so there is nothing
 // to register. The page gates entry with the SAME guard the rest of the practices admin uses.
 export default async function PracticeLibraryHealthPage() {
   await requireAdmin('host', { staff: 'community' })
@@ -33,14 +33,16 @@ export default async function PracticeLibraryHealthPage() {
   const slaTone = reviewSla.overdue > 0 ? 'down' : reviewSla.aging > 0 ? 'flat' : 'up'
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Content"
       title="Library health"
       back={{ href: '/admin/content/practices', label: 'Practices' }}
       description="A read-only read on the practice library: how it is growing, where the coverage gaps are, what is getting used, and how fast submissions clear review."
       width="wide"
-      stats={
-        <>
+    >
+      {/* One body column on the dashboard cadence: the headline StatCard row, then the sections. */}
+      <div className="space-y-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <StatCard
             label="Published practices"
             value={growth.totalPublished}
@@ -76,185 +78,185 @@ export default async function PracticeLibraryHealthPage() {
               trend: slaTone,
             }}
           />
-        </>
-      }
-    >
-      {/* Growth + funnel side by side. */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <SectionHeader title="Growth over time" />
-          <ChartCard
-            title="Library size"
-            value={`${growth.totalPublished} practices`}
-            delta={growth.addedThisWeek > 0 ? `+${growth.addedThisWeek} this week` : undefined}
-            caption={`${health.weeks} weeks ago → now`}
-          >
-            <div className="h-28">
-              <TrendArea points={growth.cumulative} height={112} />
-            </div>
-          </ChartCard>
-          <div className="mt-3">
-            <ChartCard title="Added per week" caption={`last ${health.weeks} weeks`}>
-              <div className="h-16">
-                <WeekBars values={growth.weeklyAdds} height={64} />
+        </div>
+
+        {/* Growth + funnel side by side. */}
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div>
+            <SectionHeader title="Growth over time" />
+            <ChartCard
+              title="Library size"
+              value={`${growth.totalPublished} practices`}
+              delta={growth.addedThisWeek > 0 ? `+${growth.addedThisWeek} this week` : undefined}
+              caption={`${health.weeks} weeks ago → now`}
+            >
+              <div className="h-28">
+                <TrendArea points={growth.cumulative} height={112} />
               </div>
             </ChartCard>
-          </div>
-        </div>
-
-        <div>
-          <SectionHeader title="Adoption funnel" />
-          <Funnel funnel={funnel} />
-        </div>
-      </section>
-
-      {/* Coverage matrix. */}
-      <section>
-        <SectionHeader title="Coverage by Pillar" count={coverage.totalEmptySubcategories} />
-        {coverage.pillars.length === 0 ? (
-          <EmptyState variant="no-results" title="No Pillars yet" description="Add Pillars and sub-categories to map coverage." />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {coverage.pillars.map((p) => (
-              <div key={p.id} className="rounded-2xl border border-border bg-surface p-4">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-body-sm font-bold text-text">{p.name}</p>
-                  <p className="text-body-sm font-bold tabular-nums text-text">{p.count}</p>
+            <div className="mt-3">
+              <ChartCard title="Added per week" caption={`last ${health.weeks} weeks`}>
+                <div className="h-16">
+                  <WeekBars values={growth.weeklyAdds} height={64} />
                 </div>
-                <p className="mt-0.5 text-meta text-subtle">
-                  {p.subcategories.length} sub-categories · {p.emptySubcategories.length} empty
-                </p>
-                <ul className="mt-3 space-y-1.5">
-                  {p.subcategories.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between gap-2 text-meta">
-                      <span className={s.count === 0 ? 'text-danger' : 'text-muted'}>{s.name}</span>
-                      <span className={`tabular-nums ${s.count === 0 ? 'font-semibold text-danger' : 'text-subtle'}`}>
-                        {s.count}
-                      </span>
-                    </li>
-                  ))}
-                  {p.subcategories.length === 0 && <li className="text-meta text-subtle">No sub-categories</li>}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-        {coverage.unpilared > 0 && (
-          <p className="mt-3 text-meta text-muted">
-            {coverage.unpilared} published practice{coverage.unpilared === 1 ? '' : 's'} with no Pillar set.
-          </p>
-        )}
-      </section>
-
-      {/* Where Zaps land: the per-Pillar ledger over the window (LIVE-642, ADR-1605). */}
-      <section>
-        <SectionHeader title="Where Zaps land" count={zapLanding.total} />
-        {zapLanding.total === 0 ? (
-          <EmptyState
-            variant="first-use"
-            title={`No Zaps earned in the last ${health.weeks} weeks`}
-            description="Once members log practices, this shows which Pillar their Zaps land in."
-          />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {zapLanding.pillars.map((p) => {
-              const pct = Math.round(p.share * 100)
-              return (
-                <div key={p.id} className="rounded-card border border-border bg-surface p-4">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-body-sm font-bold text-text">{p.name}</p>
-                    <p className="text-body-sm font-bold tabular-nums text-text">{p.zaps}</p>
-                  </div>
-                  <p className="mb-2 mt-0.5 text-meta text-subtle">{pct}% of Zaps earned</p>
-                  <ProgressTrack value={pct} size="md" minVisible={2} label={`${p.name}: ${pct}% of Zaps earned`} />
-                </div>
-              )
-            })}
-          </div>
-        )}
-        <p className="mt-3 text-meta text-muted">
-          Zaps from practice logs in the last {health.weeks} weeks, credited by the Pillar split each log
-          carried when it was earned. A split attributes and never adds, so the Pillars
-          {zapLanding.unattributed > 0 ? ' and the no-Pillar remainder' : ''} sum to the total.
-          {zapLanding.unattributed > 0 && ` ${zapLanding.unattributed} came from practices with no active Pillar.`}
-        </p>
-        {!zapLanding.complete && (
-          <p className="mt-1 text-meta text-danger">
-            Partial read: the log query stopped early, so these figures cover part of the window.
-          </p>
-        )}
-      </section>
-
-      {/* Top + bottom performers. */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <SectionHeader title="Top performers" />
-          {performers.top.length === 0 ? (
-            <EmptyState variant="first-use" title="No logs in the last 30 days" description="Once practices get logged, the busiest ones show up here." />
-          ) : (
-            <PerformerList rows={performers.top} metric="this month" />
-          )}
-        </div>
-        <div>
-          <SectionHeader title="Needs a push" />
-          {performers.bottom.length === 0 ? (
-            <EmptyState variant="cleared" title="Everything is getting logged" description="No published practice has been idle this month." />
-          ) : (
-            <PerformerList rows={performers.bottom} metric="all time" idle />
-          )}
-        </div>
-      </section>
-
-      {/* Review SLA + contributor leaderboard. */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <SectionHeader title="Review SLA" count={reviewSla.pending} />
-          <div className="rounded-2xl border border-border bg-surface p-4">
-            <RingGauge
-              pct={reviewSla.pending > 0 ? reviewSla.overdue / reviewSla.pending : 0}
-              label={reviewSla.overdue > 0 ? `${reviewSla.overdue} over a week` : 'On track'}
-              sub={
-                reviewSla.pending > 0
-                  ? `${reviewSla.pending} pending · oldest ${reviewSla.oldestDays} days`
-                  : 'No submissions waiting'
-              }
-            />
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <SlaBucket label="Fresh" sub="< 2 days" value={reviewSla.fresh} tone="text-success" />
-              <SlaBucket label="Aging" sub="2 to 7 days" value={reviewSla.aging} tone="text-text" />
-              <SlaBucket label="Overdue" sub="7+ days" value={reviewSla.overdue} tone="text-danger" />
+              </ChartCard>
             </div>
           </div>
-        </div>
 
-        <div>
-          <SectionHeader title="Top contributors" />
-          {contributors.length === 0 ? (
-            <EmptyState variant="first-use" title="No contributors yet" description="Authors of published practices show up here." />
+          <div>
+            <SectionHeader title="Adoption funnel" />
+            <Funnel funnel={funnel} />
+          </div>
+        </section>
+
+        {/* Coverage matrix. */}
+        <section>
+          <SectionHeader title="Coverage by Pillar" count={coverage.totalEmptySubcategories} />
+          {coverage.pillars.length === 0 ? (
+            <EmptyState variant="no-results" title="No Pillars yet" description="Add Pillars and sub-categories to map coverage." />
           ) : (
-            <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
-              {contributors.map((c, i) => (
-                <li key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="w-5 shrink-0 text-meta font-bold tabular-nums text-muted">{i + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-body-sm font-semibold text-text">{c.displayName}</p>
-                    {c.handle && <p className="truncate text-meta text-muted">@{c.handle}</p>}
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {coverage.pillars.map((p) => (
+                <div key={p.id} className="rounded-2xl border border-border bg-surface p-4">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-body-sm font-bold text-text">{p.name}</p>
+                    <p className="text-body-sm font-bold tabular-nums text-text">{p.count}</p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-body-sm font-bold tabular-nums text-text">{c.published}</p>
-                    <p className="text-2xs text-muted">published</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-body-sm font-semibold tabular-nums text-muted">{c.reach30d}</p>
-                    <p className="text-2xs text-muted">logs 30d</p>
-                  </div>
-                </li>
+                  <p className="mt-0.5 text-meta text-subtle">
+                    {p.subcategories.length} sub-categories · {p.emptySubcategories.length} empty
+                  </p>
+                  <ul className="mt-3 space-y-1.5">
+                    {p.subcategories.map((s) => (
+                      <li key={s.id} className="flex items-center justify-between gap-2 text-meta">
+                        <span className={s.count === 0 ? 'text-danger' : 'text-muted'}>{s.name}</span>
+                        <span className={`tabular-nums ${s.count === 0 ? 'font-semibold text-danger' : 'text-subtle'}`}>
+                          {s.count}
+                        </span>
+                      </li>
+                    ))}
+                    {p.subcategories.length === 0 && <li className="text-meta text-subtle">No sub-categories</li>}
+                  </ul>
+                </div>
               ))}
-            </ol>
+            </div>
           )}
-        </div>
-      </section>
-    </DashboardTemplate>
+          {coverage.unpilared > 0 && (
+            <p className="mt-3 text-meta text-muted">
+              {coverage.unpilared} published practice{coverage.unpilared === 1 ? '' : 's'} with no Pillar set.
+            </p>
+          )}
+        </section>
+
+        {/* Where Zaps land: the per-Pillar ledger over the window (LIVE-642, ADR-1605). */}
+        <section>
+          <SectionHeader title="Where Zaps land" count={zapLanding.total} />
+          {zapLanding.total === 0 ? (
+            <EmptyState
+              variant="first-use"
+              title={`No Zaps earned in the last ${health.weeks} weeks`}
+              description="Once members log practices, this shows which Pillar their Zaps land in."
+            />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {zapLanding.pillars.map((p) => {
+                const pct = Math.round(p.share * 100)
+                return (
+                  <div key={p.id} className="rounded-card border border-border bg-surface p-4">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-body-sm font-bold text-text">{p.name}</p>
+                      <p className="text-body-sm font-bold tabular-nums text-text">{p.zaps}</p>
+                    </div>
+                    <p className="mb-2 mt-0.5 text-meta text-subtle">{pct}% of Zaps earned</p>
+                    <ProgressTrack value={pct} size="md" minVisible={2} label={`${p.name}: ${pct}% of Zaps earned`} />
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          <p className="mt-3 text-meta text-muted">
+            Zaps from practice logs in the last {health.weeks} weeks, credited by the Pillar split each log
+            carried when it was earned. A split attributes and never adds, so the Pillars
+            {zapLanding.unattributed > 0 ? ' and the no-Pillar remainder' : ''} sum to the total.
+            {zapLanding.unattributed > 0 && ` ${zapLanding.unattributed} came from practices with no active Pillar.`}
+          </p>
+          {!zapLanding.complete && (
+            <p className="mt-1 text-meta text-danger">
+              Partial read: the log query stopped early, so these figures cover part of the window.
+            </p>
+          )}
+        </section>
+
+        {/* Top + bottom performers. */}
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div>
+            <SectionHeader title="Top performers" />
+            {performers.top.length === 0 ? (
+              <EmptyState variant="first-use" title="No logs in the last 30 days" description="Once practices get logged, the busiest ones show up here." />
+            ) : (
+              <PerformerList rows={performers.top} metric="this month" />
+            )}
+          </div>
+          <div>
+            <SectionHeader title="Needs a push" />
+            {performers.bottom.length === 0 ? (
+              <EmptyState variant="cleared" title="Everything is getting logged" description="No published practice has been idle this month." />
+            ) : (
+              <PerformerList rows={performers.bottom} metric="all time" idle />
+            )}
+          </div>
+        </section>
+
+        {/* Review SLA + contributor leaderboard. */}
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div>
+            <SectionHeader title="Review SLA" count={reviewSla.pending} />
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <RingGauge
+                pct={reviewSla.pending > 0 ? reviewSla.overdue / reviewSla.pending : 0}
+                label={reviewSla.overdue > 0 ? `${reviewSla.overdue} over a week` : 'On track'}
+                sub={
+                  reviewSla.pending > 0
+                    ? `${reviewSla.pending} pending · oldest ${reviewSla.oldestDays} days`
+                    : 'No submissions waiting'
+                }
+              />
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <SlaBucket label="Fresh" sub="< 2 days" value={reviewSla.fresh} tone="text-success" />
+                <SlaBucket label="Aging" sub="2 to 7 days" value={reviewSla.aging} tone="text-text" />
+                <SlaBucket label="Overdue" sub="7+ days" value={reviewSla.overdue} tone="text-danger" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="Top contributors" />
+            {contributors.length === 0 ? (
+              <EmptyState variant="first-use" title="No contributors yet" description="Authors of published practices show up here." />
+            ) : (
+              <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+                {contributors.map((c, i) => (
+                  <li key={c.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="w-5 shrink-0 text-meta font-bold tabular-nums text-muted">{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-body-sm font-semibold text-text">{c.displayName}</p>
+                      {c.handle && <p className="truncate text-meta text-muted">@{c.handle}</p>}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-body-sm font-bold tabular-nums text-text">{c.published}</p>
+                      <p className="text-2xs text-muted">published</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-body-sm font-semibold tabular-nums text-muted">{c.reach30d}</p>
+                      <p className="text-2xs text-muted">logs 30d</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </section>
+      </div>
+    </AdminTemplate>
   )
 }
 
