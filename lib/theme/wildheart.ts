@@ -156,6 +156,13 @@ const ALPHA = {
   starHoney: 'rgba(216,179,94,.6)',
   vellum0: 'rgba(251,247,239,0)',
   vellum85: 'rgba(251,247,239,.85)',
+  vellum12: 'rgba(251,247,239,.12)',
+  violet13: 'rgba(110,77,150,.13)',
+  madder05: 'rgba(148,80,94,.05)',
+  madder16: 'rgba(148,80,94,.16)',
+  nightshade28: 'rgba(46,33,56,.28)',
+  lavender75: 'rgba(217,203,230,.75)',
+  moonlight50: 'rgba(255,255,255,.5)',
 } as const
 const NIGHT_ALPHA = {
   night25: 'rgba(14,8,20,.25)',
@@ -264,6 +271,8 @@ export const WILDHEART_TOKENS_CSS = `
 --wh-symbol-ink:var(--wh-violet-text);--wh-symbol-line:${ALPHA.symbol70};--wh-symbol-line-soft:${ALPHA.symbol32};--wh-symbol-ghost:${ALPHA.symbol20};--wh-symbol-stroke:1.5px;--wh-watermark:.07;
 --wh-a-ink-04:${ALPHA.ink04};--wh-a-ink-06:${ALPHA.ink06};--wh-a-ink-12:${ALPHA.ink12};--wh-a-violet-12:${ALPHA.violet12};--wh-a-violet-35:${ALPHA.violet35};--wh-a-madder-35:${ALPHA.madder35};
 --wh-a-wash-violet:${ALPHA.lavender55};--wh-a-wash-madder:${ALPHA.madderSoft70};--wh-a-wash-moon:${ALPHA.mist90};--wh-a-wash-blush:${ALPHA.blush55};--wh-a-sage-18:${ALPHA.sage18};--wh-a-honey-14:${ALPHA.honey14};--wh-a-star-honey:${ALPHA.starHoney};--wh-a-veil-0:${ALPHA.vellum0};--wh-a-veil-85:${ALPHA.vellum85};
+--wh-a-vellum-12:${ALPHA.vellum12};--wh-a-violet-13:${ALPHA.violet13};--wh-a-madder-05:${ALPHA.madder05};--wh-a-madder-16:${ALPHA.madder16};--wh-a-night-28:${ALPHA.nightshade28};--wh-a-lavender-75:${ALPHA.lavender75};--wh-a-moonlight:${ALPHA.moonlight50};
+--wh-col:1216px;--wh-col-pad:48px;--wh-header-h:72px;--wh-header-total:116px;
 ${SEASON_TOKENS};
 --wh-season:var(--color-primary);--wh-season-top:var(--wh-violet-top);--wh-season-ink:var(--color-primary-strong);--wh-gradient-season:${GRADIENTS.lavender};--wh-text-on-season:${P.ink};--wh-text-on-fill:${P.vellum};
 --wh-gradient-violet:${GRADIENTS.violet};--wh-gradient-violet-pressed:${GRADIENTS.violetPressed};--wh-gradient-madder:${GRADIENTS.madder};--wh-gradient-lavender:${GRADIENTS.lavender};--wh-gradient-vellum:${GRADIENTS.vellum};--wh-gradient-dusk:${GRADIENTS.dusk};--wh-gradient-nightshade:${GRADIENTS.nightshade};--wh-gradient-twilight:${GRADIENTS.twilight};--wh-gradient-blush:${GRADIENTS.blush};--wh-gradient-opal:${GRADIENTS.opal};

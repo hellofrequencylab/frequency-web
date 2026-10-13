@@ -10,7 +10,7 @@ import { siteMembershipLine, type SiteMembershipView } from '@/lib/sites/site-me
 // not a member, or not signed in, or reading on a custom domain the session does not reach, sees nothing:
 // the header stays exactly as the cached page drew it.
 
-export function SiteMemberBadge({ endpoint, href }: { endpoint: string; href: string }) {
+export function SiteMemberBadge({ endpoint, href, pill = false }: { endpoint: string; href: string; /** The Wildheart account pill: a "Your circle" label over the line, and the tier's initial in a disc. */ pill?: boolean }) {
   const [membership, setMembership] = useState<SiteMembershipView | null>(null)
   useEffect(() => {
     const controller = new AbortController()
@@ -25,6 +25,17 @@ export function SiteMemberBadge({ endpoint, href }: { endpoint: string; href: st
   }, [endpoint])
   const line = siteMembershipLine(membership)
   if (!line) return null
+  if (pill) {
+    return (
+      <a href={href} className="hs-member hs-member-pill" aria-label={`${line}. Your membership on Frequency`}>
+        <span className="hs-member-text">
+          <span className="hs-member-label">Your circle</span>
+          <span className="hs-member-line">{line}</span>
+        </span>
+        <span className="hs-member-avatar" aria-hidden>{(membership?.tierName.trim()[0] ?? 'M').toUpperCase()}</span>
+      </a>
+    )
+  }
   return (
     <a href={href} className="hs-member" aria-label={`${line}. Your membership on Frequency`}>
       {line}

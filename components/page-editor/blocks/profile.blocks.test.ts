@@ -176,9 +176,9 @@ describe('the new business-profile blocks expose clean, operator-editable fields
     expect((fields.journeysHeading as { type?: string } | undefined)?.type).toBe('text')
   })
 
-  it('SpaceCommunity exposes an eyebrow + heading (live, no authored list)', () => {
+  it('SpaceCommunity exposes an eyebrow + heading, and the shape a website page draws it in (live, no authored list)', () => {
     const fields = profileComponents.SpaceCommunity.fields ?? {}
-    expect(Object.keys(fields).sort()).toEqual(['eyebrow', 'heading'])
+    expect(Object.keys(fields).sort()).toEqual(['eyebrow', 'heading', 'layout', 'seatNoun'])
   })
 })
 

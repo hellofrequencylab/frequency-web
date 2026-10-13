@@ -28,20 +28,24 @@ export function WildheartNowLine({ date = new Date(), show = ['season', 'sign', 
   )
 }
 
-/** The bar under a Wildheart site's header: the date line, and the Space's next event when it has one. */
+/** The bar under a Wildheart site's header: the date line, and the Space's next event when it has one
+ *  ("Next Circle Night · Tue Oct 20 · 6:00 PM" when that event is a Circle Night, else "Next · its title"). */
 export function WildheartSubBar({ date = new Date(), next }: { date?: Date; next: { title: string; startsAt: string } | null }) {
   const when = next ? dateLabel(next.startsAt) : null
+  const label = next ? (/^circle night$/i.test(next.title.trim()) ? 'Next Circle Night' : `Next · ${next.title}`) : ''
   return (
     <div className="hs-season">
-      <div className="hs-season-now">
-        <WildheartNowLine date={date} />
+      <div className="hs-season-in">
+        <div className="hs-season-now">
+          <WildheartNowLine date={date} />
+        </div>
+        {next && when && (
+          <p className="hs-season-next">
+            <span>{label}</span> {when.day}
+            {when.time ? ` · ${when.time}` : ''}
+          </p>
+        )}
       </div>
-      {next && when && (
-        <p className="hs-season-next">
-          <span>Next · {next.title}</span> {when.day}
-          {when.time ? ` · ${when.time}` : ''}
-        </p>
-      )}
     </div>
   )
 }

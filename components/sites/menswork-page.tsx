@@ -3,14 +3,18 @@ import {
   ArrowRight,
   CalendarCheck,
   Compass,
+  Feather,
   Footprints,
   GraduationCap,
   Hammer,
+  Hand,
   LifeBuoy,
   ListChecks,
   Map as MapIcon,
   MessageSquare,
+  MoonStar,
   Repeat,
+  Sparkles,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -36,6 +40,7 @@ import {
 } from '@/lib/sites/menswork-page'
 import type { MwCircle, MwEvent, MwJourney, MwLive } from '@/lib/sites/menswork-data'
 import { parseDay, phaseOf } from '@/lib/theme/astrology-wheel'
+import { visClass, type LayoutValue } from '@/lib/page-editor/layout'
 import { InlineText } from './inline-text'
 import { MwBeats, MwCircleFinder, MwYearWheel, type MwCircleCard } from './menswork-live'
 
@@ -69,6 +74,10 @@ const ICONS: Record<string, LucideIcon> = {
   map: MapIcon,
   'message-square': MessageSquare,
   'life-buoy': LifeBuoy,
+  hand: Hand,
+  'moon-star': MoonStar,
+  sparkles: Sparkles,
+  feather: Feather,
 }
 
 export interface MensworkPageInput {
@@ -149,7 +158,10 @@ export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, ren
             )
         }
         })()
-        return wrapSection ? wrapSection(section, Array.isArray(p.at) ? p.at : [p.at]) : section
+        // The block's own visibility (its Layout field): a phone-only or desktop-only block hides as a whole.
+        const vis = Array.isArray(p.at) ? '' : visClass(blocks[p.at].props.layout as LayoutValue)
+        const shown = vis ? <div key={key} className={vis}>{section}</div> : section
+        return wrapSection ? wrapSection(shown, Array.isArray(p.at) ? p.at : [p.at]) : shown
       })}
     </div>
   )
@@ -253,6 +265,7 @@ function Hero({ p, ctx, first }: { p: Props; ctx: Ctx; first: boolean }) {
         <Btn label={str(p.actionPrimaryLabel)} href={str(p.actionPrimaryHref)} ctx={ctx} />
         <Btn label={str(p.actionSecondaryLabel)} href={str(p.actionSecondaryHref)} ctx={ctx} kind="secondary" />
       </div>
+      {str(p.note) && <p className="mw-label mw-hero-note">{str(p.note)}</p>}
     </div>
   )
   return (
@@ -477,8 +490,17 @@ function Quotes({ p }: { p: Props }) {
   )
 }
 
+/** A list line "P · Presence · Arrive in the body" as a beat: its letter, its word and its line. */
+function beatLine(text: string): { letter: string; word: string; body: string } | null {
+  const m = /^([A-Za-z])\s*[·:]\s*([^·:]+?)\s*[·:]\s*(.+)$/.exec(text)
+  return m ? { letter: m[1].toUpperCase(), word: m[2].trim(), body: m[3].trim() } : null
+}
+
 function Story({ p, ctx }: { p: Props; ctx: Ctx }) {
   const items = arr(p.items).map((x) => str(x.text)).filter(Boolean)
+  // A list whose every line is "Letter · Word · line" is the beats, drawn as tiles inside the story.
+  const beats = items.length > 1 ? items.map(beatLine) : []
+  const beatTiles = beats.length > 0 && beats.every(Boolean) ? (beats as { letter: string; word: string; body: string }[]) : null
   const right = p.mediaSide === 'right'
   const hasPhoto = !!imgOf(p.image).src
   return (
@@ -495,7 +517,18 @@ function Story({ p, ctx }: { p: Props; ctx: Ctx }) {
         ) : (
           <Paras text={p.lead} className="mw-lead" />
         )}
-        {p.body === 'list' && <Chevrons items={items} />}
+        {p.body === 'list' && beatTiles && (
+          <div className="mw-beats mw-beats-inline" role="list">
+            {beatTiles.map((b, i) => (
+              <div key={i} className="mw-beat" role="listitem">
+                <span className="mw-beat-l">{b.letter}</span>
+                <span className="mw-beat-w">{b.word}</span>
+                <span className="mw-beat-d">{b.body}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {p.body === 'list' && !beatTiles && <Chevrons items={items} />}
         {str(p.ctaLabel) && (
           <div>
             <Btn label={`${str(p.ctaLabel)} →`} href={str(p.ctaHref)} ctx={ctx} kind="ghost" />
@@ -510,7 +543,7 @@ function Closing({ p, ctx }: { p: Props; ctx: Ctx }) {
   const title = str(p.title) || str(p.heading)
   if (!title) return null
   return (
-    <section className="mw-wrap mw-sec mw-closing">
+    <section className="mw-wrap mw-sec mw-closing" data-background={str(p.background) || undefined}>
       <div>
         <Kicker>{str(p.eyebrow)}</Kicker>
         <Title text={title} accent={str(p.accentWord)} size="m" />
@@ -518,6 +551,7 @@ function Closing({ p, ctx }: { p: Props; ctx: Ctx }) {
       </div>
       <div className="mw-actions">
         <Btn label={str(p.ctaLabel) || str(p.buttonLabel)} href={str(p.ctaHref) || str(p.buttonHref)} ctx={ctx} />
+        <Btn label={str(p.ctaSecondaryLabel)} href={str(p.ctaSecondaryHref)} ctx={ctx} kind="secondary" />
       </div>
     </section>
   )
@@ -669,6 +703,43 @@ function Circles({ p, ctx }: { p: Props; ctx: Ctx }) {
     visitHref: visit?.href ?? null,
     frequencyHref: app(ctx, `/circles/${c.slug}`),
   }))
+  // The block's Layout field picks the shape: the finder (filter, pick, read) or a grid of one card per
+  // circle (where and when, status, name, note, seats and host, a seat bar).
+  if (p.layout === 'grid') {
+    return (
+      <section className="mw-wrap mw-sec">
+        <SecHead p={{ eyebrow: p.eyebrow, title: p.heading }} />
+        <ul className="mw-circle-grid">
+          {cards.map((c) => (
+            <li key={c.id} className="mw-circle-tile">
+              <span className="mw-circle-tile-head">
+                <span className="mw-label">{[c.where, c.meets].filter(Boolean).join(' · ')}</span>
+                <span className={`mw-badge mw-badge-${c.status}`}>{c.status === 'open' ? 'Open' : c.status === 'forming' ? 'Forming' : 'Full'}</span>
+              </span>
+              <h3 className="mw-display mw-s">{c.name}</h3>
+              {c.about && <p className="mw-small">{c.about}</p>}
+              <span className="mw-circle-tile-meta">
+                <span className="mw-label">
+                  {c.members} {str(p.seatNoun) || (c.members === 1 ? 'seat taken' : 'seats taken')}
+                  {c.host ? ` · host ${c.host}` : ''}
+                </span>
+                {c.cap > 0 && (
+                  <span className="mw-progress-bar mw-seats" role="img" aria-label={`${c.members} of ${c.cap} seats`}>
+                    {Array.from({ length: c.cap }, (_, i) => (
+                      <span key={i} data-state={i < c.members ? 'done' : undefined} />
+                    ))}
+                  </span>
+                )}
+              </span>
+              <a href={c.frequencyHref} className="mw-textlink" target="_blank" rel="noopener noreferrer">
+                View on Frequency
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
   return (
     <section className="mw-wrap mw-sec">
       <SecHead p={{ eyebrow: p.eyebrow, title: p.heading }} />
@@ -678,7 +749,9 @@ function Circles({ p, ctx }: { p: Props; ctx: Ctx }) {
 }
 
 function Journeys({ p, ctx }: { p: Props; ctx: Ctx }) {
-  const journeys = ctx.live.journeys
+  // The block's "Only" field narrows the list to the journeys whose title or slug carries the word.
+  const only = str(p.only).toLowerCase()
+  const journeys = only ? ctx.live.journeys.filter((j) => j.title.toLowerCase().includes(only) || j.slug.toLowerCase().includes(only)) : ctx.live.journeys
   if (journeys.length === 0) return null
   return (
     <section className="mw-wrap mw-sec">
@@ -699,6 +772,7 @@ function JourneyCard({ j, ctx }: { j: MwJourney; ctx: Ctx }) {
   // from the event that carries its name; otherwise the first phase's steps are the weeks (the course shape).
   const flat = j.phases.length > 1 && j.phases.every((ph) => ph.steps.length <= 1)
   const first = flat ? { title: j.title, steps: j.phases.map((ph) => ph.steps[0] ?? ph.title) } : j.phases.find((ph) => ph.steps.length > 0)
+  const focus = (i: number) => (flat ? j.phases[i]?.body ?? null : null)
   const name = flat ? '' : (first?.title.toLowerCase() ?? '')
   const dated = flat
     ? j.phases.map((ph) => ctx.live.events.find((e) => e.title.toLowerCase().includes(ph.title.toLowerCase())))
@@ -722,9 +796,10 @@ function JourneyCard({ j, ctx }: { j: MwJourney; ctx: Ctx }) {
             const day = e ? parseDay(e.startsAt) : null
             return (
               <li key={i} data-phase={day ? phaseOf(day) : undefined}>
-                <span className="mw-week-tag">{flat && j.phases[i]?.title.includes(':') ? j.phases[i].title.split(':')[0].trim() : `WK ${String(i + 1).padStart(2, '0')}`}</span>
+                <span className="mw-week-tag">{(flat && /^([^:·]+?)\s*[:·]/.exec(j.phases[i]?.title ?? '')?.[1]?.trim()) || `WK ${String(i + 1).padStart(2, '0')}`}</span>
                 <span className="mw-label">{e ? dateLabel(e.startsAt).day.replace(/^\w+ /, '') : ''}</span>
                 <strong>{t}</strong>
+                {focus(i) && <span className="mw-week-focus">{focus(i)}</span>}
               </li>
             )
           })}

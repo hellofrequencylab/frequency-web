@@ -228,4 +228,16 @@ ${F} .mw-glyph{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Apple Symbol
 ${F} .mw-module-text,${F} .mw-module-dates{display:flex;flex-direction:column;gap:6px;min-width:0}
 ${F} .mw-module-dates>span{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:baseline}
 ${F} .mw-keydates{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+
+${F} .mw-hero-note{margin:4px 0 0}
+${F} .mw-beats-inline{margin-top:20px}
+${F} .mw-beats-inline .mw-beat{cursor:default}
+${F} .mw-beat-d{font-size:14px;line-height:1.4;color:var(--color-text-muted)}
+${F} .mw-beat[aria-pressed] .mw-beat-d{display:none}
+${F} .mw-circle-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+${F} .mw-circle-tile{${CARD};padding:28px;display:flex;flex-direction:column;gap:12px}
+${F} .mw-circle-tile-head,${F} .mw-circle-tile-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+${F} .mw-seats{display:flex;gap:4px}
+${F} .mw-seats span{width:10px;height:8px}
+${F} .mw-week-focus{font-size:15px;line-height:1.4;color:var(--color-text-muted)}
 `

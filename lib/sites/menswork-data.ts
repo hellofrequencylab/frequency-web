@@ -46,8 +46,8 @@ export interface MwJourney {
   title: string
   summary: string | null
   coverImage: string | null
-  /** The outline: each phase with its steps, in order. */
-  phases: { title: string; steps: string[] }[]
+  /** The outline: each phase with its steps, in order, and the phase's own line when it has one. */
+  phases: { title: string; steps: string[]; body?: string | null }[]
 }
 
 export interface MwLive {
@@ -145,7 +145,7 @@ async function readJourneys(spaceId: string): Promise<MwJourney[]> {
     }
     const { data } = await admin
       .from('journey_plan_items')
-      .select('id, plan_id, parent_id, block_type, title, sort_order')
+      .select('id, plan_id, parent_id, block_type, title, body, sort_order')
       .in('plan_id', plans.map((p) => p.id))
       .order('sort_order', { ascending: true })
     const items = data ?? []
@@ -160,7 +160,7 @@ async function readJourneys(spaceId: string): Promise<MwJourney[]> {
           const steps = kids.flatMap((k) =>
             k.block_type === 'module' ? mine.filter((r) => r.parent_id === k.id).map((r) => s(r.title)) : [s(k.title)],
           )
-          return { title: s(ph.title) ?? '', steps: steps.filter((t): t is string => !!t) }
+          return { title: s(ph.title) ?? '', steps: steps.filter((t): t is string => !!t), body: s(ph.body) }
         })
         .filter((ph) => ph.title || ph.steps.length)
       return {

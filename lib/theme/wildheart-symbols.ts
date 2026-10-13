@@ -36,6 +36,7 @@ export const ALCHEMICAL = [
   { id: 'air', name: 'Air', glyph: glyph(0x1f701), meaning: 'breath' },
   { id: 'earth', name: 'Earth', glyph: glyph(0x1f703), meaning: 'body' },
   { id: 'quintessence', name: 'Quintessence', glyph: glyph(0x1f700), meaning: 'spirit' },
+  { id: 'venus', name: 'Venus', glyph: glyph(0x2640), meaning: 'pleasure' },
   { id: 'sun', name: 'Sun', glyph: glyph(0x2609), meaning: 'vitality' },
   { id: 'moon', name: 'Moon', glyph: glyph(0x263d), meaning: 'feeling' },
 ] as const

@@ -672,7 +672,7 @@ export function ZigzagBlock({
 // mode statement | cta | quote. Held to one or two per page so the color stays punctuation.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type AccentBg = 'accent-wash' | 'image-scrim'
+type AccentBg = 'accent-wash' | 'image-scrim' | 'plain'
 type AccentMode = 'statement' | 'cta' | 'quote'
 
 export function AccentBeatBlock({
@@ -739,7 +739,7 @@ export function AccentBeatBlock({
           {/* Reuses the PhotoHero cream veil so the member beat never goes dark. */}
           <div className="absolute inset-0 bg-canvas/85" aria-hidden />
         </>
-      ) : (
+      ) : background === 'plain' ? null : (
         <div className="absolute inset-0 bg-primary-bg" aria-hidden />
       )}
       {inner}
@@ -855,6 +855,7 @@ export const designComponents: Record<string, ComponentConfig> = {
       actionPrimaryHref: { type: 'text', label: 'Primary button link' },
       actionSecondaryLabel: { type: 'text', label: 'Secondary button label' },
       actionSecondaryHref: { type: 'text', label: 'Secondary button link' },
+      note: { type: 'text', label: 'A small line under the buttons (optional)' },
       layout: blockFields().layout,
     },
     // Demo defaults that EXPLAIN each slot (Fix 7): the copy reads as a prompt, not real marketing, so an
@@ -875,6 +876,7 @@ export const designComponents: Record<string, ComponentConfig> = {
       actionPrimaryHref: '',
       actionSecondaryLabel: '',
       actionSecondaryHref: '',
+      note: '',
       layout: blockLayoutDefaults.layout,
     },
     render: ({
@@ -1168,6 +1170,7 @@ export const designComponents: Record<string, ComponentConfig> = {
         options: [
           { label: 'Accent wash', value: 'accent-wash' },
           { label: 'Image scrim', value: 'image-scrim' },
+          { label: 'Plain (no wash)', value: 'plain' },
         ],
       },
       mode: {
@@ -1189,6 +1192,8 @@ export const designComponents: Record<string, ComponentConfig> = {
       quoteBy: { type: 'text', label: 'Attribution (quote mode)' },
       ctaLabel: { type: 'text', label: 'Button label (CTA mode)' },
       ctaHref: { type: 'text', label: 'Button link' },
+      ctaSecondaryLabel: { type: 'text', label: 'Second button label (optional)' },
+      ctaSecondaryHref: { type: 'text', label: 'Second button link' },
       layout: blockFields().layout,
     },
     // Demo defaults that EXPLAIN each slot (Fix 7): a prompt call to action, not real marketing.
@@ -1205,6 +1210,8 @@ export const designComponents: Record<string, ComponentConfig> = {
       quoteBy: '',
       ctaLabel: 'Button text',
       ctaHref: '',
+      ctaSecondaryLabel: '',
+      ctaSecondaryHref: '',
       layout: blockLayoutDefaults.layout,
     },
     render: ({ background, mode, image, alt, headerFont, eyebrow, title, accentWord, body, quoteBy, ctaLabel, ctaHref, layout }) => (

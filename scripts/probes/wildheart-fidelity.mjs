@@ -37,7 +37,8 @@ const ids = new Set()
 const used = new Map()
 for (const [slug, doc] of Object.entries(docs)) {
   const blocks = doc.content
-  assert.ok(blocks.length >= 4, `${slug} has a composition, not a stub`)
+  // LIVE-904: the handoff's Retreat and About screens are one section each.
+  assert.ok(blocks.length >= 1, `${slug} has a composition, not a stub`)
   assert.ok(['PhotoHero', 'WildheartMarkSplit'].includes(blocks[0].type), `${slug} leads with a banner`)
   for (const b of blocks) {
     assert.ok(registry.has(b.type), `${slug}: ${b.type} is a registered block`)
@@ -51,7 +52,8 @@ for (const [slug, doc] of Object.entries(docs)) {
     assert.ok(!/#[0-9a-f]{3,8}\b/i.test(json), `${slug}: no hex in ${b.type}`)
   }
 }
-for (const [slug, live] of [['home', 'SpaceEvents'], ['home', 'WildheartSeasonBand'], ['program', 'SpacePractices'], ['circles', 'SpaceCommunity'], ['the-year', 'WildheartSkyMap'], ['retreat', 'SpaceEvents']]) {
+// LIVE-904: Home draws the rows through the season band and the year journey, the Retreat screen is its hero.
+for (const [slug, live] of [['home', 'WildheartYearJourney'], ['home', 'WildheartSeasonBand'], ['program', 'SpacePractices'], ['circles', 'SpaceCommunity'], ['the-year', 'WildheartSkyMap']]) {
   assert.ok(docs[slug].content.some((b) => b.type === live), `${slug} draws the Space's own rows through ${live}`)
 }
 
@@ -65,7 +67,7 @@ assert.ok(skin.WILDHEART_CSS.includes('[data-house-site][data-house-theme="wildh
 const sheet = skin.WILDHEART_CSS.slice(tokens.WILDHEART_TOKENS_CSS.length)
 assert.ok(!/#[0-9a-f]{3,8}\b/i.test(sheet) && !/rgba?\(/.test(sheet), 'the skin carries no colour literal')
 const bytes = Buffer.byteLength(skin.WILDHEART_CSS)
-assert.ok(bytes < 128 * 1024, `the theme CSS is ${bytes} bytes, under 128KB`)
+assert.ok(bytes < 160 * 1024, `the theme CSS is ${bytes} bytes, under 160KB (raised from 128KB by LIVE-904, the pinned year journey and the sky map)`)
 
 // 3. The composition blocks and the Home wiring.
 const blocksSrc = readFileSync('components/page-editor/blocks/wildheart.tsx', 'utf8')

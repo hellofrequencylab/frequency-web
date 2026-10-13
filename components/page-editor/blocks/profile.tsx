@@ -2033,12 +2033,14 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: { type: 'text', label: 'Heading (optional)' },
       practicesHeading: { type: 'text', label: 'Practices label' },
       journeysHeading: { type: 'text', label: 'Journeys label' },
+      only: { type: 'text', label: 'Only journeys whose title has this word (website pages, optional)' },
     },
     defaultProps: {
       eyebrow: 'Start here',
       heading: 'Practices and journeys',
       practicesHeading: 'Practices to start',
       journeysHeading: 'Journeys to begin',
+      only: '',
     },
     render: ({ eyebrow, heading, practicesHeading, journeysHeading, puck }) => {
       const data = practicesFrom(puck)
@@ -2076,10 +2078,14 @@ export const profileComponents: Record<string, ComponentConfig> = {
     fields: {
       eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading (optional)' },
+      layout: { type: 'select', label: 'Shape on a website page', options: [{ label: 'Finder (filter and pick)', value: 'finder' }, { label: 'Grid (a card per circle)', value: 'grid' }] },
+      seatNoun: { type: 'text', label: 'What a seat count names in the grid (e.g. members)' },
     },
     defaultProps: {
       eyebrow: 'Join in',
       heading: 'Circles',
+      layout: 'finder',
+      seatNoun: '',
     },
     render: ({ eyebrow, heading, puck }) => {
       const circles = communityFrom(puck)
