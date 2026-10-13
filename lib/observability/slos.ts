@@ -180,8 +180,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'every 15 min',
     freshByMinutes: 30,
-    jobs: ['nurture', 'event-reminders', 'space-follower-event-reminders'],
-    why: 'member re-engagement + event attendance',
+    jobs: ['nurture', 'event-reminders', 'space-follower-event-reminders', 'space-inbox-verify'],
+    why: 'member re-engagement + event attendance + the Space inbox address finishing on its own (EMAIL-022)',
   },
   {
     group: 'every 30 min',
@@ -437,6 +437,11 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   // inbox, not a lost record: the next Thursday reads the same live Events under a fresh ISO-week
   // key, and `cron.this_week.counts` in the runtime logs says whether it ran. When a check frees
   // up, the owner creates a `this-week` check and this entry moves to CRON_MONITORED.
+  // EMAIL-022: unmonitored only because the 20-check plan is full. A missed run leaves an address
+  // pending 15 minutes longer; the next run reads the same rows, and the card's Check again button
+  // still works. When a check frees up, the owner creates a `space-inbox-verify` check and this entry
+  // moves to CRON_MONITORED.
+  { job: 'space-inbox-verify', reason: 'finishes Space inbox address setup (EMAIL-022); a missed run delays verified by one interval and the next run reads the same rows, and no check is free on the 20-check plan' },
   { job: 'this-week', reason: 'the Thursday "This week in <region>" email (LIVE-806); a missed week is a quiet inbox the next Thursday fills from live Events, and no check is free on the 20-check plan' },
 ]
 

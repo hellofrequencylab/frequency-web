@@ -17,6 +17,9 @@ const state = vi.hoisted(() => ({
   appended: [] as Record<string, unknown>[],
   appendResult: { id: 'msg1' } as Record<string, unknown> | null,
   records: null as Record<string, unknown>[] | null,
+  listRows: [] as Record<string, unknown>[],
+  listCalls: [] as Record<string, unknown>[],
+  listFails: false,
 }))
 const RECORDS = [
   { record: 'Receiving', type: 'MX', name: '@', value: 'inbound-smtp.resend.com', priority: 10, ttl: 'Auto', status: 'pending' },
@@ -36,7 +39,9 @@ const providerRecords = () => state.records ?? RECORDS
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name: string) => {
   const filter: Record<string, unknown> = {}; let insert: Record<string, unknown> | null = null; let upsert: Record<string, unknown> | null = null
   const q = {
-    select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: () => q,
+    select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: (n: number) => { state.listCalls.push({ limit: n }); return q },
+    or: (f: string) => { state.listCalls.push({ or: f }); return q }, order: (k: string, o: Record<string, unknown>) => { state.listCalls.push({ order: `${k} ${JSON.stringify(o)}` }); return q },
+    then: (resolve: (v: { data: unknown; error: unknown }) => unknown) => Promise.resolve(resolve(state.listFails ? { data: null, error: { message: 'list down' } } : { data: state.listRows, error: null })),
     insert: (v: Record<string, unknown>) => { insert = v; return q }, update: () => q, upsert: (v: Record<string, unknown>) => { upsert = v; return q },
     single: async () => {
       if (name === 'space_inbox_addresses') { if (state.upsertFails) return { data: null, error: { code: 'XX000' } }; state.row = { id: 'row1', local_part: 'hello', verified_at: null, dns_records: [], ...state.row, ...upsert }; return { data: state.row, error: null } }
@@ -66,12 +71,13 @@ vi.mock('./conversations', () => ({
 }))
 vi.mock('./tenant-reply-alias', () => ({ quarantineTenantReplyAlias: vi.fn(async () => undefined) }))
 
-import { provisionSpaceInboxAddress, checkSpaceInboxAddress, resolveSpaceInboxFrom, resolveSpaceInboxRoute, recordSpaceInboxMessage } from './space-inbox-address'
+import { provisionSpaceInboxAddress, checkSpaceInboxAddress, resolveSpaceInboxFrom, resolveSpaceInboxRoute, recordSpaceInboxMessage, listSpaceInboxAddressesToFinish } from './space-inbox-address'
 import { providerRecordHost, providerRecordsToZoneRecords, spaceInboxZone } from './space-inbox-address-core'
 
 beforeEach(() => {
   state.row = null; state.contacts = []; state.createCount = 0; state.listed = null; state.providerStatus = 'verified'; state.providerThrows = false
   state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.appended = []; state.appendResult = { id: 'msg1' }; state.records = null
+  state.listRows = []; state.listCalls = []; state.listFails = false
   state.space = { id: 's1', slug: 'labs', name: 'Labs', brand_name: 'Labs Collective', owner_profile_id: 'owner1' }
   vi.stubEnv('SPACE_INBOX_ADDRESSES_ENABLED', '1'); vi.stubEnv('SPACE_EMAIL_INBOX_ROOT', 'frequencylocal.com')
 })
@@ -144,6 +150,28 @@ describe('provisionSpaceInboxAddress', () => {
     expect(await provisionSpaceInboxAddress('s1')).toMatchObject({ ok: false })
     expect(state.dnsCalls).toHaveLength(1)
   })
+  it('stamps dns_written_at when the zone write succeeds, and clears it when the write fails (the cron reads it)', async () => {
+    state.providerStatus = 'pending'
+    await provisionSpaceInboxAddress('s1')
+    const written = state.row?.dns_written_at as string
+    expect(written).toBeTruthy()
+    expect(Number.isNaN(Date.parse(written))).toBe(false)
+    state.dnsOk = false
+    expect(await provisionSpaceInboxAddress('s1')).toMatchObject({ ok: false, message: expect.stringContaining('tried again on its own') })
+    expect(state.row?.dns_written_at).toBeNull()
+    expect(state.row?.provider_domain_id).toBe('prov1')
+    state.dnsOk = true
+    await provisionSpaceInboxAddress('s1')
+    expect(state.row?.dns_written_at).toBeTruthy()
+  })
+  it('a check leaves dns_written_at as it was', async () => {
+    state.providerStatus = 'pending'
+    await provisionSpaceInboxAddress('s1')
+    const written = state.row?.dns_written_at
+    state.providerStatus = 'verified'
+    await checkSpaceInboxAddress('s1')
+    expect(state.row).toMatchObject({ state: 'verified', dns_written_at: written })
+  })
   it('leaves a paused address alone', async () => {
     state.row = { space_id: 's1', domain: 'labs.frequencylocal.com', local_part: 'hello', provider_domain_id: 'prov1', state: 'paused', dns_records: [] }
     expect(await provisionSpaceInboxAddress('s1')).toMatchObject({ ok: false, message: expect.stringContaining('paused') })
@@ -166,6 +194,21 @@ describe('checkSpaceInboxAddress', () => {
     expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: false })
     await provisionSpaceInboxAddress('s1'); state.providerThrows = true
     expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: false })
+  })
+})
+
+describe('listSpaceInboxAddressesToFinish', () => {
+  it('asks for pending rows and recent failures, oldest first, within the limit, and throws on a read fault', async () => {
+    state.listRows = [{ id: 'r1', space_id: 's1', state: 'pending', dns_written_at: null }]
+    const rows = await listSpaceInboxAddressesToFinish({ limit: 25, failedSince: '2026-10-12T12:00:00.000Z' })
+    expect(rows).toEqual([expect.objectContaining({ space_id: 's1' })])
+    expect(state.listCalls).toEqual([
+      { or: 'state.eq.pending,and(state.eq.failed,updated_at.gte.2026-10-12T12:00:00.000Z)' },
+      { order: 'updated_at {"ascending":true}' },
+      { limit: 25 },
+    ])
+    state.listFails = true
+    await expect(listSpaceInboxAddressesToFinish({ limit: 25, failedSince: '2026-10-12T12:00:00.000Z' })).rejects.toThrow('list down')
   })
 })
 
