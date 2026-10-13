@@ -10,15 +10,16 @@ import { WhGlyph, WhMoon } from './wildheart-symbols'
 
 export function WildheartNowLine({ date = new Date(), show = ['season', 'sign', 'house', 'moon'] }: { date?: Date; show?: readonly ('season' | 'sign' | 'house' | 'moon')[] }) {
   const s = sky(date)
-  const parts: React.ReactNode[] = []
-  if (show.includes('season')) parts.push(<span key="season" className="wh-nowline-season">{s.seasonName} · {s.seasonTheme}</span>)
-  if (show.includes('sign')) parts.push(<span key="sign"><WhGlyph name={s.sign} size={14} />{s.signName}</span>)
-  if (show.includes('house')) parts.push(<span key="house">{s.house} · {s.houseName}</span>)
-  if (show.includes('moon')) parts.push(<span key="moon" className="wh-nowline-moon"><WhMoon phase={s.phase} size={12} />{s.phaseName}</span>)
+  const parts: [string, React.ReactNode][] = []
+  if (show.includes('season')) parts.push(['season', <span key="season" className="wh-nowline-season">{s.seasonName} · {s.seasonTheme}</span>])
+  if (show.includes('sign')) parts.push(['sign', <span key="sign"><WhGlyph name={s.sign} size={14} />{s.signName}</span>])
+  if (show.includes('house')) parts.push(['house', <span key="house">{s.house} · {s.houseName}</span>])
+  if (show.includes('moon')) parts.push(['moon', <span key="moon" className="wh-nowline-moon"><WhMoon phase={s.phase} size={12} />{s.phaseName}</span>])
   return (
     <p className="wh-nowline">
-      {parts.map((p, i) => (
-        <span key={i} style={{ display: 'contents' }}>
+      {parts.map(([key, p], i) => (
+        // Each part with its own leading dot, so a theme can hide one part whole (the house on a phone).
+        <span key={key} className={`wh-nowline-part wh-nowline-${key}-part`} style={{ display: 'contents' }}>
           {i > 0 && <span className="wh-nowline-dot" aria-hidden="true" />}
           {p}
         </span>

@@ -609,7 +609,8 @@ function EventRow({ e, ctx }: { e: MwEvent; ctx: Ctx }) {
   const day = end && end.day !== start.day ? `${start.day} to ${end.day.replace(/^\w+ /, '')}` : start.day
   return (
     <li className="mw-date-row">
-      <span className="mw-date-mark" data-kind={isCircleNight(e) ? 'circle' : /retreat/i.test(e.title) ? 'retreat' : 'event'} aria-hidden />
+      {/* The day's moon (0 new to 7) rides the mark as data a theme may draw; the kind colours it. */}
+      <span className="mw-date-mark" data-kind={isCircleNight(e) ? 'circle' : /retreat/i.test(e.title) ? 'retreat' : 'event'} data-phase={(() => { const d = parseDay(e.startsAt); return d ? phaseOf(d) : undefined })()} aria-hidden />
       <span className="mw-label mw-label-strong">
         {day}
         {start.time && !end?.day ? ` · ${start.time}` : start.time && end?.day === start.day ? ` · ${start.time}` : ''}

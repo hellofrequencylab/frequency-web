@@ -10,6 +10,7 @@ import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
 import { WILDHEART_CSS } from './wildheart-css'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhOrnament } from './wildheart-symbols'
+import { sky } from '@/lib/theme/astrology-wheel'
 import { SITE_LOOK_CSS } from './site-look-css'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
@@ -130,6 +131,7 @@ export function SiteChrome({
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
       data-season={skin?.season}
+      data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}
       data-site-corners={look.corners}
       data-site-spacing={look.spacing}
       data-site-header={look.header}
