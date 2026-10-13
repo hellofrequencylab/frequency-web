@@ -2,8 +2,10 @@
 
 // THE FREQUENCY MEMBER HEADER (shell.js + Members.dc.html `navVals()`; README §1 "Header").
 //
-// Sticky, 76px: the flowing wordmark (sized to the left rail so it sits over it), the Home /
-// Community / The Quest / You pill whose triggers open the full-width mega menu, then Search (⌘K),
+// Sticky, 76px: the flowing wordmark (sized to the left rail so it sits over it; it goes to the Feed,
+// and on the Feed it scrolls to the top and refreshes the stream), the pill: a Feed / Home link (it
+// reads "Home" on the Feed, "Feed" everywhere else) then the Community / The Quest / You triggers
+// that open the full-width mega menu, then Search (⌘K),
 // Messages, Notifications (a 360px sheet), the Zap button (the "Capture a moment." sheet) and the
 // avatar. Transparent at the top of the page, frosted while scrolling or with a menu open, and a
 // lighter frost once the page has been still for 900ms. Escape, an outside click or a navigation
@@ -13,7 +15,7 @@
 // the viewer's streak); nothing is sample data.
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Suspense, use, useEffect, useRef, useState, useTransition } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { SearchOverlay } from '@/components/search/search-overlay'
@@ -23,7 +25,7 @@ import type { NotificationItem } from '@/lib/notifications-map'
 import { notificationHref } from '@/lib/notifications/href'
 import { relativeTime, getInitials } from '@/lib/utils'
 import { isFullViewportEditor } from '@/lib/layout/page-chrome'
-import { FQ_NAV, FQ_SITE_LINKS, areaFor, canShow, photoUrl, resolveHref, type FqNavSection } from './nav'
+import { FEED_HREF, FQ_NAV, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqNavSection } from './nav'
 import { avatarBg } from './avatar'
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | null
@@ -35,14 +37,16 @@ export interface FqHeaderProps {
   navAccess?: Record<string, string>
   unreadCount: number
   messagesUnread: number
-  /** The viewer's streak, resolved behind Suspense (the Home menu's footer line). */
+  /** The viewer's streak, resolved behind Suspense (The Quest menu's footer line). */
   streak: Promise<number>
   viewer: NavViewer
 }
 
 export function FqHeader({ profile, profileHref, navAccess, unreadCount, messagesUnread, streak, viewer }: FqHeaderProps) {
   const pathname = usePathname() ?? ''
+  const router = useRouter()
   const area = areaFor(pathname, profileHref)
+  const first = homeFeedItem(pathname)
   const [open, setOpen] = useState<Open>(null)
   const [hdr, setHdr] = useState<HdrState>('top')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -99,12 +103,26 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
   const section = FQ_NAV.find((s) => s.key === open) ?? null
   const state: HdrState = open ? 'active' : hdr
 
+  // A Link to the page you are on does nothing, so on the Feed the logo goes back to the top of the
+  // stream and refreshes it instead.
+  const onLogo = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname !== FEED_HREF || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    e.preventDefault()
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' })
+    router.refresh()
+  }
+
   return (
     <div className="fqm-top">
       <header className="ap-hdr" data-hdr={state}>
-        <Link href="/feed" className="ap-logo fq-logo-flow fqm-logo" aria-label="Frequency home" />
+        <Link href={FEED_HREF} className="ap-logo fq-logo-flow fqm-logo" aria-label="Frequency, your Feed" onClick={onLogo} />
         <div className="fqm-cluster">
           <nav className="ap-nav" aria-label="Sections">
+            <Link href={first.href} title={first.label}>
+              <FqIcon name={first.icon} />
+              <span>{first.label}</span>
+            </Link>
             {FQ_NAV.map((s) => {
               const on = open === s.key || (open == null && area === s.key)
               return (
@@ -216,7 +234,7 @@ function MegaMenu({
         </div>
       </div>
       <div className="fqm-panel-foot">
-        {section.key === 'home' ? (
+        {section.key === 'quest' ? (
           <Suspense fallback={<span>{section.foot}</span>}>
             <StreakFoot streak={streak} line={section.foot} />
           </Suspense>
