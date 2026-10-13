@@ -11,7 +11,7 @@ import { loadOnAirSessionData } from '@/lib/on-air/session-data'
 import { FocusTemplate } from '@/components/templates'
 import { OnAirSession } from '@/components/on-air/session'
 import { SITE_DESIGN } from '@/lib/theme/design'
-import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { MindlessEmpty } from '@/components/frequency/members/mindless/mindless-empty'
 import { MindlessDoor } from '@/components/frequency/members/mindless/mindless-door'
 
 export const metadata: Metadata = {
@@ -40,28 +40,7 @@ export default async function OnAirPage({
   // the empty "adopt a practice first" state.
   if (practices.length === 0) {
     // FREQUENCY (ADR-1737): the same empty state, in the members kit.
-    if (SITE_DESIGN === 'frequency') {
-      return (
-        <MembersBody>
-          <div className="head">
-            <div>
-              <span className="k">The Quest · Mindless</span>
-              <h1 className="h1">
-                Tune <span className="serif">out.</span>
-              </h1>
-              <span className="meta">The world can wait a few minutes. Breathe, log, collect the day.</span>
-            </div>
-          </div>
-          <div className="soft stack mc-start">
-            <span className="h3">Nothing on your list yet.</span>
-            <span className="t2">Adopt a practice first; then this is where you do it.</span>
-            <Link className="btn pa" href="/practices">
-              Browse practices
-            </Link>
-          </div>
-        </MembersBody>
-      )
-    }
+    if (SITE_DESIGN === 'frequency') return <MindlessEmpty />
     return (
       <FocusTemplate
         eyebrow="The Quest"
