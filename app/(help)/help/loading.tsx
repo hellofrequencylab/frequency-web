@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyHelpLoading } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 // Loading skeleton for the Help Center home. Mirrors the header + the
 // two-column grid of category cards.
@@ -17,6 +19,8 @@ function CategoryCardSkeleton() {
 }
 
 export default function HelpLoading() {
+  // Under Frequency (build-time) the wait is the help hero's frame, so nothing jumps when it lands.
+  if (SITE_DESIGN === 'frequency') return <FrequencyHelpLoading />
   return (
     <div>
       <div className="mb-10 space-y-3">

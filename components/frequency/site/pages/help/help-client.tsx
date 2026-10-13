@@ -105,16 +105,44 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
   )
 }
 
+/** The reference's #hpc: your email, the message, Send, and a thank-you in place of the form. The
+ *  "your email" field rides in the message as the reply-to line, so the person answering sees it even
+ *  when the visitor sends from another address. The thank-you does not promise a reply time. */
 export function HelpContact({ email }: { email: string }) {
+  const [from, setFrom] = useState('')
   const [message, setMessage] = useState('')
+  const [sent, setSent] = useState(false)
+  if (sent)
+    return (
+      <div className="hp-c" role="status">
+        <p className="hp-ok">Thanks. Your email app should be open with your message, ready to send.</p>
+        <small>
+          If it didn’t open, write to <a href={`mailto:${email}`}>{email}</a>.{' '}
+          <button type="button" className="hp-again" onClick={() => setSent(false)}>
+            Edit the message
+          </button>
+        </small>
+      </div>
+    )
   return (
     <form
       className="hp-c"
       onSubmit={(e) => {
         e.preventDefault()
-        window.location.href = `mailto:${email}?subject=${encodeURIComponent('Help')}&body=${encodeURIComponent(message)}`
+        const body = from ? `Reply to: ${from}\n\n${message}` : message
+        window.location.href = `mailto:${email}?subject=${encodeURIComponent('Help')}&body=${encodeURIComponent(body)}`
+        setSent(true)
       }}
     >
+      <input
+        required
+        type="email"
+        placeholder="Your email"
+        aria-label="Your email"
+        autoComplete="email"
+        value={from}
+        onChange={(e) => setFrom(e.target.value)}
+      />
       <textarea
         required
         placeholder="What’s going on?"

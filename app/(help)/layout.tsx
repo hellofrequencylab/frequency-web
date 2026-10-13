@@ -7,10 +7,22 @@ import { SupportChatLauncher } from '@/components/chat/support-chat-launcher'
 import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
 import { getAllCategories, getSearchIndex, helpHref } from '@/lib/help/content'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Help-center chrome: shared marketing header/footer + a sticky sidebar (search +
 // topic nav). Public (not in proxy.ts PROTECTED_PATHS), statically generated.
 export default async function HelpLayout({ children }: { children: React.ReactNode }) {
+  // THE DESIGN SWITCH (ADR-1737, build-time), as app/(marketing)/layout.tsx makes it. Under Frequency
+  // the help center wears the public site's chrome (kit root, header v4, ft2 footer, FX) and no DAWN
+  // sidebar: Help.html's front page carries its own search and topic tabs, and every inner page
+  // (topic, article, What's new) renders its body in the kit (components/frequency/site/pages/help).
+  // The DB menu reads and the sidebar's index are skipped; DAWN is unchanged below.
+  if (SITE_DESIGN === 'frequency') {
+    const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
+    return <SiteShell after={chat}>{children}</SiteShell>
+  }
+
   // DB-backed nav megas (lib/menus); fall back to code defaults on any miss.
   const [categories, index, headerMenu, footerMenu, menuTimings] = await Promise.all([
     getAllCategories(),

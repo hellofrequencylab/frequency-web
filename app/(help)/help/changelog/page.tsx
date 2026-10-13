@@ -6,6 +6,8 @@ import { HelpMarkdown } from '@/components/help/help-markdown'
 import { StreamTemplate } from '@/components/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyHelpChangelog } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 // "What's new" renders the human-facing CHANGELOG (docs/CHANGELOG.md) directly,
 // so the public version history IS the changelog: one source, auto-updated on
@@ -36,6 +38,21 @@ export default async function ChangelogPage() {
   // The shared header now carries the "What's new" title, so drop a leading H1
   // from the markdown to avoid a duplicate heading.
   const content = body.replace(/^#\s+.*(?:\r?\n)+/, '')
+
+  // The Frequency design (ADR-1737, build-time): the same changelog in the kit's reading column.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd
+          data={breadcrumbSchema([
+            { name: 'Help', path: '/help' },
+            { name: "What's new", path: '/help/changelog' },
+          ])}
+        />
+        <FrequencyHelpChangelog body={content} />
+      </>
+    )
+  }
 
   return (
     <StreamTemplate
