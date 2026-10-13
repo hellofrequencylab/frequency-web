@@ -8,7 +8,7 @@ import { FocusTemplate } from '@/components/templates'
 
 // ── Layout helpers ─────────────────────────────────────────────────────
 
-export function Layout({
+export function UnsubscribeFrame({
   title,
   description,
   children,
