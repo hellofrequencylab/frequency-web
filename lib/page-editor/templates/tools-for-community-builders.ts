@@ -2,7 +2,7 @@ import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/a
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOOLS FOR COMMUNITY BUILDERS — the SEVENTH seeker article enrolled in the page
-// editor (UX-MATURITY-PLAN Lift 5d, ADR-1068). The Labs-track pillar: "tools for
+// editor (UX-MATURITY-PLAN Lift 5d, ADR-1068). The builder-track pillar: "tools for
 // community builders", "best tools to build a community", "community building
 // software". It is the one article in the set that speaks to the Latent Leader /
 // builder assembling the stack (CONTENT-VOICE §2b) rather than to the Seeker, so
@@ -113,7 +113,7 @@ export const spec: ArticleSpec = {
           alt: 'A small group gathered on a sunlit lawn, settled into easy conversation',
           eyebrow: 'How Frequency helps',
           title: 'The whole stack, in one Space.',
-          body: 'Frequency Labs bundles the four jobs into a Space so you stop being the glue between apps. The front door lives in Discover, the gathering runs as Circles and Runs, the feed runs on Channels and Dispatch, and the recognition runs on Zaps and Gems. One place, one login, one room.\n\nYou keep your voice and your practice. The toolkit carries the parts that usually trip a builder up, so a community you are holding together by hand today can run on rails tomorrow.',
+          body: 'Frequency bundles the four jobs into a Space so you stop being the glue between apps. The front door lives in Discover, the gathering runs as Circles and Runs, the feed runs on Channels and Dispatch, and the recognition runs on Zaps and Gems. One place, one login, one room.\n\nYou keep your voice and your practice. The toolkit carries the parts that usually trip a builder up, so a community you are holding together by hand today can run on rails tomorrow.',
           side: 'right',
           ctaLabel: 'The operator playbook',
           ctaHref: '/how-to-build-community',
@@ -123,10 +123,10 @@ export const spec: ArticleSpec = {
     {
       question: 'Where to start',
       answer:
-        'The fastest way to get the toolkit is to claim a Space: your front door, your Circles, your feed, and your recognition in one place, free to start. If you want to see where the Labs toolkit is headed as a physical third space, tour The Lab. Both are the same idea at different sizes.',
+        'The fastest way to get the toolkit is to claim a Space: your front door, your Circles, your feed, and your recognition in one place, free to start. If you want to see where the same idea is headed as a physical third space, read the plan for The Lab, the room the community means to open in 2028. Both are the same idea at different sizes.',
       links: [
         { label: 'Get the toolkit', href: '/for/community-builders', variant: 'primary' },
-        { label: 'Tour The Lab', href: '/the-lab', variant: 'secondary' },
+        { label: 'See the plan for The Lab', href: '/the-lab', variant: 'secondary' },
       ],
     },
   ],
@@ -142,7 +142,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What is the best tool to build a community?',
-      a: 'The best tool is the one that covers the four jobs, a way in, a place to gather, a shared feed, and recognition, without making you the glue between five other apps. Frequency Labs bundles them into a Space: a front door in Discover, Circles and Runs to gather, Channels and Dispatch for the feed, and Zaps and Gems for recognition, all in one place.',
+      a: 'The best tool is the one that covers the four jobs, a way in, a place to gather, a shared feed, and recognition, without making you the glue between five other apps. Frequency bundles them into a Space: a front door in Discover, Circles and Runs to gather, Channels and Dispatch for the feed, and Zaps and Gems for recognition, all in one place.',
     },
     {
       q: 'How do I get new people to find my community?',
@@ -160,7 +160,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'Stop being the glue between five apps.',
-    body: 'Frequency Labs puts the front door, the gatherings, the feed, and the recognition in one Space. Start a Space free and get the toolkit.',
+    body: 'Frequency puts the front door, the gatherings, the feed, and the recognition in one Space. Start a Space free and get the toolkit.',
   },
 }
 

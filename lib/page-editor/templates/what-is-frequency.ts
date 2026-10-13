@@ -1,5 +1,5 @@
 import { articleTemplate, type ArticleSpec, type ArticleTier } from '@/lib/page-editor/templates/article'
-import { FOUNDING_PLACE } from '@/lib/site'
+import { CATEGORY_LINE, FOUNDING_PLACE } from '@/lib/site'
 import { priceStringsFrom, defaultPricingInput, CREW_NOTE } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
@@ -162,14 +162,14 @@ return {
   eyebrow: 'The short version',
   title: 'What is Frequency?',
   subtitle:
-    'Frequency is a Community Collective. Small local Circles, nearby Events, a real space to gather, and the tools creators and businesses need to grow together. You keep 100% of your own bookings.',
+    `${CATEGORY_LINE} Small Circles that meet on a rhythm, nearby Events, and the tools creators and businesses need to grow together. You keep 100% of your own bookings.`,
   image: HERO_IMAGE,
   alt: 'A small group sitting together on a sunlit lawn, settled into easy conversation',
   heroCtaLabel: "See what's happening near you",
   heroCtaHref: '/discover',
 
   answer:
-    'Frequency is a Community Collective built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood everything it needs to gather in one place.',
+    `${CATEGORY_LINE} Frequency is built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood everything it needs to gather in one place.`,
   intro:
     'The corner cafe, the town square, the standing table: we traded them for feeds and followers and lost the room. Frequency is the deliberate rebuild. You find a few people near you, join a small group that meets on a rhythm, and show up in person. The creators, coaches, and businesses who host those groups get the booking, payment, and community tools to grow together, and keep 100% of their own bookings while they do. The app is only the thread that gets everyone into the room.',
   openingBeat: {
@@ -225,8 +225,8 @@ return {
     {
       question: 'What is The Lab?',
       answer:
-        'The Lab is the physical third space the community gathers in: a real place you can walk into, not another tab to open.',
-      body: `Movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor, tuned to bring you back to yourself and then back to each other. A feed can keep people warm between meetings; it cannot hold a sound bath or the hour after when nobody wants to leave. The first Lab is taking root in ${FOUNDING_PLACE}.`,
+        'The Lab is the physical third space the community plans to build: a real place to walk into, not another tab to open. It is not open yet, and nothing there is bookable.',
+      body: `It is meant to hold movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor, tuned to bring you back to yourself and then back to each other. A feed can keep people warm between meetings; it cannot hold a sound bath or the hour after when nobody wants to leave. The first Lab is planned to open in ${FOUNDING_PLACE} in 2028. Until then the community meets in rooms we borrow. Community first, building second.`,
     },
     {
       question: 'Is Frequency a social media app?',
@@ -255,8 +255,8 @@ return {
       // ADR-1715: every family of reader, in their own words, never by an internal archetype name.
       // The bullet form of the same answer is lib/marketing/who-its-for.ts (llms.txt reads it).
       answer:
-        'People who want to calm down fast with a few minutes on the breathing timer. People who just moved and want friends nearby, or would rather start with a run club or a supper club than small talk. The ones who already bring others together and want to host one Circle, and members who pay for Crew so it stays free for everyone. And the teachers, practitioners, studio owners and organizers who run the rooms.',
-      body: 'This is what makes Frequency a Community Collective. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: hosting is free, Business is what you take when you start selling, and a plan is never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
+        'People who want to calm down fast with a few minutes on the breathing timer. People who just moved and want friends nearby, or would rather start with a run club or a supper club than small talk. The ones who already bring others together and want to host one Circle, and members who back Frequency with Crew. And the teachers, practitioners, studio owners and organizers who run the rooms.',
+      body: 'That is the Community Collective idea. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: hosting is free, Business is what you take when you start selling, and a plan is never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
       links: [{ label: 'See the plans and take-rates', href: '/pricing', variant: 'secondary' }],
     },
     {
@@ -298,7 +298,7 @@ return {
         },
         {
           title: 'The Lab',
-          body: 'The physical third space: movement studios, a thermal circuit, a cold pool.',
+          body: 'The plan for a physical third space, opening in 2028: movement studios, a thermal circuit, a cold pool.',
           href: '/the-lab',
         },
         {
@@ -325,7 +325,7 @@ return {
   faq: [
     {
       q: 'What is Frequency?',
-      a: 'Frequency is a Community Collective built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood everything it needs to gather in one place through small local Circles, nearby Events, and a physical space to meet, and gives the creators, coaches, and businesses who host them the tools to grow together, while everyone keeps 100% of their own bookings.',
+      a: `${CATEGORY_LINE} Frequency is built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood what it needs to gather through small local Circles and nearby Events, and gives the creators, coaches, and businesses who host them the tools to grow together, while everyone keeps 100% of their own bookings. A physical space of its own, The Lab, is planned for 2028.`,
     },
     {
       q: 'How does Frequency work?',
@@ -349,7 +349,7 @@ return {
     },
     {
       q: 'What is The Lab?',
-      a: 'The Lab is the physical third space the community gathers in: movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor. The app is the thread that brings people together; the Lab is the room it lands in. The first one is taking root in ' + FOUNDING_PLACE + '.',
+      a: 'The Lab is the physical third space the community plans to build: movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor. The app is the thread that brings people together; the Lab will be the room it lands in. The first one is planned to open in ' + FOUNDING_PLACE + ' in 2028. It is not open yet, and until then the community meets in rooms we borrow.',
     },
     {
       q: 'Is Frequency a social media app?',
@@ -365,11 +365,11 @@ return {
     },
     {
       q: 'What is the Community Collective?',
-      a: 'Frequency is a Community Collective: a network where independent creators, coaches, healers, and small businesses grow together, and eventually build real-world spaces together. You keep 100% of your own bookings and we earn only on what the network sends you. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
+      a: 'The Community Collective is the idea under the Frequency name: a network where independent creators, coaches, healers, and small businesses grow together, and eventually build real-world spaces together. You keep 100% of your own bookings and we earn only on what the network sends you. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
     },
     {
       q: 'Where is Frequency available?',
-      a: 'Frequency is taking root in ' + FOUNDING_PLACE + ', where the first Circles are forming and the first Lab is being built. It spreads the only way real community ever has: person to person, circle to circle, following the people who start them, one city at a time.',
+      a: 'Frequency is taking root in ' + FOUNDING_PLACE + ', where the first Circles are forming and the first Lab is planned for 2028. It spreads the only way real community ever has: person to person, circle to circle, following the people who start them, one city at a time.',
     },
   ],
 

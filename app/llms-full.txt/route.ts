@@ -1,5 +1,5 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
@@ -103,7 +103,7 @@ export async function GET() {
     '',
     '## About Frequency',
     '',
-    'Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, and grow a Space (your own community, business, or nonprofit). The Quest is the light game everyone plays alongside that.',
+    `${CATEGORY_LINE} Frequency exists to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, and grow a Space (your own community, business, or nonprofit). The Quest is the light game everyone plays alongside that.`,
     '',
     `### ${WHO_FREQUENCY_IS_FOR_HEADING}`,
     '',
@@ -122,7 +122,7 @@ export async function GET() {
     // not enforce. It used to type "revenue splits (Collective)" for a gate HYG-079 had deleted.
     `${paidWallsPhrase(input.gateOverrides) === 'nothing' ? PLAN_STORY.selling : `What needs a paid plan: ${paidWallsPhrase(input.gateOverrides)}.`} ${PLAN_STORY.meters}`,
     '',
-    'Physical Spaces (Outposts and Frequency Labs) are funded by a separate community-owned vehicle, never out of platform margin.',
+    'Physical spaces (Outposts and The Lab, the first planned for 2028) will be funded by a separate community-owned vehicle, never out of platform margin.',
     '',
     '### The four promises',
     '',

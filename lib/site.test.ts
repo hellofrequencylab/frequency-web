@@ -5,6 +5,7 @@ import {
   SITE_NAME,
   SITE_TAGLINE,
   SITE_DESCRIPTION,
+  CATEGORY_LINE,
   SITE_NAV,
   MARKETING_NAV,
   BETA_CTA_HREF,
@@ -58,6 +59,15 @@ describe('SITE_DESCRIPTION', () => {
   it('is a non-empty string', () => {
     expect(typeof SITE_DESCRIPTION).toBe('string')
     expect(SITE_DESCRIPTION.length).toBeGreaterThan(0)
+  })
+
+  // LIVE-912: owner ruling R1 (LAUNCH-MARKETING-PLAN §3.2) makes "Local groups that keep meeting."
+  // the category line everywhere; "Community Collective" is the logo lockup (SITE_TAGLINE) only.
+  it("opens on R1's category line and no longer claims the lockup as the category", () => {
+    expect(CATEGORY_LINE).toBe('Local groups that keep meeting.')
+    expect(SITE_DESCRIPTION.startsWith(CATEGORY_LINE)).toBe(true)
+    expect(SITE_DESCRIPTION).not.toMatch(/Community Collective/)
+    expect(SITE_DESCRIPTION.length).toBeLessThanOrEqual(160)
   })
 })
 

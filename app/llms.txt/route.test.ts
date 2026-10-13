@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { CONTACT_EMAIL, SITE_URL } from '@/lib/site'
+import { CATEGORY_LINE, CONTACT_EMAIL, SITE_URL } from '@/lib/site'
 
 // ── /llms.txt is the paragraph answer engines quote about us ───────────────────────────────────
 //
@@ -172,5 +172,25 @@ describe('the fail-safe degrades to fewer facts, never to an error page', () => 
     for (const trace of ['supabase unreachable', 'db.internal', 'Error:', 'at Object.']) {
       expect(out, trace).not.toContain(trace)
     }
+  })
+})
+
+// LIVE-912 (LAUNCH-MARKETING-PLAN §14 Phase 0.3): the summary answer engines quote leads with R1's
+// category line, never says you can walk into The Lab today, and no longer carries the dormant
+// "Opening Beta rate" branch.
+describe('the category line and The Lab tense (LIVE-912)', () => {
+  it("opens the summary on R1's category line", async () => {
+    const out = await body()
+    expect(out).toContain(`> ${CATEGORY_LINE}`)
+    expect(out).not.toMatch(/is a Community Collective\./)
+  })
+
+  it('puts The Lab in the future and drops the Opening Beta branch', async () => {
+    const out = await body()
+    expect(out).not.toMatch(/gather at The\s*>?\s*Lab/)
+    expect(out).toMatch(/Lab[^.]*planned for 2028/)
+    expect(out).not.toContain('Opening Beta')
+    expect(out).not.toContain('Frequency Labs')
+    expect(out).not.toContain('stays free for everyone')
   })
 })

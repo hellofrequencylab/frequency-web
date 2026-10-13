@@ -46,6 +46,9 @@ export const OG_SITE = { siteName: SITE_NAME, locale: "en_US" } as const;
 // NOT to be confused with "The Community Collective" the TIER LADDER (also ADR-811) — that is a
 // billing surface heading, a different name that keeps its article.
 export const SITE_TAGLINE = "Community Collective";
+// The category line, one everywhere (owner ruling R1, LIVE-912). What Frequency IS in one breath,
+// where SITE_TAGLINE is only the words under the mark. SITE_DESCRIPTION and llms.txt read it.
+export const CATEGORY_LINE = "Local groups that keep meeting.";
 // The root share card, for a public page that has no segment card of its own (SCAN-798). The file
 // convention app/opengraph-image.jpg attaches ONLY to the root layout: Next replaces a child
 // segment's `openGraph` wholesale, so a page that declares openGraph without `images` ships no
@@ -64,8 +67,11 @@ export const ROOT_OG_IMAGES = [
 // ADR-1499). Kept under the ~160 characters a search result shows (scripts/check-seo.mjs Scan E).
 // The tagline is unchanged and the two OG `.alt.txt` files carry it; lib/og/root-card.test.ts pins
 // that pairing, which is what CORE-MODEL §5 item 6.2 means by "move together".
+// LIVE-912: it opens on the category line, "Local groups that keep meeting." (owner ruling R1,
+// docs/LAUNCH-MARKETING-PLAN.md §3.2, amends ADR-944). "Community Collective" stays the logo lockup
+// (SITE_TAGLINE above) and is no longer the category claim here.
 export const SITE_DESCRIPTION =
-  `Frequency is a Community Collective. Start a Circle, host Events, grow a Space. ${PLAN_STORY.lines}`;
+  `${CATEGORY_LINE} Start a Circle, host Events, grow a Space. ${PLAN_STORY.lines}`;
 
 // ── Unified site navigation ───────────────────────────────────────────────────
 // One nav, used by every header (the in-app AppShell top bar, the marketing
