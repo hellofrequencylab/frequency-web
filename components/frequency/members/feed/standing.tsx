@@ -168,7 +168,7 @@ export function Standing(props: StandingProps) {
         )}
         {stat === 'gems' && (
           <div className="row wrap" style={{ gap: 24 }}>
-            <span className="grow" style={{ minWidth: 220, font: '400 15px/1.45 var(--fq-font-sans)', color: 'var(--fq-text-body)' }}>
+            <span className="grow" style={{ minWidth: 220, font: '400 var(--fq-text-body-s)/var(--fq-lh-body-s) var(--fq-font-sans)', color: 'var(--fq-text-body)' }}>
               Spend Gems in the Vault on a streak freeze, or gift some to a friend.
             </span>
             <Link href="/crew/store" className="btn">

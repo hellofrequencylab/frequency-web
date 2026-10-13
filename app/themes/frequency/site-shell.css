@@ -2,7 +2,10 @@
    do not edit) does not carry, because the prototype hung it on <body> or never needed it.
    Hand-kept. --fq- variables only, scoped like the kit to [data-design="frequency"] [data-kit="site"];
    the one exception is the document canvas below, which has to be the html/body pair.
-   Imported by components/frequency/site/shell/site-shell.tsx. */
+   Imported by components/frequency/site/shell/site-shell.tsx.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
 
 @layer components {
   /* The document canvas behind the kit: Stage's void, so overscroll and the first paint are dark (fx.js
@@ -36,7 +39,7 @@
     left: 12px;
     z-index: 90;
     padding: 12px 18px;
-    border-radius: 999px;
+    border-radius: var(--fq-radius-orb);
     background: var(--fq-surface-raised);
     color: var(--fq-text-strong);
     font: 600 15px/1 var(--fq-font-sans);
@@ -77,6 +80,6 @@
   /* Keep going, "row" variant: the inline style Vision's prototype carried. */
   [data-design="frequency"] [data-kit="site"] .next .fq-kg-body {
     margin: 10px 0 0;
-    font-size: 16px;
+    font-size: var(--fq-text-body-size);
   }
 }
