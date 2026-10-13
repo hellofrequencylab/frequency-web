@@ -67,4 +67,69 @@
 [data-design="frequency"] [data-kit="members"] .fqm-item{gap:10px}
 [data-design="frequency"] [data-kit="members"] .fqm-item>.ph{aspect-ratio:4/5;border-radius:20px}
 [data-design="frequency"] [data-kit="members"] .fqm-item>.btn{align-self:flex-start}
+
+/* The find-and-filter row (components/frequency/members/shared/kit-tools.tsx): a white find pill, then
+   each facet as a chip that opens a frosted menu. Native <details>, so it works without a script. */
+[data-design="frequency"] [data-kit="members"] .fqm-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-find{height:44px;flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:10px;padding:0 18px;border-radius:999px;background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-find .fq-icon{width:18px;height:18px;color:var(--fq-text-muted);flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-find input{flex:1;min-width:0;border:none;outline:none;background:none;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-find input::placeholder{color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .fqm-find:focus-within{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu{position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary{list-style:none}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary .fq-icon{width:15px;height:15px}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary .fqm-chev{width:12px;height:12px;opacity:.6;transform:rotate(90deg);transition:transform var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu[open]>summary .fqm-chev{transform:rotate(-90deg)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p{position:absolute;z-index:30;top:46px;left:0;min-width:220px;max-height:340px;overflow-y:auto;padding:8px;border-radius:20px;display:flex;flex-direction:column;background:color-mix(in oklab,var(--fq-surface-card) 94%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 70px -30px rgba(30,27,24,.35),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a{display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;font:500 14px/1.2 var(--fq-font-sans);color:var(--fq-text-body);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a:hover{background:rgba(30,27,24,.05);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a.on{color:var(--fq-text-strong);font-weight:600}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a.on::after{content:"";margin-left:auto;padding-left:16px;width:7px;height:7px;border-radius:50%;background:var(--fq-pa);flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-tools .fqm-end{margin-left:auto}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-find{flex-basis:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-tools .fqm-end{margin-left:0}}
+
+/* A segmented List / Map switch, the kit's chip track. */
+[data-design="frequency"] [data-kit="members"] .fqm-seg{display:inline-flex;gap:2px;padding:4px;border-radius:999px;background:rgba(30,27,24,.035)}
+[data-design="frequency"] [data-kit="members"] .fqm-seg button{height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:none;border-radius:999px;background:none;color:var(--fq-text-muted);font:500 14px/1 var(--fq-font-sans);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .fqm-seg button .fq-icon{width:16px;height:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-seg button.on{background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 1px 2px rgba(30,27,24,.08),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-map{height:460px;border-radius:24px;overflow:hidden;box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-map>*{height:100%!important;width:100%;border:none!important;border-radius:0!important}
+[data-design="frequency"] [data-kit="members"] .fqm-map.wide{height:auto;aspect-ratio:16/9}
+[data-design="frequency"] [data-kit="members"] .fqm-map-note{margin-top:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--fq-pa);margin-right:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-legend i.starter{background:var(--design-map-starter)}
+[data-design="frequency"] [data-kit="members"] .fqm-seg.top{margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-block{display:block}
+[data-design="frequency"] [data-kit="members"] .fqm-lane{margin-bottom:44px}
+[data-design="frequency"] [data-kit="members"] .fqm-lane .why{font-size:15px}
+[data-design="frequency"] [data-kit="members"] .fqm-intro{margin:-8px 0 28px}
+[data-design="frequency"] [data-kit="members"] .av.fqm-sq{border-radius:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-map-frame{overflow:hidden;box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-map-frame>*,[data-design="frequency"] [data-kit="members"] .fqm-map-frame .fqm-map-in{height:100%!important;width:100%!important;border:none!important;border-radius:0!important}
+[data-design="frequency"] [data-kit="members"] .fqm-map .fqm-map-in{height:100%;width:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-cap{margin:-6px 0 18px}
+[data-design="frequency"] [data-kit="members"] .chip .t2{color:inherit;opacity:.6}
+[data-design="frequency"] [data-kit="members"] .fqm-sec-h0{margin-bottom:0}
+[data-design="frequency"] [data-kit="members"] .fqm-goal{align-items:baseline;gap:10px;margin-top:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-goal-foot{gap:8px 16px}
+[data-design="frequency"] [data-kit="members"] .fa-capture.fqm-cl-compose,[data-design="frequency"] [data-kit="members"] .why.fqm-cl-compose{margin:0 0 8px}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-empty{padding:32px 0}
+@media (max-width:900px){[data-design="frequency"] [data-kit="members"] .fqm-stats.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+[data-design="frequency"] [data-kit="members"] .fqm-note{margin-bottom:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-item-ph{position:relative;display:block}
+[data-design="frequency"] [data-kit="members"] .fqm-pre{white-space:pre-wrap}
+/* Messages: the inbox find field and sort switch, presence on a DM photo, the day line, rooms to join. */
+[data-design="frequency"] [data-kit="members"] .fqm-inbox-tools{margin-top:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-inbox-tools .fqm-find{height:40px;flex-basis:auto}
+[data-design="frequency"] [data-kit="members"] .fqm-ic-round{width:48px;height:48px;border-radius:50%}
+[data-design="frequency"] [data-kit="members"] .fqm-presence{position:relative;flex:none;display:inline-flex}
+[data-design="frequency"] [data-kit="members"] .fqm-presence i{position:absolute;right:1px;bottom:1px;width:11px;height:11px;border-radius:50%;background:var(--fq-presence);box-shadow:0 0 0 2px var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .fqm-pad{padding:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-daysep{align-self:center;text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-pane-more{padding:0 28px 28px;overflow-y:auto}
 }

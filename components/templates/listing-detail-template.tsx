@@ -29,6 +29,8 @@ import { listingJsonLd } from '@/lib/listings-shared/listing-seo'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import type { OfferTargetKind } from '@/lib/marketplace/listing-offers'
 import { relativeTime } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqListingDetail } from '@/components/frequency/members/marketplace/listing-detail'
 
 /** The larger info line directly under the hero: price/terms . location . relative time. */
 function ListingInfoLine({ view }: { view: ListingDetailView }) {
@@ -113,6 +115,27 @@ export function ListingDetailTemplate({
    */
   asideExtras?: React.ReactNode
 }) {
+  // THE DESIGN SWITCH (ADR-1737): under Frequency every listing (Classifieds, the Market, Housing)
+  // is the member kit's listing page, on the same view and islands. Build-time, so DAWN is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqListingDetail
+        view={view}
+        comments={comments}
+        canComment={canComment}
+        canModerate={canModerate}
+        myProfileId={myProfileId}
+        footer={footer}
+        contactNote={contactNote}
+        ownerControls={ownerControls}
+        claimToken={claimToken}
+        soloGalleryRow={soloGalleryRow}
+        asideExtras={asideExtras}
+      >
+        {children}
+      </FqListingDetail>
+    )
+  }
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
   const sellerFirst = view.seller?.displayName.split(/\s+/)[0] || 'the seller'

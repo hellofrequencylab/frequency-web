@@ -89,10 +89,16 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
           image: l.images?.[0] ?? null,
           seller: l.author?.display_name ?? null,
           place: l.neighborhood ?? l.city ?? null,
+          description: l.description,
+          lat: l.latitude,
+          lng: l.longitude,
+          unclaimed: !!l.seededUnclaimed,
         }))}
         activeKind={activeKind}
         signedIn={!!profileId}
         subtitle="Meet up to swap. No in-app payment."
+        stats={{ total: allListings.length, free: kindCount('free'), lend: kindCount('lend'), request: kindCount('request') }}
+        intro={{ body: body ?? null, ctaLabel: ctaLabel ?? null, ctaHref: ctaHref ?? null }}
       />
     )
   }

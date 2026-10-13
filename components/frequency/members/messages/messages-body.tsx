@@ -1,4 +1,5 @@
 import '@/app/themes/frequency/members-a.css'
+import '@/app/themes/frequency/members-b.css'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
@@ -6,6 +7,7 @@ import { loadInbox } from '@/app/(main)/messages/inbox-data'
 import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { relativeTime } from '@/lib/utils'
 import type { createClient } from '@/lib/supabase/server'
+import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { FqToaster } from '../shared/toast'
 import { InboxList, type ThreadLite } from './inbox-list'
 
@@ -16,6 +18,11 @@ import { InboxList, type ThreadLite } from './inbox-list'
 //
 // Below 1000px the two columns stack the way the kit does, so the list shows on /messages and the
 // conversation shows on a thread route.
+//
+// THE HYBRID RULE (owner, design pass): the DAWN inbox also starts a room, lists the open room of
+// each Channel you are tuned into, shows who is online, and offers public rooms to join. They stay:
+// Room beside New, Channel rooms in the list, the presence dot on a DM, and "Rooms to join" in the
+// pane while no conversation is open.
 
 export async function FrequencyMessages({
   supabase,
@@ -29,12 +36,13 @@ export async function FrequencyMessages({
   activeKey?: string | null
   pane?: ReactNode
 }) {
-  const { allItems, totalUnread } = await loadInbox(supabase, myProfileId)
+  const { allItems, totalUnread, channelRooms, discoverRooms, onlineIds } = await loadInbox(supabase, myProfileId)
 
   const threads: ThreadLite[] = await Promise.all(
-    allItems.map(async (it): Promise<ThreadLite> => {
+    allItems.map(async (it, order): Promise<ThreadLite> => {
       if (it.kind === 'room') {
         return {
+          order,
           key: `room:${it.id}`,
           kind: 'room',
           href: `/messages/r/${it.id}`,
@@ -53,6 +61,8 @@ export async function FrequencyMessages({
           ? c.participants.slice(0, 3).map((p) => p.display_name.split(' ')[0]).join(', ') + (c.participants.length > 3 ? ` +${c.participants.length - 3}` : '')
           : c.participants[0]?.display_name ?? 'Conversation')
       return {
+        order,
+        online: !isGroup && !!c.participants[0] && onlineIds.has(c.participants[0].id),
         key: `dm:${c.id}`,
         kind: isGroup ? 'group' : 'dm',
         href: await dmThreadHref(c.id, '/messages'),
@@ -64,6 +74,22 @@ export async function FrequencyMessages({
       }
     }),
   )
+  // The open room of each Channel you are tuned into, after your own threads (DAWN's Channels list).
+  const have = new Set(threads.map((t) => t.key))
+  for (const room of channelRooms) {
+    if (have.has(`room:${room.id}`)) continue
+    threads.push({
+      order: threads.length,
+      key: `room:${room.id}`,
+      kind: 'room',
+      href: `/messages/r/${room.id}`,
+      name: room.name,
+      avatarUrl: null,
+      preview: 'Open Channel room · anyone tuned in can post',
+      when: room.last_message_at ? relativeTime(room.last_message_at) : null,
+      unread: 0,
+    })
+  }
 
   return (
     <div className={pane ? 'ap-cols l fa-msg in-thread' : 'ap-cols l fa-msg'}>
@@ -73,9 +99,12 @@ export async function FrequencyMessages({
           <h1 className="h2">
             Messages{totalUnread > 0 ? <span className="meta">{` · ${totalUnread > 99 ? '99+' : totalUnread} new`}</span> : null}
           </h1>
-          <Link href="/network" className="btn sm pa">
-            New
-          </Link>
+          <span className="row fqm-gap-sm">
+            <NewRoomCompose buttonLabel="Room" buttonClass="btn sm" />
+            <Link href="/network" className="btn sm pa">
+              New
+            </Link>
+          </span>
         </div>
         <InboxList threads={threads} activeKey={activeKey} />
       </aside>
@@ -88,6 +117,26 @@ export async function FrequencyMessages({
             <span className="h3">Pick a conversation</span>
             <span className="t2">Or start one from anyone’s profile.</span>
           </div>
+          {discoverRooms.length > 0 && (
+            <div className="stack fqm-pane-more">
+              <span className="k">Rooms to join</span>
+              <div className="list">
+                {discoverRooms.slice(0, 6).map((room) => (
+                  <Link key={room.id} href={`/messages/r/${room.id}`}>
+                    <span className="ic" aria-hidden>
+                      <FqIcon name="circle" />
+                    </span>
+                    <span className="grow">
+                      <span className="t1 fqm-block">{room.name}</span>
+                      <span className="t2">
+                        {[`${room.member_count} ${room.member_count === 1 ? 'member' : 'members'}`, room.description].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>

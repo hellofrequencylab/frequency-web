@@ -151,7 +151,9 @@ function dayLabel(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { timeZone: HOME_TZ, weekday: 'long', month: 'long', day: 'numeric' })
 }
 
-function PostItem({
+/** One post in the kit's hairline idiom. Exported for the Circle feed tab, which reads the same rows
+ *  scoped to one Circle (loadFeedPage's `scopeId`). */
+export function PostItem({
   post,
   scope,
   why,

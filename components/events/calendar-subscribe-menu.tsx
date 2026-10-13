@@ -17,6 +17,7 @@ export function CalendarSubscribeMenu({
   webcalUrl,
   title = PERSONAL_TITLE,
   description = PERSONAL_DESCRIPTION,
+  buttonClassName,
 }: {
   httpsUrl: string
   webcalUrl: string
@@ -25,6 +26,8 @@ export function CalendarSubscribeMenu({
   /** Panel body. Defaults to the personal-feed copy; a public space feed passes its own (never
    *  "keep it private" — the space feed URL is public). */
   description?: string
+  /** The trigger's class, for a design that draws its own button (the Frequency kit's `.btn`). */
+  buttonClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -48,7 +51,7 @@ export function CalendarSubscribeMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className={buttonClassName ?? 'inline-flex items-center gap-2 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'}
       >
         <CalendarPlus className="h-4 w-4" />
         Subscribe to calendar
