@@ -40,11 +40,14 @@ export function AccentScope({
   // The AccentVars keys are CSS custom properties; React types CSSProperties without an index
   // signature for `--*`, so cast through the documented custom-property style shape.
   //
-  // Under a design that overrides everything (Frequency, ADR-1737) neither the Space's accent nor its
-  // font set applies: both re-point tokens the design owns. The wrapper stays, so layout is unchanged.
+  // Under a design that overrides everything (Frequency, ADR-1737) the Space's accent does not apply: it
+  // re-points tokens the design owns. Its FONT SET does (owner ruling, 2026-10-13: a Space picks its primary
+  // fonts in its theme, never per heading). It rides `data-space-fonts`, which only
+  // app/themes/frequency/space-page.css reads, and only for a set other than the house default.
   const style = (LEGACY_THEME_AXES ? (vars ?? undefined) : undefined) as CSSProperties | undefined
+  const fqFonts = !LEGACY_THEME_AXES && theme && theme !== 'frequency' ? theme : undefined
   return (
-    <div className={className} style={style} data-space-theme={LEGACY_THEME_AXES ? theme : undefined}>
+    <div className={className} style={style} data-space-theme={LEGACY_THEME_AXES ? theme : undefined} data-space-fonts={fqFonts}>
       {children}
     </div>
   )

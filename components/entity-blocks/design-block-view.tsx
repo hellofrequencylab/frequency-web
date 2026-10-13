@@ -209,7 +209,6 @@ export function DesignBlockView({ id, props }: { id: string; props: Record<strin
         <DisplayHeadingBlock
           text={s(props, 'text')}
           accentWord={s(props, 'accentWord')}
-          font={oneOf(props.font, ['display', 'serif', 'grotesk'], 'display')}
         />
       )
     case 'prose':

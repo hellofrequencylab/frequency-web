@@ -12,13 +12,30 @@
      render path, ADR-1727), so the page's look is a scope over that one markup. These rules are
      UNLAYERED on purpose: Tailwind's utilities sit in `@layer utilities`, and an unlayered rule beats a
      layered one outright, which is the same mechanism app/globals.css uses for its per-theme type
-     treatment. `font-family` alone carries !important, because a design block's per-header face is an
-     INLINE style (lib/page-editor/fields headerFontStyle) and only !important outranks inline.
+     treatment. Faces are the design's unless the Space picked a font set in its theme (`data-space-fonts`,
+     emitted by components/spaces/accent-scope.tsx); there is no per-heading font pick.
    · `[data-kit="members"] .fqs-*` is the chrome (cover card, identity, actions, tab row), composed
      from the kit's own classes the way the Circle shell is (components/frequency/members/space).
 
    Colours, faces, radii and motion are --fq-* tokens; a translucent fill is a color-mix of one, so the
    page follows Commons at night without a second set of values. */
+
+/* ══ 0. THE SPACE'S FONT SET ════════════════════════════════════════════════════════════════════
+   A Space's theme picks its primary fonts (lib/theme/space-themes.ts). The house set leaves the design's
+   faces; any other set swaps the display face (titles, the Space name) and the reading face. Families
+   mirror the [data-space-theme] blocks in app/globals.css; case, weight and size stay Frequency's. */
+[data-design="frequency"] [data-space-fonts="editorial"] { --space-font-display: var(--font-fraunces); --space-font-body: var(--font-nunito); }
+[data-design="frequency"] [data-space-fonts="classic"] { --space-font-display: var(--font-playfair); --space-font-body: var(--font-pt-serif); }
+[data-design="frequency"] [data-space-fonts="playful"] { --space-font-display: var(--font-fredoka); --space-font-body: var(--font-nunito); }
+[data-design="frequency"] [data-space-fonts="accessible"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-atkinson); }
+[data-design="frequency"] [data-space-fonts="modern"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-nunito); }
+[data-design="frequency"] [data-space-fonts="menswork"] { --space-font-display: var(--font-sofia-xc); --space-font-body: var(--font-barlow); }
+[data-design="frequency"] [data-space-fonts] [data-space-page] {
+  font-family: var(--space-font-body), var(--fq-font-sans);
+}
+[data-design="frequency"] [data-space-fonts] .fqs-hero h1 {
+  font-family: var(--space-font-display), var(--fq-font-display);
+}
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */
 
@@ -26,7 +43,7 @@
    canvas, the contact form): Frequency's display face in sentence case, never DAWN's condensed caps. */
 [data-design="frequency"] [data-space-page] .font-display,
 [data-design="frequency"] [data-space-page] .font-section {
-  font-family: var(--fq-font-display) !important;
+  font-family: var(--space-font-display, var(--fq-font-display));
   font-weight: 500;
   font-style: normal;
   text-transform: none;
@@ -63,7 +80,7 @@
 }
 /* A quote is the serif voice, not a shouted headline. */
 [data-design="frequency"] [data-space-page] blockquote.font-display {
-  font-family: var(--fq-font-serif) !important;
+  font-family: var(--fq-font-serif);
   font-style: italic;
   font-weight: 400;
   letter-spacing: -0.01em;

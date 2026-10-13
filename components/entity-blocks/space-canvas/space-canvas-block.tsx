@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from 'react'
 import { ArrowRight, ImagePlus, Pencil } from 'lucide-react'
 import { entityBlockById, DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
-import { headerFontStyle } from '@/lib/page-editor/fields'
 import {
   fieldsForBlock,
   fieldRendersInlineHtml,
@@ -1058,14 +1057,9 @@ function designCanvas(
     case 'prose':
       return <div>{textSlot('text', `max-w-[62ch] ${BODY_CLS}`)}</div>
     case 'displayHeading':
-      // Parity fix 6: published DisplayHeading applies the chosen `font` (headerFontStyle → an inline family off
-      // the validated CSS-variable stacks) at a large display clamp. Honour the font + size (DISPLAY_CLS carries
-      // the clamp; the inline style overrides the base font-display face for serif / grotesk).
-      return (
-        <div style={headerFontStyle(typeof props.font === 'string' ? props.font : undefined)}>
-          {textSlot('text', DISPLAY_CLS)}
-        </div>
-      )
+      // Parity fix 6: the canvas matches the published DisplayHeading's display clamp (DISPLAY_CLS). The face is
+      // the theme's display face; there is no per-heading font pick.
+      return <div>{textSlot('text', DISPLAY_CLS)}</div>
     default:
       // cardGrid has its own dedicated canvas branch (parity fix 4); nothing else needs a bespoke layout here.
       return null
