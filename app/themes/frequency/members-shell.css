@@ -66,8 +66,8 @@
 [data-design="frequency"] [data-kit="members"] .ap-me.fqm-me{display:flex;align-items:center;justify-content:center;background:var(--fqm-ink-6) center/cover no-repeat;color:var(--fq-text-strong);font:600 13px/1 var(--fq-font-sans)}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-me-end{flex:none;min-width:0}}
 
-/* Mega menu and sheets: frosted panels under the 76px header. */
-[data-design="frequency"] [data-kit="members"] .fqm-panel{position:absolute;left:0;right:0;top:76px;z-index:1;max-height:calc(100vh - 76px);overflow-y:auto;background:var(--fqm-frost);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 40px 80px -40px color-mix(in oklab,var(--fq-text-strong) 25%,transparent)}
+/* Mega menu: no panel background (owner, 2026-10-13); the highlighted link keeps its fill. Sheets: frosted panels under the 76px header. */
+[data-design="frequency"] [data-kit="members"] .fqm-panel{position:absolute;left:0;right:0;top:76px;z-index:1;max-height:calc(100vh - 76px);overflow-y:auto;background:none}
 [data-design="frequency"] [data-kit="members"] .fqm-panel-grid{max-width:1280px;margin:0 auto;padding:36px 32px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:40px}
 [data-design="frequency"] [data-kit="members"] .fqm-panel-col{display:flex;flex-direction:column;gap:2px}
 [data-design="frequency"] [data-kit="members"] .fqm-panel-h{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:var(--fq-track-label);text-transform:uppercase;color:var(--fq-text-faint);padding:0 0 14px}
@@ -84,6 +84,11 @@
 [data-design="frequency"] [data-kit="members"] .fqm-panel-foot{max-width:1280px;margin:32px auto 0;padding:22px 32px 26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--fqm-ink-6)}
 [data-design="frequency"] [data-kit="members"] .fqm-panel-foot span{flex:1;font:400 italic 21px/1.2 var(--fq-font-serif);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-panel-foot .btn{height:48px;font-size:14px}
+/* The website row: Home and every primary website page, on every section of the menu. */
+[data-design="frequency"] [data-kit="members"] .fqm-panel-site{max-width:1280px;margin:0 auto;padding:18px 32px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;border-top:1px solid var(--fqm-ink-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-panel-site .fqm-panel-h{padding:0 6px 0 0}
+[data-design="frequency"] [data-kit="members"] .fqm-panel-site a{font:500 14px/1.2 var(--fq-font-sans);color:var(--fq-text-strong);padding:6px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-panel-site a:hover{opacity:.65}
 
 [data-design="frequency"] [data-kit="members"] .fqm-sheet-wrap{position:absolute;left:0;right:0;top:76px;z-index:1;pointer-events:none}
 [data-design="frequency"] [data-kit="members"] .fqm-sheet-row{max-width:1280px;margin:0 auto;padding:10px 32px;display:flex;justify-content:flex-end}

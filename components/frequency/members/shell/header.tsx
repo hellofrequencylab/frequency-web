@@ -23,7 +23,7 @@ import type { NotificationItem } from '@/lib/notifications-map'
 import { notificationHref } from '@/lib/notifications/href'
 import { relativeTime, getInitials } from '@/lib/utils'
 import { isFullViewportEditor } from '@/lib/layout/page-chrome'
-import { FQ_NAV, areaFor, canShow, photoUrl, resolveHref, type FqNavSection } from './nav'
+import { FQ_NAV, FQ_SITE_LINKS, areaFor, canShow, photoUrl, resolveHref, type FqNavSection } from './nav'
 import { avatarBg } from './avatar'
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | null
@@ -227,6 +227,14 @@ function MegaMenu({
           {section.footCta}
         </Link>
       </div>
+      <nav className="fqm-panel-site" aria-label="Frequency website">
+        <span className="fqm-panel-h">Frequency</span>
+        {FQ_SITE_LINKS.map((l) => (
+          <Link key={l.href} href={l.href}>
+            {l.label}
+          </Link>
+        ))}
+      </nav>
     </div>
   )
 }

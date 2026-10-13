@@ -9,6 +9,7 @@
 // Pure and client-safe: the header island and the server rails both read it.
 
 import type { FqIconName } from '@/components/frequency/icon'
+import { ROUTES } from '@/lib/frequency/site-nav'
 
 export type MemberArea = 'home' | 'community' | 'quest' | 'you' | ''
 
@@ -172,6 +173,23 @@ export const FQ_NAV: readonly FqNavSection[] = [
   },
 ]
 
+/** Home for a signed-in member. Bare `/` sends a member to the Feed (lib/nav/front-door.ts, owner directive
+ *  2026-09-01: opening the site lands on the Feed); `?home` is the door a member takes on purpose. */
+export const MEMBER_HOME_HREF = '/?home'
+
+/** The primary website pages, shown on every section of the member mega menu (owner, 2026-10-13) so a
+ *  signed-in member can always get back to Home and the site. Routes come from the site nav (ROUTES). */
+export const FQ_SITE_LINKS: readonly { label: string; href: string }[] = [
+  { label: 'Home', href: MEMBER_HOME_HREF },
+  { label: 'For people', href: ROUTES.people },
+  { label: 'For spaces', href: ROUTES.spaces },
+  ...(ROUTES.features ? [{ label: 'Features', href: ROUTES.features }] : []),
+  { label: 'Pricing', href: ROUTES.pricing },
+  ...(ROUTES.stories ? [{ label: 'Stories', href: ROUTES.stories }] : []),
+  { label: 'Vision', href: ROUTES.vision },
+  { label: 'Help Center', href: ROUTES.help },
+]
+
 /** The left rail's shortcuts (Members.dc.html `shortcuts`). `badge` names the live count that rides on it. */
 export const FQ_SHORTCUTS: readonly (FqNavItem & { badge?: 'messages' | 'notifications' })[] = [
   { label: 'Around You', sub: '', href: '/nearby', icon: 'pin', navKey: 'nearby' },
@@ -190,6 +208,8 @@ export const FQ_YOU_LINKS: readonly FqNavItem[] = [
   { label: 'My Code', sub: '', href: '/codes', icon: 'qr' },
   { label: 'Orders', sub: '', href: '/orders', icon: 'ticket' },
   { label: 'Join Crew', sub: '', href: '/upgrade', icon: 'membership' },
+  // Phones have no mega menu, so the website door rides here too.
+  { label: 'Frequency home', sub: '', href: MEMBER_HOME_HREF, icon: 'page' },
 ]
 
 /** Design items with no route in app/(main) today. Not rendered; listed so the gap is on the record. */

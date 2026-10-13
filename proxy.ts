@@ -311,7 +311,7 @@ export async function proxy(request: NextRequest) {
   const frontDoor = frontDoorRedirect({
     pathname,
     signedIn: !!user,
-    preview: request.nextUrl.searchParams.has('preview'),
+    preview: request.nextUrl.searchParams.has('preview') || request.nextUrl.searchParams.has('home'),
   })
   if (frontDoor) {
     const feedUrl = request.nextUrl.clone()
