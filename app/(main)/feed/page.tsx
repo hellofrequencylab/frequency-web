@@ -248,6 +248,7 @@ export default async function FeedPage({
             top
               ? {
                   title: top.title,
+                  href: `/journeys/${top.slug}`,
                   percent: top.percent,
                   phasesComplete: top.phasesComplete,
                   phasesTotal: top.phasesTotal,

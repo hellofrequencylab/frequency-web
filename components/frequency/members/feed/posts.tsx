@@ -32,6 +32,8 @@ export type FeedSort = 'recent' | 'relevant' | 'nearby' | 'story' | 'popular'
 
 export interface JourneyRun {
   title: string
+  /** The Journey's own page, the door when there is no lesson to continue. */
+  href: string
   percent: number
   phasesComplete: number
   phasesTotal: number
@@ -253,9 +255,12 @@ function JourneyRunItem({ journey }: { journey: JourneyRun }) {
         </span>
         <span className="grow">
           <span className="t1">Your {journey.inCohort ? 'Run' : 'Journey'} · {journey.title}</span>
-          <span className="fa-src">
-            Phase {Math.min(journey.phasesTotal, journey.phasesComplete + 1)} of {journey.phasesTotal}
-          </span>
+          {/* A Journey with no phases yet has no phase to name ("Phase 0 of 0"). */}
+          {journey.phasesTotal > 0 && (
+            <span className="fa-src">
+              Phase {Math.min(journey.phasesTotal, journey.phasesComplete + 1)} of {journey.phasesTotal}
+            </span>
+          )}
         </span>
       </div>
       <div className="fa-run" data-energy="still">
@@ -265,16 +270,23 @@ function JourneyRunItem({ journey }: { journey: JourneyRun }) {
         </span>
         <span className="stack grow" style={{ gap: 10 }}>
           <span className="t2">Next lesson</span>
-          <span className="fa-run-t">{journey.nextLesson?.title ?? 'Every lesson done'}</span>
+          {/* "Every lesson done" only when it is true: a Journey whose lessons are not published yet says so. */}
+          <span className="fa-run-t">
+            {journey.nextLesson?.title ?? (journey.phasesTotal > 0 && journey.percent >= 100 ? 'Every lesson done' : 'No lesson open yet')}
+          </span>
         </span>
       </div>
-      {journey.nextLesson && (
-        <div className="row wrap" style={{ gap: 16 }}>
+      <div className="row wrap" style={{ gap: 16 }}>
+        {journey.nextLesson ? (
           <Link href={journey.nextLesson.href} className="btn pa lg">
             Continue lesson
           </Link>
-        </div>
-      )}
+        ) : (
+          <Link href={journey.href} className="btn lg">
+            Open the Journey
+          </Link>
+        )}
+      </div>
     </article>
   )
 }

@@ -106,9 +106,8 @@ export function FeedPlanner({
   const fits = (e: RankedHomeEvent) => e.distanceMi == null ? !!e.myCircleName || !hasHome : e.distanceMi <= radius
   const near = events.filter((e) => e.slot === slot && (intent === 'all' || e.intent === intent) && fits(e) && status[e.id] !== 'not_going')
   const withFriends = near.filter((e) => e.friends.length > 0).length
-  const resultLine = near.length
-    ? `${near.length} ${near.length === 1 ? 'thing' : 'things'}${withFriends ? ` · ${withFriends} with friends` : ''}`
-    : 'Nothing yet'
+  // The live count; an empty result says so in the body ("Nothing that fits within N mi."), not twice.
+  const resultLine = `${near.length} ${near.length === 1 ? 'thing' : 'things'}${withFriends ? ` · ${withFriends} with friends` : ''}`
 
   return (
     <>
@@ -135,7 +134,8 @@ export function FeedPlanner({
                 {doorZaps > 0 ? ` · ⚡ ${doorZaps} at the door` : ''}
               </span>
             </span>
-            <span className="why">{hero.why}</span>
+            {/* The where line already carries the distance; a why that only restates it is dropped. */}
+            {!(distanceLabel(hero.distanceMi) && /^(Close to home\.|[\d.]+ mi from home\.)$/.test(hero.why)) && <span className="why">{hero.why}</span>}
             {!heroDone ? (
               <div className="fa-actions">
                 <button
@@ -208,7 +208,7 @@ export function FeedPlanner({
           <span className="fa-livedot fq-breathe" aria-hidden />
           Near you
         </span>
-        <span className="fa-f13">{resultLine}</span>
+        {near.length > 0 && <span className="fa-f13">{resultLine}</span>}
       </div>
       <div className="chips fa-intents" role="group" aria-label="What you’re up for">
         {INTENTS.map(([k, label]) => (
@@ -317,6 +317,7 @@ export function FeedPlanner({
 }
 
 function whereLine(e: RankedHomeEvent): string {
-  const dist = distanceLabel(e.distanceMi)
+  // A non-breaking space keeps "4.7 mi" on one line when the where line wraps.
+  const dist = distanceLabel(e.distanceMi)?.replace(' ', '\u00a0')
   return [e.when, e.location, dist ?? (e.myCircleName ? e.myCircleName : null)].filter(Boolean).join(' · ')
 }

@@ -220,3 +220,19 @@
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fa-recap,[data-design="frequency"] [data-kit="members"] .fa-photo{height:240px}[data-design="frequency"] [data-kit="members"] .fa-hero-title{font-size:26px}[data-design="frequency"] [data-kit="members"] .fa-stats{gap:24px}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fa-create:active,[data-design="frequency"] [data-kit="members"] .fa-stat:active,[data-design="frequency"] [data-kit="members"] .fa-tuneout:hover{transform:none}}
 }
+
+/* ── Comments under a post (components/feed/post-replies.tsx, shared with DAWN) ──────────────────────
+   The shared thread paints each comment on DAWN's raised surface, which maps to Commons sand: a warm
+   block on the cool members canvas. Under Frequency a comment is a quiet ink wash, the kit's field fill. */
+[data-design="frequency"] [data-kit="members"] .rounded-card.bg-surface-elevated\/60 {
+  background: color-mix(in oklab, var(--fq-text-strong) 4%, transparent);
+  border-radius: 18px;
+}
+/* A one-row textarea is a single-line field (the comment and reply composers), not the kit's 110px
+   multi-line box: it starts one line tall and grows as the member writes. */
+[data-design="frequency"] [data-kit="members"] textarea.input[rows="1"] {
+  min-height: 44px;
+  padding: 11px 18px;
+  border-radius: 22px;
+  resize: none;
+}

@@ -89,7 +89,7 @@ export function Standing(props: StandingProps) {
               </span>
             ) : (
               <span className="fa-stat-n">
-                <span className="num">{s.val}</span>
+                <span className="num">{typeof s.val === 'number' ? s.val.toLocaleString('en-US') : s.val}</span>
                 {s.glyph && <i aria-hidden>{s.glyph}</i>}
               </span>
             )}
