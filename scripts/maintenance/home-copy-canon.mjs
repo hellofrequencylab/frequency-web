@@ -182,12 +182,28 @@ export function modelGaps(doc) {
   return MODEL_CLAIMS.filter((c) => !c.re.test(text))
 }
 
+/** Money claims the product no longer honours (ADR-1709: selling starts at Business), banned from the
+ *  front door by LIVE-910 / LAUNCH-MARKETING-PLAN §14 Phase 0.1. Checked beside the canon RULES so the
+ *  published document reports them the same way. */
+export const MONEY_CLAIMS = [
+  {
+    name: 'selling free from day one',
+    re: /\b(free from day one|(sell(ing)? tickets|tak(e|ing) donations)[^.]*\bfrom day one)\b/i,
+    hint: 'Selling starts at Business (PLAN_STORY.selling). Hosting is free; paid tickets and donations are not.',
+  },
+  {
+    name: 'taking money is never behind a plan',
+    re: /\btaking money is never behind a plan\b/i,
+    hint: 'ADR-1709 put selling behind Business. Say what is free (joining, opening a Space, hosting).',
+  },
+]
+
 /** Apply every canon rule to the extracted copy. Returns findings, newest rule order. */
 export function findings(doc) {
   const strings = proseStrings(doc)
   const out = []
   for (const { path, text } of strings) {
-    for (const rule of RULES) {
+    for (const rule of [...RULES, ...MONEY_CLAIMS]) {
       if (rule.re.test(text)) {
         out.push({ rule: rule.name, hint: rule.hint, path, text: text.slice(0, 160) })
       }

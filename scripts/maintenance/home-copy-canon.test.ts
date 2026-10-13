@@ -16,7 +16,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { RULES } from '../check-canon.mjs'
-import { query, proseStrings, isCopy, findings, report, SLUG, MODEL_CLAIMS, modelGaps } from './home-copy-canon.mjs'
+import { query, proseStrings, isCopy, findings, report, SLUG, MODEL_CLAIMS, MONEY_CLAIMS, modelGaps } from './home-copy-canon.mjs'
 
 /** A miniature of the live home document: same keys, same nesting depths. */
 const CLEAN_DOC = {
@@ -126,6 +126,16 @@ describe('home-copy-canon — the rules actually fire', () => {
     expect(sample, `no sample copy for rule "${rule.name}" — add one or the rule is unproven here`).toBeDefined()
     const { out } = findings(withCopy(sample!))
     expect(out.map((f) => f.rule)).toContain(rule.name)
+  })
+
+  it('catches the retired money claims the 2026-09-15 document made (LIVE-910)', () => {
+    const live = 'Joining is free. Opening a Space is free. Hosting an Event, selling tickets, and taking donations are free from day one.'
+    const card = 'When the room is open. Anyone can host one, sell tickets, and take donations from day one.'
+    for (const text of [live, card]) {
+      expect(findings(withCopy(text)).out.map((f) => f.rule)).toContain(MONEY_CLAIMS[0].name)
+    }
+    const fixed = 'Joining is free. Opening a Space is free. Hosting an Event is free. Selling starts at Business: paid tickets, paid memberships, donations, shop checkout and booking deposits open there.'
+    expect(findings(withCopy(fixed)).out).toEqual([])
   })
 
   it('POSITIVE CONTROL: passes the real front-door voice', () => {
