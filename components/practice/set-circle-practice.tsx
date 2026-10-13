@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { setCirclePracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
 import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 // Host control: pick the circle's current practice from the library.
 export function SetCirclePractice({
@@ -37,7 +38,7 @@ export function SetCirclePractice({
           </option>
         ))}
       </Select>
-      <button
+      <Button
         disabled={pending || !val || val === current}
         onClick={() =>
           start(async () => {
@@ -49,10 +50,9 @@ export function SetCirclePractice({
             }
           })
         }
-        className="rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60 transition-colors"
       >
         {pending ? 'Setting…' : 'Set'}
-      </button>
+      </Button>
       {err && <span className="text-meta text-danger">{err}</span>}
     </div>
   )

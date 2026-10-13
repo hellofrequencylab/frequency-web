@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Star, Trash2 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { ReviewAggregate } from '@/lib/spaces/reviews-aggregate'
 import type { RecordingReview } from '@/lib/airwaves/reviews'
@@ -158,14 +159,9 @@ export function RecordingReviews({
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           <div className="mt-2 flex justify-end border-t border-border pt-2">
-            <button
-              type="button"
-              onClick={submit}
-              disabled={pending || rating < 1}
-              className="rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <Button type="button" size="sm" onClick={submit} disabled={pending || rating < 1}>
               {pending ? 'Saving...' : myReview ? 'Update rating' : 'Post rating'}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

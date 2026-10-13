@@ -13,6 +13,7 @@
 import { useState, useTransition } from 'react'
 import { Check, Loader2, Zap } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 import { nudgeStreakMate } from '@/app/(main)/crew/leaderboard/streak-actions'
 
 export function NudgeMateButton({ mateProfileId, mateName }: { mateProfileId: string; mateName: string }) {
@@ -40,16 +41,10 @@ export function NudgeMateButton({ mateProfileId, mateName }: { mateProfileId: st
 
   return (
     <span className="inline-flex flex-col items-end gap-0.5">
-      <button
-        type="button"
-        onClick={onNudge}
-        disabled={pending}
-        aria-label={`Nudge ${mateName}`}
-        className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-      >
+      <Button type="button" size="sm" onClick={onNudge} disabled={pending} aria-label={`Nudge ${mateName}`}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Zap className="h-3.5 w-3.5" aria-hidden />}
         {pending ? 'Nudging' : 'Nudge'}
-      </button>
+      </Button>
       {error && <span className="text-meta text-danger">{error}</span>}
     </span>
   )

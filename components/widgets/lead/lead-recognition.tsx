@@ -5,6 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Leadership dashboard layout module (/lead): "People to celebrate" — a short, ranked list
 // of members IN THE LEADER'S OWN CIRCLES who are worth a thank-you or a promotion, tying
@@ -153,7 +154,7 @@ export async function LeadRecognition(): Promise<React.ReactElement | null> {
                 <h.Icon className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+                <span className={capsLabel('block text-2xs font-semibold text-primary-strong', 'widest')}>
                   {h.eyebrow}
                 </span>
                 <span className="mt-0.5 block text-body-sm leading-relaxed text-text">

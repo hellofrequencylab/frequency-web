@@ -20,6 +20,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { profileHrefFor } from '@/lib/people/member-viewer'
 import type { MemberAction, MemberDetail, MemberRole } from './types'
 import type { DetailMode } from './types'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The RIGHT PANE of the member-viewer block: one member, rendered from a presentation-neutral
 // MemberDetail (ADR-017/018 — data + intent in, no IO). Two modes: `full` (the FULLY-FEATURED card:
@@ -148,7 +149,7 @@ function StatGrid({ stats }: { stats: NonNullable<MemberDetail['engagementStats'
     <dl className="grid grid-cols-2 gap-3 @lg:grid-cols-3">
       {stats.map((s) => (
         <div key={s.label} className="rounded-card border border-border bg-surface p-3">
-          <dt className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</dt>
+          <dt className={capsLabel('text-2xs font-medium text-muted')}>{s.label}</dt>
           <dd className="mt-0.5 text-body-lg font-bold text-text">{s.value}</dd>
           {s.hint && <p className="mt-0.5 text-2xs text-muted">{s.hint}</p>}
         </div>
@@ -206,7 +207,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Contact */}
           {detail.contact && (detail.contact.email || detail.contact.phone || detail.contact.links?.length) && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Contact</h3>
+              <h3 className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Contact</h3>
               <ul className="space-y-1.5 text-body-sm">
                 {detail.contact.email && (
                   <li>
@@ -250,7 +251,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Engagement stats */}
           {detail.engagementStats && detail.engagementStats.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Engagement</h3>
+              <h3 className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Engagement</h3>
               <StatGrid stats={detail.engagementStats} />
             </section>
           )}
@@ -258,7 +259,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Pipeline (the member's CRM / contact pipeline stage) */}
           {detail.pipeline && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Pipeline</h3>
+              <h3 className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Pipeline</h3>
               <div className="flex items-center gap-2 rounded-card border border-border bg-surface p-3">
                 <GitBranch className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-body-sm text-muted">{detail.pipeline.label}</span>
@@ -272,7 +273,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Active funnels (the funnels the member is active in) */}
           {detail.funnels && detail.funnels.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Active funnels</h3>
+              <h3 className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Active funnels</h3>
               <ul className="space-y-1.5">
                 {detail.funnels.map((f, i) => (
                   <li
@@ -295,7 +296,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Recent interactions (truncated to ~5, with a "view all" affordance) */}
           {detail.interactions && detail.interactions.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Recent interactions</h3>
+              <h3 className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Recent interactions</h3>
               <ul className="space-y-2">
                 {detail.interactions.slice(0, INTERACTION_CAP).map((it, i) => (
                   <li key={`${it.kind}-${i}`} className="flex items-start gap-2.5">
@@ -325,7 +326,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Latest activity */}
           {detail.latestActivity && detail.latestActivity.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Latest activity</h3>
+              <h3 className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Latest activity</h3>
               <ul className="space-y-2">
                 {detail.latestActivity.map((a, i) => {
                   const row = (
