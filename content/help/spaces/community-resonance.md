@@ -1,20 +1,20 @@
 ---
-title: Your Space Contacts
-description: Track the people you work with in your Space, and bring them over from My Contacts.
+title: Community Resonance
+description: Community Resonance is your Space's CRM. Track the people you work with, and bring them over from My Contacts.
 category: spaces
 order: 1
 published: 2026-06-22
-updated: 2026-06-23
+updated: 2026-10-13
 audience: member
 featureKeys: [crm]
 status: published
 ---
 
-Space Contacts is the place to track the people you work with: a set of stages, a card for each
-person, and a contact list, all kept inside your Space. It builds on My Contacts, the private address
+Community Resonance is your Space's CRM, the place to track the people you work with. It is a set of
+stages, a card for each person, and a contact list, all kept inside your Space. It builds on My Contacts, the private address
 book every member already has.
 
-## What is Space Contacts?
+## What is Community Resonance?
 
 It is a set of stages and a contact list that belong to your Space.
 
@@ -59,7 +59,7 @@ will not make a duplicate, but your personal list, your notes, and your follow-u
 
 ## Frequently asked questions
 
-### Who can see my Space Contacts?
+### Who can see my Community Resonance?
 
 Only the owners and admins of your Space. The stages, the contacts, and the notes are scoped to your
 Space and never shared with another Space.
