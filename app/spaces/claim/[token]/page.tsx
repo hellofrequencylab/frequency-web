@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Suspense, cache } from 'react'
 import { spacePageFonts } from '@/lib/theme/site-style'
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
 import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
@@ -23,7 +22,8 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
-import { DetailTemplate } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
+import { heroOverlayForScrim } from '@/lib/layout/cover-scrim'
 import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
@@ -242,12 +242,6 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   // would show a bare logo on its profile and a plated one on its claim page.
   const logoBackdrop = readLogoBackdrop(space.preferences)
   const heroOnInk = coverScrim !== 'blend'
-  const heroScrimGradient =
-    coverScrim === 'none'
-      ? null
-      : heroOnInk
-        ? 'from-ink/80 via-ink/30 to-transparent'
-        : 'from-canvas via-canvas/40 to-transparent'
 
   // The public grid: read the operator's saved arrangement (preferences.profileLayout) and resolve it the
   // SAME way the live visitor page does (parseEntityLayout -> resolveRows), fail-safe to the kind starter.
@@ -319,18 +313,16 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
           <DetailTemplate
             title={hero.heading}
             band={
-          <div className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH)}>
-            <Image
-              src={coverSrc}
-              alt=""
-              fill
-              sizes="(max-width: 1024px) 100vw, 1344px"
-              preload
-              className="object-cover"
-              style={{ objectPosition: coverFocus }}
-            />
-            {heroScrimGradient && <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />}
-            <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
+              // The canonical PageHero (PROG-P5, ADR-1579), the same composition the live Space profile's
+              // heroCoverNode uses: PageHero owns the cover image, the scrim through the one cover-scrim
+              // mapping and the band chrome; `frame` carries the tier height and `lockup` the identity row.
+              <PageHero
+                title={hero.heading}
+                coverImage={coverSrc}
+                coverFocus={coverFocus}
+                overlayStyle={heroOverlayForScrim(coverScrim)}
+                frame={{ className: cn('rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH) }}
+                lockup={
               <div className="flex min-w-0 items-end gap-4">
                 <div className="shrink-0">
                   <BrandAnchor name={name} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
@@ -361,8 +353,8 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   )}
                 </div>
               </div>
-            </div>
-          </div>
+                }
+              />
             }
           >
 

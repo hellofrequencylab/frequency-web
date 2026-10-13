@@ -127,7 +127,11 @@ the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest
                     #    the template did not draw (the "Generosity over grinding" guardrail, the
                     #    /discover link, the /pricing link) were recovered into existing template
                     #    blocks in the same change. Template-only from here.
-pricing         6   # PlanCard + RateLine + PlanPrice + PlanCta + ExtraCard + ComparisonBlock (826 lines)
+pricing         0   # MOVED, not retired (2026-10-13, ADR-1737 marketing lane): the six coded bodies
+                    #    (PlanCard, RateLine, PlanPrice, PlanCta, ExtraCard, ComparisonBlock) now live in
+                    #    app/(marketing)/pricing/pricing-sections.tsx and plan-cards.tsx, so the page file
+                    #    counts 0. The coded body still renders; this is a file split, not a Phase 5 win.
+                    # was: 6 (PlanCard + RateLine + PlanPrice + PlanCta + ExtraCard + ComparisonBlock, 826 lines)
                     #    7 -> 6 on 2026-09-09: IndependentStrip RETIRED, not moved (LIVE-227). The
                     #    owner ruled that the Independent tier stops being advertised and is sold by
                     #    hand, so the offering leaves the ladder and the strip that rendered it has no

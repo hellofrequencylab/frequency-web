@@ -167,7 +167,8 @@ describe('the page is navigable and does not snap while it streams', () => {
     // and its <h1> (DetailTemplate renders the band inside its own <header>).
     const main = pageCode.indexOf('<main className={cn(CLAIM_COLUMN')
     const shell = pageCode.indexOf('<DetailTemplate')
-    const cover = pageCode.indexOf("<div className={cn('relative w-full overflow-hidden")
+    // The cover is the canonical PageHero in the band (PROG-P5), as on the live profile.
+    const cover = pageCode.indexOf('<PageHero')
     expect(main).toBeGreaterThan(-1)
     expect(shell).toBeGreaterThan(main)
     expect(cover).toBeGreaterThan(shell)
