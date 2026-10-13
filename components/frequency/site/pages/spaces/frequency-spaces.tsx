@@ -9,14 +9,20 @@
 // in its STANDING order (../shared/data.ts), the same earned order /discover/spaces uses. The design's
 // "Gathered 18 times this month" has no public figure behind it, so the pill shows the Space's upcoming
 // gatherings when it has any, else its kind. Copy is the design's, verbatim.
+//
+// THE HYBRID: one section the design lacks is kept from the DAWN page, the four builder guides, restyled
+// as the design's feature cards. The questions carry FAQPage JSON-LD. Motion is the shell's FX loop and
+// the closing band is the shell's <KeepGoing>.
 
 import '@/app/themes/frequency/site-pages-a.css'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getRankedSpaces } from '../shared/data'
 import { feature, SITE } from '../shared/links'
-import { Acts, aura, ChapPhoto, Chapter, KeepGoing, LocPill, photo, WhatsOnList } from '../shared/parts'
-import { PageMotion } from '../shared/page-motion'
+import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
+import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
+import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
 
 const TYPES: { icon: FqIconName; kind: string; line: string }[] = [
   { icon: 'breath', kind: 'Studios', line: 'Fill the 7pm class.' },
@@ -37,6 +43,15 @@ const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] 
   { id: 'f-programs-s', icon: 'program', title: 'Programs', body: 'A path your Circle walks together.' },
 ]
 
+/** Kept from the DAWN page (lib/page-editor/templates/spaces.ts, "Guides for builders"): the builder
+ *  guides that make /spaces the hub of that cluster. Not in the design; restyled as its feature cards. */
+const GUIDES: { href: string; icon: FqIconName; title: string; body: string }[] = [
+  { href: '/loneliness', icon: 'space', title: 'What a third space is', body: 'The definition, why they got rare, and how to build one today.' },
+  { href: '/how-to-build-community', icon: 'circle', title: 'How to run a community space', body: 'The operator playbook: a rhythm, a room, a few regulars, light tooling.' },
+  { href: '/tools-for-community-builders', icon: 'page', title: 'Tools for community builders', body: 'The four jobs a builder needs, and how one Space covers them.' },
+  { href: '/how-to-start-a-circle', icon: 'host', title: 'How to start a Circle', body: 'Pick one thing, set a standing time, invite a few people, keep the format simple.' },
+]
+
 const QUESTIONS: [string, string][] = [
   ['Another tool?', 'It replaces the six you’re juggling: calendar, door list, contacts, email, tickets and memberships.'],
   ['What does it cost?', 'Nothing until you charge. Your regulars are 0%. When someone we bring you buys, we take a small share.'],
@@ -48,8 +63,6 @@ export async function FrequencySpaces() {
   const ranked = await getRankedSpaces(6)
   return (
     <div className="pa-page pa-spaces" data-pa-side="e" data-motion-scope style={{ display: 'contents' }}>
-      <PageMotion />
-
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg" style={{ backgroundImage: `url('${photo('gathering-09.jpg')}')` }} />
         <div className="fq-aura" style={aura(0.3)} />
@@ -100,8 +113,8 @@ export async function FrequencySpaces() {
             </p>
             <Acts
               items={[
-                { href: feature('f-doorqr'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
-                { href: feature('spaces'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
+                { href: feature('f-page'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
+                { href: feature('f-events-s'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
               ]}
             />
           </div>
@@ -120,7 +133,7 @@ export async function FrequencySpaces() {
             <Acts
               items={[
                 { href: feature('f-doorqr'), icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
-                { href: feature('f-doorqr'), icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re in the room' },
+                { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re in the room' },
               ]}
             />
           </div>
@@ -136,7 +149,7 @@ export async function FrequencySpaces() {
             </p>
             <Acts
               items={[
-                { href: feature('spaces'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
+                { href: feature('f-programs-s'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
                 { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Members land in their Circle' },
               ]}
             />
@@ -250,6 +263,7 @@ export async function FrequencySpaces() {
             </div>
             <h2 className="h-l">Before you open.</h2>
           </div>
+          <JsonLd data={faqSchema(QUESTIONS.map(([q, a]) => ({ q, a })))} />
           <div className="qa">
             {QUESTIONS.map(([q, a]) => (
               <details key={q}>
@@ -261,8 +275,32 @@ export async function FrequencySpaces() {
         </div>
       </section>
 
+      <section className="sec" style={{ paddingTop: 0 }} id="guides" data-screen-label="05x Guides">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Guides for builders</b>Free to read
+            </div>
+            <h2 className="h-l">How to build a third space.</h2>
+          </div>
+          <div className="g4f">
+            {GUIDES.map((g) => (
+              <Link className="pop" key={g.href} href={g.href}>
+                <span className="pglow" />
+                <span className="pc">
+                  <span className="ic">
+                    <FqIcon name={g.icon} />
+                  </span>
+                  <h3>{g.title}</h3>
+                  <p>{g.body}</p>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <KeepGoing
-        label="06 Keep going"
         title="Open your Space. It’s free."
         body="It takes a few minutes, and you pay nothing until you charge."
         primary={{ href: SITE.join, label: 'Open your Space →' }}

@@ -6,11 +6,10 @@
 // are ported here line for line, with every design-file link (People.html, Features.html#f-zaps, …)
 // mapped to a route that exists in app/. site-nav.test.ts walks app/ and fails if one does not.
 //
-// THREE DESIGN PAGES HAVE NO ROUTE YET: Features, Stories and the Help accessibility statement. Each is
-// one entry in ROUTES below. While it is null, the items that point at it either fall back to the
-// nearest real page (every feature has one, listed in FEATURE_FALLBACK) or are left out (Stories), so
-// the header never links to a 404. When a page lane ships the route, set it here and every menu,
-// the search, the sheet and the footer follow.
+// ONE DESIGN PAGE HAS NO ROUTE YET: the Help accessibility statement. Features (/features) and Stories
+// (/stories) shipped with the Frequency rebuild and are set in ROUTES below, so every menu, the search,
+// the sheet and the footer link to them. A route set to null falls back (FEATURE_FALLBACK, for a build
+// where /features is not served) or is left out, so the header never links to a 404.
 //
 // COPY. Follows guidelines/messaging.md, which wins over the prototype where they differ: the calendar
 // is "What's happening" (the prototype's "Your town's calendar"), and no line promises "every week".
@@ -20,14 +19,14 @@ import type { FqIconName } from '@/components/frequency/icon'
 /** The design page each link was drawn against, and the route it lands on today. */
 export const ROUTES = {
   home: '/',
-  /** People.html. No dedicated wing page exists yet; /the-community is the nearest people-facing page. */
+  /** People.html, served at /the-community (/people is the member directory). */
   people: '/the-community' as string,
   spaces: '/spaces' as string,
-  /** Features.html. No route yet: features fall back to FEATURE_FALLBACK. */
-  features: null as string | null,
+  /** Features.html. Served under Frequency (app/(marketing)/features). Null falls back to FEATURE_FALLBACK. */
+  features: '/features' as string | null,
   pricing: '/pricing',
-  /** Stories.html. No route yet: Stories items are left out until it exists. */
-  stories: null as string | null,
+  /** Stories.html. Served under Frequency (app/(marketing)/stories). */
+  stories: '/stories' as string | null,
   /** Vision.html, the third-space vision (footer and search only, per the website strategy). */
   vision: '/the-lab',
   join: '/join',
@@ -53,6 +52,9 @@ export interface SiteLink {
   icon?: FqIconName
 }
 
+/** People.html#first-night: the People page's own "Your first night" section. */
+const FIRST_NIGHT = `${ROUTES.people}#first-night`
+
 export type Wing = 'people' | 'spaces'
 /** Side state: `p` People (Browse Community), `e` Spaces (Host Community). */
 export type Side = 'p' | 'e'
@@ -60,8 +62,9 @@ export type Side = 'p' | 'e'
 // ── Features (FJ) ──────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Every feature, by id (the `#f-<id>` anchor Features.html opens). Until /features exists each one
- * lands on the closest real page, most often its help article.
+ * Every feature, by id (the `#f-<id>` anchor Features.html opens), and the closest real page beyond
+ * /features, most often its help article. The header links /features#f-<id>; the Features page links
+ * each feature on to this page ("Read the guide"), and a build without /features falls back to it.
  */
 export const FEATURE_FALLBACK: Record<string, string> = {
   // For people
@@ -93,12 +96,12 @@ export const FEATURE_FALLBACK: Record<string, string> = {
   tips: '/help/spaces/get-paid',
 }
 
-/** Features.html#f-<id>, or the feature's fallback while /features has no route. */
+/** Features.html#f-<id>, or the feature's fallback if /features has no route. */
 export function featureHref(id: string): string {
   return ROUTES.features ? `${ROUTES.features}#f-${id}` : (FEATURE_FALLBACK[id] ?? ROUTES.help)
 }
 
-/** Features.html#people / #spaces, or the wing's own page while /features has no route. */
+/** Features.html#people / #spaces, or the wing's own page if /features has no route. */
 export function featuresWingHref(side: Side): string {
   if (ROUTES.features) return `${ROUTES.features}#${side === 'e' ? 'spaces' : 'people'}`
   return side === 'e' ? ROUTES.spaces : ROUTES.people
@@ -169,7 +172,7 @@ export const WING_MENUS: WingMenu[] = [
         heading: 'Start',
         links: [
           { href: ROUTES.people, label: 'Find your people', hint: 'How Frequency works for you', icon: 'circle' },
-          { href: '/help/getting-started/what-happens-at-a-gathering', label: 'Your first night', hint: 'What to expect, start to finish', icon: 'checkin' },
+          { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect, start to finish', icon: 'checkin' },
           { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
         ],
       },
@@ -244,7 +247,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
   { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2027', icon: 'breath' },
-  { href: '/help/getting-started/what-happens-at-a-gathering', label: 'Your first night', hint: 'What to expect', icon: 'checkin' },
+  { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect', icon: 'checkin' },
   { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, non-profits', icon: 'contacts' },
 ]
@@ -278,7 +281,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
     heading: 'For people',
     links: [
       { href: ROUTES.people, label: 'Find your people' },
-      { href: '/help/getting-started/what-happens-at-a-gathering', label: 'Your first night' },
+      { href: FIRST_NIGHT, label: 'Your first night' },
       { href: ROUTES.happening, label: 'What’s happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },
     ],
@@ -312,10 +315,6 @@ export const FOOTER_LEGAL: SiteLink[] = [
 
 /** Design links with no route of their own, and what each does meanwhile. Read by the test and the report. */
 export const UNROUTED: { design: string; meanwhile: string }[] = [
-  { design: 'People.html (the people wing home)', meanwhile: `${ROUTES.people} (nearest people page)` },
-  { design: 'Features.html and every #f-<id>', meanwhile: 'FEATURE_FALLBACK (help articles, /discover, /spaces)' },
-  { design: 'Stories.html (nav, both menus, search, footer)', meanwhile: 'left out' },
   { design: 'Help.html#accessibility', meanwhile: ROUTES.help },
-  { design: 'People.html#first-night', meanwhile: '/help/getting-started/what-happens-at-a-gathering' },
   { design: 'People.html#near', meanwhile: `${ROUTES.happening} (What's happening)` },
 ]

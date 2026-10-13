@@ -3,17 +3,43 @@
 // /features, a route that exists only under Frequency (DAWN 404s it, see the route file).
 //
 // Every word is the design's. The People half is aqua and the Spaces half is sun whatever side the
-// visitor last chose (`.half-p` / `.half-e` set the side colour locally, as the design does).
+// visitor last chose (`.half-p` / `.half-e` set the side colour locally, as the design does). Motion is
+// the shell's FX loop; the closing band is the shell's <KeepGoing>.
 
 import '@/app/themes/frequency/site-pages-a.css'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
+import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
+import { FEATURE_FALLBACK, ROUTES } from '@/lib/frequency/site-nav'
 import { SITE } from '../shared/links'
-import { aura, KeepGoing, photo } from '../shared/parts'
-import { PageMotion } from '../shared/page-motion'
+import { aura, photo } from '../shared/parts'
 import { featureCount, PEOPLE, SPACES, type Half } from './features-data'
 import { FeaturesMotion } from './features-motion'
+
+/**
+ * THE HYBRID: each feature's onward page beyond this one (its help article, the live calendar, the
+ * Circle guide), from the nav's FEATURE_FALLBACK table. The design stops at "What changes"; the site
+ * already has a real page for most features, so the open card links on to it. Features whose only page
+ * is the Spaces marketing page get no link (it would send an owner back where they came from).
+ */
+function guideFor(id: string): { href: string; label: string } | null {
+  const href = FEATURE_FALLBACK[id.replace(/^f-/, '')]
+  if (!href || href === ROUTES.spaces) return null
+  if (href.startsWith('/help/')) return { href, label: 'Read the guide' }
+  if (href.startsWith('/discover/')) return { href, label: 'See what’s happening' }
+  return { href, label: 'Read more' }
+}
+
+function GuideLink({ id }: { id: string }) {
+  const g = guideFor(id)
+  if (!g) return null
+  return (
+    <Link className="more" href={g.href}>
+      {g.label} →
+    </Link>
+  )
+}
 
 const jumpColour = (v: string) => ({ '--fq-c': `var(${v})` }) as CSSProperties
 
@@ -66,6 +92,7 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
                       <b>What changes</b>
                       {f.changes}
                     </p>
+                    <GuideLink id={f.id} />
                   </div>
                 </details>
               ))}
@@ -80,7 +107,6 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
 export function FrequencyFeatures() {
   return (
     <div className="pa-page pa-features" data-motion-scope style={{ display: 'contents' }}>
-      <PageMotion />
       <FeaturesMotion />
 
       <section className="phero" data-energy="charge" data-screen-label="01 Hero">
@@ -116,7 +142,6 @@ export function FrequencyFeatures() {
       <HalfSection half={SPACES} label="03 For spaces" />
 
       <KeepGoing
-        label="04 Keep going"
         title="Ready when you are."
         body="Free for people. Free for Spaces until you charge."
         primary={{ href: SITE.people, label: 'Find your Circle →' }}

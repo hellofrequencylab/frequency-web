@@ -301,7 +301,9 @@ function run(root: HTMLElement): () => void {
       })
       px.forEach((el) => {
         const r = el.getBoundingClientRect()
-        const t = `0 ${(((r.top + r.height / 2 - vh / 2) / vh) * -Number(el.dataset.px) * 100).toFixed(1)}px`
+        // `.rings.big` is centred by its own `translate: -50% 0` (Home's "Live this week"), so keep the x.
+        const x = el.classList.contains('big') ? '-50%' : '0'
+        const t = `${x} ${(((r.top + r.height / 2 - vh / 2) / vh) * -Number(el.dataset.px) * 100).toFixed(1)}px`
         w.push(() => (el.style.translate = t))
       })
       if (ph) {
