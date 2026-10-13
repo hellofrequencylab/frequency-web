@@ -261,14 +261,14 @@ ${W} .hs-season-next span{color:var(--color-text);margin-right:8px}
 ${W} .wh-nowline{margin:0;display:inline-flex;flex-wrap:wrap;gap:8px;align-items:center;${LABEL};font-size:11px;color:var(--color-text-muted)}
 ${W} .wh-nowline>span{display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
 ${W} .wh-nowline-season{color:var(--wh-season-ink)}
-${W} .wh-nowline-moon{color:var(--wh-symbol-ink)}
+${W} .wh-nowline-moon{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;color:var(--wh-symbol-ink)}
 ${W} .wh-nowline-dot{width:3px;height:3px;border-radius:50%;background:var(--wh-symbol-line)}
 
 ${W} .wh-glyph{font-family:var(--wh-symbol);font-weight:300;line-height:1;color:var(--wh-symbol-ink);font-variant-emoji:text;text-shadow:.5px .6px 0 var(--wh-symbol-ghost);display:inline-flex;align-items:center;justify-content:center;filter:url(#wh-ink-fine)}
 ${W} .wh-glyph-halo{position:relative;border-radius:50%;background:var(--wh-wash-moon),var(--wh-grain),var(--wh-gradient-lavender);box-shadow:0 0 0 1.5px var(--wh-symbol-ink),0 0 0 4.5px var(--wh-vellum),0 0 0 5.5px var(--wh-symbol-line-soft)}
 ${W} .wh-glyph-halo::before{content:"";position:absolute;inset:4px;border-radius:50%;border:1.5px dotted var(--wh-symbol-ink)}
 ${W} .wh-glyph-watermark{position:absolute;right:4%;bottom:0;opacity:var(--wh-watermark);filter:none;pointer-events:none;text-shadow:none}
-${W} .wh-moon{flex:none;border-radius:50%;overflow:visible}
+${W} .wh-moon{display:inline-block;vertical-align:middle;flex:none;border-radius:50%;overflow:visible}
 ${W} .wh-moon-dark{fill:var(--wh-lavender)}
 ${W} .wh-moon-lit{fill:var(--wh-vellum)}
 ${W} .wh-moon-ring{fill:none;stroke:var(--wh-symbol-ink);stroke-width:var(--wh-symbol-stroke)}

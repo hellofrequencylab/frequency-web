@@ -615,8 +615,10 @@ export function WildheartRetreatBandBlock({ label, heading, accentWord, lead, da
 export function WildheartMarkSplitBlock({ label, heading, accentWord, lead, body, note, metadata, pad, vis }: {
   label?: string; heading?: string; accentWord?: string; lead?: string; body?: string; note?: string; metadata?: Record<string, unknown>; pad?: string; vis?: string
 }) {
-  const space = metadata?.space as { name?: string; logoUrl?: string | null } | undefined
-  const name = str(space?.name)
+  // The live render passes the Space's website content, whose name lives under `identity`
+  // (lib/spaces/content-data.ts); the editor harness passes a flat `name`. Read both.
+  const space = metadata?.space as { name?: string; identity?: { name?: string } | null } | undefined
+  const name = str(space?.identity?.name) || str(space?.name)
   return (
     <section className={cls('wh-block wh-block-mark', pad, vis)}>
       <div className="wh-mark-split">

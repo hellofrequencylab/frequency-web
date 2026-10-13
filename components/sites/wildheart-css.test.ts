@@ -73,5 +73,9 @@ describe('the Wildheart website skin', () => {
   it('draws the date line and the calendar family, and honours reduced motion', () => {
     for (const c of ['.wh-nowline', '.wh-glyph', '.wh-moon', '.wh-yj-stage', '.wh-yj-rotor', '.wh-zw', '.wh-sm-grid', '.wh-track-range', '.wh-row', '.wh-fixed', '.wh-fixed-spacer', '.wh-logo']) expect(skin).toContain(c)
     expect(skin).toMatch(/@media \(prefers-reduced-motion:reduce\)\{\[data-house-theme="wildheart"\] \*\{transition:none!important;animation:none!important\}\}/)
+    // Tailwind's preflight makes every svg a block: the moon on the date line stays beside its label,
+    // never above it, because the label is a flex row and the moon is inline.
+    expect(skin).toMatch(/\.wh-nowline-moon\{display:inline-flex;[^}]*white-space:nowrap/)
+    expect(skin).toMatch(/\.wh-moon\{display:inline-block;vertical-align:middle;/)
   })
 })

@@ -89,7 +89,8 @@ const footer = siteFooterFor(readSiteFooter(buildPreferences()), links, ORIGIN)
 /** The Space's own rows the blocks the theme does not plan read through `puck.metadata.space`. */
 const metadata = {
   space: {
-    name: 'Wildheart',
+    // The live render's website content carries the name under `identity` (lib/spaces/content-data.ts).
+    identity: { name: 'Wildheart', logoUrl: '/brand/wildheart/wildheart-logo.svg' },
     slug: SLUG,
     tagline: TAGLINE,
     logoUrl: '/brand/wildheart/wildheart-logo.svg',

@@ -126,6 +126,11 @@ describe('the astrology calendar block family', () => {
     expect(split).toContain('>HEART</tspan>')
     expect(split).toContain('href="#wh-logo-figure"')
     expect(renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" metadata={{ space: { name: 'Any Space' } }} />)).toContain('aria-label="Any Space"')
+    // The live site passes the website content, whose name sits under `identity`: the mark still draws.
+    const live = renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" metadata={{ space: { identity: { name: 'Wildheart' }, events: [] } }} />)
+    expect(live).toContain('wh-mark-logo')
+    expect(live).toContain('aria-label="Wildheart"')
+    expect(live).not.toContain('wh-mark-name')
   })
 
   it('keeps a watermark glyph out of the flow on a surface without the skin', () => {
