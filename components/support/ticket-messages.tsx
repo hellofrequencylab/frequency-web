@@ -1,6 +1,7 @@
 import { Sparkles, Lock, Shield } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
 import type { TicketMessage } from '@/lib/support/types'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Renders a ticket's conversation. Member replies sit on the right; staff/vera/system
 // on the left. Internal staff notes get a distinct, locked treatment (only shown on
@@ -15,7 +16,7 @@ export function TicketMessages({ messages }: { messages: TicketMessage[] }) {
         if (m.isInternal) {
           return (
             <div key={m.id} className="rounded-xl border border-warning/40 bg-warning-bg/30 px-3 py-2">
-              <p className="mb-1 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-warning">
+              <p className={capsLabel('mb-1 flex items-center gap-1.5 text-2xs font-semibold text-warning')}>
                 <Lock className="h-3 w-3" /> Internal note · {m.authorName ?? 'Staff'} · {relativeTime(m.createdAt)}
               </p>
               <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-text">{m.body}</p>

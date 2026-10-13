@@ -5,6 +5,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { useState, useEffect, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { createItemsForRole, type CommunityRole } from './create-actions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export function CreateMenu({ role }: { role: CommunityRole }) {
   const [open, setOpen] = useState(false)
@@ -36,7 +37,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-64 rounded-card border border-border bg-surface lift-3 py-1 z-50">
           <div className="px-3 py-2 border-b border-border">
-            <p className="text-3xs font-semibold uppercase tracking-wider text-muted">
+            <p className={capsLabel('text-3xs font-semibold text-muted', 'wider')}>
               Quick Create
             </p>
           </div>

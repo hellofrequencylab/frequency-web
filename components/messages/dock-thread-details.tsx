@@ -6,6 +6,7 @@ import { X, Loader2, LogOut, Pencil } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // ── The conversation console the dock was missing (ADR-896 parity) ────────────────────────
 // Rename, leave and the participant roster lived ONLY on app/(main)/messages/[id]/page.tsx,
@@ -158,7 +159,7 @@ export function DockThreadDetails({
           <div className="shrink-0 border-b border-border px-3 py-2.5">
             {editing ? (
               <div>
-                <label htmlFor="dock-conversation-name" className="block text-2xs font-semibold uppercase tracking-wider text-muted">
+                <label htmlFor="dock-conversation-name" className={capsLabel('block text-2xs font-semibold text-muted', 'wider')}>
                   Group name
                 </label>
                 <input
@@ -192,7 +193,7 @@ export function DockThreadDetails({
             ) : (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Group name</p>
+                  <p className={capsLabel('text-2xs font-semibold text-muted', 'wider')}>Group name</p>
                   <p className="truncate text-body-sm text-text">{name || 'Not set'}</p>
                 </div>
                 <Button
@@ -210,7 +211,7 @@ export function DockThreadDetails({
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <h3 className="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted">
+          <h3 className={capsLabel('px-3 pt-2.5 pb-1 text-2xs font-semibold text-muted', 'wider')}>
             People ({participants.length})
           </h3>
           <ul className="divide-y divide-border/50">

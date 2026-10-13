@@ -22,6 +22,7 @@ import {
   setDockPanelOpen,
   subscribeDockGeometry,
 } from '@/components/layout/dock-bar'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -42,7 +43,7 @@ export type DockData = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-3xs font-semibold uppercase tracking-widest text-muted">{children}</p>
+    <p className={capsLabel('text-3xs font-semibold text-muted', 'widest')}>{children}</p>
   )
 }
 
@@ -533,7 +534,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       >
         <div className="flex items-center gap-1.5">
           <Lock className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-          <span className="text-meta font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
+          <span className={capsLabel('text-meta font-bold text-primary-strong', 'wider')}>The Vault</span>
         </div>
         {/* The spendable balance is a READING, so it goes through Counter too — same teal Gem,
             same mono numeral as the head above, rather than a third hand-rolled spelling of it. */}

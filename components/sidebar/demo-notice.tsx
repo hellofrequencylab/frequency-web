@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Right-sidebar explainer for Beta testers: what the little ⚡ bolt means, the
 // *honest* headcount, and — the activation nudge — a few direct links to real
@@ -46,7 +47,7 @@ export async function DemoNotice() {
           <Zap className="h-5 w-5 fill-current" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h3 className="text-body-sm font-extrabold uppercase tracking-wide text-warning">Help build it</h3>
+          <h3 className={capsLabel('text-body-sm font-extrabold text-warning')}>Help build it</h3>
           <p className="text-2xs font-semibold leading-tight text-text">
             {demoCount.toLocaleString()} demo {demoCount === 1 ? 'member' : 'members'} · {realCount} real
           </p>

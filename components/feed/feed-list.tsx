@@ -25,6 +25,7 @@ import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { readFeedRpc, type FeedLoad } from '@/lib/feed/load-feed'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Day bucketing for the Story lens (matches /journal's grouping voice).
 //
@@ -497,7 +498,7 @@ export async function FeedList({
       <div data-visual-mask="feed-stream" className="space-y-6">
         {days.map((day) => (
           <section key={day.label}>
-            <h3 className="mb-2 px-1 text-meta font-bold uppercase tracking-wide text-subtle">{day.label}</h3>
+            <h3 className={capsLabel('mb-2 px-1 text-meta font-bold text-subtle')}>{day.label}</h3>
             <div className="space-y-4">
               {day.items.map(({ data: post }) => (
                 <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
@@ -563,13 +564,13 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-3xs font-black uppercase tracking-widest text-broadcast-strong">
+            <span className={capsLabel('text-3xs font-black text-broadcast-strong', 'widest')}>
               {isEvent ? 'Dispatch' : `${d.audience_scope} Dispatch`}
             </span>
             {/* Event badge: a lucide icon + "Event" chip in DAWN success tokens, so an
                 Event Dispatch reads as event-flavoured on the broadcast rail. */}
             {isEvent && (
-              <span className="inline-flex items-center gap-0.5 rounded-pill bg-success-bg px-1.5 py-px text-3xs font-black uppercase tracking-wide text-success">
+              <span className={capsLabel('inline-flex items-center gap-0.5 rounded-pill bg-success-bg px-1.5 py-px text-3xs font-black text-success')}>
                 <CalendarClock className="w-2.5 h-2.5" /> Event
               </span>
             )}
@@ -621,7 +622,7 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CalendarDays className="w-3 h-3 text-success" />
-            <span className="text-3xs font-black uppercase tracking-widest text-success">Upcoming event</span>
+            <span className={capsLabel('text-3xs font-black text-success', 'widest')}>Upcoming event</span>
           </div>
           <p className="text-body-sm font-bold text-text group-hover:text-success transition-colors line-clamp-1">
             {e.title}

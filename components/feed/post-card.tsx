@@ -23,6 +23,7 @@ import { SystemLine } from './system-line'
 import { PostPoll } from './post-poll'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+import { capsLabel } from '@/components/ui/caps-label'
 
 /** WHERE a post lives — the wall / Circle / Channel / event / Space it was posted
  *  to. Rendered as the linked context half of the header's one attribution line
@@ -234,7 +235,7 @@ export function PostCard({
               </span>
             )}
             {isNote && (
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-muted">
+              <span className={capsLabel('inline-flex items-center gap-1 text-2xs font-semibold text-muted', 'wider')}>
                 <NotebookPen className="h-3 w-3" /> Note
               </span>
             )}

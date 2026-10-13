@@ -11,6 +11,7 @@ import {
   type TicketStatus, type TicketPriority, type TicketParty,
 } from '@/lib/support/types'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Staff triage controls for one ticket: status / priority / assignee selects, plus a
 // reply composer that can send a public reply OR file an internal note.
@@ -80,7 +81,7 @@ export function AdminTicketControls({
     })
   }
 
-  const lbl = 'mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted'
+  const lbl = capsLabel('mb-1 block text-2xs font-semibold text-muted')
 
   return (
     <div className="space-y-4">
