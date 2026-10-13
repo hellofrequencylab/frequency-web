@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 1270,
+      "baseline": 1003,
       "frozen": {
         "at": "2026-10-13",
-        "value": 1270,
+        "value": 1003,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Theme-bulletproofing scan, consoles lane (2026-10-13): admin, CRM, billing, commerce, analytics and the Space/Circle/Event console pages moved rounded-2xl/lg/full onto rounded-card/control/pill (pixel-identical under DAWN light and dark)",
-        "from": 1868
+        "reason": "Theme-bulletproofing scans (primitives, consoles, spaces-builder, pages-rest) merged: rounded-lg/2xl/full moved onto rounded-control/card/pill, pixel-identical under DAWN",
+        "from": 1270
       },
       "history": [
         {
@@ -322,6 +322,13 @@
           "to": 1270,
           "direction": "lowered",
           "reason": "Theme-bulletproofing scan, consoles lane (2026-10-13): admin, CRM, billing, commerce, analytics and the Space/Circle/Event console pages moved rounded-2xl/lg/full onto rounded-card/control/pill (pixel-identical under DAWN light and dark)"
+        },
+        {
+          "at": "2026-10-13",
+          "from": 1270,
+          "to": 1003,
+          "direction": "lowered",
+          "reason": "Theme-bulletproofing scans (primitives, consoles, spaces-builder, pages-rest) merged: rounded-lg/2xl/full moved onto rounded-control/card/pill, pixel-identical under DAWN"
         }
       ]
     },
