@@ -705,8 +705,8 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   themselves are still **People** and **Spaces** (the page names); only the toggle's words
   changed.
 - **Retired with this section:** "What's on" / "What's On" as a label · "Circles, not walls." as
-  the belief line · "Reading as:" and "Experiences" as toggle labels. The code still carries the
-  old label; `LIVE-906` holds the rename and its probe.
+  the belief line · "Reading as:" and "Experiences" as toggle labels. `LIVE-906` holds the rename in
+  code and the probe that keeps the old label out.
 
 ## Marketplace & Commerce (ADR-596, July 2026; umbrella revived by ADR-868)
 
