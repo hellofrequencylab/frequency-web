@@ -15,6 +15,7 @@ import {
 } from '@/app/(main)/events/host-transfer-actions'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // ── "Hand hosting to another Space" (ADR-911) ──────────────────────────────────────────────
 //
@@ -268,7 +269,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
               )}
               <span className="min-w-0 flex-1 truncate text-meta font-semibold text-text">{h.name}</span>
               {h.type_label && (
-                <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
+                <span className={capsLabel('shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold text-muted')}>
                   {h.type_label}
                 </span>
               )}

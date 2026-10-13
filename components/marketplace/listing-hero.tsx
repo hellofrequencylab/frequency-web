@@ -8,6 +8,7 @@
 
 import Image from 'next/image'
 import { ImageIcon } from 'lucide-react'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export function ListingHero({
   title,
@@ -54,9 +55,11 @@ export function ListingHero({
       {/* TOP-RIGHT: the category pill. */}
       {categoryLabel && (
         <span
-          className={`absolute right-4 top-4 inline-flex items-center rounded-pill px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${
-            image ? 'bg-on-ink/20 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
-          }`}
+          className={capsLabel(
+            `absolute right-4 top-4 inline-flex items-center rounded-pill px-3 py-1 text-2xs font-semibold ${
+              image ? 'bg-on-ink/20 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
+            }`,
+          )}
         >
           {categoryLabel}
         </span>

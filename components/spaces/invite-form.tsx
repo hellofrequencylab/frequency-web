@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AtSign, Check, Copy, Loader2, Mail, Search, Trash2, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
-import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import {
@@ -23,7 +23,6 @@ import {
   type TeamCandidate,
 } from '@/lib/spaces/invites-shared'
 import type { SpaceRole } from '@/lib/spaces/membership'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // INVITE A TEAMMATE (client). The owner (or admin) of a Space adds a teammate at a role, through the
@@ -76,11 +75,11 @@ function CopyLink({ url }: { url: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <input
+      <Input
         readOnly
         value={url}
         onFocus={(e) => e.currentTarget.select()}
-        className={cn(fieldClasses, 'min-w-0 flex-1 font-mono text-meta')}
+        className="min-w-0 flex-1 font-mono text-meta"
         aria-label="Invite link"
       />
       <Button type="button" variant="secondary" size="sm" onClick={copy} className="shrink-0">

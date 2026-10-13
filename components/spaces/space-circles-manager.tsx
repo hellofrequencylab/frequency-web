@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The Space's Circles, each with the Journey it is running (ADR-842). Two jobs: make a new Circle
 // under this Space, and start a Run of one of the Space's Journeys for a Circle that is not
@@ -460,7 +461,7 @@ export function SpaceCirclesManager({
               {/* Move it: to another space this steward runs, or to them as their own circle. */}
               {moveFor === c.id && (
                 <div className="mt-3 space-y-2 border-t border-border pt-3">
-                  <label htmlFor={`move-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <label htmlFor={`move-${c.id}`} className={capsLabel('block text-2xs font-semibold text-muted')}>
                     Where it should live
                   </label>
                   <Select
@@ -503,7 +504,7 @@ export function SpaceCirclesManager({
                   {/* Handing it to someone ELSE is an offer, not a move: it stays yours until they
                       accept, because a circle carries members (ADR-845). */}
                   <div className="space-y-1.5 border-t border-border pt-2">
-                    <label htmlFor={`handoff-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                    <label htmlFor={`handoff-${c.id}`} className={capsLabel('block text-2xs font-semibold text-muted')}>
                       Or hand it to someone
                     </label>
                     <Input
@@ -543,7 +544,7 @@ export function SpaceCirclesManager({
               {/* The picker: only the Journeys this Space offers. The server re-checks it. */}
               {runFor === c.id && !c.run && (
                 <div className="mt-3 space-y-2 border-t border-border pt-3">
-                  <label htmlFor={`plan-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <label htmlFor={`plan-${c.id}`} className={capsLabel('block text-2xs font-semibold text-muted')}>
                     Which Journey
                   </label>
                   <Select

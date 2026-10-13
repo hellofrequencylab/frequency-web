@@ -11,6 +11,8 @@ import {
   downloadQrSvgString,
   downloadQrSvgStringAsPng,
 } from '@/lib/qr/client-download'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button } from '@/components/ui/button'
 
 // The event "QR & Share" affordance — the header control that lets any viewer send an event on.
 // It encodes the event's OWN public page (`/events/<slug>`) so a scan or a copied link lands right
@@ -112,7 +114,7 @@ export function EventShareButton({
         <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             <div className="shrink-0">
-              <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('mb-2 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <QrCode className="h-3.5 w-3.5" /> Scan to open
               </p>
               <div
@@ -140,7 +142,7 @@ export function EventShareButton({
               </div>
             </div>
             <div className="w-full min-w-0 space-y-3">
-              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <Link2 className="h-3.5 w-3.5" /> Share link
               </p>
               <code
@@ -169,13 +171,14 @@ export function EventShareButton({
                 </a>
               </div>
               {canNativeShare && (
-                <button
+                <Button
                   type="button"
                   onClick={nativeShare}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  size="xs"
+                  className="w-full"
                 >
                   <Share2 className="h-3.5 w-3.5" /> Share
-                </button>
+                </Button>
               )}
               <p className="text-2xs text-muted">Anyone with the link or the code lands on this event.</p>
             </div>
@@ -185,7 +188,7 @@ export function EventShareButton({
               The claim link hands the event off to its real organizer so they can take it over. */}
           {hostClaimUrl && (
             <div className="mt-4 space-y-2 rounded-card border border-primary/30 bg-primary-bg/40 p-3">
-              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
+              <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-primary-strong')}>
                 <Send className="h-3.5 w-3.5" /> Send to host
               </p>
               <p className="text-2xs text-muted">
@@ -198,14 +201,15 @@ export function EventShareButton({
                 >
                   {hostClaimUrl}
                 </code>
-                <button
+                <Button
                   type="button"
                   onClick={copyHost}
-                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control bg-primary px-2.5 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  size="xs"
+                  className="shrink-0"
                 >
                   {hostCopied ? <Check className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
                   {hostCopied ? 'Copied' : 'Copy'}
-                </button>
+                </Button>
               </div>
             </div>
           )}

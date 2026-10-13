@@ -14,6 +14,8 @@ import { isError } from '@/lib/action-result'
 import { Input, labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
 import type { EventShareView } from '@/lib/events/event-share'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button } from '@/components/ui/button'
 
 type ScopeHit = { id: string; name: string; slug: string; image_url: string | null; type_label?: string }
 
@@ -22,7 +24,7 @@ type ScopeHit = { id: string; name: string; slug: string; image_url: string | nu
  *  as a person. The badge does the disambiguation; person-named Spaces are eligible. */
 function SpaceTypeBadge({ label }: { label: string }) {
   return (
-    <span className="shrink-0 rounded-pill border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
+    <span className={capsLabel('shrink-0 rounded-pill border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold text-muted')}>
       {label}
     </span>
   )
@@ -151,14 +153,14 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                   >
                     Decline
                   </button>
-                  <button
+                  <Button
                     type="button"
                     onClick={() => run(approveEventShare(s.id))}
                     disabled={pending}
-                    className="rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    size="sm"
                   >
                     Approve
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <button

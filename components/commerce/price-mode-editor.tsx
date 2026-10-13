@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Star, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Radio } from '@/components/ui/radio'
 import { Select } from '@/components/ui/select'
 import {
   MAX_PACKAGE_OPTIONS,
@@ -458,17 +459,17 @@ export function PriceModeEditor({
               onChange={(price) => updateOption(idx, { price })}
             />
 
-            <label className="flex items-center gap-2 text-body-sm text-text">
-              <input
-                type="radio"
-                name={`${idPrefix}-recommended`}
-                checked={opt.recommended === true}
-                disabled={disabled}
-                className="h-4 w-4 border-border text-primary focus:ring-border-strong/30"
-                onChange={() => setRecommended(idx)}
-              />
-              <Star className="h-3.5 w-3.5" aria-hidden /> Most popular
-            </label>
+            <Radio
+              name={`${idPrefix}-recommended`}
+              checked={opt.recommended === true}
+              disabled={disabled}
+              onChange={() => setRecommended(idx)}
+              label={
+                <span className="inline-flex items-center gap-2">
+                  <Star className="h-3.5 w-3.5" aria-hidden /> Most popular
+                </span>
+              }
+            />
           </div>
         ))}
 

@@ -4,13 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Label, Textarea } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setTicketTiers } from '@/lib/spaces/tickets-actions'
 import type { TicketKind, TicketTier } from '@/lib/spaces/tickets'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER TICKET TIER EDITOR (client). The Event Space owner defines one or more ticket tiers (name,
@@ -223,12 +222,12 @@ export function TicketTierForm({
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-meta font-medium text-muted">Capacity</span>
-                <input
+                <Input
                   inputMode="numeric"
                   value={r.capacity}
                   onChange={(e) => update(i, { capacity: e.target.value })}
                   placeholder="Unlimited"
-                  className={cn(fieldClasses, 'w-32')}
+                  className="w-32"
                 />
               </label>
               {/* A <div>, not a <label>: Checkbox brings its own wrapping label, and a label inside

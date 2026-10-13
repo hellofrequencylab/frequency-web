@@ -10,6 +10,7 @@ import { ArrowRight, Loader2, Settings } from 'lucide-react'
 // coverage for tidiness. What moved is the BUTTONS, so a space surface can reach them at all.
 import { startPayoutOnboarding, openPayoutDashboard } from '@/app/(main)/settings/billing/actions'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 /** Start (or resume) Stripe Express onboarding, then redirect to the hosted flow. */
 export function StartPayoutButton({ label = 'Set up payouts' }: { label?: string }) {
@@ -27,15 +28,15 @@ export function StartPayoutButton({ label = 'Set up payouts' }: { label?: string
 
   return (
     <div className="space-y-2">
-      <button
+      <Button
         onClick={go}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        size="lg"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {label}
         {!isPending && <ArrowRight className="h-4 w-4" />}
-      </button>
+      </Button>
       {error && <p className="text-body-sm text-danger">{error}</p>}
     </div>
   )
@@ -57,14 +58,15 @@ export function ManagePayoutButton() {
 
   return (
     <div className="space-y-2">
-      <button
+      <Button
         onClick={go}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        variant="secondary"
+        size="lg"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
         Manage payouts
-      </button>
+      </Button>
       {error && <p className="text-body-sm text-danger">{error}</p>}
     </div>
   )

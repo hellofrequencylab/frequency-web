@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Eyebrow } from '@/components/page-editor/blocks/kit'
 import { submitContactForm } from '@/app/(main)/spaces/[slug]/contact-form-actions'
 
@@ -186,16 +188,12 @@ export function ContactFormBlock({
           </Field>
         </div>
 
-        <label className="flex items-start gap-2.5">
-          <input
-            type="checkbox"
-            checked={optIn}
-            onChange={(e) => setOptIn(e.target.checked)}
-            disabled={preview}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-[var(--color-primary)]"
-          />
-          <span className="text-body-sm text-muted">{consentWords}</span>
-        </label>
+        <Checkbox
+          checked={optIn}
+          onChange={(e) => setOptIn(e.target.checked)}
+          disabled={preview}
+          label={<span className="text-muted">{consentWords}</span>}
+        />
 
         {error && (
           <p className="text-body-sm text-danger" role="alert">
@@ -209,7 +207,7 @@ export function ContactFormBlock({
           className={
             house
               ? 'hs-btn hs-btn-primary disabled:opacity-60'
-              : 'tap-target inline-flex items-center justify-center rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60'
+              : buttonClasses('primary', 'lg')
           }
         >
           {status === 'loading' ? 'Sending…' : sendLabel}

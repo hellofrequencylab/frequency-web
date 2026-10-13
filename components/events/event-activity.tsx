@@ -13,6 +13,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -337,7 +338,7 @@ export function EventActivity({
 
           {!asDispatch && showGifInput && (
             <div className="mt-2 flex items-center gap-2">
-              <input
+              <Input
                 type="url"
                 aria-label="GIF link"
                 value={gifDraft}
@@ -347,7 +348,7 @@ export function EventActivity({
                 }}
                 placeholder="Paste a GIF link"
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-meta text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="min-w-0 flex-1 text-meta"
               />
               <button
                 type="button"
@@ -422,14 +423,15 @@ export function EventActivity({
                 </button>
               )}
             </div>
-            <button
+            <Button
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              size="sm"
+              className="shrink-0"
             >
               {pending ? 'Posting…' : asDispatch ? 'Send Dispatch' : 'Post'}
-            </button>
+            </Button>
           </div>
 
           {asDispatch && (

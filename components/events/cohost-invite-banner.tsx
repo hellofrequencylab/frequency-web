@@ -12,6 +12,7 @@ import {
   declineCohostInvite,
 } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 export function CohostInviteBanner({
   eventId,
@@ -80,15 +81,15 @@ export function CohostInviteBanner({
       </p>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-3">
-        <button
+        <Button
           type="button"
           onClick={accept}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          size="sm"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
           Accept
-        </button>
+        </Button>
         <button
           type="button"
           onClick={decline}

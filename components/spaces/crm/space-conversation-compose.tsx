@@ -19,6 +19,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 type StartAction = (input: { email: string; subject: string; body: string }) => Promise<ActionResult<{ ref: string }>>
 
@@ -120,7 +121,7 @@ export function SpaceConversationCompose({
               <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
                 <div className="min-w-0">
                   {senderName ? (
-                    <p className="text-meta font-semibold uppercase tracking-wide text-primary">From {senderName}</p>
+                    <p className={capsLabel('text-meta font-semibold text-primary')}>From {senderName}</p>
                   ) : null}
                   <h2 id={headingId} className="font-section mt-1 text-page-title font-bold text-text">
                     New conversation

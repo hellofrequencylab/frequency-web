@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Loader2, Zap } from 'lucide-react'
 import { claimListingAction } from '@/app/listings/claim/[token]/actions'
 import { useViewer } from '@/components/layout/viewer-chrome'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button } from '@/components/ui/button'
 
 // Shown on a seeded listing's public page IN PLACE OF "Contact the seller" when the visitor arrives
 // through a claim link (/classifieds/<id>?claim=<token>). A signed-in visitor claims in place (the
@@ -44,15 +46,16 @@ export function ListingClaimBox({
         <p className="rounded-card border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
       )}
       {isSignedIn ? (
-        <button
+        <Button
           type="button"
           onClick={claim}
           disabled={pending}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          size="lg"
+          className="w-full"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" aria-hidden />}
           {pending ? 'Claiming' : 'Claim listing'}
-        </button>
+        </Button>
       ) : (
         <Link
           href={signInHref}
@@ -74,7 +77,7 @@ export function ViewerListingClaim({ detailPath }: { detailPath: string }) {
   if (!token) return null
   return (
     <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
-      <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-primary-strong">Claim this listing</h2>
+      <h2 className={capsLabel('mb-3 text-2xs font-semibold text-primary-strong')}>Claim this listing</h2>
       <ListingClaimBox
         token={token}
         signedIn={signedIn}

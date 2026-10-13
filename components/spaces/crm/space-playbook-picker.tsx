@@ -5,6 +5,7 @@ import { Check, Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { runSpacePlaybookAction, dismissSpacePlaybook } from '@/app/(main)/spaces/[slug]/crm/playbook-actions'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // THE NEXT-BEST-ACTION PLAYBOOK PICKER on the Space contact detail (Resonance Engine · ADR-382 ·
 // docs/NEXT-GEN-CRM.md Altitude 3 "Action: next-best-action playbook picker"). The one-tap move for
@@ -125,15 +126,14 @@ export function SpacePlaybookPicker({
         {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
             disabled={pending}
             onClick={doIt}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-2 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Do it
-          </button>
+          </Button>
           {card.isOutbound && (
             <button
               type="button"

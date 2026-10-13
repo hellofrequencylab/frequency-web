@@ -4,13 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Label, Textarea } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setMembershipTiers } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
@@ -283,12 +282,12 @@ export function MembershipTierForm({
                 <span className="text-meta font-medium text-muted">Price</span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-body-sm text-muted">$</span>
-                  <input
+                  <Input
                     inputMode="decimal"
                     value={r.price}
                     onChange={(e) => update(i, { price: e.target.value })}
                     placeholder="0"
-                    className={cn(fieldClasses, 'w-28')}
+                    className="w-28"
                   />
                 </span>
               </label>
@@ -301,12 +300,12 @@ export function MembershipTierForm({
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-body-sm text-muted">$</span>
-                  <input
+                  <Input
                     inputMode="decimal"
                     value={r.annualPrice}
                     onChange={(e) => update(i, { annualPrice: e.target.value })}
                     placeholder="Monthly only"
-                    className={cn(fieldClasses, 'w-36')}
+                    className="w-36"
                   />
                 </span>
               </label>
@@ -375,12 +374,12 @@ export function MembershipTierForm({
                 <span className="text-meta font-medium text-muted">
                   Capacity <span className="font-normal text-subtle">(blank = unlimited)</span>
                 </span>
-                <input
+                <Input
                   inputMode="numeric"
                   value={r.capacity}
                   onChange={(e) => update(i, { capacity: e.target.value })}
                   placeholder="Unlimited"
-                  className={cn(fieldClasses, 'w-32')}
+                  className="w-32"
                 />
               </label>
               <div className="flex flex-col justify-end gap-1">

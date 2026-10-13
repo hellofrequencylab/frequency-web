@@ -11,6 +11,7 @@ import {
   downloadQrSvgString,
   downloadQrSvgStringAsPng,
 } from '@/lib/qr/client-download'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The listing "QR & Link" affordance (replaces the old Settings gear on the detail page). It encodes
 // the listing's OWN public URL so a scan/link lands directly on this listing. Modeled on
@@ -76,7 +77,7 @@ export function ListingShareButton({
         <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             <div className="shrink-0">
-              <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('mb-2 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <QrCode className="h-3.5 w-3.5" /> Scan to open
               </p>
               <div
@@ -104,7 +105,7 @@ export function ListingShareButton({
                 </button>
               </div>            </div>
             <div className="w-full min-w-0 space-y-3">
-              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <Link2 className="h-3.5 w-3.5" /> Share link
               </p>
               <code className="block truncate rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted" title={url}>

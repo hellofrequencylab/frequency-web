@@ -6,6 +6,7 @@ import { Check, RotateCcw, X, Trash2, Loader2, Link2, Send } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setListingStatusAction, deleteListingAction } from '@/app/(main)/classifieds/actions'
 import type { ListingStatus } from '@/lib/marketplace'
+import { capsLabel } from '@/components/ui/caps-label'
 
 const BTN = 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50'
 
@@ -54,7 +55,7 @@ export function ListingOwnerControls({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Manage your listing</p>
+      <p className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Manage your listing</p>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'active' ? (
           <>
@@ -76,7 +77,7 @@ export function ListingOwnerControls({
 
       {claimShareUrl && (
         <div className="mt-3 border-t border-border pt-3">
-          <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+          <p className={capsLabel('mb-1.5 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
             <Send className="h-3.5 w-3.5" aria-hidden /> Claim Listing link
           </p>
           <p className="mb-2 text-meta text-muted">Send this to the poster. Opening it lets them claim the listing in place of contacting the seller.</p>
