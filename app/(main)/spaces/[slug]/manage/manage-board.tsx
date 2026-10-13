@@ -21,6 +21,7 @@ import { SpaceIdentityEditor } from './identity-editor'
 import { SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqOverviewBody } from '@/components/frequency/admin/pages/overview/overview-body'
+import { FqContactsBody } from '@/components/frequency/admin/pages/contacts/contacts-body'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
 // gates on manage access, computes the gated surface spine + Mode emphasis, and renders the console.
@@ -117,7 +118,11 @@ export async function SpaceManageBoard({
 
   const crmEmbed =
     section === 'resonance' ? (
-      <SpaceResonanceCrm spaceId={space.id} slug={space.slug} spaceName={brandName} />
+      SITE_DESIGN === 'frequency' ? (
+        <FqContactsBody spaceId={space.id} slug={space.slug} spaceName={brandName} />
+      ) : (
+        <SpaceResonanceCrm spaceId={space.id} slug={space.slug} spaceName={brandName} />
+      )
     ) : undefined
 
   // Marketing IS the space's Marketing dashboard: the SAME admin CRM Marketing composition (email
