@@ -3,6 +3,7 @@ import { Star } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import { FaqList } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { richParagraphs, richPlainText } from '@/lib/page-editor/richtext'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
@@ -147,7 +148,7 @@ export function CoverBlock({
               <p className="text-body-sm font-bold uppercase tracking-eyebrow text-on-ink/80 mb-3">{eyebrow}</p>
             )}
             {title && (
-              <h1 className="font-display uppercase text-balance text-on-ink text-[clamp(1.875rem,6vw,3.5rem)]">
+              <h1 className={`font-display uppercase text-balance text-on-ink ${DISPLAY_TYPE.cover}`}>
                 {title}
               </h1>
             )}

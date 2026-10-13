@@ -4,7 +4,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { PageHero, Section, BetaCTA, Button } from '@/components/marketing/marketing-ui'
+import { PageHero, Section, BetaCTA, Button, cardClasses } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
@@ -75,7 +75,7 @@ export default function ComparisonsIndexPage() {
             <Link
               key={c.slug}
               href={comparisonPath(c.slug)}
-              className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 lift-1 transition-colors hover:border-primary"
+              className={cardClasses({ tone: 'feature', pad: 'px-6 py-5', className: 'group flex items-center justify-between gap-4 transition-colors hover:border-primary' })}
             >
               <span>
                 <span className="block text-body-lg font-semibold text-text">

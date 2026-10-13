@@ -6,6 +6,8 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { Stat } from '@/components/ui/stat'
+import { cardClasses } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 
 // Presentational blocks shared by the Puck config (editor + public render) and
 // the legacy splash fallback. Pure props in, markup out.
@@ -114,7 +116,7 @@ export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyeb
     <section className={`bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && <p className="eyebrow text-primary-strong mb-4">{eyebrow}</p>}
-        {heading && <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">{heading}</h2>}
+        {heading && <h2 className={`font-display uppercase text-text ${DISPLAY_TYPE.section} mb-12`}>{heading}</h2>}
         {stats ? (
           <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
             {stats.map((s) => (
@@ -150,7 +152,7 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
           const day = d.getDate()
           const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
           return (
-            <div key={event.id} className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4">
+            <div key={event.id} className="flex items-center gap-4 rounded-card border border-border bg-surface px-5 py-4">
               <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
                 <span className="text-3xs font-bold text-primary-strong leading-none">{month}</span>
                 <span className="text-body font-bold text-primary-strong leading-tight">{day}</span>
@@ -203,7 +205,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
             const showRole = hasRole(a?.community_role ?? null)
             const initials = a?.display_name ? getInitials(a.display_name) : '?'
             return (
-              <article key={post.id} className="rounded-2xl border border-border bg-surface lift-1">
+              <article key={post.id} className={cardClasses({ tone: 'feature', pad: '' })}>
                 <div className="p-5">
                   <div className="flex items-start gap-3 mb-3">
                     {a?.avatar_url ? (
