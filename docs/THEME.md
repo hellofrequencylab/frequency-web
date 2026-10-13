@@ -47,6 +47,35 @@ member's own skin applies only when it is authored for the active design (`SkinD
 **Adding a design** = an id in `DesignId` and `DESIGNS`, a sheet in `app/themes/`, and its import in
 `app/layout.tsx`. The test fails until all three agree.
 
+### The Frequency system's own rules (design export, 2026-10-13)
+
+Frequency is its **own system**, not DAWN with new values. Its token vocabulary is the source of
+truth: `--bg-canvas`, `--bg-sunken`, `--surface-card`, `--surface-raised`, `--surface-glass`,
+`--text-strong/-body/-muted/-faint`, `--action-primary*`, `--accent`, `--accent-2`, `--live`,
+`--presence`, `--reward` (each with `-soft`), the crossover hues `--x-<hue>-neon/-deep`, the type roles
+(`--font-display` Unbounded, `--font-serif` Instrument Serif italic, `--font-sans` Hanken Grotesk), the
+space, radius, shadow and motion scales. `app/themes/frequency.css` declares those names first; DAWN's
+semantic names (`--color-*`, `--design-*`) are then **aliases that point at them**, so every component
+works under Frequency while Frequency keeps its own words. The locked core is "edit only in the
+Frequency design system; products import, never override".
+
+Two surfaces, one family:
+
+| | **Commons** (light, default) | **Stage** (always dark) |
+|---|---|---|
+| Job | The signed-in network: find, RSVP, check in, talk, host | Sell the feeling: home, campaigns, persona doors, Labs vision |
+| Night | Dims to the Thermal room with system dark or after sunset | Always dark |
+| Hues | Crossover hues at **deep** values only (they pass AA) | Crossover hues at **neon** values |
+| Iridescent | Earned only: trophies, tickets, Crew, a check-in confirmation; one per screen | Signature: one phrase per headline, hero CTA, rims |
+| Type | Unbounded for page and card titles only; Hanken 16px body, 14px dense | Unbounded 40-104px, short lines, body 18px+ at most 62ch |
+| Motion | Breath on live things only | Drift, beat, shimmer; energy still / flow / charge |
+
+Hue meanings are the same on both: **violet** act (the next thing to do), **magenta** live (now,
+tonight), **aqua** presence (who's there, checked in), **sun** reward (Zaps, Gems). Never put long
+reading (help, Space pages, messages) on Stage; data-heavy Space tools (CRM, tickets, payouts) are always
+Commons. Sign-up is the doorway: it starts on Stage and cross-fades to Commons as a member picks their
+first Circle. Reduced motion stops durations, aura, orbs and waveforms. Minimum hit target 44px.
+
 ## 1. The four axes
 
 Each axis is a single attribute (or class) on `<html>` or the shell root. They compose by the
