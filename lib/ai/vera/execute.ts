@@ -20,6 +20,7 @@ import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { proposeCreateFromTool } from './create-entity'
 import { PLATFORM_POSTAL_LINE, postalFooterHtml } from '@/lib/email-studio/postal'
 import { sanitizeProfileFieldValue } from '@/lib/profile-input'
+import { palette } from '@/lib/theme/palette'
 
 /** Profile fields Vera may set (the member's own, low-risk), mapped to the REAL column. Must stay
  *  in sync with the `set_profile_field` tool advertisement in tools.ts (display_name | bio |
@@ -176,7 +177,7 @@ function outboundEmailHtml(body: string, unsubscribeUrl: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\n/g, '<br/>')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#3D352A;line-height:1.65;">${safe}</p><hr style="border:none;border-top:1px solid #E9E1D4;margin:24px 0;"/><p style="font-size:12px;color:#8F8675;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe or manage emails</a>.</p>${postalFooterHtml()}</div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:${palette.text};line-height:1.65;">${safe}</p><hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:24px 0;"/><p style="font-size:12px;color:${palette.emailSubtle};">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe or manage emails</a>.</p>${postalFooterHtml()}</div>`
 }
 
 /** In-product, reversible: save a member's streak by actually SPENDING a banked freeze

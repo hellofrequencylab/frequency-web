@@ -2,6 +2,7 @@ import { getPublishedSpotlight } from '@/lib/spotlight/data'
 import { SITE_NAME } from '@/lib/site'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A spotlight on ${SITE_NAME}`
@@ -41,7 +42,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: '#6366f1', marginBottom: 28 }} />
+          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: palette.ogAccent, marginBottom: 28 }} />
           <div
             style={{
               display: 'flex',

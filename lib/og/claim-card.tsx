@@ -9,6 +9,7 @@ import type { CoverPlaceholderPath } from "@/lib/spaces/cover-placeholder";
 import { loadNunito } from "@/lib/og/load-nunito";
 import { SITE_NAME } from "@/lib/site";
 import { deliverCard } from "@/lib/og/deliver";
+import { palette } from "@/lib/theme/palette";
 
 // SHARED CLAIM-LINK OG CARD (SEO/AIO). The share card a scraper renders for a seeded entity's claim
 // link (/spaces/claim/<token>, /events/claim/<token>, /listings/claim/<token>) — NOT the generic site
@@ -18,13 +19,13 @@ import { deliverCard } from "@/lib/og/deliver";
 //
 // One place builds the card so every claim route reads the same visual language as the rest of the
 // site's OG cards (app/opengraph-image.tsx, the spaces + events cards). Satori has no access to the
-// CSS token system, so the DAWN tokens it needs are mirrored here as literals (app/globals.css :root):
-// ink #141210 · on-ink #F3EEE3 · primary #E2912F. Voice canon: plain imperative, no em or en dashes.
+// CSS token system, so its colours come from the design-keyed palette (lib/theme/palette.ts: onInk,
+// primary). Voice canon: plain imperative, no em or en dashes.
 
 export const CLAIM_OG_SIZE = { width: 1200, height: 630 } as const;
 
-const ON_INK = "#F3EEE3";
-const PRIMARY = "#E2912F";
+const ON_INK = palette.onInk;
+const PRIMARY = palette.primary;
 
 // Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
 // not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is

@@ -5,6 +5,7 @@ import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `Claim your business on ${SITE_NAME}`
@@ -20,8 +21,9 @@ export const contentType = OG_CONTENT_TYPE
 // token is the secret; a resolvable token means the operator sent it to the owner, so surfacing the
 // brand is intended. An unknown / used token falls back to a neutral pitch card that reveals nothing.
 
-// Per-type accent literals (Satori cannot resolve token names): business #1EB6C5 · nonprofit #0F8E78.
-const ACCENT_BY_TYPE: Record<string, string> = { business: '#1EB6C5', nonprofit: '#0F8E78' }
+// Per-type accents from the design-keyed palette (Satori cannot resolve token names): business =
+// broadcast · nonprofit = signal.
+const ACCENT_BY_TYPE: Record<string, string> = { business: palette.broadcast, nonprofit: palette.signal }
 
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
