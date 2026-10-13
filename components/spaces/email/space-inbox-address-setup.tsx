@@ -45,6 +45,7 @@ export function SpaceInboxAddressCard({ spaceId, slug, address, state: initialSt
       <p className="text-body-sm text-muted">
         People can write to this address and their message lands in your Conversations. Once it is ready, your replies go out from it, and it is the Reply-To we recommend for anything you send from this Space.
       </p>
+      {state === 'pending' && <p className="text-body-sm text-muted">Your address is finishing setting up on its own. DNS can take a few minutes, and you can leave this page; it will be ready when you come back.</p>}
       {state === 'paused' && <p className="text-body-sm text-muted">This address is paused. Write to support to switch it back on.</p>}
       <div className="flex flex-wrap gap-2">
         {canSetUp && (

@@ -16,6 +16,10 @@ const state = vi.hoisted(() => ({
   opened: [] as Record<string, unknown>[],
   appended: [] as Record<string, unknown>[],
   appendResult: { id: 'msg1' } as Record<string, unknown> | null,
+  records: null as Record<string, unknown>[] | null,
+  listRows: [] as Record<string, unknown>[],
+  listCalls: [] as Record<string, unknown>[],
+  listFails: false,
 }))
 const RECORDS = [
   { record: 'Receiving', type: 'MX', name: '@', value: 'inbound-smtp.resend.com', priority: 10, ttl: 'Auto', status: 'pending' },
@@ -23,10 +27,21 @@ const RECORDS = [
   { record: 'SPF', type: 'TXT', name: 'send', value: 'v=spf1 include:amazonses.com ~all', ttl: 'Auto', status: 'pending' },
   { record: 'DKIM', type: 'TXT', name: 'resend._domainkey', value: 'p=key', ttl: 'Auto', status: 'pending' },
 ]
+/** What Resend really returned for labs.space.frequencylocal.com on 2026-10-12: names relative to the
+ *  registrable domain, not to the verified one. */
+const APEX_RELATIVE_RECORDS = [
+  { record: 'Receiving', type: 'MX', name: 'labs.space', value: 'inbound-smtp.us-east-1.amazonaws.com', priority: 10, ttl: 'Auto', status: 'pending' },
+  { record: 'SPF', type: 'MX', name: 'send.labs.space', value: 'feedback-smtp.us-east-1.amazonses.com', priority: 10, ttl: 'Auto', status: 'pending' },
+  { record: 'SPF', type: 'TXT', name: 'send.labs.space', value: 'v=spf1 include:amazonses.com ~all', ttl: 'Auto', status: 'pending' },
+  { record: 'DKIM', type: 'TXT', name: 'resend._domainkey.labs.space', value: 'p=key', ttl: 'Auto', status: 'pending' },
+]
+const providerRecords = () => state.records ?? RECORDS
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name: string) => {
   const filter: Record<string, unknown> = {}; let insert: Record<string, unknown> | null = null; let upsert: Record<string, unknown> | null = null
   const q = {
-    select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: () => q,
+    select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: (n: number) => { state.listCalls.push({ limit: n }); return q },
+    or: (f: string) => { state.listCalls.push({ or: f }); return q }, order: (k: string, o: Record<string, unknown>) => { state.listCalls.push({ order: `${k} ${JSON.stringify(o)}` }); return q },
+    then: (resolve: (v: { data: unknown; error: unknown }) => unknown) => Promise.resolve(resolve(state.listFails ? { data: null, error: { message: 'list down' } } : { data: state.listRows, error: null })),
     insert: (v: Record<string, unknown>) => { insert = v; return q }, update: () => q, upsert: (v: Record<string, unknown>) => { upsert = v; return q },
     single: async () => {
       if (name === 'space_inbox_addresses') { if (state.upsertFails) return { data: null, error: { code: 'XX000' } }; state.row = { id: 'row1', local_part: 'hello', verified_at: null, dns_records: [], ...state.row, ...upsert }; return { data: state.row, error: null } }
@@ -45,9 +60,9 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
 } }) }))
 vi.mock('@/lib/sites/vercel-domains', () => ({ vercelDomainsConfigured: () => true, upsertZoneDnsRecords: async (zone: string, records: unknown[]) => { state.dnsCalls.push({ zone, records }); return state.dnsOk ? { ok: true } : { ok: false, error: 'vercel-500' } } }))
 vi.mock('@/lib/spaces/email-domain-provider', () => ({
-  createEmailProviderInboxDomain: async (domain: string) => { if (state.providerThrows) throw new Error('provider down'); state.createCount++; return { id: 'prov1', status: 'pending', capabilities: { sending: 'enabled', receiving: 'enabled' }, records: RECORDS, name: domain } },
+  createEmailProviderInboxDomain: async (domain: string) => { if (state.providerThrows) throw new Error('provider down'); state.createCount++; return { id: 'prov1', status: 'pending', capabilities: { sending: 'enabled', receiving: 'enabled' }, records: providerRecords(), name: domain } },
   findEmailProviderDomainByName: async () => state.listed,
-  inspectEmailProviderDomain: async () => { if (state.providerThrows) throw new Error('provider down'); return { status: state.providerStatus, capabilities: { sending: 'enabled', receiving: 'enabled' }, records: RECORDS } },
+  inspectEmailProviderDomain: async () => { if (state.providerThrows) throw new Error('provider down'); return { status: state.providerStatus, capabilities: { sending: 'enabled', receiving: 'enabled' }, records: providerRecords() } },
   requestEmailProviderVerification: async () => undefined,
 }))
 vi.mock('./conversations', () => ({
@@ -56,11 +71,13 @@ vi.mock('./conversations', () => ({
 }))
 vi.mock('./tenant-reply-alias', () => ({ quarantineTenantReplyAlias: vi.fn(async () => undefined) }))
 
-import { provisionSpaceInboxAddress, checkSpaceInboxAddress, resolveSpaceInboxFrom, resolveSpaceInboxRoute, recordSpaceInboxMessage } from './space-inbox-address'
+import { provisionSpaceInboxAddress, checkSpaceInboxAddress, resolveSpaceInboxFrom, resolveSpaceInboxRoute, recordSpaceInboxMessage, listSpaceInboxAddressesToFinish } from './space-inbox-address'
+import { providerRecordHost, providerRecordsToZoneRecords, spaceInboxZone } from './space-inbox-address-core'
 
 beforeEach(() => {
   state.row = null; state.contacts = []; state.createCount = 0; state.listed = null; state.providerStatus = 'verified'; state.providerThrows = false
-  state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.appended = []; state.appendResult = { id: 'msg1' }
+  state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.appended = []; state.appendResult = { id: 'msg1' }; state.records = null
+  state.listRows = []; state.listCalls = []; state.listFails = false
   state.space = { id: 's1', slug: 'labs', name: 'Labs', brand_name: 'Labs Collective', owner_profile_id: 'owner1' }
   vi.stubEnv('SPACE_INBOX_ADDRESSES_ENABLED', '1'); vi.stubEnv('SPACE_EMAIL_INBOX_ROOT', 'frequencylocal.com')
 })
@@ -76,6 +93,26 @@ describe('provisionSpaceInboxAddress', () => {
     expect(zone).toBe('frequencylocal.com')
     expect(records.map(r => `${r.type} ${r.name}`)).toEqual(['MX labs', 'MX send.labs', 'TXT send.labs', 'TXT resend._domainkey.labs'])
     expect(records[0].mxPriority).toBe(10)
+  })
+  it('under a delegated root, writes apex-relative names into the apex zone (the 2026-10-12 pilot failure)', async () => {
+    vi.stubEnv('SPACE_EMAIL_INBOX_ROOT', 'space.frequencylocal.com')
+    state.records = APEX_RELATIVE_RECORDS
+    const r = await provisionSpaceInboxAddress('s1')
+    expect(r).toMatchObject({ ok: true, address: 'hello@labs.space.frequencylocal.com' })
+    const { zone, records } = state.dnsCalls[0] as { zone: string; records: { type: string; name: string }[] }
+    expect(zone).toBe('frequencylocal.com')
+    expect(records.map(r => `${r.type} ${r.name}`)).toEqual(['MX labs.space', 'MX send.labs.space', 'TXT send.labs.space', 'TXT resend._domainkey.labs.space'])
+    expect(state.row).toMatchObject({ domain: 'labs.space.frequencylocal.com', dns_records: expect.arrayContaining([expect.objectContaining({ name: 'labs.space' })]) })
+  })
+  it('re-reads the records from the provider on a retry instead of trusting a stale saved row', async () => {
+    vi.stubEnv('SPACE_EMAIL_INBOX_ROOT', 'space.frequencylocal.com')
+    state.records = APEX_RELATIVE_RECORDS
+    state.providerStatus = 'pending'
+    state.row = { space_id: 's1', domain: 'labs.space.frequencylocal.com', local_part: 'hello', provider_domain_id: 'prov1', state: 'pending', dns_records: [{ type: 'MX', name: 'labs.space.labs', value: 'wrong', mxPriority: 10 }] }
+    await provisionSpaceInboxAddress('s1')
+    expect(state.createCount).toBe(0)
+    const { records } = state.dnsCalls[0] as { records: { name: string }[] }
+    expect(records.map(r => r.name)).toEqual(['labs.space', 'send.labs.space', 'send.labs.space', 'resend._domainkey.labs.space'])
   })
   it('is idempotent: a verified address is reported, never re-created or re-written', async () => {
     await provisionSpaceInboxAddress('s1')
@@ -113,6 +150,28 @@ describe('provisionSpaceInboxAddress', () => {
     expect(await provisionSpaceInboxAddress('s1')).toMatchObject({ ok: false })
     expect(state.dnsCalls).toHaveLength(1)
   })
+  it('stamps dns_written_at when the zone write succeeds, and clears it when the write fails (the cron reads it)', async () => {
+    state.providerStatus = 'pending'
+    await provisionSpaceInboxAddress('s1')
+    const written = state.row?.dns_written_at as string
+    expect(written).toBeTruthy()
+    expect(Number.isNaN(Date.parse(written))).toBe(false)
+    state.dnsOk = false
+    expect(await provisionSpaceInboxAddress('s1')).toMatchObject({ ok: false, message: expect.stringContaining('tried again on its own') })
+    expect(state.row?.dns_written_at).toBeNull()
+    expect(state.row?.provider_domain_id).toBe('prov1')
+    state.dnsOk = true
+    await provisionSpaceInboxAddress('s1')
+    expect(state.row?.dns_written_at).toBeTruthy()
+  })
+  it('a check leaves dns_written_at as it was', async () => {
+    state.providerStatus = 'pending'
+    await provisionSpaceInboxAddress('s1')
+    const written = state.row?.dns_written_at
+    state.providerStatus = 'verified'
+    await checkSpaceInboxAddress('s1')
+    expect(state.row).toMatchObject({ state: 'verified', dns_written_at: written })
+  })
   it('leaves a paused address alone', async () => {
     state.row = { space_id: 's1', domain: 'labs.frequencylocal.com', local_part: 'hello', provider_domain_id: 'prov1', state: 'paused', dns_records: [] }
     expect(await provisionSpaceInboxAddress('s1')).toMatchObject({ ok: false, message: expect.stringContaining('paused') })
@@ -135,6 +194,21 @@ describe('checkSpaceInboxAddress', () => {
     expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: false })
     await provisionSpaceInboxAddress('s1'); state.providerThrows = true
     expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: false })
+  })
+})
+
+describe('listSpaceInboxAddressesToFinish', () => {
+  it('asks for pending rows and recent failures, oldest first, within the limit, and throws on a read fault', async () => {
+    state.listRows = [{ id: 'r1', space_id: 's1', state: 'pending', dns_written_at: null }]
+    const rows = await listSpaceInboxAddressesToFinish({ limit: 25, failedSince: '2026-10-12T12:00:00.000Z' })
+    expect(rows).toEqual([expect.objectContaining({ space_id: 's1' })])
+    expect(state.listCalls).toEqual([
+      { or: 'state.eq.pending,and(state.eq.failed,updated_at.gte.2026-10-12T12:00:00.000Z)' },
+      { order: 'updated_at {"ascending":true}' },
+      { limit: 25 },
+    ])
+    state.listFails = true
+    await expect(listSpaceInboxAddressesToFinish({ limit: 25, failedSince: '2026-10-12T12:00:00.000Z' })).rejects.toThrow('list down')
   })
 })
 
@@ -188,5 +262,38 @@ describe('resolveSpaceInboxRoute + recordSpaceInboxMessage', () => {
     state.appendResult = { duplicate: true }
     expect(await recordSpaceInboxMessage(route, parsed)).toMatchObject({ status: 'duplicate' })
     expect(await recordSpaceInboxMessage({ ...route, ownerProfileId: null }, parsed)).toEqual({ status: 'no_owner' })
+  })
+})
+
+describe('provider record names (pure)', () => {
+  it('spaceInboxZone is the registrable apex of a multi-label root, else the root', () => {
+    expect(spaceInboxZone('frequencylocal.com')).toBe('frequencylocal.com')
+    expect(spaceInboxZone('space.frequencylocal.com')).toBe('frequencylocal.com')
+    expect(spaceInboxZone('mail.space.frequencylocal.com')).toBe('frequencylocal.com')
+  })
+  it('providerRecordHost resolves domain-relative, apex-relative and absolute names', () => {
+    const d = 'labs.space.frequencylocal.com'
+    expect(providerRecordHost(d, '@')).toBe(d)
+    expect(providerRecordHost(d, '')).toBe(d)
+    expect(providerRecordHost(d, 'send')).toBe(`send.${d}`)
+    expect(providerRecordHost(d, 'resend._domainkey')).toBe(`resend._domainkey.${d}`)
+    expect(providerRecordHost(d, 'labs.space')).toBe(d)
+    expect(providerRecordHost(d, 'send.labs.space')).toBe(`send.${d}`)
+    expect(providerRecordHost(d, 'resend._domainkey.labs.space')).toBe(`resend._domainkey.${d}`)
+    expect(providerRecordHost(d, d)).toBe(d)
+    expect(providerRecordHost(d, `send.${d}`)).toBe(`send.${d}`)
+    expect(providerRecordHost('labs.frequencylocal.com', 'send.labs')).toBe('send.labs.frequencylocal.com')
+  })
+  it('providerRecordsToZoneRecords names records relative to the zone, @ for the zone itself', () => {
+    const out = providerRecordsToZoneRecords('labs.space.frequencylocal.com', 'frequencylocal.com', [
+      { record: 'Receiving', type: 'MX', name: 'labs.space', value: 'inbound.example.', priority: 10 },
+      { record: 'DKIM', type: 'TXT', name: 'resend._domainkey.labs.space', value: 'p=key' },
+      { record: 'x', type: 'A', name: 'labs.space', value: '1.2.3.4' },
+    ])
+    expect(out).toEqual([
+      { type: 'MX', name: 'labs.space', value: 'inbound.example', mxPriority: 10, record: 'Receiving' },
+      { type: 'TXT', name: 'resend._domainkey.labs.space', value: 'p=key', record: 'DKIM' },
+    ])
+    expect(providerRecordsToZoneRecords('frequencylocal.com', 'frequencylocal.com', [{ record: 'r', type: 'MX', name: '@', value: 'm', priority: 5 }])[0].name).toBe('@')
   })
 })

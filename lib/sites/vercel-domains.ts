@@ -98,6 +98,15 @@ function errorCode(json: Record<string, unknown>): string {
   return err?.code ?? ''
 }
 
+/** Vercel's human sentence for a refusal, bounded. The code alone (`forbidden`) cost the EMAIL-022
+ *  pilot an hour on 2026-10-12; the message says WHAT was forbidden. */
+const ERROR_MESSAGE_MAX = 200
+export function errorMessage(json: Record<string, unknown>): string {
+  const err = json.error as { message?: unknown } | undefined
+  const msg = typeof err?.message === 'string' ? err.message.trim() : ''
+  return msg.length > ERROR_MESSAGE_MAX ? `${msg.slice(0, ERROR_MESSAGE_MAX)}...` : msg
+}
+
 /** The registrar's name for a host under `apex`: `@` for the apex itself, else the leading labels. */
 export function recordName(host: string, apex: string): string {
   if (host === apex) return '@'
@@ -267,8 +276,10 @@ interface ZoneDnsRecord {
 
 /** Write `records` into the `zone` Vercel DNS zone. Idempotent: a record Vercel already holds with the
  *  same name, type and value counts as written. BEST EFFORT and NEVER THROWS: a missing config or an API
- *  error comes back as `{ ok: false }` with the first error, and every record that could be written was.
- *  Needs only the token and team (the zone is a team domain, not a project domain). */
+ *  error comes back as `{ ok: false }` with the first error (Vercel's code AND its message, so the log
+ *  says what was refused), and every record that could be written was. Each refusal is also logged at
+ *  warn with the zone and the record name. Needs only the token and team (the zone is a team domain,
+ *  not a project domain). */
 export async function upsertZoneDnsRecords(
   zone: string,
   records: ZoneDnsRecord[],
@@ -285,7 +296,10 @@ export async function upsertZoneDnsRecords(
       const code = errorCode(res.json)
       // Vercel refuses an exact duplicate (same name, type and value) as a conflict: already written.
       if (res.status === 409 || code === 'record_already_exists' || code === 'already_exists') continue
-      firstError ??= code || `vercel-${res.status}`
+      const message = errorMessage(res.json)
+      const error = `${code || `vercel-${res.status}`}${message ? `: ${message}` : ''}`
+      console.warn('[vercel-domains] zone DNS record write failed', { zone, name: r.name, type: r.type, status: res.status, error })
+      firstError ??= error
     }
     return firstError ? { ok: false, error: firstError } : { ok: true }
   } catch (err) {

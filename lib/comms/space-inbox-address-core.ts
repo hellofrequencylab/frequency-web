@@ -93,15 +93,48 @@ export interface ZoneRecord {
   record?: string
 }
 
-/** Resend names records relative to the domain it verified (`send`, `resend._domainkey`, `@`), and the
- *  zone wants them relative to the root. `send` on `slug.root` becomes `send.slug` in the `root` zone. */
+/** The Vercel DNS zone that holds a root's records. Vercel keeps one zone per REGISTRABLE domain and
+ *  refuses a subdomain as a domain of its own (`POST /v7/domains` answers invalid_name for
+ *  `space.example.com`, checked 2026-10-12), so a root like `space.example.com` is served out of the
+ *  `example.com` zone with names relative to that apex, and the registrar delegates `space` to Vercel's
+ *  nameservers. A one- or two-label root is its own zone. Two labels stand for the registrable domain;
+ *  a root under a multi-label public suffix (`space.example.co.uk`) is not supported and needs its own
+ *  rule here before it is used. */
+export function spaceInboxZone(root: string): string {
+  const labels = root.split('.')
+  return labels.length <= 2 ? root : labels.slice(-2).join('.')
+}
+
+/** The fully qualified host a provider record name means. Resend names records relative to the
+ *  REGISTRABLE domain, not to the domain it verified: on `slug.space.example.com` it returns
+ *  `send.slug.space`, `resend._domainkey.slug.space` and `slug.space` (the receiving MX), never
+ *  `send`. So the name's trailing labels overlap the domain's leading labels; the longest
+ *  label-aligned overlap says how much of the domain the name already carries. No overlap means a
+ *  domain-relative name (`send`, `@`), which is appended to the domain. A name that already ends in
+ *  the domain is taken as is. EMAIL-022 pilot of 2026-10-12: the old `${rel}.${domain}` rule turned
+ *  `send.slug.space` into `send.slug.space.slug`, so no record landed. */
+export function providerRecordHost(domain: string, rel: string): string {
+  if (rel === '' || rel === '@') return domain
+  if (rel === domain || rel.endsWith(`.${domain}`)) return rel
+  const relLabels = rel.split('.')
+  const domainLabels = domain.split('.')
+  for (let k = Math.min(relLabels.length, domainLabels.length); k > 0; k--) {
+    if (relLabels.slice(-k).join('.') === domainLabels.slice(0, k).join('.')) {
+      return [...relLabels, ...domainLabels.slice(k)].join('.')
+    }
+  }
+  return `${rel}.${domain}`
+}
+
+/** Provider record names become names in the `root` zone: `send.slug.space` on `slug.space.example.com`
+ *  with root `space.example.com` is `send.slug` in that zone; the receiving MX on the domain itself is
+ *  `slug`. A host that is the root itself is `@`. */
 export function providerRecordsToZoneRecords(domain: string, root: string, records: ProviderDnsRecord[]): ZoneRecord[] {
   const out: ZoneRecord[] = []
   for (const r of records) {
     const type = r.type.toUpperCase()
     if (type !== 'MX' && type !== 'TXT' && type !== 'CNAME') continue
-    const rel = r.name.trim().toLowerCase()
-    const host = rel === '' || rel === '@' ? domain : rel === domain || rel.endsWith(`.${domain}`) ? rel : `${rel}.${domain}`
+    const host = providerRecordHost(domain, r.name.trim().toLowerCase())
     const name = host === root ? '@' : host.endsWith(`.${root}`) ? host.slice(0, -(root.length + 1)) : host
     const zone: ZoneRecord = { type, name, value: r.value.replace(/\.$/, '') }
     if (type === 'MX') zone.mxPriority = r.priority ?? 10
