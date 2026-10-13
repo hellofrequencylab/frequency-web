@@ -35,6 +35,7 @@ import {
   type MwSeason,
 } from '@/lib/sites/menswork-page'
 import type { MwCircle, MwEvent, MwJourney, MwLive } from '@/lib/sites/menswork-data'
+import { parseDay, phaseOf } from '@/lib/theme/astrology-wheel'
 import { InlineText } from './inline-text'
 import { MwBeats, MwCircleFinder, MwYearWheel, type MwCircleCard } from './menswork-live'
 
@@ -608,7 +609,8 @@ function EventRow({ e, ctx }: { e: MwEvent; ctx: Ctx }) {
   const day = end && end.day !== start.day ? `${start.day} to ${end.day.replace(/^\w+ /, '')}` : start.day
   return (
     <li className="mw-date-row">
-      <span className="mw-date-mark" data-kind={isCircleNight(e) ? 'circle' : /retreat/i.test(e.title) ? 'retreat' : 'event'} aria-hidden />
+      {/* The day's moon (0 new to 7) rides the mark as data a theme may draw; the kind colours it. */}
+      <span className="mw-date-mark" data-kind={isCircleNight(e) ? 'circle' : /retreat/i.test(e.title) ? 'retreat' : 'event'} data-phase={(() => { const d = parseDay(e.startsAt); return d ? phaseOf(d) : undefined })()} aria-hidden />
       <span className="mw-label mw-label-strong">
         {day}
         {start.time && !end?.day ? ` · ${start.time}` : start.time && end?.day === start.day ? ` · ${start.time}` : ''}
@@ -693,10 +695,15 @@ function Journeys({ p, ctx }: { p: Props; ctx: Ctx }) {
 /** One journey: its title and summary, and its first phase as the week list, each week dated from the
  *  Space's own events that carry the phase's name (the opening course's sessions). */
 function JourneyCard({ j, ctx }: { j: MwJourney; ctx: Ctx }) {
-  const first = j.phases.find((ph) => ph.steps.length > 0)
-  const name = first?.title.toLowerCase() ?? ''
-  const dated = name ? ctx.live.events.filter((e) => e.title.toLowerCase().includes(name)) : []
-  const rest = j.phases.filter((ph) => ph !== first)
+  // A journey whose phases each hold one step (a week per phase) lists the phases as its weeks, each dated
+  // from the event that carries its name; otherwise the first phase's steps are the weeks (the course shape).
+  const flat = j.phases.length > 1 && j.phases.every((ph) => ph.steps.length <= 1)
+  const first = flat ? { title: j.title, steps: j.phases.map((ph) => ph.steps[0] ?? ph.title) } : j.phases.find((ph) => ph.steps.length > 0)
+  const name = flat ? '' : (first?.title.toLowerCase() ?? '')
+  const dated = flat
+    ? j.phases.map((ph) => ctx.live.events.find((e) => e.title.toLowerCase().includes(ph.title.toLowerCase())))
+    : name ? ctx.live.events.filter((e) => e.title.toLowerCase().includes(name)) : []
+  const rest = flat ? [] : j.phases.filter((ph) => ph !== first)
   return (
     <article className="mw-journey">
       <div className="mw-journey-head">
@@ -711,9 +718,11 @@ function JourneyCard({ j, ctx }: { j: MwJourney; ctx: Ctx }) {
         <ol className="mw-weeks">
           {first.steps.map((t, i) => {
             const e = dated[i]
+            // The week's moon (0 new to 7), a data mark a theme may draw (Wildheart's moon on each card).
+            const day = e ? parseDay(e.startsAt) : null
             return (
-              <li key={i}>
-                <span className="mw-week-tag">WK {String(i + 1).padStart(2, '0')}</span>
+              <li key={i} data-phase={day ? phaseOf(day) : undefined}>
+                <span className="mw-week-tag">{flat && j.phases[i]?.title.includes(':') ? j.phases[i].title.split(':')[0].trim() : `WK ${String(i + 1).padStart(2, '0')}`}</span>
                 <span className="mw-label">{e ? dateLabel(e.startsAt).day.replace(/^\w+ /, '') : ''}</span>
                 <strong>{t}</strong>
               </li>

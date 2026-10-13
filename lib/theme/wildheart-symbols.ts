@@ -44,6 +44,7 @@ export const ALCHEMICAL = [
 export const MARKS = [
   { id: 'star', name: 'Star', glyph: glyph(0x2736), meaning: 'festival' },
   { id: 'spark', name: 'Spark', glyph: glyph(0x2726), meaning: 'intention' },
+  { id: 'waning', name: 'Waning moon', glyph: glyph(0x263e), meaning: 'release' },
   { id: 'triplemoon', name: 'Triple moon', glyph: glyph(0x263d) + glyph(0x25ef) + glyph(0x263e), meaning: 'maiden, mother, crone' },
 ] as const
 
