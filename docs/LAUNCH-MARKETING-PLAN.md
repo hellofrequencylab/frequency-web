@@ -1,6 +1,6 @@
 # Launch marketing plan: positioning, ladder, Suite Builder, funnels, content, DAWN
 
-**Status:** proposal, 2026-10-13, awaiting owner rulings (§12). Status lives in
+**Status:** owner rulings recorded 2026-10-13 (§12, ADR-1735). Status lives in
 [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never here: each workstream below becomes one backlog
 row (a `docs/ledger/rows/` fragment) when it is picked up, with a probe that measures the consequence.
 This file explains the work and the reasoning. It does not track it.
@@ -267,13 +267,13 @@ picked.
 
 ### 5.4 Where it surfaces
 
-1. **Public page** `/find-your-setup` (name to confirm against NAMING, R6): a small client island over
+1. **Public page** `/build-your-suite` ("Build your suite", R6): a small client island over
    pure data (keeps `check:shell-weight` clean). Answers live in the URL, so results are shareable and
    crawlable. Three columns, the plan card, then "Start free" to `/join?suite=…`.
 2. **`/for/<niche>` doors** become pre-filled answers (`NICHE_SUITE_ANSWERS` replaces the Focus mapping
    in `lib/funnels/definitions.ts:155-163`) with an "Adjust your setup" link. Fixes the
    community-builder and teacher mismatches by construction.
-3. **`/start`**: "Run a business? Find your setup." replaces the single text link
+3. **`/start`**: "Run a business? Build your suite." replaces the single text link
    (`app/(marketing)/start/page.tsx:117`).
 4. **`/spaces/new` and the Space Spark**: Q1 to Q4 replace Mode, Focus and Starting setup, with a live
    three-column preview. `type` and the Focus variant are derived (Focus keeps driving lexicon, CRM
@@ -307,7 +307,7 @@ Every auth-gated destination sends a person with no account to `/join?next=…` 
 |---|---|---|---|
 | **Join** (Seeker) | `/`, guides, `/discover`, event pages | Find your people, `/join?persona=visitor`, induction, `/feed?welcome=vera` | Joined a Circle, RSVP'd, logged a practice (week 1) |
 | **Host** (Leader) | `/start` Build, `/go/host-one-circle`, how-to-start-a-circle | `/join?persona=builder&next=/circles/templates`, Starter Circle, publish, invite three | First gathering with 3 people (new `circle.first_gathering`) |
-| **Business** (Builder) | `/for/<niche>`, `/pricing`, `/spaces`, `/find-your-setup` | `/join?seq=<niche>` or `?suite=…`, induction, `/spaces/new`, first offer, share | Space created, first offer, first booking or sale |
+| **Business** (Builder) | `/for/<niche>`, `/pricing`, `/spaces`, `/build-your-suite` | `/join?seq=<niche>` or `?suite=…`, induction, `/spaces/new`, first offer, share | Space created, first offer, first booking or sale |
 
 ### 6.2 Leaks to close
 
@@ -366,7 +366,7 @@ comparison contradicting `/for/event-hosts`.
 | Browse without account | See what's near you | `/discover` |
 | Learn more | See how it works | the relevant page |
 | Free tool | Try Mindless | `/mindless` |
-| Business setup | Find your setup | the Suite Builder |
+| Business setup | Build your suite | `/build-your-suite` |
 | Paid plan | Go Business | billing (never "Upgrade") |
 | Support Frequency | Back Frequency | `/upgrade` |
 | Newsletter | Get the notes | `/subscribe` |
@@ -565,7 +565,7 @@ probes pass, not when this file says so.
 
 **Phase 2: Suite Builder**
 - `lib/spaces/suite.ts` and tests with the four personas pinned; ADR fragment for rule 2.
-- `/find-your-setup` page, `/for/<niche>` pre-filled answers, `/start` link.
+- `/build-your-suite` page, `/for/<niche>` pre-filled answers, `/start` link.
 - `/spaces/new` and Spark questions; settings sectioned list; retire presets and `defaultToggles`; derive
   `KNOWN_FUNCTION_KEYS`.
 - Help article "Choosing your setup".
@@ -585,20 +585,18 @@ probes pass, not when this file says so.
 
 ---
 
-## 12. Owner rulings needed
+## 12. Owner rulings (decided 2026-10-13, ADR-1735)
 
-| # | Decision | Recommendation |
+| # | Decision | Ruling |
 |---|---|---|
-| R1 | Category line and tagline lockup (amends ADR-811/944) | "Local groups that keep meeting." as category; "Community Collective" lockup only |
-| R2 | End of comped Crew (`BETA_OPEN_ACCESS`, `BETA_MEMBERS_GET_CREW`; ADR-1703 retired the flip) | Off at public launch; existing comps keep Crew for 60 days, then the picker |
-| R3 | Non Profit billing for existing free grants | Grandfather existing grants to a date; new verifications check out at $39 |
-| R4 | Amend bundle rule 2 so the Suite Builder may switch on `crm`, `email`, `shop` | Yes; `program` stays paid depth |
-| R5 | "Add when ready" tools start off, or on but tucked away, for solo operators | Off, one switch away; revisit after 20 setups |
-| R6 | Name and route of the public Suite Builder | "Find your setup" at `/find-your-setup`, checked against NAMING |
-| R7 | Home and pricing headline rewrites (OWN-043 owner-reserved copy) | §7.2 as a starting draft |
-| R8 | Crew repositioned as support first, host kit second | Yes |
-
----
+| R1 | Category line and tagline lockup (amends ADR-944) | "Local groups that keep meeting." everywhere; "Community Collective" is the logo lockup only |
+| R2 | End of comped Crew (`BETA_OPEN_ACCESS`, `BETA_MEMBERS_GET_CREW`; amends ADR-1703 §3) | Off at public launch; beta comps keep Crew for 60 days, then the picker |
+| R3 | Non Profit billing | New verifications check out at $39; existing free grants are grandfathered to a date |
+| R4 | Bundle rule 2 | The suite may switch on `crm`, `email`, `shop`; `program` stays paid depth |
+| R5 | "Add when ready" tools for solo operators | Off, one switch away; weights revisited after 20 setups |
+| R6 | Public Suite Builder name and route | "Build your suite" at `/build-your-suite` |
+| R7 | Home headline (OWN-043 owner-reserved copy) | "Your people are closer than you think." with the §7.2 subhead; other §7.2 rewrites are the starting draft |
+| R8 | Crew positioning | Support first ("Back Frequency"); host kit is a bonus |
 
 ## 13. Doc drift to fix in the same passes
 
