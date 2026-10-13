@@ -1,7 +1,8 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { listEventsForSpace } from '@/lib/events/store'
+import { listEventsForSpace, listSpaceSeriesRows } from '@/lib/events/store'
+import { expandSiteSeries, foldSiteEvent, siteEventZone, siteInstant, type SiteEventRow } from '@/lib/sites/site-events'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
 
@@ -17,9 +18,13 @@ export interface MwEvent {
   slug: string
   title: string
   description: string | null
+  /** The start as every site formatter reads it: the UTC parts are the wall clock (lib/time/zone.ts). On a
+   *  site whose rows are true instants (`instantRows`), the stored instant folded into `timeZone`. */
   startsAt: string
   endsAt: string | null
   location: string | null
+  /** The zone the wall clock is in (events.time_zone, else the Space's, else home). */
+  timeZone: string | null
 }
 
 export interface MwCircle {
@@ -60,29 +65,74 @@ const EVENTS_CAP = 80
 const CIRCLES_CAP = 24
 const JOURNEYS_CAP = 6
 
-export async function loadMensworkLive(spaceId: string, need: { events: boolean; circles: boolean; journeys: boolean }): Promise<MwLive> {
+interface MwLiveNeed {
+  events: boolean
+  circles: boolean
+  journeys: boolean
+  /** The Space's rows are TRUE INSTANTS beside their `time_zone` (the Wildheart seed writes them so,
+   *  scripts/seed-wildheart.sql), not the product's wall-clock-as-UTC-parts convention: fold each start
+   *  into its zone's wall clock so every site formatter prints the local time (LIVE-905). */
+  instantRows?: boolean
+  /** The Space's own zone (spaces.time_zone), the fallback for a row without one. */
+  spaceZone?: string | null
+  /** The clock, for the series expansion window and the upcoming floor (tests pass one). */
+  now?: Date
+}
+
+export async function loadMensworkLive(spaceId: string, need: MwLiveNeed): Promise<MwLive> {
   const [events, circles, journeys] = await Promise.all([
-    need.events ? readEvents(spaceId) : Promise.resolve([]),
+    need.events ? readEvents(spaceId, need) : Promise.resolve([]),
     need.circles ? readCircles(spaceId) : Promise.resolve([]),
     need.journeys ? readJourneys(spaceId) : Promise.resolve([]),
   ])
   return { events, circles, journeys }
 }
 
-async function readEvents(spaceId: string): Promise<MwEvent[]> {
+/** The site's upcoming rows plus its live series, every recurring anchor expanded through the end of next
+ *  year (every Circle Night on the wheel, LIVE-905), cancelled rows dropped, soonest first. */
+async function readEvents(spaceId: string, need: MwLiveNeed): Promise<MwEvent[]> {
   try {
-    const rows = await listEventsForSpace(spaceId, { limit: EVENTS_CAP, upcomingOnly: true })
-    return rows
-      .filter((e) => !e.is_cancelled)
-      .map((e) => ({
+    const now = need.now ?? new Date()
+    const [upcoming, series] = await Promise.all([listEventsForSpace(spaceId, { limit: EVENTS_CAP, upcomingOnly: true }), listSpaceSeriesRows(spaceId)])
+    const seen = new Set<string>()
+    const rows: SiteEventRow[] = []
+    for (const e of [...upcoming, ...series]) {
+      if (seen.has(e.id)) continue
+      seen.add(e.id)
+      rows.push({
         id: e.id,
         slug: e.slug,
         title: e.title,
-        description: e.description ?? null,
         startsAt: e.starts_at,
         endsAt: e.ends_at ?? null,
-        location: e.hide_address ? (e.city ?? null) : (e.location?.trim() || e.city || null),
-      }))
+        timeZone: e.time_zone ?? null,
+        recurrenceType: e.recurrence_type ?? null,
+        recurrenceRule: e.recurrence_rule ?? null,
+        recurrenceUntil: e.recurrence_until ?? null,
+        parentEventId: e.parent_event_id ?? null,
+        isCancelled: e.is_cancelled === true,
+      })
+    }
+    const by = new Map(upcoming.concat(series).map((e) => [e.id, e]))
+    const through = new Date(Date.UTC(now.getUTCFullYear() + 1, 11, 31, 23, 59, 59))
+    // The anchors read has no date floor; the site lists what is still to come (today on, in UTC).
+    const floor = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    return expandSiteSeries(rows, { through, from: new Date(floor), spaceZone: need.spaceZone })
+      .filter((r) => (siteInstant(r.startsAt)?.getTime() ?? floor) >= floor)
+      .map((r) => {
+        const src = by.get(r.parentEventId ?? r.id) ?? by.get(r.id)
+        const folded = need.instantRows ? foldSiteEvent(r, need.spaceZone) : r
+        return {
+          id: r.id,
+          slug: r.slug ?? src?.slug ?? r.id,
+          title: r.title,
+          description: src?.description ?? null,
+          startsAt: folded.startsAt,
+          endsAt: folded.endsAt ?? null,
+          location: src ? (src.hide_address ? (src.city ?? null) : (src.location?.trim() || src.city || null)) : null,
+          timeZone: siteEventZone(r.timeZone, need.spaceZone),
+        }
+      })
   } catch {
     return []
   }

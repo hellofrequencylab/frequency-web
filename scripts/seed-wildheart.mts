@@ -767,7 +767,7 @@ function tzOffsetMs(ms: number): number {
   return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second')) - ms
 }
 /** A Pacific wall-clock date + time as a UTC ISO instant. */
-function ptIso(date: string, time: string): string {
+export function ptIso(date: string, time: string): string {
   const [y, m, d] = date.split('-').map(Number)
   const [hh, mm] = time.split(':').map(Number)
   const guess = Date.UTC(y, m - 1, d, hh, mm)

@@ -273,6 +273,10 @@ export async function SitePage({
           events: true,
           circles: !!websitePage || !!mwPlan?.some((p) => p.kind === 'circles'),
           journeys: !!websitePage || !!mwPlan?.some((p) => p.kind === 'journeys'),
+          // A Wildheart site's rows are true instants beside their zone (LIVE-905): the date line and the
+          // page sections print each in the event's own zone, the Space's zone standing in.
+          instantRows: wildSite,
+          spaceZone: space.timeZone,
         })
       : null,
     boundSiteDomain(space),

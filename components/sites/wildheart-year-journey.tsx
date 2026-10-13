@@ -13,6 +13,12 @@ import { WhMoon } from './wildheart-symbols'
 // with momentum; arrow keys step the stops; the rail jumps. Reduced motion follows the scroll exactly with
 // no tilt or glow. No SVG filter, backdrop-filter or blur touches anything that moves.
 //
+// THE SEASONS ARE THE SECTIONS (LIVE-905, owner 2026-10-13). The journey opens in January, the first
+// events of the year in the first panel. Two months into a season a "Next section" door appears beside
+// the readout while the wheel keeps scrolling as before; it travels to the next season's first day. A
+// fast wheel, trackpad or touch scroll (the thresholds below) skips the rest of the season and lands on
+// the next one. Reduced motion jumps instead of gliding.
+//
 // A client island: every word and date arrives as data from the server block
 // (components/page-editor/blocks/wildheart.tsx, WildheartYearJourneyBlock), which reads the sky and the
 // Space's own events. Every colour and face is a token (components/sites/wildheart-css.ts).
@@ -50,13 +56,26 @@ export interface YearJourneyData {
   geo: YearGeometry
   /** Per day of the window: the sign, its house, the season, the moon phase and the date label. */
   table: { date: string; sign: string; signName: string; house: string; season: string; seasonName: string; phase: number; phaseName: string }[]
-  labels: { calendar: string; sky: string; season: string; moon: string; skip: string; tip: string; save: string; year: string; aria: string }
+  labels: { calendar: string; sky: string; season: string; moon: string; skip: string; next: string; tip: string; save: string; year: string; aria: string }
   enrollHref: string | null
   yearHref: string | null
 }
 
 const HOLD = 0.2
 const STEP_VH = 68
+/** The "Next section" door opens once the reader is this many days into a season: about two months. */
+const NEXT_SECTION_AFTER_DAYS = 60
+/** A wheel or trackpad scroll that moves this many pixels inside FAST_SCROLL_WINDOW_MS is a fast scroll
+ *  and skips the rest of the season. A deliberate read scrolls a few hundred pixels a tick. */
+const FAST_SCROLL_DELTA = 900
+const FAST_SCROLL_WINDOW_MS = 160
+/** A touch flick faster than this many pixels per millisecond, over at least FAST_TOUCH_MIN_PX, skips too. */
+const FAST_TOUCH_PX_PER_MS = 2.2
+const FAST_TOUCH_MIN_PX = 80
+/** After a skip the next one waits this long, so one flick lands on one season. */
+const FAST_SCROLL_COOLDOWN_MS = 700
+/** Scrolling back up within this many days of a season's first day goes to the season before it. */
+const BACK_SLACK_DAYS = 7
 const clamp = (x: number, a = 0, b = 1) => Math.max(a, Math.min(b, x))
 const ss = (t: number) => t * t * (3 - 2 * t)
 const invSS = (u: number) => {
@@ -165,6 +184,17 @@ export function WildheartYearJourney({ data, offset = 72, wheelSize = 600, start
   const [S, setS] = useState(520)
   const [act, setAct] = useState(0)
   const [sky, setSky] = useState(() => ({ sign: table[0]?.sign ?? 'capricorn', season: table[0]?.season ?? 'winter', phase: table[0]?.phase ?? 0 }))
+  /** The next section's index while the door is open, else null. */
+  const [next, setNext] = useState<number | null>(null)
+  // The seasons of the window as sections: the first day of each, in order.
+  const sections = useMemo(() => {
+    const out: { day: number; season: string; name: string }[] = []
+    table.forEach((k, i) => {
+      if (i === 0 || k.season !== table[i - 1].season) out.push({ day: i, season: k.season, name: k.seasonName })
+    })
+    return out
+  }, [table])
+  const reduceRef = useRef(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const rotorRef = useRef<HTMLDivElement>(null)
@@ -177,7 +207,7 @@ export function WildheartYearJourney({ data, offset = 72, wheelSize = 600, start
   const glowRef = useRef<HTMLDivElement>(null)
   const panels = useRef<(HTMLElement | null)[]>([])
   const out = useRef<Record<string, HTMLSpanElement | null>>({})
-  const cur = useRef({ p: 0, applied: -1, di: -1, act: 0, sky: null as null | { sign: string; phase: number; season: string }, tx: 0, ty: 0, gx: 0, gy: 0, ax: 0, ay: 0 })
+  const cur = useRef({ p: 0, applied: -1, di: -1, act: 0, sky: null as null | { sign: string; phase: number; season: string }, tx: 0, ty: 0, gx: 0, gy: 0, ax: 0, ay: 0, section: 0, day: 0, next: null as number | null })
   const drag = useRef<null | { a: number; day: number; moved: number; id: number; v: number; t: number; cap?: boolean }>(null)
   const mom = useRef(0)
   const suppress = useRef(false)
@@ -260,8 +290,29 @@ export function WildheartYearJourney({ data, offset = 72, wheelSize = 600, start
         setAct(a)
       }
       if (countRef.current) countRef.current.textContent = `${String(a + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`
+      // The section the needle is in, and whether the reader is two months into it.
+      let si = 0
+      while (si < sections.length - 1 && day >= sections[si + 1].day) si++
+      c.section = si
+      c.day = day
+      const door = si < sections.length - 1 && day - sections[si].day >= NEXT_SECTION_AFTER_DAYS ? si + 1 : null
+      if (door !== c.next) {
+        c.next = door
+        setNext(door)
+      }
     },
-    [data.a0, data.span, N, dayAt, table],
+    [data.a0, data.span, N, dayAt, table, sections],
+  )
+  /** Travel to a season's first day: a glide, or a jump under reduced motion. */
+  const goSection = useCallback(
+    (k: number) => {
+      const target = sections[k]
+      if (!target) return
+      mom.current = 0
+      scrollToP(pAt(target.day), !reduceRef.current)
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollToP reads refs only
+    [sections, pAt],
   )
 
   useEffect(() => {
@@ -273,12 +324,57 @@ export function WildheartYearJourney({ data, offset = 72, wheelSize = 600, start
 
   useEffect(() => {
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    reduceRef.current = reduce
     let id = 0
     let vis = true
     let alive = true
     const c = cur.current
     c.applied = -1
     c.di = -1
+    // A fast scroll skips the season: a wheel's delta summed inside a short window, or a touch flick's speed.
+    let acc = 0
+    let accAt = 0
+    let cool = 0
+    let touch: null | { y: number; t: number } = null
+    const pinned = () => c.p > 0.001 && c.p < 0.999 && !drag.current
+    const skip = (dir: 1 | -1) => {
+      const now = performance.now()
+      if (now < cool) return
+      const si = c.section
+      const k = dir > 0 ? si + 1 : c.day - sections[si].day > BACK_SLACK_DAYS ? si : si - 1
+      if (k < 0 || k >= sections.length) return
+      cool = now + FAST_SCROLL_COOLDOWN_MS
+      acc = 0
+      goSection(k)
+    }
+    const onWheel = (e: WheelEvent) => {
+      if (!pinned()) return
+      const now = performance.now()
+      if (now - accAt > FAST_SCROLL_WINDOW_MS) acc = 0
+      accAt = now
+      acc += e.deltaY
+      if (Math.abs(acc) >= FAST_SCROLL_DELTA) skip(acc > 0 ? 1 : -1)
+    }
+    const onTouchStart = (e: TouchEvent) => {
+      touch = { y: e.touches[0]?.clientY ?? 0, t: performance.now() }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touch || !pinned()) return
+      const y = e.touches[0]?.clientY ?? touch.y
+      const dy = touch.y - y
+      const dt = Math.max(1, performance.now() - touch.t)
+      if (Math.abs(dy) >= FAST_TOUCH_MIN_PX && Math.abs(dy) / dt >= FAST_TOUCH_PX_PER_MS) {
+        touch = null
+        skip(dy > 0 ? 1 : -1)
+      }
+    }
+    const onTouchEnd = () => {
+      touch = null
+    }
+    window.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    window.addEventListener('touchend', onTouchEnd, { passive: true })
     const tick = () => {
       id = 0
       if (!alive) return
@@ -318,9 +414,13 @@ export function WildheartYearJourney({ data, offset = 72, wheelSize = 600, start
       alive = false
       io.disconnect()
       if (id) cancelAnimationFrame(id)
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- range reads refs only
-  }, [apply, offset])
+  }, [apply, offset, sections, goSection])
 
   const onStageMove = (e: ReactPointerEvent) => {
     const c = cur.current
@@ -524,6 +624,12 @@ export function WildheartYearJourney({ data, offset = 72, wheelSize = 600, start
             {read('season', data.labels.season)}
             {read('moon', data.labels.moon)}
             <button type="button" onClick={leave} className="wh-label wh-yj-skip">{data.labels.skip}</button>
+            {next !== null && (
+              <button type="button" onClick={() => goSection(next)} className="wh-yj-next" title={sections[next]?.name}>
+                {data.labels.next}
+                <span aria-hidden="true">↓</span>
+              </button>
+            )}
           </div>
         </div>
         <div className="wh-yj-rail">

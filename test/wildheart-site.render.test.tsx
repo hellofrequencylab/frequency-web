@@ -13,7 +13,8 @@ import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_CSS } from '@/components/sites/wildheart-css'
 import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
-import { buildEvents, buildItems, buildPageDocs, buildPreferences, CIRCLE, CIRCLES_MORE, FOUNDATION, PAGES, SLUG, TAGLINE, YEAR } from '../scripts/seed-wildheart.mts'
+import { buildEvents, buildItems, buildPageDocs, buildPreferences, ptIso, CIRCLE, CIRCLES_MORE, FOUNDATION, PAGES, SLUG, TAGLINE, YEAR } from '../scripts/seed-wildheart.mts'
+import { expandSiteSeries, foldSiteEvent, type SiteEventRow } from '@/lib/sites/site-events'
 
 // THE WILDHEART SITE, RENDERED OFFLINE (LIVE-903, LIVE-904). The live site is the seed's page docs drawn by
 // the same chrome and section renderer the Next page uses (components/sites/site-page.tsx), with the
@@ -33,24 +34,33 @@ const pageDocs = buildPageDocs() as Record<string, { content: MwBlock[] }>
 const events = buildEvents()
 const items = buildItems()
 
-/** The seed's events as the live rows a page reads (lib/sites/menswork-data.ts shape), soonest first,
- *  with the Circle Night cadence minted through 2027 the way the daily cron mints it. */
+const TZ = 'America/Los_Angeles'
+
+/** The seed's rows as the database holds them: true instants beside the Space's zone (the SQL writes
+ *  `timestamp ... at time zone 'America/Los_Angeles'`), the Circle Night anchor with its rule. */
+const storedRows: (SiteEventRow & { description: string })[] = events.map((e, i) => ({
+  id: `evt-${i}`,
+  slug: e.slug,
+  title: e.title,
+  description: e.description,
+  startsAt: ptIso(e.date, e.start),
+  endsAt: ptIso(e.endDate ?? e.date, e.end),
+  timeZone: TZ,
+  recurrenceType: e.recurrence?.type ?? null,
+  recurrenceRule: e.recurrence?.rule ?? null,
+  recurrenceUntil: null,
+  parentEventId: null,
+  isCancelled: false,
+}))
+
+/** The seed's events as the live rows a page reads (lib/sites/menswork-data.ts readEvents): every anchor
+ *  expanded through next year, each start folded into its own zone, soonest first from today. */
 function liveEvents(): MwLive['events'] {
-  const rows = events.map((e, i) => ({
-    id: `evt-${i}`,
-    slug: e.slug,
-    title: e.title,
-    description: e.description,
-    startsAt: `${e.date}T${e.start}`,
-    endsAt: `${e.endDate ?? e.date}T${e.end}`,
-    location: null,
-  }))
-  const anchor = events[0]
-  for (let d = new Date(Date.UTC(2026, 10, 17)); d.getTime() < Date.UTC(2028, 0, 1); d = new Date(d.getTime() + 14 * 864e5)) {
-    const day = d.toISOString().slice(0, 10)
-    rows.push({ id: `evt-cn-${day}`, slug: `${anchor.slug}-${day}`, title: anchor.title, description: anchor.description, startsAt: `${day}T${anchor.start}`, endsAt: `${day}T${anchor.end}`, location: null })
-  }
-  return rows.filter((e) => e.startsAt >= '2026-10-12').sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+  const floor = new Date(Date.UTC(2026, 9, 12))
+  return expandSiteSeries(storedRows, { through: new Date(Date.UTC(2027, 11, 31, 23, 59, 59)), from: floor, spaceZone: TZ })
+    .filter((e) => new Date(e.startsAt).getTime() >= floor.getTime())
+    .map((e) => foldSiteEvent(e, TZ))
+    .map((e) => ({ id: e.id, slug: e.slug ?? e.id, title: e.title, description: e.description, startsAt: e.startsAt, endsAt: e.endsAt ?? null, location: null, timeZone: e.timeZone }))
 }
 
 function liveJourneys(): MwLive['journeys'] {
@@ -93,7 +103,11 @@ const metadata = {
     slug: SLUG,
     tagline: TAGLINE,
     logoUrl: '/brand/wildheart/wildheart-logo.svg',
-    events: live.events.map((e) => ({ id: e.id, slug: e.slug, title: e.title, startsAt: e.startsAt, endsAt: e.endsAt, description: e.description })),
+    // The landing's channel (components/spaces/space-landing.tsx): the upcoming rows as stored, the live
+    // series rows, and the Space's zone; the Wildheart block expands and folds them itself.
+    events: storedRows.filter((e) => new Date(e.startsAt).getTime() >= Date.UTC(2026, 9, 12)),
+    series: storedRows.filter((e) => e.recurrenceType && e.recurrenceType !== 'none'),
+    timeZone: TZ,
   },
   links,
 }
@@ -183,6 +197,9 @@ describe('the Wildheart site, rendered from the seed through the real chrome and
   it("draws the Space's own rows: the next Circle Night, the four circles with their seats, and the foundation's weeks", () => {
     const home = renderPage('home')
     expect(home).toContain('Next Circle Night')
+    // The live bug (LIVE-905): the stored 2026-11-04T02:00Z is Tue Nov 3 at 6:00 PM in the Space's zone.
+    expect(words(home)).toContain('Next Circle Night Tue Nov 3 · 6:00 PM')
+    expect(words(home)).not.toContain('2:00 AM')
     expect(words(home)).toContain("Hunter's Moon")
     const circles = renderPage('circles')
     for (const c of [CIRCLE, ...CIRCLES_MORE]) expect(circles).toContain(c.name)
@@ -191,8 +208,29 @@ describe('the Wildheart site, rendered from the seed through the real chrome and
     expect(circles).toContain('mw-badge-forming')
     const program = renderPage('program')
     expect(program).toContain('Week 1')
+    expect(words(program)).toContain('Jan 5')
+    expect(words(program)).not.toContain('Jan 6')
     expect(program).toContain('Breath and noticing what the body feels, not how it looks')
     expect(program).not.toContain(YEAR.title)
+  })
+
+  it('puts every Circle Night of the year on the wheel and in the season-headed list (LIVE-905)', () => {
+    const home = renderPage('home')
+    // The pinned wheel: a dot per Circle Night through 2027 (the anchor's rule, not the four stored children).
+    const circleDots = home.match(/data-kind="circle"/g) ?? []
+    expect(circleDots.length).toBeGreaterThanOrEqual(26)
+    expect(home).toContain('Circle Night · Jan 12')
+    expect(home).toContain('Circle Night · Dec 28')
+    // The journey opens in winter, in January, whatever today is.
+    expect(home).toMatch(/wh-block wh-block-journey[^"]*" data-season="winter"/)
+    expect(home).toContain('The year opens')
+    // The phone's sky map and The year's: the list in season sections headed by the season and its modules.
+    const year = renderPage('the-year')
+    expect(year).toContain('wh-sm-season-head')
+    expect(words(year)).toContain('Winter · Rest and root')
+    expect(words(year)).toContain('Spring · Rise')
+    expect((year.match(/>Circle Night</g) ?? []).length).toBeGreaterThanOrEqual(26)
+    expect(words(year)).toContain('Tue · 6:00 PM')
   })
 
   it('carries every string of the handoff template on the six pages (the content checklist)', () => {
