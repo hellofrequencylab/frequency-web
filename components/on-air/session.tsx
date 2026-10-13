@@ -272,6 +272,7 @@ export function OnAirSession({
   onLeaveViaLink,
   mode: doorMode,
   onModeChange,
+  minutesOverride,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
@@ -323,6 +324,10 @@ export function OnAirSession({
    *  Moving toggle wired to this. The standalone /on-air route omits it, so no toggle shows there
    *  and the sit behaves exactly as before. */
   onModeChange?: (mode: TimerMode) => void
+  /** A length the member picked BEFORE the session mounted (the Frequency Mindless door's duration
+   *  chips). It beats the practice's suggested length and the remembered one, never a resume or an
+   *  author-locked length. Absent everywhere else, so every other door behaves exactly as before. */
+  minutesOverride?: number
 }) {
   const [stage, setStage] = useState<Stage>('setup')
   const initialId =
@@ -401,7 +406,11 @@ export function OnAirSession({
   // minutes, then the remembered open length. A locked practice always uses its length.
   const [minutes, setMinutes] = useState(() => {
     if (resuming) return resumeRemainingMin
-    const d = practices.find((p) => p.id === initialId)?.durationMin
+    const initial = practices.find((p) => p.id === initialId)
+    const d = initial?.durationMin
+    if (minutesOverride && minutesOverride > 0 && !(initial?.durationLocked && d && d > 0)) {
+      return clampMinutes(minutesOverride)
+    }
     if (d && d > 0) return clampMinutes(d)
     return saved?.minutes != null ? clampMinutes(saved.minutes) : prefs.minutes
   })

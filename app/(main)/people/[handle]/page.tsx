@@ -65,6 +65,10 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { roleUnlocked, stageUnlocked } from '@/lib/unlocks'
 import { getCachedMemberProgress } from '@/lib/member-progress'
 import { supporterMarkShows } from '@/lib/pricing/catalog-config'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import {
+  ProfileBody, ProfilePhoto, ProfileCircles, ProfileStanding, ProfileAchievements,
+} from '@/components/frequency/members/profile/profile-body'
 
 export default async function ProfilePage({
   params,
@@ -507,6 +511,231 @@ export default async function ProfilePage({
   // height / scrim resolve from the master config (retune site-wide).
   // The owner's picked overlay (profiles.meta) is the surface default — an operator master value in
   // /admin/elements can still override it site-wide (resolveHeaderElement precedence).
+  // ── FREQUENCY (ADR-1737). The same reads, gates and controls on the reference's profile
+  //    (design_handoff/frequency/templates/members/Profile.html). Nothing below is computed for it
+  //    that the DAWN band did not already gate: the Circles tab lists the same listable-only set the
+  //    achievements read, the four numbers are the public counts this page already shows, and every
+  //    viewer control keeps its exact guard. DAWN's Detail composition below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    const fqTab = tab === 'posts' || tab === 'circles' || tab === 'practice' ? tab : 'story'
+    const base = `/people/${profile.handle as string}`
+    const fqActions = isOwner ? (
+      <>
+        <OpenAdminBarButton
+          scope={{ kind: 'profile', id: profileId }}
+          label="Edit profile"
+          icon={<Pencil className="h-4 w-4" />}
+          className="btn"
+        />
+        <Link className="btn pa" href="/codes">
+          My Code
+        </Link>
+        {vcardEnabled && (
+          <a className="btn" href={`${profilePath}/vcard`}>
+            <Contact className="h-3.5 w-3.5" />
+            Save contact
+          </a>
+        )}
+        <QrShareDropdown manager className="btn" />
+      </>
+    ) : (
+      <>
+        {user && !isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+        {user && vcardEnabled && (
+          <a className="btn" href={`${profilePath}/vcard`}>
+            <Contact className="h-3.5 w-3.5" />
+            Save contact
+          </a>
+        )}
+        {user && !isBlocked && friendState.kind === 'accepted' && (
+          <MessageMemberButton profileId={profileId} threadTitle={firstName} className="btn">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Message
+          </MessageMemberButton>
+        )}
+        {user && !isBlocked && canTipRecipient && <TipButton toProfileId={profileId} recipientName={firstName} />}
+        {user && isStaffViewer && (
+          <ProfileSettingsDrawer
+            profileId={profileId}
+            handle={profile.handle as string}
+            initialName={profile.display_name}
+            initialBio={profile.bio ?? ''}
+            spotlightEnabled={spotlightEnabled}
+            spotlightPublished={spotlightPublished}
+            canModerate={canModerateProfile}
+            isJanitor={isJanitorViewer}
+            triggerClassName="btn"
+          />
+        )}
+        <QrShareDropdown manager={false} className="btn" />
+      </>
+    )
+    const isCrew = isEndorsed(profile.membership_tier)
+    const fqChips = (
+      <div className="row wrap">
+        {role !== 'member' && roleBadge}
+        {isCrew && <span className="fq-iri-text on-light mc-crew">Crew</span>}
+        {/* The same status cluster the DAWN band wears: the bought flair and title, Founder,
+            Supporter, the endorsed season rank, demo. One node, so the cosmetics stay wired once. */}
+        {badges}
+      </div>
+    )
+    const metaLine = (
+      <>
+        @{profile.handle as string}
+        {regionName ? ` · ${regionName}` : ''} · Member since {joinedDate}
+        {website && (
+          <>
+            {' · '}
+            <a href={website.href} target="_blank" rel="noopener noreferrer nofollow">
+              {website.label}
+            </a>
+          </>
+        )}
+      </>
+    )
+    const tabContent =
+      fqTab === 'circles' ? (
+        <ProfileCircles
+          circles={circles}
+          emptyLine={isOwner ? 'No Circles yet. Find one near you.' : `${firstName} is not in a public Circle yet.`}
+        />
+      ) : fqTab === 'practice' ? (
+        <FrequencySignature signature={signature} variant="full" layout="stack" name={isOwner ? undefined : firstName} />
+      ) : (
+        <div className="stack mc-gap-24">
+          {fqTab === 'story' && myProfileId && !blockedEither && (
+            <Composer
+              scopeId={profileId}
+              visibility="public"
+              placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
+            />
+          )}
+          <Suspense fallback={<ProfileFeedSkeleton />}>
+            {fqTab === 'posts' ? (
+              <ProfilePosts
+                profileId={profileId}
+                firstName={firstName}
+                isOwner={isOwner}
+                myProfileId={myProfileId}
+                viewerRole={myRole}
+              />
+            ) : (
+              <ProfileFeed
+                profileId={profileId}
+                profileHandle={profile.handle as string}
+                myProfileId={myProfileId}
+                viewerRole={myRole}
+              />
+            )}
+          </Suspense>
+        </div>
+      )
+    return (
+      <ShareRefProvider profileId={profileId}>
+        <ProfileBody
+          notice={
+            tippedCents !== null ? (
+              <div className="mc-note">
+                <span className="t1">
+                  Thank you. Your ${(tippedCents / 100).toFixed(2)} tip to {firstName} is on its way.
+                </span>
+              </div>
+            ) : null
+          }
+          avatar={
+            <CosmeticBorder value={equippedBorder}>
+              <ProfilePhoto src={profile.avatar_url} initials={initials} name={profile.display_name} />
+            </CosmeticBorder>
+          }
+          metaLine={metaLine}
+          name={profile.display_name}
+          chips={fqChips}
+          bio={<EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />}
+          actions={fqActions}
+          secondary={secondaryControls}
+          stats={[
+            { value: currentStreak.toLocaleString(), label: 'Day streak' },
+            { value: lifetimeZaps.toLocaleString(), label: 'Zaps earned' },
+            { value: circles.length.toLocaleString(), label: circles.length === 1 ? 'Circle' : 'Circles' },
+            { value: postCount.toLocaleString(), label: postCount === 1 ? 'Post' : 'Posts' },
+          ]}
+          panels={
+            <>
+              {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
+              {!isOwner && !!user && !isBlocked && (
+                <ConnectionPanel
+                  profileId={profileId}
+                  firstName={firstName}
+                  friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
+                />
+              )}
+              {!isOwner && roleUnlocked('profile.member-support', myRole) && <MemberSupportPanel profileId={profileId} />}
+              <Suspense fallback={null}>
+                {isOwner ? <OwnerProfileLayoutPreview handle={handle} /> : <ProfileSpotlightBlocks handle={handle} />}
+              </Suspense>
+            </>
+          }
+          tabs={[
+            { key: 'story', label: 'Story', href: base },
+            { key: 'posts', label: postCount ? `Posts · ${postCount}` : 'Posts', href: `${base}?tab=posts` },
+            { key: 'circles', label: 'Circles', href: `${base}?tab=circles` },
+            { key: 'practice', label: 'Practice', href: `${base}?tab=practice` },
+          ]}
+          activeTab={fqTab}
+          tabContent={tabContent}
+          side={
+            <>
+              <Suspense fallback={null}>
+                <ProfileAssociations
+                  profileId={profileId}
+                  handle={profile.handle as string}
+                  firstName={firstName}
+                  viewerProfileId={myProfileId}
+                  isOwner={isOwner}
+                  blocked={isBlocked}
+                />
+              </Suspense>
+              <ProfileStanding
+                isOwner={isOwner}
+                rankLabel={rankDef.label}
+                nextLabel={rankNext?.label ?? null}
+                pct={rankPct}
+                zapsToNext={zapsToNext}
+                rows={[
+                  { label: 'Zaps', value: lifetimeZaps.toLocaleString(), href: '/crew/leaderboard' },
+                  { label: 'Gems', value: gems.toLocaleString(), href: '/crew/store' },
+                  { label: 'Streak', value: `${currentStreak} ${currentStreak === 1 ? 'day' : 'days'}`, href: '/crew/leaderboard' },
+                  { label: 'Rank', value: rankDef.label, href: '/crew/leaderboard' },
+                ]}
+              />
+              {showAchievements && (
+                <ProfileAchievements
+                  items={rewards.map((r) => ({
+                    label: r.label,
+                    description: r.description,
+                    earned: r.earned,
+                    current: r.current,
+                    target: r.target,
+                    milestone: r.milestone,
+                  }))}
+                />
+              )}
+              <ProfileAwards awards={awards} firstName={firstName} isOwner={isOwner} />
+              {isOwner && isCrew && (
+                <div className="soft stack mc-start">
+                  <span className="k">Crew</span>
+                  <span className="h3">You&apos;re Crew.</span>
+                  <span className="t2">Thank you for backing the community.</span>
+                </div>
+              )}
+            </>
+          }
+        />
+      </ShareRefProvider>
+    )
+  }
+
   const overlayStyle = readProfileOverlayStyle((profile as { meta?: unknown }).meta)
   const overlayColor = readProfileOverlayColor((profile as { meta?: unknown }).meta)
   // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the member's own

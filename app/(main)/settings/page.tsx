@@ -15,6 +15,8 @@ import { AccountSection } from './account/section'
 import { PlanSection } from './billing/section'
 import { MyMembershipsSection } from './memberships/section'
 import { InstallSettingsCard } from '@/components/push/install-card'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SettingsBody } from '@/components/frequency/members/settings/settings-body'
 
 // The member Settings suite as ONE page (DAWN 2 screen pass, per
 // design_handoff/dawn/ui_kits/screens/settings.html): a chip section-rail up top, then
@@ -62,6 +64,11 @@ export default async function SettingsPage({
 
   // Stripe checkout / Connect returns land here via the /settings/billing redirect.
   const params = await searchParams
+
+  // FREQUENCY (ADR-1737): the same sections, regrouped into the reference's side list and panes.
+  if (SITE_DESIGN === 'frequency') {
+    return <SettingsBody sessionId={params.session_id} payouts={params.payouts} />
+  }
 
   return (
     <FocusTemplate title="Settings" description="The whole suite on one page." width="wide">

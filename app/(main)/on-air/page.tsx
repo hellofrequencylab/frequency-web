@@ -10,6 +10,9 @@ import { getMyProfileId } from '@/lib/auth'
 import { loadOnAirSessionData } from '@/lib/on-air/session-data'
 import { FocusTemplate } from '@/components/templates'
 import { OnAirSession } from '@/components/on-air/session'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { MindlessEmpty } from '@/components/frequency/members/mindless/mindless-empty'
+import { MindlessDoor } from '@/components/frequency/members/mindless/mindless-door'
 
 export const metadata: Metadata = {
   title: 'Mindless',
@@ -36,6 +39,8 @@ export default async function OnAirPage({
   // entering Mindless means no app chrome at all. The Focus shell only hosts
   // the empty "adopt a practice first" state.
   if (practices.length === 0) {
+    // FREQUENCY (ADR-1737): the same empty state, in the members kit.
+    if (SITE_DESIGN === 'frequency') return <MindlessEmpty />
     return (
       <FocusTemplate
         eyebrow="The Quest"
@@ -57,6 +62,21 @@ export default async function OnAirPage({
           </Link>
         </div>
       </FocusTemplate>
+    )
+  }
+
+  // FREQUENCY (ADR-1737): the reference's door (Tune out, a length, Start) in front of the same engine.
+  if (SITE_DESIGN === 'frequency') {
+    const initialId =
+      defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
+    const initial = practices.find((p) => p.id === initialId)
+    const own = initial?.durationMin && initial.durationMin > 0 ? initial.durationMin : null
+    return (
+      <MindlessDoor
+        session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
+        initialMinutes={own ?? prefs.minutes}
+        lockedMinutes={initial?.durationLocked && own ? own : null}
+      />
     )
   }
 
