@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import '@/app/themes/frequency/members-b.css'
 import type { EventRow, EventsIndexData } from '@/app/(main)/events/index-data'
 import { CalendarSubscribe } from '@/components/events/calendar-subscribe'
@@ -6,6 +7,9 @@ import { FqIcon } from '@/components/frequency/icon'
 import { GoButton } from '@/components/frequency/members/go-button'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { HOME_TZ, dayInZone, isEventPast } from '@/lib/time/zone'
+import { FqClearLink, FqFacetMenu, FqFindField, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
+import { FqEventsMapToggle } from './events-map-toggle'
+import { FqEventsForYou, FqPeopleToMeet } from './events-lanes'
 
 // EVENTS, FREQUENCY BODY (templates/members/Events.html, line for line). The shell lane owns the
 // kit root, header and rails; this is the page body only: the head, the When tabs, the day-grouped
@@ -16,6 +20,12 @@ import { HOME_TZ, dayInZone, isEventPast } from '@/lib/time/zone'
 // does the filtering. They cut the same upcoming list the DAWN page shows: Now is all of it, Tonight
 // is today from 5pm, Tomorrow is tomorrow, This week is the next seven days, in the community's home
 // zone (the zone `formatWhen` already reads "Today" in).
+//
+// THE HYBRID RULE (owner, design pass): the reference draws no search, filters or map, and the
+// platform has all of them, so they are kept in the kit's idiom rather than hidden. Under the When
+// tabs sits one find-and-filter row (kit-tools.tsx: the find pill, each facet as a chip menu, the
+// sort), every control a URL param the shared read already honours; the day list sits inside the
+// List / Map switch; For you and People to know stream in behind their own <Suspense>.
 
 type WhenKey = 'now' | 'tonight' | 'tomorrow' | 'week'
 const WHEN_TABS: { key: WhenKey; label: string }[] = [
@@ -75,11 +85,32 @@ function needsTicket(e: EventRow, priceLabel: string | null | undefined): boolea
 export function FqEventsBody({
   data,
   when,
+  params,
 }: {
   data: EventsIndexData
   when: WhenKey
+  /** The page's search params, so every control keeps the others when it changes its own. */
+  params: Params
 }) {
-  const { sortedEvents, goingEvents, coverUrls, rsvpCounts, myRsvps, priceLabels, nowDate, myProfileId, userHasEvents } = data
+  const {
+    sortedEvents,
+    goingEvents,
+    coverUrls,
+    rsvpCounts,
+    myRsvps,
+    priceLabels,
+    nowDate,
+    myProfileId,
+    userHasEvents,
+    facets,
+    sortOptions,
+    mapPins,
+    showForYou,
+    filtering,
+    content,
+  } = data
+  const shownFacets = facets.filter((f) => f.show !== false)
+  const anyFilter = filtering || !!params.sort
 
   const shown = sortedEvents.filter((e) => inWhen(e, when, nowDate)).slice(0, ROW_CAP)
   const days: { label: string; rows: EventRow[] }[] = []
@@ -97,6 +128,7 @@ export function FqEventsBody({
 
   const meta = [
     `${sortedEvents.length} coming up`,
+    params.q ? `matching “${params.q}”` : null,
     myProfileId ? `${goingEvents.length} you're going to` : null,
   ]
     .filter(Boolean)
@@ -121,7 +153,12 @@ export function FqEventsBody({
             <Link className="btn lg" href="/events/calendar">
               Calendar
             </Link>
-            <CalendarSubscribe />
+            <CalendarSubscribe buttonClassName="btn lg" />
+            {content.ctaLabel && content.ctaHref && (
+              <a className="btn lg" href={content.ctaHref}>
+                {content.ctaLabel}
+              </a>
+            )}
             {userHasEvents && (
               <>
                 <Link className="btn txt" href="/admin/events">
@@ -136,11 +173,13 @@ export function FqEventsBody({
         )}
       </div>
 
+      {content.body && <p className="body fqm-intro">{content.body}</p>}
+
       <nav className="tabs fqm-tabs" aria-label="When">
         {WHEN_TABS.map((t) => (
           <Link
             key={t.key}
-            href={t.key === 'now' ? '/events' : `/events?when=${t.key}`}
+            href={hrefWith('/events', params, { when: t.key === 'now' ? null : t.key })}
             className={t.key === when ? 'on' : undefined}
             aria-current={t.key === when ? 'page' : undefined}
           >
@@ -149,15 +188,46 @@ export function FqEventsBody({
         ))}
       </nav>
 
+      <div className="fqm-tools">
+        <FqFindField action="/events" value={params.q} placeholder="Search events" keep={params} />
+        {shownFacets.map((f) => (
+          <FqFacetMenu key={f.paramKey} label={f.label} paramKey={f.paramKey} options={f.options} base="/events" current={params} />
+        ))}
+        {sortOptions.length > 1 && (
+          <FqFacetMenu
+            label="Sort"
+            paramKey="sort"
+            options={sortOptions}
+            base="/events"
+            current={params.sort ? params : { ...params, sort: sortOptions[0].value }}
+            clearable={false}
+            icon="chart"
+          />
+        )}
+        <FqClearLink base={when === 'now' ? '/events' : `/events?when=${when}`} active={anyFilter} />
+      </div>
+
       <div className="ap-cols">
         <div>
+          {showForYou && when === 'now' && (
+            <Suspense fallback={null}>
+              <FqEventsForYou data={data} />
+            </Suspense>
+          )}
+          <FqEventsMapToggle pins={mapPins}>
           {days.length === 0 ? (
             <div className="empty stack">
-              <span className="h3">Nothing on the calendar {when === 'now' ? 'yet' : 'for then'}.</span>
-              <span className="t2">
-                {when === 'now' ? 'When a host near you posts a gathering, it lands here.' : 'Try another day, or see everything coming up.'}
+              <span className="h3">
+                {anyFilter ? 'Nothing matches these filters.' : `Nothing on the calendar ${when === 'now' ? 'yet' : 'for then'}.`}
               </span>
-              {when !== 'now' && (
+              <span className="t2">
+                {anyFilter
+                  ? 'Try another filter, or clear them to see everything coming up.'
+                  : when === 'now'
+                    ? 'When a host near you posts a gathering, it lands here.'
+                    : 'Try another day, or see everything coming up.'}
+              </span>
+              {(when !== 'now' || anyFilter) && (
                 <Link className="btn sm fqm-tag-start" href="/events">
                   See everything
                 </Link>
@@ -214,6 +284,7 @@ export function FqEventsBody({
               See the full calendar
             </Link>
           )}
+          </FqEventsMapToggle>
         </div>
 
         <aside className="side">
@@ -237,6 +308,11 @@ export function FqEventsBody({
               </span>
             )}
           </div>
+          {showForYou && myProfileId && (
+            <Suspense fallback={null}>
+              <FqPeopleToMeet viewerProfileId={myProfileId} eventIds={sortedEvents.map((e) => e.id)} />
+            </Suspense>
+          )}
         </aside>
       </div>
     </>

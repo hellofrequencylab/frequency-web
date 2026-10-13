@@ -78,7 +78,7 @@ export default async function EventsPage({
       {onCommerceFace && <CommerceLastVisited surface="events" />}
       {/* THE DESIGN SWITCH (ADR-1737): build-time, so DAWN's tree is untouched when it is off. */}
       {SITE_DESIGN === 'frequency' ? (
-        <FqEventsBody data={data} when={asWhen(sp.when)} />
+        <FqEventsBody data={data} when={asWhen(sp.when)} params={sp} />
       ) : (
       <EventsSurface
         data={data}
