@@ -7,15 +7,21 @@
 //
 // Sample data replaced: the hero pill's "San Diego · 48 Circles and events this week" and the
 // "What's happening near you" map read the real calendar (../shared/data.ts). Copy is the design's,
-// verbatim (guidelines/messaging.md: final copy).
+// verbatim (guidelines/messaging.md: final copy), except where messaging.md overrules the prototype: the
+// calendar feature is "What's happening", not "Your town's calendar".
+//
+// Motion (pop-in reveals, parallax, the hero lift) is the shell's FX loop; the closing band is the
+// shell's <KeepGoing>. The questions carry FAQPage JSON-LD, as the DAWN body's accordion does.
 
 import '@/app/themes/frequency/site-pages-a.css'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getWhatsOn } from '../shared/data'
 import { feature, SITE } from '../shared/links'
-import { Acts, aura, ChapPhoto, Chapter, KeepGoing, LocPill, photo, WhatsOnList } from '../shared/parts'
-import { PageMotion } from '../shared/page-motion'
+import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
+import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
+import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
 
 const FIRST_NIGHT: { icon: FqIconName; title: string; body: string }[] = [
   { icon: 'host', title: 'The Host at the door', body: 'Someone is there to say hi and tell you where to put your things.' },
@@ -24,7 +30,7 @@ const FIRST_NIGHT: { icon: FqIconName; title: string; body: string }[] = [
 ]
 
 const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] = [
-  { id: 'f-calendar', icon: 'event', title: 'Your town’s calendar', body: 'Everything meeting near you this week, in one place.' },
+  { id: 'f-calendar', icon: 'event', title: 'What’s happening', body: 'Everything meeting near you this week, in one place.' },
   { id: 'f-circles', icon: 'circle', title: 'Circles', body: 'Small groups around one thing, with familiar faces when you return.' },
   { id: 'f-events', icon: 'ticket', title: 'Events', body: 'One-off gatherings worth going out for.' },
   { id: 'f-programs', icon: 'program', title: 'Programs', body: 'A few weeks with the same group, start to finish.' },
@@ -46,8 +52,6 @@ export async function FrequencyPeople() {
   const weekLine = on.thisWeek > 0 ? `${on.thisWeek} ${on.thisWeek === 1 ? 'event' : 'events'} this week` : null
   return (
     <div className="pa-page pa-people" data-pa-side="p" data-motion-scope style={{ display: 'contents' }}>
-      <PageMotion />
-
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg" style={{ backgroundImage: `url('${photo('day-meditation-circle.jpg')}')` }} />
         <div className="fq-aura" style={aura(0.3)} />
@@ -150,7 +154,12 @@ export async function FrequencyPeople() {
             <p className="body-l">
               Keep coming and someone will ask you to host. That’s how a town gets a scene it didn’t have last year.
             </p>
-            <Acts items={[{ href: SITE.spaces, icon: 'host', title: 'Host an experience', sub: 'Your living room counts' }]} />
+            <Acts
+              items={[
+                { href: SITE.spaces, icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
+                { href: SITE.stories, icon: 'message', title: 'Host stories', sub: 'Regulars who became Hosts' },
+              ]}
+            />
           </div>
         </Chapter>
       </section>
@@ -248,6 +257,7 @@ export async function FrequencyPeople() {
             </div>
             <h2 className="h-l">You’re not the only one wondering.</h2>
           </div>
+          <JsonLd data={faqSchema(QUESTIONS.map(([q, a]) => ({ q, a })))} />
           <div className="qa">
             {QUESTIONS.map(([q, a]) => (
               <details key={q}>
@@ -260,7 +270,6 @@ export async function FrequencyPeople() {
       </section>
 
       <KeepGoing
-        label="07 Keep going"
         title="Find your first Circle."
         body="The nearest one might meet this week."
         primary={{ href: SITE.peopleNear, label: 'Find your Circle →' }}

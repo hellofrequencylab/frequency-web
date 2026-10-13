@@ -8,8 +8,7 @@
 //   Features.html  -> /features       (app/(marketing)/features, new with the Frequency rebuild)
 //   Join.html      -> /join           (BETA_CTA_HREF: signup is one door for both readers, ADR-1197)
 //   Pricing.html   -> /pricing
-//   Stories.html   -> no route yet. Its one body link ("Host stories") is left out rather than pointed
-//                     at a page that is not a story.
+//   Stories.html   -> /stories         (app/(marketing)/stories, new with the Frequency rebuild)
 
 import { BETA_CTA_HREF } from '@/lib/site'
 
@@ -22,6 +21,7 @@ export const SITE = {
   join: BETA_CTA_HREF,
   pricing: '/pricing',
   features: '/features',
+  stories: '/stories',
 } as const
 
 /** A Features anchor: `feature('f-zaps')` -> `/features#f-zaps`; `feature('people')` -> `/features#people`. */
