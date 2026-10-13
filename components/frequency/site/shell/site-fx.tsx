@@ -254,7 +254,27 @@ function run(root: HTMLElement): () => void {
       }),
     { threshold: 0.2, rootMargin: '0px 0px -6% 0px' },
   )
-  q('.pop').forEach((el) => (RM ? el.classList.add('in') : pio.observe(el)))
+  // THE CONTRACT: the kit holds every `.pop` at opacity 0 until it carries `.in`, so a `.pop` this
+  // island never sees is a card nobody can see. The first pass only found the cards already in the DOM
+  // at mount; a body that streams in after (a route with loading.tsx, a Suspense boundary, a client
+  // list that renders later) stayed invisible. `pops()` runs again from the late-DOM observer below,
+  // and a card the URL points at (#privacy on Help) is shown at once, as Help.html does.
+  const seen = new WeakSet<Element>()
+  const pops = () => {
+    let target: Element | null = null
+    try {
+      if (location.hash.length > 1) target = d.getElementById(decodeURIComponent(location.hash.slice(1)))
+    } catch {
+      // A malformed hash names nothing.
+    }
+    q('.pop:not(.in)').forEach((el) => {
+      if (seen.has(el)) return
+      seen.add(el)
+      if (RM || el === target) el.classList.add('in')
+      else pio.observe(el)
+    })
+  }
+  pops()
   offs.push(() => pio.disconnect())
 
   // ── One scroll loop: read everything, then write. ──
@@ -436,10 +456,12 @@ function run(root: HTMLElement): () => void {
     )
   }
 
-  // Late DOM (map popups, anything a page mounts after us): grain and signal lines, debounced.
+  // Late DOM (map popups, anything a page mounts after us): grain, signal lines and pop reveals,
+  // debounced.
   const late = () => {
     grain()
     sigs()
+    pops()
   }
   late()
   let mq: ReturnType<typeof setTimeout> | 0 = 0

@@ -189,6 +189,22 @@ export default async function PricingPage() {
       }),
     )
 
+  // The Frequency design (ADR-1737): the same model, the same FAQ, the same schema and the same CTA
+  // hrefs, in the design's body. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  // It sits ABOVE the published-document branch on purpose: a published /edit/pricing document is
+  // drawn in DAWN blocks, and under Frequency it rendered those blocks inside the Frequency shell, a
+  // DAWN page wearing the new header. The design's body reads the same live model, so nothing an
+  // operator sets in /admin/pricing is lost.
+  if (SITE_DESIGN === 'frequency') {
+    const faq = pricingFaq(input)
+    return (
+      <>
+        <JsonLd data={[breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), faqSchema(faq), ...priceSchema]} />
+        <FrequencyPricing members={members} spaces={spaces} grid={spaceFeatureGrid(input)} faq={faq} />
+      </>
+    )
+  }
+
   if (isWellFormed(published)) {
     return (
       <>
@@ -213,17 +229,6 @@ export default async function PricingPage() {
 
   const faq = pricingFaq(input)
   const pageSchema = [breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), faqSchema(faq), ...priceSchema]
-
-  // The Frequency design (ADR-1737): the same model, the same FAQ, the same schema and the same CTA
-  // hrefs, in the design's body. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={pageSchema} />
-        <FrequencyPricing members={members} spaces={spaces} grid={spaceFeatureGrid(input)} faq={faq} />
-      </>
-    )
-  }
 
   const extras = planExtras(input)
 
