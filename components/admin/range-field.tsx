@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 // Tokenized range slider with a labeled value readout (ADR-233 §4 forms). One
 // accessible `<input type="range">` so wizards / generators stop hand-rolling the
 // label + readout + `accent-primary` markup. The caller owns the value and the
@@ -38,9 +40,12 @@ export function RangeField({
   className?: string
   'aria-label'?: string
 }) {
-  // The one range element in this file, in both modes, so the adoption ratchet counts one site.
+  // The one range element in this file, in both modes, so the adoption ratchet counts one site. The
+  // labelled mode names it by id (the label contract wants an explicit or a literal association).
+  const id = useId()
   const input = (
     <input
+      id={id}
       type="range"
       min={min}
       max={max}
@@ -54,7 +59,7 @@ export function RangeField({
   )
   if (bare) return input
   return (
-    <label className="block text-meta text-muted">
+    <label htmlFor={id} className="block text-meta text-muted">
       <span className="mb-1 flex justify-between gap-2">
         <span>{label}</span>
         <b className="tabular-nums text-text">
