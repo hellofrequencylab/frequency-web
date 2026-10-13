@@ -101,7 +101,7 @@ export function MwCircleFinder({ circles }: { circles: MwCircleCard[] }) {
             {c.meets && <span className="mw-label">{c.meets}</span>}
           </div>
           {c.about && <p className="mw-body">{c.about}</p>}
-          {c.cap > 0 && <MwChevronProgress label={`${c.members} of ${c.cap} men`} value={c.members} total={c.cap} />}
+          {c.cap > 0 && <MwChevronProgress label={`${c.members} of ${c.cap} seats`} value={c.members} total={c.cap} />}
           {(c.host || c.module) && (
             <div className="mw-circle-meta">
               {c.host && (

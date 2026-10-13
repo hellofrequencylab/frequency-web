@@ -9,7 +9,7 @@ import { MENSWORK_PAGE_CSS } from './menswork-page-css'
 import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
 import { WILDHEART_CSS } from './wildheart-css'
 import { WildheartSubBar } from './wildheart-now-line'
-import { WildheartInkDefs } from './wildheart-symbols'
+import { WildheartInkDefs, WhOrnament } from './wildheart-symbols'
 import { SITE_LOOK_CSS } from './site-look-css'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
@@ -158,6 +158,11 @@ export function SiteChrome({
         <div className="hs-footer-top">
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">
+              {/* A Wildheart footer leads with the Space's own mark (the handoff's LogoMark at 170px). */}
+              {skin?.theme === 'wildheart' && logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
+                <img src={logoUrl} alt="" className="hs-footer-logo" />
+              )}
               {brandName}
             </a>
             {tagline && <p>{tagline}</p>}
@@ -174,6 +179,11 @@ export function SiteChrome({
         </div>
       )}
       {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} />}
+      {skin?.theme === 'wildheart' && (
+        <div className="hs-footer-ornament">
+          <WhOrnament variant="star" />
+        </div>
+      )}
       <footer className="hs-footer">
         <span>
           © {new Date().getFullYear()} {brandName}

@@ -9,8 +9,8 @@ describe('the Wildheart symbol library never shows an emoji', () => {
   it('has the twelve signs, the elements with Sun and Moon, and the three marks', () => {
     expect(ZODIAC).toHaveLength(12)
     expect(ALCHEMICAL.map((a) => a.id)).toEqual(['fire', 'water', 'air', 'earth', 'quintessence', 'sun', 'moon'])
-    expect(MARKS.map((m) => m.id)).toEqual(['star', 'spark', 'triplemoon'])
-    expect(all).toHaveLength(22)
+    expect(MARKS.map((m) => m.id)).toEqual(['star', 'spark', 'waning', 'triplemoon'])
+    expect(all).toHaveLength(23)
   })
 
   it('carries no emoji-presentation selector and no emoji-presentation codepoint without a text selector', () => {

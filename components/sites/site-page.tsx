@@ -14,7 +14,7 @@ import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { hasPage, readPageDoc, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
 import { wildheartAccentVars } from '@/lib/theme/wildheart'
@@ -223,7 +223,11 @@ export async function SitePage({
 
   // Home is the house theme (components/sites/house-home.tsx) over the operator's own Home blocks; a
   // custom page renders its own page doc the way the profile renders it, inside the same chrome.
-  const model = home && !websitePage
+  // LIVE-903: a Wildheart site's Home is its own page doc, composed from registered blocks and drawn by the
+  // same sections as every other page (the handoff's Home is a composition, not the house Home's rows).
+  // Without a Home doc the site keeps the house Home over the profile rows, like any theme.
+  const wildHome = home && wildSite && !websitePage && readPageDoc(space.preferences, HOME_SLUG) !== null
+  const model = home && !websitePage && !wildHome
     ? await buildHouseHome({
         space,
         grid: profileGrid(space.preferences),
@@ -252,7 +256,7 @@ export async function SitePage({
   // LIVE-869: a site's `calendar` page (listed among its pages, so the owner places it in the menu) is the
   // public yearly calendar, not a page doc.
   const calendarPage = pageSlug === SITE_CALENDAR_SLUG
-  const customPage = !home && !contactPage && !bookPage && !calendarPage
+  const customPage = (!home || wildHome) && !contactPage && !bookPage && !calendarPage
   const mwBlocks: MwBlock[] | null =
     customPage
       ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])

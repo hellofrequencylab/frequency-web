@@ -49,3 +49,74 @@ export function WildheartInkDefs() {
     </svg>
   )
 }
+
+/** The ornament rule (the handoff's Ornament): a hairline fading in from each side to a dot and a short
+ *  dash, with the mark in the middle. `moons` is the default (a moon, a spark, a waning moon), `star` the
+ *  festival star, `phases` three small moons. `bridge` is the Home page's "enter the year" bridge: a
+ *  vertical fading hairline down to a new moon and the label under it. */
+export function WhOrnament({ variant = 'moons', label }: { variant?: 'moons' | 'star' | 'phases' | 'bridge'; label?: string }) {
+  if (variant === 'bridge') {
+    return (
+      <div className="wh-bridge" aria-hidden="true">
+        <span className="wh-bridge-line" />
+        <WhMoon phase={0} size={22} />
+        {label && <span className="wh-bridge-label">{label}</span>}
+      </div>
+    )
+  }
+  const mid =
+    variant === 'star' ? (
+      <WhGlyph name="star" size={16} />
+    ) : variant === 'phases' ? (
+      <span className="wh-ornament-mid">
+        <WhMoon phase={1} size={10} />
+        <WhMoon phase={4} size={14} />
+        <WhMoon phase={7} size={10} />
+      </span>
+    ) : (
+      <span className="wh-ornament-mid">
+        <WhGlyph name="moon" size={15} />
+        <WhGlyph name="spark" size={10} />
+        <WhGlyph name="waning" size={15} />
+      </span>
+    )
+  return (
+    <div className="wh-ornament" role="separator">
+      <span className="wh-ornament-line" />
+      {mid}
+      <span className="wh-ornament-line wh-ornament-line-r" />
+    </div>
+  )
+}
+
+/** A seal: a glyph on a lavender disc inside a dotted ring, a hairline ring and four compass dots, in the
+ *  symbol ink. Circles are for people, moons and seals only. */
+export function WhSeal({ name, size = 72, label }: { name: string; size?: number; label?: string }) {
+  return (
+    <span className="wh-seal-wrap">
+      <span className="wh-seal" style={{ width: size, height: size }} aria-hidden={label ? undefined : true} aria-label={label} role={label ? 'img' : undefined}>
+        <span className="wh-seal-dot wh-seal-dot-n" />
+        <span className="wh-seal-dot wh-seal-dot-s" />
+        <span className="wh-seal-dot wh-seal-dot-w" />
+        <span className="wh-seal-dot wh-seal-dot-e" />
+        <span className="wh-seal-glyph" style={{ fontSize: size * 0.4 }}>{WILDHEART_GLYPHS[name] ?? name}</span>
+      </span>
+      {label && <span className="wh-seal-label">{label}</span>}
+    </span>
+  )
+}
+
+/** A row of `total` moons, the first `done` of them full, the rest new: a fullness bar (a circle's twelve
+ *  seats, a journey's weeks). The label sits after the moons. */
+export function WhMoonPhases({ total, done = 0, size = 12, label }: { total: number; done?: number; size?: number; label?: string | false }) {
+  const n = Math.max(1, Math.min(24, Math.round(total)))
+  const d = Math.max(0, Math.min(n, Math.round(done)))
+  return (
+    <span className="wh-moonphases" role="img" aria-label={`${d} of ${n}${label ? `, ${label}` : ''}`}>
+      {Array.from({ length: n }, (_, i) => (
+        <WhMoon key={i} phase={i < d ? 4 : 0} size={size} label={i < d ? 'Full' : 'New'} />
+      ))}
+      {label && <span className="wh-moonphases-label">{label}</span>}
+    </span>
+  )
+}

@@ -25,13 +25,14 @@
 // not used. Copy obeys docs/CONTENT-VOICE.md: no em dashes, no emoji, invitation never a fix.
 
 import { createHash } from 'node:crypto'
+import { pathToFileURL } from 'node:url'
 
 // ── Fixed ids (read from production on 2026-10-12) ─────────────────────────────────────────────
 const SPACE_ID = '5c7c46d1-a2ba-4e58-a942-c1fe6a68e74b'
 const OWNER_ID = 'c1d40f58-318b-4c7b-a331-21788d632fc9' // spaces.owner_profile_id, also the circle host
 const CIRCLE_ID = '242927ed-1ebf-4f7b-91e4-0d6a373d0b10' // the Space's primary circle (is_space_primary)
 const OLD_SLUG = 'wilheart' // the typo the Space was created with
-const SLUG = 'wildheart'
+export const SLUG = 'wildheart'
 const TZ = 'America/Los_Angeles'
 
 /** A deterministic uuid from a key, so re-running the seed hits the same rows (natural key = id). */
@@ -41,20 +42,20 @@ function uuidFrom(key: string): string {
 }
 
 // ── The Space ──────────────────────────────────────────────────────────────────────────────────
-const TAGLINE = 'Come home to your body. Take up space.'
-const ABOUT =
+export const TAGLINE = 'Come home to your body. Take up space.'
+export const ABOUT =
   'Wildheart is a year-round circle for women: 6 to 12 women and a trained host, meeting every other week, in person, through the seasons. Women come back into their bodies and let what is inside move out, through movement, voice, pleasure, play and presence. A place to take up space without apology.'
 
 // Mirrors Hearts on Fire's entitlements keys exactly.
 const ENTITLEMENTS = { crm: false, shop: false, reviews: false, availability: false }
 
-const SITE_HERO = {
+export const SITE_HERO = {
   eyebrow: "Women's circles · Year-round · A Space on Frequency",
   heading: 'For every woman who wants to be *free*.',
   tagline:
     'A year-round circle for women who are ready to stop holding it all together. Every other week you gather with the same women to move, breathe, make noise, laugh and feel at home in your body. Come once and see what wakes up.',
   action: { label: 'Come to one Circle Night', href: `/spaces/${SLUG}/circles` },
-  secondary: { label: 'How it works', href: `/spaces/${SLUG}/foundation` },
+  secondary: { label: 'How it works', href: `/spaces/${SLUG}/program` },
 }
 
 const PROFILE_DATA = {
@@ -78,17 +79,28 @@ const PROFILE_DATA = {
   ],
 }
 
-// Six pages (MAX_PROFILE_PAGES), none on the reserved list (lib/spaces/profile-pages.ts).
-const PAGES = [
+// Six pages (MAX_PROFILE_PAGES: Home plus five), the design handoff's six screens, none on the reserved
+// list (lib/spaces/profile-pages.ts). Safety lives on The program and hosting on Circles (LIVE-903).
+export const PAGES = [
   { slug: 'home', label: 'Home' },
-  { slug: 'the-year', label: 'The Year' },
+  { slug: 'program', label: 'The program' },
+  { slug: 'the-year', label: 'The year' },
   { slug: 'circles', label: 'Circles' },
-  { slug: 'foundation', label: 'Foundation' },
-  { slug: 'safety', label: 'Safety' },
-  { slug: 'host', label: 'Host' },
+  { slug: 'retreat', label: 'Retreat' },
+  { slug: 'about', label: 'About' },
 ]
 
-const PULSE = [
+/** The handoff's five photos (rights confirmed, design_handoff_wildheart/assets/photos), served from the
+ *  app's own public folder so every site host reaches them. forest-witch.jpg keeps its photographer credit. */
+export const PHOTOS = {
+  hands: '/brand/wildheart/photos/hands-together.jpg',
+  cacao: '/brand/wildheart/photos/cacao-circle.jpg',
+  forest: '/brand/wildheart/photos/forest-witch.jpg',
+  shore: '/brand/wildheart/photos/sisters-shore.jpg',
+  huddle: '/brand/wildheart/photos/huddle.jpg',
+}
+
+export const PULSE = [
   { icon: 'P', title: 'Presence', body: 'Arrive in the body: breath, shaking, landing.' },
   { icon: 'U', title: 'Unite', body: 'A check-in round, each woman speaking and being witnessed.' },
   { icon: 'L', title: 'Lead', body: "The module's practice: movement, voice, ritual or teaching." },
@@ -96,14 +108,14 @@ const PULSE = [
   { icon: 'E', title: 'Exhale', body: 'Close with sound, a commitment, and celebration.' },
 ]
 
-const PILLARS = [
+export const PILLARS = [
   { title: 'Embodiment', body: 'Feeling the body from inside, not watching it from outside. Breath, shaking, grounding.' },
   { title: 'Sensuality', body: 'Pleasure through the senses, at her own pace. Slow movement, texture, scent.' },
   { title: 'Voice and expression', body: 'Taking up space with sound, words and anger. Sighing to roaring, saying no.' },
   { title: 'Joy', body: 'Play without purpose. Dance, laughter, games.' },
 ]
 
-const PATH = [
+export const PATH = [
   { icon: '01', title: 'Visit', body: 'Come to one Circle Night. Join in or simply witness.' },
   { icon: '02', title: 'Join', body: 'Become a member of the Space and one circle.' },
   { icon: '03', title: 'Foundation', body: 'Eight weeks, with check-ins from your host.' },
@@ -112,7 +124,7 @@ const PATH = [
   { icon: '06', title: 'Host', body: 'Train to co-lead or start a circle.' },
 ]
 
-const SAFETY = [
+export const SAFETY = [
   'Women-only, led by women.',
   'Every practice is an invitation: join in, go gently, witness or pass. No explanation needed.',
   'No touch between members unless a practice invites it and each woman opts in.',
@@ -122,7 +134,7 @@ const SAFETY = [
 ]
 
 // Foundation: eight self-guided weeks, Jan 5 to Feb 23 2027.
-const WEEKS = [
+export const WEEKS = [
   { n: 1, date: '2027-01-05', theme: 'Arriving', focus: 'Breath and noticing what the body feels, not how it looks', practice: 'Lie down or sit. Ten slow breaths. Notice what the body feels, not how it looks. Name three sensations out loud.' },
   { n: 2, date: '2027-01-12', theme: 'Moving', focus: 'Free movement and shaking; letting the body lead', practice: 'Put on one song. Shake for the whole song, then let the body lead for one more. No steps, no mirror.' },
   { n: 3, date: '2027-01-19', theme: 'Sounding', focus: 'Breath into sound, sighing, humming, the first loud note', practice: 'Breath into sound. Sigh, hum, then the first loud note. Let it be as loud and as ugly as it wants.' },
@@ -137,7 +149,7 @@ const DAILY_PRACTICE =
   'Daily practice, 20 to 30 minutes: breath, free movement to one song, a sensory pause, and three questions. Where do I feel alive right now? What do I want? What am I holding back?'
 
 // Twelve modules, zodiac order from Capricorn, four seasons.
-const MODULES = [
+export const MODULES = [
   { season: 'Winter', sign: 'Capricorn', from: 'Dec 21', title: 'Sovereignty', theme: 'Your own authority, your own rules' },
   { season: 'Winter', sign: 'Aquarius', from: 'Jan 19', title: 'Sisterhood', theme: 'Being met without competing' },
   { season: 'Winter', sign: 'Pisces', from: 'Feb 18', title: 'Flow', theme: 'Tears, softness, letting it move' },
@@ -160,7 +172,7 @@ const SEASON_LEADS: Record<string, string> = {
 }
 
 // ── The ritual calendar (design_handoff_wildheart/components/calendar/calendarData.js, owner approved) ──
-const FESTIVALS = [
+export const FESTIVALS = [
   { date: '2026-10-31', title: 'Samhain', note: 'Honour the dead. The veil is thin.' },
   { date: '2026-12-21', title: 'Yule', note: 'Winter solstice. The return of the light.' },
   { date: '2027-02-01', title: 'Imbolc', note: 'First stirrings. Brigid, hearth and flame.' },
@@ -173,7 +185,7 @@ const FESTIVALS = [
   { date: '2027-12-21', title: 'Yule', note: 'Winter solstice. The return of the light.' },
 ]
 
-const MOONS: { date: string; kind: 'new' | 'full'; name?: string }[] = [
+export const MOONS: { date: string; kind: 'new' | 'full'; name?: string }[] = [
   { date: '2026-10-26', kind: 'full', name: "Hunter's Moon" },
   { date: '2026-11-10', kind: 'new' },
   { date: '2026-11-25', kind: 'full', name: 'Beaver Moon' },
@@ -206,7 +218,7 @@ const MOONS: { date: string; kind: 'new' | 'full'; name?: string }[] = [
   { date: '2027-12-28', kind: 'new' },
 ]
 
-const HEARTH = [
+export const HEARTH = [
   { date: '2027-02-06', note: 'Imbolc, with Hearts on Fire.' },
   { date: '2027-05-01', note: 'Beltane, with Hearts on Fire.' },
   { date: '2027-08-07', note: 'Lammas, with Hearts on Fire.' },
@@ -221,10 +233,10 @@ const CIRCLE_NIGHT_RULE = 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU'
 // them (HORIZON_DAYS = 60, the anchor itself excluded, one row per landing day).
 const CIRCLE_NIGHT_OCCURRENCES = ['2026-11-17', '2026-12-01', '2026-12-15', '2026-12-29']
 
-const RETREAT = { start: '2027-10-29', end: '2027-10-31' }
+export const RETREAT = { start: '2027-10-29', end: '2027-10-31' }
 
 // ── Event rows ────────────────────────────────────────────────────────────────────────────────
-interface SeedEvent {
+export interface SeedEvent {
   slug: string
   title: string
   description: string
@@ -237,7 +249,7 @@ interface SeedEvent {
   recurrence?: { type: 'weekly'; rule: string }
 }
 
-function buildEvents(): SeedEvent[] {
+export function buildEvents(): SeedEvent[] {
   const out: SeedEvent[] = []
   out.push({
     slug: `wildheart-circle-night-${CIRCLE_NIGHT_ANCHOR}`,
@@ -318,7 +330,7 @@ function buildEvents(): SeedEvent[] {
 }
 
 // ── Journeys ──────────────────────────────────────────────────────────────────────────────────
-const FOUNDATION = {
+export const FOUNDATION = {
   id: uuidFrom('journey:foundation'),
   slug: 'wildheart-foundation',
   title: 'Wildheart Foundation',
@@ -342,7 +354,7 @@ const FOUNDATION = {
   },
 }
 
-const YEAR = {
+export const YEAR = {
   id: uuidFrom('journey:year'),
   slug: 'the-wildheart-year',
   title: 'The Wildheart Year',
@@ -366,7 +378,7 @@ const YEAR = {
   },
 }
 
-interface SeedItem {
+export interface SeedItem {
   id: string
   plan: 'foundation' | 'year'
   block_type: 'phase' | 'module' | 'lesson'
@@ -379,7 +391,7 @@ interface SeedItem {
   cadence: string | null
 }
 
-function buildItems(): SeedItem[] {
+export function buildItems(): SeedItem[] {
   const items: SeedItem[] = []
   for (const w of WEEKS) {
     const phase = uuidFrom(`foundation:phase:${w.n}`)
@@ -410,7 +422,7 @@ const PROGRAM = {
   category: 'movement',
 }
 
-const CIRCLE = {
+export const CIRCLE = {
   name: 'Wildheart Circle One',
   slug: 'wildheart-circle-one',
   about:
@@ -425,37 +437,61 @@ type Block = { type: string; props: Record<string, unknown> }
 const doc = (blocks: Block[]) => ({ root: { props: {} }, content: blocks })
 const cards = (rows: { icon?: string; title: string; body: string }[]) => rows.map((r) => ({ icon: r.icon ?? '', title: r.title, body: r.body }))
 
-const YEAR_AS_TEXT = [
-  'The Wheel of the Year, 2027: Imbolc Feb 1, Ostara Mar 20, Beltane May 1, Litha Jun 21, Lammas Aug 1, Mabon Sep 22, Samhain Oct 31, Yule Dec 21.',
-  'The moon: a full moon circle to release, a new moon circle to plant, every month, 6:00 PM.',
-  'The signs, from Capricorn on Dec 21: ' + MODULES.map((m) => `${m.sign} (${m.title}, from ${m.from})`).join(', ') + '.',
-  'Circle Night every other Tuesday at 6:00 PM. The Wildheart Retreat Oct 29 to 31, 2027.',
-].join('\n\n')
+/** The twelve modules as the season band and sky blocks read them. */
+const MODULE_ROWS = MODULES.map((m) => ({ sign: m.sign.toLowerCase(), title: m.title, theme: m.theme }))
+const BEATS = PULSE.map((b) => ({ letter: b.icon, word: b.title }))
+const RETREAT_DAYS = [
+  { label: 'Fri · Arrive', title: 'The threshold', body: 'Fire lit, circle cast, the first sound.' },
+  { label: 'Sat · Samhain', title: 'The ancestors', body: 'Movement, rage, release, and a night vigil.', accent: true },
+  { label: 'Sun · Return', title: 'The new year', body: 'Rest, intentions, and joy before home.' },
+]
+const PILLAR_GLYPHS = ['earth', 'water', 'air', 'fire']
+const PILLAR_NOTES = ['Breath, shaking, grounding', 'Slow movement, texture, scent', 'Sighing to roaring, saying no', 'Dance, laughter, games']
 
-function buildPageDocs(): Record<string, unknown> {
+// The six screens of the design handoff (templates/website/Website.dc.html), composed from registered
+// blocks only: the theme's own sections dress the generic blocks, the Wildheart blocks carry the pieces
+// no generic block can (components/page-editor/blocks/wildheart.tsx). The Space's own rows draw the
+// dates, the circle and the journeys (SpaceEvents, SpaceCommunity, SpacePractices and the season band
+// read them at render time); the words here are the narrative only.
+export function buildPageDocs(): Record<string, unknown> {
   const home = doc([
-    { type: 'PhotoHero', props: { id: 'wh-home-hero', variant: 'text-only', eyebrow: SITE_HERO.eyebrow, title: 'For every woman who wants to be free.', accentWord: 'free', subtitle: SITE_HERO.tagline, actionPrimaryLabel: SITE_HERO.action.label, actionPrimaryHref: SITE_HERO.action.href, actionSecondaryLabel: SITE_HERO.secondary.label, actionSecondaryHref: SITE_HERO.secondary.href } },
+    { type: 'PhotoHero', props: { id: 'wh-home-hero', variant: 'image', display: 'beside', image: PHOTOS.hands, alt: "Women's hands joined at the centre of a circle", eyebrow: SITE_HERO.eyebrow, title: 'For every woman who wants to be *free.*', subtitle: SITE_HERO.tagline, actionPrimaryLabel: SITE_HERO.action.label, actionPrimaryHref: SITE_HERO.action.href, actionSecondaryLabel: SITE_HERO.secondary.label, actionSecondaryHref: SITE_HERO.secondary.href } },
+    { type: 'WildheartOrnament', props: { id: 'wh-home-bridge', variant: 'bridge', label: 'Enter the year' } },
+    { type: 'WildheartYearJourney', props: { id: 'wh-home-journey', label: 'The year · how the sky and the calendar overlay', heading: 'Twelve signs, eight festivals, *every moon.*', lead: 'Every circle works the same module at the same time, so a woman can walk into any circle and know where the year is. Scroll sideways to turn it.', year: 2027 } },
     { type: 'CardGrid', props: { id: 'wh-home-parts', role: 'feature', eyebrow: 'Four parts', title: 'A circle, a rhythm, a year, a foundation.', columns: 2, cards: cards([
-      { icon: 'I', title: 'The circles', body: '6 to 12 women and a trained host, every other week, in person.' },
-      { icon: 'II', title: 'The rhythm', body: 'One five-beat Circle Night any new host can learn.' },
-      { icon: 'III', title: 'The year', body: 'Twelve modules across four seasons and twelve signs.' },
-      { icon: 'IV', title: 'The foundation', body: 'Eight self-guided weeks every member completes.' },
+      { icon: 'hand', title: 'The circles', body: '6 to 12 women and a trained host, every other week, in person.' },
+      { icon: 'sun', title: 'The rhythm', body: 'One five-beat Circle Night any new host can learn.' },
+      { icon: 'moon', title: 'The year', body: 'Twelve modules across four seasons and twelve signs.' },
+      { icon: 'sprout', title: 'The foundation', body: 'Eight self-guided weeks every member completes.' },
     ]) } },
-    { type: 'EditorialSection', props: { id: 'wh-home-stats', body: 'stats', stats: [
-      { label: 'Women per circle', value: '6 to 12' },
-      { label: 'Circle Night', value: 'Every other Tuesday' },
-      { label: 'Modules', value: '12' },
-      { label: 'Festivals', value: '8' },
+    { type: 'WildheartMoonPath', props: { id: 'wh-home-path', label: 'The member path', heading: 'Wax at your own pace.', note: 'New moon to full · lowest exposure first', steps: PATH.map((p) => ({ title: p.title, body: p.body })) } },
+    { type: 'WildheartOrnament', props: { id: 'wh-home-ornament', variant: 'phases' } },
+    { type: 'WildheartSeasonBand', props: { id: 'wh-home-season', heading: 'This season, we go *wild.*', image: PHOTOS.cacao, alt: 'Hands raising cacao cups together', modules: MODULE_ROWS, gatheringLabel: 'Circle Night', gatheringNote: 'every circle on the same module', beats: BEATS, ctaLabel: 'Visit this night', ctaHref: `/spaces/${SLUG}/circles`, yearLabel: 'See the year', yearHref: `/spaces/${SLUG}/the-year` } },
+    { type: 'Zigzag', props: { id: 'wh-home-circle-night', image: PHOTOS.shore, alt: 'Women embracing on a grey shore', eyebrow: 'Circle Night', title: 'Every circle moves through the same *five beats.*', body: 'lead', lead: 'Ninety minutes, every other week, in person. A woman can walk into any circle and know where she is.', mediaSide: 'left', ctaLabel: 'Find a circle', ctaHref: `/spaces/${SLUG}/circles` } },
+    { type: 'CardGrid', props: { id: 'wh-home-beats', role: 'feature', eyebrow: 'The rhythm', title: 'Presence, Unite, Lead, Settle, Exhale.', columns: 3, cards: cards(PULSE) } },
+    { type: 'WildheartSealCards', props: { id: 'wh-home-pillars', label: 'The four pillars', heading: 'Feel it, enjoy it, sound it, *play.*', columns: 4, cards: PILLARS.map((p, i) => ({ glyph: PILLAR_GLYPHS[i], title: p.title, body: p.body, note: PILLAR_NOTES[i] })) } },
+    { type: 'WildheartRetreatBand', props: { id: 'wh-home-retreat', image: PHOTOS.forest, alt: 'Tattooed hands and a fern pressed to a tree', seal: 'scorpio', label: 'Samhain weekend · Oct 29 to 31, 2027', heading: 'Three nights in the *wild dark.*', lead: 'The year turns on the thinnest night. Every Wildheart circle gathers to honour what has ended, move what is held, and walk back into the light together.', days: RETREAT_DAYS, ctaLabel: 'Hold my place', ctaHref: `/spaces/${SLUG}/retreat`, secondaryLabel: 'See the weekend', secondaryHref: `/spaces/${SLUG}/retreat`, note: 'Same weekend as the Hearts on Fire Desert Retreat · held separately' } },
+    { type: 'SpaceEvents', props: { id: 'wh-home-events', max: '6', eyebrow: 'Next rituals', heading: 'On the calendar' } },
+    { type: 'AccentBeat', props: { id: 'wh-home-join', mode: 'cta', eyebrow: 'Enrollment for 2027 opens Dec 8', title: 'Come once and see what *wakes up.*', body: 'Join in, go gently, witness or pass.', ctaLabel: 'Find a circle', ctaHref: `/spaces/${SLUG}/circles`, background: 'accent-wash' } },
+  ])
+
+  const program = doc([
+    { type: 'PhotoHero', props: { id: 'wh-program-hero', variant: 'image', display: 'beside', image: PHOTOS.cacao, alt: 'Hands raising cacao cups together', eyebrow: 'The program', title: 'Come home to your body. *Take up space.*', subtitle: 'Circles of 6 to 12 women and a trained host. One rhythm for every gathering, four pillars all year, and an eight-week foundation every member completes when she joins.' } },
+    { type: 'WildheartMoonStrip', props: { id: 'wh-program-moons', label: 'The foundation · eight Tuesdays · Jan 5 to Feb 23, 2027', total: 8, done: 0 } },
+    { type: 'SpacePractices', props: { id: 'wh-program-journeys', eyebrow: 'Where every woman starts', heading: 'The foundation, then the year.', journeysHeading: '', practicesHeading: '' } },
+    { type: 'CardGrid', props: { id: 'wh-program-daily', role: 'list', columns: 2, cards: [
+      { icon: '', title: 'Daily practice · 20 to 30 minutes', body: 'Where do I feel alive right now?\nWhat do I want?\nWhat am I holding back?' },
+      { icon: '', title: 'Consent, safety and care', body: SAFETY.join('\n') },
     ] } },
-    { type: 'Zigzag', props: { id: 'wh-home-year', body: 'list', eyebrow: 'The year', title: 'Twelve signs, eight festivals, every moon.', lead: 'The year turns with the seasons and the sky. Every circle works the same module at the same time, so a woman can walk into any circle and know where the year is.', items: [
-      { text: 'The eight festivals of the Wheel of the Year, from Imbolc to Yule.' },
-      { text: 'A full moon circle to release and a new moon circle to plant, every month.' },
-      { text: 'The Wildheart Retreat on Samhain weekend, Oct 29 to 31.' },
-    ], mediaSide: 'left', ctaLabel: 'See the year', ctaHref: `/spaces/${SLUG}/the-year` } },
-    { type: 'CardGrid', props: { id: 'wh-home-path', role: 'step', eyebrow: 'The member path', title: 'Wax at your own pace.', columns: 3, cards: cards(PATH) } },
-    { type: 'CardGrid', props: { id: 'wh-home-pillars', role: 'feature', eyebrow: 'The four pillars', title: 'Feel it, enjoy it, sound it, play.', columns: 2, cards: cards(PILLARS) } },
-    { type: 'SpaceEvents', props: { id: 'wh-home-events', max: '5', eyebrow: 'Next rituals', heading: 'On the calendar' } },
-    { type: 'AccentBeat', props: { id: 'wh-home-join', mode: 'cta', eyebrow: 'Join', title: 'Come to one Circle Night.', accentWord: 'one', body: 'Join in, go gently, witness or pass. Come once and see what wakes up.', ctaLabel: 'Save my place', ctaHref: `/spaces/${SLUG}/circles`, background: 'accent-wash' } },
+    { type: 'EditorialSection', props: { id: 'wh-program-daily-lead', eyebrow: 'Breath, one song, a pause, three questions', title: 'A practice you can *keep.*', lead: DAILY_PRACTICE } },
+    { type: 'CardGrid', props: { id: 'wh-program-beats', role: 'feature', eyebrow: 'Circle Night', title: 'Five beats, 90 minutes', browseLabel: 'The PULSE rhythm', columns: 3, cards: cards(PULSE) } },
+    { type: 'WildheartSealCards', props: { id: 'wh-program-pillars', label: 'The four pillars', heading: 'Feel it, enjoy it, sound it, *play.*', columns: 4, cards: PILLARS.map((p, i) => ({ glyph: PILLAR_GLYPHS[i], title: p.title, body: p.body, note: PILLAR_NOTES[i] })) } },
+    { type: 'CardGrid', props: { id: 'wh-program-fixed', role: 'list', columns: 2, cards: [
+      { icon: '', title: 'Fixed in every circle', body: 'Women-only, led by women.\nInvitation, never instruction: join in, go gently, witness or pass.\nNo touch without opting in. Nothing sexual happens in the circle.\nNo photos, full confidentiality.' },
+      { icon: '', title: 'Set by each circle', body: 'Venue, night of the week, and local gatherings.\nWhich optional practices the host adds, and how the Lead beat is delivered.' },
+    ] } },
+    { type: 'AccentBeat', props: { id: 'wh-program-note', mode: 'statement', title: 'Practice and community, not therapy.', body: 'Hosts train in trauma-informed facilitation and hold a written referral route for a woman who needs more than the circle can give. Sensuality here means aliveness through the senses: never sexual activity, never touch without opt-in, never performance.', background: 'accent-wash' } },
+    { type: 'AccentBeat', props: { id: 'wh-program-cta', mode: 'cta', eyebrow: 'Your first night, your way', title: 'Every practice is an *invitation.*', body: 'Join in, go gently, witness or pass. No explanation needed. Eyes open is always fine.', ctaLabel: 'Come to one Circle Night', ctaHref: `/spaces/${SLUG}/circles`, background: 'accent-wash' } },
   ])
 
   const seasons = ['Winter', 'Spring', 'Summer', 'Fall'].map((season, i) => ({
@@ -471,7 +507,9 @@ function buildPageDocs(): Record<string, unknown> {
     },
   }))
   const theYear = doc([
-    { type: 'PhotoHero', props: { id: 'wh-year-hero', variant: 'text-only', eyebrow: 'The year', title: 'Twelve signs, eight festivals, every moon.', accentWord: 'moon', subtitle: 'One module per sign, about two Circle Nights each. The festivals and the moons fall inside them. Every circle is in the same sign at the same time.' } },
+    { type: 'PhotoHero', props: { id: 'wh-year-hero', variant: 'text-only', eyebrow: 'The year', title: 'The turning year', subtitle: 'One module per sign, about two Circle Nights each. The eight festivals and every moon fall inside them, and every circle is in the same sign at the same time.' } },
+    { type: 'WildheartSkyMap', props: { id: 'wh-year-skymap', label: 'The sky in 2027', heading: 'One wheel. The *whole year.*', lead: 'Festivals, moons, Circle Nights and gatherings, placed on the wheel where they fall.', year: 2027 } },
+    { type: 'WildheartOrnament', props: { id: 'wh-year-ornament', variant: 'star' } },
     { type: 'EditorialSection', props: { id: 'wh-year-stats', body: 'stats', stats: [
       { label: 'Modules', value: '12' },
       { label: 'Festivals', value: '8' },
@@ -479,55 +517,16 @@ function buildPageDocs(): Record<string, unknown> {
       { label: 'Retreat', value: 'Oct 29 to 31' },
     ] } },
     ...seasons,
-    { type: 'Divider', props: { id: 'wh-year-divider' } },
-    { type: 'CardGrid', props: { id: 'wh-year-wheel', role: 'list', columns: 2, cards: [
-      { icon: '', title: 'The Wheel of the Year', body: FESTIVALS.filter((f) => f.date.startsWith('2027')).map((f) => `${f.title}, ${f.date.slice(5).replace('-', '/')}. ${f.note}`).join('\n') },
-      { icon: '', title: 'The moon', body: 'Full moon circle: release what is finished.\nNew moon circle: plant what you want next.\nEvery month, 6:00 PM, with your circle.' },
-    ] } },
-    // SLOT: the astrology calendar block (handoff components/calendar: SkyMap, YearJourney,
-    // SeasonTrack) goes HERE once it exists in the block registry. Until then the same content
-    // reads as text.
-    { type: 'Text', props: { id: 'wh-year-calendar-text', body: YEAR_AS_TEXT } },
-    { type: 'SpaceEvents', props: { id: 'wh-year-events', max: '12', eyebrow: 'The year', heading: 'Calendar' } },
-    { type: 'AccentBeat', props: { id: 'wh-year-retreat', mode: 'cta', eyebrow: 'Samhain weekend · Oct 29 to 31, 2027', title: 'Three nights in the wild dark.', accentWord: 'wild', body: 'The year turns on the thinnest night. Every Wildheart circle gathers to honour what has ended, move what is held, and walk back into the light together.', ctaLabel: 'Hold my place', ctaHref: `/spaces/${SLUG}/calendar`, background: 'accent-wash' } },
+    { type: 'WildheartRetreatBand', props: { id: 'wh-year-retreat', image: PHOTOS.forest, alt: 'Tattooed hands and a fern pressed to a tree', seal: 'scorpio', label: 'Samhain weekend · Oct 29 to 31, 2027', heading: 'Three nights in the *wild dark.*', lead: 'The year turns on the thinnest night. Every Wildheart circle gathers to honour what has ended, move what is held, and walk back into the light together.', days: RETREAT_DAYS, ctaLabel: 'Hold my place', ctaHref: `/spaces/${SLUG}/retreat`, note: 'Same weekend as the Hearts on Fire Desert Retreat · held separately' } },
   ])
 
   const circles = doc([
-    { type: 'PhotoHero', props: { id: 'wh-circles-hero', variant: 'text-only', eyebrow: 'Circles', title: 'Find your sisters.', accentWord: 'sisters', subtitle: 'Women-only, led by women. Six to twelve women, every other Tuesday, in person. Ask to sit in on one Circle Night. You never have to share anything.' } },
-    { type: 'SpaceCommunity', props: { id: 'wh-circles-community', eyebrow: '', heading: '' } },
-    { type: 'Divider', props: { id: 'wh-circles-divider' } },
-    { type: 'CardGrid', props: { id: 'wh-circles-pulse', role: 'feature', eyebrow: 'Circle Night', title: 'Five beats, 90 minutes', browseLabel: 'The PULSE rhythm', columns: 3, cards: cards(PULSE) } },
-    { type: 'CardGrid', props: { id: 'wh-circles-fixed', role: 'list', columns: 2, cards: [
-      { icon: '', title: 'Same in every circle', body: 'The five-beat rhythm and the 90-minute container.\nWomen-only, led by women.\nEvery practice is an invitation: join in, go gently, witness or pass.\nNo touch without opting in. Nothing sexual. No photos. Full confidentiality.\nPractice and community, with a written route to professional help.' },
-      { icon: '', title: 'Set by each circle', body: 'Venue, night of the week, and local gatherings.\nWhich optional practices the host adds, and how the Lead beat is delivered.' },
-    ] } },
-    { type: 'AccentBeat', props: { id: 'wh-circles-growth', mode: 'cta', eyebrow: 'Growth rule', title: 'At twelve women, a circle seeds a second circle.', accentWord: 'second', body: 'A trained host takes the new one. No circle gets bigger than twelve.', ctaLabel: 'Become a host', ctaHref: `/spaces/${SLUG}/host`, background: 'accent-wash' } },
-  ])
-
-  const foundation = doc([
-    { type: 'PhotoHero', props: { id: 'wh-foundation-hero', variant: 'text-only', eyebrow: 'The Foundation · eight Tuesdays', title: 'Come home to your body. Take up space.', accentWord: 'space', subtitle: 'Eight self-guided weeks every member completes when she joins, Tuesdays at 6:00 PM from Jan 5 to Feb 23. One theme a week, a short daily practice, and a check-in from your host along the way.' } },
-    { type: 'CardGrid', props: { id: 'wh-foundation-weeks', role: 'step', eyebrow: 'Eight weeks', title: 'From arriving to wild', columns: 2, cards: WEEKS.map((w) => ({ icon: String(w.n).padStart(2, '0'), title: `${w.theme} · ${w.date.slice(5).replace('-', '/')}`, body: `${w.focus}.` })) } },
-    { type: 'EditorialSection', props: { id: 'wh-foundation-daily', body: 'lead', eyebrow: 'Daily practice · 20 to 30 minutes', title: 'Breath, one song, a pause, three questions.', accentWord: 'song', lead: 'Breath. Free movement to one song. A sensory pause.\n\nThen three questions: Where do I feel alive right now? What do I want? What am I holding back?' } },
-    { type: 'SpacePractices', props: { id: 'wh-foundation-practices', eyebrow: '', heading: '', journeysHeading: '', practicesHeading: '' } },
-    { type: 'AccentBeat', props: { id: 'wh-foundation-note', mode: 'statement', title: 'Practice and community, not therapy.', body: 'Every practice is an invitation. Join in, go gently, witness or pass. Every host has a written route to professional help.', background: 'accent-wash' } },
-  ])
-
-  const safety = doc([
-    { type: 'PhotoHero', props: { id: 'wh-safety-hero', variant: 'text-only', eyebrow: 'Consent, safety and care', title: 'Your first night, your way.', accentWord: 'way', subtitle: 'Sensual and embodied work only feels free when it is safe, so safety is designed in, not left to instinct. Eyes open is always fine.' } },
-    { type: 'CardGrid', props: { id: 'wh-safety-fixed', role: 'feature', eyebrow: 'Fixed in every circle', title: 'Four things that never change', columns: 2, cards: cards([
-      { title: 'Women-only, led by women', body: 'Every host and facilitator in the room is a woman.' },
-      { title: 'Invitation, never instruction', body: 'Every practice can be joined, modified, watched or skipped. No explanation needed.' },
-      { title: 'No touch without opting in', body: 'Touch is never a surprise. Nothing sexual happens in the circle.' },
-      { title: 'No photos, full confidentiality', body: 'What is shared stays in the circle.' },
-    ]) } },
-    { type: 'CardGrid', props: { id: 'wh-safety-list', role: 'list', columns: 1, cards: [{ icon: '', title: 'The agreements', body: SAFETY.join('\n') }] } },
-    { type: 'Text', props: { id: 'wh-safety-text', body: 'Wildheart is practice and community, not therapy or crisis care. Hosts train in trauma-informed facilitation and hold a written referral route for a woman who needs more than the circle can give. Sensuality, in this program, means aliveness through the senses: never sexual activity, never touch without opt-in, never performance.' } },
-    { type: 'AccentBeat', props: { id: 'wh-safety-cta', mode: 'cta', title: 'Come as you are.', accentWord: 'are', body: 'Join in, go gently, or simply witness. Your host will know.', ctaLabel: 'Find a circle', ctaHref: `/spaces/${SLUG}/circles`, background: 'accent-wash' } },
-  ])
-
-  const host = doc([
-    { type: 'PhotoHero', props: { id: 'wh-host-hero', variant: 'text-only', eyebrow: 'Host', title: 'Train to co-lead or start a circle.', accentWord: 'circle', subtitle: 'Wildheart grows by adding circles, not by making any one circle bigger. A trained host, a shared rhythm and the same twelve modules make every circle feel like one.' } },
-    { type: 'CardGrid', props: { id: 'wh-host-paths', role: 'step', eyebrow: 'For leaders', title: 'Start or adapt a circle', columns: 3, cards: cards([
+    { type: 'PhotoHero', props: { id: 'wh-circles-hero', variant: 'image', display: 'beside', image: PHOTOS.huddle, alt: 'Women in a group hug outdoors', eyebrow: 'Circles', title: 'Find your *sisters.*', subtitle: 'Women-only, led by women. Circles meet every other Tuesday, on the same nights as Hearts on Fire. At twelve, a circle seeds a new one.' } },
+    { type: 'SpaceCommunity', props: { id: 'wh-circles-community', eyebrow: 'The circles', heading: 'Six to twelve women, every other Tuesday.' } },
+    { type: 'AccentBeat', props: { id: 'wh-circles-first', mode: 'cta', eyebrow: 'Your first night, your way', title: 'Every practice is an *invitation.*', body: 'Join in, go gently, witness or pass. No explanation needed. Eyes open is always fine.', ctaLabel: 'Save my place', ctaHref: `/spaces/${SLUG}/contact`, background: 'accent-wash' } },
+    { type: 'CardGrid', props: { id: 'wh-circles-beats', role: 'feature', eyebrow: 'Circle Night', title: 'Five beats, 90 minutes', browseLabel: 'The PULSE rhythm', columns: 3, cards: cards(PULSE) } },
+    { type: 'WildheartOrnament', props: { id: 'wh-circles-ornament', variant: 'moons' } },
+    { type: 'CardGrid', props: { id: 'wh-host-paths', role: 'step', eyebrow: 'Host', title: 'Train to co-lead or start a circle.', columns: 3, cards: cards([
       { icon: '01', title: 'Start new', body: 'For a member ready to host where no circle exists. You complete host training, open a circle and run the current module.' },
       { icon: '02', title: 'Adopt', body: "For a woman with an existing women's group. You bring the group in as a circle and take on the rhythm and the year." },
       { icon: '03', title: 'Borrow', body: 'For a leader who wants the tools only. You use the open five-beat rhythm. The twelve modules stay inside the Space.' },
@@ -536,10 +535,34 @@ function buildPageDocs(): Record<string, unknown> {
       { icon: '', title: 'What a host receives', body: 'The five-beat rhythm and a run sheet for a 90-minute Circle Night.\nThe twelve modules, each with two meeting plans and a host note.\nThe agreements, the consent and safety guidance and the referral route.\nA circle of your own in the Space, with events, members and a calendar.\nHost training, with trauma-informed facilitation.\nA seat in the hosts\' own circle, for support and supervision.' },
       { icon: '', title: 'What a circle agrees to', body: 'Run the five-beat rhythm and keep the agreements.\nHave every member complete the Foundation.\nFollow the current module, so all circles are in the same sign at the same time.\nTake part in the festivals, the moons and the retreat.' },
     ] } },
-    { type: 'AccentBeat', props: { id: 'wh-host-cta', mode: 'cta', eyebrow: 'Growth rule', title: 'At twelve women, a circle seeds a second circle.', accentWord: 'second', body: 'A trained host takes the new one. Ask about host training at any Circle Night.', ctaLabel: 'Talk to us', ctaHref: `/spaces/${SLUG}/contact`, background: 'accent-wash' } },
+    { type: 'AccentBeat', props: { id: 'wh-circles-growth', mode: 'cta', eyebrow: 'Growth rule', title: 'At twelve women, a circle seeds a *second circle.*', body: 'A trained host takes the new one. No circle gets bigger than twelve. Ask about host training at any Circle Night.', ctaLabel: 'Talk to us', ctaHref: `/spaces/${SLUG}/contact`, background: 'accent-wash' } },
   ])
 
-  return { home, 'the-year': theYear, circles, foundation, safety, host }
+  const retreat = doc([
+    { type: 'PhotoHero', props: { id: 'wh-retreat-hero', variant: 'image', display: 'beside', image: PHOTOS.forest, alt: 'Tattooed hands and a fern pressed to a tree', eyebrow: 'Samhain weekend · Oct 29 to 31, 2027', title: 'The Wildheart *Retreat*', subtitle: 'Three days on the thinnest night of the year, the same weekend as the Hearts on Fire Desert Retreat and held separately. Every circle together, in the wild dark.', actionPrimaryLabel: 'Hold my place', actionPrimaryHref: `/spaces/${SLUG}/contact` } },
+    { type: 'WildheartRetreatBand', props: { id: 'wh-retreat-band', image: PHOTOS.shore, alt: 'Women embracing on a grey shore', seal: 'scorpio', label: 'Three nights', heading: 'Arrive, go *deep,* return.', lead: 'Friday the threshold, Saturday the ancestors, Sunday the new year. Location, cost and what to bring post here first.', days: RETREAT_DAYS, ctaLabel: 'Hold my place', ctaHref: `/spaces/${SLUG}/contact`, note: 'Every practice is an invitation: join in, go gently, witness or pass' } },
+    { type: 'SpaceEvents', props: { id: 'wh-retreat-events', max: '4', eyebrow: 'On the calendar', heading: 'The dates' } },
+    { type: 'AccentBeat', props: { id: 'wh-retreat-note', mode: 'statement', title: 'Practice and community, not therapy.', body: 'Every host has a written referral route for a woman who needs more than the circle can give.', background: 'accent-wash' } },
+  ])
+
+  const about = doc([
+    { type: 'WildheartMarkSplit', props: { id: 'wh-about-mark', label: 'About', heading: 'A call to every woman who wants to be *free.*', lead: "Wildheart is the women's branch of Hearth, a year-round circle and the sister to Hearts on Fire. It teaches women to come back into their bodies and let what is inside move out: in movement, voice, pleasure, play and presence. It is a place to take up space without apology.", body: 'Wildheart is for women 25 to 55 who look capable from the outside and feel contained, tired or quietly disconnected from their own bodies and desires.', note: 'Wildheart is practice and community, not therapy or crisis care. Every host has a written referral route for a woman who needs more than the circle can give.' } },
+    { type: 'EditorialSection', props: { id: 'wh-about-stats', body: 'stats', stats: [
+      { label: 'Women per circle', value: '6 to 12' },
+      { label: 'Circle Night', value: 'Every other Tuesday' },
+      { label: 'Modules', value: '12' },
+      { label: 'Festivals', value: '8' },
+    ] } },
+    { type: 'CardGrid', props: { id: 'wh-about-voice', role: 'list', columns: 2, cards: [
+      { icon: '', title: 'We say', body: 'Free, alive, wild, whole.\nTake up space.\nMove, sound, joy, pleasure.\nSisters, circle.' },
+      { icon: '', title: 'We avoid', body: 'Fix, heal yourself, glow up.\nGoddess cliches, "too much", body-shape language.\n"Break through", "transform in 8 weeks".\nAnything sexual or performative.' },
+    ] } },
+    { type: 'WildheartOrnament', props: { id: 'wh-about-ornament', variant: 'star' } },
+    { type: 'Zigzag', props: { id: 'wh-about-hearth', image: PHOTOS.cacao, alt: 'Hands raising cacao cups together', eyebrow: 'Hearth', title: 'Where Wildheart and Hearts on Fire *meet.*', body: 'list', lead: 'Two branches of one house, on the same calendar, with three mornings a year together.', items: HEARTH.map((h) => ({ text: h.note.replace(', with Hearts on Fire.', '') + `, ${h.date.slice(5).replace('-', '/')}.` })), mediaSide: 'right' } },
+    { type: 'AccentBeat', props: { id: 'wh-about-cta', mode: 'cta', title: 'Wild, whole, and *welcome here.*', body: 'Come once and see what wakes up.', ctaLabel: 'Find a circle', ctaHref: `/spaces/${SLUG}/circles`, background: 'accent-wash' } },
+  ])
+
+  return { home, program, 'the-year': theYear, circles, retreat, about }
 }
 
 // ── Profile layout (the Space profile rail, HoF's shape) ─────────────────────────────────────
@@ -703,7 +726,7 @@ function buildProgramOverview(): string {
 
 // The preferences keys this seed writes. NOT here: theme (stock theme at launch) and websitePublished
 // (the owner publishes by hand). Merged over the existing preferences, so any other key survives.
-function buildPreferences(): Record<string, unknown> {
+export function buildPreferences(): Record<string, unknown> {
   return {
     pages: PAGES,
     pageDocs: buildPageDocs(),
@@ -839,7 +862,7 @@ function renderSql(): string {
     '-- PLACEHOLDER: brand_logo_url, cover_image_url, brand_logo_asset_id stay as they are until then.',
     '',
     `-- VERIFY: select slug, name, brand_name, plan, limits_waived, skin, visibility, time_zone, entitlements, preferences ? 'theme' as has_theme, preferences ? 'websitePublished' as has_web, preferences->'profilePublished', jsonb_array_length(preferences->'pages') as pages, (select count(*) from jsonb_object_keys(preferences->'pageDocs')) as page_docs from spaces where id = '${SPACE_ID}';`,
-    '-- EXPECT: wildheart | Wildheart | Wildheart | collective | t | dawn | network | America/Los_Angeles | {crm,shop,reviews,availability} | f | f | true | 6 | 6',
+    '-- EXPECT: wildheart | Wildheart | Wildheart | collective | t | dawn | network | America/Los_Angeles | {crm,shop,reviews,availability} | f | f | true | 6 | 6 (pageDocs is replaced whole: home, program, the-year, circles, retreat, about)',
     '',
     '-- ============================================================================================',
     '-- 2. The primary circle: renamed, capacity 12, host = owner, body pillar. The circle_profiles meetup',
@@ -1073,7 +1096,11 @@ async function applyViaRest(): Promise<void> {
   console.log(`\nDone. /spaces/${SLUG}`)
 }
 
-if (process.argv.includes('--sql')) {
+// Runs only as a script: the render test and the fidelity probe import the content above.
+const isMain = process.argv[1] ? pathToFileURL(process.argv[1]).href === import.meta.url : false
+if (!isMain) {
+  // imported
+} else if (process.argv.includes('--sql')) {
   process.stdout.write(renderSql())
 } else {
   applyViaRest().catch((err) => {

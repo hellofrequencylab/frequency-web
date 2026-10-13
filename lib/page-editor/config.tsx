@@ -147,7 +147,7 @@ export const config: Config = {
     // events through `metadata.space`, and wear any site theme.
     wildheart: {
       title: 'Astrology calendar',
-      components: ['WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine'],
+      components: ['WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine', 'WildheartSeasonBand', 'WildheartMoonPath', 'WildheartSealCards', 'WildheartRetreatBand', 'WildheartMarkSplit', 'WildheartPhoto', 'WildheartOrnament', 'WildheartMoonStrip'],
     },
   },
 }
