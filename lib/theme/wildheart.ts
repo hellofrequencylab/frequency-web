@@ -45,7 +45,10 @@
 // rise), no bounce, no scale on press, and prefers-reduced-motion zeroes every motion token in one block.
 
 import { HEX_ACCENT, contrastRatio, strongShades, type AccentVars } from '@/lib/spaces/accent'
-import type { MensworkSeason } from '@/lib/theme/menswork'
+// The season table is a leaf (lib/theme/wildheart-seasons.ts) so the sky engine's client islands read it
+// without this module's reach into lib/spaces/accent and zod; readers of the theme keep these names.
+import { WILDHEART_SEASONS, WILDHEART_SEASON_ORDER, type WildheartSeason } from '@/lib/theme/wildheart-seasons'
+export { WILDHEART_SEASONS, WILDHEART_SEASON_ORDER, type WildheartSeason }
 
 /** The Wildheart palette: 7 neutrals, the violet set, the two warm secondaries, and every gradient stop
  *  named so it can be audited (tokens-v3). Light is the default mode; Nightshade is the override below. */
@@ -96,20 +99,6 @@ export const WILDHEART_NIGHTSHADE = {
   blushTop: '#56383F',
   blushDeep: '#D9A08F',
 } as const
-
-export type WildheartSeason = MensworkSeason
-
-/** The four seasons, shared with Bold as fill / ink pairs: the fill for chips, tracks and shapes, the ink
- *  for season text on light grounds, the night ink for season text on Nightshade grounds, the top stop for
- *  the season gradient. Each season's name and theme line are the theme's, not a program's. */
-export const WILDHEART_SEASONS: Record<WildheartSeason, { name: string; theme: string; fill: string; top: string; ink: string; inkNight: string; gradient: string }> = {
-  winter: { name: 'Winter', theme: 'Rest and root', fill: '#A3AEDC', top: '#C4CBEA', ink: '#46518A', inkNight: '#B9C2EC', gradient: 'linear-gradient(160deg,var(--wh-season-winter-top) 0%,var(--wh-season-winter) 100%)' },
-  spring: { name: 'Spring', theme: 'Rise', fill: '#9DBA86', top: '#C0D4AF', ink: '#4C6B37', inkNight: '#B6CFA0', gradient: 'linear-gradient(160deg,var(--wh-season-spring-top) 0%,var(--wh-season-spring) 100%)' },
-  summer: { name: 'Summer', theme: 'Bloom', fill: '#D8B35E', top: '#E8CF94', ink: '#7A5A16', inkNight: '#E6C87A', gradient: 'linear-gradient(160deg,var(--wh-season-summer-top) 0%,var(--wh-season-summer) 100%)' },
-  fall: { name: 'Fall', theme: 'Wild', fill: '#CC8B74', top: '#E2B4A2', ink: '#8A4630', inkNight: '#E3A68F', gradient: 'linear-gradient(160deg,var(--wh-season-fall-top) 0%,var(--wh-season-fall) 100%)' },
-}
-
-export const WILDHEART_SEASON_ORDER: readonly WildheartSeason[] = ['winter', 'spring', 'summer', 'fall']
 
 const P = WILDHEART_PALETTE
 const N = WILDHEART_NIGHTSHADE

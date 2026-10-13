@@ -11,7 +11,8 @@
 // Aries, Cancer or Libra.
 
 import { MOON_PHASES, ZODIAC, type ZodiacId } from '@/lib/theme/wildheart-symbols'
-import { WILDHEART_SEASONS, type WildheartSeason } from '@/lib/theme/wildheart'
+// The leaf, never lib/theme/wildheart: this module rides the client islands, and the theme module reaches zod.
+import { WILDHEART_SEASONS, type WildheartSeason } from '@/lib/theme/wildheart-seasons'
 
 export const DAY = 864e5
 /** The mean synodic month in days, and a reference new moon (2000-01-06 18:14 UTC). */
