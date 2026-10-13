@@ -4,6 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, isoDay, parseDay, shortDay, signOf, sky, utcDate, wheelAngle, DAY } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_GLYPHS, ZODIAC } from '@/lib/theme/wildheart-symbols'
 import { WhConstellation, WhGlyph, WhMoon } from './wildheart-symbols'
+import { RangeField } from '@/components/admin/range-field'
 
 // THE SKY MAP (the design handoff's components/calendar/SkyMap.jsx and symbols/ZodiacWheel.jsx, 2026-10-13):
 // the click-driven calendar wheel. The wheel turns to the sun's position (900ms, always the short way
@@ -174,7 +175,7 @@ function SeasonTrack({ start, end, value, events, onChange }: { start: Date; end
             <span key={i} className="wh-track-moon" data-new={e.phase === 0 ? '' : undefined} style={{ left: pct(d) }} />
           )
         })}
-      <input className="wh-track-range" type="range" min={0} max={span} value={Math.max(0, Math.min(span, val))} onChange={(ev) => onChange(addDays(start, +ev.target.value))} aria-label="Date" />
+      <RangeField bare className="wh-track-range" min={0} max={span} value={Math.max(0, Math.min(span, val))} onChange={(v) => onChange(addDays(start, v))} aria-label="Date" />
       <div className="wh-track-months">
         {months.map((m, i) => (
           <span key={i} className="wh-label" style={{ left: pct(m), transform: i === 0 ? 'none' : 'translateX(-50%)' }}>
