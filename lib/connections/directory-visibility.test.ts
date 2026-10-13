@@ -167,7 +167,8 @@ describe('/network consults the predicate', () => {
 })
 
 describe('/search?tab=people consults the predicate', () => {
-  const PAGE = read('app/(main)/search/page.tsx')
+  // The read moved into the shared search module (DAWN page + Frequency body both call it).
+  const PAGE = read('app/(main)/search/search-data.ts')
 
   it('imports it from the shared module', () => {
     expect(PAGE).toMatch(/isListableInDirectory,?\s*\}\s*from '@\/lib\/connections\/directory-visibility'/)
@@ -178,7 +179,7 @@ describe('/search?tab=people consults the predicate', () => {
   })
 
   it('filters BEFORE the +1 truncation probe, so a hidden row never advertises "more"', () => {
-    expect(PAGE).toMatch(/const rows = \(\(data \?\? \[\]\) as PersonRow\[\]\)\.filter\(isListableInDirectory\)\s*\n\s*return \{ \.\.\.empty, people: rows\.slice\(0, PEOPLE_RESULTS\)/)
+    expect(PAGE).toMatch(/const rows = \(\(data \?\? \[\]\) as PersonRow\[\]\)\.filter\(isListableInDirectory\)\s*\n\s*return \{ rows: rows\.slice\(0, limit\), truncated: rows\.length > limit \}/)
   })
 })
 
