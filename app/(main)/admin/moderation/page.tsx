@@ -1,6 +1,8 @@
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqModerationBody } from '@/components/frequency/admin/pages/moderation/moderation-body'
 
 // MODERATION — the community report queue, module-driven (ADR-270/294): the page owns the
 // AdminTemplate header, then renders <PageModules>, which lays out the report queue as one
@@ -10,6 +12,10 @@ import { PageModules } from '@/components/widgets/page-modules'
 // route; the module renders only through it and never re-gates.
 export default async function ModerationPage() {
   await requireAdmin('host', { staff: 'community' })
+
+  // Under the Frequency design (SITE_DESIGN, build-time) this is the Member Admin Moderation page, over the
+  // same report read and the same actions; DAWN keeps the module-driven queue.
+  if (SITE_DESIGN === 'frequency') return <FqModerationBody />
 
   return (
     <AdminTemplate
