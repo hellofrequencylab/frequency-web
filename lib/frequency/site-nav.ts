@@ -27,8 +27,9 @@ export const ROUTES = {
   pricing: '/pricing',
   /** Stories.html. Served under Frequency (app/(marketing)/stories). */
   stories: '/stories' as string | null,
-  /** Vision.html, the third-space vision (footer and search only, per the website strategy). */
-  vision: '/the-lab',
+  /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
+   *  Frequency-only route, app/(marketing)/vision, which points on to /the-lab, the full plan. */
+  vision: '/vision',
   join: '/join',
   help: '/help',
   privacy: '/privacy',
@@ -246,7 +247,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
-  { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2027', icon: 'breath' },
+  { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
   { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect', icon: 'checkin' },
   { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, non-profits', icon: 'contacts' },

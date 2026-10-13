@@ -2,11 +2,16 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NOT_FOUND_METADATA } from '@/lib/seo/not-found-metadata'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyHelpNotFound } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 // One robots directive in the head, never two (LIVE-214, ADR-1276): see the module.
 export const metadata = NOT_FOUND_METADATA
 
 export default function NotFound() {
+  // Under Frequency (build-time) the help center's not-found wears the help hero, inside the site
+  // shell the (help) layout renders.
+  if (SITE_DESIGN === 'frequency') return <FrequencyHelpNotFound />
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
       <EmptyState

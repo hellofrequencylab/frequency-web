@@ -8,12 +8,19 @@
 // argument is PLAN_STORY. Each card's CTA is `offering.cta` verbatim, so the links into checkout are the
 // DAWN page's links, unchanged (docs/CHECKOUT.md).
 //
+// LOCKED TO THE SPACES SIDE. The reference pins Pricing to Spaces (`body[data-lock="e"]`), and so does
+// its row in lib/frequency/site-pages.ts, so the body renders the Spaces copy outright rather than
+// shipping a People half the lock would only ever hide. The personal tiers are real products the
+// reference has no card for, so they keep a band of their own under the plans, in the reference's
+// People-side copy ("Everything for people is free.") and the same `.pop > .pc` card.
+//
 // WHERE THE REAL LADDER BEATS THE REFERENCE. The design draws three Space plans (Free, Business,
 // Non-profit) and three people cards (Joining, Hosting, Buying). The product sells four Space plans
 // (Free, Business, Collective, Non Profit) and two personal tiers (Member, Crew), so the cards follow
 // the offerings and the plan-count heading is counted, not typed. Every "0%" carries "plus card
 // processing" in its own sentence (LIVE-913).
 import Link from 'next/link'
+import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/frequency/site-pages-b.css'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import type { FeatureGrid, Offering } from '@/lib/pricing/pricing-grid'
@@ -108,55 +115,49 @@ export function FrequencyPricing({
             <span>Pricing</span>
           </div>
           <h1 className="h-xl">
-            <span className="p-only">
-              Free for people. <em className="fq-iri-text">Forever.</em>
-            </span>
-            <span className="e-only">
-              We only earn when we help <em className="fq-iri-text">your community grow.</em>
-            </span>
+            We only earn when we help <em className="fq-iri-text">your community grow.</em>
           </h1>
-          <p className="p-only">
-            Joining, checking in, playing and hosting are free. When you buy a ticket or membership, the money
-            goes to the Space.
-          </p>
-          <p className="e-only">{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: a small share. Non Profits: nothing.`}</p>
+          <p>{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: a small share. Non Profits: nothing.`}</p>
           <div className="ctas">
-            <span className="p-only">
-              <Link className="btn fq-iri-btn" href="/discover/circles">
-                Find your Circle
-              </Link>
-            </span>
-            <span className="e-only">
-              <Link className="btn fq-iri-btn" href="/spaces">
-                Open your Space
-              </Link>
-            </span>
+            <Link className="btn fq-iri-btn" href="/spaces">
+              Open your Space
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="sec" id="plans" data-screen-label="02 Plans">
+      <section className="sec" id="spaces" data-screen-label="02 Plans">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
             <div className="label">
               <b>Plans</b>One price per plan
             </div>
-            <h2 className="h-l">
-              <span className="p-only">Everything you need to join is free.</span>
-              <span className="e-only">{`${planCount} plans. Start free.`}</span>
-            </h2>
-            <p className="pb-note e-only">{PLAN_STORY.paid}</p>
-            <p className="pb-note p-only">{PLAN_STORY.crew}</p>
+            <h2 className="h-l">{`${planCount} plans. Start free.`}</h2>
+            <p className="pb-note">{PLAN_STORY.paid}</p>
           </div>
-          <div className={`g3 e-only${spaces.length > 3 ? ' pb-g4' : ''}`}>
+          <div className={`g3${spaces.length > 3 ? ' pb-g4' : ''}`}>
             {spaces.map((o, i) => (
               <PlanCard key={o.id} offering={o} hue={HUES[i % HUES.length]!} />
             ))}
           </div>
-          <div className="g3 p-only">
+          <p className="pb-note">{PLAN_STORY.selling}</p>
+        </div>
+      </section>
+
+      <section className="sec" id="people" style={{ paddingTop: 0 }} data-screen-label="02b For people">
+        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>For people</b>Joining and hosting
+            </div>
+            <h2 className="h-l">Everything for people is free.</h2>
+            <p className="pb-note">{PLAN_STORY.crew}</p>
+          </div>
+          <div className="g3">
             {members.map((o, i) => (
-              <PlanCard key={o.id} offering={o} hue={HUES[i % HUES.length]!} />
+              <PlanCard key={o.id} offering={o} hue={HUES[(i + 1) % HUES.length]!} />
             ))}
             <div className="pop" style={vars({ '--fq-pc': 'var(--fq-x-magenta-neon)' })}>
               <span className="pglow" />
@@ -183,6 +184,7 @@ export function FrequencyPricing({
               <b>Features</b>By plan
             </div>
             <h2 className="h-l">Every feature, every plan.</h2>
+            <p className="pb-note">{PLAN_STORY.meters}</p>
           </div>
           <div className="mxw">
             <table className="mx">
@@ -217,7 +219,7 @@ export function FrequencyPricing({
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="04 Questions">
+      <section className="sec" id="questions" style={{ paddingTop: 0 }} data-screen-label="04 Questions">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
@@ -237,27 +239,12 @@ export function FrequencyPricing({
         </div>
       </section>
 
-      <section className="sec kg" data-screen-label="05 Keep going">
-        <div className="wrap">
-          <div className="next2" data-energy="charge">
-            <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.55 })} />
-            <span className="rings" aria-hidden="true" />
-            <div className="n2t">
-              <span className="k">Keep going</span>
-              <h3>Open your Space.</h3>
-              <p>{`Free until you charge. Your regulars stay at 0% ${PLAN_STORY.plusProcessing}.`}</p>
-            </div>
-            <div className="ctas">
-              <Link className="btn fq-iri-btn" href="/spaces">
-                Open your Space →
-              </Link>
-              <a className="btn btn-ghost fq-iri-rim" href="#features">
-                Compare features
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      <KeepGoing
+        title="Open your Space."
+        body={`Free until you charge. Your regulars stay at 0% ${PLAN_STORY.plusProcessing}.`}
+        primary={{ href: '/spaces', label: 'Open your Space →' }}
+        secondary={{ href: '#features', label: 'Compare features' }}
+      />
     </>
   )
 }
