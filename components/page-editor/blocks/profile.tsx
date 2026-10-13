@@ -174,9 +174,15 @@ function AnchorSection({ anchor, children }: { anchor: string; children: React.R
 // legibility. One radius/spacing/elevation rhythm across the whole set. `rounded-card` (not a
 // rounded-2xl literal): the Space's page theme shapes its cards (ADR-578 — editorial squares them,
 // playful pillows them); the [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
+//
+// `data-fq` (here and on the offering card and stat tiles below) names the part for the Frequency Space
+// page scope (app/themes/frequency/space-page.css), which dresses it in the kit's idiom there and nowhere
+// else: the attribute is inert on a Space website and under DAWN. Light bands only; an `ink` card keeps
+// its dark treatment in every design.
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
+      data-fq={ink ? undefined : 'panel'}
       className={`rounded-card border ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'} p-6 sm:p-8 ${className}`}
     >
       {children}
@@ -446,10 +452,10 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
           key={s.label}
           className={`rounded-card border p-6 text-center ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'}`}
         >
-          <div className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
+          <div data-fq={ink ? undefined : 'num'} className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
             {s.value.toLocaleString()}
           </div>
-          <div className={`mt-1.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+          <div data-fq={ink ? undefined : 'num-label'} className={`mt-1.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
             {s.label}
           </div>
         </div>
@@ -533,10 +539,10 @@ export function SpaceStatsBlock({
             >
               {STAT_METRIC_META[s.metric]?.icon}
             </span>
-            <div className={`mt-3 text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
+            <div data-fq={ink ? undefined : 'num'} className={`mt-3 text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
               {s.value.toLocaleString()}
             </div>
-            <div className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+            <div data-fq={ink ? undefined : 'num-label'} className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
               {s.label}
             </div>
           </div>
@@ -928,16 +934,18 @@ export function SpaceOfferingsBlock({
             return (
               <div
                 key={i}
+                data-fq={ink ? undefined : 'offering'}
                 className={`flex flex-col rounded-card border p-6 transition-shadow ${
                   ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm hover:shadow-md'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   {o.title && (
-                    <h3 className={`text-body-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
+                    <h3 data-fq={ink ? undefined : 'offering-title'} className={`text-body-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
                   )}
                   {price && (
                     <span
+                      data-fq={ink ? undefined : 'offering-price'}
                       className={`shrink-0 rounded-pill px-2.5 py-1 text-body-sm font-semibold ${
                         ink ? 'bg-on-ink/10 text-on-ink' : 'bg-primary-bg text-primary-strong'
                       }`}
@@ -947,15 +955,15 @@ export function SpaceOfferingsBlock({
                   )}
                 </div>
                 {meta.length > 0 && (
-                  <p className={`mt-1 text-meta font-medium ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+                  <p data-fq={ink ? undefined : 'offering-meta'} className={`mt-1 text-meta font-medium ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
                     {meta.join(' · ')}
                   </p>
                 )}
                 {o.blurb && (
-                  <p className={`mt-2 text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
+                  <p data-fq={ink ? undefined : 'offering-blurb'} className={`mt-2 text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
                 )}
                 {deposit && (
-                  <p className={`mt-auto pt-3 text-meta ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{deposit}</p>
+                  <p data-fq={ink ? undefined : 'offering-meta'} className={`mt-auto pt-3 text-meta ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{deposit}</p>
                 )}
               </div>
             )
