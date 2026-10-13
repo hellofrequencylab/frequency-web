@@ -686,6 +686,28 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
 - **Retired:** the ADR-552 "no third vocabulary / no tier names" lock (this ADR reintroduces named tiers);
   the flat single-Business $49 model (ADR-590, grandfathered).
 
+## The core belief, "What's happening", and the two sides (ADR-1735, October 2026, owner-ruled)
+
+- **The core belief is "Build circles, not walls."** Imperative, with the full stop, lowercase
+  "circles" (the common noun: the line is about how people gather, not the Circle container). It
+  replaces "Circles, not walls." and "A community that builds Circles, not walls." It is a
+  BELIEF LINE: footer sign-off, hero close, about copy. It does **not** replace the tagline:
+  `SITE_TAGLINE` stays **"Community Collective"** (ADR-944), the words under the mark.
+- **"What's happening" replaces "What's on"** as the name for what is coming up: every nav item,
+  menu, label and line of copy that points at the calendar or a program. Sentence case in copy and
+  menus ("See what's happening"); title case where it is a tab label, beside **Circle Stats**:
+  the Circle tab is **What's Happening**. The route stays `/whats-on` (route ≠ label, ADR-1023), so
+  no saved link breaks.
+  - **Collision guard:** "What's on your mind?" is a composer prompt, not this term, and stays.
+    So does "on" in plain prose ("what's on screen").
+- **The two sides of the public site are "Browse Community" and "Host Community".** They label
+  the side toggle on marketing pages and replace "Reading as: People / Experiences". The sides
+  themselves are still **People** and **Spaces** (the page names); only the toggle's words
+  changed.
+- **Retired with this section:** "What's on" / "What's On" as a label · "Circles, not walls." as
+  the belief line · "Reading as:" and "Experiences" as toggle labels. The code still carries the
+  old label; `LIVE-906` holds the rename and its probe.
+
 ## Marketplace & Commerce (ADR-596, July 2026; umbrella revived by ADR-868)
 
 The four consumer commerce surfaces, plus their umbrella. **Member-facing names + public routes
