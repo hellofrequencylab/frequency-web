@@ -126,6 +126,15 @@ describe('EmptyState, StatCard, Meter, ProgressTrack, Avatar', () => {
     expect(p.className).toBe('meter mu-h8 mu-success')
     expect((p.querySelector('i') as HTMLElement).style.width).toBe('30%')
   })
+  it('renders a segmented control as the kit pill rail with the selected segment .on', async () => {
+    const { SegmentedLinks } = await import('./segmented-control')
+    const nav = doc(<SegmentedLinks label="Areas" activeHref="/a" links={[{ href: '/a', label: 'A' }, { href: '/b', label: 'B' }]} />).querySelector('nav')!
+    expect(nav.className).toContain('mu-seg')
+    const [on, off] = Array.from(nav.querySelectorAll('a'))
+    expect(on.className).toContain('on')
+    expect(on.className).not.toContain('bg-primary')
+    expect(off.className).not.toContain('on')
+  })
   it('gives an avatar the kit .av ring and ink initials', () => {
     const a = doc(<Avatar src={null} name="Ana Lee" />).firstElementChild!
     expect(a.className).toContain('av ')

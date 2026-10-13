@@ -158,6 +158,15 @@
 [data-design="frequency"] [data-kit="members"] .mu-row .t1 a:hover{color:var(--fq-accent)}
 [data-design="frequency"] [data-kit="members"] .mu-dim{opacity:.72;filter:saturate(.6)}
 
+/* SegmentedControl: the kit's pill rail (the header's `.ap-nav` grammar), the selected segment ink. */
+[data-design="frequency"] [data-kit="members"] .mu-seg{gap:2px;padding:4px;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>*{height:36px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 14px;border:none;border-radius:999px;background:transparent;font:500 14px/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer;white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>*:hover{color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-surface-raised) 60%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>.on,[data-design="frequency"] [data-kit="members"] .mu-seg>.on:hover{background:var(--fq-text-strong);color:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>.mu-md{height:40px;padding:0 16px}
+[data-design="frequency"] [data-kit="members"] .mu-seg.mu-v{border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .mu-seg.mu-v>*{justify-content:flex-start;height:40px;border-radius:16px}
+
 /* SectionHeader: the kit's `.sec-h` with the `.h2` title, the count beside it, the arrow on a link. */
 [data-design="frequency"] [data-kit="members"] .mu-sec-t{display:flex;align-items:baseline;gap:10px}
 [data-design="frequency"] [data-kit="members"] .mu-sec-t .meta{font-variant-numeric:tabular-nums}
@@ -228,6 +237,9 @@
 [data-design="frequency"] .head:not([data-kit] *)>.mu-actions{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
 [data-design="frequency"] .k:not([data-kit] *){font:500 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 [data-design="frequency"] .h1:not([data-kit] *){margin:0;font:500 clamp(32px,4vw,46px)/1.02 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] .mu-seg:not([data-kit] *){gap:2px;padding:4px;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent)}
+[data-design="frequency"] .mu-seg:not([data-kit] *)>*{height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;border:none;border-radius:999px;background:transparent;font:500 14px/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer;white-space:nowrap}
+[data-design="frequency"] .mu-seg:not([data-kit] *)>.on{background:var(--fq-text-strong);color:var(--fq-surface-card)}
 [data-design="frequency"] .sec-h:not([data-kit] *){display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px}
 [data-design="frequency"] .h2:not([data-kit] *){margin:0;font:500 22px/1.1 var(--fq-font-display);letter-spacing:-.035em;color:var(--fq-text-strong)}
 [data-design="frequency"] .mu-sec-t:not([data-kit] *){display:flex;align-items:baseline;gap:10px}
