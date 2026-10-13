@@ -26,7 +26,7 @@
   --fqm-white-90:color-mix(in oklab,var(--fq-surface-raised) 90%,transparent);
   --fqm-lilac-22:color-mix(in oklab,var(--fq-x-violet-neon) 18%,transparent);
   --fqm-frost:color-mix(in oklab,var(--fq-surface-card) 92%,transparent);
-  --fqm-float:0 30px 70px -30px color-mix(in oklab,var(--fq-text-strong) 35%,transparent);
+  --fqm-float:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent);
   --fqm-glass-chip:linear-gradient(150deg,var(--fqm-white-75),color-mix(in oklab,var(--fq-surface-raised) 35%,transparent));
   --fqm-glass-tab:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 86%,transparent),color-mix(in oklab,var(--fq-surface-card) 62%,transparent));
   position:relative;min-height:100dvh;display:flex;flex-direction:column;overflow-x:clip;
@@ -44,7 +44,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-top .ap-hdr::before{transition:opacity var(--fq-dur-slow) var(--fq-ease-breath)}
 [data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="top"]{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 1px 0 transparent}
 [data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="top"]::before{opacity:0}
-[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="active"]{background:color-mix(in oklab,var(--fq-surface-card) 86%,transparent);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 1px 0 var(--fq-border-hair),0 18px 40px -30px color-mix(in oklab,var(--fq-text-strong) 35%,transparent)}
+[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="active"]{background:color-mix(in oklab,var(--fq-surface-card) 86%,transparent);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 1px 0 var(--fq-border-hair),0 18px 40px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent)}
 [data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="active"]::before{opacity:.9}
 [data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="idle"]{background:color-mix(in oklab,var(--fq-surface-card) 52%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);box-shadow:0 1px 0 var(--fqm-ink-3)}
 
@@ -161,7 +161,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-handle{position:absolute;top:0;bottom:0;width:12px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3}
 [data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-handle{right:-34px}
 [data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-handle{left:-34px}
-[data-design="frequency"] [data-kit="members"] .fqm-chev{flex:none;width:28px;height:28px;margin:0 -8px;border:none;border-radius:50%;background:var(--fqm-white-75);box-shadow:inset 0 0 0 1px var(--fqm-ink-8),0 6px 16px -10px color-mix(in oklab,var(--fq-text-strong) 40%,transparent);color:var(--fq-text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fqm-chev{flex:none;width:28px;height:28px;margin:0 -8px;border:none;border-radius:50%;background:var(--fqm-white-75);box-shadow:inset 0 0 0 1px var(--fqm-ink-8),0 6px 16px -10px color-mix(in oklab,var(--fq-ink) 40%,transparent);color:var(--fq-text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
 [data-design="frequency"] [data-kit="members"] .fqm-chev:hover{color:var(--fq-text-strong);background:var(--fq-surface-raised)}
 [data-design="frequency"] [data-kit="members"] .fqm-chev svg{width:10px;height:10px;transition:transform var(--fq-dur-base) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .fqm-drag{flex:1;width:12px;border-radius:6px;cursor:col-resize;touch-action:none;display:flex;justify-content:center}
@@ -216,7 +216,7 @@
 
 /* ── Rail tabs (You, Vera + Vault) and their rising panels ──────────────────────────────────────── */
 [data-design="frequency"] [data-kit="members"] .fqm-tab-wrap{position:relative;flex:none;width:100%}
-[data-design="frequency"] [data-kit="members"] .fqm-tab{position:relative;width:100%;height:60px;border:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px 4px 10px;border-radius:24px 24px 18px 18px;background:var(--fqm-glass-tab);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px color-mix(in oklab,var(--fq-text-strong) 45%,transparent),inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab{position:relative;width:100%;height:60px;border:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px 4px 10px;border-radius:24px 24px 18px 18px;background:var(--fqm-glass-tab);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px color-mix(in oklab,var(--fq-ink) 45%,transparent),inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .fqm-tab:hover{transform:translateY(-2px)}
 [data-design="frequency"] [data-kit="members"] .fqm-tab:active{transform:scale(.98)}
 [data-design="frequency"] [data-kit="members"] .fqm-tab::before{content:"";position:absolute;left:50%;top:6px;width:28px;height:4px;margin-left:-14px;border-radius:4px;background:var(--fqm-ink-14)}
@@ -241,7 +241,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-rise{left:0;transform-origin:bottom left}
 [data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-rise{right:0;transform-origin:bottom right}
 [data-design="frequency"] [data-kit="members"] .fqm-rise[data-open]{opacity:1;transform:none;pointer-events:auto}
-[data-design="frequency"] [data-kit="members"] .fqm-rise-card{max-height:calc(100vh - 220px);overflow-y:auto;width:300px;padding:20px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-text-strong) 40%,transparent),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 80%,transparent);display:flex;flex-direction:column;gap:18px}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card{max-height:calc(100vh - 220px);overflow-y:auto;width:300px;padding:20px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 40%,transparent),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 80%,transparent);display:flex;flex-direction:column;gap:18px}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault{position:relative;overflow:hidden}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault .fq-aura{opacity:.28}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault>*{position:relative}
@@ -302,7 +302,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-rp-foot:hover{color:var(--fq-text-strong)}
 
 /* Get started: the conic ring with the count, the step rows, the breathing current step. */
-[data-design="frequency"] [data-kit="members"] .fqm-gs{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--fq-radius-l);background:linear-gradient(150deg,color-mix(in oklab,var(--fq-surface-raised) 86%,transparent),color-mix(in oklab,var(--fq-surface-raised) 50%,transparent));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 24px 60px -36px color-mix(in oklab,var(--fq-text-strong) 35%,transparent),inset 0 0 0 1px var(--fqm-white-90)}
+[data-design="frequency"] [data-kit="members"] .fqm-gs{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--fq-radius-l);background:linear-gradient(150deg,color-mix(in oklab,var(--fq-surface-raised) 86%,transparent),color-mix(in oklab,var(--fq-surface-raised) 50%,transparent));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 24px 60px -36px color-mix(in oklab,var(--fq-ink) 35%,transparent),inset 0 0 0 1px var(--fqm-white-90)}
 [data-design="frequency"] [data-kit="members"] .fqm-gs>.fq-aura{opacity:.28}
 [data-design="frequency"] [data-kit="members"] .fqm-gs>*{position:relative}
 [data-design="frequency"] [data-kit="members"] .fqm-gs-h{display:flex;align-items:center;gap:14px}
