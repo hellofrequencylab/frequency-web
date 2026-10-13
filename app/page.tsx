@@ -12,7 +12,6 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
 import { OG_SITE, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyHome } from '@/components/frequency/site/pages/home/frequency-home'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
@@ -164,7 +163,7 @@ export default async function RootPage() {
     return (
       <SiteShell>
         <BlockDocJsonLd data={data} path="/" schemaType="WebPage" />
-        <BlockRender config={config} data={data} />
+        <FrequencyHome />
       </SiteShell>
     )
   }
@@ -200,7 +199,7 @@ export default async function RootPage() {
             SITE_DESIGN is a build-time constant, so this is one branch per deploy, never a request
             read, and the page stays ISR. The body is imported, not declared here, so the
             render-path ledger's `home 0` still holds. */}
-        {SITE_DESIGN === 'frequency' ? <FrequencyHome /> : <BlockRender config={config} data={data} />}
+        <BlockRender config={config} data={data} />
       </main>
       <MarketingFooter menu={footerMenu} />
     </div>
