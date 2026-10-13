@@ -39,12 +39,13 @@ export default async function CirclesPage({
 }: {
   searchParams: Promise<{ type?: string; interest?: string; sort?: string; q?: string; channel?: string }>
 }) {
-  const circlesIndex = await getCirclesIndexData(await searchParams)
+  const sp = await searchParams
+  const circlesIndex = await getCirclesIndexData(sp)
   const { content, signedIn, interests, canCreate } = circlesIndex
 
   // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the member kit's Circles page, on the
   // same live read. Build-time, so the DAWN block layout below is untouched when it is off.
-  if (SITE_DESIGN === 'frequency') return <FqCirclesBody data={circlesIndex} />
+  if (SITE_DESIGN === 'frequency') return <FqCirclesBody data={circlesIndex} params={sp} />
 
   // Block layout: an operator-published doc wins; else the coded default template.
   const published = await getPublishedData('circles')

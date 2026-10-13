@@ -78,6 +78,12 @@ export function MapZone({
   return <MapCtx.Provider value={{ open, setOpen, circles, starters, center, setCenter }}><div>{children}</div></MapCtx.Provider>
 }
 
+/** The map zone's shared state, for a design that draws its own map frame and controls (the
+ *  Frequency Circles body). Null outside a <MapZone>. */
+export function useCirclesMapZone() {
+  return useContext(MapCtx)
+}
+
 // "Find circles near me" — uses precise browser geolocation to recentre the map
 // on the viewer, then opens it. Denied/unsupported still opens (on the IP centre).
 // Lives inside MapZone so it shares the one open/centre state.
