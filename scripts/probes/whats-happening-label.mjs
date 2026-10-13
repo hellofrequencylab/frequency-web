@@ -1,7 +1,7 @@
 // LIVE-906 (ADR-1738): no member-facing string still says "What's On". The consequence is the
 // words a member reads, so this scans string literals and JSX text, never comments, and lets the
 // composer prompt "What's on your mind?" through (NAMING.md collision guard).
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOTS = ['app', 'components', 'lib', 'content']
@@ -9,9 +9,10 @@ const OLD = /what['’]s on\b(?!\s+(your|screen))/i
 const hits = []
 
 function walk(dir) {
-  for (const name of readdirSync(dir)) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const name = entry.name
     const path = join(dir, name)
-    if (statSync(path).isDirectory()) { walk(path); continue }
+    if (entry.isDirectory()) { walk(path); continue }
     if (!/\.(tsx?|mdx?)$/.test(name) || /\.test\./.test(name)) continue
     readFileSync(path, 'utf8').split('\n').forEach((line, i) => {
       const code = /\.mdx?$/.test(name) ? line : line.replace(/^\s*(\/\/|\*|\/\*).*$/, '').replace(/\s\/\/.*$/, '')

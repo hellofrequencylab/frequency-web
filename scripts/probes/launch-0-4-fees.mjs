@@ -15,7 +15,7 @@
 // Scope is LIVE-913's lane: /pricing, lib/pricing, the page-editor templates (except home, about,
 // what-is-frequency and tools-for-community-builders, which other Phase 0 rows own) and llms-full.txt.
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 
@@ -24,9 +24,9 @@ const ts = createRequire(import.meta.url)('typescript')
 const OTHER_LANES = new Set(['home.ts', 'about.ts', 'what-is-frequency.ts', 'tools-for-community-builders.ts'])
 
 function walk(dir) {
-  return readdirSync(dir).flatMap((name) => {
-    const p = join(dir, name)
-    return statSync(p).isDirectory() ? walk(p) : [p]
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = join(dir, e.name)
+    return e.isDirectory() ? walk(p) : [p]
   })
 }
 const isSource = (p) => /\.(ts|tsx)$/.test(p) && !/\.test\.tsx?$/.test(p)

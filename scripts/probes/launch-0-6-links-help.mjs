@@ -7,7 +7,7 @@
 //      paragraph is left behind in either FAQ section.
 //   3. The Space CRM article is Community Resonance (docs/NAMING.md) at its new slug, the old
 //      slug 308s there, and no file links /help/spaces/space-crm any more.
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 const fails = []
@@ -51,11 +51,11 @@ if (!/source: '\/help\/spaces\/space-crm',\s*destination: '\/help\/spaces\/commu
 
 const SKIP = new Set(['node_modules', '.next', '.git', '.claude', 'docs', 'coverage'])
 const walk = (d) =>
-  readdirSync(d).flatMap((n) => {
+  readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+    const n = e.name
     if (SKIP.has(n)) return []
     const p = path.join(d, n)
-    const st = statSync(p)
-    if (st.isDirectory()) return walk(p)
+    if (e.isDirectory()) return walk(p)
     return /\.(md|mdx|ts|tsx|mjs|mts|js|json)$/.test(n) ? [p] : []
   })
 let scanned = 0
