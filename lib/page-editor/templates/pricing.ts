@@ -71,7 +71,7 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
     features: [
       'Every business tool, with limits sized for a launch',
       'Your page, Circles, Events, contacts, email, and bookings',
-      'Tips, with no fee',
+      'Tips, with no platform fee, only card processing',
       'Be a Collaborator on other Spaces’ events',
     ],
   },
@@ -114,7 +114,7 @@ const spaceTierCard = (t: PricingTier, i: number) => {
     cadence: free ? 'forever' : '/mo',
     priceNote: free
       ? ''
-      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free.${t.sells ? ` 0% on your own people, ${rateOf(t)} once per customer the network introduces.` : ''}${copy.noteTail ?? ''}`,
+      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free.${t.sells ? ` 0% on your own people ${PLAN_STORY.plusProcessing}, ${rateOf(t)} once per customer the network introduces.` : ''}${copy.noteTail ?? ''}`,
     tagline: t.tagline,
     highlight: t.featured ? 'featured' : 'normal',
     badge: 'none',
@@ -218,7 +218,7 @@ export const data: Data = {
               { text: 'Attend gatherings in person' },
               { text: `Host ${n(LIMIT.circle_host?.free)} Circle and ${n(LIMIT.event_create?.free)} upcoming free Events, up to ${n(LIMIT.event_guests?.free)} guests each` },
               { text: `Vera, your guide, up to ${n(LIMIT.vera_unlimited?.free)} messages a day` },
-              { text: 'Tips, with no fee' },
+              { text: 'Tips, with no platform fee, only card processing' },
             ],
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'primary',
           },
@@ -373,7 +373,7 @@ export const data: Data = {
             highlight: 'normal', badge: 'none',
             features: [
               { text: 'Open on the free Space' },
-              { text: 'No fee, ever' },
+              { text: 'No platform fee, ever, only card processing' },
             ],
             ctaLabel: 'Start a free Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
@@ -465,7 +465,7 @@ export const data: Data = {
           { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. ${PLAN_STORY.crew} Crew is from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested. Neither personal tier takes payments: tips work on both, and selling runs through a Space on Business. Those two are the whole member ladder.` },
           { q: 'What do the Space plans cost?', a: `A Space is free to start and stays free until you start charging. ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}. Every plan is the same price whenever you start, and yearly is two months free.` },
           { q: 'Why does selling start at Business?', a: `Because free hosting is the point. ${PLAN_STORY.selling} When you set a price on a free Space, you can start a Business trial right there, or keep the thing free. Nothing you built is lost either way.` },
-          { q: 'How does the network fee work?', a: `You keep 100% of the business you bring yourself, always. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. ${PLAN_STORY.rate} Where each selling plan lands: ${andList(SELLING_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
+          { q: 'How does the network fee work?', a: `You keep 100% of the business you bring yourself, ${PLAN_STORY.afterProcessing}, always. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. ${PLAN_STORY.rate} Where each selling plan lands: ${andList(SELLING_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
           { q: 'What is Collective?', a: `${PLAN_STORY.collective} ${andList(SPACE_TIERS.filter((t) => t.id === 'collective').map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },

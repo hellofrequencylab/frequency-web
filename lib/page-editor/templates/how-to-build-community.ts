@@ -1,4 +1,5 @@
 import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/article'
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW TO BUILD COMMUNITY — the SECOND seeker article enrolled in the page editor
@@ -256,7 +257,7 @@ export const spec: ArticleSpec = {
       question: 'Where do I start?',
       answer:
         'Pick what you practice, find a few people near you, and hold the door open for one Circle. Frequency hands community builders the format, the first-night script, and the rails, so hosting is a clear next step instead of a blank page.',
-      body: 'You keep 100% of your own bookings, always. See exactly what a plan costs on the [pricing page](/pricing), month to month, leave anytime.',
+      body: `You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always. See exactly what a plan costs on the [pricing page](/pricing), month to month, leave anytime.`,
       links: [
         { label: 'Host your first Circle', href: '/the-community', variant: 'primary' },
         { label: 'Run a group you already gather', href: '/spaces', variant: 'secondary' },
@@ -315,7 +316,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What does Frequency cost to build community here?',
-      a: 'People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on a sale the network brought you, never on the people you bring yourself. A plan is what you take when money starts moving, and the rate is what a plan settles at, not what a plan is for. See the plans on the pricing page. Month to month, take your data and leave anytime.',
+      a: `People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always. Frequency is a Community Collective, so we earn only on a sale the network brought you, never on the people you bring yourself. A plan is what you take when money starts moving, and the rate is what a plan settles at, not what a plan is for. See the plans on the pricing page. Month to month, take your data and leave anytime.`,
     },
   ],
 

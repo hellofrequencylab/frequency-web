@@ -55,7 +55,7 @@ export const PLAN_STORY = {
     'Hosting is free, and that is the point, not a teaser. A free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging, and Collective is Business for a group of groups.',
   /** The selling line: where taking money starts, and the one kind of money every tier receives. */
   selling:
-    'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no fee.',
+    'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no platform fee, only card processing.',
   /** The network fee, stated as the consequence it is: an introduction fee, never the reason to take
    *  a plan, and never a buy-down. */
   rate:
@@ -74,4 +74,12 @@ export const PLAN_STORY = {
    *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
    *  months free on the year. */
   founding: 'Every plan is one price, the same whenever you start, and paying for the year is two months free.',
+  /** CARD PROCESSING (LIVE-913, docs/VALUE-LADDER.md §2). Stripe's processing fee is always passed
+   *  through, so no surface says "0%" or "no fee" without these words beside it, and none says "you keep
+   *  100%" without saying of what. Two fragments, not sentences, because the caveat belongs INSIDE the
+   *  claim it qualifies: `plusProcessing` follows a rate ("0% on your own people, plus card
+   *  processing"), `afterProcessing` follows a kept share ("you keep 100% of it, after card processing").
+   *  `node scripts/probes/launch-0-4-fees.mjs` fails any claim in scope that drops them. */
+  plusProcessing: 'plus card processing',
+  afterProcessing: 'after card processing',
 } as const

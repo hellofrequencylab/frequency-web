@@ -87,12 +87,12 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'What stays free forever?',
-      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no fee on any tier. A business never pays for access to people.',
+      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no platform fee on any tier, only card processing. A business never pays for access to people.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, ${PLAN_STORY.afterProcessing}, and we never take a share of a tip. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
     },
     ...collectiveFaq,
     {

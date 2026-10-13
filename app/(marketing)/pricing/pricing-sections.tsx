@@ -146,7 +146,7 @@ export function PricingPlans({
         </div>
         <p className="mx-auto mt-8 max-w-2xl text-center text-body leading-relaxed text-muted">
           {PLAN_STORY.crew} Neither personal tier takes payments: selling runs through a Space on
-          Business, which any member can open. Tips work on both, with no fee.
+          Business, which any member can open. Tips work on both, with no platform fee, only card processing.
         </p>
       </div>
     </Section>
@@ -331,7 +331,7 @@ export function PricingPromises() {
         {[
           {
             title: 'We never take a cut of your own people.',
-            body: 'You keep 100% of the business you bring in yourself, and every tip. We earn only on a customer the network introduces, once.',
+            body: `You keep 100% of the business you bring in yourself, and every tip, ${PLAN_STORY.afterProcessing}. We earn only on a customer the network introduces, once.`,
           },
           {
             title: 'One honest price, no surprise invoices.',

@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-913",
+  "title": "Phase 0.4: every 0% and 100% claim says 'plus card processing'",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LAUNCH-MARKETING-PLAN.md",
+    "ref": "§14 Phase 0.4 (Fees): \"plus card processing\" beside every 0% and 100% claim; §4.2 hole 10, against docs/VALUE-LADDER.md §2 (\"We never describe a rate as '0%' without the words 'plus card processing' nearby in the same view\")."
+  },
+  "detail": "The pricing surfaces said \"0%\", \"You keep 100%\" and \"no fee\" with nothing about card processing, which Stripe always passes through. lib/pricing/plan-story.ts now carries two caveat fragments, PLAN_STORY.plusProcessing (after a rate) and PLAN_STORY.afterProcessing (after a kept share), and every 0% / 100% claim in /pricing, lib/pricing, the page-editor templates in this lane (pricing, spaces, how-to-build-community) and llms-full.txt reads one of them in the same sentence. The tips \"no fee\" lines say \"no platform fee, only card processing\", and PLAN_STORY.selling carries the same words. Copy only: no checkout, rate, or price changed. home, about, what-is-frequency and tools-for-community-builders belong to the other Phase 0 rows, as do lib/marketing/funnel-config.ts and comparisons.ts.\n\nThe probe parses every string in scope with the TypeScript parser, so a comment is never a claim, and fails any 0%, 100%, no-fee or keep-everything claim whose own sentence lacks \"card processing\" or a real PLAN_STORY caveat interpolation. A bare \"0%\" stat value is checked with its object's label. It plants claims first and proves it catches them.\n\nShipped 2026-10-13.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-0-4-fees.mjs"
+  },
+  "closed": "2026-10-13"
+}
