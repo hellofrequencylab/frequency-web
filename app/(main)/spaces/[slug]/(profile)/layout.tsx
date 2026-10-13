@@ -39,6 +39,8 @@ import { isServiceListed } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
 import { FoundingBusinessBadge } from '@/lib/community-roles'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
 
 // ── THE NETWORKED ENTITY PROFILE CHROME (ENTITY-SPACES-BUILD §A.4 / §B.1) ────────────────────────
 // This is the profile's ONE cohesive header for every public tab (Facebook/LinkedIn business-page
@@ -662,47 +664,138 @@ export default async function SpaceProfileChromeLayout({
   const canManage = adminTabs.some((t) => t.label === 'Manage')
   const stickyNav = <SpaceProfileMenu tabs={tabs} canManage={canManage} homeHref={base} />
 
+  // Per-type structured data for the PUBLIC profile plus a Breadcrumb back to the directory. Network
+  // spaces only, never on a private one. Both designs emit the same node.
+  const structuredData = isNetwork ? (
+    <JsonLd
+      data={[
+        spaceSchema({
+          slug: space.slug,
+          type: space.type,
+          name: brandName,
+          tagline,
+          logoUrl: space.brandLogoUrl,
+          aggregateRating,
+          // NAP + sameAs for a LocalBusiness node (the "<category> near you" / AIO local signal). All
+          // already rendered on this page by the Contact / Business blocks; read the same source here so
+          // the schema carries the address, phone, website + socials instead of a name-only stub.
+          telephone: spaceProfile.phone,
+          // The place half (street, addressLocality, addressRegion, postalCode, addressCountry and geo) is
+          // built once in lib/spaces/schema-location.ts, which also applies the owner's location precision.
+          address: schemaLocation.address,
+          geo: schemaLocation.geo,
+          sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
+          // The operator's relative price indicator ('$'..'$$$$'), captured on the Business Info form.
+          priceRange: spaceProfile.priceRange,
+          // Free-text hours parsed best-effort into schema.org openingHours; unparseable lines drop out,
+          // so the node stays valid (the free-text field remains the source for display).
+          openingHours: parseOpeningHours(spaceProfile.hours),
+        }),
+        // The listed offerings as an ItemList of Product/Offer nodes (what the Space offers + what it
+        // costs), so answer engines can cite the services. Omitted entirely when there are none.
+        ...(listedOfferings.length
+          ? [spaceOfferingsSchema(listedOfferings, { slug: space.slug, sellerName: brandName, listName: `${brandName} offerings` })]
+          : []),
+        breadcrumbSchema([
+          { name: 'Spaces', path: '/spaces' },
+          { name: brandName, path: `/spaces/${space.slug}` },
+        ]),
+      ]}
+    />
+  ) : null
+
+  // THE FREQUENCY CHROME (ADR-1737, components/frequency/members/space). The same reads, gates, actions
+  // and owner tools as the DAWN header below, placed on the Circle page's grammar: a cover card holding
+  // the identity and the buttons, the kit's tab row (Follow and Boost at its right end, where the Circle
+  // keeps Boost), then the body. SITE_DESIGN is build-time, so a deploy ships one branch.
+  if (SITE_DESIGN === 'frequency') {
+    const frost = 'btn fqs-frost'
+    return (
+      <>
+        {structuredData}
+        <FqSpaceChrome
+          coverImage={coverSrc}
+          coverFocus={coverFocus}
+          tall={isHero}
+          logo={showLogoChip ? <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} /> : null}
+          eyebrow={heroEyebrow}
+          name={heroHeading}
+          badges={
+            isFoundingBusiness || isBoosted ? (
+              <div className="fqs-badges">
+                {isFoundingBusiness && <FoundingBusinessBadge founding className="text-3xs leading-tight" />}
+                <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
+              </div>
+            ) : null
+          }
+          tagline={
+            heroTagline ? (
+              <p className="fqs-tagline">{heroTagline}</p>
+            ) : canSeeAsOwner ? (
+              <p className="fqs-tagline">
+                <Link href={`${base}/manage?section=settings`}>Add a tagline. Say what you do.</Link>
+              </p>
+            ) : null
+          }
+          actions={
+            <>
+              <SpaceShareButton
+                slug={space.slug}
+                brandName={brandName}
+                brandLogoUrl={space.brandLogoUrl}
+                sharerProfileId={viewerProfileId}
+                hasContactCard
+                claimUrl={claimUrl}
+                className={frost}
+              />
+              {canSeeAsOwner && (
+                <OpenAdminBarButton
+                  scope={{ kind: 'space', id: space.id }}
+                  spaceType={space.type}
+                  spaceFns={spaceFns}
+                  moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden, activated: moduleMenu.activated }}
+                  label={manage.staffViewing ? 'Edit (staff)' : 'Edit'}
+                  icon={<SlidersHorizontal aria-hidden />}
+                  className={frost}
+                />
+              )}
+              <Link href={ctaHref} className="btn pa" {...ctaLinkProps}>
+                {ctaLabel}
+                <ArrowUpRight aria-hidden />
+              </Link>
+            </>
+          }
+          nav={
+            <SpaceProfileMenu
+              tabs={tabs}
+              canManage={canManage}
+              homeHref={base}
+              tools={
+                viewerProfileId ? (
+                  <>
+                    <FollowSpaceButton
+                      spaceId={space.id}
+                      spaceName={brandName}
+                      initialFollowing={viewerFollows}
+                      className="btn sm"
+                    />
+                    {!canSeeAsOwner && <BoostButton kind="space" targetId={space.id} className="btn sm" />}
+                  </>
+                ) : null
+              }
+            />
+          }
+          notices={manage.canManage && !isNetwork ? <SpacePrivateNotice spaceId={space.id} /> : null}
+        >
+          {children}
+        </FqSpaceChrome>
+      </>
+    )
+  }
+
   return (
     <>
-      {/* Per-type structured data for the PUBLIC profile plus a Breadcrumb back to the directory.
-          Network spaces only, never on a private one. */}
-      {isNetwork && (
-        <JsonLd
-          data={[
-            spaceSchema({
-              slug: space.slug,
-              type: space.type,
-              name: brandName,
-              tagline,
-              logoUrl: space.brandLogoUrl,
-              aggregateRating,
-              // NAP + sameAs for a LocalBusiness node (the "<category> near you" / AIO local signal). All
-              // already rendered on this page by the Contact / Business blocks; read the same source here so
-              // the schema carries the address, phone, website + socials instead of a name-only stub.
-              telephone: spaceProfile.phone,
-              // The place half (street, addressLocality, addressRegion, postalCode, addressCountry and geo) is
-              // built once in lib/spaces/schema-location.ts, which also applies the owner's location precision.
-              address: schemaLocation.address,
-              geo: schemaLocation.geo,
-              sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
-              // The operator's relative price indicator ('$'..'$$$$'), captured on the Business Info form.
-              priceRange: spaceProfile.priceRange,
-              // Free-text hours parsed best-effort into schema.org openingHours; unparseable lines drop out,
-              // so the node stays valid (the free-text field remains the source for display).
-              openingHours: parseOpeningHours(spaceProfile.hours),
-            }),
-            // The listed offerings as an ItemList of Product/Offer nodes (what the Space offers + what it
-            // costs), so answer engines can cite the services. Omitted entirely when there are none.
-            ...(listedOfferings.length
-              ? [spaceOfferingsSchema(listedOfferings, { slug: space.slug, sellerName: brandName, listName: `${brandName} offerings` })]
-              : []),
-            breadcrumbSchema([
-              { name: 'Spaces', path: '/spaces' },
-              { name: brandName, path: `/spaces/${space.slug}` },
-            ]),
-          ]}
-        />
-      )}
+      {structuredData}
       <DetailTemplate title={brandName} hero={coverNode} band={infoBand} stickyNav={stickyNav}>
         {/* Owner guardrail: a private Space is hidden from the directory, search, and shared links, so a
             manager viewing their own private page gets a one-click Make public assist (server re-gates). */}
