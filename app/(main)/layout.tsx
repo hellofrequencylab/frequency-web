@@ -132,6 +132,11 @@ function isAnonPublicEvent(p: string | null): boolean {
  * reason — a visitor landing on the home page is the behaviour we already ship, and a layout
  * that throws on the signed-out path would take down every public route with it.
  */
+/** Admin and Space console routes, which carry their own Frequency chrome (components/frequency/admin). */
+function isConsoleRoute(path: string | null): boolean {
+  return !!path && /^\/(admin(\/|$)|spaces\/[^/]+\/(manage|crm|settings)(\/|$))/.test(path)
+}
+
 async function resolvePublicTwin(pathname: string | null): Promise<string | null> {
   const match = matchPublicTwin(pathname)
   if (!match) return null
@@ -768,7 +773,11 @@ export default async function MainLayout({
     {/* THE DESIGN SWITCH (ADR-1737). Frequency wears its own member chrome
         (components/frequency/members/shell, the design handoff's shell.js + Feed rails); DAWN keeps
         AppShell exactly as it was. Same data, same children, same overlays. */}
-    {SITE_DESIGN === 'frequency' ? (
+    {SITE_DESIGN === 'frequency' && isConsoleRoute(reqPath) ? (
+      // The admin and Space console routes wear their own Frequency chrome (264px glass sidebar and
+      // top bar, components/frequency/admin), so the member header and rails step aside there.
+      <>{shellChildren}</>
+    ) : SITE_DESIGN === 'frequency' ? (
       <FrequencyMembersShell
         profile={{ ...profile, community_role: effectiveRole }}
         previewVisitor={previewVisitor}
