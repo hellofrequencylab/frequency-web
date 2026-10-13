@@ -471,7 +471,7 @@ export default async function CircleDetailLayout({
                 )}
 
                 {!isMember && myProfileId && full && (
-                  <span className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-body-sm font-semibold text-subtle">
+                  <span className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-control border border-border bg-surface-elevated px-3 py-1.5 text-body-sm font-semibold text-subtle">
                     Full
                   </span>
                 )}

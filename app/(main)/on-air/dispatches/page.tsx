@@ -64,7 +64,7 @@ export default async function DispatchesPage() {
           action={
             <Link
               href="/on-air"
-              className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+              className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               Tune out
             </Link>

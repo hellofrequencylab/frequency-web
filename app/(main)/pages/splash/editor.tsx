@@ -317,7 +317,7 @@ export function SplashCopyEditor({
               <span className="ml-1.5 font-normal text-subtle/70">· the /join?seq= slug and the link you share</span>
             </label>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2">
                 <span className="shrink-0 text-meta text-subtle">?seq=</span>
                 <Input
                   variant="seamless"

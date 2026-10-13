@@ -384,10 +384,10 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
     const previewSrc = safeUploadPreviewSrc(showOriginal ? originalUrl : (deskewedUrl ?? originalUrl))
     return (
       <div className="space-y-4">
-        {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
+        {msg && <p className={`rounded-control border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
         {unreadable && (
-          <div className="rounded-2xl border border-primary/40 bg-primary-bg p-4">
+          <div className="rounded-card border border-primary/40 bg-primary-bg p-4">
             <p className="flex items-start gap-2 text-body-sm font-semibold text-primary-strong">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               This shot is hard to read
@@ -488,7 +488,7 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
   // ── Pick: tip card + capture ────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
+      {msg && <p className={`rounded-control border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
       {/* The capture tip, up front — a good shot saves a retake. */}
       <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated/40 p-3">
@@ -550,7 +550,7 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
       {files.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {thumbs.map((src, i) => (
-            <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface-elevated">
+            <div key={src} className="relative aspect-square overflow-hidden rounded-control border border-border bg-surface-elevated">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={safeUploadPreviewSrc(src) ?? undefined} alt={`Shot ${i + 1}`} className="h-full w-full object-cover" />
               <button

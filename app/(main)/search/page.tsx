@@ -102,7 +102,7 @@ function formatDate(iso: string) {
 function DateBlock({ iso }: { iso: string }) {
   const d = new Date(iso)
   return (
-    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-card bg-primary-bg text-primary-strong">
       <span className="eyebrow leading-none">
         {d.toLocaleDateString('en-US', { month: 'short' })}
       </span>
@@ -317,7 +317,7 @@ export default async function SearchPage({
                 key={pg.href}
                 href={pg.href}
                 anchor={
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
                     <Compass className="h-5 w-5" />
                   </span>
                 }

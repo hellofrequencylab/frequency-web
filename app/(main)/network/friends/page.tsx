@@ -134,7 +134,7 @@ async function PeopleMode({
   return (
     <div className="space-y-8">
       {reward.rewarded > 0 && (
-        <div className="rounded-2xl border border-success bg-success-bg px-5 py-4">
+        <div className="rounded-card border border-success bg-success-bg px-5 py-4">
           <p className="text-body-sm font-semibold text-success">
             Your introduction stuck. +{reward.gems} Gems for bringing two people together 🎉
           </p>

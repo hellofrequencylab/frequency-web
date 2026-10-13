@@ -83,7 +83,7 @@ export default async function SettingsPage({
           href="/settings/profile"
           className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 lift-1 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
         >
-          <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
+          <span className="flex items-center justify-center w-9 h-9 rounded-control bg-surface-elevated shrink-0">
             <User className="w-4 h-4 text-muted" />
           </span>
           <span className="flex-1 min-w-0">

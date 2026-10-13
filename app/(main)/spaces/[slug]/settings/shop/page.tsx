@@ -128,12 +128,12 @@ function StatsSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/50" />
       ))}
     </>
   )
 }
 
 function TabSkeleton() {
-  return <div className="mt-4 h-40 animate-pulse rounded-2xl bg-surface-elevated/50" />
+  return <div className="mt-4 h-40 animate-pulse rounded-card bg-surface-elevated/50" />
 }

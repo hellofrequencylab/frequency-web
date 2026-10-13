@@ -50,12 +50,12 @@ export function ShowCoverPicker({
     <div className="space-y-2">
       <div className="flex items-center gap-3">
         {value ? (
-          <span className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border bg-surface">
+          <span className="h-16 w-16 shrink-0 overflow-hidden rounded-control border border-border bg-surface">
             {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a build asset */}
             <img src={value.url} alt="" className="h-full w-full object-cover" />
           </span>
         ) : (
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-subtle">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-control border border-dashed border-border text-subtle">
             <ImageIcon className="h-5 w-5" aria-hidden />
           </span>
         )}
@@ -98,7 +98,7 @@ export function ShowCoverPicker({
             </button>
           </div>
 
-          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
+          <div className="mb-3 flex items-center gap-2 rounded-control border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
             <Input
               variant="seamless"

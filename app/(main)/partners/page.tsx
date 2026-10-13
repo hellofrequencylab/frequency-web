@@ -105,7 +105,7 @@ function PartnerCard({ partner }: { partner: PartnerSummary }) {
     <EntityCard
       href={`/partners/${partner.slug}`}
       anchor={
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+        <div className="flex h-12 w-12 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
           <Store className="h-6 w-6" />
         </div>
       }

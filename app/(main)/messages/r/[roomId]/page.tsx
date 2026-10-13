@@ -187,7 +187,7 @@ export default async function RoomPage({
   // Always the hash — a room never wears a padlock (GateNotice canon); the visibility
   // badge beside the title already says "private" in words.
   const roomGlyph = (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg">
       <Hash className="h-4 w-4 text-primary-strong" />
     </span>
   )
@@ -222,7 +222,7 @@ export default async function RoomPage({
       <header className="flex shrink-0 items-center gap-3 bg-surface px-5 py-3">
         <Link
           href="/messages"
-          className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
+          className="md:hidden -ml-1 rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
           aria-label="Back"
         >
           <ChevronLeft className="h-5 w-5" />

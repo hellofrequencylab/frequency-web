@@ -151,7 +151,7 @@ export default async function ConversationPage({
   // Identity glyph for the compact takeover bar: the group icon, the peer's avatar,
   // or initials. Kept as a leading element beside the shared PageHeading title.
   const avatar = isGroup ? (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg">
       <UsersRound className="h-4 w-4 text-primary-strong" />
     </span>
   ) : others[0] ? (
@@ -197,7 +197,7 @@ export default async function ConversationPage({
       <header className="shrink-0 flex items-center gap-3 border-b border-border bg-surface px-5 py-3">
         <Link
           href="/messages"
-          className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
+          className="md:hidden -ml-1 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
           aria-label="Back"
         >
           <ChevronLeft className="h-5 w-5" />

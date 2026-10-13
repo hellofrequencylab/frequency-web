@@ -117,7 +117,7 @@ function TemplatePicker({ templates, onPick, onCancel }: { templates?: EntryTemp
           <button
             key={t.id}
             onClick={() => onPick(t)}
-            className="flex items-start gap-3 rounded-2xl border border-border bg-canvas/40 px-4 py-3 text-left transition-colors hover:border-primary/40"
+            className="flex items-start gap-3 rounded-card border border-border bg-canvas/40 px-4 py-3 text-left transition-colors hover:border-primary/40"
           >
             <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
             <span>
@@ -263,7 +263,7 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
       <div className="flex gap-3">
         <div
           // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-          className="h-20 w-20 shrink-0 rounded-lg border border-border bg-white p-1 [&>svg]:h-full [&>svg]:w-full"
+          className="h-20 w-20 shrink-0 rounded-control border border-border bg-white p-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: card.qrSvg }}
         />
         <div className="min-w-0 flex-1">

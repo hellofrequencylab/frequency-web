@@ -817,7 +817,7 @@ export function EventForm({
             </Label>
           )}
           {isEdit ? (
-            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm text-muted">
+            <p className="rounded-control border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm text-muted">
               {currentScopeName ?? 'This event'}
             </p>
           ) : (
@@ -1099,7 +1099,7 @@ export function EventForm({
       </FormSection>
 
       {submitError && !(upgradeTarget && isPaymentsRefusal(submitError)) && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
+        <p className="rounded-control border border-danger/40 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {submitError}
         </p>
       )}

@@ -274,7 +274,7 @@ export function DraftEditor({
     return (
       <div className="space-y-4">
         {published.claimSentTo && (
-          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-body-sm text-success">
+          <p className="rounded-control border border-success/40 bg-success-bg px-3 py-2 text-body-sm text-success">
             Published, and we emailed the organizer a claim link at{' '}
             <span className="font-semibold">{published.claimSentTo}</span>. You can also share it yourself below.
           </p>
@@ -282,7 +282,7 @@ export function DraftEditor({
         {published.claimToken ? (
           <OutreachCard claimToken={published.claimToken} slug={published.slug} sentTo={published.claimSentTo} />
         ) : (
-          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-body-sm text-success">
+          <p className="rounded-control border border-success/40 bg-success-bg px-3 py-2 text-body-sm text-success">
             Published. It is live on local events.
           </p>
         )}
@@ -293,7 +293,7 @@ export function DraftEditor({
   return (
     <div className="space-y-6">
       {msg && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{msg}</p>
+        <p className="rounded-control border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{msg}</p>
       )}
 
       {/* ── Cover preview ── */}
@@ -303,7 +303,7 @@ export function DraftEditor({
           <img
             src={coverUrl}
             alt="Event cover"
-            className="h-28 w-28 shrink-0 rounded-2xl border border-border object-cover"
+            className="h-28 w-28 shrink-0 rounded-card border border-border object-cover"
           />
           <p className="text-meta text-muted">
             The cover, cut from your poster. It fronts the event on local events.
@@ -432,9 +432,9 @@ export function DraftEditor({
             <Row key={i} flagged={row.confidence === 'low'} onRemove={() => setLineup((p) => p.filter((_, x) => x !== i))}>
               {row.imagePath && signedUrls[row.imagePath] ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={signedUrls[row.imagePath]} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
+                <img src={signedUrls[row.imagePath]} alt="" className="h-10 w-10 shrink-0 rounded-control border border-border object-cover" />
               ) : (
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-subtle">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-subtle">
                   <UserRound className="h-4 w-4" />
                 </span>
               )}

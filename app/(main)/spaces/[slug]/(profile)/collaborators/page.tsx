@@ -54,9 +54,9 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
             >
               {v.partner.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator-supplied space logo, not a build asset
-                <img src={v.partner.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
+                <img src={v.partner.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-control border border-border object-cover" />
               ) : (
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-elevated text-body font-bold text-subtle">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control border border-border bg-surface-elevated text-body font-bold text-subtle">
                   {v.partner.name.slice(0, 1).toUpperCase()}
                 </span>
               )}

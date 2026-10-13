@@ -60,7 +60,7 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
   return (
     <Link
       href={`/support/${ticket.id}`}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
+      className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

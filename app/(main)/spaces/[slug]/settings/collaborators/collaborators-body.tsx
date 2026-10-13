@@ -19,9 +19,9 @@ function PartnerRow({ view }: { view: CollaborationView }) {
     <div className="flex min-w-0 items-center gap-3">
       {partner.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- operator-supplied space logo, not a build asset
-        <img src={partner.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
+        <img src={partner.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-control border border-border object-cover" />
       ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-elevated text-body-sm font-bold text-subtle">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-border bg-surface-elevated text-body-sm font-bold text-subtle">
           {partner.name.slice(0, 1).toUpperCase()}
         </span>
       )}

@@ -36,7 +36,7 @@ export default async function CrewPage() {
           <img
             src={headerImage}
             alt=""
-            className="mb-6 h-auto w-full rounded-2xl border border-border"
+            className="mb-6 h-auto w-full rounded-card border border-border"
           />
         )
       }

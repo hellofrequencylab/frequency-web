@@ -131,7 +131,7 @@ export function ProductSpark({
 /** The member editor is thin on purpose: a Business Space unlocks the full Shop. */
 function FullShopUpsell() {
   return (
-    <div className="rounded-2xl border border-primary/30 bg-primary-bg/10 p-5">
+    <div className="rounded-card border border-primary/30 bg-primary-bg/10 p-5">
       <div className="mb-2 flex items-center gap-2">
         <Store className="h-5 w-5 text-primary-strong" aria-hidden />
         <h2 className="text-body font-bold text-text">Want a full shop?</h2>

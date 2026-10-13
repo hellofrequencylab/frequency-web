@@ -124,7 +124,7 @@ function MarketingRow({ card, targets, qrConfig }: { card: MarketingCard; target
       <div className="flex gap-3">
         <div
           // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-          className="shrink-0 w-20 h-20 rounded-lg border border-border bg-white p-1 [&>svg]:w-full [&>svg]:h-full"
+          className="shrink-0 w-20 h-20 rounded-control border border-border bg-white p-1 [&>svg]:w-full [&>svg]:h-full"
           dangerouslySetInnerHTML={{ __html: card.svg }}
         />
         <div className="min-w-0 flex-1">

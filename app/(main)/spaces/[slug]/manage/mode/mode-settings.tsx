@@ -98,7 +98,7 @@ export function ModeSettings({
       </section>
 
       {error && (
-        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
+        <p className="rounded-control border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}

@@ -66,7 +66,7 @@ export function ModeSwitcher() {
                   : 'hover:bg-surface-elevated'
               }`}
             >
-              <div className={`flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ${
+              <div className={`flex items-center justify-center w-9 h-9 rounded-control shrink-0 ${
                 active
                   ? 'bg-primary-bg'
                   : 'bg-surface-elevated'

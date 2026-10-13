@@ -120,7 +120,7 @@ function StatusCard({
             </p>
           )}
           {status === 'rejected' && note && (
-            <p className="mt-2 rounded-lg bg-surface-elevated px-3 py-2 text-meta text-text">{note}</p>
+            <p className="mt-2 rounded-control bg-surface-elevated px-3 py-2 text-meta text-text">{note}</p>
           )}
         </div>
       </div>

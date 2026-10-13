@@ -58,7 +58,7 @@ export default async function PartnerProgramsPage() {
           return (
             <div key={p} className="rounded-card border border-border bg-surface p-5 lift-1">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-lead">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-primary-bg text-lead">
                   {meta.emoji}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -74,7 +74,7 @@ export default async function PartnerProgramsPage() {
                       <Link
                         key={t.href}
                         href={t.href}
-                        className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated px-2.5 py-1 text-meta font-semibold text-text transition-colors hover:bg-primary-bg hover:text-primary-strong"
+                        className="inline-flex items-center gap-1 rounded-control bg-surface-elevated px-2.5 py-1 text-meta font-semibold text-text transition-colors hover:bg-primary-bg hover:text-primary-strong"
                       >
                         {t.label}
                         <ArrowRight className="h-3 w-3" />
