@@ -19,6 +19,8 @@ import { thumbActionsFor } from '@/lib/spaces/console-thumb'
 import { SpaceManageConsole } from './console'
 import { SpaceIdentityEditor } from './identity-editor'
 import { SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqOverviewBody } from '@/components/frequency/admin/pages/overview/overview-body'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
 // gates on manage access, computes the gated surface spine + Mode emphasis, and renders the console.
@@ -102,9 +104,15 @@ export async function SpaceManageBoard({
 
   // Home IS the command-center Dashboard (ADR-796): revenue + members + needs-attention + activity + upcoming,
   // the default landing tab. Built server-side and streamed per band; scoped to this space + gated on manage.
+  // Under the Frequency design (SITE_DESIGN, build-time) Home is the Member Admin Overview body; DAWN
+  // keeps the command-center dashboard. Same space, same gate, same reads.
   const dashboardEmbed =
     section === 'dashboard' ? (
-      <SpaceDashboard spaceId={space.id} slug={space.slug} spaceName={brandName} />
+      SITE_DESIGN === 'frequency' ? (
+        <FqOverviewBody spaceId={space.id} slug={space.slug} spaceName={brandName} viewerProfileId={viewerProfileId} />
+      ) : (
+        <SpaceDashboard spaceId={space.id} slug={space.slug} spaceName={brandName} />
+      )
     ) : undefined
 
   const crmEmbed =
