@@ -9,6 +9,11 @@
 // proper nouns carry the magic, no em dashes, no health claims, the skeptic test.
 // We position honestly — we never knock the other tool, we say what it is good at
 // and where Frequency is a different shape (real-world community, not a feature).
+//
+// Money copy is READ from PLAN_STORY (a leaf with no imports, ADR-1368), never retyped: selling starts
+// at Business (ADR-1709), and a 0% claim carries "plus card processing" (LIVE-911).
+
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
 /** One named alternative we publish a comparison page for. Pure data. */
 export interface Comparison {
@@ -124,24 +129,24 @@ export const COMPARISONS: Comparison[] = [
   {
     slug: 'eventbrite',
     published: '2026-07-28',
-    updated: '2026-08-05',
+    updated: '2026-10-13',
     name: 'Eventbrite',
     category: 'event listing and ticketing platform',
     theyAreGoodAt:
       'Eventbrite is built to sell tickets to a real event. The listing, the payments, the door: all handled, and for a big paid one-off, it is the standard.',
     theDifference:
-      'Frequency is built for the small, free, repeating room, not the ticketed one-off. Here is the sharpest line between them, and it is about money: Eventbrite charges a fee on every ticket you sell, while Frequency takes 0% on your own bookings, always. Hosting a gathering is free, charging for one starts at Business, and what your work earns is yours. Frequency earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
+      "Frequency is built for the room that keeps meeting, not the one-off. Here's the sharpest line between them, and it's about money: Eventbrite charges a fee on every ticket you sell. On Frequency, hosting a gathering is free and selling tickets starts at Business, where a ticket sold to someone already yours carries no network fee, only card processing. Frequency earns a small fee only on a customer the network introduces, once, never a cut of the business you bring yourself.",
     contrast: [
-      { dimension: 'What it is', them: 'A ticketed event, often one time.', us: 'A free Circle that keeps meeting.' },
+      { dimension: 'What it is', them: 'A ticketed event, often one time.', us: 'A Circle or an event series that keeps meeting.' },
       { dimension: 'Getting in', them: 'You buy a ticket.', us: 'You find a Circle and show up.' },
       { dimension: 'After the event', them: 'It ends; the next one is unrelated.', us: 'The same group meets again.' },
-      { dimension: 'On what you sell', them: 'A fee on every ticket you sell.', us: '0% on your own bookings, always.' },
-      { dimension: 'Cost', them: 'Free and paid listings; fees on tickets.', us: 'Free to join, always.' },
+      { dimension: 'On what you sell', them: 'A fee on every ticket you sell.', us: 'Selling starts at Business. 0% on your own audience, plus card processing.' },
+      { dimension: 'Cost', them: 'Free and paid listings; fees on tickets.', us: 'Free to join and to host. Business when you start charging.' },
     ],
     forReader:
       'You have been to plenty of events. You want the few that turn into people you keep seeing, not another ticket stub.',
     moneyBeat:
-      'Eventbrite charges a fee on every ticket you sell, to everyone, every time. On Frequency people join free, businesses host free, and you pay when you start charging. We take 0% on anyone already yours: a follower, a contact, or someone who bought from you before. Hosting is free, and selling tickets starts at Business, the plan you take when you start charging. One honest price, and only a small slice of the business the network brings you, never a cut of the business you bring yourself.',
+      `Eventbrite charges a fee on every ticket you sell, to everyone, every time. ${PLAN_STORY.spine} ${PLAN_STORY.selling} ${PLAN_STORY.rate} Card processing applies to every sale, the same as anywhere you take a card.`,
   },
   {
     slug: 'mighty-networks',
