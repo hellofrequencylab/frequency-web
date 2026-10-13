@@ -6,6 +6,12 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { meetsAccess } from '@/lib/nav-areas'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { openAdminBar } from '@/components/admin/open-admin-bar'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the design draws no rule under a page head, so under Frequency the divider row
+// keeps its lead and controls but its hairline is an empty spacer, a bare rule is nothing, and the
+// Settings trigger is the kit's quiet `.btn.txt`. Inlined at build; DAWN's markup is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // The on-page admin control (ADR-128 rebuild, Workstream D). It is now a thin TRIGGER
 // row that sits on the divider under a page title. It no longer hosts the settings
@@ -118,7 +124,7 @@ export function PageAdminBar({
 
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.
-  const bareRule = asDivider ? <div className="mb-5 border-b border-border sm:mb-6" /> : null
+  const bareRule = asDivider && !FREQUENCY ? <div className="mb-5 border-b border-border sm:mb-6" /> : null
   if (!authed && !shareable) return bareRule
 
   // The Settings trigger — opens the shell-level admin bar via the typed `open-admin-bar` event
@@ -135,7 +141,11 @@ export function PageAdminBar({
     <button
       type="button"
       onClick={() => openAdminBar()}
-      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-meta font-semibold text-muted transition-colors hover:text-text"
+      className={
+        FREQUENCY
+          ? 'btn txt sm shrink-0'
+          : 'inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-meta font-semibold text-muted transition-colors hover:text-text'
+      }
     >
       <Settings className="h-3.5 w-3.5" aria-hidden />
       Settings
@@ -163,7 +173,7 @@ export function PageAdminBar({
           {lead && <div className="min-w-0">{lead}</div>}
           {/* Hidden below sm when there is a lead: on a phone the rule would be a 12px stub
               wedged between two wrapped blocks, which reads as a rendering fault. */}
-          <div className={`h-px flex-1 bg-border ${lead ? 'hidden sm:block' : ''}`} />
+          <div className={`h-px flex-1 ${FREQUENCY ? '' : 'bg-border '}${lead ? 'hidden sm:block' : ''}`} />
           {controls}
         </div>
       </div>

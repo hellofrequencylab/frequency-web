@@ -27,6 +27,12 @@ import { usePathname } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { FieldError } from './field/field-control'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the step heading speaks the members kit (the `.k` eyebrow, the Unbounded `.h1`,
+// the `.meta` line), the same lockup PageHeading renders; the progress and buttons already come from
+// the kit through WizardProgress and wizardPrimaryClass. Inlined at build; DAWN is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 import { draftScope } from './draft/draft-store'
 import { useSparkDraft } from './draft/use-spark-draft'
 import { SparkDraftConflict, SparkDraftCue, SparkResumeOffer } from './draft/spark-resume'
@@ -170,13 +176,13 @@ export function SparkShell({
         aria-label={stepLabel ? `Step ${step} of ${totalSteps}: ${stepLabel}` : `Step ${step} of ${totalSteps}`}
         className="mt-7 animate-[slideUp_0.35s_ease-out] outline-none motion-reduce:animate-none"
       >
-        <p className="eyebrow mb-1.5 text-primary-strong">{eyebrow}</p>
+        <p className={FREQUENCY ? 'k mb-3' : 'eyebrow mb-1.5 text-primary-strong'}>{eyebrow}</p>
         {headingLevel === 1 ? (
-          <h1 className="text-page-title font-bold text-text">{title}</h1>
+          <h1 className={FREQUENCY ? 'h1' : 'text-page-title font-bold text-text'}>{title}</h1>
         ) : (
-          <h2 className="text-page-title font-bold text-text">{title}</h2>
+          <h2 className={FREQUENCY ? 'h1' : 'text-page-title font-bold text-text'}>{title}</h2>
         )}
-        {description && <p className="mt-1 text-body-sm leading-relaxed text-muted">{description}</p>}
+        {description && <p className={FREQUENCY ? 'meta mt-3' : 'mt-1 text-body-sm leading-relaxed text-muted'}>{description}</p>}
 
         <div className="mt-5">{children}</div>
 

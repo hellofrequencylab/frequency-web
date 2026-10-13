@@ -104,5 +104,24 @@ describe('a Dialog opened outside any Space', () => {
     expect(el).not.toBeNull()
     expect(el?.hasAttribute('data-space-theme')).toBe(false)
     expect(el?.style.getPropertyValue('--color-primary')).toBe('')
+    // No Frequency members kit above the opener (DAWN), so no kit scope is carried either.
+    expect(el?.hasAttribute('data-kit')).toBe(false)
+  })
+})
+
+describe('a Dialog opened inside the Frequency members kit', () => {
+  it('carries the kit scope across the portal, so its kit buttons and fields keep their styles', () => {
+    container = document.createElement('div')
+    container.setAttribute('data-kit', 'members')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() =>
+      root!.render(
+        <Dialog open onClose={() => {}} ariaLabel="Test">
+          <p>body</p>
+        </Dialog>,
+      ),
+    )
+    expect(portalRoot()?.getAttribute('data-kit')).toBe('members')
   })
 })

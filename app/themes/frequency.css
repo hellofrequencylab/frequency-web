@@ -102,7 +102,8 @@
   --design-font-display: var(--fq-font-display);
   --design-font-display-fallback: var(--fq-font-sans);
   --design-heading-weight: 600;
-  --design-display-weight: 600;
+  /* The kit sets Unbounded at 500 everywhere it draws a title or a numeral (.h1, .h2, .h3, .num). */
+  --design-display-weight: 500;
   --design-display-tracking: var(--fq-track-h1);
   --design-display-leading: var(--fq-lh-h1);
   --design-radius-sm: var(--fq-radius-s);

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Entity-detail tab strip (ADR-233 §3, GitHub Primer UnderlineNav). Horizontal
 // underlined tabs to switch between sibling views of ONE entity; each tab is a real
@@ -31,6 +32,53 @@ const TAB =
 const ACTIVE = 'border-primary-strong text-text'
 const IDLE = 'border-transparent text-muted hover:border-border-strong hover:text-text'
 
+// FREQUENCY (ADR-1737): the members kit's `.tabs` strip (a hairline, 44px tabs, the active one ink with
+// a 1.5px underline). Count pills and the dropdown panel are `mu-count` / `mu-menu`
+// (app/themes/frequency/members-ui.css). Inlined at build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
+function FrequencyTabs({
+  tabs,
+  isActive,
+  label,
+}: {
+  tabs: UnderlineTabItem[]
+  isActive: (href: string) => boolean
+  label: string
+}) {
+  return (
+    <nav className={cn('tabs', tabs.some((t) => 'menu' in t) && 'mu-wrap')} aria-label={label}>
+      {tabs.map((t) =>
+        'menu' in t ? (
+          <details key={`menu:${t.label}`} data-popover className="group relative shrink-0">
+            <summary className={t.menu.some((m) => isActive(m.href)) ? 'on' : undefined}>
+              {t.label}
+              <ChevronDown className="transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="mu-menu">
+              {t.menu.map((m) => (
+                <Link key={m.href} href={m.href} aria-current={isActive(m.href) ? 'page' : undefined}>
+                  {m.label}
+                </Link>
+              ))}
+            </div>
+          </details>
+        ) : (
+          <Link
+            key={t.href}
+            href={t.href}
+            aria-current={isActive(t.href) ? 'page' : undefined}
+            className={isActive(t.href) ? 'on' : undefined}
+          >
+            {t.label}
+            {t.count !== undefined && <span className="mu-count">{t.count}</span>}
+          </Link>
+        ),
+      )}
+    </nav>
+  )
+}
+
 export function UnderlineTabs({
   tabs,
   activeHref,
@@ -46,6 +94,7 @@ export function UnderlineTabs({
 }) {
   const pathname = usePathname()
   const isActive = (href: string) => (activeHref !== undefined ? activeHref === href : pathname === href)
+  if (FREQUENCY) return <FrequencyTabs tabs={tabs} isActive={isActive} label={label} />
   return (
     <nav
       // A disclosure and a horizontal scroller cannot share a box. `overflow-x: auto` forces

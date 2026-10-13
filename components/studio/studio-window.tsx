@@ -3,6 +3,9 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+// Under Frequency (ADR-1737) the window is the members kit's frosted sheet (`mu-window`,
+// app/themes/frequency/members-ui.css) and its kicker the kit's `.k`. Inlined at build.
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // The Studio — the one familiar "creation window" reused across the site. Anywhere
 // there's something to make (a journey today; circles, practices, events next), the
@@ -83,12 +86,16 @@ export function StudioWindow({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="flex h-full w-full flex-col overflow-hidden bg-canvas lift-3 outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-card sm:border sm:border-border"
+        className={
+          SITE_DESIGN === 'frequency'
+            ? 'mu-window flex h-full w-full flex-col overflow-hidden outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl'
+            : 'flex h-full w-full flex-col overflow-hidden bg-canvas lift-3 outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-card sm:border sm:border-border'
+        }
       >
         {/* Chrome bar — skipped when the entity owns its own header (hideChrome). Esc still closes. */}
         {!hideChrome && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <p className="eyebrow text-primary-strong">{eyebrow}</p>
+            <p className={SITE_DESIGN === 'frequency' ? 'k' : 'eyebrow text-primary-strong'}>{eyebrow}</p>
             <button
               type="button"
               onClick={onClose}

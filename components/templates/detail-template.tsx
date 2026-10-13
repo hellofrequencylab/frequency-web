@@ -22,6 +22,12 @@ import { ChevronLeft, ImageIcon } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageHero, type PageHeroSize, type HeroOverlayStyle } from './page-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the identity lockup speaks the members kit (the Unbounded `.h1`, the `.meta`
+// line, the `mu-back` link) and the context tabs are the kit's `.tabs` strip. Inlined at build; every
+// DAWN string below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 export interface DetailTab {
   href: string
@@ -189,7 +195,11 @@ export function DetailTemplate({
         {back && (
           <Link
             href={back.href}
-            className="mb-2 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
+            className={
+              FREQUENCY
+                ? 'mu-back mb-3'
+                : 'mb-2 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text'
+            }
           >
             <ChevronLeft className="h-4 w-4" />
             {back.label}
@@ -215,16 +225,20 @@ export function DetailTemplate({
                     the conversion removed is the ramp — one token to keep in step, not three
                     classes across two breakpoints — not the requirement that both say it. */}
                 <h1
-                  className={`${
-                    titleScale === 'display' ? 'text-page-title-lg' : 'text-lead sm:text-page-title'
-                  } font-bold text-text break-words`}
+                  className={
+                    FREQUENCY
+                      ? 'h1'
+                      : `${
+                          titleScale === 'display' ? 'text-page-title-lg' : 'text-lead sm:text-page-title'
+                        } font-bold text-text break-words`
+                  }
                 >
                   {title}
                 </h1>
                 {badges}
               </div>
               {subtitle && (
-                <div className="mt-1 text-body-sm text-muted">{subtitle}</div>
+                <div className={FREQUENCY ? 'meta mt-3' : 'mt-1 text-body-sm text-muted'}>{subtitle}</div>
               )}
             </div>
             {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
@@ -239,7 +253,21 @@ export function DetailTemplate({
             instead). A caller-supplied NODE renders in the same slot, untouched — that is the
             layout-composed form (see the prop's doc). */}
         {!stickyNav && tabs != null && !Array.isArray(tabs) && <div className="mt-4">{tabs}</div>}
-        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && (
+        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && FREQUENCY && (
+          <nav className="tabs mt-6">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                aria-current={tab.active ? 'page' : undefined}
+                className={tab.active ? 'on' : undefined}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && !FREQUENCY && (
           <nav className="flex items-center gap-1 mt-4 -mb-px overflow-x-auto">
             {tabs.map((tab) => (
               <Link

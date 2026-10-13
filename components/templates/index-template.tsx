@@ -17,6 +17,11 @@ import { PageHero, type PageHeroSize, type PageHeroVariant } from './page-hero'
 import { PageIntro } from './page-intro'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the header is PageHeading's kit `.head`; the banner is a borderless 24px photo
+// and the toolbar sits on the kit's 28px rhythm (`mu-toolbar`). Inlined at build; DAWN is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 /** One crumb in the standard index breadcrumb (`/network` -> this section). */
 export type Crumb = { href: string; label: string }
@@ -150,7 +155,7 @@ export function IndexTemplate({
               alt=""
               fetchPriority="high"
               style={heroFocus ? { objectPosition: heroFocus } : undefined}
-              className="mb-6 mt-3 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+              className={FREQUENCY ? 'mb-7 mt-3 h-44 w-full rounded-card object-cover sm:h-56' : 'mb-6 mt-3 h-44 w-full rounded-2xl border border-border object-cover sm:h-56'}
             />
           )}
           {/* Secondary page controls, sitting directly under the banner (a wrapping pill row) —
@@ -161,7 +166,7 @@ export function IndexTemplate({
       )}
       <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} adminBar={adminBar} />
       <PageIntro text={intro} />
-      {toolbar && <div className="mb-4">{toolbar}</div>}
+      {toolbar && <div className={FREQUENCY ? 'mu-toolbar' : 'mb-4'}>{toolbar}</div>}
       {children}
     </div>
   )

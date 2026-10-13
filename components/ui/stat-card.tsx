@@ -2,6 +2,13 @@ import Link from 'next/link'
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { TrendArea } from '@/components/admin/spark-charts'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's stat panel (templates/members/The Vault.html): a `.panel`
+// with the `.k` label over the `.num` reading and a `.t2` qualifier; `sm` / `xs` are the denser tiles
+// (`mu-stat`, app/themes/frequency/members-ui.css). A linked stat is an `a.panel`, which the kit lifts
+// on hover. Inlined at build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // One stat tile for KPI rows and dashboards (crew home, Studio, admin). The
 // audits found stat strips static (no time-axis) and over-boxed; this tile is a
@@ -74,6 +81,40 @@ export function StatCard({
   const t = delta ? TREND[delta.trend ?? 'flat'] : null
   const sm = size === 'sm'
   const xs = size === 'xs'
+
+  if (FREQUENCY) {
+    const fq = (
+      <>
+        <span className="row">
+          <span className="k grow">{label}</span>
+          {Icon && <Icon aria-hidden />}
+        </span>
+        <span className="num">{value}</span>
+        {detail && <span className="t2">{detail}</span>}
+        {delta && t && (
+          <span className={`t2 row ${delta.trend === 'up' ? 'mu-up' : delta.trend === 'down' ? 'mu-down' : ''}`}>
+            <t.Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {delta.label}
+          </span>
+        )}
+        {sparkline && sparkline.length > 1 && (
+          <span className="block h-8">
+            <TrendArea points={sparkline} height={32} />
+          </span>
+        )}
+      </>
+    )
+    const fqCls = `panel mu-stat${sm ? ' mu-sm' : xs ? ' mu-xs' : ''}`
+    return href ? (
+      <Link href={href} title={title} className={fqCls}>
+        {fq}
+      </Link>
+    ) : (
+      <div className={fqCls} title={title}>
+        {fq}
+      </div>
+    )
+  }
 
   // VALUE-FIRST anatomy (dashboard redesign): the number is the loudest thing in
   // the tile; the label sits quiet beneath in sentence case (uppercase + tracking

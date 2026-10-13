@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactElement, cloneElement, isValidElement } from 'react'
 import { cn } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Shared button primitive — the audit found ~40 files hand-rolling button class
 // strings with drifting padding / size / feedback. One scale here (variant ×
@@ -104,6 +105,26 @@ const BASE =
   // DAWN: controls take the ROLE radius (skinnable), not a literal step (dawn/tokens/spacing.css).
   'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold tap-target press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
 
+// FREQUENCY (ADR-1737). Under SITE_DESIGN === 'frequency' the button is the members kit's own `.btn`
+// (design_handoff/frequency/templates/members/app/app.css): a 44px pill, `.pa` the iridescent primary,
+// `.txt` the quiet text action, `.sm` / `.lg` the kit's sizes. The kit has no class for the danger,
+// warning and outline tones or for `xs`; app/themes/frequency/members-ui.css adds them (`mu-*`).
+// SITE_DESIGN is inlined at build, so a DAWN build never reaches these strings and its markup is
+// byte-identical to before.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+const FQ_VARIANT: Record<ButtonVariant, string> = {
+  primary: 'pa',
+  primarySoft: 'mu-soft',
+  secondary: '',
+  ghost: 'txt',
+  danger: 'mu-danger',
+  warning: 'mu-warning',
+  dangerOutline: 'mu-danger-o',
+  warningOutline: 'mu-warning-o',
+  successOutline: 'mu-success-o',
+}
+const FQ_SIZE: Record<ButtonSize, string> = { xs: 'xs', sm: 'sm', md: '', lg: 'lg' }
+
 /** The button's GEOMETRY ALONE — shape, padding, type scale, press/focus states and the
  *  `tap-target` floor — carrying NO palette whatsoever.
  *
@@ -123,6 +144,7 @@ const BASE =
  *  Use `buttonClasses` whenever a standard variant's colours are wanted; reach for this only
  *  when the surface supplies its own (an on-photo scrim chip, a brand-accent fill). */
 export function buttonGeometry(size: ButtonSize = 'md', className?: string): string {
+  if (FREQUENCY) return cn('btn', FQ_SIZE[size], className)
   return cn(BASE, SIZE[size], className)
 }
 
@@ -134,6 +156,7 @@ export function buttonClasses(
   size: ButtonSize = 'md',
   className?: string,
 ): string {
+  if (FREQUENCY) return cn('btn', FQ_VARIANT[variant], FQ_SIZE[size], className)
   return cn(BASE, VARIANT[variant], SIZE[size], className)
 }
 
