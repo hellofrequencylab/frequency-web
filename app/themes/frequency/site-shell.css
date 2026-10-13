@@ -1,0 +1,82 @@
+/* The Frequency public site SHELL: what the React port needs that the generated kit (kit-site.css,
+   do not edit) does not carry, because the prototype hung it on <body> or never needed it.
+   Hand-kept. --fq- variables only, scoped like the kit to [data-design="frequency"] [data-kit="site"];
+   the one exception is the document canvas below, which has to be the html/body pair.
+   Imported by components/frequency/site/shell/site-shell.tsx. */
+
+@layer components {
+  /* The document canvas behind the kit: Stage's void, so overscroll and the first paint are dark (fx.js
+     set this on <html> from script; here it is in the first paint). */
+  [data-design="frequency"]:has([data-kit="site"]),
+  [data-design="frequency"]:has([data-kit="site"]) body {
+    background: var(--fq-uv-void);
+    color-scheme: dark;
+  }
+
+  /* The kit root is the prototype's <body>: it paints the canvas, and it is the stacking context the
+     mood wash (`[data-mood]::before`, fixed, z-index -1) sits in, so the wash lands above the canvas
+     and below the page. The kit sets `background: transparent` on [data-mood] for the body it wrote
+     for; this more specific rule restores the canvas on the element that replaced it. */
+  [data-design="frequency"] [data-kit="site"].fq-site,
+  [data-design="frequency"] [data-kit="site"].fq-site[data-mood] {
+    position: relative;
+    isolation: isolate;
+    display: flow-root;
+    flex: 1 0 auto;
+    min-height: 100dvh;
+    background: var(--fq-bg-canvas);
+    color: var(--fq-text-body);
+    font-family: var(--fq-font-sans);
+  }
+
+  /* Skip link: the first focusable element, hidden until a keyboard user reaches it (WCAG 2.4.1). */
+  [data-design="frequency"] [data-kit="site"] .fq-skip {
+    position: fixed;
+    top: 10px;
+    left: 12px;
+    z-index: 90;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--fq-surface-raised);
+    color: var(--fq-text-strong);
+    font: 600 15px/1 var(--fq-font-sans);
+    text-decoration: none;
+    transform: translateY(-160%);
+    transition: transform var(--fq-dur-fast) var(--fq-ease-out);
+  }
+  [data-design="frequency"] [data-kit="site"] .fq-skip:focus-visible {
+    transform: none;
+    outline: 2px solid var(--fq-x-aqua-neon);
+    outline-offset: 3px;
+  }
+
+  /* The fixed header clears the iPhone notch in a standalone PWA (viewport-fit=cover); env() is 0
+     everywhere else, so the kit's 84 / 64px bar is unchanged off-device. */
+  [data-design="frequency"] [data-kit="site"] header.nav {
+    height: calc(84px + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top) !important;
+  }
+  [data-design="frequency"] [data-kit="site"] header.nav.is-scrolled {
+    height: calc(64px + env(safe-area-inset-top)) !important;
+  }
+
+  /* The prototype's Log in and avatar are <button>s; here they are links, so they need the box. */
+  [data-design="frequency"] [data-kit="site"] a.acct-login,
+  [data-design="frequency"] [data-kit="site"] a.acct-me {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  /* A page that does not open on a kit hero (which sits under the transparent bar by design) is pushed
+     clear of the fixed header. */
+  [data-design="frequency"] [data-kit="site"] main.fq-main:not(:has(.hero, .phero, .hp-hero, .jx, .fold)) {
+    padding-top: calc(84px + env(safe-area-inset-top));
+  }
+
+  /* Keep going, "row" variant: the inline style Vision's prototype carried. */
+  [data-design="frequency"] [data-kit="site"] .next .fq-kg-body {
+    margin: 10px 0 0;
+    font-size: 16px;
+  }
+}

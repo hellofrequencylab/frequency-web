@@ -1593,7 +1593,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 69,
+      "baseline": 70,
       "history": [
         {
           "at": "2026-08-05",
@@ -1671,15 +1671,22 @@
           "to": 69,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-input sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-13",
+          "from": 69,
+          "to": 70,
+          "direction": "raised",
+          "reason": "Frequency public site search (components/frequency/site/shell/site-header.tsx): the kit's label.fq-sin styles a bare input verbatim; the Input primitive's utility classes outrank the kit layer and would repaint it"
         }
       ],
       "frozen": {
         "at": "2026-10-13",
-        "value": 69,
-        "direction": "lowered",
+        "value": 70,
+        "direction": "raised",
         "basis": "a76a8556a0ed",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-input sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 88
+        "reason": "Frequency public site search (components/frequency/site/shell/site-header.tsx): the kit's label.fq-sin styles a bare input verbatim; the Input primitive's utility classes outrank the kit layer and would repaint it",
+        "from": 69
       }
     },
     {
