@@ -52,3 +52,38 @@ describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) 
     expect(unknown, `not a DAWN token: ${unknown.join(', ')}`).toEqual([])
   })
 })
+
+describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
+  it('wears Frequency, switches the older layers off, and offers no DAWN-only skin', async () => {
+    const { vi } = await import('vitest')
+    vi.resetModules()
+    vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', 'frequency')
+    try {
+      const design = await import('./design')
+      const skins = await import('./skins')
+      expect(design.SITE_DESIGN).toBe('frequency')
+      expect(design.LEGACY_THEME_AXES).toBe(false)
+      expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default'])
+      expect(skins.resolveSkin('midnight')).toBe('default')
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
+  it('wears DAWN with every layer on when the variable is unset', async () => {
+    const { vi } = await import('vitest')
+    vi.resetModules()
+    vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', '')
+    try {
+      const design = await import('./design')
+      const skins = await import('./skins')
+      expect(design.SITE_DESIGN).toBe('dawn')
+      expect(design.LEGACY_THEME_AXES).toBe(true)
+      expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+})

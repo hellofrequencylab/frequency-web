@@ -2085,6 +2085,15 @@
   --design-font-display: var(--font-anton);
   --design-font-mono:    var(--font-geist-mono);
 
+  /* Map paint (lib/maps/css-color.ts): MapLibre layers and popups on the Circle, Discover and scan maps. */
+  --design-map-pin:          #E2912F;
+  --design-map-pin-ring:     #FFFFFF;
+  --design-map-count:        #2A1B06;
+  --design-map-link:         #A8631B;
+  --design-map-meta:         #8a7a66;
+  --design-map-starter:      #7C5CD6;
+  --design-map-starter-link: #5B3FB0;
+
   --design-radius-sm:  6px;
   --design-radius-md:  10px;
   --design-radius-lg:  14px;
