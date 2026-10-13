@@ -108,11 +108,10 @@ Research basis: NN/g found users are 89% more likely to remember a top-left logo
 - **Under 1024px:** a full-screen Menu sheet with search and login at the top, then accordions.
 - **Footer:** both wings, Features, Pricing, Stories, Vision.
 
-## Texture and mood layers
-Pages load `web/texture.css` + `web/mood.css` after `site.css`, and `web/mood.js` + `web/texture.js` after `megamenu.js`.
-- **Texture:** canvas film grain (`.fq-grain` on `.photo`, `.pd`, `.mm-card`), iridescent hover sheen on `.photo.fq-iri-rim`, live signal-line waveforms (`.lv-live`, `.fqm-live`, `.locpill`, driven by `data-energy`), breathing live dots, pointer-follow card light (`.tx-lit`), frosted `.concept` caption, iridescent FR roundel in the footer.
-- **Mood:** `body[data-mood]` sets page energy and a three-hue palette (`--m1/--m2/--m3`) with a fixed wash. Hero sphere (`.tx-sphere`), section halos (`.tx-halo`), jewel orbs (`.tx-jewel`), gradient seams (`.tx-seam`). The page table lives in `mood.js`.
-- **Orbs:** one hero sphere per page. Jewels add depth only, at section edges.
-- **Neutral surfaces:** on Help-style pages, orbs stay in the hero.
-- **Grain:** never use `mix-blend-mode` on fixed full-page SVG noise. Use the canvas tile.
-- All motion respects `prefers-reduced-motion`.
+## FX layer (mood + texture)
+Pages load `web/fx.css` after `site.css`, and `web/fx.js` last (after `side.js` and `megamenu.js`, which it reads).
+- **Mood:** `fx.js` sets `body[data-mood]`, `body[data-energy-page]` and `--m1/--m2/--m3` from its page table, with a fixed wash. Hero sphere, section halos, jewel orbs, gradient seams.
+- **Texture:** one generated bitmap grain tile (`--fx-noise`) on photos and cards, iridescent hover sheen, live signal lines driven by `data-energy`, breathing live dots, pointer-follow card light, logo sheen.
+- **Orbs:** one hero sphere per page. Jewels add depth only, at section edges. Help-style pages keep orbs in the hero.
+- **Performance:** one rAF-batched scroll loop, orb fields pause offscreen, signal lines about 30fps only while visible, grain hidden under 860px, Leaflet loaded on demand. Never put `mix-blend-mode` on fixed full-page SVG noise.
+- All loops stop under `prefers-reduced-motion`.

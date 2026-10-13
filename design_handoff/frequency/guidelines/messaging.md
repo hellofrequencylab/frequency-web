@@ -35,7 +35,7 @@ We don't sell yoga, and we don't sell raves. We sell the thing both are reaching
 >
 > Somewhere along the way, we lost our communities. The feed moved in. We got a hundred contacts and no one to call on a Tuesday.
 >
-> Frequency is how we get them back. A network of rooms and the people who fill them. Circles that meet every week. Nights that run late. Mornings that start slow. Free to join, and built to get you off your phone.
+> Frequency is how we get them back. A network of rooms and the people who fill them. Circles you can keep coming back to. Nights that run late. Mornings that start slow. Free to join, and built to get you off your phone.
 >
 > Sacred, not serious. Gather like it matters.
 
@@ -61,7 +61,7 @@ Copy patterns: "Build circles, not walls." · "Open the door." · "Bring someone
 | Pillar | Say | Never |
 |---|---|---|
 | **The community** | Real people, real places, real times | "Community" as an abstraction with no faces |
-| **The regulars** | Circles: same people, every week | Followers, audience, tribe |
+| **The regulars** | Circles: familiar faces, again and again | Followers, audience, tribe |
 | **The ritual** | Moments that mark time: openings, closings, seasons | Spiritual jargon, doctrine, "energy work" |
 | **The release** | Joy, music, staying late, laughing | Party clichés, drinking culture, "rave" |
 | **The fair deal** | Free to gather; we earn only when we help a community grow | Discounts, urgency, reach |
@@ -94,6 +94,7 @@ Copy patterns: "Build circles, not walls." · "Open the door." · "Bring someone
 Rules: CTAs are verbs about the real world. Never use Join the movement, Unlock or Sign up now. "Start free" is reserved for places.
 
 ## Web surface language
+- **Connection, not commitment.** Never promise or push "every week" or "weekly". Say that people can keep coming back, connect consistently, and find familiar faces whenever they show up. Schedules state facts ("Tuesday mornings", "Recurring"), never obligations.
 - The town calendar is called **What's happening** in nav, menus, labels and copy. Never "What's on".
 - Side toggle labels: **Browse Community** / **Host Community**.
 - Hero headlines lead with search terms (local, groups, events, near you) and don't promise a weekly commitment:

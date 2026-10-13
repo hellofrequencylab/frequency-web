@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<meta name="ext-resource-dependency" content="../../assets/icons/frequency-icons.svg" data-resource-id="icons">
+<meta name="ext-resource-dependency" content="../../assets/photos/day-meditation-circle.jpg" data-resource-id="mm-dmc">
+<meta name="ext-resource-dependency" content="../../assets/photos/night-string-lights-web.jpg" data-resource-id="mm-nsl">
+<meta name="ext-resource-dependency" content="../../assets/photos/gathering-04.jpg" data-resource-id="mm-g04">
+<meta name="ext-resource-dependency" content="../../assets/photos/day-park-yoga.jpg" data-resource-id="mm-dpy">
+<meta name="theme-color" content="#0A0612"><link rel="icon" href="../../assets/logo/frequency-icon-round.png">
+
 <title>Frequency · Find local groups near you, or host experiences people come back to</title>
-<meta name="description" content="Frequency is a community network. Find local Circles, events and programs that meet every week near you, free. Studios, cafés, coaches and venues host experiences and get found by people looking for a community.">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Frequency Community Collective","description":"A local community network where people find groups that meet every week, and Spaces host experiences people come back to."},{"@type":"WebSite","name":"Frequency","description":"Find local groups and events near you, or host experiences as a studio, café, coach or venue."}]}</script>
+<meta name="description" content="Frequency is a community network. Find local Circles, events and programs near you, with people you'll keep seeing, free. Studios, cafés, coaches and venues host experiences and get found by people looking for a community.">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Frequency Community Collective","description":"A local community network where people find groups near them and keep coming back, and Spaces host experiences people come back to."},{"@type":"WebSite","name":"Frequency","description":"Find local groups and events near you, or host experiences as a studio, café, coach or venue."}]}</script>
 <link rel="stylesheet" href="../../styles.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="web/site.css">
-<link rel="stylesheet" href="web/texture.css">
-<link rel="stylesheet" href="web/mood.css">
+<link rel="stylesheet" href="web/fx.css">
 <style>
 body[data-side="p"]{--side:var(--x-aqua-neon);--side-soft:rgba(61,242,255,.14);--other:var(--x-sun-neon)}
 body[data-side="e"]{--side:var(--x-sun-neon);--side-soft:rgba(255,196,107,.14);--other:var(--x-aqua-neon)}
@@ -184,7 +189,8 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 @media (max-width:960px){.pair,.feats6{grid-template-columns:1fr}.chap .split .photo{order:-1}
 .weave{padding:0}.wv-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-flow:column;grid-template-rows:auto repeat(6,auto);gap:22px 12px}.wv-stage,.wv-loop{display:none}.wv-row{text-align:center}.wn{flex-direction:column;text-align:center;font-size:13px;padding:12px 8px}.wv-cap{grid-template-columns:1fr}}
 @media (max-width:560px){.dock .k{display:none}.sw.big button{padding:0 16px;font-size:15px}}
-</style></head>
+</style><template id="__bundler_thumbnail" data-bg-color="#0A0612"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0A0612"/><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF2BD6"/><stop offset=".5" stop-color="#9B7BFF"/><stop offset="1" stop-color="#3FE0FF"/></linearGradient></defs><circle cx="50" cy="50" r="20" fill="none" stroke="url(#g)" stroke-width="4"/><circle cx="50" cy="50" r="5" fill="url(#g)"/></svg></template>
+</head>
 <body data-theme="stage" data-side="p">
 
 <header class="nav dark" id="nav">
@@ -200,7 +206,7 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 <a class="locpill" href="Join.html"><svg aria-hidden="true"><use href="../../assets/icons/frequency-icons.svg#pin"/></svg><b>San Diego</b><span>48 Circles and events this week</span><em>Change</em></a></div></div>
 <div class="h-main"><h1 class="h-xl"><span class="p-only">Find local groups and events <em class="fq-iri-text">near you.</em></span><span class="e-only">Host local events and groups people <em class="fq-iri-text">come back to.</em></span></h1>
 <div class="h-foot"><div class="lede">
-<p class="p-only">A hundred contacts. No one to call on a Tuesday. Frequency is where the people near you meet every week, around something you like doing. Free to join, and built to get you off your phone.</p>
+<p class="p-only">A hundred contacts. No one to call on a Tuesday. Frequency is where you find the people near you, and keep finding them, around something you like doing. Free to join, and built to get you off your phone.</p>
 <p class="e-only">Studios, cafés, coaches, clubs and venues: every Space is making an experience. Frequency puts your Circles and events on the calendar your town reads, remembers who came, and gives them a reason to come back.</p>
 </div>
 <div class="ctas"><a class="btn fq-iri-btn p-only" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim p-only" href="#weave">See how it works</a><a class="btn fq-iri-btn e-only" href="Spaces.html">Open your Space</a><a class="btn btn-ghost fq-iri-rim e-only" href="#weave">See how it works</a></div></div></div>
@@ -210,22 +216,22 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 
 <section class="fold" id="fold" data-screen-label="02 Vision + choose your path">
 <div class="fold-stage">
-<div class="fl-ph" data-d="1.4" style="left:4%;top:14%;width:clamp(150px,17vw,260px);aspect-ratio:3/4"><img src="../../assets/photos/day-park-yoga.jpg" alt=""></div>
-<div class="fl-ph" data-d="0.7" style="right:6%;top:8%;width:clamp(170px,20vw,300px);aspect-ratio:4/3"><img src="../../assets/photos/night-string-lights-web.jpg" alt=""></div>
-<div class="fl-ph" data-d="1.9" style="left:12%;bottom:6%;width:clamp(140px,15vw,230px);aspect-ratio:1"><img src="../../assets/photos/gathering-03.jpg" alt=""></div>
-<div class="fl-ph" data-d="1.1" style="right:12%;bottom:10%;width:clamp(150px,16vw,240px);aspect-ratio:3/4"><img src="../../assets/photos/day-meditation-circle.jpg" alt=""></div>
-<div class="fl-ph" data-d="2.4" style="left:40%;top:4%;width:clamp(110px,11vw,170px);aspect-ratio:1"><img src="../../assets/photos/gathering-05.jpg" alt=""></div>
-<div class="fl-ph" data-d="1.6" style="left:46%;bottom:2%;width:clamp(120px,12vw,190px);aspect-ratio:4/3"><img src="../../assets/photos/night-yoga-rave-web.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.4" style="left:4%;top:14%;width:clamp(150px,17vw,260px);aspect-ratio:3/4"><img loading="lazy" decoding="async" src="../../assets/photos/day-park-yoga.jpg" alt=""></div>
+<div class="fl-ph" data-d="0.7" style="right:6%;top:8%;width:clamp(170px,20vw,300px);aspect-ratio:4/3"><img loading="lazy" decoding="async" src="../../assets/photos/night-string-lights-web.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.9" style="left:12%;bottom:6%;width:clamp(140px,15vw,230px);aspect-ratio:1"><img loading="lazy" decoding="async" src="../../assets/photos/gathering-03.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.1" style="right:12%;bottom:10%;width:clamp(150px,16vw,240px);aspect-ratio:3/4"><img loading="lazy" decoding="async" src="../../assets/photos/day-meditation-circle.jpg" alt=""></div>
+<div class="fl-ph" data-d="2.4" style="left:40%;top:4%;width:clamp(110px,11vw,170px);aspect-ratio:1"><img loading="lazy" decoding="async" src="../../assets/photos/gathering-05.jpg" alt=""></div>
+<div class="fl-ph" data-d="1.6" style="left:46%;bottom:2%;width:clamp(120px,12vw,190px);aspect-ratio:4/3"><img loading="lazy" decoding="async" src="../../assets/photos/night-yoga-rave-web.jpg" alt=""></div>
 <div class="fl-shade"></div>
 <div class="fl-txt" data-in="-1 -.5" data-out=".14 .2"><span class="label" style="justify-content:center"><b>Frequency</b>The vision</span><p class="fl-big">Somewhere in your town, people are gathering <em class="fq-iri-text">on purpose.</em></p></div>
-<div class="fl-txt" data-in=".18 .26" data-out=".36 .42"><p class="fl-big">A Thursday Circle. A long table. A night that runs late.</p></div>
+<div class="fl-txt" data-in=".18 .26" data-out=".36 .42"><p class="fl-big">A Thursday Circle. A community table. A night that runs late.</p></div>
 <div class="fl-txt" data-in=".38 .45" data-out=".5 .56"><p class="fl-big">Frequency is how they find each other, and why they keep <em class="fq-iri-text">coming back.</em></p></div>
 <div class="fl-fork" data-in=".54 .62">
 <span class="label" style="justify-content:center"><b>Your move</b>Choose your path</span>
 <h2 class="h-l" style="text-align:center;margin:18px auto 0">Where do you come in?</h2>
 <div class="pds">
-<div class="pdw l"><span class="pdg"></span><button class="pd l" data-set="p" data-go="story"><img src="../../assets/photos/day-parachute-play.jpg" alt=""><span class="dk">Path one</span><b>I’m looking for an experience.</b><span class="dp">Find a Circle, a night, a few weeks with the same people. Free, forever.</span><span class="dg">Start here →</span></button></div>
-<div class="pdw r"><span class="pdg"></span><button class="pd r" data-set="e" data-go="story"><img src="../../assets/photos/gathering-07.jpg" alt=""><span class="dk">Path two</span><b>I want to host an experience.</b><span class="dp">Studios, cafés, clubs and hosts. Make the thing people come back for.</span><span class="dg">Start here →</span></button></div>
+<div class="pdw l"><span class="pdg"></span><button class="pd l" data-set="p" data-go="story"><img loading="lazy" decoding="async" src="../../assets/photos/day-parachute-play.jpg" alt=""><span class="dk">Path one</span><b>I’m looking for an experience.</b><span class="dp">Find a Circle, a night, a few weeks with the same people. Free, forever.</span><span class="dg">Start here →</span></button></div>
+<div class="pdw r"><span class="pdg"></span><button class="pd r" data-set="e" data-go="story"><img loading="lazy" decoding="async" src="../../assets/photos/gathering-07.jpg" alt=""><span class="dk">Path two</span><b>I want to host an experience.</b><span class="dp">Studios, cafés, clubs and hosts. Make the thing people come back for.</span><span class="dg">Start here →</span></button></div>
 </div>
 <p class="pd-hint">Pick one to keep going. You can switch sides anytime.</p>
 </div>
@@ -242,7 +248,7 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 <div>
 <span class="n">01 · <span class="p-only">Find</span><span class="e-only">Be found</span></span>
 <h2 class="h-l"><span class="p-only">See what’s happening near you.</span><span class="e-only">Land where your town looks.</span></h2>
-<p class="body-l p-only">One calendar for your town. Circles that meet every week, events, programs, experiences. Pick something you like doing and a time you’re free.</p>
+<p class="body-l p-only">One calendar for your town. Circles you can keep coming back to, events, programs, experiences. Pick something you like doing and a time you’re free.</p>
 <p class="body-l e-only">Open a Space for free and post what you run. It lands on the calendar your whole town reads, ranked by how often you gather, never by who paid.</p>
 <div class="acts p-only"><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#pin"/></svg></span><span><b>Set your town</b><small>See what meets near you</small></span><span class="ar">→</span></a><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><span><b>Browse this week</b><small>Circles, events, programs</small></span><span class="ar">→</span></a><a href="People.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Pick a Circle</b><small>Same people, same time</small></span><span class="ar">→</span></a></div>
 <div class="acts e-only"><a href="Spaces.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#space"/></svg></span><span><b>Open your Space</b><small>Free, takes ten minutes</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#page"/></svg></span><span><b>Set up your page</b><small>Change it yourself, anytime</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><span><b>Post your first experience</b><small>A Circle, an event or a program</small></span><span class="ar">→</span></a></div>
@@ -251,7 +257,7 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 </div></div>
 
 <div class="chap" data-screen-label="03b Show up"><span class="rings" data-px="-.12" aria-hidden="true"></span><div class="wrap split rev">
-<div class="photo fq-iri-rim" data-px=".08"><img class="p-only" src="../../assets/photos/day-parachute-play.jpg" alt="Adults playing with a parachute in a park"><img class="e-only" src="../../assets/photos/gathering-07.jpg" alt="Guests arriving at a local venue"></div>
+<div class="photo fq-iri-rim" data-px=".08"><img loading="lazy" decoding="async" class="p-only" src="../../assets/photos/day-parachute-play.jpg" alt="Adults playing with a parachute in a park"><img loading="lazy" decoding="async" class="e-only" src="../../assets/photos/gathering-07.jpg" alt="Guests arriving at a local venue"></div>
 <div>
 <span class="n">02 · <span class="p-only">Show up</span><span class="e-only">Open the door</span></span>
 <h2 class="h-l"><span class="p-only">Walk in. Check in.</span><span class="e-only">Know who came.</span></h2>
@@ -274,15 +280,15 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 <span class="n">03 · <span class="p-only">Come back</span><span class="e-only">Bring them back</span></span>
 <h2 class="h-l"><span class="p-only">Same people, same time.</span><span class="e-only">Give them a rhythm.</span></h2>
 <p class="body-l p-only">Keep coming and the faces start to know yours. One week you’re new, a month later someone saves you a spot.</p>
-<p class="body-l e-only">Weekly Circles, programs people move through together, memberships that drop them straight into their group. Experiences that repeat are the ones that hold.</p>
-<div class="acts p-only"><a href="People.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Join a weekly Circle</b><small>Your regular slot</small></span><span class="ar">→</span></a><a href="People.html#first-night"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><span><b>Start a program</b><small>Six weeks, same group</small></span><span class="ar">→</span></a><a href="Features.html#f-zaps"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#zap"/></svg></span><span><b>Keep your streak</b><small>Zaps for showing up again</small></span><span class="ar">→</span></a></div>
-<div class="acts e-only"><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Run a weekly Circle</b><small>The heartbeat of a Space</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><span><b>Build a program</b><small>A path your Circle walks together</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#membership"/></svg></span><span><b>Sell memberships</b><small>Members land in their Circle</small></span><span class="ar">→</span></a></div>
+<p class="body-l e-only">Ongoing Circles, programs people move through together, memberships that drop them straight into their group. Experiences that repeat are the ones that hold.</p>
+<div class="acts p-only"><a href="People.html"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Join a Circle</b><small>A place to keep coming back</small></span><span class="ar">→</span></a><a href="People.html#first-night"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><span><b>Start a program</b><small>Six weeks, same group</small></span><span class="ar">→</span></a><a href="Features.html#f-zaps"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#zap"/></svg></span><span><b>Keep your streak</b><small>Zaps for showing up again</small></span><span class="ar">→</span></a></div>
+<div class="acts e-only"><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Run a Circle</b><small>The heartbeat of a Space</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><span><b>Build a program</b><small>A path your Circle walks together</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#membership"/></svg></span><span><b>Sell memberships</b><small>Members land in their Circle</small></span><span class="ar">→</span></a></div>
 </div>
-<div class="photo fq-iri-rim" data-px=".08"><img class="p-only" src="../../assets/photos/day-meditation-circle.jpg" alt="A circle of people sitting together outdoors"><img class="e-only" src="../../assets/photos/gathering-09.jpg" alt="A regular group mid-session at a studio"></div>
+<div class="photo fq-iri-rim" data-px=".08"><img loading="lazy" decoding="async" class="p-only" src="../../assets/photos/day-meditation-circle.jpg" alt="A circle of people sitting together outdoors"><img loading="lazy" decoding="async" class="e-only" src="../../assets/photos/gathering-09.jpg" alt="A regular group mid-session at a studio"></div>
 </div></div>
 
 <div class="chap" data-screen-label="03d Pass it on"><span class="rings" data-px="-.12" aria-hidden="true"></span><div class="wrap split rev">
-<div class="photo fq-iri-rim" data-px=".08"><img class="p-only" src="../../assets/photos/day-beach-hoop.jpg" alt="Someone dancing on the beach"><img class="e-only" src="../../assets/photos/night-yoga-rave-web.jpg" alt="A full room at night"></div>
+<div class="photo fq-iri-rim" data-px=".08"><img loading="lazy" decoding="async" class="p-only" src="../../assets/photos/day-beach-hoop.jpg" alt="Someone dancing on the beach"><img loading="lazy" decoding="async" class="e-only" src="../../assets/photos/night-yoga-rave-web.jpg" alt="A full room at night"></div>
 <div>
 <span class="n">04 · <span class="p-only">Pass it on</span><span class="e-only">Grow</span></span>
 <h2 class="h-l"><span class="p-only">Bring someone. Then host.</span><span class="e-only">Rise by how often you gather.</span></h2>
@@ -299,12 +305,12 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 <div class="label"><b>What’s inside</b>Every feature is an experience</div>
 <h2 class="h-l" style="margin-top:24px;max-width:18ch"><span class="p-only">Six ways to be in the room.</span><span class="e-only">Six things you can make.</span></h2>
 <div class="feats6">
-<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><h3>Circle</h3><span class="v p-only">You join</span><span class="v e-only">You run</span><p class="p-only">A small group that meets every week around one thing.</p><p class="e-only">Your weekly heartbeat. Members, a time, a door.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><h3>Circle</h3><span class="v p-only">You join</span><span class="v e-only">You run</span><p class="p-only">A small group around one thing. The faces start to know yours.</p><p class="e-only">Your steady place. Members, a time, a door.</p></div>
 <div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#event"/></svg></span><h3>Event</h3><span class="v p-only">You go</span><span class="v e-only">You throw</span><p class="p-only">One-off gatherings worth staying out for.</p><p class="e-only">Tickets, a guest list and refunds in one place.</p></div>
 <div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#program"/></svg></span><h3>Program</h3><span class="v p-only">You move through</span><span class="v e-only">You design</span><p class="p-only">A few weeks with the same group, start to finish.</p><p class="e-only">A path your Circle walks together, step by step.</p></div>
 <div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#host"/></svg></span><h3>Experience</h3><span class="v p-only">You host</span><span class="v e-only">You hand off</span><p class="p-only">Open your living room, garden or local park.</p><p class="e-only">Regulars running gatherings under your Space.</p></div>
 <div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#checkin"/></svg></span><h3>Check-in</h3><span class="v p-only">You arrive</span><span class="v e-only">You remember</span><p class="p-only">Scan at the door. Zaps for being there.</p><p class="e-only">Everyone who came, kept in your contact list.</p></div>
-<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#membership"/></svg></span><h3>Membership</h3><span class="v p-only">You belong</span><span class="v e-only">You sustain</span><p class="p-only">Your spot, saved every week.</p><p class="e-only">Recurring support that drops people into their Circle.</p></div>
+<div class="fx"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#membership"/></svg></span><h3>Membership</h3><span class="v p-only">You belong</span><span class="v e-only">You sustain</span><p class="p-only">Your spot, saved whenever you come.</p><p class="e-only">Recurring support that drops people into their Circle.</p></div>
 </div>
 </div>
 </section>
@@ -334,18 +340,18 @@ body.gated #story,body.gated #features,body.gated #weave,body.gated .closer,body
 <div class="wrap">
 <p class="label" style="justify-content:center;color:#A89BC2">Build circles, not walls</p>
 <h2 class="h-xl" style="margin-top:22px">Sacred, <em class="fq-iri-text">not serious.</em></h2>
-<p style="color:#D9CFEA;font-size:clamp(18px,1.7vw,22px);line-height:1.55;max-width:46ch;margin:28px auto 0">The quiet morning and the loud night. The long table and the dance floor. Different communities, same reason: being with your people, on purpose. We measure success by who showed up this week.</p>
+<p style="color:#D9CFEA;font-size:clamp(18px,1.7vw,22px);line-height:1.55;max-width:46ch;margin:28px auto 0">The quiet morning and the loud night. The community table and the dance floor. Different communities, same reason: being with your people, on purpose. We measure success by who showed up this week.</p>
 <div class="ctas"><a class="btn fq-iri-btn" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim" href="Spaces.html">Open your Space</a></div>
 </div>
 </section>
 
-<footer class="ft2"><div class="wrap"><div class="ft2-top"><div class="ft2-brand"><a href="Home.html" aria-label="Frequency home"><img class="w" src="../../assets/logo/frequency-wordmark.png" alt="Frequency Community Collective"></a><p>Build circles, not walls. A community network where people find the groups that meet near them every week, and Spaces host experiences people come back to.</p><div class="ctas"><a class="btn fq-iri-btn" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim" href="Spaces.html">Open your Space</a></div></div><nav class="ft2-cols" aria-label="Footer"><div><b>For people</b><a href="People.html">Find your people</a><a href="People.html#first-night">Your first night</a><a href="People.html#near">What’s happening near you</a><a href="Features.html#people">Features for people</a></div><div><b>For spaces</b><a href="Spaces.html">Open your Space</a><a href="Spaces.html#types">For your type</a><a href="Features.html#spaces">Features for Spaces</a><a href="Pricing.html">Pricing</a></div><div><b>Frequency</b><a href="Stories.html">Stories</a><a href="Vision.html">Vision</a><a href="Join.html">Get started</a><a href="Home.html">What we believe</a><a href="Help.html">Help</a></div></nav></div><div class="ft2-bot"><span>© 2026 Frequency Community Collective</span><span class="ft2-legal"><a href="Help.html#privacy">Privacy</a><a href="Help.html#terms">Terms</a><a href="Help.html#accessibility">Accessibility</a></span><em>Your people stay yours.</em></div></div></footer>
+<footer class="ft2"><div class="wrap"><div class="ft2-top"><div class="ft2-brand"><a href="Home.html" aria-label="Frequency home"><img loading="lazy" decoding="async" class="w" src="../../assets/logo/frequency-wordmark.png" alt="Frequency Community Collective"></a><p>Build circles, not walls. A community network where people find groups near them and keep coming back, and Spaces host experiences people come back to.</p><div class="ctas"><a class="btn fq-iri-btn" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim" href="Spaces.html">Open your Space</a></div></div><nav class="ft2-cols" aria-label="Footer"><div><b>For people</b><a href="People.html">Find your people</a><a href="People.html#first-night">Your first night</a><a href="People.html#near">What’s happening near you</a><a href="Features.html#people">Features for people</a></div><div><b>For spaces</b><a href="Spaces.html">Open your Space</a><a href="Spaces.html#types">For your type</a><a href="Features.html#spaces">Features for Spaces</a><a href="Pricing.html">Pricing</a></div><div><b>Frequency</b><a href="Stories.html">Stories</a><a href="Vision.html">Vision</a><a href="Join.html">Get started</a><a href="Home.html">What we believe</a><a href="Help.html">Help</a></div></nav></div><div class="ft2-bot"><span>© 2026 Frequency Community Collective</span><span class="ft2-legal"><a href="Help.html#privacy">Privacy</a><a href="Help.html#terms">Terms</a><a href="Help.html#accessibility">Accessibility</a></span><em>Your people stay yours.</em></div></div></footer>
 
 <div class="dock" id="dock"><div class="sw" role="group" aria-label="Browse or host"><span class="thumb"></span><button data-set="p" aria-pressed="true"><i></i>Browse Community</button><button data-set="e" aria-pressed="false"><i></i>Host Community</button></div></div>
 
 <script>
 (function(){
-const I='../../assets/icons/frequency-icons.svg#';
+const I='#';
 const W=[
 {s:'Find',se:'Be found',p:['Picks a Circle nearby','pin'],m:['The town calendar','event'],e:['Opens a Space, free','space'],
  cp:'Someone new in town opens the calendar and finds a Circle that meets Thursdays, ten minutes away.',ce:'A studio opens a Space for free. Its page, Circles and events land on the calendar the whole town reads.',ap:['Browse this week','People.html#near'],ae:['Open your Space','Spaces.html']},
@@ -429,6 +435,5 @@ var n=document.querySelector('[data-count]');if(n){var done=false,io=new Interse
 <script src="../../assets/icons/icons.js"></script>
 <script src="web/eventmap.js"></script>
 <script src="web/megamenu.js"></script>
-<script src="web/mood.js"></script>
-<script src="web/texture.js"></script>
-</body></html>
+<script src="web/fx.js"></script>
+<script src="../preview.js"></script></body></html>

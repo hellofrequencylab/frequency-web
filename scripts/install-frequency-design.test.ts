@@ -18,6 +18,8 @@ describe('install-frequency-design', () => {
     expect(scopeSelector('[data-time="night"][data-night="uv"]')).toBeNull()
     expect(scopeSelector('h1')).toBe('[data-design="frequency"] h1')
     expect(scopeSelector('.fq-aura')).toBe('.fq-aura')
+    expect(scopeSelector('[data-theme="stage"] .ig-bars i')).toBe('[data-design="frequency"] [data-surface="stage"] .ig-bars i')
+    expect(scopeSelector('[data-theme="commons"] .ig-weave>.c')).toBe('[data-design="frequency"] .ig-weave>.c')
   })
 
   it('drops the font @import even when its URL carries semicolons, and layers element defaults', () => {

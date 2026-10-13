@@ -1,0 +1,111 @@
+{
+  "_source": "hellofrequencylab/frequency-web · content/help/the-quest/zaps-and-gems.md, lib/gems.ts (gem_config). Synced 2026-10-13. Tune values here; every design reads them through assets/economy/economy.js.",
+  "zaps": {
+    "circle_found": {
+      "label": "Found or start a Circle",
+      "amount": 100
+    },
+    "journey_finish": {
+      "label": "Finish a Journey",
+      "amount": 75,
+      "note": "plus a Trophy"
+    },
+    "event_host": {
+      "label": "Host an event",
+      "amount": 60,
+      "amplitude": 2
+    },
+    "expression": {
+      "label": "Expression Challenge at a Circle",
+      "amount": 50
+    },
+    "checkin": {
+      "label": "Verified event check-in",
+      "amount": 25
+    },
+    "outreach": {
+      "label": "Outreach task (flyer or QR)",
+      "amount": 20
+    },
+    "practice_daily": {
+      "label": "Log a daily practice",
+      "amount": 10
+    },
+    "practice_3x": {
+      "label": "Log a 3x-a-week practice",
+      "amount": 15
+    },
+    "practice_weekly": {
+      "label": "Log a weekly practice",
+      "amount": 25
+    }
+  },
+  "gems": {
+    "welcome_member": {
+      "label": "Welcome a newcomer",
+      "amount": 5,
+      "cap": "once per newcomer"
+    },
+    "event_rsvp": {
+      "label": "RSVP to an event",
+      "amount": 5
+    },
+    "circle_join": {
+      "label": "Join a Circle",
+      "amount": 5
+    },
+    "post_create": {
+      "label": "Post",
+      "amount": 3,
+      "cap": 5
+    },
+    "comment_reply": {
+      "label": "Comment or reply",
+      "amount": 2,
+      "cap": 8
+    },
+    "share": {
+      "label": "Share",
+      "amount": 2,
+      "cap": 5
+    },
+    "daily_login": {
+      "label": "Daily presence",
+      "amount": 2,
+      "cap": 1
+    },
+    "reaction": {
+      "label": "React",
+      "amount": 1,
+      "cap": 8
+    }
+  },
+  "season": {
+    "convert_zaps_per_gem": 5
+  },
+  "ranks": [
+    "Initiate",
+    "Adept",
+    "Keeper",
+    "Elder"
+  ],
+  "rank_rule": "Rank is earned by finishing Journeys, not by Zaps. Shown as Rank · Amplitude.",
+  "store": [
+    "Profile cosmetics",
+    "Custom titles",
+    "Collectible badges",
+    "Membership credits"
+  ],
+  "bonus": {
+    "setup_complete": {
+      "label": "Finish Get started",
+      "amount": 50,
+      "note": "Design placeholder. Not in the repo yet; confirm or remove."
+    },
+    "goal_show_up_3": {
+      "label": "Today's goal: show up 3 times",
+      "amount": 35,
+      "note": "Design placeholder. Not in the repo yet; confirm or remove."
+    }
+  }
+}

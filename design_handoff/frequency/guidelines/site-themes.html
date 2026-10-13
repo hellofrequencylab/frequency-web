@@ -1,0 +1,56 @@
+<!-- Frequency design system reference -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frequency™ · Site themes</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="cards/card.css">
+<style>
+body{padding:28px}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;max-width:1400px;margin:0 auto}
+.frame{border-radius:28px;overflow:hidden;position:relative;min-height:600px;display:flex;flex-direction:column}
+.sth{background:#0A0612;color:#D9CFEA;box-shadow:inset 0 0 0 1px rgba(246,240,255,.1);--m1:var(--x-magenta-neon);--m2:var(--x-aqua-neon)}
+.sth .bg{position:absolute;inset:0;background:url('../assets/broll/yoga-rave-uv-swirl-web.jpg') center/cover;opacity:.4}
+.sth .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,18,.2),rgba(10,6,18,.94))}
+.bar{position:relative;z-index:2;height:64px;display:flex;align-items:center;gap:14px;padding:0 22px}
+.mk{width:104px;aspect-ratio:1920/389;-webkit-mask:url('../assets/logo/frequency-wordmark.png') no-repeat left center/contain;mask:url('../assets/logo/frequency-wordmark.png') no-repeat left center/contain}
+.nav{display:flex;gap:2px;padding:4px;border-radius:999px}
+.nav span{height:32px;display:flex;align-items:center;padding:0 12px;border-radius:999px;font:500 13px/1 var(--font-sans)}
+.sth .nav{background:rgba(246,240,255,.06)}.sth .nav span{color:#A89BC2}.sth .nav span.on{background:#F6F0FF;color:#0A0612}
+.cmh{background:#FFFFFF;color:#4D4945}
+.cmh::before{content:"";position:absolute;inset:0;background:var(--wash)}
+.cmh .bar{box-shadow:0 1px 0 rgba(30,27,24,.07);background:rgba(255,255,255,.6)}
+.cmh .nav{background:rgba(30,27,24,.035)}.cmh .nav span{color:#7C766F}.cmh .nav span.on{background:var(--pa);color:#34312E;box-shadow:var(--pa-glow)}
+.inner{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;gap:18px;padding:28px}
+.pill{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:999px;background:rgba(30,18,50,.6);box-shadow:inset 0 0 0 1px rgba(246,240,255,.12);color:#F6F0FF;font:500 13px/1 var(--font-sans);align-self:flex-start;backdrop-filter:blur(10px)}
+.live{width:7px;height:7px;border-radius:50%;background:var(--x-magenta-neon);box-shadow:0 0 10px var(--x-magenta-neon)}
+.hues{max-width:1400px;margin:16px auto 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.hue{border-radius:20px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;box-shadow:inset 0 0 0 1px rgba(246,240,255,.1)}
+.hue div{padding:14px;min-height:84px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;font:500 12px/1.2 var(--font-sans)}
+.hue b{font:500 15px/1 var(--font-sans)}
+.tog{max-width:1400px;margin:0 auto 14px;display:flex;justify-content:space-between;align-items:center}
+.tog button{height:36px;padding:0 14px;border-radius:999px;border:none;background:rgba(246,240,255,.08);color:#F6F0FF;font:500 13px/1 var(--font-sans);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(246,240,255,.14)}
+@media (max-width:1000px){.pair,.hues{grid-template-columns:1fr}}
+</style></head>
+<body class="st" data-theme="stage">
+<div class="tog"><span class="k">Stage sells · Commons is where the network lives</span></div>
+<div class="pair">
+<div class="frame sth" data-energy="charge" data-screen-label="Stage"><div class="bg"></div><div class="shade"></div><span class="orb sphere" style="width:300px;height:300px;right:-60px;top:40px"></span>
+<div class="bar"><span class="mk" style="background:#F6F0FF"></span><span style="flex:1"></span><div class="nav"><span class="on">People</span><span>Spaces</span><span>Features</span></div></div>
+<div class="inner"><span class="k" style="color:#A89BC2">Stage · marketing · always dark</span><span class="pill"><span class="live"></span>214 checked in today · Bird Rock</span>
+<h2 style="margin:auto 0 0;font:600 clamp(36px,4.2vw,60px)/.95 var(--font-display);letter-spacing:-.05em;color:#F6F0FF">Find local groups and events <span class="serif fq-iri-text">near you.</span></h2>
+<p style="margin:0;font-size:18px;line-height:1.55;max-width:40ch">Most people aren't short of content. They're short of a Thursday.</p>
+<div class="row"><span class="btn fq-iri-btn" style="height:48px">Find your Circle</span><span class="btn out" style="height:48px">See what's happening</span></div></div></div>
+<div class="frame cmh" id="commons" data-theme="commons" data-screen-label="Commons">
+<div class="bar"><span class="fq-logo-flow" style="width:110px"></span><div class="nav"><span class="on">Home</span><span>Community</span><span>The Quest</span><span>You</span></div><span style="flex:1"></span><span class="btn pa" style="height:38px;padding:0 16px">Zap</span></div>
+<div class="inner"><span class="k" style="color:#7C766F">Commons · the network · light by default</span>
+<h1 style="margin:0;font:500 38px/1 var(--font-display);letter-spacing:-.05em;color:#34312E">Good evening, <span class="serif" style="font-size:1.08em">Maya.</span></h1>
+<div style="display:flex;border-radius:24px;overflow:hidden;background:#fff;box-shadow:0 20px 50px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(30,27,24,.07)"><div style="flex:1;min-height:180px;background:url('../assets/photos/day-park-yoga.jpg') center/cover"></div><div style="flex:1.2;padding:20px;display:flex;flex-direction:column;gap:8px"><span class="k" style="color:#7C766F">Up next for you</span><span style="font:500 24px/1.05 var(--font-display);letter-spacing:-.045em;color:#34312E">Sunset flow in the park</span><span style="font-size:14px;color:#4D4945">Tonight 6pm · Kate Sessions · 1.8 mi</span><span class="serif" style="font-size:15px;color:#7C766F">Because 3 friends are going.</span><div class="row" style="margin-top:auto"><span class="btn pa">Going</span><span class="btn out">Maybe</span></div></div></div>
+<div class="g" style="grid-template-columns:repeat(3,1fr)"><div class="tile"><span style="font:500 32px/1 var(--font-display);letter-spacing:-.05em;color:#34312E">12</span><span class="hx">Day streak</span></div><div class="tile"><span style="font:500 32px/1 var(--font-display);letter-spacing:-.05em;color:#34312E">⚡ 340</span><span class="hx">Zaps this season</span></div><div class="tile"><span class="fq-iri-text on-light" style="font:600 22px/1.2 var(--font-display)">Initiate</span><span class="hx">Season rank</span></div></div></div></div>
+</div>
+<div class="hues">
+<div class="hue"><div style="background:#8B5CFF;color:#0A0612"><b>Violet</b>Neon · act</div><div style="background:#5B3FD0;color:#fff"><b>Violet</b>Deep · act</div></div>
+<div class="hue"><div style="background:#FF2BD6;color:#0A0612"><b>Magenta</b>Neon · live</div><div style="background:#B0287F;color:#fff"><b>Magenta</b>Deep · live</div></div>
+<div class="hue"><div style="background:#3DF2FF;color:#0A0612"><b>Aqua</b>Neon · presence</div><div style="background:#17788A;color:#fff"><b>Aqua</b>Deep · presence</div></div>
+<div class="hue"><div style="background:#FFC46B;color:#0A0612"><b>Sun</b>Neon · reward</div><div style="background:#9A6200;color:#fff"><b>Sun</b>Deep · reward</div></div>
+</div>
+</body></html>

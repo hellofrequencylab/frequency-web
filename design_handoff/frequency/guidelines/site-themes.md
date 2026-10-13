@@ -48,3 +48,13 @@ Sign-up and first-run onboarding are where the themes hand over. The screen star
 - NN/g, Dark Mode vs. Light Mode: Which Is Better?
 - Vargas (2026), Dark Mode vs. Light Mode: Effects on Mobile Focus, Readability, and Task Performance (Springer)
 - Dogtown Media summary of NN/g usage observations; Wildcore and Watsspace summaries of the hybrid recommendation
+
+## Commons member layer
+Built in the Members app and now part of core `tokens/themes.css` and `tokens/base.css`.
+- **Accent `--pa`:** pastel iridescent gradient `#EEC1EC → #C4B8FF → #A3D4FF → #8FE9FF` (120deg). Use it only where it means something: primary actions, progress, live dots. Text on `--pa` is ink. Pair with `--pa-glow`; use `--pa-soft` for washes and the caught-up card, `--pa-orb` for breathing orbs. Deep violet stays for links, focus and text accents.
+- **Ink:** softened for the member surface. Strong `#34312E`, body `#4D4945`, muted `#7C766F`, faint `#A59F98`. Hairline `rgba(30,27,24,.07)`, track `rgba(30,27,24,.06)`.
+- **Glass panel** (`.fq-panel`): `--glass-panel` gradient, blur 16 saturate 1.3, `--glass-panel-shadow`, radius 24.
+- **Wash** (`.fq-wash`): fixed lilac, aqua and violet radial ellipses behind the page.
+- **Tooltip / toast** (`.fq-tip`, `.fq-toast`): dark pill `rgba(52,49,46,.92)`, white text; toasts sit bottom-centre 76px and hide after 2.8s.
+- **Logo flow** (`.fq-logo-flow`): the wordmark as a mask over ink 88%, with an iridescent band drifting across it every 16s. Stops under reduced motion.
+- **Radii in use:** 14 tooltip, 16 icon buttons and thumbs, 20 listings, 22 small cards, 24 panels, 28 hero and end cap, pill for buttons and chips. Primary CTA 48px, hit target 44px minimum.

@@ -1,0 +1,44 @@
+{
+  "theme": "frequency",
+  "label": "Frequency",
+  "level": "platform",
+  "description": "The Frequency design system as a platform theme pack. Available on every site theme; each item falls back when the site switches theme.",
+  "tokens": {
+    "stage":   { "--th-bg": "#0A0612", "--th-text": "#F6F0FF", "--th-muted": "#A89BC2", "--th-accent": "var(--iridescent-sweep)", "--th-on-accent": "#0A0612", "--th-r": "24px" },
+    "commons": { "--th-bg": "#FFFFFF", "--th-text": "#34312E", "--th-muted": "#7C766F", "--th-accent": "var(--pa)", "--th-on-accent": "#1E1B18", "--th-r": "24px" },
+    "fonts": { "display": "Unbounded", "body": "Hanken Grotesk", "accent": "Instrument Serif" }
+  },
+  "variants": {
+    "stats": { "grid-2": "ig-stat", "grid-4": "ig-stat", "cards": "ig-card" },
+    "steps": { "numbered": "ig-path", "orbit": "ig-orbit" },
+    "timeline": { "horizontal": "ig-path" },
+    "bar": { "single": "ig-bars", "layered": "ig-stack" },
+    "donut": { "ring": "ig-ring", "overlap": "ig-donut" },
+    "meter": { "tide": "ig-meter", "segments": "ig-meter seg" },
+    "pictogram": { "icons": "ig-pic", "orbs": "ig-pic orbs" },
+    "card": { "soft": "fq-panel", "glass": "fq-glass" }
+  },
+  "pack": [
+    { "id": "grain",        "kind": "ornament", "class": "fq-grain",      "fallback": null },
+    { "id": "mood-sphere",  "kind": "ornament", "class": "tx-sphere",     "fallback": null },
+    { "id": "mood-halo",    "kind": "ornament", "class": "tx-halo",       "fallback": null },
+    { "id": "seam",         "kind": "divider",  "class": "tx-seam",       "fallback": "Divider" },
+    { "id": "iri-text",     "kind": "text-style","class": "fq-iri-text",  "fallback": "accent" },
+    { "id": "iri-rim",      "kind": "frame",    "class": "fq-iri-rim",    "fallback": "border" },
+    { "id": "roundel",      "kind": "symbol",   "asset": "assets/logo/frequency-icon-round.png", "fallback": null },
+    { "id": "logo-flow",    "kind": "symbol",   "class": "fq-logo-flow",  "fallback": "Logo" },
+    { "id": "houses",       "kind": "symbol-set","sprite": "assets/icons/frequency-icons.svg", "ids": ["house-01","house-02","house-03","house-04","house-05","house-06","house-07","house-08","house-09","house-10","house-11","house-12"], "fallback": "icon:circle" },
+    { "id": "breath-ring",  "kind": "ornament", "class": "ig-ring",       "fallback": "meter" },
+    { "id": "streak-arc",   "kind": "smart",    "ig": "streak",           "fallback": "stats" },
+    { "id": "streak-thread","kind": "smart",    "ig": "chain",            "fallback": "stats" },
+    { "id": "podium",       "kind": "smart",    "class": "ig-podium",     "fallback": "stats" },
+    { "id": "orbit",        "kind": "smart",    "class": "ig-orbit",      "fallback": "iconList" },
+    { "id": "weave",        "kind": "smart",    "class": "ig-weave",      "fallback": "stats" }
+  ],
+  "presets": [
+    { "id": "year-in-numbers", "label": "Our year in numbers", "blocks": ["Infographic:stats", "Infographic:bar", "Infographic:quote"] },
+    { "id": "three-steps",     "label": "How it works in 3 steps", "blocks": ["Infographic:steps"] },
+    { "id": "event-schedule",  "label": "Event schedule", "blocks": ["Infographic:timeline"] },
+    { "id": "fundraiser-goal", "label": "Fundraiser goal", "blocks": ["Infographic:meter", "Infographic:stats", "Infographic:iconList"] }
+  ]
+}

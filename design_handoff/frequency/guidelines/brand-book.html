@@ -1,0 +1,218 @@
+<!-- Frequency design system reference -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frequency™ Brand Book</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg-canvas);color:var(--text-body);font-family:var(--font-sans)}
+a{color:var(--text-link)}a:hover{color:var(--text-link-hover)}
+*{box-sizing:border-box}
+.wrap{max-width:1200px;margin:0 auto;padding:0 clamp(18px,4vw,40px);position:relative;z-index:2}
+section{position:relative;overflow:hidden;padding:clamp(88px,10vw,136px) 0}
+.bb-nav{position:sticky;top:0;z-index:50;height:68px;display:flex;align-items:center;gap:20px;padding:0 clamp(18px,4vw,40px);background:rgba(10,6,18,.62);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 1px 0 rgba(246,240,255,.08)}
+.bb-nav .mark{width:118px;flex:none;aspect-ratio:1920/389;background:#F6F0FF;-webkit-mask:url('../assets/logo/frequency-wordmark.png') no-repeat left center/contain;mask:url('../assets/logo/frequency-wordmark.png') no-repeat left center/contain}
+.bb-nav .t{font:500 10.5px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:#A89BC2;flex:none}
+.bb-nav ul{list-style:none;margin:0 0 0 auto;padding:4px;display:flex;gap:2px;border-radius:999px;background:rgba(246,240,255,.06);overflow-x:auto;scrollbar-width:none;min-width:0}
+.bb-nav ul a{display:flex;align-items:center;height:34px;padding:0 13px;border-radius:999px;font:500 13px/1 var(--font-sans);color:#A89BC2;text-decoration:none;white-space:nowrap;transition:background var(--dur-fast),color var(--dur-fast)}
+.bb-nav ul a:hover{color:#F6F0FF;background:rgba(246,240,255,.08)}
+.bb-nav ul a.on{color:#0A0612;background:var(--iridescent-sweep);background-size:200% 100%}
+@media (max-width:860px){.bb-nav .t{display:none}}
+.lbl{font:var(--type-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--text-muted);display:flex;gap:12px}.lbl b{color:var(--text-strong);font-weight:600}
+.xl{font:600 clamp(48px,8vw,112px)/.92 var(--font-display);letter-spacing:-.055em;color:var(--text-strong);margin:22px 0 0;text-wrap:balance}
+.l{font:600 clamp(32px,4.4vw,60px)/1 var(--font-display);letter-spacing:-.045em;color:var(--text-strong);margin:22px 0 0;max-width:20ch;text-wrap:balance}
+.lede{font-size:clamp(17px,1.6vw,20px);line-height:1.6;max-width:58ch;margin:24px 0 0;text-wrap:pretty}
+.serif{font-family:var(--font-serif);font-style:italic;font-weight:400;padding:0 .08em}
+.g{display:grid;gap:14px;margin-top:48px}
+.card{border-radius:24px;padding:24px;background:var(--surface-card);display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.card h3{margin:0;font:600 22px/1.1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)}
+.card p{margin:0;font-size:15.5px;line-height:1.5}
+.k{font:600 10.5px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
+.photo{border-radius:22px;background-size:cover;background-position:center;min-height:240px;position:relative;overflow:hidden}
+.tbl{width:100%;border-collapse:collapse;margin-top:40px;font-size:15px}.tbl td,.tbl th{padding:16px 12px;border-top:1px solid var(--border-hair);text-align:left;vertical-align:top}.tbl th{font:600 10.5px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}.tbl td b{color:var(--text-strong)}
+@media (max-width:900px){.g{grid-template-columns:1fr!important}}
+/* site mood: spheres, halos, jewels, grain, seams */
+.orb{position:absolute;border-radius:50%;pointer-events:none;z-index:0}
+.sphere{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.9) 0,color-mix(in oklab,var(--m1) 70%,#fff) 18%,var(--m1) 46%,color-mix(in oklab,var(--m2) 80%,transparent) 72%,transparent 74%);filter:saturate(1.2);box-shadow:0 0 120px color-mix(in oklab,var(--m1) 50%,transparent);animation:bb-drift 22s var(--ease-breath) infinite alternate}
+.halo{background:radial-gradient(circle,color-mix(in oklab,var(--m2) 40%,transparent),transparent 65%);filter:blur(20px);animation:bb-breath var(--breath-flow) var(--ease-breath) infinite}
+.jewel{background:radial-gradient(circle at 35% 30%,#fff 0,color-mix(in oklab,var(--m3) 80%,#fff) 30%,var(--m3) 70%);box-shadow:0 0 40px color-mix(in oklab,var(--m3) 60%,transparent);animation:bb-drift 14s var(--ease-breath) infinite alternate-reverse}
+.seam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--m1),var(--m2),var(--m3),transparent);opacity:.5;z-index:1}
+.grain{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.1;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+@keyframes bb-drift{from{transform:translate(0,0)}to{transform:translate(-4%,6%)}}
+@keyframes bb-breath{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes bb-wave{from{stroke-dashoffset:0}to{stroke-dashoffset:-120}}
+.cv{min-height:max(680px,92vh);padding:0;display:flex;background:#0A0612}
+.cv-bg{position:absolute;inset:0;background:url('../assets/broll/yoga-rave-uv-swirl-web.jpg') center/cover;opacity:.72}
+.cv-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,18,.2) 0%,rgba(10,6,18,.4) 45%,rgba(10,6,18,.9) 100%)}
+.cv-wrap{display:flex;flex-direction:column;width:100%;min-height:max(680px,92vh);padding-top:clamp(32px,5vh,56px)}
+.cv-top{display:flex;justify-content:space-between;align-items:center;gap:16px 24px;flex-wrap:wrap}
+.cv .pill{text-decoration:none;padding-right:6px}.cv .pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-em{font-style:normal;font-weight:600;font-size:12.5px;padding:7px 11px;border-radius:999px;background:rgba(246,240,255,.1);color:#F6F0FF}.cv .pill:hover .cv-em{background:#F6F0FF;color:#140B22}
+.cv-main{margin-top:auto;margin-bottom:auto;padding-top:40px;display:flex;flex-direction:column;gap:18px}
+.cv-h{margin:0;font:600 clamp(44px,7vw,108px)/.92 var(--font-display);letter-spacing:-.055em;color:#F6F0FF;max-width:13ch;text-wrap:balance}
+.cv-h .serif{font-size:1.02em;letter-spacing:-.02em}
+.cv-foot{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px 56px;align-items:end;margin-top:12px}
+.cv-lede p{margin:0;color:#D9CFEA;font-size:17px;line-height:1.6;max-width:46ch;text-wrap:pretty}
+.cv-meta{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;font:500 13px/1 var(--font-sans);color:#A89BC2}.cv-meta b{font:600 22px/1 var(--font-display);letter-spacing:-.04em;color:#F6F0FF;margin-right:6px}
+.cv-idx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid rgba(246,240,255,.14)}
+.cv-idx a{display:flex;align-items:baseline;gap:14px;padding:13px 4px;border-bottom:1px solid rgba(246,240,255,.1);font:500 15px/1.2 var(--font-sans);color:#F6F0FF;text-decoration:none;transition:padding var(--dur-base) var(--ease-out),color var(--dur-fast)}
+.cv-idx a:nth-child(odd){margin-right:18px}
+.cv-idx a span{font:500 10.5px/1 var(--font-display);letter-spacing:.14em;color:#A89BC2;width:22px}
+.cv-idx a:hover{padding-left:10px;color:var(--x-aqua-neon)}
+.cv-sig{position:relative;margin:clamp(32px,5vh,56px) calc(50% - 50vw) 0;padding:14px 0;opacity:.65;overflow:hidden;border-top:1px solid rgba(246,240,255,.12)}
+.cv-track{display:flex;width:max-content;animation:cv-sig 80s linear infinite}
+.cv-run{display:flex;align-items:center;gap:32px;padding-right:32px;font:400 italic clamp(18px,1.7vw,24px)/1 var(--font-serif);white-space:nowrap}
+.cv-run .fill{color:rgba(246,240,255,.85)}
+.cv-run .ico{width:18px;height:18px;flex:none;background:var(--iridescent-sweep);-webkit-mask:url('../assets/logo/frequency-icon-round.png') no-repeat center/contain;mask:url('../assets/logo/frequency-icon-round.png') no-repeat center/contain}
+@keyframes cv-sig{to{transform:translateX(-50%)}}
+@media (max-width:1100px){#cover .cov{opacity:.35;top:4%}}
+@media (max-width:1100px){.cv-foot{grid-template-columns:1fr}.cv-idx{max-width:560px}#cover .jewel{display:none}}
+@media (prefers-reduced-motion:reduce){.cv-track{animation:none}}
+#mood .card{padding-top:150px}
+@media (prefers-reduced-motion:reduce){.sphere,.halo,.jewel,.wave path{animation:none!important}}
+/* components */
+.btn{height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 22px;border-radius:999px;border:none;font:600 15px/1 var(--font-sans);cursor:pointer;white-space:nowrap;transition:transform var(--dur-fast) var(--ease-out)}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:scale(.97)}
+.btn.out{background:transparent;color:var(--text-strong);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.btn.mag{background:var(--x-magenta-neon);color:#0A0612;box-shadow:var(--action-glow)}
+.chip{height:40px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;font:500 14px/1 var(--font-sans);background:rgba(246,240,255,.06);color:#D9CFEA;border:none}
+.chip.on{background:#F6F0FF;color:#0A0612}
+.pill{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 16px 0 12px;border-radius:999px;background:rgba(30,18,50,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(246,240,255,.12);color:#F6F0FF;font:500 14px/1 var(--font-sans)}
+.live{width:8px;height:8px;border-radius:50%;background:var(--x-magenta-neon);box-shadow:0 0 12px var(--x-magenta-neon);animation:bb-breath 1.6s var(--ease-breath) infinite}
+.wave path{stroke-dasharray:6 6;animation:bb-wave 3s linear infinite}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:rgba(246,240,255,.06);box-shadow:inset 0 0 0 1px rgba(246,240,255,.1)}
+.seg button{height:44px;padding:0 20px;border-radius:999px;border:none;background:none;color:#A89BC2;font:500 14px/1 var(--font-sans);cursor:pointer;transition:background var(--dur-base),color var(--dur-base)}
+.seg button.on{background:var(--side,#3DF2FF);color:#0A0612}
+.cm{background:#FFFFFF;color:#4D4945;font-family:var(--font-sans)}
+.cm .btn.pa{background:var(--pa);color:#1E1B18;box-shadow:var(--pa-glow),inset 0 0 0 1px rgba(255,255,255,.5)}
+.cm .panel{background:var(--glass-panel);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:var(--glass-panel-shadow);border-radius:24px;padding:20px}
+.sw{height:96px;border-radius:18px}
+</style></head>
+<body data-theme="stage">
+<nav class="bb-nav"><span class="mark" role="img" aria-label="Frequency"></span><span class="t">Brand book · v4</span><ul id="bbn">
+<li><a href="#belief">Belief</a></li><li><a href="#voice-house">Messaging</a></li><li><a href="#markets">Markets</a></li><li><a href="#themes">Themes</a></li><li><a href="#color">Color</a></li><li><a href="#type">Type</a></li><li><a href="#components">Components</a></li><li><a href="#mood">Mood</a></li><li><a href="#imagery">Imagery</a></li><li><a href="#voice">Voice</a></li></ul></nav>
+
+<section id="cover" class="cv" data-energy="charge" style="--m1:var(--x-magenta-neon);--m2:var(--x-aqua-neon);--m3:var(--x-sun-neon)" data-screen-label="01 Cover">
+<div class="cv-bg"></div><div class="cv-shade"></div>
+<span class="orb sphere cov" style="width:min(240px,22vw);aspect-ratio:1;right:7%;top:16%;opacity:.55;filter:saturate(.85)"></span><span class="orb halo" style="width:640px;height:640px;right:-12%;top:-8%"></span><span class="orb jewel" style="width:56px;height:56px;left:62%;top:30%"></span><span class="orb jewel" style="width:24px;height:24px;left:6%;top:22%;--m3:var(--x-violet-neon)"></span>
+<div class="grain"></div>
+<div class="wrap cv-wrap">
+<div class="cv-top"><div class="seg" role="group" aria-label="Theme"><button class="on" data-c="#3DF2FF">Stage</button><button data-c="#C4B8FF">Commons</button></div>
+<a class="pill" href="../Frequency Front End.html"><svg class="fq-icon" style="width:17px;height:17px;color:var(--x-aqua-neon)"><use href="#page"></use></svg><b style="font-weight:600">Brand book v4</b><span style="color:#A89BC2">10 chapters · 64 icons · 353 tokens · Oct 2026</span><em class="cv-em">Pages</em></a></div>
+<div class="cv-main"><span class="k" style="color:#A89BC2">Frequency™ · Community Collective</span><h1 class="cv-h">Gather like it <span class="serif fq-iri-text">matters.</span></h1>
+<div class="cv-foot"><div class="cv-lede"><p>Frequency is a network of communities and the people looking to fill them. This book holds the brand and the styles the site, the member app and the admin console are built from.</p><div class="cv-meta"><span><b>3</b> products</span><span><b>31</b> pages</span><span><b>2</b> themes</span><span><b>4</b> crossover hues</span></div></div>
+<nav class="cv-idx" aria-label="Chapters"><a href="#belief"><span>01</span>Belief</a><a href="#voice-house"><span>02</span>Messaging</a><a href="#markets"><span>03</span>Markets</a><a href="#themes"><span>04</span>Themes</a><a href="#color"><span>05</span>Color</a><a href="#type"><span>06</span>Type</a><a href="#components"><span>07</span>Components</a><a href="#mood"><span>08</span>Mood</a><a href="#imagery"><span>09</span>Imagery</a><a href="#voice"><span>10</span>Voice</a></nav></div></div>
+<div class="cv-sig" role="text" aria-label="Gather like it matters."><div class="cv-track" aria-hidden="true"><span class="cv-run"><span class="fill">Gather like it matters.</span><span class="ico"></span><span class="fill">Gather like it matters.</span><span class="ico"></span><span class="fill">Gather like it matters.</span><span class="ico"></span><span class="fill">Gather like it matters.</span><span class="ico"></span></span><span class="cv-run"><span class="fill">Gather like it matters.</span><span class="ico"></span><span class="fill">Gather like it matters.</span><span class="ico"></span><span class="fill">Gather like it matters.</span><span class="ico"></span><span class="fill">Gather like it matters.</span><span class="ico"></span></span></div></div>
+</div></section>
+
+<section id="belief" data-energy="flow" style="--m1:var(--x-aqua-neon);--m2:var(--x-violet-neon);--m3:var(--uv-cyan)" data-screen-label="02 Belief"><span class="orb halo" style="width:600px;height:600px;left:-200px;top:-120px"></span><span class="orb jewel" style="width:40px;height:40px;right:8%;top:16%"></span><div class="wrap">
+<div class="lbl"><b>01</b>What we believe</div>
+<h2 class="xl">Build circles, <span class="serif fq-iri-text">not walls.</span></h2>
+<p class="lede">A circle is open. Anyone can step into it, and it gets stronger as it grows. A wall keeps people out and keeps them in. Everything we build chooses the circle.</p>
+<div class="g" style="grid-template-columns:repeat(4,1fr)">
+<div class="card fq-iri-rim"><svg class="fq-icon" style="color:var(--x-aqua-neon)"><use href="#circle"></use></svg><h3>Open doors</h3><p>Free, forever. A Space never shows a lock.</p></div>
+<div class="card fq-iri-rim"><svg class="fq-icon" style="color:var(--x-aqua-neon)"><use href="#contacts"></use></svg><h3>Yours to keep</h3><p>Your people stay yours. Export anytime.</p></div>
+<div class="card fq-iri-rim"><svg class="fq-icon" style="color:var(--x-aqua-neon)"><use href="#pin"></use></svg><h3>No walled garden</h3><p>Gatherings anyone can find, invites anyone can open.</p></div>
+<div class="card fq-iri-rim"><svg class="fq-icon" style="color:var(--x-aqua-neon)"><use href="#program"></use></svg><h3>Many circles</h3><p>Belong to as many as you like. They overlap.</p></div>
+</div></div><div class="seam" style="bottom:0"></div></section>
+
+<section id="voice-house" data-energy="still" data-screen-label="03 Messaging"><div class="wrap">
+<div class="lbl"><b>02</b>The messaging house</div>
+<h2 class="l">Sacred, <span class="serif">not serious.</span></h2>
+<p class="lede">People want something that matters, with people they like, and they don't want to be told what to believe. We sell being part of a community, on purpose.</p>
+<table class="tbl"><tr><th>Layer</th><th>Line</th></tr>
+<tr><td>Platform line</td><td><b>Gather like it matters.</b></td></tr>
+<tr><td>Core belief</td><td><b>We build circles, not walls.</b> Tagline: <b>Build circles, not walls.</b></td></tr>
+<tr><td>Attitude</td><td><b>Sacred, not serious.</b></td></tr>
+<tr><td>Definition</td><td>Frequency is a network of communities and the people looking to fill them.</td></tr>
+<tr><td>Calendar</td><td><b>What's happening.</b> Never "What's on".</td></tr>
+<tr><td>Proof rule</td><td>We measure success by who showed up this week.</td></tr></table>
+</div></section>
+
+<section id="markets" data-screen-label="04 Two markets" style="--m1:var(--x-violet-neon);--m2:var(--x-magenta-neon);--m3:var(--x-sun-neon)"><span class="orb halo" style="width:560px;height:560px;right:-160px;bottom:-200px"></span><div class="wrap">
+<div class="lbl"><b>03</b>Two markets, never mixed</div>
+<h2 class="l">One toggle. <span class="serif">Two front doors.</span></h2>
+<p class="lede">Only the homepage switches sides. Every other page is fixed to one. The toggle recolors the whole page through one variable, <code>--side</code>.</p>
+<div style="margin-top:36px" class="seg" id="side"><button class="on" data-c="#3DF2FF" data-s="p">Browse Community</button><button data-c="#FFC46B" data-s="e">Host Community</button></div>
+<div class="g" style="grid-template-columns:1.2fr 1fr;margin-top:24px">
+<div class="card fq-iri-rim" style="min-height:320px"><span class="k" id="sk" style="color:var(--side,#3DF2FF)">People · Browse Community</span><h3 id="sh" style="font-size:clamp(28px,3vw,42px);letter-spacing:-.045em;margin-top:auto">Find local groups and events <span class="serif" style="color:var(--side,#3DF2FF)">near you.</span></h3><p id="sp">Find → Show up → Come back → Pass it on.</p></div>
+<div class="photo" id="sph" style="background-image:url('../assets/photos/day-meditation-circle.jpg');min-height:320px"><div class="grain"></div></div></div></div></section>
+
+<section id="themes" data-energy="flow" data-screen-label="05 Two themes"><div class="wrap">
+<div class="lbl"><b>04</b>Two themes, four crossover hues</div>
+<h2 class="l">Stage sells. <span class="serif">Commons is where we live.</span></h2>
+<div class="g" style="grid-template-columns:1fr 1fr">
+<div class="card" style="background:#0A0612;box-shadow:inset 0 0 0 1px rgba(246,240,255,.12);min-height:340px;--m1:var(--x-violet-neon);--m2:var(--x-magenta-neon);--m3:var(--x-aqua-neon)"><span class="orb sphere" style="width:220px;height:220px;right:-50px;top:-50px"></span><span class="k" style="position:relative">Stage · dark · marketing</span><h3 style="position:relative;font-size:32px;margin-top:auto">Iridescent, neon, <span class="serif fq-iri-text">cinematic.</span></h3><p style="position:relative">Big type, b-roll, orbs and bloom. Body 18px and up, never pure white. Primary action is the iridescent button or magenta.</p><div style="position:relative;display:flex;gap:10px;margin-top:8px"><span class="btn fq-iri-btn" style="height:44px">Save my spot</span><span class="pill"><span class="live"></span>12 here now</span></div></div>
+<div class="card cm" data-theme="commons" style="min-height:340px;background:#FFFFFF"><div class="fq-wash" style="position:absolute"></div><span class="k" style="position:relative;color:#7C766F">Commons · light · the network</span><h3 style="position:relative;font-size:32px;margin-top:auto;color:#34312E">Calm, legible, <span class="serif">content first.</span></h3><p style="position:relative">White and sand, softened ink, glass panels. One pastel accent, <code>--pa</code>, for actions, progress and live dots. Dims to the Thermal room at night.</p><div style="position:relative;display:flex;gap:10px;margin-top:8px"><span class="btn pa" style="height:44px">Going</span><span class="btn out" style="height:44px;color:#34312E;box-shadow:inset 0 0 0 1px rgba(30,27,24,.2)">Maybe</span></div></div>
+</div></div></section>
+
+<section id="color" data-screen-label="06 Color"><div class="wrap">
+<div class="lbl"><b>05</b>Color</div>
+<h2 class="l">Same hue, <span class="serif">two volumes.</span></h2>
+<p class="lede">Each crossover hue means one thing in both themes. Neon on Stage, deep on Commons.</p>
+<div class="g" style="grid-template-columns:repeat(4,1fr);gap:10px">
+<div class="card" style="padding:0;gap:0"><div style="height:96px;background:#8B5CFF"></div><div style="height:96px;background:#5B3FD0;padding:14px;color:#fff;font:600 13px/1.4 var(--font-sans)">Violet · act<br><span style="opacity:.8;font-weight:500">#8B5CFF / #5B3FD0</span></div></div>
+<div class="card" style="padding:0;gap:0"><div style="height:96px;background:#FF2BD6"></div><div style="height:96px;background:#B0287F;padding:14px;color:#fff;font:600 13px/1.4 var(--font-sans)">Magenta · live<br><span style="opacity:.8;font-weight:500">#FF2BD6 / #B0287F</span></div></div>
+<div class="card" style="padding:0;gap:0"><div style="height:96px;background:#3DF2FF"></div><div style="height:96px;background:#17788A;padding:14px;color:#fff;font:600 13px/1.4 var(--font-sans)">Aqua · presence<br><span style="opacity:.8;font-weight:500">#3DF2FF / #17788A</span></div></div>
+<div class="card" style="padding:0;gap:0"><div style="height:96px;background:#FFC46B"></div><div style="height:96px;background:#9A6200;padding:14px;color:#fff;font:600 13px/1.4 var(--font-sans)">Sun · reward<br><span style="opacity:.8;font-weight:500">#FFC46B / #9A6200</span></div></div></div>
+<div class="g" style="grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px">
+<div class="card"><div class="sw" style="background:var(--iridescent-sweep)"></div><span class="k">Iridescent · signature on Stage, earned in Commons</span></div>
+<div class="card"><div class="sw" style="background:var(--pa,linear-gradient(120deg,#EEC1EC,#C4B8FF 36%,#A3D4FF 68%,#8FE9FF))"></div><span class="k">--pa · member accent</span></div>
+<div class="card"><div class="sw" style="background:#0A0612;box-shadow:inset 0 0 0 1px rgba(246,240,255,.14)"></div><span class="k">UV void · #0A0612</span></div></div>
+</div></section>
+
+<section id="type" data-screen-label="07 Type + icons"><div class="wrap">
+<div class="lbl"><b>06</b>Type and icons</div>
+<div class="g" style="grid-template-columns:1.3fr 1fr">
+<div class="card"><span class="k">Unbounded 600 · headlines, numbers, labels</span><div style="font:600 clamp(40px,5vw,72px)/.94 var(--font-display);letter-spacing:-.05em;color:var(--text-strong)">Then the next town.</div><div style="display:flex;gap:28px;margin-top:10px;font:500 13px/1 var(--font-sans);color:var(--text-muted)"><span>96 · 64 · 44 · 30 · 22 · 18</span><span>Tracking −.02 to −.055em</span></div><span class="k" style="margin-top:18px">Hanken Grotesk · body and UI</span><p style="font-size:18px">Find a Circle near you, show up, and keep showing up.</p></div>
+<div class="card"><span class="k">Instrument Serif italic · one soft phrase</span><div class="serif" style="font-size:clamp(34px,4vw,54px);line-height:1.05;color:var(--text-strong)">Sacred, not serious.</div><p style="font-size:14px;color:var(--text-muted)">Give italic phrases a little side padding so the overhang never clips.</p><span class="k" style="margin-top:14px">In-house icons · 24px grid, 1.75 stroke</span><div style="display:flex;gap:12px;flex-wrap:wrap;color:var(--x-aqua-neon)"><svg class="fq-icon"><use href="#circle"></use></svg><svg class="fq-icon"><use href="#event"></use></svg><svg class="fq-icon"><use href="#checkin"></use></svg><svg class="fq-icon"><use href="#qr"></use></svg><svg class="fq-icon"><use href="#space"></use></svg><svg class="fq-icon"><use href="#standing"></use></svg><svg class="fq-icon"><use href="#zap"></use></svg><svg class="fq-icon"><use href="#host"></use></svg><svg class="fq-icon"><use href="#gem"></use></svg><svg class="fq-icon"><use href="#message"></use></svg></div></div>
+</div></div></section>
+
+<section id="components" data-energy="flow" style="--m1:var(--x-aqua-neon);--m2:var(--x-violet-neon);--m3:var(--x-magenta-neon)" data-screen-label="08 Components"><span class="orb halo" style="width:520px;height:520px;left:40%;top:-220px"></span><div class="wrap">
+<div class="lbl"><b>07</b>Site components</div>
+<h2 class="l">Built from <span class="serif">the same parts.</span></h2>
+<div class="g" style="grid-template-columns:1fr 1fr">
+<div class="card fq-iri-rim"><span class="k">Actions · Stage</span><div style="display:flex;gap:10px;flex-wrap:wrap"><span class="btn fq-iri-btn">Find your Circle</span><span class="btn mag">Save my spot</span><span class="btn out">See what's happening</span></div><span class="k" style="margin-top:12px">Filters</span><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip on">Anything</span><span class="chip">Move</span><span class="chip">Sit</span><span class="chip">Social</span><span class="chip">Give back</span></div></div>
+<div class="card fq-iri-rim"><span class="k">Live · location pill and signal line</span><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span class="pill"><svg class="fq-icon" style="width:18px;height:18px;color:var(--x-aqua-neon)"><use href="#pin"></use></svg>Bird Rock, San Diego</span><span class="pill"><span class="live"></span>214 checked in today</span></div>
+<svg class="wave" viewBox="0 0 400 60" style="width:100%;height:60px;margin-top:8px" aria-hidden="true"><defs><linearGradient id="wg" x1="0" x2="1"><stop offset="0" stop-color="#FF9BD8"></stop><stop offset=".5" stop-color="#B8A2FF"></stop><stop offset="1" stop-color="#8FE9FF"></stop></linearGradient></defs><path d="M0 30 Q 20 6 40 30 T 80 30 T 120 30 T 160 30 Q 180 0 200 30 T 240 30 T 280 30 Q 300 10 320 30 T 360 30 T 400 30" fill="none" stroke="url(#wg)" stroke-width="2"></path></svg><p style="font-size:14px;color:var(--text-muted)">Amplitude follows <code>data-energy</code>: still, flow, charge.</p></div>
+<div class="card cm" data-theme="commons" style="background:#FBF7F0"><div class="fq-wash" style="position:absolute"></div><span class="k" style="position:relative;color:#7C766F">Commons · member parts</span>
+<div style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="panel" style="display:flex;flex-direction:column;gap:10px"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:#7C766F;white-space:nowrap">Up next</span><span style="font:500 20px/1.1 var(--font-display);letter-spacing:-.04em;color:#34312E">Sunset sound bath</span><span style="font-size:13px;color:#7C766F">Thu 6pm · 1.2 mi</span><span class="btn pa" style="height:40px;align-self:flex-start">Going</span></div>
+<div class="panel" style="display:flex;flex-direction:column;gap:10px;align-items:flex-start"><span style="font:500 40px/1 var(--font-display);letter-spacing:-.05em;color:#34312E">12</span><span style="font-size:13px;color:#7C766F">Day streak</span><span style="width:100%;height:4px;border-radius:999px;background:rgba(30,27,24,.06);overflow:hidden"><i style="display:block;width:64%;height:100%;background:var(--pa)"></i></span><span style="display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:rgba(52,49,46,.92);color:#fff;font-size:12px">You're going. Reminder at 5:15pm.</span></div></div></div>
+<div class="card cm" data-theme="commons" style="background:#FFFFFF"><span class="k" style="color:#7C766F">Logo flow · member header</span><span class="fq-logo-flow" style="width:260px;margin:18px 0"></span><p style="font-size:14px;color:#7C766F">The wordmark as a mask over ink, with an iridescent band drifting through every 16 seconds. Stops under reduced motion.</p></div>
+</div></div></section>
+
+<section id="mood" data-screen-label="09 Mood + texture"><div class="wrap">
+<div class="lbl"><b>08</b>Mood and texture</div>
+<h2 class="l">Every page has <span class="serif">an energy.</span></h2>
+<p class="lede">Each page sets an energy and three hues. One hero sphere per page, halos behind sections, jewels at the edges, a gradient seam between sections, film grain on photos. All of it stops for reduced motion.</p>
+<div class="g" style="grid-template-columns:repeat(3,1fr)">
+<div class="card" style="min-height:260px;background:#0A0612;box-shadow:inset 0 0 0 1px rgba(246,240,255,.1);--m1:#3B2A7A;--m2:var(--x-violet-neon);--m3:#1F5C7A"><span class="orb halo" style="width:300px;height:300px;left:-60px;top:-60px;animation-duration:8s"></span><span class="orb sphere" style="width:104px;height:104px;right:20px;top:20px;animation-duration:30s"></span><span class="k" style="position:relative;margin-top:auto">Still · 8s breath</span><h3 style="position:relative">Pricing, Vision, Help</h3></div>
+<div class="card" style="min-height:260px;background:#0A0612;box-shadow:inset 0 0 0 1px rgba(246,240,255,.1);--m1:var(--x-aqua-neon);--m2:var(--x-violet-neon);--m3:var(--uv-cyan)"><span class="orb halo" style="width:300px;height:300px;left:-60px;top:-60px"></span><span class="orb sphere" style="width:104px;height:104px;right:20px;top:20px"></span><span class="orb jewel" style="width:22px;height:22px;left:40%;top:30%"></span><span class="k" style="position:relative;margin-top:auto">Flow · 5s breath</span><h3 style="position:relative">People, Spaces, Features, Stories, Join</h3></div>
+<div class="card" style="min-height:260px;background:#0A0612;box-shadow:inset 0 0 0 1px rgba(246,240,255,.1);--m1:var(--x-magenta-neon);--m2:var(--x-aqua-neon);--m3:var(--x-sun-neon)"><span class="orb halo" style="width:300px;height:300px;left:-60px;top:-60px;animation-duration:2.5s"></span><span class="orb sphere" style="width:104px;height:104px;right:20px;top:20px;animation-duration:10s"></span><span class="orb jewel" style="width:26px;height:26px;left:30%;top:24%"></span><span class="orb jewel" style="width:14px;height:14px;left:52%;top:46%;--m3:var(--x-violet-neon)"></span><span class="k" style="position:relative;margin-top:auto">Charge · 2.5s beat</span><h3 style="position:relative">Home</h3></div>
+</div></div></section>
+
+<section id="imagery" data-energy="charge" data-screen-label="10 Imagery"><div class="wrap">
+<div class="lbl"><b>09</b>Imagery · people mid-something</div>
+<div class="g" style="grid-template-columns:2fr 1fr 1fr">
+<div class="photo fq-iri-sheen" style="background-image:url('../assets/photos/day-meditation-circle.jpg');min-height:380px"><div class="grain"></div></div>
+<div class="photo" style="background-image:url('../assets/broll/yoga-rave-glowsticks-web.jpg')"><div class="grain"></div></div>
+<div class="photo" style="background-image:url('../assets/photos/day-parachute-play.jpg')"><div class="grain"></div></div>
+</div><p class="lede" style="font-size:15px">Real gatherings only. Graded with Frequency's light, grain allowed. No stock and no AI people. On Stage, b-roll sits under a dark shade; in Commons, members' photos run at full light, faces first. Facility renders appear only on Vision, labeled "Vision · late 2027."</p></div></section>
+
+<section id="voice" data-screen-label="11 Voice"><div class="wrap">
+<div class="lbl"><b>10</b>Voice · invitation, not advertising</div>
+<table class="tbl"><tr><th>Context</th><th>Say</th></tr>
+<tr><td>Invite</td><td><b>Thursday, 7pm, Cedar Studio. 12 people. Come.</b></td></tr>
+<tr><td>Belief</td><td><b>Build circles, not walls.</b> Never: exclusive, members-only, VIP, unlock.</td></tr>
+<tr><td>Spaces</td><td><b>Your regulars: 0%. People we bring you: a small share.</b></td></tr>
+<tr><td>Product copy</td><td>Sentence case, no em dashes, numbers over adjectives. A short reason on every pick.</td></tr>
+<tr><td>Avoid on the surface</td><td>yoga, rave, temple, energy, tribe, journey, transform</td></tr></table>
+</div></section>
+<script src="../assets/icons/icons.js"></script>
+<script>
+(function(){var L=[].slice.call(document.querySelectorAll('#bbn a'));var o=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)L.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})})},{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section[id]').forEach(function(s){o.observe(s)});
+var C={p:['People · Browse Community','Find local groups and events <span class="serif" style="color:var(--side)">near you.</span>','Find → Show up → Come back → Pass it on.','day-meditation-circle'],e:['Spaces · Host Community','Host local events and groups people <span class="serif" style="color:var(--side)">come back to.</span>','Be found → Open the door → Bring them back → Get paid.','gathering-06']};
+document.querySelectorAll('#side button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#side button').forEach(function(x){x.classList.toggle('on',x===b)});var m=document.getElementById('markets');m.style.setProperty('--side',b.dataset.c);var c=C[b.dataset.s];document.getElementById('sk').textContent=c[0];document.getElementById('sh').innerHTML=c[1];document.getElementById('sp').textContent=c[2];document.getElementById('sph').style.backgroundImage="url('../assets/photos/"+c[3]+".jpg')"})});})();
+document.querySelectorAll('.cv .seg button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.cv .seg button').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelector('.cv .seg').style.setProperty('--side',b.dataset.c);location.hash=b.textContent==='Commons'?'themes':'cover'})});
+</script>
+</body></html>

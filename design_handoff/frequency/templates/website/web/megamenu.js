@@ -1,11 +1,12 @@
 /* Frequency header v4. Logo left, need-based nav (For people · For spaces · Features · Pricing · Stories), search, account on the right.
    Include on any page with <header class="nav">. Builds menus, inlines the icon sprite. data-open="people|spaces|packages(features)" opens a panel (cards). */
 (function(){
-var me=document.currentScript,base=me.src.replace(/web\/megamenu\.js.*$/,''),A=me.dataset.assets?new URL(me.dataset.assets,location.href).href:base+'../../assets/';
+var me=document.currentScript,RS=window.__resources||{},base=/^(https?|file):/.test(me.src)?me.src.replace(/web\/megamenu\.js.*$/,''):'',A=me.dataset.assets?new URL(me.dataset.assets,location.href).href:base+'../../assets/';
+var RM_={'photos/day-meditation-circle.jpg':'mm-dmc','photos/night-string-lights-web.jpg':'mm-nsl','photos/gathering-04.jpg':'mm-g04','photos/day-park-yoga.jpg':'mm-dpy','icons/frequency-icons.svg':'icons'};var AS=function(p){return RS[RM_[p]]||A+p};
 var U=function(h){return base+encodeURI(h).replace(/%23/g,'#')};
 var I=function(id){return '<svg class="fq-icon" aria-hidden="true"><use href="#'+id+'"/></svg>'};
 var L=function(x){return '<a class="mm-link" href="'+U(x[0])+'"><i class="mm-ic">'+I(x[3])+'</i><span><b>'+x[1]+'</b><small>'+x[2]+'</small></span></a>'};
-var C=function(x){return '<a class="mm-card" href="'+U(x[0])+'"><span class="mm-img" style="background-image:url(\''+A+''+x[1]+'\')"></span><span class="mm-shade"></span><span class="mm-ct"><span class="mm-k">'+x[2]+'</span><b>'+x[3]+'</b></span></a>'};
+var C=function(x){return '<a class="mm-card" href="'+U(x[0])+'"><span class="mm-img" style="background-image:url(\''+AS(x[1])+'\')"></span><span class="mm-shade"></span><span class="mm-ct"><span class="mm-k">'+x[2]+'</span><b>'+x[3]+'</b></span></a>'};
 var COL=function(h,items){return '<div class="mm-col"><span class="mm-h">'+h+'</span>'+items.map(L).join('')+'</div>'};
 var M={
 people:{label:'For people',wing:'community',cols:[['Start',[['People.html','Find your people','How Frequency works for you','circle'],['People.html#first-night','Your first night','What to expect, start to finish','checkin'],['People.html#near','What’s happening near you','This week in your town','pin']]],['Play + lead',[['Features.html#f-zaps','The game','Only showing up earns Zaps','zap'],['Spaces.html','Host an experience','Your living room, garden or park counts','host'],['Stories.html','Host stories','Regulars who became Hosts','message']]]],
@@ -99,6 +100,6 @@ var bar=document.createElement('span');bar.className='fq-progress';nav.appendChi
 var last=scrollY,tk=false;function onS(){var y=scrollY,h=document.documentElement.scrollHeight-innerHeight;nav.classList.toggle('is-scrolled',y>24);if(!cur){if(y>last+6&&y>240){nav.classList.add('is-hidden');closePops()}else if(y<last-6)nav.classList.remove('is-hidden')}nav.style.setProperty('--p',h>0?(y/h).toFixed(3):0);last=y;tk=false}
 addEventListener('scroll',function(){if(!tk){requestAnimationFrame(onS);tk=true}},{passive:true});onS();
 if(me.dataset.open)show(me.dataset.open)}
-function sprite(cb){if(document.getElementById('qr')){cb();return}fetch(A+'icons/frequency-icons.svg').then(function(r){return r.text()}).then(function(s){var d=document.createElement('div');d.style.display='none';d.innerHTML=s;document.body.insertBefore(d,document.body.firstChild);cb()}).catch(cb)}
+function sprite(cb){if(document.getElementById('qr')){cb();return}fetch(AS('icons/frequency-icons.svg')).then(function(r){return r.text()}).then(function(s){var d=document.createElement('div');d.style.display='none';d.innerHTML=s;document.body.insertBefore(d,document.body.firstChild);cb()}).catch(cb)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){sprite(build)});else sprite(build);
 })();

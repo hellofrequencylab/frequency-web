@@ -1,4 +1,4 @@
-/* Frequency event map. Mounts on [data-fqmap="people|spaces"]. Web kit. Needs Leaflet 1.9.4 (css+js) loaded in <head>. OSM tiles, darkened to Stage. */
+/* Frequency event map. Mounts on [data-fqmap="people|spaces"]. Web kit. Loads Leaflet 1.9.4 on demand. OSM tiles, darkened to Stage. */
 (function(){
 var IC='#';
 var EV=[
@@ -46,8 +46,12 @@ el.querySelectorAll('[data-f]').forEach(function(b){b.onclick=function(){var f=b
  marks.forEach(function(o){var show=f==='all'||(f==='wk'?/Sat|Sun/.test(o.d.d):o.d.k===f);o.it.hidden=!show;if(show){o.m.addTo(map);g.push(o.d.ll)}else map.removeLayer(o.m)});
  if(g.length)map.flyToBounds(g,{padding:[60,60],maxZoom:13,duration:.8,paddingTopLeft:[PL,40]})}});
 setTimeout(function(){map.invalidateSize();map.fitBounds(data.map(function(d){return d.ll}),{paddingTopLeft:[PL,40],paddingBottomRight:[40,40]})},60)}
+/* Leaflet loads on demand, the first time a map nears the viewport. */
+var LQ=null,LF=[];function need(cb,fail){if(window.L)return cb();if(fail)LF.push(fail);if(LQ===false){if(fail)fail();return}if(!LQ){LQ=[];var c=document.createElement('link');c.rel='stylesheet';var RS=window.__resources||{};c.href=RS['leaflet-css']||'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';if(!RS['leaflet-css'])c.integrity='sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H';c.crossOrigin='anonymous';document.head.appendChild(c);
+ var s=document.createElement('script');s.src=RS['leaflet-js']||'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';if(!RS['leaflet-js'])s.integrity='sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH';s.crossOrigin='anonymous';s.onload=function(){var q=LQ;LQ=[];q.forEach(function(f){f()})};s.onerror=function(){LQ=false;LF.forEach(function(f){f()})};document.head.appendChild(s)}LQ.push(cb)}
 function all(){document.querySelectorAll('[data-fqmap]').forEach(function(el){
- if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){if(es[0].isIntersecting){mount(el);io.disconnect()}},{rootMargin:'300px'});io.observe(el)}else mount(el)})}
+ if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){if(es[0].isIntersecting){io.disconnect();need(function(){mount(el)},function(){off(el)})}},{rootMargin:'400px'});io.observe(el)}else need(function(){mount(el)},function(){off(el)})})}
+function off(el){if(el.dataset.off)return;el.dataset.off='1';el.style.display='grid';el.style.placeItems='center';el.style.background='radial-gradient(60% 60% at 50% 40%,rgba(155,123,255,.18),transparent 70%),#120A1F';el.innerHTML='<p style="margin:0;padding:24px;text-align:center;font:500 15px/1.5 var(--font-sans);color:#B9AED0">The live map shows on the full site.</p>'}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',all);else all();
-window.FQMap={mount:mount};
+window.FQMap={mount:function(el){need(function(){mount(el)})}};
 })();

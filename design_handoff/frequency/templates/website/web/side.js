@@ -13,5 +13,6 @@ function tick(){var vh=innerHeight;
 if(!rm){px.forEach(function(el){var r=el.getBoundingClientRect(),c=(r.top+r.height/2-vh/2)/vh;el.style.translate='0 '+(c*-(+el.dataset.px)*100).toFixed(1)+'px'});
 if(hero){var y=Math.max(0,-hero.getBoundingClientRect().top),k=Math.min(1,y/(hero.offsetHeight*.7));if(hb)hb.style.transform='scale('+(1+k*.12)+')';if(hw){hw.style.opacity=String(1-k*.9);hw.style.transform='translate3d(0,'+(-y*.25)+'px,0)'}}}
 if(dock&&hero){dock.classList.toggle('on',hero.getBoundingClientRect().bottom<80&&(!foot||foot.getBoundingClientRect().top>vh*.9))}}
-addEventListener('scroll',tick,{passive:true});addEventListener('resize',tick);tick();
+var tq=false;function req(){if(tq)return;tq=true;requestAnimationFrame(function(){tq=false;tick()})}
+addEventListener('scroll',req,{passive:true});addEventListener('resize',req,{passive:true});tick();
 })();

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frequency™ · Website wireframes</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+body{background:#EDEAE4;margin:0;padding:32px;font-family:var(--font-sans);color:#2b2b2b}
+.top{max-width:1600px;margin:0 auto 24px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.top h1{font:600 40px/1 var(--font-display);letter-spacing:-0.04em;margin:6px 0 0;color:#1E1B18}
+.lbl{font:500 10px/1.4 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:#7a746c}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{height:34px;padding:0 14px;border-radius:999px;border:1px solid #cfc9bf;background:#fff;font:600 13px/1 var(--font-sans);cursor:pointer;color:#3b3530;white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:#1E1B18;color:#fff;border-color:#1E1B18}
+.board{display:flex;gap:24px;overflow-x:auto;padding-bottom:24px;max-width:1600px;margin:0 auto;align-items:flex-start}
+.pg{flex:none;width:420px;background:#fff;border-radius:14px;box-shadow:0 10px 30px -18px rgba(0,0,0,.35);overflow:hidden}
+.pg>.hd{padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.pg>.hd b{font:600 16px/1.2 var(--font-display);letter-spacing:-0.02em;color:#1E1B18}
+.pg>.hd code{font:500 11px/1 var(--font-sans);color:#8b847a}
+.job{padding:10px 16px;font-size:12.5px;line-height:1.45;background:#FAF8F4;border-bottom:1px solid #eee;color:#5b544c}
+.sec{position:relative;margin:10px;border:1.5px dashed #cfc9bf;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.sec.dark{background:#2a2730;border-color:#2a2730;color:#e8e3ee}
+.sec .n{position:absolute;top:-9px;left:10px;background:#fff;padding:0 6px;font:600 10px/18px var(--font-display);letter-spacing:.08em;text-transform:uppercase;color:#8b847a}
+.sec.dark .n{background:#2a2730;color:#b8b0c4}
+.h{font:600 20px/1.05 var(--font-display);letter-spacing:-0.03em;color:inherit}
+.sec:not(.dark) .h{color:#1E1B18}
+.t{font-size:12.5px;line-height:1.45;color:inherit;opacity:.8}
+.ln{height:7px;border-radius:4px;background:currentColor;opacity:.14}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.btn{height:26px;padding:0 11px;border-radius:999px;display:inline-flex;align-items:center;font:600 11px/1 var(--font-sans);border:1.5px solid currentColor;white-space:nowrap;flex:none}
+.btn.p{background:linear-gradient(100deg,#FF9BD8,#B8A2FF,#8FE9FF,#C9FFB8,#FFE7A3);border:0;color:#140B22}
+.grid{display:grid;gap:6px}
+.box{border-radius:8px;background:currentColor;opacity:.1;min-height:46px}
+.img{border-radius:8px;min-height:90px;background:repeating-linear-gradient(135deg,rgba(127,127,127,.18) 0 8px,rgba(127,127,127,.08) 8px 16px);display:flex;align-items:flex-end;padding:6px;font:500 9.5px/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase;opacity:.9}
+.note{font:500 11px/1.4 var(--font-sans);color:#9a5b00;background:#FFF3D6;border-radius:6px;padding:5px 8px}
+.sec.dark .note{background:rgba(255,196,107,.15);color:#FFC46B}
+.chips{display:flex;gap:4px;flex-wrap:wrap}.chips i{font-style:normal;font:600 10px/1 var(--font-sans);padding:4px 7px;border-radius:999px;border:1px solid currentColor;opacity:.6}
+.legend{max-width:1600px;margin:0 auto 18px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#5b544c;align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+</style></head>
+<body>
+<div class="top"><div><span class="lbl">Website · lo-fi wireframes · messaging per guidelines/messaging.md · structure per guidelines/website-strategy.md</span><h1>Two wings, page by page.</h1></div>
+<div class="tabs" id="tabs"><button data-f="all" aria-pressed="true">All</button><button data-f="home">Home</button><button data-f="community">Community wing</button><button data-f="spaces">Spaces wing</button><button data-f="shared">Shared + Vision</button></div></div>
+<div class="legend"><span><i class="sw" style="background:#2a2730"></i>Stage section (dark)</span><span><i class="sw" style="border:1.5px dashed #cfc9bf"></i>Content section</span><span><i class="sw" style="background:linear-gradient(100deg,#FF9BD8,#B8A2FF,#8FE9FF)"></i>Primary CTA (iridescent)</span><span><i class="sw" style="background:#FFF3D6"></i>Note: feature, data or behavior</span></div>
+<div class="board" id="board"></div>
+<script>
+const P=[
+{w:'home',u:'/',t:'Home · the split door',j:'Route each visitor to a wing in 5 seconds. Make both feel the brand.',s:[
+['dark','Hero',{h:'Gather like it matters.',t:'A network of rooms and the people who fill them.',b:[['Find your Circle',1],['Open your Space']],img:'B-roll, graded dark',n:'Nav: For people · For spaces · Stories · [Find your Circle]'}],
+['dark','Two doors',{g:2,cards:['A hundred contacts. No one to call on a Tuesday. → people','You\u2019ve built a community. Let the people looking for one find it. → spaces']}],
+['','The story',{h:'People have always gathered on purpose.',l:3,img:'3 real photos'}],
+['','Live proof strip',{chips:['212 checked in this week','48 Circles met','city picker'],n:'Live counts from check-ins; falls back to last week'}],
+['','Wing teasers',{g:2,cards:['Community: 3 steps + near-you','Spaces: the kit + the deal']}],
+['dark','Closer',{h:'Sacred, not serious.',t:'We measure success by who showed up this week.',b:[['Find your Circle',1],['Open your Space']]}],
+['','Footer',{chips:['For people','For spaces','Pricing','Stories','Vision','About','Help']}]]},
+{w:'community',u:'/community',t:'Find your Circle',j:'Turn a lonely scroller into an RSVP.',s:[
+['dark','Hero',{h:'A hundred contacts. No one to call on a Tuesday.',b:[['Find your Circle',1]],n:'Location-aware: 3 real Circles nearby under the CTA'}],
+['','Three steps',{g:3,cards:['Find a Circle','Show up','Bring someone']}],
+['','Your first night',{h:'What the first night is like',chips:['who\u2019s going (faces)','what to bring','how long','the Host at the door'],n:'Anxiety reducer, from the event detail fields'}],
+['','Kinds of Circles',{g:3,cards:['Moving','Making','Eating','Sitting still','Going out','Learning']}],
+['dark','Only showing up earns',{h:'+25 ⚡ for being in the room. 0 for scrolling.',b:[['How the game works']]}],
+['','Objections',{chips:['I don\u2019t know anyone','I\u2019m not spiritual','I\u2019m not fit','Is it free?']}],
+['','Near you',{g:3,cards:['Circle card','Event card','Circle card'],b:[['See all near me',1]],n:'Ends in a community, not a form'}]]},
+{w:'community',u:'/community/how',t:'How it works',j:'Remove uncertainty for careful joiners.',s:[
+['dark','Hero',{h:'Small rooms. Same faces. Every week.'}],
+['','Circle vs. night',{g:2,cards:['Circle: up to 50, weekly, same people','Night: open doors, bigger, one-off']}],
+['','The door',{h:'Check in, name tag, the first five minutes',img:'Photo: a Host at the door',n:'QR check-in + Zaps reveal'}],
+['','Safety',{chips:['verified Hosts','report','block','meetup note']}],
+['','FAQ',{l:5}],
+['','End in a community',{b:[['Find your Circle',1]]}]]},
+{w:'community',u:'/community/play',t:'The game',j:'Make showing up fun, without guilt.',s:[
+['dark','Hero',{h:'The only way to win is to show up.'}],
+['','What earns Zaps',{g:3,cards:['Check in','Finish with your Circle','Bring a friend']}],
+['','Seasons',{h:'Thirteen weeks, then a fresh start',n:'Season ranks are completion-based'}],
+['','Together',{g:2,cards:['Circle meter','Local shared board'],n:'Cooperative; no global leaderboard'}],
+['','No streak shame',{t:'Miss a week? Welcome back.'}],
+['dark','What you earn',{chips:['Gems','Vault','Trophies (iridescent)']}]]},
+{w:'community',u:'/community/host',t:'Host a Circle',j:'Recruit the people who already organize.',s:[
+['dark','Hero',{h:'You\u2019re already the one who organizes. Here\u2019s backup.',b:[['Host a Circle',1]]}],
+['','A format that works',{g:2,cards:['Starter Circles','Programs your Circle runs together']}],
+['','The host kit',{chips:['invite link','check-in','reminders','co-hosts']}],
+['','Find a place to meet',{t:'Meet in a Community Space near you.',n:'Links to Spaces directory by standing'}],
+['','Host stories',{g:2,cards:['Story','Story']}],
+['','CTA',{b:[['Host a Circle',1],['Get the host kit']]}]]},
+{w:'community',u:'/near/[city]',t:'What\u2019s on near you',j:'SEO and answer-engine landing that converts live.',s:[
+['','H1 in search language',{h:'Things to do this week in San Diego with other people'}],
+['','This week',{g:2,cards:['Event','Event','Circle','Circle'],n:'Live listings, filter by day and kind'}],
+['','Top Spaces',{l:3,n:'Sorted by standing'}],
+['','FAQ (literal questions)',{l:4,n:'Schema markup; first sentence answers fully'}]]},
+{w:'spaces',u:'/spaces',t:'Grow your community',j:'Turn an owner with an empty Tuesday into an open Space.',s:[
+['dark','Hero',{h:'You\u2019ve built a community. Let the people looking for one find it.',b:[['Open your Space',1],['See how it pays']],n:'Free; no card'}],
+['','What the network does',{g:3,cards:['The city calendar','People looking for their people','Ranked by gathering']}],
+['','The kit',{g:3,cards:['Door QR','Contacts','Memberships','Tickets','Programs','Your page']}],
+['dark','Rank by gathering',{h:'Nobody can buy their way above a community that actually gathers.',b:[['How standing works']]}],
+['','The deal',{g:3,cards:['Host free','Regulars 0%','A small share of what we bring']}],
+['','A live Space',{img:'Real Space page preview',n:'Standing line + this week\u2019s check-ins'}],
+['','Which are you?',{chips:['Studio','Coach / practitioner','Event host','Café / venue','Non-profit']}]]},
+{w:'spaces',u:'/spaces/tools',t:'The kit',j:'Feature depth for evaluators, one outcome per tool.',s:[
+['dark','Hero',{h:'Six tools you\u2019d otherwise rent. On by default.'}],
+['','Remember who came',{t:'Door QR \u2192 contacts',img:'Screenshot'}],
+['','Bring them back',{t:'CRM nudges, email'}],
+['','Get paid',{t:'Memberships, tickets, refunds, tips at 0%'}],
+['','Run it together',{t:'Programs + Circles'}],
+['','Look good / know it\u2019s working',{t:'Page editor \u00b7 standing + check-in counts'}],
+['','CTA',{b:[['Open your Space',1]]}]]},
+{w:'spaces',u:'/spaces/standing',t:'How placement is earned',j:'Trust and differentiation.',s:[
+['dark','Hero',{h:'Earned by gathering. Never sold.'}],
+['','What counts',{g:2,cards:['How often you gather','People in the room']}],
+['','What never counts',{chips:['money','ads','follower count']}],
+['','Worked example',{img:'Two Spaces compared'}],
+['','New Spaces',{t:'How your first Circle gets seen'}]]},
+{w:'spaces',u:'/spaces/pricing',t:'The deal',j:'One price per plan. End on outcomes.',s:[
+['dark','Hero',{h:'We only earn when we help your community grow.'}],
+['','The rule',{t:'Your regulars: 0%. People we bring you: a small share. Non-profits: nothing.'}],
+['','Plans',{g:3,cards:['Free Space','Business','Non Profit'],n:'Prices from the product catalog; no strike-throughs'}],
+['','FAQ',{l:4}],
+['','CTA',{b:[['Open your Space',1]]}]]},
+{w:'spaces',u:'/spaces/for/[type]',t:'Persona door (template)',j:'Same structure, own hero, 3 tools, 1 story.',s:[
+['dark','Hero',{h:'Studios: fill the 7pm class.',chips:['Coaches: a client list you keep','Event hosts: a guest list that comes back','Cafés: your slow night, full','Non-profits: every tool, nothing taken']}],
+['','3 most relevant tools',{g:3,cards:['Tool','Tool','Tool']}],
+['','One story',{img:'Photo + quote'}],
+['','CTA',{b:[['Open your Space',1]]}]]},
+{w:'shared',u:'/stories',t:'Stories',j:'Hosts and Spaces in their own words.',s:[
+['','Grid',{g:2,cards:['Host story','Space story','Host story','Space story']}],
+['','Each story ends',{b:[['Join their Circle',1],['Visit their Space']]}]]},
+{w:'shared',u:'/vision',t:'Third spaces · 2027 vision',j:'For partners, investors, civic and press. Footer + About only.',s:[
+['dark','Hero',{h:'When a community is ready, it earns a home.',n:'Slower motion, editorial'}],
+['','The density story',{t:'The network finds the people \u2192 the people find the Spaces \u2192 the town earns a third space.',img:'Density map'}],
+['dark','Concepts',{g:2,cards:['Vision \u00b7 late 2027','Vision \u00b7 late 2027'],n:'Facility renders, always labeled'}],
+['','Partner interest',{l:3,b:[['Talk to us',1]]}]]}];
+function sec([dark,name,o]){let h=`<div class="sec ${dark}"><span class="n">${name}</span>`;
+if(o.img&&!o.g)h+=`<div class="img">${o.img}</div>`;
+if(o.h)h+=`<div class="h">${o.h}</div>`;if(o.t)h+=`<div class="t">${o.t}</div>`;
+if(o.l)for(let i=0;i<o.l;i++)h+=`<div class="ln" style="width:${90-i*12}%"></div>`;
+if(o.g)h+=`<div class="grid" style="grid-template-columns:repeat(${o.g},1fr)">${o.cards.map(c=>`<div style="position:relative"><div class="box"></div><div class="t" style="position:absolute;inset:6px;font-size:11px;line-height:1.3">${c}</div></div>`).join('')}</div>`;
+if(o.chips)h+=`<div class="chips">${o.chips.map(c=>`<i>${c}</i>`).join('')}</div>`;
+if(o.b)h+=`<div class="row">${o.b.map(([l,p])=>`<span class="btn${p?' p':''}">${l}</span>`).join('')}</div>`;
+if(o.n)h+=`<div class="note">${o.n}</div>`;return h+'</div>'}
+const board=document.getElementById('board');
+board.innerHTML=P.map(p=>`<article class="pg" data-w="${p.w}" data-screen-label="${p.u}"><div class="hd"><b>${p.t}</b><code>${p.u}</code></div><div class="job">${p.j}</div>${p.s.map(sec).join('')}<div style="height:6px"></div></article>`).join('');
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));board.querySelectorAll('.pg').forEach(p=>p.style.display=(b.dataset.f==='all'||p.dataset.w===b.dataset.f)?'':'none')});
+</script>
+</body></html>

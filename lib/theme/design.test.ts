@@ -80,6 +80,8 @@ describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) 
     const declared = [...core.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1])
     expect(declared.filter((n) => !n.startsWith('--fq-'))).toEqual([])
     expect(core).not.toMatch(/@import/)
+    // A relative url() cannot resolve from app/themes/ and fails the whole build (2026-10-13).
+    expect(core).not.toMatch(/url\(['"]?\.\.?\//)
   })
 })
 

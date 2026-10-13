@@ -1,0 +1,32 @@
+/* Frequency infographic kinds. Renders the Theme Element Library's infographic data model:
+   <figure data-ig="infographic" data-json='{"kind":"stats","title":"…","items":[…],"source":"…","variant":"grid-4","describe":"…"}'></figure>
+   kinds: stats | iconList | steps | timeline | comparison | bar | donut | meter | pictogram | quote
+   Rules: null values render a "needs a number" slot, source always shows, describe + a data table give the text version. */
+(function(){
+var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var miss='<span class="ig-need">needs a number</span>';
+var num=function(i){return i.value==null||i.needsValue?miss:esc(i.value.toLocaleString?i.value.toLocaleString():i.value)+(i.unit?'<small>'+esc(i.unit)+'</small>':'')};
+var ico=function(id){return '<svg class="fq-icon"><use href="#'+esc(id||'circle')+'"></use></svg>'};
+var PAL=['#C4B8FF','#8FE9FF','#EEC1EC','#A3D4FF','#B3C6FF'];
+var K={
+ stats:function(m){return '<div class="ig-k-stats v-'+esc(m.variant||'grid-4')+'">'+m.items.map(function(i){return '<div class="'+(m.variant==='cards'?'ig-card':'ig-stat')+'"><span class="ig-n">'+num(i)+'</span><span class="ig-l">'+esc(i.label)+'</span></div>'}).join('')+'</div>'},
+ iconList:function(m){return '<div class="ig-k-list">'+m.items.map(function(i){return '<div><span class="ic">'+ico(i.icon)+'</span><span><b>'+esc(i.title)+'</b><em>'+esc(i.line)+'</em></span></div>'}).join('')+'</div>'},
+ steps:function(m){return '<div class="ig-path" style="--n:'+m.items.length+'">'+m.items.map(function(i,n){return '<div class="'+(n<(m.done||m.items.length)?'on':'')+'"><h4>'+esc(i.title)+'</h4><p>'+esc(i.line)+'</p></div>'}).join('')+'</div>'},
+ timeline:function(m){return '<div class="ig-k-time">'+m.items.map(function(i){return '<div><time>'+esc(i.date||i.time)+'</time><span class="dt"></span><span><b>'+esc(i.title)+'</b><em>'+esc(i.line||'')+'</em></span></div>'}).join('')+'</div>'},
+ comparison:function(m){var c=m.columns||[];return '<table class="ig-k-cmp"><thead><tr><th></th>'+c.map(function(x,n){return '<th'+(n===m.highlight?' class="hi"':'')+'>'+esc(x)+'</th>'}).join('')+'</tr></thead><tbody>'+m.items.map(function(r){return '<tr><th>'+esc(r.label)+'</th>'+r.values.map(function(v,n){return '<td'+(n===m.highlight?' class="hi"':'')+'>'+(v===true?'<span class="ck"></span>':v===false?'<span class="no"></span>':esc(v))+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>'},
+ bar:function(m){var mx=Math.max.apply(0,m.items.map(function(i){return i.value||0}))||1,hi=m.highlight==null?-1:m.highlight;return '<div class="ig-k-bar"><div class="ig-bars" style="--h:'+(m.height||150)+'px">'+m.items.map(function(i,n){return i.value==null?'<i class="need" style="--v:30"></i>':'<i style="--v:'+Math.round(i.value/mx*100)+'"'+(n===hi?' class="hi"':'')+' title="'+esc(i.label)+': '+i.value+'"></i>'}).join('')+'</div><div class="ig-axis">'+m.items.map(function(i){return '<span>'+esc(i.label)+'</span>'}).join('')+'</div></div>'},
+ donut:function(m){var t=m.items.reduce(function(a,i){return a+(i.value||0)},0)||1,acc=0,st=m.items.map(function(i,n){var a=acc;acc+=(i.value||0)/t*100;return (i.color||PAL[n%PAL.length])+' '+a+'% '+acc+'%'}).join(',');
+  return '<div class="ig-k-donut"><div class="ring" style="background:conic-gradient(from -90deg,'+st+')"><span><b>'+Math.round((m.items[0].value||0)/t*100)+'%</b><em>'+esc(m.items[0].label)+'</em></span></div><div class="ig-legend" style="flex-direction:column;gap:10px">'+m.items.map(function(i,n){return '<span style="--c:'+(i.color||PAL[n%PAL.length])+'">'+esc(i.label)+' · '+(i.value==null?'?':Math.round(i.value/t*100)+'%')+'</span>'}).join('')+'</div></div>'},
+ meter:function(m){return '<div class="ig-k-meter">'+m.items.map(function(i){var v=i.current==null||!i.goal?0:Math.min(100,i.current/i.goal*100);return '<div><div class="row"><span class="ig-l">'+esc(i.label)+'</span><span class="ig-n" style="font-size:24px">'+(i.current==null?miss:esc(i.current.toLocaleString())+'<small>of '+esc((i.goal||0).toLocaleString())+(i.unit?' '+esc(i.unit):'')+'</small>')+'</span></div><div class="ig-meter thick" style="--v:'+Math.round(v)+'"></div></div>'}).join('')+'</div>'},
+ pictogram:function(m){return '<div class="ig-k-pic">'+m.items.map(function(i){var n=i.of||10,c=i.count==null?0:i.count,s='';for(var k=0;k<n;k++)s+='<span class="'+(k<c?'on':'')+'">'+ico(i.icon||'user')+'</span>';return '<div><div class="row2">'+s+'</div><span class="ig-n" style="font-size:30px">'+(i.count==null?miss:c+'<small>in '+n+'</small>')+'</span><span class="ig-l">'+esc(i.label)+'</span></div>'}).join('')+'</div>'},
+ quote:function(m){var i=m.items[0]||{};return '<blockquote class="ig-k-quote"><p>'+esc(i.text)+'</p><cite>'+esc(i.who)+(i.role?' · '+esc(i.role):'')+'</cite></blockquote>'}};
+function table(m){var rows=m.items.map(function(i){return '<tr><td>'+esc(i.label||i.title||i.date||i.text||'')+'</td><td>'+esc(i.value!=null?i.value+(i.unit||''):i.current!=null?i.current+' of '+i.goal:i.count!=null?i.count+' in '+(i.of||10):i.line||(i.values?i.values.join(' / '):''))+'</td></tr>'}).join('');return '<details class="ig-data"><summary>See the data</summary><table>'+rows+'</table></details>'}
+function render(el){var m;try{m=JSON.parse(el.dataset.json)}catch(e){el.textContent='Invalid infographic data';return}
+ var f=K[m.kind];if(!f){el.textContent='Unknown kind: '+m.kind;return}
+ var need=m.items.some(function(i){return ('value' in i&&i.value==null)||i.needsValue||('current' in i&&i.current==null)||('count' in i&&i.count==null)});
+ el.classList.add('ig-fig');el.setAttribute('role','figure');
+ el.innerHTML=(m.title?'<div class="ig-fig-h"><span class="ig-k">'+esc(m.kind)+(m.variant?' · '+esc(m.variant):'')+'</span><h3>'+esc(m.title)+'</h3></div>':'')+'<div class="ig-fig-v" aria-hidden="true">'+f(m)+'</div>'+(m.note?'<p class="ig-fig-note">'+esc(m.note)+'</p>':'')+'<div class="ig-fig-f"><span class="ig-src">'+(m.source?'Source: '+esc(m.source):'<span class="ig-need">needs a source</span>')+'</span>'+(need?'<span class="ig-need">Publish blocked: fill every number</span>':'')+'</div><p class="ig-sr">'+esc(m.describe||'')+'</p>'+table(m)}
+function run(root){(root||document).querySelectorAll('[data-ig="infographic"]').forEach(render)}
+window.fqInfographic=render;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){run()});else run();
+})();
