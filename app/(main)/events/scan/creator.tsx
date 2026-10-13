@@ -395,13 +395,9 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
             <p className="mt-1 text-body-sm text-primary-strong">
               {extraction.quality.note ?? 'Some of the poster did not come through clearly. A straight-on shot of the whole poster works best.'}
             </p>
-            <button
-              type="button"
-              onClick={retake}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
+            <Button type="button" onClick={retake} className="mt-3">
               <RefreshCw className="h-4 w-4" /> Retake
-            </button>
+            </Button>
           </div>
         )}
 

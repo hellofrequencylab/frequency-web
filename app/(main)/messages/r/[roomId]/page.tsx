@@ -304,12 +304,9 @@ export default async function RoomPage({
                 conversation opens, along with the composer.
               </GateNotice>
               <form action={joinRoom.bind(null, roomId)} className="mt-4 flex justify-center">
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-                >
+                <Button type="submit" size="sm">
                   <LogIn className="w-3.5 h-3.5" /> Join room
-                </button>
+                </Button>
               </form>
             </div>
           </div>
