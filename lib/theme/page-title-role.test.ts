@@ -65,7 +65,7 @@ function valueIn(block: string, token: string): string {
 const source = (p: string) => stripComments(readFileSync(join(root, p), 'utf8'))
 const DETAIL = source('components/templates/detail-template.tsx')
 const EVENT = source('app/(main)/events/[slug]/event-member-page.tsx')
-const PRICING = source('app/(marketing)/pricing/page.tsx')
+const PRICING = source('app/(marketing)/pricing/plan-cards.tsx')
 
 describe('--text-page-title-lg reproduces the ramp it retired', () => {
   it('is a clamp on the generation axis, not a bare clamp', () => {

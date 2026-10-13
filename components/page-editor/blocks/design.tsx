@@ -37,6 +37,8 @@ import {
 import { richParagraphs, safeHref } from '@/lib/page-editor/richtext'
 import { decodeLegacyEntities, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import { SiteImage } from '@/components/marketing/site-image'
+import { arrowLinkClasses } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 
 // A body / lead / subtitle string, rendered as sanitized inline HTML (Bold / Italic / Link + <br>) via the
 // SAME allowlist the Space canvas editor writes and ContentBlockView renders — so formatting typed in the
@@ -92,10 +94,7 @@ function DesignHeading({
   // Heal a legacy entity double-escape before it hits the page.
   const clean = decodeLegacyEntities(title)
   // Fluid scale mirrors the kit DisplayHeading so a design block sits in the same type rhythm.
-  const scale =
-    size === 'lg'
-      ? 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]'
-      : 'text-[clamp(1.875rem,5.5vw,3rem)]'
+  const scale = size === 'lg' ? DISPLAY_TYPE.feature : DISPLAY_TYPE.section
   // The color token defaults to warm text; a caller can swap it (on-ink over a photo) via `className`.
   const color = className ?? 'text-text'
   const cls = `font-display uppercase text-balance ${color} ${scale}`
@@ -340,10 +339,10 @@ export function EditorialSectionBlock({
       <dl className="grid grid-cols-1 gap-8 sm:grid-cols-3">
         {shown.map((s, i) => (
           <div key={i}>
-            <dt className="font-display text-[clamp(2.5rem,6vw,4rem)] leading-none text-primary-strong">
+            <dt className={`font-display ${DISPLAY_TYPE.figure} leading-none text-primary-strong`}>
               {s.value}
             </dt>
-            <dd className="mt-2 text-body-sm font-semibold uppercase tracking-[0.18em] text-muted">{s.label}</dd>
+            <dd className="mt-2 text-body-sm font-semibold uppercase tracking-eyebrow text-muted">{s.label}</dd>
           </div>
         ))}
       </dl>
@@ -540,7 +539,7 @@ export function CardGridBlock({
         <div className="mt-10">
           <Link
             href={browseSafe}
-            className="inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
+            className={arrowLinkClasses({ register: 'band' })}
           >
             {browseLabel}
             <ArrowRight className="h-4 w-4" aria-hidden />
@@ -638,7 +637,7 @@ export function ZigzagBlock({
       {ctaLabel && ctaSafe && (
         <Link
           href={ctaSafe}
-          className="mt-6 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
+          className={arrowLinkClasses({ register: 'band', className: 'mt-6' })}
         >
           {ctaLabel}
           <ArrowRight className="h-4 w-4" aria-hidden />
@@ -710,7 +709,7 @@ export function AccentBeatBlock({
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {mode === 'quote' ? (
         <figure>
-          <blockquote className="font-display text-[clamp(1.5rem,4vw,2.5rem)] uppercase leading-tight text-text" style={headerFontStyle(headerFont)}>
+          <blockquote className={`font-display ${DISPLAY_TYPE.bandQuote} uppercase leading-tight text-text`} style={headerFontStyle(headerFont)}>
             {/* Light on purpose: the image variant veils the photo with CREAM
                 (bg-canvas/85 below), not ink, so this never sits on a dark band. */}
             {accentWord ? accentize(title ?? '', accentWord) : title}
@@ -767,7 +766,7 @@ export function DisplayHeadingBlock({
   if (!text) return null
   // Heal a legacy entity double-escape before render.
   const clean = decodeLegacyEntities(text)
-  const cls = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
+  const cls = `font-display ${DISPLAY_TYPE.poster} uppercase text-balance text-text`
   const style = headerFontStyle(font)
   // Same split as DesignHeading: the accent-word path stays a React node (marketing); with no accent word (the
   // Space entity-block path) the title renders through the inline-rich allowlist so a <br> / mark shows as the

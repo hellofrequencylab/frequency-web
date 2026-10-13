@@ -135,7 +135,7 @@ export function ComparisonTable({
           passes. The token gate cannot see this: it validates `success on surface`, and no pair in
           its table puts a status tone on the canvas. So the table declares the surface it was
           measured against instead of inheriting whichever band it lands on. */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-surface lg:block">
+      <div className="hidden overflow-x-auto rounded-card border border-border bg-surface lg:block">
         <table className="w-full text-left">
           <caption className="sr-only">{caption}</caption>
           <thead>
@@ -230,7 +230,7 @@ function MobileByColumn({
         <details
           key={column.id}
           open={column.id === openId}
-          className="group rounded-2xl border border-border bg-surface [&_summary]:list-none"
+          className="group rounded-card border border-border bg-surface [&_summary]:list-none"
         >
           <summary className="flex cursor-pointer select-none items-center justify-between gap-3 px-5 py-4">
             <span className="font-display uppercase text-text text-lead">{column.label}</span>
@@ -293,7 +293,7 @@ function MobileByRow({
         // on the canvas tone (4.05). LIVE-300 darkened `--color-success` for the chip pairing and
         // carried this one to 4.936, so the card is now a layout preference rather than a
         // workaround — keep it, but do not cite AA for it.
-        <div key={group.key} className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <div key={group.key} className="overflow-hidden rounded-card border border-border bg-surface">
           <p className="border-b border-border bg-surface-elevated px-4 py-3 font-display uppercase text-text">
             {group.label}
           </p>
@@ -318,7 +318,7 @@ function MobileByRow({
         </div>
       ))}
       {footer && (
-        <div className="rounded-2xl border-2 border-primary bg-primary-bg/20 p-5 text-center">
+        <div className="rounded-card border-2 border-primary bg-primary-bg/20 p-5 text-center">
           <p className="font-display uppercase text-text text-lead">{footer.label}</p>
           {footer.detail && <p className="mt-1 text-body-sm text-subtle">{footer.detail}</p>}
           <dl className="mt-4 space-y-3">

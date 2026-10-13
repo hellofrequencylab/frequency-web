@@ -52,6 +52,8 @@ import {
   Body,
   Card,
   PillarNav,
+  PlanRibbon,
+  planCardClasses,
 } from '@/components/marketing/marketing-ui'
 import { SiteImage } from '@/components/marketing/site-image'
 import { Reveal } from '@/components/marketing/motion'
@@ -763,18 +765,9 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
 /** One plan card. `featured` is the row's floating middle card (lift-2, primary
  *  border, the badge, taller via the negative block margin). */
 function PlanCard({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
-  const shell = plan.featured
-    ? `lift-2 border-2 border-primary p-7 sm:p-8 lg:-my-4 ${
-        ink ? 'bg-on-ink/5' : 'bg-surface ring-4 ring-primary-bg'
-      }`
-    : `lift-1 border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'}`
   return (
-    <Reveal as="article" className={`relative flex flex-col rounded-card ${shell}`}>
-      {plan.featured && (
-        <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
-          Most chosen
-        </span>
-      )}
+    <Reveal as="article" className={planCardClasses({ featured: plan.featured, ink })}>
+      {plan.featured && <PlanRibbon>Most chosen</PlanRibbon>}
       <h3
         className={`font-display uppercase ${plan.featured ? 'text-3xl' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
