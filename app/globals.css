@@ -1618,6 +1618,9 @@
   --radius-lg:   var(--design-radius-lg);
   --radius-xl:   var(--design-radius-xl);
   --radius-2xl:  var(--design-radius-2xl);
+  --radius-xs:   var(--design-radius-xs);
+  --radius-3xl:  var(--design-radius-3xl);
+  --radius-4xl:  var(--design-radius-4xl);
   --radius-full: 9999px;
 
   /* Named size for the profile hero-stat skeleton tile. A `--spacing-*` key, so
@@ -1720,6 +1723,21 @@
   --tracking-tight-display: var(--tracking-tight-display);
   --tracking-eyebrow:       var(--tracking-eyebrow);
   --tracking-eyebrow-soft:  var(--tracking-eyebrow-soft);
+  /* Tailwind's default steps, bridged to the design layer at Tailwind's own values (ADR-1737): about
+     500 `tracking-wide/wider/widest` and 5,000 `font-semibold/bold/…` call sites follow a design
+     without a codemod. */
+  --tracking-tighter: var(--design-tracking-tighter);
+  --tracking-normal:  var(--design-tracking-normal);
+  --tracking-wide:    var(--design-tracking-wide);
+  --tracking-wider:   var(--design-tracking-wider);
+  --tracking-widest:  var(--design-tracking-widest);
+  --leading-tight:    var(--design-leading-tight);
+  --leading-loose:    var(--design-leading-loose);
+  --font-weight-light:    var(--design-weight-light);
+  --font-weight-normal:   var(--design-weight-normal);
+  --font-weight-medium:   var(--design-weight-medium);
+  --font-weight-semibold: var(--design-weight-semibold);
+  --font-weight-bold:     var(--design-weight-bold);
   --ease-out:               var(--ease-out);
 }
 
@@ -2099,6 +2117,24 @@
   --design-radius-lg:  14px;
   --design-radius-xl:  16px;
   --design-radius-2xl: 24px;
+  /* Tailwind's own values for the steps DAWN never redefined. */
+  --design-radius-xs:  0.125rem;
+  --design-radius-3xl: 1.5rem;
+  --design-radius-4xl: 2rem;
+
+  /* Tailwind's default tracking, leading and weight steps, at Tailwind's values. */
+  --design-tracking-tighter: -0.05em;
+  --design-tracking-normal:  0em;
+  --design-tracking-wide:    0.025em;
+  --design-tracking-wider:   0.05em;
+  --design-tracking-widest:  0.1em;
+  --design-leading-tight:    1.25;
+  --design-leading-loose:    2;
+  --design-weight-light:     300;
+  --design-weight-normal:    400;
+  --design-weight-medium:    500;
+  --design-weight-semibold:  600;
+  --design-weight-bold:      700;
 
   --design-shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
   --design-shadow-xs: 0 1px 3px rgb(40 30 16 / 0.05);

@@ -167,3 +167,20 @@ describe('the editable index and registered compositions', () => {
     expect(hollow.length).toBe(Object.keys(COMPOSITIONS).length)
   })
 })
+
+describe('the comment scanner and the stub test (ADR-1737 fan-out findings)', () => {
+  it('does not let a /* inside a // line swallow the shell below it', async () => {
+    const { composesShell } = await import('./check-templates.mjs')
+    expect(composesShell('// every /admin/* page\nexport default () => <AdminTemplate title="x" />')).toBe(true)
+    expect(composesShell('const u = "https://x"\nexport default () => <FocusTemplate />')).toBe(true)
+    expect(composesShell('/* <AdminTemplate /> */\nexport default () => null')).toBe(false)
+  })
+
+  it('reads a type argument as a type, and a keyword-led tag as markup', async () => {
+    const { rendersJsx } = await import('./check-templates.mjs')
+    expect(rendersJsx('const m: Record<string, string> = {}\nexport default function P() { redirect("/a") }')).toBe(false)
+    expect(rendersJsx('if (a < b) redirect("/a")')).toBe(false)
+    expect(rendersJsx('export default function P() { return <A /> }')).toBe(true)
+    expect(rendersJsx('export default () => (<div />)')).toBe(true)
+  })
+})
