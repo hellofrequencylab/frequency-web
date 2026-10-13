@@ -209,7 +209,7 @@ export function VeraLightbox({
             <span className={capsLabel('mx-auto inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-meta font-semibold text-primary-strong')}>
               <Sparkles className="h-3.5 w-3.5" /> {current.eyebrow}
             </span>
-            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-page-title font-bold leading-tight text-text sm:text-3xl">
+            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-page-title font-bold leading-tight text-text sm:text-stat-sm">
               {current.title}
             </h2>
             <p className="mx-auto mt-3 max-w-md text-pretty text-body-sm leading-relaxed text-muted sm:text-body">{current.body}</p>

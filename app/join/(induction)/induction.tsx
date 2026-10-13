@@ -663,7 +663,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
     }
     const initials = getInitials(displayName || userEmail)
     return (
-      <div className="h-24 w-24 rounded-pill bg-primary-bg text-3xl text-primary-strong font-semibold flex items-center justify-center shrink-0">
+      <div className="h-24 w-24 rounded-pill bg-primary-bg text-stat-sm text-primary-strong font-semibold flex items-center justify-center shrink-0">
         {initials || '?'}
       </div>
     )
@@ -677,7 +677,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
   const eyebrow = 'eyebrow text-primary-strong'
-  const heading = 'font-display uppercase leading-[1.0] text-text'
+  const heading = 'font-display uppercase leading-none text-text'
 
   const slide = reel[reelIndex]
   const isLastSlide = reelIndex >= reel.length - 1

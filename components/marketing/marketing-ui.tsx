@@ -175,7 +175,7 @@ export function PhotoHero({
           {facts.map(([value, label]) => (
             <div key={label} className="min-w-0 text-center">
               {/* A numeral never wraps; the label may take two lines. */}
-              <div className="font-display text-lead leading-none whitespace-nowrap text-primary sm:text-3xl">
+              <div className="font-display text-lead leading-none whitespace-nowrap text-primary sm:text-stat-sm">
                 {value}
               </div>
               <div className="mt-1.5 text-3xs font-bold uppercase tracking-eyebrow-soft text-on-ink-muted sm:tracking-eyebrow">
@@ -983,7 +983,7 @@ export function Marquee({ items }: { items: string[] }) {
     <div className="overflow-hidden border-y border-on-ink/10 py-5 select-none">
       <div className="flex w-max animate-marquee items-center whitespace-nowrap">
         {row.map((t, i) => (
-          <span key={i} className="flex items-center font-display uppercase text-3xl text-on-ink/15">
+          <span key={i} className="flex items-center font-display uppercase text-stat-sm text-on-ink/15">
             <span className="px-7">{t}</span>
             <span className="text-primary text-lead">&bull;</span>
           </span>
@@ -1096,7 +1096,7 @@ function PillarFace({
   const sub = isInk ? 'text-on-ink-subtle' : 'text-subtle'
   return (
     <div className="flex items-baseline gap-3">
-      <span className={`font-display text-4xl leading-none ${active ? accent : isInk ? 'text-ink-border' : 'text-border-strong'}`}>
+      <span className={`font-display text-stat-md leading-none ${active ? accent : isInk ? 'text-ink-border' : 'text-border-strong'}`}>
         {n}
       </span>
       <div>
