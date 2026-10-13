@@ -1,4 +1,5 @@
-// The Features page's content, from templates/website/Features.html verbatim: two halves (people,
+// The Features page's content, from templates/website/Features.html verbatim (except the calendar, which
+// guidelines/messaging.md names "What's happening", overruling the prototype's "Your town's calendar"): two halves (people,
 // spaces), four jobs each, every feature with its three steps and "What changes" line. The ids are the
 // design's anchors (#f-zaps, #f-doorqr, ...) and the rest of the site links to them, so they are a
 // contract: rename one and grep for `feature('<id>')` first.
@@ -42,7 +43,7 @@ export const PEOPLE: Half = {
       line: 'See what’s happening near you.',
       photo: 'day-park-yoga.jpg',
       features: [
-        { id: 'f-calendar', icon: 'event', name: 'Your town’s calendar', line: 'Everything meeting near you this week, in one place.', steps: ['Set your town once.', 'Browse Circles, events and programs by day.', 'Filter by what you like doing and when you’re free.'], changes: 'You find something for Thursday in a minute, not an evening of scrolling.' },
+        { id: 'f-calendar', icon: 'event', name: 'What’s happening', line: 'Everything meeting near you this week, in one place.', steps: ['Set your town once.', 'Browse Circles, events and programs by day.', 'Filter by what you like doing and when you’re free.'], changes: 'You find something for Thursday in a minute, not an evening of scrolling.' },
         { id: 'f-circles', icon: 'circle', name: 'Circles', line: 'Small groups around one thing, with familiar faces when you return.', steps: ['Pick a Circle that meets at a time you’re free.', 'Show up. The Host knows you’re coming.', 'Come back next week to the same faces.'], changes: 'A standing plan with people who expect you.' },
         { id: 'f-events', icon: 'ticket', name: 'Events', line: 'One-off gatherings worth going out for.', steps: ['RSVP, or buy a ticket if the Space charges.', 'Get a reminder the day before.', 'Walk in with your ticket on your phone.'], changes: 'Something to look forward to, already in your calendar.' },
         { id: 'f-programs', icon: 'program', name: 'Programs', line: 'A few weeks with the same group, start to finish.', steps: ['Join before the first week.', 'Move through each session together.', 'Finish as a group and earn a trophy.'], changes: 'A shared goal, and people who finished it with you.' },

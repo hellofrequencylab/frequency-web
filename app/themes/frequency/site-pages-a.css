@@ -224,6 +224,9 @@
 [data-design="frequency"] [data-kit="site"] .pa-features .fth li span{font:600 12px/1 var(--fq-font-display);letter-spacing:.08em;color:var(--fq-side)}
 [data-design="frequency"] [data-kit="site"] .pa-features .out{margin:12px 0 0;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font:400 italic 19px/1.35 var(--fq-font-serif);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .pa-features .out b{font:600 11px/1 var(--fq-font-display);font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:var(--fq-side)}
+/* The onward link under an open feature (the site's help article or calendar; not in the design). */
+[data-design="frequency"] [data-kit="site"] .pa-features .fth .more{display:inline-flex;margin-top:14px;font:600 14px/1 var(--fq-font-sans);color:var(--fq-side);text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .pa-features .fth .more:hover{text-decoration:underline;text-underline-offset:3px}
 @media (max-width:900px){[data-design="frequency"] [data-kit="site"] .pa-features .job{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="site"] .pa-features .jl{position:static}
 [data-design="frequency"] [data-kit="site"] .pa-features .jph{display:none}

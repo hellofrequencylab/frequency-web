@@ -164,45 +164,5 @@ export function LocPill({ href, city, line }: { href: string; city: string | nul
   )
 }
 
-/** The page-end "Keep going" band. The shell lane owns the shared Keep going component; this is the
- *  design's markup for it, kept here so each body is whole until that component lands. */
-export function KeepGoing({
-  label,
-  title,
-  body,
-  primary,
-  secondary,
-}: {
-  label: string
-  title: string
-  body: string
-  primary: { href: string; label: string }
-  secondary: { href: string; label: string }
-}) {
-  return (
-    <section className="sec kg" data-screen-label={label}>
-      <div className="wrap">
-        <div className="next2" data-energy="charge">
-          <div className="fq-aura" style={aura(0.55)} />
-          <span className="rings" aria-hidden="true" />
-          <div className="n2t">
-            <span className="k">Keep going</span>
-            <h3>{title}</h3>
-            <p>{body}</p>
-          </div>
-          <div className="ctas">
-            <Link className="btn fq-iri-btn" href={primary.href}>
-              {primary.label}
-            </Link>
-            <Link className="btn btn-ghost fq-iri-rim" href={secondary.href}>
-              {secondary.label}
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 /** `--fq-aura-opacity` for a `.fq-aura` layer (the design's inline `--aura-opacity`). */
 export const aura = (opacity: number) => ({ '--fq-aura-opacity': opacity }) as CSSProperties
