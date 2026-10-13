@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import '@/app/themes/frequency/members-b.css'
 import { FqIcon } from '@/components/frequency/icon'
 import { FqModules } from '@/components/frequency/members/modules'
+import { FqCopyLink } from '@/components/frequency/members/shared/copy-link'
+import { FqEventCalendar, FqEventHost, FqEventPlan, FqEventWhere } from './event-panels'
 
 // EVENT, FREQUENCY BODY (templates/members/Event.html). The page (event-member-page.tsx) keeps every
 // read, gate and derivation it already had and hands this body the results: the JOIN BOX it built
@@ -11,10 +13,11 @@ import { FqModules } from '@/components/frequency/members/modules'
 // in the reference layout: the split hero card, About / Plan / Where down the main column, Host and
 // Going down the side.
 //
-// The interior blocks that carry their own actions (activity and its composer, the recap album, the
-// run of show, the Host & Co Hosts credit with Message Host, the cohost controls, add-to-calendar)
-// render through <FqModules>, reading the event context the page stamped, so none of them is
-// re-derived here.
+// The reference's own sections are drawn in the kit by event-panels.tsx (Plan, Good to know, Links,
+// Where with its map, the Host panel with Message, Add to calendar), each reading the event context
+// the page stamped. The blocks that carry their own tools (activity and its composer, the recap
+// album, the host's co host controls, a manager's inline description editor) still render through
+// <FqModules>, so none of them is re-derived here.
 
 export type FqGoingPerson = { id: string; name: string; handle: string; avatarUrl: string | null }
 
@@ -172,16 +175,16 @@ export function FqEventBody({
               </div>
             )
           )}
-          <FqModules
-            ids={['event-schedule', 'event-good-to-know', 'event-links', 'event-sponsors', 'event-activity', 'event-recap', 'event-location']}
-          />
+          <FqEventPlan />
+          <FqEventWhere />
+          <FqModules ids={['event-activity', 'event-recap']} />
         </div>
 
         <aside className="side">
-          <FqModules ids={['event-lineup']} />
-          {namesVisible && goingPeople.length > 0 && (
-            <div className="panel stack">
-              <span className="k">Going · {going}</span>
+          <FqEventHost />
+          <div className="panel stack">
+            <span className="k">Going · {going}</span>
+            {namesVisible && goingPeople.length > 0 ? (
               <div className="list">
                 {goingPeople.slice(0, 8).map((p) => (
                   <Link key={p.id} href={`/people/${p.handle}`}>
@@ -193,10 +196,24 @@ export function FqEventBody({
                   </Link>
                 ))}
               </div>
-              {goingPeople.length > 8 && <span className="t2">and {goingPeople.length - 8} more</span>}
-            </div>
-          )}
-          <FqModules ids={['event-when-where', 'event-cohosts']} />
+            ) : faces.length > 0 ? (
+              <span className="faces">
+                {goingPeople.slice(0, 6).map((p) => (
+                  <span
+                    key={p.id}
+                    className="av s"
+                    style={p.avatarUrl ? { backgroundImage: `url('${p.avatarUrl}')` } : undefined}
+                  />
+                ))}
+              </span>
+            ) : (
+              <span className="t2">Nobody yet. Be the first.</span>
+            )}
+            {namesVisible && goingPeople.length > 8 && <span className="t2">and {goingPeople.length - 8} more</span>}
+            <FqCopyLink label="Bring a friend" className="btn sm fqm-tag-start" />
+          </div>
+          <FqEventCalendar />
+          <FqModules ids={['event-cohosts']} />
           {belonging}
         </aside>
       </div>
