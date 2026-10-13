@@ -57,6 +57,12 @@
 [data-design="frequency"] [data-kit="members"] .ap-nav button:not(.on) svg{opacity:.75}
 @media (max-width:1180px){[data-design="frequency"] [data-kit="members"] .ap-nav button{padding:0 12px}
 [data-design="frequency"] [data-kit="members"] .ap-nav button span{display:none}}
+/* The pill's first item is a link (Feed / Home), worn exactly like the section buttons beside it. */
+[data-design="frequency"] [data-kit="members"] .ap-nav a{letter-spacing:-.01em}
+[data-design="frequency"] [data-kit="members"] .ap-nav a:hover{color:var(--fq-text-strong);background:var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .ap-nav a:not(.on) svg{opacity:.75}
+@media (max-width:1180px){[data-design="frequency"] [data-kit="members"] .ap-nav a{padding:0 12px}
+[data-design="frequency"] [data-kit="members"] .ap-nav a span{display:none}}
 [data-design="frequency"] [data-kit="members"] .ap-search svg{width:17px;height:17px;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .ap-search span{flex:1}
 [data-design="frequency"] [data-kit="members"] button.ap-ic{border:none;background:transparent;cursor:pointer;padding:0}
