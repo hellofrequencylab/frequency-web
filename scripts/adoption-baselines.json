@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2146,
+      "baseline": 2139,
       "frozen": {
-        "at": "2026-10-06",
-        "value": 2146,
+        "at": "2026-10-13",
+        "value": 2139,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Earned fall, 2147 -> 2146: the site Coming soon link in components/sites/site-page.tsx composes buttonClasses instead of a hand-rolled rounded-control fill (LIVE-741, the main ratchet fix).",
-        "from": 2147
+        "reason": "LIVE-904 (#3414): the Wildheart site chrome and blocks now read their shapes from the theme sheet (components/sites/wildheart-css.ts), retiring 7 rounded-[...] literals. 2146 to 2139.",
+        "from": 2146
       },
       "history": [
         {
@@ -301,6 +301,13 @@
           "to": 2146,
           "direction": "lowered",
           "reason": "Earned fall, 2147 -> 2146: the site Coming soon link in components/sites/site-page.tsx composes buttonClasses instead of a hand-rolled rounded-control fill (LIVE-741, the main ratchet fix)."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 2146,
+          "to": 2139,
+          "direction": "lowered",
+          "reason": "LIVE-904 (#3414): the Wildheart site chrome and blocks now read their shapes from the theme sheet (components/sites/wildheart-css.ts), retiring 7 rounded-[...] literals. 2146 to 2139."
         }
       ]
     },
@@ -639,14 +646,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 403,
+      "baseline": 402,
       "frozen": {
-        "at": "2026-10-06",
-        "value": 403,
-        "direction": "raised",
+        "at": "2026-10-13",
+        "value": 402,
+        "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Instrument false positive, not a filled button: the +1 is the selected state of the field toggle pills in components/spaces/crm/segment-fields-manager.tsx (LIVE-662, #3203), whose bg-primary-bg tint matches the bg-primary pattern because a hyphen is a word boundary. No pill-toggle primitive exists to compose. The real raw bg-primary button from the same merge window (sister-circle-prompt, LIVE-665) moves to Button in this PR.",
-        "from": 402
+        "reason": "LIVE-904 (#3414): the Wildheart header's admin chip and the site's buttons are drawn by the theme sheet, retiring one raw bg-primary button. 403 to 402.",
+        "from": 403
       },
       "history": [
         {
@@ -816,6 +823,13 @@
           "to": 403,
           "direction": "raised",
           "reason": "Instrument false positive, not a filled button: the +1 is the selected state of the field toggle pills in components/spaces/crm/segment-fields-manager.tsx (LIVE-662, #3203), whose bg-primary-bg tint matches the bg-primary pattern because a hyphen is a word boundary. No pill-toggle primitive exists to compose. The real raw bg-primary button from the same merge window (sister-circle-prompt, LIVE-665) moves to Button in this PR."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 403,
+          "to": 402,
+          "direction": "lowered",
+          "reason": "LIVE-904 (#3414): the Wildheart header's admin chip and the site's buttons are drawn by the theme sheet, retiring one raw bg-primary button. 403 to 402."
         }
       ]
     },
