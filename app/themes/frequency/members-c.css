@@ -58,4 +58,12 @@
 [data-design="frequency"] [data-kit="members"] .mc-step{display:block;height:4px;border-radius:999px;background:var(--fq-track)}
 [data-design="frequency"] [data-kit="members"] .mc-step.on{background:var(--fq-pa)}
 
+/* Settings: the side list and the panes. */
+[data-design="frequency"] [data-kit="members"] .mc-gap-2{gap:2px}
+[data-design="frequency"] [data-kit="members"] .mc-navbtn{height:44px;border:none;border-radius:14px;text-align:left;padding:0 14px;font:500 15px/1 var(--fq-font-sans);cursor:pointer;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .panel.mc-pane{gap:20px;padding:28px}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .panel.mc-pane{padding:18px}}
+[data-design="frequency"] [data-kit="members"] .mc-bar{display:block;height:12px;width:60%;border-radius:999px;background:var(--fq-track)}
+[data-design="frequency"] [data-kit="members"] .mc-bar.short{width:35%}
+
 }
