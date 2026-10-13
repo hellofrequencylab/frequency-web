@@ -66,4 +66,12 @@
 [data-design="frequency"] [data-kit="members"] .mc-bar{display:block;height:12px;width:60%;border-radius:999px;background:var(--fq-track)}
 [data-design="frequency"] [data-kit="members"] .mc-bar.short{width:35%}
 
+/* Profile. */
+[data-design="frequency"] [data-kit="members"] .mc-identity{gap:32px;align-items:center}
+[data-design="frequency"] [data-kit="members"] .mc-photo{box-shadow:0 0 0 4px var(--fq-ig-hole),0 20px 50px -24px var(--fq-ig-halo)}
+[data-design="frequency"] [data-kit="members"] .mc-initials{display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);font:500 40px/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .g4.mc-stats{margin-top:44px}
+[data-design="frequency"] [data-kit="members"] .mc-gap-24{gap:24px}
+[data-design="frequency"] [data-kit="members"] .mc-crew{font:600 14px/1 var(--fq-font-sans)}
+
 }
