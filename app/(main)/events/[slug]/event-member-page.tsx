@@ -94,6 +94,8 @@ import { nextOccurrence, recurrenceLineFor } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqEventBody } from '@/components/frequency/members/event/event-body'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -2050,6 +2052,218 @@ export default async function EventDetailPage({
 
   // (`hostAskSpaces` — the ADR-911 host handshake's Space side — is resolved in the social wave
   // above, under the same `myProfileId && !canManage` gate. See the comment there.)
+
+  // THE FREQUENCY BODY (ADR-1737 switch, templates/members/Event.html). Same reads, same gates, same
+  // join box: only the placement changes. Build-time constant, so the DAWN return below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    const cadenceLine =
+      event.recurrence_type !== 'none' || event.parent_event_id
+        ? [
+            recurrenceLineFor(event) ?? 'Part of a recurring series',
+            nextRecurrence
+              ? `Next: ${nextRecurrence.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : null
+    return (
+      <FqEventBody
+        structuredData={
+          <JsonLd
+            data={[
+              eventJsonLd,
+              breadcrumbSchema([
+                { name: 'Events', path: '/events' },
+                { name: event.title, path: `/events/${event.slug}` },
+              ]),
+            ]}
+          />
+        }
+        notices={
+          <>
+            {event.is_cancelled && (
+              <div className="panel" role="status">
+                <span className="t1">This event has been cancelled.</span>
+              </div>
+            )}
+            {claimed === '1' && isHost && (
+              <div className="panel" role="status">
+                <span className="t1">It is yours. You are the host now, so you can edit anything on this page.</span>
+              </div>
+            )}
+            {ticketedCents !== null && (
+              <div className="panel" role="status">
+                <span className="t1">
+                  You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
+                </span>
+              </div>
+            )}
+            {myCohostInvite && !isHost && (
+              <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
+            )}
+          </>
+        }
+        bodyLead={
+          claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token ? (
+            <div className="soft row wrap">
+              <span className="grow stack">
+                <span className="h3">Is this your event?</span>
+                <span className="t2">
+                  Frequency built this page so people nearby could find it. Claim it to manage RSVPs, edit the
+                  details, and run it from your own account. It takes one tap.
+                </span>
+              </span>
+              {myProfileId ? (
+                <ClaimButton token={extra.claim_token} size="lg" />
+              ) : (
+                <Link
+                  className="btn pa lg"
+                  href={`/join?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
+                >
+                  Claim This Event
+                </Link>
+              )}
+            </div>
+          ) : isClaimable && !canManage ? (
+            <ClaimRequestCta eventId={event.id} organizerName={extra?.organizer_name ?? null} />
+          ) : hostAskSpaces.length > 0 ? (
+            <HostRequestCta eventId={event.id} spaces={hostAskSpaces} />
+          ) : null
+        }
+        heroUrl={heroUrl}
+        modeLabel={mode.label}
+        kicker={
+          [spaceHost?.name ?? event.host?.display_name ?? extra?.organizer_name, scopeName].filter(Boolean).join(' · ') ||
+          'Event'
+        }
+        title={
+          canManage ? (
+            <InlineText
+              value={event.title}
+              save={updateEventField.bind(null, event.id, slug, 'title')}
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title-lg font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            />
+          ) : (
+            event.title
+          )
+        }
+        whenLine={whenLine}
+        where={
+          isOnline ? (
+            'Online'
+          ) : headerLocation ? (
+            <>
+              {mapsHref ? (
+                <a href={mapsHref} target="_blank" rel="noopener noreferrer">
+                  {headerLocation}
+                </a>
+              ) : (
+                headerLocation
+              )}
+              {addressHidden && ' · Exact address shared after you RSVP'}
+            </>
+          ) : null
+        }
+        cadence={cadenceLine}
+        hostedBy={
+          spaceHost ? (
+            <>
+              Hosted by <Link href={`/spaces/${spaceHost.slug}`}>{spaceHost.name}</Link>
+              {collaboratorNames ? ` with ${collaboratorNames}` : null}
+              <VenueCredit venue={venueSpace} />
+              {showsOrganizerCredit(event.host) ? ` · organized by ${event.host!.display_name}` : null}
+            </>
+          ) : event.host ? (
+            <>
+              Hosted by <HostHovercard host={event.host} />
+              {collaboratorNames ? ` with ${collaboratorNames}` : null}
+              <VenueCredit venue={venueSpace} />
+            </>
+          ) : isPostedEvent ? (
+            `${extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}Organizer not on Frequency yet`
+          ) : null
+        }
+        postedBy={
+          postedBy ? (
+            <>
+              Posted by <Link href={`/people/${postedBy.handle}`}>{postedBy.display_name}</Link>
+            </>
+          ) : null
+        }
+        going={goingRsvps.length}
+        goingPeople={goingMembers.map(({ profile }) => ({
+          id: profile.id,
+          name: profile.display_name,
+          handle: profile.handle,
+          avatarUrl: profile.avatar_url,
+        }))}
+        namesVisible={isCrew}
+        fromYourCircles={fromYourCircles}
+        checkInZaps={checkInEnabled && !event.is_cancelled ? ZAP_AMOUNTS.event_attend : null}
+        joinBox={event.is_cancelled ? null : joinActions}
+        checkIn={
+          <EventCheckInSurface
+            eventId={event.id}
+            cancelled={!!event.is_cancelled}
+            checkInEnabled={checkInEnabled}
+            startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
+            windowOpen={checkInWindow}
+            signedIn={!!myProfileId}
+            isGoing={isGoing || ownsTicket}
+            alreadyCheckedIn={alreadyCheckedIn}
+            zaps={ZAP_AMOUNTS.event_attend}
+            doorNote={readEventSpecialInstructions(extra?.details)}
+          />
+        }
+        controls={
+          <>
+            <EventShareButton
+              slug={event.slug}
+              title={event.title}
+              sharerProfileId={myProfileId}
+              hostClaimUrl={
+                isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
+                  ? `${SITE_URL}/events/claim/${extra.claim_token}`
+                  : null
+              }
+            />
+            {canManage && (
+              <>
+                <Link className="btn sm" href={`/events/${event.slug}/manage`}>
+                  Manage
+                </Link>
+                <OpenAdminBarButton
+                  scope={{ kind: 'event', id: event.id }}
+                  caps={Array.from(eventCaps)}
+                  label="Edit"
+                  icon={<Settings className="h-4 w-4" />}
+                  className="btn sm"
+                />
+              </>
+            )}
+          </>
+        }
+        description={event.description}
+        canManage={canManage}
+        seriesRail={
+          <>
+            <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} />
+            <EventGallery images={galleryUrls.slice(1)} />
+          </>
+        }
+        belonging={
+          <Suspense fallback={<EventBelongingSkeleton />}>
+            <EventBelonging
+              eventId={event.id}
+              circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
+              canManage={canManage}
+            />
+          </Suspense>
+        }
+      />
+    )
+  }
 
   return (
     <EventDetailTemplate
