@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
+import { SITE_DESIGN } from "@/lib/theme/design";
 import {
   getTopicalChannels,
   getPublicCircles,
@@ -289,6 +290,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // the page every answer engine quotes our money model from. It is now the highest-priority
     // URL after the home page.
     { url: `${SITE_URL}/pricing`, changeFrequency: "monthly", priority: 0.9 },
+    // /features exists only under the Frequency design (DAWN answers 404, see its page.tsx), so it is
+    // advertised only on a Frequency deploy. SITE_DESIGN is build-time, so this never varies per request.
+    ...(SITE_DESIGN === "frequency"
+      ? [{ url: `${SITE_URL}/features`, changeFrequency: "monthly" as const, priority: 0.7 }]
+      : []),
     // Operator funnel doors, /for/<niche> (ADR-591). A static registry (lib/marketing/funnel-config), so
     // the per-page URLs are safe to advertise here directly.
     ...funnelSlugs().map((slug) => ({
