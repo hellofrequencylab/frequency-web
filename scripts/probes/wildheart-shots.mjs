@@ -16,7 +16,7 @@
 import { spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
-import { extname, join, normalize, resolve } from 'node:path'
+import { extname, join, normalize, resolve, sep } from 'node:path'
 
 const out = process.env.WILDHEART_SHOTS_DIR
 if (!out) {
@@ -35,16 +35,22 @@ if (render.status !== 0) console.error('render harness reported failures (pages 
 // 2. Serve.
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.md': 'text/plain' }
 const roots = [join(out, 'site'), resolve('public')]
+/** A file under `root` for the request path, or null: the resolved path must stay inside the root, so a
+ *  `..` or an encoded one can never read outside the folders the probe serves (local only, but CodeQL
+ *  counts a request path reaching the filesystem). */
+function insideRoot(root, rel) {
+  const base = resolve(root)
+  const f = resolve(base, `.${rel.startsWith('/') ? rel : `/${rel}`}`)
+  if (f !== base && !f.startsWith(`${base}${sep}`)) return null
+  return existsSync(f) && statSync(f).isFile() ? f : null
+}
 function fileFor(url) {
   const path = decodeURIComponent(new URL(url, 'http://x').pathname)
-  const safe = normalize(path).replace(/^(\.\.[/\\])+/, '')
-  if (handoff && safe.startsWith('/handoff/')) {
-    const f = join(handoff, safe.slice('/handoff/'.length))
-    return existsSync(f) && statSync(f).isFile() ? f : null
-  }
+  const safe = normalize(path)
+  if (handoff && safe.startsWith('/handoff/')) return insideRoot(handoff, safe.slice('/handoff'.length))
   for (const root of roots) {
-    const f = join(root, safe === '/' ? '/home.html' : safe)
-    if (existsSync(f) && statSync(f).isFile()) return f
+    const f = insideRoot(root, safe === '/' ? '/home.html' : safe)
+    if (f) return f
   }
   return null
 }
