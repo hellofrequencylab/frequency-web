@@ -36,8 +36,10 @@ export const dynamic = 'force-dynamic'
 // The member-facing practice page (ADR-116): the hero image + identity + claim / adopt / log / edit
 // actions stay fixed; the BODY (stats · intro · guide · tags · used-in) is module-driven (ADR-270/
 // 294) so staff arrange it from Settings → Layout, shared across every /practices/<id> via the
-// '/practices/*' scope. The body blocks self-fetch the practice from the URL (lib/practices/
-// detail-data); the page keeps the member-state-dependent header here.
+// wildcard module scope (ROUTE_MODULE_IDS in lib/widgets/modules.ts; its key is not spelled here
+// because a slash-star in a line comment opens a block comment to check-templates' stripper). The
+// body blocks self-fetch the practice from the URL (lib/practices/detail-data); the page keeps the
+// member-state-dependent header here.
 
 type Params = { params: Promise<{ id: string }> }
 

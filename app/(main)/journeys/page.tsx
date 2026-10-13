@@ -12,7 +12,7 @@ import { resolveIndexHero } from '@/lib/layout/index-hero'
 // <PageModules>, which lays out the page's blocks (the two ways in, your journeys, the community
 // library) in the operator-chosen template + order. Staff arrange it from the on-page
 // Settings → Layout panel (the route is registered in lib/widgets/module-routes.ts). Each block is
-// a self-fetching RSC in components/widgets/journeys/*.
+// a self-fetching RSC in components/widgets/journeys/.
 
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
