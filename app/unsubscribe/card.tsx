@@ -5,6 +5,7 @@
 
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 
 // ── Layout helpers ─────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ export function ManageLink() {
     <div className="pt-3">
       <Link
         href="/settings#notifications"
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary text-body-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors"
+        className={buttonClasses('primary', 'md')}
       >
         Manage all preferences →
       </Link>
