@@ -10,6 +10,8 @@ import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { resolvePageContent } from '@/lib/page-content'
 import { OG_SITE, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyHome } from '@/components/frequency/site/pages/home/frequency-home'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
 // system (edited at /pages/home; the coded strings below are the fallback).
@@ -177,7 +179,13 @@ export default async function RootPage() {
           that sets the reader's expectation for all the others. */}
       <MarketingHeader overHero detectClientAuth headerMenu={headerMenu} menuTimings={menuTimings} />
       <main id="main">
-        <BlockRender config={config} data={data} />
+        {/* THE DESIGN SWITCH (ADR-1737). Under Frequency the owner wants the design's own Home
+            (design_handoff/frequency/templates/website/Home.html), so the body is the coded one in
+            components/frequency/site/pages/home; under DAWN it is the published document, as above.
+            SITE_DESIGN is a build-time constant, so this is one branch per deploy, never a request
+            read, and the page stays ISR. The body is imported, not declared here, so the
+            render-path ledger's `home 0` still holds. */}
+        {SITE_DESIGN === 'frequency' ? <FrequencyHome /> : <BlockRender config={config} data={data} />}
       </main>
       <MarketingFooter menu={footerMenu} />
     </div>
