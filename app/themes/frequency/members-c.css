@@ -98,4 +98,19 @@
 [data-design="frequency"] [data-kit="members"] .k.mc-k-gap{margin-bottom:10px}
 [data-design="frequency"] [data-kit="members"] .mc-maplink{padding:8px 0;font:500 15px/1.2 var(--fq-font-sans)}
 
+/* Journey course home, the Journeys index (members pass). */
+[data-design="frequency"] [data-kit="members"] .mc-bottom-12{margin-bottom:12px}
+[data-design="frequency"] [data-kit="members"] .mc-bottom-24{margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .mc-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .card.mc-jcard{display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .mc-jcard-ph{display:flex;align-items:center;justify-content:center;aspect-ratio:16/10;color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .mc-jcard-ph .fq-icon{width:28px;height:28px}
+[data-design="frequency"] [data-kit="members"] .mc-jcard-body{padding:18px 20px 20px}
+[data-design="frequency"] [data-kit="members"] .list>[aria-disabled="true"]{cursor:default}
+[data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
+[data-design="frequency"] [data-kit="members"] .faces a{display:flex;margin-left:-8px;border-radius:50%}
+[data-design="frequency"] [data-kit="members"] .faces a:first-child{margin-left:0}
+[data-design="frequency"] [data-kit="members"] .faces a .av{margin-left:0}
+
 }

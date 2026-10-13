@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import type { JourneyTree, Lesson } from '@/lib/journeys/tree'
+import type { JourneyFriend } from '@/lib/journeys/friends-on-journey'
+import { OnThisJourneyPanel, MoreJourneysPanel, peopleLine, type MoreJourney } from './journey-side'
 
 // THE JOURNEY BODY under Frequency (design_handoff/frequency/templates/members/Journey.html). The
 // page (app/(main)/journeys/[slug]/page.tsx) keeps every read, gate, redirect and control it had; it
@@ -23,16 +25,7 @@ export interface JourneyBodyPlan {
   adoptCount: number
 }
 
-export interface MoreJourney {
-  slug: string
-  title: string
-  coverImage: string | null
-  adoptCount: number
-}
-
-function peopleLine(n: number): string {
-  return `${n.toLocaleString()} ${n === 1 ? 'person' : 'people'} on this Journey`
-}
+export type { MoreJourney }
 
 function minutesLine(lesson: Lesson): string | null {
   return lesson.estMinutes && lesson.estMinutes > 0 ? `${lesson.estMinutes} min` : null
@@ -50,6 +43,7 @@ export function JourneyBody({
   enrol,
   details,
   more,
+  friends = [],
 }: {
   plan: JourneyBodyPlan
   /** The lesson tree, with the viewer's completion when they are on it. */
@@ -71,6 +65,8 @@ export function JourneyBody({
   /** Outcomes, instructor, reviews, FAQ, Q&A and the guarantee: the sales detail, unchanged. */
   details: React.ReactNode
   more: MoreJourney[]
+  /** The viewer's friends on this Journey (faces in the side panel). */
+  friends?: JourneyFriend[]
 }) {
   const lessons = tree.phases.flatMap((p) => p.modules.flatMap((m) => m.lessons))
   const numberOf = new Map(lessons.map((l, i) => [l.id, i + 1]))
@@ -190,31 +186,10 @@ export function JourneyBody({
           <div id="enrol" className="stack">
             {enrol}
           </div>
-          <div className="panel stack">
-            <span className="k">On this Journey</span>
-            <span className="t2">{peopleLine(plan.adoptCount)}.</span>
+          <OnThisJourneyPanel friends={friends} adoptCount={plan.adoptCount}>
             {credits}
-          </div>
-          {more.length > 0 && (
-            <div className="panel stack">
-              <span className="k">More Journeys</span>
-              <div className="list">
-                {more.map((j) => (
-                  <Link key={j.slug} href={`/journeys/${j.slug}`}>
-                    <span
-                      className="ph mc-thumb"
-                      style={j.coverImage ? { backgroundImage: `url(${JSON.stringify(j.coverImage)})` } : undefined}
-                      aria-hidden
-                    />
-                    <span className="grow">
-                      <span className="t1 mc-block">{j.title}</span>
-                      <span className="t2">{peopleLine(j.adoptCount)}</span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          </OnThisJourneyPanel>
+          <MoreJourneysPanel more={more} />
         </aside>
       </div>
     </MembersBody>

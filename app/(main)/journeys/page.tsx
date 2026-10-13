@@ -6,6 +6,12 @@ import { canCreate } from '@/lib/core/load-capabilities'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { getMyProfileId } from '@/lib/auth'
+import { getMyPlans, listPublicPlans } from '@/lib/journey-plans'
+import { getMemberJourneyProgress } from '@/lib/journeys/progress'
+import { JourneysIndexBody } from '@/components/frequency/members/journey/journeys-index-body'
+import { visibleModuleOrder } from '@/components/frequency/members/shared/module-order'
 
 // The Journeys browse + build page. Module-driven (ADR-270/294): the page resolves its
 // operator-editable header (ADR-180) and composes the IndexTemplate chrome, then renders
@@ -44,6 +50,31 @@ export default async function JourneysPage() {
   const hero = await resolveIndexHero('/journeys', { contentImage: heroImage })
   // Any signed-in member may build (FIRST ONE FREE, ADR-920); signed-out gets a sign-in door.
   const canBuildJourney = await canCreate('journey.create')
+
+  // FREQUENCY (ADR-1737): the same header content, the same three layout modules in the operator's
+  // order, and the member's own progress, in the members kit. DAWN keeps the IndexTemplate below.
+  if (SITE_DESIGN === 'frequency') {
+    const profileId = await getMyProfileId()
+    const [order, progress, mine, library] = await Promise.all([
+      visibleModuleOrder('/journeys'),
+      profileId ? getMemberJourneyProgress(profileId, { activeOnly: false }) : Promise.resolve([]),
+      profileId ? getMyPlans(profileId) : Promise.resolve(null),
+      listPublicPlans(),
+    ])
+    return (
+      <JourneysIndexBody
+        title={title}
+        description={description}
+        intro={body}
+        cta={ctaLabel && ctaHref ? { label: ctaLabel, href: ctaHref } : null}
+        canBuild={canBuildJourney}
+        order={order}
+        progress={progress}
+        mine={mine}
+        library={library.filter((p) => p.author_id !== profileId)}
+      />
+    )
+  }
 
   return (
     <IndexTemplate

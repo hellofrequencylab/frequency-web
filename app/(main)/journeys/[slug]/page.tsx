@@ -12,6 +12,7 @@ import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds, listPublicJourneys } from '@/lib/journey-plans'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { JourneyBody } from '@/components/frequency/members/journey/journey-body'
+import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { buildJourneyTree } from '@/lib/journeys/tree'
 import { JourneyDock } from '@/components/journey/nav/journey-dock'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
@@ -234,7 +235,11 @@ export default async function JourneyPlanPage({
   if (SITE_DESIGN === 'frequency') {
     const completed = docked && profileId ? [...(await getCompletedLessonIds(profileId, plan.id))] : []
     const tree = buildJourneyTree(itemsToBlocks(items), completed)
-    const more = (await listPublicJourneys())
+    const [publicJourneys, friends] = await Promise.all([
+      listPublicJourneys(),
+      profileId ? listFriendsOnJourney(profileId, plan.id) : Promise.resolve([]),
+    ])
+    const more = publicJourneys
       .filter((j) => j.id !== plan.id)
       .slice(0, 3)
       .map((j) => ({ slug: j.slug, title: j.title, coverImage: j.cover_image, adoptCount: j.adopt_count }))
@@ -348,6 +353,7 @@ export default async function JourneyPlanPage({
               </>
             }
             more={more}
+            friends={friends}
           />
         </ShareImageProvider>
         {docked && (
