@@ -169,6 +169,12 @@
 [data-design="frequency"] [data-kit="members"] .fa-run>*{position:relative}
 [data-design="frequency"] [data-kit="members"] .fa-run-ring{width:76px;height:76px;flex:none;border-radius:50%;background:conic-gradient(var(--fq-accent) 0 var(--p),var(--fq-track) var(--p) 100%)}
 [data-design="frequency"] [data-kit="members"] .fa-run-ring>span{position:absolute;inset:3px;border-radius:50%;background:color-mix(in oklab,var(--fq-surface-card) 88%,transparent);display:flex;align-items:center;justify-content:center;font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+/* Classifieds: a 3-up row of listings, 4/5 images at radius 20 (README §4.9). */
+[data-design="frequency"] [data-kit="members"] .fa-listings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+[data-design="frequency"] [data-kit="members"] .fa-listing{display:flex;flex-direction:column;gap:8px;min-width:0;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fa-listing .ph{aspect-ratio:4/5;border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .fa-listing b{font:500 15px/1.25 var(--fq-font-sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fa-listing small{font:400 13px/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fa-run-t{font:500 24px/1.05 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fa-replies{font-size:14px}
 
