@@ -57,7 +57,7 @@ export function BlockPicker({
       key={b.id}
       type="button"
       onClick={() => onPick(b.id)}
-      className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary-bg focus:bg-primary-bg focus:outline-none"
+      className="flex w-full items-start gap-2 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-primary-bg focus:bg-primary-bg focus:outline-none"
     >
       <span className="min-w-0 flex-1">
         <span className="block text-body-sm font-semibold text-text">{b.label}</span>
@@ -76,7 +76,7 @@ export function BlockPicker({
 
   return (
     <div className="rounded-card border border-border bg-surface p-2 lift-1" role="dialog" aria-label="Add a block">
-      <div className="mb-1 flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2">
+      <div className="mb-1 flex items-center gap-1.5 rounded-control border border-border bg-surface-elevated px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <Input
           variant="seamless"

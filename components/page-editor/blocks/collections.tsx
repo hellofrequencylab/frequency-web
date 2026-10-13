@@ -342,7 +342,7 @@ export function ChecklistBlock({
       <ul className={`grid grid-cols-1 ${cols} ${gap}`}>
         {(items || []).map((item, i) => (
           <li key={i} className="flex items-start gap-3">
-            <span className="mt-0.5 shrink-0 w-6 h-6 rounded-lg bg-primary-bg text-primary-strong flex items-center justify-center">
+            <span className="mt-0.5 shrink-0 w-6 h-6 rounded-control bg-primary-bg text-primary-strong flex items-center justify-center">
               <Check className="w-3.5 h-3.5" aria-hidden />
             </span>
             <span className={`text-body leading-relaxed ${textColor}`}>{item.text}</span>
@@ -568,7 +568,7 @@ export function TiersBlock({
               <ul className="space-y-3 mb-8 flex-1">
                 {(tier.features || []).map((f, fi) => (
                   <li key={fi} className="flex items-start gap-3">
-                    <span className={`shrink-0 w-6 h-6 mt-0.5 rounded-lg flex items-center justify-center ${featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'}`}>
+                    <span className={`shrink-0 w-6 h-6 mt-0.5 rounded-control flex items-center justify-center ${featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'}`}>
                       <Check className={`w-3.5 h-3.5 ${featured ? 'text-primary-strong' : 'text-success'}`} aria-hidden />
                     </span>
                     <span className="text-body-sm text-text leading-snug">{f.text}</span>

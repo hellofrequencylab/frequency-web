@@ -62,7 +62,7 @@ export function HostCohostSection({
   const eyebrow = hasHost ? (hasCohosts ? 'Host & Co Hosts' : 'Host') : 'Co Hosts'
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
+    <section className="rounded-card border border-border bg-surface p-4">
       <p className="eyebrow mb-3 text-subtle">{eyebrow}</p>
 
       {/* 1. THE HOST. A hosting Space is the attribution and the person in host_id drops to the
@@ -133,7 +133,7 @@ function PersonCohostRow({ cohost }: { cohost: CohostView }) {
   return (
     <Link
       href={`/people/${cohost.handle}`}
-      className="flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-surface"
+      className="flex items-center gap-3 rounded-control p-1 transition-colors hover:bg-surface"
     >
       {cohost.avatarUrl ? (
         <Image

@@ -47,7 +47,7 @@ export async function PracticesBalance() {
   return (
     <section id="practices-balance" className="scroll-mt-20">
       <SectionHeader title="Pillar balance" />
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-1.5">
           <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="text-meta font-medium text-muted">Across your adopted practices</span>

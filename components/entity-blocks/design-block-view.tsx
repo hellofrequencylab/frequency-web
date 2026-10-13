@@ -257,7 +257,7 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
   const shadow = props.shadow !== false
   if (!title && !subtitle && !cards.length) return null
 
-  const round = rounded ? 'rounded-2xl' : ''
+  const round = rounded ? 'rounded-card' : ''
   const shade = shadow ? 'shadow-pop' : ''
   const frame = ['overflow-hidden border border-border bg-surface', round, shade].filter(Boolean).join(' ')
 

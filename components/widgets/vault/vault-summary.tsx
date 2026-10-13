@@ -34,7 +34,7 @@ export async function VaultSummary() {
           </span>
         }
       />
-      <div className="rounded-2xl border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg p-5 lift-1">
+      <div className="rounded-card border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg p-5 lift-1">
         {/* Amplitude — lifetime XP beside the season rank; never resets. */}
         {hasAmplitude && (
           <div className="flex items-center justify-between rounded-xl bg-success-bg/50 px-3 py-2">

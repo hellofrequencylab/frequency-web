@@ -121,7 +121,7 @@ export const EventWhenWhere = async () => {
   const showCalendar = !ctx.event.is_cancelled && (!ctx.hasEnded || !!schedule.nextOccurrenceIso)
 
   return (
-    <div className="@container rounded-2xl border border-border bg-surface p-4">
+    <div className="@container rounded-card border border-border bg-surface p-4">
       <h3 className="mb-3 flex items-center gap-2 text-body-sm font-bold text-text">
         <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" />
         Event Details

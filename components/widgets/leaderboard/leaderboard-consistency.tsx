@@ -245,7 +245,7 @@ export async function LeaderboardConsistency() {
       />
 
       {/* How forgiveness works, the safety net made legible */}
-      <div className="mt-6 rounded-2xl bg-signal-bg/40 p-5">
+      <div className="mt-6 rounded-card bg-signal-bg/40 p-5">
         <div className="flex items-start gap-3">
           <Shield className="mt-0.5 h-5 w-5 shrink-0 text-signal-strong" aria-hidden />
           <div className="min-w-0">
@@ -309,7 +309,7 @@ export async function LeaderboardConsistency() {
             <div key={type} className="rounded-2xl bg-surface-elevated/60">
               <div className="p-5">
                 <div className="flex items-start gap-4">
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${getRhythmBg(current)}`}>
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-card ${getRhythmBg(current)}`}>
                     <Icon className={`h-6 w-6 ${getRhythmColor(current)}`} aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">

@@ -23,6 +23,6 @@ describe('channels directory card (source shape): the cover crop honors the oper
     // the focal-point style, the same pairing the Channel page hero uses.
     expect(src).not.toMatch(/function (readChannelCoverFocus|channelCoverFocusStyle)\b/)
     expect(src).toContain('channelCoverFocusStyle(readChannelCoverFocus(channel.theme))')
-    expect(src).toMatch(/className="h-12 w-12 rounded-2xl object-cover"\s+style=\{channelCoverFocusStyle\(/)
+    expect(src).toMatch(/className="h-12 w-12 rounded-card object-cover"\s+style=\{channelCoverFocusStyle\(/)
   })
 })

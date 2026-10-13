@@ -51,7 +51,7 @@ export async function PracticeRemixLevers() {
         <StatCard label="Most remixed" value={topCount} detail="off one original" />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         <ol className="divide-y divide-border/60">
           {rows.map((r, i) => (
             <li key={r.rootId} className="flex items-center gap-3 px-4 py-3">

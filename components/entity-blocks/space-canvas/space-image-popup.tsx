@@ -106,7 +106,7 @@ export function SpaceImagePopup({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2.5 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="rounded-control px-2.5 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             Close
           </button>
@@ -128,7 +128,7 @@ export function SpaceImagePopup({
           <button
             type="button"
             onClick={() => setLoomOpen(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+            className="flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
           >
             <ImagePlus className="h-4 w-4" aria-hidden /> Choose from your Loom
           </button>
@@ -153,7 +153,7 @@ export function SpaceImagePopup({
           </label>
 
           {error && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
+            <p className="rounded-control bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
               {error}
             </p>
           )}
@@ -171,7 +171,7 @@ export function SpaceImagePopup({
               <button
                 type="button"
                 onClick={clear}
-                className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
+                className="flex items-center justify-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
               >
                 <Trash2 className="h-4 w-4" aria-hidden /> Remove photo
               </button>

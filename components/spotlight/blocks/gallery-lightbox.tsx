@@ -127,7 +127,7 @@ export function GalleryLightbox({
               width={1600}
               height={1600}
               unoptimized
-              className="max-h-[88vh] w-auto rounded-lg object-contain"
+              className="max-h-[88vh] w-auto rounded-control object-contain"
             />
           </div>
 

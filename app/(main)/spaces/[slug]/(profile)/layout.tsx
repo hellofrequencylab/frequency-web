@@ -517,6 +517,7 @@ export default async function SpaceProfileChromeLayout({
           // "from header to end"). With no theme (or `bold`) it resolves to the body stack this h1
           // already inherits, so the default look is untouched.
           'font-section min-w-0 break-words text-display-h3 font-bold leading-tight',
+          // token-ok: replace with text-shadow-on-photo after merge
           onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
         )}
       >

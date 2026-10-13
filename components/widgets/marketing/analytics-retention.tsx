@@ -24,7 +24,7 @@ export async function MarketingAnalyticsRetention() {
           description="Cohorts appear once members start logging."
         />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
+        <div className="overflow-x-auto rounded-card border border-border bg-surface lift-1">
           <table className="w-full text-body-sm">
             <caption className="sr-only">Weekly practice-retention cohorts</caption>
             <thead>

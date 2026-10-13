@@ -69,7 +69,7 @@ export default function SpaceDetailLoading() {
           two 40px glyph buttons. Desktop shows nothing here — its actions are on the cover above. */}
       <div className="mt-4 flex items-center gap-2 sm:hidden">
         <Skeleton className="h-10 min-w-0 flex-1 rounded-control" />
-        <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+        <Skeleton className="h-10 w-10 shrink-0 rounded-control" />
       </div>
 
       {/* The sticky sub-nav strip, above its hairline. */}

@@ -162,7 +162,7 @@ function FieldControl({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(o.value)}
-                  className={`min-h-[44px] rounded-lg border px-4 text-body-sm font-medium transition-colors ${
+                  className={`min-h-[44px] rounded-control border px-4 text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary text-on-primary'
                       : 'border-border bg-surface text-text hover:bg-surface-elevated'
@@ -221,7 +221,7 @@ function FieldControl({
                       },
                     })
                   }
-                  className="flex min-h-[44px] flex-1 items-center justify-between rounded-lg border border-border bg-surface px-3 text-left text-body-sm text-text hover:bg-surface-elevated"
+                  className="flex min-h-[44px] flex-1 items-center justify-between rounded-control border border-border bg-surface px-3 text-left text-body-sm text-text hover:bg-surface-elevated"
                 >
                   <span className="truncate">{summarize(item, i)}</span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />

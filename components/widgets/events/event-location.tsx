@@ -19,7 +19,7 @@ export const EventLocation = async () => {
   if (!facts.location && !facts.venuePoint && !facts.mapPin) return null
 
   return (
-    <div className="space-y-2.5 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-2.5 rounded-card border border-border bg-surface p-4">
       {facts.location && (
         <p className="flex items-start gap-2 text-body-sm text-text">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />

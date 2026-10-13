@@ -271,21 +271,21 @@ export async function PracticesLibrary() {
               </span>
               <div className="flex items-center gap-2">
                 {page > 1 ? (
-                  <Link href={href({ page: page - 1 })} className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-3 py-2 font-semibold text-text hover:bg-surface-elevated">
+                  <Link href={href({ page: page - 1 })} className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-3 py-2 font-semibold text-text hover:bg-surface-elevated">
                     <ChevronLeft className="h-4 w-4" /> Prev
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-subtle opacity-50">
+                  <span className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-2 text-subtle opacity-50">
                     <ChevronLeft className="h-4 w-4" /> Prev
                   </span>
                 )}
                 <span className="whitespace-nowrap text-subtle">Page {page} of {result.pageCount}</span>
                 {page < result.pageCount ? (
-                  <Link href={href({ page: page + 1 })} className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-3 py-2 font-semibold text-text hover:bg-surface-elevated">
+                  <Link href={href({ page: page + 1 })} className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-3 py-2 font-semibold text-text hover:bg-surface-elevated">
                     Next <ChevronRight className="h-4 w-4" />
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-subtle opacity-50">
+                  <span className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-2 text-subtle opacity-50">
                     Next <ChevronRight className="h-4 w-4" />
                   </span>
                 )}

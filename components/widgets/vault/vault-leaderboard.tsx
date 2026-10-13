@@ -11,9 +11,9 @@ export async function VaultLeaderboard() {
       <SectionHeader title="Standing" />
       <Link
         href="/crew/leaderboard"
-        className="group flex items-center gap-3 rounded-2xl border border-border bg-surface/50 p-5 lift-1 transition-colors hover:border-primary"
+        className="group flex items-center gap-3 rounded-card border border-border bg-surface/50 p-5 lift-1 transition-colors hover:border-primary"
       >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-warning-bg text-warning">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-warning-bg text-warning">
           <TrendingUp className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">

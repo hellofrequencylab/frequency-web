@@ -197,6 +197,7 @@ export function PhotoHeroBlock({
     </div>
   ) : null
 
+  // token-ok: replace with text-shadow-on-photo after merge
   const headingCls = onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : undefined
   const subtitleCls = onInk ? 'text-on-ink-muted' : 'text-muted'
 

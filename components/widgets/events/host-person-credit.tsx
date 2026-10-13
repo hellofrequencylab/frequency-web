@@ -89,7 +89,7 @@ export function HostPersonCredit({
       )}
 
       <Dialog open={open} onClose={close} ariaLabel={`Message ${host.display_name}`} className="max-w-md">
-        <div className="w-full rounded-2xl border border-border bg-surface p-6 lift-3">
+        <div className="w-full rounded-card border border-border bg-surface p-6 lift-3">
           {/* The larger host profile header. */}
           <div className="flex items-center gap-4">
             {host.avatar_url ? (

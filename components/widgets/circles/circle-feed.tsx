@@ -73,7 +73,7 @@ export const CircleFeed = async () => {
       {/* A. THE NEWCOMER'S OWN WELCOME. Still `!canManage`: a host does not introduce themselves
              to a Circle they run. Now it names who else is new, so the intro has an audience. */}
       {isMember && justJoined && !canManage && (
-        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
+        <div className="mb-4 flex items-start gap-3 rounded-card border border-primary/30 bg-primary/5 px-4 py-3">
           <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
           <div className="min-w-0">
             <p className="text-body-sm font-semibold text-text">Welcome to {circle.name}</p>
@@ -133,7 +133,7 @@ export const CircleFeed = async () => {
         />
       ) : (
         myProfileId && (
-          <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
+          <div className="mb-4 rounded-card border border-dashed border-border bg-surface/60 px-4 py-3">
             <p className="text-meta leading-relaxed text-muted">
               Join this circle to post and follow it from your feed.
             </p>

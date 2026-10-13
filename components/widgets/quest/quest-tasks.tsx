@@ -85,12 +85,12 @@ export async function QuestTasks() {
               return (
                 <div
                   key={task.id}
-                  className={`flex items-start gap-3 rounded-2xl px-4 py-3 transition-colors ${
+                  className={`flex items-start gap-3 rounded-card px-4 py-3 transition-colors ${
                     isDone ? 'bg-success-bg/40' : 'bg-surface-elevated/60'
                   }`}
                 >
                   <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-control ${
                       isDone ? 'bg-success-bg' : 'bg-surface-elevated'
                     }`}
                   >

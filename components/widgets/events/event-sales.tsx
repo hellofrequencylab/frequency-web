@@ -15,7 +15,7 @@ export const EventSales = async () => {
   if (!canManage || !isPaidEvent) return null
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <p className="eyebrow text-subtle">
         Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
       </p>

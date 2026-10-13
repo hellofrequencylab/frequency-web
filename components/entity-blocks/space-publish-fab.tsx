@@ -241,7 +241,7 @@ export function SpacePublishFab({
           onClick={() => store.undo()}
           disabled={!canUndo}
           aria-label="Undo the last change"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
         >
           <Undo2 className="h-3.5 w-3.5" aria-hidden /> Undo
         </button>
@@ -253,7 +253,7 @@ export function SpacePublishFab({
           aria-checked={published}
           disabled={visibleBusy}
           onClick={() => void onToggleVisible()}
-          className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-control px-2 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <span
             aria-hidden
@@ -290,7 +290,7 @@ export function SpacePublishFab({
               onClick={() => void onDiscard()}
               disabled={discardBusy}
               title="Go back to the page visitors see"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
             >
               {discardBusy ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -304,7 +304,7 @@ export function SpacePublishFab({
             type="button"
             onClick={onSaveDraft}
             title="Come back later"
-            className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-body-sm font-bold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center rounded-control border border-border px-4 py-2 text-body-sm font-bold text-text transition-colors hover:bg-surface-elevated"
           >
             Save draft
           </button>
