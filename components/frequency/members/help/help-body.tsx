@@ -4,12 +4,26 @@ import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import type { HelpCategory, HelpSearchEntry } from '@/lib/help/content'
 import { helpHref } from '@/lib/help/content'
 import { HelpSearchPill } from './help-search-pill'
+import { SupportButton } from './support-button'
 
-// THE HELP ENTRY under Frequency (design_handoff/frequency/templates/members/Help.html): "How can we
-// help?", a search pill, the topics as panels, common questions, and a door to a person. Everything
-// is the help centre's own content (content/help/, read by lib/help/content): the topics are its
-// categories, the questions are each topic's lead article with its own summary, and every link goes
-// into the existing article pages. No answer is written here.
+// THE MEMBER HELP PANEL under Frequency (design_handoff/frequency/templates/members/Help.html): "How
+// can we help?", a search pill, the topics as panels, common questions, the member's own reports, and a
+// door to a person. Mounted at /support, inside the member shell: /help is the PUBLIC help centre (the
+// site kit's FrequencyHelp, with the marketing chrome), so a signed-in member asking for help no longer
+// has to leave the app to get it, and their report history (the real feature /support always was) sits
+// under the same roof. Everything is the help centre's own content (content/help/, read by
+// lib/help/content): the topics are its categories, the questions are each topic's lead article with
+// its own summary, and every link goes into the existing article pages. No answer is written here.
+
+export interface HelpReport {
+  id: string
+  ref: string | number
+  subject: string
+  status: string
+  statusLabel: string
+  typeLabel: string
+  updated: string
+}
 
 const TOPIC_ICON: Record<string, FqIconName> = {
   'getting-started': 'home',
@@ -24,7 +38,16 @@ const TOPIC_ICON: Record<string, FqIconName> = {
   safety: 'shield',
 }
 
-export function HelpBody({ categories, index }: { categories: HelpCategory[]; index: HelpSearchEntry[] }) {
+export function HelpBody({
+  categories,
+  index,
+  reports,
+}: {
+  categories: HelpCategory[]
+  index: HelpSearchEntry[]
+  /** The member's own support reports, newest activity first. */
+  reports: HelpReport[]
+}) {
   const questions = categories
     .map((c) => ({ category: c, article: c.articles[0] }))
     .filter((q) => !!q.article)
@@ -80,14 +103,39 @@ export function HelpBody({ categories, index }: { categories: HelpCategory[]; in
         </div>
       )}
 
+      {reports.length > 0 && (
+        <div className="sec" id="reports">
+          <div className="sec-h">
+            <span className="h2">Your reports</span>
+            <span className="meta">
+              {reports.length} sent
+            </span>
+          </div>
+          <div className="list">
+            {reports.map((r) => (
+              <Link key={r.id} href={`/support/${r.id}`}>
+                <span className="ic">
+                  <FqIcon name={r.status === 'resolved' || r.status === 'closed' ? 'check' : 'message'} />
+                </span>
+                <span className="grow">
+                  <span className="t1 mc-block">{r.subject}</span>
+                  <span className="t2">
+                    {r.typeLabel} · #{r.ref} · Updated {r.updated}
+                  </span>
+                </span>
+                <span className={r.status === 'waiting' ? 'tag live' : 'tag'}>{r.statusLabel}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="soft row wrap sec mc-between">
         <span className="stack mc-gap-6">
           <span className="h3">Still stuck?</span>
-          <span className="t2">Send us a note. A person reads every one.</span>
+          <span className="t2">Send us a note. A person reads every one, and the reply lands here.</span>
         </span>
-        <Link className="btn pa" href="/support">
-          Message support
-        </Link>
+        <SupportButton />
       </div>
     </MembersBody>
   )
