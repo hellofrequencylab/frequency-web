@@ -353,7 +353,7 @@ ${M} .mw-hero-split .mw-hero-inner{grid-template-columns:minmax(0,7fr) minmax(0,
 @media (max-width:860px){${M} .mw-hero-split .mw-hero-inner{grid-template-columns:minmax(0,1fr)}}
 ${M} .mw-hero-split .mw-photo{aspect-ratio:auto;height:clamp(320px,38vw,540px);max-height:none}
 ${M} .mw-hero-copy{max-width:none;display:flex;flex-direction:column;gap:24px}
-${M} .mw-hero-copy .mw-kicker{margin:0}
+${M} .mw-hero-copy .mw-kicker{margin:0;color:var(--color-text-subtle)}
 ${M} .mw-hero-copy .mw-kicker::before{content:"☽︎";display:inline;font-family:var(--wh-symbol);font-weight:300;font-size:14px;color:var(--wh-symbol-ink)}
 ${M} .mw-hero-copy .mw-lead{margin:0;max-width:52ch}
 ${M} .mw-hero-copy .mw-actions{margin-top:0}
@@ -619,10 +619,10 @@ ${M} .wh-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:col
 ${M} .wh-card .wh-row{grid-template-columns:auto 22px minmax(0,1fr)}
 
 ${M} .wh-block-retreat{max-width:none;padding-left:0;padding-right:0}
-${M} .mw-other:has(>.wh-block-retreat){max-width:none;padding-left:0;padding-right:0}
-${M} .wh-retreat{position:relative;overflow:hidden;padding:clamp(48px,6vw,72px) clamp(20px,4vw,48px);background:var(--wh-smoke),var(--wh-wash-madder),var(--wh-wash-moon),var(--wh-grain),var(--wh-gradient-dusk);border-top:1px solid var(--wh-hairline);border-bottom:1px solid var(--wh-hairline)}
+${M} .mw-other:has(.wh-block-retreat){max-width:1200px;padding-left:0;padding-right:0}
+${M} .wh-retreat{position:relative;overflow:hidden;border-radius:var(--wh-petal-lg);padding:clamp(48px,6vw,72px) clamp(20px,4vw,48px);background:var(--wh-smoke),var(--wh-wash-madder),var(--wh-wash-moon),var(--wh-grain),var(--wh-gradient-dusk);border-top:1px solid var(--wh-hairline);border-bottom:1px solid var(--wh-hairline)}
 ${M} .wh-retreat-watermark{position:absolute;right:-60px;bottom:-140px;pointer-events:none}
-${M} .wh-retreat-watermark .wh-glyph-watermark{position:static}
+${M} .wh-retreat-watermark .wh-glyph-watermark{right:0;bottom:0}
 ${M} .wh-retreat>.wh-retreat-photo,${M} .wh-retreat>.wh-retreat-copy{position:relative}
 ${M} .wh-retreat{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(32px,5vw,64px);align-items:center}
 @media (max-width:900px){${M} .wh-retreat{grid-template-columns:minmax(0,1fr)}}

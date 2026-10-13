@@ -328,7 +328,7 @@ export function WildheartPhotoBlock({ image, alt, shape = 'arch', grade = 'warm'
   const src = img(image)
   if (!src) return null
   return (
-    <div className={cls('wh-block wh-block-photo', pad, vis)}>
+    <div className={cls('wh-block wh-block-photo', pad, vis)} style={{ position: 'relative', overflow: 'hidden' }}>
       <figure className="wh-frame" data-shape={shape} data-grade={grade} style={{ height: Math.max(160, Math.min(720, height)) }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host */}
         <img src={src} alt={alt ?? ''} loading="lazy" />
@@ -516,7 +516,7 @@ export function WildheartRetreatBandBlock({ label, heading, accentWord, lead, da
   const tiles = days.map((d) => ({ label: str(d.label), title: str(d.title), body: str(d.body), accent: d.accent === true })).filter((d) => d.title || d.label)
   return (
     <section className={cls('wh-block wh-block-retreat', pad, vis)}>
-      <div className="wh-retreat">
+      <div className="wh-retreat" style={{ position: 'relative', overflow: 'hidden' }}>
         {seal && <span className="wh-retreat-watermark" aria-hidden="true"><WhGlyph name={seal} size={460} watermark /></span>}
         {src && (
           <div className="wh-retreat-photo">

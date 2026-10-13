@@ -111,4 +111,10 @@ describe('the astrology calendar block family', () => {
     expect(split).toContain('role="separator"')
     expect(renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" metadata={{ space: { name: 'Any Space' } }} />)).toContain('Any Space')
   })
+
+  it('keeps a watermark glyph out of the flow on a surface without the skin', () => {
+    const html = renderToStaticMarkup(<WildheartRetreatBandBlock heading="A weekend" days={[]} seal="scorpio" />)
+    expect(html).toMatch(/class="wh-glyph wh-glyph-watermark" style="[^"]*position:absolute;opacity:0.07;pointer-events:none/)
+    expect(html).toMatch(/class="wh-retreat" style="position:relative;overflow:hidden"/)
+  })
 })

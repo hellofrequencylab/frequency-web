@@ -8,7 +8,9 @@ import { WILDHEART_GLYPHS, MOON_PHASES, moonPhasePath } from '@/lib/theme/wildhe
 export function WhGlyph({ name, size = 20, halo = false, watermark = false, label }: { name: string; size?: number; halo?: boolean; watermark?: boolean; label?: string }) {
   const ch = WILDHEART_GLYPHS[name] ?? name
   const cls = `wh-glyph${halo ? ' wh-glyph-halo' : ''}${watermark ? ' wh-glyph-watermark' : ''}`
-  const style = halo ? { width: size * 2, height: size * 2, fontSize: size } : { fontSize: size }
+  // A watermark is positioned and faint inline too, so a surface without the skin (the editor canvas, the
+  // Space page) never shows a 300px glyph in the flow.
+  const style = halo ? { width: size * 2, height: size * 2, fontSize: size } : watermark ? { fontSize: size, position: 'absolute' as const, opacity: 0.07, pointerEvents: 'none' as const, lineHeight: 1 } : { fontSize: size }
   return (
     <span className={cls} style={style} aria-hidden={label ? undefined : true} aria-label={label} role={label ? 'img' : undefined}>
       {ch}
