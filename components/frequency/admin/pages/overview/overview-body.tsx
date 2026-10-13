@@ -80,7 +80,8 @@ export async function FqOverviewBody({
     listWorkspaceConversations({ scope: 'all', viewerProfileId: '', spaceId, limit: 100 }),
     listEventsForSpace(spaceId, { fromDay: today, toDay: addDays(today, WEEK_DAYS), limit: 50 }),
     viewerProfileId ? getProfileSummaries([viewerProfileId]) : Promise.resolve(null),
-    loadSpaceCheckins(spaceId, 90),
+    // All time, not a 90-day window: "first timers" must see a regular's older visits. Every other stat windows itself.
+    loadSpaceCheckins(spaceId),
     listSpaceMemberships(spaceId),
   ])
   const nowMs = now.getTime()

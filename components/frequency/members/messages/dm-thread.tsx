@@ -8,6 +8,9 @@ import { TypingIndicator } from '@/components/messages/typing-indicator'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import type { Message } from '@/components/messages/thread'
 
+// HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
+const HOME_TZ = 'America/Los_Angeles'
+
 // The Frequency DM transcript and composer (Messages.html): their bubble left on white, yours right
 // on the accent gradient, the time under each, a pill input and Send. The behaviour is the
 // platform's MessageThread, unchanged: the realtime insert subscription, the typing broadcast, the
@@ -16,23 +19,29 @@ import type { Message } from '@/components/messages/thread'
 
 type Participant = { id: string; display_name: string }
 
+// Days and times read in the home zone (lib/time/zone.ts), not the runtime's: the server renders in UTC and
+// the browser in local time, so a local read could put a day line on one side of hydration and not the other.
+const DAY_KEY = new Intl.DateTimeFormat('en-CA', { timeZone: HOME_TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
+const TIME_FMT = new Intl.DateTimeFormat('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' })
+const DATE_TIME_FMT = new Intl.DateTimeFormat('en-US', { timeZone: HOME_TZ, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+const DAY_FMT = new Intl.DateTimeFormat('en-US', { timeZone: HOME_TZ, weekday: 'long', month: 'short', day: 'numeric' })
+const DAY_MS = 86_400_000
+
 function timeLabel(iso: string): string {
   const d = new Date(iso)
-  const today = d.toDateString() === new Date().toDateString()
-  return today
-    ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()
-    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return DAY_KEY.format(d) === DAY_KEY.format(new Date())
+    ? TIME_FMT.format(d).replace(' ', '').toLowerCase()
+    : DATE_TIME_FMT.format(d)
 }
 
 /** The reference's centred day line ("Today") between messages from different days. */
 function dayLine(iso: string): string {
   const d = new Date(iso)
-  const now = new Date()
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  if (d.toDateString() === now.toDateString()) return 'Today'
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  const key = DAY_KEY.format(d)
+  const now = Date.now()
+  if (key === DAY_KEY.format(now)) return 'Today'
+  if (key === DAY_KEY.format(now - DAY_MS)) return 'Yesterday'
+  return DAY_FMT.format(d)
 }
 
 export function FqDmThread({

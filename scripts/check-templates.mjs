@@ -134,6 +134,10 @@ export const COMPOSITIONS = {
   // The onboarding wizard and the persona sequence runner: both are WizardShell walks.
   OnboardingForm: 'app/onboarding/form.tsx',
   SequenceRunner: 'components/onboarding/sequence-runner.tsx',
+  // The Space console's page templates (ADR-1737): under DAWN each IS FocusTemplate / DashboardTemplate with
+  // the same props; under Frequency the console shell's AdminPageFrame. Both render the DAWN shell tag.
+  ConsoleFocusTemplate: 'components/templates/console-templates.tsx',
+  ConsoleDashboardTemplate: 'components/templates/console-templates.tsx',
 }
 
 /** Exported by the SAME barrel and deliberately NOT shells. Listed so the distinction is explicit

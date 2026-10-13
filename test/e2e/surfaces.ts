@@ -1140,6 +1140,12 @@ export const VISUAL_MASK_SITES: readonly {
   },
   {
     value: 'rail-panel',
+    file: 'components/frequency/members/shell/right-rail.tsx',
+    kind: 'live',
+    why: 'The Frequency right rail (ADR-1740): Get started, Your week, Today’s goals, Your Circles this season and People to know, every one a reading of the member’s own rows.',
+  },
+  {
+    value: 'rail-panel',
     file: 'components/sidebar/community-panel.tsx',
     kind: 'live',
     why: 'The community board, which took the rail slot when the practice board went back to the top of /feed (ADR-1362): the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times, are every one of them a reading.',

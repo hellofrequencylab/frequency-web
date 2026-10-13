@@ -17,8 +17,11 @@ import { DAY_MS, type CheckinRow } from './checkin-stats'
 // same arithmetic, never a second copy of it.
 
 const EVENT_BATCH = 100
-const MAX_EVENTS = 400
-const MAX_ROWS = 20_000
+// PostgREST caps every response at max_rows (1000, supabase/config.toml), whatever .limit() asks for, so
+// both reads page with .range() until a short page. The ceilings only bound a runaway read.
+const PAGE = 1000
+const MAX_EVENTS = 5_000
+const MAX_ROWS = 50_000
 
 /** The Space's events whose start falls after `sinceIso` (all of them when omitted), newest first, capped. */
 async function spaceEventIds(spaceId: string, sinceIso?: string): Promise<string[]> {
@@ -26,9 +29,15 @@ async function spaceEventIds(spaceId: string, sinceIso?: string): Promise<string
   // Check-ins land on or after an event's day, so an event that started before the window holds none of
   // the window's rows (the margin covers a multi-day event).
   if (sinceIso) q = q.gte('starts_at', new Date(Date.parse(sinceIso) - 14 * DAY_MS).toISOString())
-  const { data, error } = await q.order('starts_at', { ascending: false }).limit(MAX_EVENTS)
-  if (error) throw error
-  return ((data ?? []) as { id: string }[]).map((r) => r.id)
+  const ids: string[] = []
+  for (let from = 0; from < MAX_EVENTS; from += PAGE) {
+    const { data, error } = await q.order('starts_at', { ascending: false }).order('id').range(from, from + PAGE - 1)
+    if (error) throw error
+    const rows = (data ?? []) as { id: string }[]
+    for (const r of rows) ids.push(r.id)
+    if (rows.length < PAGE) break
+  }
+  return ids
 }
 
 /** Every verified check-in on this Space's events since `sinceDays` ago (all time when omitted). Null on a
@@ -41,18 +50,22 @@ export const loadSpaceCheckins = cache(async (spaceId: string, sinceDays?: numbe
     if (ids.length === 0) return []
     const out: CheckinRow[] = []
     for (let i = 0; i < ids.length && out.length < MAX_ROWS; i += EVENT_BATCH) {
-      let q = createAdminClient()
-        .from('engagement_events')
-        .select('actor_profile_id, created_at')
-        .eq('event_type', 'practice.verified')
-        .eq('context->>kind', 'event_checkin')
-        .in('context->>eventId', ids.slice(i, i + EVENT_BATCH))
-      if (since) q = q.gte('created_at', since)
-      const { data, error } = await q.limit(MAX_ROWS)
-      if (error) throw error
-      for (const r of (data ?? []) as { actor_profile_id: string | null; created_at: string }[]) {
-        const at = Date.parse(r.created_at)
-        if (r.actor_profile_id && Number.isFinite(at)) out.push({ profileId: r.actor_profile_id, at })
+      for (let from = 0; out.length < MAX_ROWS; from += PAGE) {
+        let q = createAdminClient()
+          .from('engagement_events')
+          .select('id, actor_profile_id, created_at')
+          .eq('event_type', 'practice.verified')
+          .eq('context->>kind', 'event_checkin')
+          .in('context->>eventId', ids.slice(i, i + EVENT_BATCH))
+        if (since) q = q.gte('created_at', since)
+        const { data, error } = await q.order('id').range(from, from + PAGE - 1)
+        if (error) throw error
+        const rows = (data ?? []) as { actor_profile_id: string | null; created_at: string }[]
+        for (const r of rows) {
+          const at = Date.parse(r.created_at)
+          if (r.actor_profile_id && Number.isFinite(at)) out.push({ profileId: r.actor_profile_id, at })
+        }
+        if (rows.length < PAGE) break
       }
     }
     return out

@@ -9,6 +9,9 @@ import type { ReportWithPreview } from '@/components/widgets/admin/admin-moderat
 import type { BlockedMember, ResolvedReport } from './moderation-reads'
 import { Av, EMPTY } from '../shared'
 
+// HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
+const HOME_TZ = 'America/Los_Angeles'
+
 // The Frequency report cards (templates/admin/Moderation.html `.panel.stack.rep`). The SAME server actions
 // the DAWN queue calls (app/(main)/admin/moderation/moderation-queue.tsx): hide the content, warn or suspend
 // a member, cancel an event, dismiss. Each action re-checks the moderator's scope server-side. A card leaves
@@ -48,7 +51,8 @@ const STATUS: Record<string, { label: string; tone: 'ok' | 'n' }> = {
   dismissed: { label: 'Dismissed', tone: 'n' },
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
+// The home zone, so the server (UTC) and the browser print the same day.
+const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: HOME_TZ, month: 'short', day: 'numeric' })
 
 /** The House rules panel (design: the soft row under the queue). The platform's rules are the community
  *  guidelines page; there is no per-Space rules editor, so the action opens the guidelines. */
