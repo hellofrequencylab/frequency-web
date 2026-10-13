@@ -51,7 +51,7 @@ import { CircleTasksSection } from '@/app/(main)/crew/circle-tasks-section'
 // MEMBER COPY SAYS "RUN", NEVER "COHORT" (docs/NAMING.md). `getCohortProgress` is the internal name
 // of the read; nothing it produces is labelled that way on screen.
 
-export const metadata = { title: "What's On" }
+export const metadata = { title: "What's Happening" }
 
 export default async function CircleWhatsOnPage({
   params,

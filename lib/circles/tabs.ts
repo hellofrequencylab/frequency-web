@@ -3,7 +3,10 @@
 //
 // FOUR TABS, and each one hides when it has nothing to say (owner ruling, 2026-08-13):
 //
-//   Feed · What's On · Members · Circle Stats
+//   Feed · What's Happening · Members · Circle Stats
+//
+// The middle tab was "What's On" until ADR-1738 (2026-10-13) renamed the label; the route is still
+// `/whats-on`, and the notes below keep the name the decision was made under.
 //
 // FEED IS THE DEFAULT and it carries the reason people came, so it is the bare `/circles/<slug>`
 // route and it leads the strip whenever a strip renders at all.
@@ -100,7 +103,7 @@ export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
   if (hasWhatsOn || facts.isMember || facts.canManage) {
     tabs.push({
       href: `${base}/whats-on`,
-      label: "What's On",
+      label: "What's Happening",
       ...(facts.upcomingEventCount > 0 ? { count: facts.upcomingEventCount } : {}),
     })
   }

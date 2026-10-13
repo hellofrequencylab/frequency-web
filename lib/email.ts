@@ -1991,7 +1991,7 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
     <p style="${leadStyle}">Find your people</p>
     <ul style="font-size:15px;color:#6B6253;line-height:1.75;padding-left:20px;margin:0 0 4px;">
       <li><a href="${BASE_URL}/circles" style="${link}">Circles</a>: your local group, where it actually happens.</li>
-      <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's on near you this week.</li>
+      <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's happening near you this week.</li>
       <li><a href="${BASE_URL}/practices" style="${link}">Practices</a>: pick one small thing to do for yourself.</li>
       <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: show up, earn Zaps, climb the ranks.</li>
     </ul>
@@ -2017,7 +2017,7 @@ Open your feed: ${BASE_URL}/feed
 
 Find your people:
 - Circles (your local group): ${BASE_URL}/circles
-- Events (what's on near you): ${BASE_URL}/events
+- Events (what's happening near you): ${BASE_URL}/events
 - Practices (one small thing for yourself): ${BASE_URL}/practices
 - The Quest (earn Zaps, climb the ranks): ${BASE_URL}/crew
 

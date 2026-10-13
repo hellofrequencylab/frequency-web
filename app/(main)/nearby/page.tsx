@@ -429,7 +429,7 @@ export default async function NearbyPage({
 
           {/* Quick links across community surfaces */}
           <div className="grid grid-cols-2 gap-2">
-            <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s on" color="bg-primary-bg text-primary-strong" />
+            <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s happening" color="bg-primary-bg text-primary-strong" />
             <QuickLink href="/circles" Icon={CircleDot} label="Circles" sub="Find your people" color="bg-signal-bg text-signal-strong" />
             <QuickLink href="/channels" Icon={Radio} label="Channels" sub="By topic" color="bg-broadcast-bg text-broadcast-strong" />
             <QuickLink href="/network" Icon={Users} label="Directory" sub="The community" color="bg-warning-bg text-warning" />

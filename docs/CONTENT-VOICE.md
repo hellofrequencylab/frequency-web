@@ -406,6 +406,15 @@ Encinitas," "ways to meet people in Carlsbad." Only publish where real activity
 exists. Honest thinness beats fake breadth.
 
 ### 7d. Positioning vocabulary for SEO
+**Hero headlines lead with the words people search for** (ADR-1738): local, groups, events, near
+you. Name what the reader came to find, then the payoff, and ask for no weekly commitment.
+
+- People side: "Find local groups and events *near you.*"
+- Spaces side: "Host local events and groups people *come back to.*"
+
+The belief line under them is "Build circles, not walls." ([NAMING.md](NAMING.md)). A lede that
+promises "meet every week" asks for the commitment the headline left out; say "come back" instead.
+
 Own "third space / third place" and the connection-pain cluster. Do NOT chase
 head-term "wellness" keywords; capture wellness-adjacent terms (breathwork,
 meditation, yoga, mindfulness) only at the practice/article level, always entered

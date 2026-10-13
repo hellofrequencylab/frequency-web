@@ -234,7 +234,7 @@ export default async function PublicSpacePage({
           <div className="mx-auto mt-14 max-w-xl">
             <SignInCta
               title={`Want to know ${brandName}?`}
-              body="Sign in free to follow this Space, see what's on, and be a face the host recognizes."
+              body="Sign in free to follow this Space, see what's happening, and be a face the host recognizes."
               action={BETA_CTA_LABEL}
               href={BETA_CTA_HREF}
             />
