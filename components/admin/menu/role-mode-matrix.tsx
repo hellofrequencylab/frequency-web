@@ -29,7 +29,7 @@ export function RoleModeMatrix({
   return (
     <fieldset className="min-w-0">
       <legend className="mb-1 text-meta font-semibold text-subtle">{legend}</legend>
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-control border border-border">
         <table className="w-full border-collapse text-body-sm">
           <thead>
             <tr className="border-b border-border bg-surface-elevated">

@@ -85,7 +85,7 @@ export function Banner({
   return (
     <div
       role={tone === 'critical' ? 'alert' : 'status'}
-      className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${BANNER[tone]}`}
+      className={`flex items-start gap-3 rounded-card border px-4 py-3 ${BANNER[tone]}`}
     >
       <div className="min-w-0 flex-1">
         <p className="text-body-sm font-semibold">{title}</p>

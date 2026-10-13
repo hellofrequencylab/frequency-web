@@ -52,7 +52,7 @@ export default async function MarketReadPage() {
         </div>
       </AdminSection>
 
-      <div className="rounded-2xl bg-surface-elevated/60 p-4">
+      <div className="rounded-card bg-surface-elevated/60 p-4">
         <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <Sparkles className="w-4 h-4 text-primary-strong" />
           How this grows
@@ -71,7 +71,7 @@ export default async function MarketReadPage() {
 
 function PainPointCard({ pain }: { pain: PainPoint }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <section className="rounded-card border border-border bg-surface p-5 lift-1">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -103,7 +103,7 @@ const CHANNEL_TONE: Record<ContentIdea['channel'], StatusTone> = {
 
 function IdeaCard({ idea }: { idea: ContentIdea }) {
   return (
-    <div className="flex flex-col rounded-2xl bg-surface-elevated/60 p-4">
+    <div className="flex flex-col rounded-card bg-surface-elevated/60 p-4">
       <span className="self-start">
         <StatusChip tone={CHANNEL_TONE[idea.channel]} size="sm">{idea.channel}</StatusChip>
       </span>

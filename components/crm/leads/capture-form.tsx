@@ -81,7 +81,7 @@ export function CaptureForm({
             href={result.link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-card bg-primary px-6 py-3 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {result.link.label}
             <ExternalLink className="h-4 w-4" aria-hidden />
@@ -186,7 +186,7 @@ export function CaptureForm({
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-3.5 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {status === 'loading' ? 'One sec…' : submitLabel}
         {status !== 'loading' && <ArrowRight className="h-4 w-4" aria-hidden />}

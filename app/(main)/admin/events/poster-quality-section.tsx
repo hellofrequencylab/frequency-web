@@ -17,14 +17,14 @@ export async function PosterQualitySection() {
 
   if (posters.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-body-sm text-muted">
+      <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-body-sm text-muted">
         Nobody has posted an event yet. Posters appear here with their band after their first publish.
       </p>
     )
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
+    <div className="overflow-x-auto rounded-card border border-border bg-surface lift-1">
       <table className="w-full min-w-[640px] border-collapse">
         <thead>
           <tr className="border-b border-border">

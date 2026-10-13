@@ -21,7 +21,7 @@ export function PastDueBanner({ state }: { state: MemberPaymentState }) {
     : 'We could not charge your card. Update your payment to keep your Crew benefits, no rush, it stays simple.'
 
   return (
-    <div className="mb-4 rounded-2xl border border-warning/50 bg-warning-bg/30 p-4">
+    <div className="mb-4 rounded-card border border-warning/50 bg-warning-bg/30 p-4">
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
         <div className="min-w-0 flex-1">

@@ -51,7 +51,7 @@ export function DangerModal({
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabel={title} className="max-w-md">
-      <div className="relative w-full rounded-2xl border border-border bg-surface p-5 lift-3">
+      <div className="relative w-full rounded-card border border-border bg-surface p-5 lift-3">
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-danger-bg text-danger">
             <AlertTriangle className="h-5 w-5" aria-hidden />
@@ -81,7 +81,7 @@ export function DangerModal({
             ref={cancelRef}
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="rounded-control border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             Cancel
           </button>
@@ -92,7 +92,7 @@ export function DangerModal({
               onConfirm()
               onClose()
             }}
-            className="rounded-lg bg-danger px-3 py-1.5 text-body-sm font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-control bg-danger px-3 py-1.5 text-body-sm font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {confirmLabel}
           </button>

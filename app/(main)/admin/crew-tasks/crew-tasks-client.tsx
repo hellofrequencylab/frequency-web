@@ -74,7 +74,7 @@ function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-card border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
       <Field className="sm:col-span-2" label="Task name *">
         <Input
           type="text"
@@ -121,12 +121,12 @@ function TaskForm({
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create task'}
         </button>
-        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors">
+        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors">
           <X className="w-3.5 h-3.5" />
           Cancel
         </button>
@@ -166,7 +166,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
       </h2>
       <div className="space-y-2">
         {items.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 lift-1 px-4 py-3">
+          <div key={c.id} className="flex items-center gap-3 rounded-card border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 lift-1 px-4 py-3">
             {c.member?.avatar_url ? (
               <Image src={avatarSrc(c.member.avatar_url)} alt={c.member.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover shrink-0" style={avatarFocusStyle(c.member.avatar_url)} />
             ) : (
@@ -190,7 +190,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleApprove(c.id)}
                 disabled={isPending}
                 title="Approve"
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-on-success text-meta font-semibold hover:bg-success disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-success text-on-success text-meta font-semibold hover:bg-success disabled:opacity-50 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Approve
               </button>
@@ -198,7 +198,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleReject(c.id)}
                 disabled={isPending}
                 title="Reject"
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-danger text-danger text-meta font-semibold hover:bg-danger-bg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-control border border-danger text-danger text-meta font-semibold hover:bg-danger-bg disabled:opacity-50 transition-colors"
               >
                 <ShieldX className="w-3.5 h-3.5" /> Reject
               </button>
@@ -247,7 +247,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               isPending={isPending}
             />
           ) : (
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface lift-1 px-4 py-3 group">
+            <div className="flex items-center gap-3 rounded-card border border-border bg-surface lift-1 px-4 py-3 group">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-body-sm font-medium text-text">{task.name}</span>
@@ -274,7 +274,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => setEditingId(task.id)}
-                  className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
+                  className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
                   aria-label="Edit"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
                 <button
                   onClick={() => handleDelete(task.id)}
                   disabled={isPending}
-                  className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
+                  className="p-1.5 rounded-control text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
                   aria-label="Delete"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

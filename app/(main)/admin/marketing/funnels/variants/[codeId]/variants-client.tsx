@@ -52,11 +52,11 @@ export function VariantManager({
 
       <section className="space-y-3">
         {results.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
             No variants yet. Add two or more destinations below to start splitting scans.
           </p>
         ) : (
-          <div className="rounded-2xl bg-surface-elevated/40 px-2 py-1.5">
+          <div className="rounded-card bg-surface-elevated/40 px-2 py-1.5">
             <div className="grid grid-cols-[3rem_1fr_3.5rem_3.5rem_4rem_4.5rem_2rem] gap-2 px-3 py-2 text-meta font-medium text-subtle">
               <span>Key</span><span>Destination</span><span className="text-right">Wt</span>
               <span className="text-right">Scans</span><span className="text-right">Signups</span><span className="text-right">Rate</span><span></span>
@@ -125,7 +125,7 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
 
   return (
     <div>
-      <div className={`grid grid-cols-[3rem_1fr_3.5rem_3.5rem_4rem_4.5rem_2rem] gap-2 px-3 py-2.5 items-center rounded-lg ${v.active ? '' : 'opacity-50'}`}>
+      <div className={`grid grid-cols-[3rem_1fr_3.5rem_3.5rem_4rem_4.5rem_2rem] gap-2 px-3 py-2.5 items-center rounded-control ${v.active ? '' : 'opacity-50'}`}>
         <span className="flex items-center gap-1 text-body-sm font-bold text-text">
           {v.key}{isWinner && <Trophy className="h-3 w-3 text-primary" aria-label="Leading" />}
         </span>
@@ -167,13 +167,13 @@ function AddVariant({ codeId, groups }: { codeId: string; groups: DestinationGro
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text hover:border-border-strong">
+      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-control border border-dashed border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text hover:border-border-strong">
         <Plus className="h-3.5 w-3.5" /> Add variant
       </button>
     )
   }
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="space-y-2 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="grid gap-2 sm:grid-cols-[6rem_1fr]">
         <Input aria-label="Variant key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (a)" />
         <Input aria-label="Variant label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Event flow)" />

@@ -74,7 +74,7 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
       : 'Members unknown'
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <Link
@@ -229,12 +229,12 @@ function SpacesHealthSkeleton() {
     <AdminSection>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/60" />
+          <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/60" />
         ))}
       </div>
       <div className="mt-6 space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-elevated/60" />
+          <div key={i} className="h-24 animate-pulse rounded-card bg-surface-elevated/60" />
         ))}
       </div>
     </AdminSection>
@@ -266,7 +266,7 @@ export default async function SpacesHealthPage() {
           top so it is reachable even before any Space exists: paste a site or socials, the pipeline
           researches + verifies, and you review a drafted Space before it goes live (seeds land unlisted). */}
       <AdminSection>
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
               <Sparkles className="h-5 w-5" aria-hidden />

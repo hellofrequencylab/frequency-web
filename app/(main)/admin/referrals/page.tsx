@@ -101,7 +101,7 @@ export default async function ReferralsPage() {
             {stats.recent.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm"
+                className="flex items-center justify-between gap-3 rounded-control border border-border bg-surface px-3 py-2 text-body-sm"
               >
                 <span className="min-w-0 truncate text-text">
                   {e.handle ? (

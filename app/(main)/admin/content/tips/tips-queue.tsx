@@ -176,7 +176,7 @@ export function TipDraftCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="text-body-sm font-semibold text-text">{creatorName}</span>
         <span className="text-meta text-subtle">
@@ -244,7 +244,7 @@ export function FlagReviewCard({
   }
 
   return (
-    <div className="rounded-2xl border border-warning/30 bg-warning-bg/40 p-4">
+    <div className="rounded-card border border-warning/30 bg-warning-bg/40 p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <StatusChip tone="warning" size="sm">
           <Flag className="h-3 w-3" aria-hidden /> Spam flag

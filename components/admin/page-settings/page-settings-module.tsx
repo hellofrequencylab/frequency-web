@@ -111,7 +111,7 @@ export function PageSettingsModule({
           return (
             <div
               key={section.id}
-              className="flex items-start gap-3 rounded-2xl border border-dashed border-border bg-surface/60 p-4"
+              className="flex items-start gap-3 rounded-card border border-dashed border-border bg-surface/60 p-4"
             >
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
               <div className="min-w-0 flex-1">

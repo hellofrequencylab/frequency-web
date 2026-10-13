@@ -21,7 +21,7 @@ export function CaptureShell({
         <Link href="/" className="mb-6 inline-block text-lead font-black tracking-tight text-text">
           frequency
         </Link>
-        <div className="rounded-2xl border border-border bg-surface p-8 lift-1">
+        <div className="rounded-card border border-border bg-surface p-8 lift-1">
           <FocusTemplate
             eyebrow={eyebrow}
             title={title}

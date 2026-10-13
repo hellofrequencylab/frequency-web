@@ -66,7 +66,7 @@ export async function FinancialsTab() {
         <AdminSection title="By revenue type" description="Net per entity, broken down by how the money came in.">
           <div className="grid gap-3 sm:grid-cols-2">
             {summary.entities.map((e) => (
-              <div key={e.entityKey} className="rounded-2xl border border-border bg-surface p-4">
+              <div key={e.entityKey} className="rounded-card border border-border bg-surface p-4">
                 <p className="mb-2 text-body-sm font-semibold text-text">{e.entityName}</p>
                 {Object.keys(e.byType).length === 0 ? (
                   <p className="text-body-sm text-muted">No transactions yet.</p>

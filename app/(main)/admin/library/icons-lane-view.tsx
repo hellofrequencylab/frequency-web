@@ -30,7 +30,7 @@ export function IconsLaneView() {
       >
         <div className="grid gap-4 @2xl:grid-cols-2">
           {ICON_SETS.map((set) => (
-            <div key={set.prefix} className="rounded-2xl border border-border bg-surface p-4">
+            <div key={set.prefix} className="rounded-card border border-border bg-surface p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">

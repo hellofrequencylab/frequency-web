@@ -83,7 +83,7 @@ export function DangerDelete({
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg/40"
+            className="inline-flex items-center gap-1.5 rounded-control border border-danger/40 px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg/40"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete {entity}
           </button>
@@ -111,7 +111,7 @@ export function DangerDelete({
                 type="button"
                 onClick={run}
                 disabled={pending || !matched}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-control bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 {confirmLabel ?? 'Yes, delete'}
@@ -119,7 +119,7 @@ export function DangerDelete({
               <button
                 type="button"
                 onClick={reset}
-                className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
+                className="rounded-control px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
               >
                 Cancel
               </button>
@@ -132,5 +132,5 @@ export function DangerDelete({
 
   if (chromeless) return <div>{body}</div>
 
-  return <div className="mt-6 rounded-2xl border border-danger/30 bg-danger-bg/20 p-4">{body}</div>
+  return <div className="mt-6 rounded-card border border-danger/30 bg-danger-bg/20 p-4">{body}</div>
 }

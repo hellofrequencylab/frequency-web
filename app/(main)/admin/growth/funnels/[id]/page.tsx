@@ -66,7 +66,7 @@ function RollupSkeleton() {
   return (
     <div className="space-y-2.5">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-9 animate-pulse rounded-lg bg-surface-elevated/70" />
+        <div key={i} className="h-9 animate-pulse rounded-control bg-surface-elevated/70" />
       ))}
     </div>
   )

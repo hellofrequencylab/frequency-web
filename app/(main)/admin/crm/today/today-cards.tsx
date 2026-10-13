@@ -65,7 +65,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
     })
 
   return (
-    <li className="rounded-2xl border border-border bg-surface p-4">
+    <li className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-body-sm font-bold text-text">{card.name}</span>
         <span className="text-meta text-subtle">{card.context}</span>

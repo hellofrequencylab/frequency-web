@@ -202,7 +202,7 @@ export function SeederImages({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <ImageIcon className="h-4 w-4 text-primary-strong" aria-hidden />

@@ -332,10 +332,10 @@ export function CirclesClient({
               act={(next) => setCircleFeaturedAction(c.id, next)}
             />
             <InviteLinkButton circleId={c.id} />
-            <button onClick={() => { setError(null); setEditingId(c.id) }} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+            <button onClick={() => { setError(null); setEditingId(c.id) }} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
               <Pencil className="h-3.5 w-3.5" aria-hidden />
             </button>
-            <button onClick={() => setConfirmArchive(c)} disabled={isPending} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none" aria-label="Archive">
+            <button onClick={() => setConfirmArchive(c)} disabled={isPending} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none" aria-label="Archive">
               <Archive className="h-3.5 w-3.5" aria-hidden />
             </button>
           </div>

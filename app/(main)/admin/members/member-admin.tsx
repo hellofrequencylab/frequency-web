@@ -119,7 +119,7 @@ export function MemberAdmin({
       </div>
 
       {/* Member list */}
-      <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden divide-y divide-border">
+      <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden divide-y divide-border">
         {filtered.length === 0 ? (
           <p className="text-body-sm text-subtle text-center py-8">No members found.</p>
         ) : (

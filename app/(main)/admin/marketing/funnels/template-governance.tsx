@@ -17,7 +17,7 @@ export interface TemplateGov {
 
 export function TemplateGovernance({ templates }: { templates: TemplateGov[] }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface lift-1">
+    <section className="rounded-card border border-border bg-surface lift-1">
       <div className="border-b border-border px-4 py-3">
         <h2 className="text-body-sm font-bold text-text">Crew templates</h2>
         <p className="mt-0.5 text-meta text-muted">

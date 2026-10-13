@@ -187,7 +187,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
         {/* ── LEFT: controls ── */}
         <div className="space-y-5">
           {/* Sequence meta */}
-          <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
             <h2 className="text-body font-bold text-text">Sequence</h2>
             <Field label="Name" labelClassName={lbl}>
               <Input value={wt.name} onChange={(e) => setMeta('name', e.target.value)} />
@@ -285,7 +285,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           </div>
 
           {/* Slide list */}
-          <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-1">
             <div className="flex items-center justify-between">
               <h2 className="text-body font-bold text-text">Slides</h2>
               <Button type="button" variant="secondary" size="sm" onClick={addStep}>
@@ -293,7 +293,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               </Button>
             </div>
             {wt.steps.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-body-sm text-subtle">
+              <p className="rounded-control border border-dashed border-border px-3 py-6 text-center text-body-sm text-subtle">
                 No slides yet. Add one to start.
               </p>
             ) : (
@@ -353,7 +353,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
           {/* Per-slide editor */}
           {step && (
-            <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+            <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
               <h2 className="text-body font-bold text-text">Slide {selected + 1}</h2>
               <Field label="Title" labelClassName={lbl}>
                 <Input value={step.title} onChange={(e) => setStep(selected, { title: e.target.value })} />
@@ -411,7 +411,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               {/* Layout toggle */}
               <div>
                 <span className={groupLbl}>Layout</span>
-                <div className="inline-flex rounded-lg border border-border bg-surface p-0.5">
+                <div className="inline-flex rounded-control border border-border bg-surface p-0.5">
                   {LAYOUTS.map((l) => (
                     <button
                       key={l}
@@ -435,7 +435,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     type="button"
                     aria-pressed={!step.icon}
                     onClick={() => setStep(selected, { icon: undefined })}
-                    className={`rounded-lg border px-2 py-1.5 text-2xs font-medium transition-colors ${
+                    className={`rounded-control border px-2 py-1.5 text-2xs font-medium transition-colors ${
                       !step.icon ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-subtle hover:bg-surface-elevated'
                     }`}
                   >
@@ -448,7 +448,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                       aria-label={name}
                       aria-pressed={step.icon === name}
                       onClick={() => setStep(selected, { icon: name })}
-                      className={`rounded-lg border p-2 transition-colors ${
+                      className={`rounded-control border p-2 transition-colors ${
                         step.icon === name ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted hover:bg-surface-elevated'
                       }`}
                     >

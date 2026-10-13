@@ -61,7 +61,7 @@ export default async function KeystoneDensityPage() {
             description="Once members set a location and start circles and events, the nightly rollup fills this. Until then there is nowhere with a pulse to read."
           />
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="overflow-hidden rounded-card border border-border">
             <table className="w-full text-body-sm">
               <thead className="bg-surface-elevated/60 text-left text-meta font-medium text-muted">
                 <tr>

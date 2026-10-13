@@ -80,7 +80,7 @@ export function SpaceBrandEditor({
 
   return (
     <AdminSection>
-      <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="space-y-5 rounded-card border border-border bg-surface p-5 lift-1">
         {/* Theme (the per-Space skin assignment — spaces.skin) */}
         <div>
           <label htmlFor="space-skin" className={labelClass}>
@@ -170,7 +170,7 @@ export function SpaceBrandEditor({
             />
             {/* The ONE raw color: a live preview of the operator's chosen accent. */}
             <span
-              className="h-9 w-9 shrink-0 rounded-lg border border-border"
+              className="h-9 w-9 shrink-0 rounded-control border border-border"
               style={accentValid ? { backgroundColor: brandAccent.trim() } : undefined}
               aria-hidden
             />
@@ -196,7 +196,7 @@ export function SpaceBrandEditor({
         </div>
 
         {error && (
-          <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+          <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
             {error}
           </p>
         )}

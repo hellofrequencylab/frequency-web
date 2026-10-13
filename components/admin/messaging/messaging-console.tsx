@@ -99,7 +99,7 @@ export function MessagingConsole({
   return (
     <div className="space-y-5">
       {/* Status legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-card border border-border bg-surface px-4 py-3">
         <span className="text-2xs font-bold uppercase tracking-wide text-muted">Status</span>
         {MESSAGING_STATUS_LEGEND.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1.5 text-meta text-muted" title={s.hint}>
@@ -307,7 +307,7 @@ function CampaignsPanel({
           }
         />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border">
+        <div className="overflow-x-auto rounded-card border border-border">
           <table className="w-full text-left text-body-sm">
             <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-muted">
               <tr>
@@ -494,7 +494,7 @@ export const FunnelCard = forwardRef<HTMLElement, {
   const stepLine = `${f.stageCount} step${f.stageCount === 1 ? '' : 's'}${f.linkCount > 0 ? ` · ${f.linkCount} wired` : ''}`
 
   const cls = cn(
-    'group flex h-full flex-col gap-3 rounded-2xl border bg-surface p-4 text-left transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+    'group flex h-full flex-col gap-3 rounded-card border bg-surface p-4 text-left transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
     selected ? 'border-primary-strong ring-2 ring-primary/30' : 'border-border hover:border-border-strong',
   )
 

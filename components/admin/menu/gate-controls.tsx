@@ -67,7 +67,7 @@ export function GateControls({
 
   if (inherited) {
     return (
-      <div className="rounded-lg border border-border bg-surface/50 p-3">
+      <div className="rounded-control border border-border bg-surface/50 p-3">
         <p className="text-meta font-semibold text-subtle">Permissions</p>
         <p className="mt-1 text-body-sm text-text">
           {ACCESS_LABEL[inherited.minAccess] ?? inherited.minAccess} and above
@@ -89,7 +89,7 @@ export function GateControls({
   }
 
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-surface/50 p-3 sm:grid-cols-3">
+    <div className="grid gap-3 rounded-control border border-border bg-surface/50 p-3 sm:grid-cols-3">
       {/* Field, not a bare <label> + sibling <select>: the three labels here carried no
           `htmlFor` and the selects no `id`, so none of them named its control. */}
       <Field label="Minimum access" className="min-w-0" labelClassName="font-semibold text-subtle">

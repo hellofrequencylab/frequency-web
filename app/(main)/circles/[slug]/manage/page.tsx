@@ -125,7 +125,7 @@ export default async function CircleManagePage({
           {caps.has('circle.moderate') && (
             <section>
               <SectionHeader title="Message center" />
-              <Suspense fallback={<Skeleton className="h-96 rounded-2xl" />}>
+              <Suspense fallback={<Skeleton className="h-96 rounded-card" />}>
                 <CircleMemberViewer circleId={circle.id} slug={circle.slug} />
               </Suspense>
             </section>
@@ -144,7 +144,7 @@ export default async function CircleManagePage({
               gathering for next, plus the owner-asked "add an already created event" door. The
               add action re-checks circle.editSettings AND event.editSettings (ADR-274/883). */}
           <SectionHeader title="Events" />
-          <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
+          <Suspense fallback={<Skeleton className="h-40 rounded-card" />}>
             <CircleEventsSection
               circleId={circle.id}
               slug={circle.slug}

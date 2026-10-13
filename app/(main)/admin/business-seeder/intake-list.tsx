@@ -42,7 +42,7 @@ export function IntakeList({ imports }: { imports: IntakeListItem[] }) {
             key={it.id}
             href={`/admin/business-seeder/${it.id}`}
             anchor={
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-elevated text-muted">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-surface-elevated text-muted">
                 <Building2 className="h-4 w-4" aria-hidden />
               </span>
             }

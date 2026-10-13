@@ -52,11 +52,11 @@ export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChu
         </Button>
       </div>
       {msg && (
-        <p className="mt-3 flex items-center gap-1.5 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-body-sm text-success">
+        <p className="mt-3 flex items-center gap-1.5 rounded-control border border-success-bg bg-success-bg/40 px-3 py-2 text-body-sm text-success">
           <CheckCircle2 className="h-4 w-4 shrink-0" /> {msg}
         </p>
       )}
-      {error && <p className="mt-3 rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-body-sm text-danger">{error}</p>}
+      {error && <p className="mt-3 rounded-control border border-danger-bg bg-danger-bg/30 px-3 py-2 text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

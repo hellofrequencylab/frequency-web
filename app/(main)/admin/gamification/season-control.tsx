@@ -25,7 +25,7 @@ export function SeasonControl({
   const router = useRouter()
 
   return (
-    <div className="rounded-2xl border border-border bg-surface lift-1 p-4 mb-8">
+    <div className="rounded-card border border-border bg-surface lift-1 p-4 mb-8">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-warning" />
@@ -55,13 +55,13 @@ export function SeasonControl({
                     }
                   })
                 }
-                className="rounded-lg bg-danger text-on-danger px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60"
+                className="rounded-control bg-danger text-on-danger px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60"
               >
                 {pending ? 'Ending…' : 'Confirm end'}
               </button>
               <button
                 onClick={() => setConfirming(false)}
-                className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text"
+                className="rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text"
               >
                 Cancel
               </button>
@@ -69,7 +69,7 @@ export function SeasonControl({
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text hover:border-danger hover:text-danger transition-colors"
+              className="rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text hover:border-danger hover:text-danger transition-colors"
             >
               End season &amp; start next
             </button>

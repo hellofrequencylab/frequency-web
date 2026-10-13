@@ -57,7 +57,7 @@ export default async function SeasonComposerPage({ params }: { params: Promise<{
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/content/seasons/${season.id}/preview`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             <Eye className="h-3.5 w-3.5" aria-hidden /> Preview as a member
           </Link>
@@ -103,7 +103,7 @@ function JourneysFallback() {
   return (
     <div className="space-y-3" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 animate-pulse rounded-2xl border border-border bg-surface" />
+        <div key={i} className="h-28 animate-pulse rounded-card border border-border bg-surface" />
       ))}
     </div>
   )
@@ -184,7 +184,7 @@ function JourneyRow({
       : 'Always open'
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -217,7 +217,7 @@ function JourneyRow({
         </div>
         <Link
           href={`/journeys/${journey.slug}/edit`}
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-control border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
         >
           Author <ExternalLink className="h-3.5 w-3.5" aria-hidden />
         </Link>

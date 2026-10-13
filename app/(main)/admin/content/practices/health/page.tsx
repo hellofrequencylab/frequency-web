@@ -117,7 +117,7 @@ export default async function PracticeLibraryHealthPage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {coverage.pillars.map((p) => (
-                <div key={p.id} className="rounded-2xl border border-border bg-surface p-4">
+                <div key={p.id} className="rounded-card border border-border bg-surface p-4">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-body-sm font-bold text-text">{p.name}</p>
                     <p className="text-body-sm font-bold tabular-nums text-text">{p.count}</p>
@@ -210,7 +210,7 @@ export default async function PracticeLibraryHealthPage() {
         <section className="grid gap-4 lg:grid-cols-2">
           <div>
             <SectionHeader title="Review SLA" count={reviewSla.pending} />
-            <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="rounded-card border border-border bg-surface p-4">
               <RingGauge
                 pct={reviewSla.pending > 0 ? reviewSla.overdue / reviewSla.pending : 0}
                 label={reviewSla.overdue > 0 ? `${reviewSla.overdue} over a week` : 'On track'}
@@ -233,7 +233,7 @@ export default async function PracticeLibraryHealthPage() {
             {contributors.length === 0 ? (
               <EmptyState variant="first-use" title="No contributors yet" description="Authors of published practices show up here." />
             ) : (
-              <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+              <ol className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
                 {contributors.map((c, i) => (
                   <li key={c.id} className="flex items-center gap-3 px-4 py-2.5">
                     <span className="w-5 shrink-0 text-meta font-bold tabular-nums text-muted">{i + 1}</span>
@@ -270,7 +270,7 @@ function Funnel({ funnel }: { funnel: FunnelMetrics }) {
     { label: 'Logged in 30 days', value: funnel.loggedRecently, share: funnel.activeRate },
   ]
   return (
-    <div className="space-y-2.5 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-2.5 rounded-card border border-border bg-surface p-4">
       {steps.map((s) => (
         <div key={s.label}>
           <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -303,7 +303,7 @@ function PerformerList({
   idle?: boolean
 }) {
   return (
-    <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+    <ol className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
       {rows.map((r) => (
         <li key={r.id} className="flex items-center gap-3 px-4 py-2.5">
           <div className="min-w-0 flex-1">

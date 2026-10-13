@@ -96,7 +96,7 @@ export function MenuRailCardsEditor({
             type="button"
             onClick={() => addRailCard('left')}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Left card
@@ -105,7 +105,7 @@ export function MenuRailCardsEditor({
             type="button"
             onClick={() => addRailCard('right')}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Right card
@@ -117,7 +117,7 @@ export function MenuRailCardsEditor({
         {status}
       </p>
       {error && (
-        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
+        <p className="mb-3 rounded-control border border-danger/30 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}

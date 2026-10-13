@@ -272,7 +272,7 @@ function ItemCard({ item, images }: { item: ClassifiedItem; images: ImageMap }) 
   const isEvent = item.category === 'event'
   const Icon = isEvent ? CalendarDays : item.category === 'roommate' ? Users : Home
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-primary" />
         <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium capitalize text-muted">
@@ -326,7 +326,7 @@ function Thumb({ file }: { file: File }) {
   useEffect(() => () => URL.revokeObjectURL(url), [url])
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={safeUploadPreviewSrc(url) ?? undefined} alt="" className="h-16 w-16 rounded-lg border border-border object-cover" />
+    <img src={safeUploadPreviewSrc(url) ?? undefined} alt="" className="h-16 w-16 rounded-control border border-border object-cover" />
   )
 }
 
@@ -397,7 +397,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Count({ label, value }: { label: string; value: number }) {
   return (
-    <span className="rounded-lg border border-border bg-surface px-3 py-1.5 font-medium text-text">
+    <span className="rounded-control border border-border bg-surface px-3 py-1.5 font-medium text-text">
       {value} {label}
     </span>
   )

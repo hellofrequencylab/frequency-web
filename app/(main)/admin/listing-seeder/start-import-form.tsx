@@ -131,7 +131,7 @@ export function StartImportForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
+    <div className="rounded-card border border-border bg-surface p-5">
       {error && (
         <div className="mb-4">
           <Banner tone="critical" title="Could not seed the listing">
@@ -164,7 +164,7 @@ export function StartImportForm() {
                   : 'border-border bg-surface hover:border-border-strong',
               )}
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-surface-elevated text-muted">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-control bg-surface-elevated text-muted">
                 <Icon className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0">

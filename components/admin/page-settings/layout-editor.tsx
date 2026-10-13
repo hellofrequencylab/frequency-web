@@ -36,7 +36,7 @@ type ScopeChoice = 'page' | 'section'
 // renderer (components/widgets/page-modules.tsx): main + side is the 3:2 split, etc. `active` tints
 // the blocks with the brand colour so the chosen layout reads at a glance.
 export function TemplateThumbnail({ id, active }: { id: TemplateId; active: boolean }) {
-  const box = `rounded-[2px] ${active ? 'bg-primary/70' : 'bg-border-strong'}`
+  const box = `rounded-xs ${active ? 'bg-primary/70' : 'bg-border-strong'}`
   const row = 'flex flex-1 gap-0.5'
   const frame = 'flex h-9 w-14'
   switch (id) {
@@ -252,7 +252,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
   const multiSlot = slots.length > 1
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-4">
       {/* Scope: which routes this layout applies to (most-specific wins). */}
       <div className="flex flex-wrap items-center gap-1.5">
         {scopes.map((s) => (
@@ -262,7 +262,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
             onClick={() => chooseScope(s.choice)}
             disabled={pending}
             aria-pressed={s.choice === choice}
-            className={`rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ${
+            className={`rounded-control px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ${
               s.choice === choice ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
             }`}
           >
@@ -311,7 +311,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                     disabled={pending}
                     aria-pressed={isActive}
                     title={t.description}
-                    className={`flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors disabled:opacity-40 ${
+                    className={`flex flex-col items-center gap-1.5 rounded-control border p-2 transition-colors disabled:opacity-40 ${
                       isActive
                         ? 'border-primary bg-primary-bg/40 ring-1 ring-primary'
                         : 'border-border bg-surface-elevated/40 hover:border-border-strong'
@@ -343,14 +343,14 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                   {(() => {
                     const h = slotHeader(s.id)
                     return (
-                      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-2">
+                      <div className="flex items-center gap-2 rounded-control border border-border bg-surface-elevated/50 px-3 py-2">
                         <button
                           type="button"
                           onClick={() => toggleHeader(s.id)}
                           disabled={pending}
                           aria-label={h.enabled ? `Turn off the ${s.label} row header` : `Turn on the ${s.label} row header`}
                           aria-pressed={h.enabled}
-                          className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                          className={`shrink-0 rounded-control p-1.5 transition-colors disabled:opacity-40 ${
                             h.enabled ? 'text-primary-strong hover:text-primary-hover' : 'text-subtle hover:text-text'
                           }`}
                         >
@@ -376,7 +376,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                       {group.map((item, index) => (
                         <li
                           key={item.id}
-                          className="space-y-2 rounded-lg border border-border bg-surface-elevated/50 p-3"
+                          className="space-y-2 rounded-control border border-border bg-surface-elevated/50 p-3"
                         >
                           <div className="flex items-center gap-3">
                             <button
@@ -385,7 +385,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                               disabled={pending}
                               aria-label={item.enabled ? `Hide ${item.label}` : `Show ${item.label}`}
                               aria-pressed={item.enabled}
-                              className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                              className={`shrink-0 rounded-control p-1.5 transition-colors disabled:opacity-40 ${
                                 item.enabled ? 'text-primary-strong hover:text-primary-hover' : 'text-subtle hover:text-text'
                               }`}
                             >
@@ -403,7 +403,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                                 onClick={() => move(item.id, -1)}
                                 disabled={pending || index === 0}
                                 aria-label={`Move ${item.label} up`}
-                                className="rounded-lg p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
+                                className="rounded-control p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
                               >
                                 <ChevronUp className="h-4 w-4" />
                               </button>
@@ -412,7 +412,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                                 onClick={() => move(item.id, 1)}
                                 disabled={pending || index === group.length - 1}
                                 aria-label={`Move ${item.label} down`}
-                                className="rounded-lg p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
+                                className="rounded-control p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
                               >
                                 <ChevronDown className="h-4 w-4" />
                               </button>
@@ -479,7 +479,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
           type="button"
           onClick={save}
           disabled={pending || loading}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : 'Save'}
         </button>

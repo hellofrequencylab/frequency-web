@@ -108,7 +108,7 @@ export function RuleForm({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface lift-1 p-4 max-w-2xl space-y-3">
+    <div className="rounded-card border border-border bg-surface lift-1 p-4 max-w-2xl space-y-3">
       <h2 className="text-body-sm font-semibold text-text">{editing ? 'Edit automation' : 'New automation'}</h2>
 
       <Input
@@ -132,7 +132,7 @@ export function RuleForm({
       </label>
 
       {/* Condition layer: every predicate must hold for the action to fire. */}
-      <fieldset className="rounded-lg border border-border p-3 space-y-2">
+      <fieldset className="rounded-control border border-border p-3 space-y-2">
         <legend className="px-1 text-meta text-subtle">Only when (optional)</legend>
         {conditions.length === 0 && (
           <p className="text-meta text-subtle">No conditions. The action fires on every matching event.</p>
@@ -173,7 +173,7 @@ export function RuleForm({
                 type="button"
                 onClick={() => removeCondition(i)}
                 aria-label="Remove condition"
-                className="rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-text"
+                className="rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-text"
               >
                 <X className="h-4 w-4" />
               </button>

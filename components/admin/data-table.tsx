@@ -76,7 +76,7 @@ export function DataTable<T>({
   const colSpan = columns.length + (rowActions ? 1 : 0)
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+    <div className="overflow-hidden rounded-card border border-border bg-surface">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-body-sm">
           <caption className="sr-only">{caption}</caption>

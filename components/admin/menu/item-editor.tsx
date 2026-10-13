@@ -190,7 +190,7 @@ export function ItemEditor({
             onClick={remove}
             disabled={isPending}
             aria-label={`Delete ${item.label}`}
-            className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+            className="shrink-0 rounded-control p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>
@@ -283,7 +283,7 @@ export function ItemEditor({
           {/* Ghost upsell copy — surfaced when ANY per-role mode is set to Ghost (point 6),
               so the operator can author the message the upsell shows. */}
           {hasGhostRole && (
-            <div className="grid gap-3 rounded-lg border border-warning/30 bg-warning-bg/40 p-3 sm:grid-cols-2">
+            <div className="grid gap-3 rounded-control border border-warning/30 bg-warning-bg/40 p-3 sm:grid-cols-2">
               <div className="min-w-0">
                 <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`gt-${item.id}`}>
                   Ghost tier

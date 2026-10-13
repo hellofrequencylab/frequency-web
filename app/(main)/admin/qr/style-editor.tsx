@@ -97,7 +97,7 @@ export function StyleEditor({
   // Live scannability advisory — surfaced in both layouts so a low-contrast or
   // logo-heavy design is flagged before it's printed.
   const warningsBox = warnings.length > 0 && (
-    <div className="mt-2 rounded-lg border border-warning/40 bg-warning-bg/50 p-2">
+    <div className="mt-2 rounded-control border border-warning/40 bg-warning-bg/50 p-2">
       <p className="flex items-center gap-1 text-2xs font-semibold text-warning">
         <TriangleAlert className="h-3 w-3" /> Scannability
       </p>
@@ -362,7 +362,7 @@ export function StyleEditor({
           preview: (
             <div
               // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-              className="aspect-square w-40 rounded-lg border border-border bg-white p-1.5 [&>svg]:h-full [&>svg]:w-full"
+              className="aspect-square w-40 rounded-control border border-border bg-white p-1.5 [&>svg]:h-full [&>svg]:w-full"
               dangerouslySetInnerHTML={{ __html: svg }}
             />
           ),
@@ -391,7 +391,7 @@ export function StyleEditor({
         <div className="shrink-0">
           <div
             // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-            className="w-40 h-40 mx-auto rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
+            className="w-40 h-40 mx-auto rounded-control border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
           <div className="mt-2">{presets}</div>

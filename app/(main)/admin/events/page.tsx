@@ -34,7 +34,7 @@ import { ChatRoutesToggle } from './chat-routes-toggle'
 // gathering published 64 days out). Same `canManage` chrome, same janitor re-gate in the action.
 
 function SectionFallback() {
-  return <div className="h-32 animate-pulse rounded-2xl bg-surface-elevated/60" aria-hidden />
+  return <div className="h-32 animate-pulse rounded-card bg-surface-elevated/60" aria-hidden />
 }
 
 export default async function AdminEventsPage() {

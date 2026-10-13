@@ -304,13 +304,13 @@ export default async function LoomStudioPage({
               </Select>
               <button
                 type="submit"
-                className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"
+                className="rounded-card border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"
               >
                 Apply
               </button>
 
               {/* View mode (links; cards is primary/default) */}
-              <div className="ml-1 flex items-center rounded-2xl border border-border p-0.5">
+              <div className="ml-1 flex items-center rounded-card border border-border p-0.5">
                 {VIEWS.map(({ value, label, Icon }) => (
                   <Link
                     key={value}
@@ -348,7 +348,7 @@ export default async function LoomStudioPage({
         >
           <div>
             {splashLaneMatches.length > 0 && (
-              <div className="mb-6 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+              <div className="mb-6 rounded-card border border-border bg-surface-elevated/40 p-4">
                 <div className="mb-3 flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
                   <p className="font-display text-meta uppercase tracking-wide text-subtle">From the Splash lane</p>
@@ -369,7 +369,7 @@ export default async function LoomStudioPage({
               </div>
             )}
             {assets.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
+              <div className="rounded-card border border-dashed border-border-strong px-6 py-16 text-center">
                 <Images className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
                 <p className="text-body text-muted">
                   {q || kind || category || collectionId ? 'No assets match.' : 'No assets yet.'}

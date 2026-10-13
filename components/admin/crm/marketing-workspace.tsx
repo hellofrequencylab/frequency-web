@@ -144,7 +144,7 @@ export function MarketingWorkspace({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">
+        <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}

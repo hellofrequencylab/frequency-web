@@ -75,7 +75,7 @@ export function DangerZone({
   const dangerBtn = buttonClasses('dangerOutline', 'sm', 'text-body-sm')
 
   return (
-    <div className="space-y-4 rounded-2xl border border-danger-bg bg-danger-bg/10 p-5">
+    <div className="space-y-4 rounded-card border border-danger-bg bg-danger-bg/10 p-5">
       {error && <Banner tone="critical" title="Something went wrong">{error}</Banner>}
       {notice && <Banner tone="info" title="Done">{notice}</Banner>}
 
@@ -166,7 +166,7 @@ export function DangerZone({
               type="button"
               disabled={pending}
               onClick={() => run(async () => setDecay(await previewDemoDecay()))}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50 motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50 motion-reduce:transition-none"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
               Preview
@@ -178,7 +178,7 @@ export function DangerZone({
           </div>
         </div>
         {decay && (
-          <p className="mt-3 rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-muted">
+          <p className="mt-3 rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-muted">
             {decay.dryRun ? 'Would' : 'Did'}: purge <b className="text-text">{decay.purgedCircles}</b> circles, prune{' '}
             <b className="text-text">{decay.prunedPosts}</b> posts in <b className="text-text">{decay.prunedCircles}</b> circles, shed{' '}
             <b className="text-text">{decay.trimmedNeighbours}</b> demo neighbors, remove <b className="text-text">{decay.orphansRemoved}</b> orphans. ({decay.realCircles} real / {decay.demoCircles} demo circles.)

@@ -80,7 +80,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             drawer slides OVER. The drawer mounts inside this column (not the shell's) so it
             covers the rail and compresses the center as its grab handle widens it. */}
         <AdminRailDrawerColumn>
-          <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-card border border-border bg-surface" />}>
             <AdminInfoRail role={role} webRole={webRole} staffRole={staffRole} />
           </Suspense>
         </AdminRailDrawerColumn>

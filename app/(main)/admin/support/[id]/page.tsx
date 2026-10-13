@@ -44,11 +44,11 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
       <div className="grid gap-5 lg:grid-cols-[1fr_18rem]">
         {/* Conversation + triage */}
         <div className="space-y-5">
-          <section className="rounded-2xl border border-border bg-surface p-4">
+          <section className="rounded-card border border-border bg-surface p-4">
             <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Conversation</p>
             <TicketMessages messages={ticket.messages} />
           </section>
-          <section className="rounded-2xl border border-border bg-surface p-4">
+          <section className="rounded-card border border-border bg-surface p-4">
             <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Triage</p>
             <AdminTicketControls
               ticketId={ticket.id}
@@ -63,7 +63,7 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
         {/* Reporter + context rail */}
         <aside className="space-y-4">
           {ticket.reporter && (
-            <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="rounded-card border border-border bg-surface p-4">
               <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Reporter</p>
               <p className="mt-1.5 text-body-sm font-bold text-text">{ticket.reporter.name}</p>
               <p className="text-meta text-subtle">@{ticket.reporter.handle}</p>
@@ -71,10 +71,10 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
                 {reporterTickets.total} ticket{reporterTickets.total === 1 ? '' : 's'} · {reporterTickets.open} open
               </p>
               <div className="mt-3 space-y-1.5">
-                <Link href={`/people/${ticket.reporter.handle}`} className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
+                <Link href={`/people/${ticket.reporter.handle}`} className="flex items-center gap-2 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
                   <User className="h-3.5 w-3.5 text-subtle" /> View profile <ExternalLink className="ml-auto h-3 w-3 text-subtle" />
                 </Link>
-                <Link href={`/connections?q=${encodeURIComponent(ticket.reporter.handle)}`} className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
+                <Link href={`/connections?q=${encodeURIComponent(ticket.reporter.handle)}`} className="flex items-center gap-2 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
                   <KanbanSquare className="h-3.5 w-3.5 text-subtle" /> Find in CRM <ExternalLink className="ml-auto h-3 w-3 text-subtle" />
                 </Link>
               </div>

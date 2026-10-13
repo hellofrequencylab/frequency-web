@@ -168,7 +168,7 @@ async function SeasonStats() {
             {season ? `Season ${season.season_number}` : 'No season running'}
           </p>
         </Tile>
-        <div className="col-span-1 flex items-center rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        <div className="col-span-1 flex items-center rounded-card border border-border bg-surface p-4 sm:p-5">
           <RingGauge pct={practice.activationRate} label="Activation" sub={`${practice.activated} of ${practice.newMembers} new activated`} />
         </div>
         <Tile label="This season">
@@ -226,7 +226,7 @@ async function ManageSections() {
           <Link
             key={c.href}
             href={c.href}
-            className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+            className="group flex flex-col gap-3 rounded-card border border-border bg-surface p-4 transition-colors hover:border-border-strong"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
@@ -256,9 +256,9 @@ function DashSkeleton({ title }: { title: string }) {
       <h2 className="text-lead font-bold tracking-tight text-text">{title}</h2>
       <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
       <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">
-        <div className="h-32 animate-pulse rounded-2xl bg-surface-elevated/70" />
-        <div className="h-32 animate-pulse rounded-2xl bg-surface-elevated/70" />
-        <div className="h-32 animate-pulse rounded-2xl bg-surface-elevated/70" />
+        <div className="h-32 animate-pulse rounded-card bg-surface-elevated/70" />
+        <div className="h-32 animate-pulse rounded-card bg-surface-elevated/70" />
+        <div className="h-32 animate-pulse rounded-card bg-surface-elevated/70" />
       </div>
     </section>
   )

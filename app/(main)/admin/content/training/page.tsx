@@ -126,7 +126,7 @@ export default async function AdminContentTrainingPage() {
                 <p className="mb-2 eyebrow text-subtle">
                   Curriculum steps
                 </p>
-                <ol className="divide-y divide-border/50 overflow-hidden rounded-2xl border border-border bg-surface">
+                <ol className="divide-y divide-border/50 overflow-hidden rounded-card border border-border bg-surface">
                   {def.steps.map((s, i) => (
                     <li key={s.id} className="flex items-center gap-3 px-4 py-3">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-meta font-semibold tabular-nums text-muted">

@@ -278,7 +278,7 @@ export function LoomGrid({
       />
 
       {view === 'list' ? (
-        <div className="overflow-hidden rounded-2xl border border-border">
+        <div className="overflow-hidden rounded-card border border-border">
           {assets.map((a) => {
             const isSel = sel.has(a.id)
             return (
@@ -294,7 +294,7 @@ export function LoomGrid({
                   onClick={() => setOpenId(a.id)}
                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
                 >
-                  <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
+                  <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-control bg-surface-elevated">
                     <Thumb asset={a} fit="cover" rendition="grid" />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={a.title}>
@@ -330,7 +330,7 @@ export function LoomGrid({
             return (
               <div
                 key={a.id}
-                className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
+                className={`group relative overflow-hidden rounded-card border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
                   featured ? 'col-span-2 sm:col-span-1' : ''
                 } ${isSel ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
               >
@@ -434,7 +434,7 @@ function BulkBar({
     'inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-50'
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-elevated/60 px-3 py-2">
+    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface-elevated/60 px-3 py-2">
       <button
         type="button"
         onClick={onToggleAll}
@@ -465,7 +465,7 @@ function BulkBar({
                     key={c.id}
                     type="button"
                     onClick={() => run(() => addAssetsToCollection(c.id, ids))}
-                    className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-body-sm text-text hover:bg-surface-elevated"
+                    className="flex w-full items-center justify-between gap-2 rounded-control px-3 py-1.5 text-left text-body-sm text-text hover:bg-surface-elevated"
                   >
                     <span className="truncate">{c.title}</span>
                     <span className="shrink-0 text-meta text-subtle">{c.count}</span>
@@ -482,7 +482,7 @@ function BulkBar({
                       return addAssetsToCollection(created.id, ids)
                     })
                   }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-border px-3 py-1.5 text-left text-body-sm font-medium text-primary-strong hover:bg-surface-elevated"
+                  className="mt-1 flex w-full items-center gap-2 rounded-control border-t border-border px-3 py-1.5 text-left text-body-sm font-medium text-primary-strong hover:bg-surface-elevated"
                 >
                   <FolderInput className="h-4 w-4" /> New collection…
                 </button>
@@ -517,7 +517,7 @@ function BulkBar({
                         type="button"
                         onClick={() => setStyleLane(l)}
                         aria-pressed={styleLane === l}
-                        className={`rounded-lg px-2.5 py-1 text-meta font-semibold ${
+                        className={`rounded-control px-2.5 py-1 text-meta font-semibold ${
                           styleLane === l ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                         }`}
                       >
@@ -529,7 +529,7 @@ function BulkBar({
                     type="button"
                     onClick={trainStyle}
                     disabled={pending || !styleName.trim()}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                   >
                     <Palette className="h-4 w-4" /> Train style
                   </button>
@@ -868,7 +868,7 @@ function DetailDrawer({
   }, [asset.id, hasFile])
 
   const chipCls =
-    'inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated'
+    'inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated'
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Asset details">
@@ -893,7 +893,7 @@ function DetailDrawer({
         <div className="space-y-4 p-5">
           <div
             ref={previewRef}
-            className="flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated"
+            className="flex h-64 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated"
           >
             {safeOverride ? (
               <div
@@ -925,7 +925,7 @@ function DetailDrawer({
               <button
                 type="button"
                 onClick={copyUrl}
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated"
               >
                 {copied ? <Check className="h-4 w-4 text-signal" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Copied' : 'Copy URL'}
@@ -992,7 +992,7 @@ function DetailDrawer({
 
           {/* Design with Vera — edit this graphic by describing the change (SVG elements only). */}
           {isElement && (
-            <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
+            <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
               <p className="mb-2 flex items-center gap-1.5 text-body-sm font-semibold text-text">
                 <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
                 Design with Vera
@@ -1015,7 +1015,7 @@ function DetailDrawer({
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="A small, surgical change that keeps the graphic nearly identical"
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-card bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : 'Tweak'}
@@ -1025,7 +1025,7 @@ function DetailDrawer({
                   onClick={() => askVera('redraw')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="Rebuild the whole graphic from scratch, for bigger changes"
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-card border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
                 >
                   <RefreshCw className="h-4 w-4" /> Redraw
                 </button>
@@ -1034,7 +1034,7 @@ function DetailDrawer({
                   onClick={() => void reviewCurrent()}
                   disabled={veraBusy || reviewing}
                   title="Vera renders it, looks at it, and fixes anything clearly broken"
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-70"
                 >
                   {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                   {reviewing ? 'Checking…' : 'Check her work'}
@@ -1045,7 +1045,7 @@ function DetailDrawer({
                       type="button"
                       onClick={saveVera}
                       disabled={veraBusy || reviewing}
-                      className="rounded-2xl bg-signal px-3 py-1.5 text-body-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
+                      className="rounded-card bg-signal px-3 py-1.5 text-body-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
                     >
                       Save changes
                     </button>
@@ -1056,7 +1056,7 @@ function DetailDrawer({
                         setVeraErr(null)
                         setReviewNote(null)
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated"
+                      className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated"
                     >
                       <Undo2 className="h-4 w-4" /> Revert
                     </button>
@@ -1177,7 +1177,7 @@ function DetailDrawer({
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-2xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+              className="rounded-card bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
             >
               {pending ? 'Saving…' : 'Save'}
             </button>
@@ -1185,7 +1185,7 @@ function DetailDrawer({
               type="button"
               onClick={archive}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-70"
+              className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-70"
             >
               <Archive className="h-4 w-4" /> Archive
             </button>
@@ -1193,7 +1193,7 @@ function DetailDrawer({
               type="button"
               onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
               disabled={pending}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-2xl border border-danger px-3 py-2 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-70"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-card border border-danger px-3 py-2 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-70"
             >
               <Trash2 className="h-4 w-4" /> {confirmDelete ? 'Confirm delete' : 'Delete'}
             </button>

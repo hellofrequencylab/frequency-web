@@ -132,7 +132,7 @@ export function ReviewBoard({
   return (
     <div className="space-y-6">
       {/* Roll-up + publish */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2 text-body-sm">
           <StatusChip tone="success" size="sm">✅ {s.facts} from the paste</StatusChip>
           <StatusChip tone="warning" size="sm">⚠️ {s.inferred} inferred</StatusChip>
@@ -171,7 +171,7 @@ export function ReviewBoard({
 
       {/* Published: the claim link the operator sends the poster */}
       {published && (
-        <div className="rounded-2xl border border-success/30 bg-success-bg p-4" role="status">
+        <div className="rounded-card border border-success/30 bg-success-bg p-4" role="status">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" aria-hidden /> Published, held by Frequency
           </p>
@@ -181,7 +181,7 @@ export function ReviewBoard({
           </p>
           {claimUrl ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs text-text">
+              <code className="min-w-0 flex-1 truncate rounded-control border border-border bg-surface px-2.5 py-1.5 text-2xs text-text">
                 {claimUrl}
               </code>
               <Button size="sm" variant="secondary" onClick={copyClaim}>
@@ -207,7 +207,7 @@ export function ReviewBoard({
             <h3 className="text-body font-bold text-text">{section.title}</h3>
             <p className="mt-0.5 text-body-sm text-muted">{section.desc}</p>
           </div>
-          <div className="divide-y divide-border rounded-2xl border border-border bg-surface">
+          <div className="divide-y divide-border rounded-card border border-border bg-surface">
             {section.fields.map((f) => (
               <FieldRow key={f.path} intakeId={intakeId} field={f} onUpdate={onFieldUpdate} />
             ))}
@@ -331,7 +331,7 @@ function FieldRow({
           )}
 
           {field.snippet && !editing && (
-            <p className="mt-1.5 rounded-lg border border-border bg-surface-elevated p-2 text-2xs text-muted">
+            <p className="mt-1.5 rounded-control border border-border bg-surface-elevated p-2 text-2xs text-muted">
               <span className="font-semibold text-subtle">From the paste: </span>“{field.snippet}”
             </p>
           )}
@@ -489,7 +489,7 @@ function DetailsEditor({
             type="button"
             aria-label={`Remove detail ${i + 1}`}
             onClick={() => setDetails(details.filter((_, j) => j !== i))}
-            className="shrink-0 rounded-lg p-2 text-subtle hover:bg-danger-bg hover:text-danger"
+            className="shrink-0 rounded-control p-2 text-subtle hover:bg-danger-bg hover:text-danger"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>
@@ -589,7 +589,7 @@ function PhotoStrip({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
         <ImagePlus className="h-4 w-4 text-primary-strong" aria-hidden />
         Photos
