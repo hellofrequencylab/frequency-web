@@ -7,7 +7,8 @@ import { GamificationRewards } from '@/components/widgets/gamification/gamificat
 import { GamificationMetrics } from '@/components/widgets/gamification/gamification-metrics'
 import { GamificationAchievements } from '@/components/widgets/gamification/gamification-achievements'
 import { GamificationChallenges } from '@/components/widgets/gamification/gamification-challenges'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { countAchievementUnlocks } from '@/components/widgets/gamification/gamification-stats'
+import { loadTopAchievers } from '@/components/widgets/gamification/gamification-top-achievers'
 import { getCurrentSeason } from '@/lib/seasons'
 import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, n } from '../shared'
 import { loadEarnRates } from '../earn-rates'
@@ -25,15 +26,6 @@ import { loadEarnRates } from '../earn-rates'
 // have no reader or action, so they are not drawn; nor is "Save rules" (the rates are edited by the janitor's
 // reward editor below).
 
-type Achiever = {
-  id: string
-  display_name: string | null
-  handle: string
-  avatar_url: string | null
-  lifetime_zaps: number | null
-  current_streak: number | null
-}
-
 function daysLeft(endsAt: string | null): number | null {
   if (!endsAt) return null
   const ms = Date.parse(endsAt) - Date.now()
@@ -41,18 +33,12 @@ function daysLeft(endsAt: string | null): number | null {
 }
 
 export async function FqStandingBody() {
-  const admin = createAdminClient()
-  const [season, { count: awards }, { data: top }, rates] = await Promise.all([
+  const [season, awards, leaders, rates] = await Promise.all([
     getCurrentSeason(),
-    admin.from('user_achievements').select('id', { count: 'exact', head: true }),
-    admin
-      .from('profiles')
-      .select('id, display_name, handle, avatar_url, lifetime_zaps, current_streak')
-      .order('achievement_count', { ascending: false })
-      .limit(5),
+    countAchievementUnlocks(),
+    loadTopAchievers(),
     loadEarnRates(),
   ])
-  const leaders = (top ?? []) as Achiever[]
   const left = season ? daysLeft(season.ends_at) : null
   const meta = season
     ? `Season ${season.season_number}${left !== null ? ` · ${left} ${left === 1 ? 'day' : 'days'} left` : ''}`
@@ -75,7 +61,7 @@ export async function FqStandingBody() {
       <div className="g4">
         <Kpi label="On a streak" value={EMPTY} />
         <Kpi label="Longest streak" value={EMPTY} />
-        <Kpi label="Awards given" value={n(awards ?? 0)} />
+        <Kpi label="Awards given" value={n(awards)} />
         <Kpi label="Freezes used" value={EMPTY} note={season ? 'This season' : undefined} />
       </div>
 

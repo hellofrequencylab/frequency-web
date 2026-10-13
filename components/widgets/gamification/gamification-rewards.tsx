@@ -13,9 +13,9 @@ import { RewardConfig, type RewardRow } from '@/app/(main)/admin/gamification/re
 type ZapCfgRow = { action_type: string; zaps_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
 type GemCfgRow = { action_type: string; gems_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
 
-export async function GamificationRewards() {
-  if (!(await getJanitor())) return null
-
+/** The live Zap and Gem config rows (zap_config, gem_config), in the editor's shape. Read-only; shared with
+ *  the Frequency Standing and Economy bodies, which show the rates without the editor. */
+export async function loadRewardRows(): Promise<{ zaps: RewardRow[]; gems: RewardRow[] }> {
   const cfg = createAdminClient()
   const [{ data: zapRows }, { data: gemRows }] = await Promise.all([
     cfg.from('zap_config').select('action_type, zaps_amount, daily_cap, is_active, description').order('action_type'),
@@ -29,5 +29,11 @@ export async function GamificationRewards() {
     action_type: r.action_type, amount: r.gems_amount, daily_cap: r.daily_cap, is_active: r.is_active, description: r.description,
   }))
 
+  return { zaps, gems }
+}
+
+export async function GamificationRewards() {
+  if (!(await getJanitor())) return null
+  const { zaps, gems } = await loadRewardRows()
   return <RewardConfig zaps={zaps} gems={gems} />
 }

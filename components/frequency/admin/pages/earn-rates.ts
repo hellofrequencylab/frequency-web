@@ -1,10 +1,10 @@
 import 'server-only'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { loadRewardRows } from '@/components/widgets/gamification/gamification-rewards'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
 
 // WHAT A MEMBER EARNS, READ LIVE (Standing and Economy bodies). The design ships these rates as sample data
 // (assets/economy/economy.json); in code they are the tunable `zap_config` and `gem_config` rows, read with
-// the same select the janitor's reward editor uses (components/widgets/gamification/gamification-rewards.tsx).
+// the janitor's reward editor's own read (loadRewardRows, components/widgets/gamification/gamification-rewards.tsx).
 // A missing Zap row falls back to ZAP_AMOUNTS, exactly as the award path does (awardZapsForAction), so the
 // number shown is the number paid. A missing Gem row has no fallback and reads as null (the caller renders
 // the empty value). An inactive row pays nothing and reads 0. Read-only: nothing here edits a rate.
@@ -27,23 +27,13 @@ const RULES: { key: string; label: string; kind: 'zap' | 'gem'; fallback?: numbe
   { key: 'event_rsvp', label: 'RSVP to your event', kind: 'gem' },
 ]
 
-type CfgRow = { action_type: string; amount: number; is_active: boolean }
-
 export async function loadEarnRates(): Promise<EarnRate[]> {
-  const zaps = new Map<string, CfgRow>()
-  const gems = new Map<string, CfgRow>()
+  let zaps = new Map<string, { amount: number; is_active: boolean }>()
+  let gems = new Map<string, { amount: number; is_active: boolean }>()
   try {
-    const cfg = createAdminClient()
-    const [{ data: zapRows }, { data: gemRows }] = await Promise.all([
-      cfg.from('zap_config').select('action_type, zaps_amount, is_active'),
-      cfg.from('gem_config').select('action_type, gems_amount, is_active'),
-    ])
-    for (const r of (zapRows ?? []) as { action_type: string; zaps_amount: number; is_active: boolean }[]) {
-      zaps.set(r.action_type, { action_type: r.action_type, amount: r.zaps_amount, is_active: r.is_active })
-    }
-    for (const r of (gemRows ?? []) as { action_type: string; gems_amount: number; is_active: boolean }[]) {
-      gems.set(r.action_type, { action_type: r.action_type, amount: r.gems_amount, is_active: r.is_active })
-    }
+    const rows = await loadRewardRows()
+    zaps = new Map(rows.zaps.map((r) => [r.action_type, r]))
+    gems = new Map(rows.gems.map((r) => [r.action_type, r]))
   } catch {
     // fall through: Zaps read their static defaults, Gems read empty
   }
