@@ -8,7 +8,8 @@
 /* ─────────────────────────────────────────────────────────────────────────
    DAWN. Frequency's semantic token layer.
    Components reference these variables (or the Tailwind utilities mapped
-   below in @theme inline). Raw hex appears ONLY in this file.
+   below in @theme inline). Raw hex lives only in the token files: this one and
+   each design sheet under app/themes/ (docs/THEME-PROTOCOL.md §3, enforced by check:tokens).
    ───────────────────────────────────────────────────────────────────────── */
 
 :root {

@@ -17,7 +17,7 @@ feel, like a friendly app screen.
    supporting accent (a check, a motion line), never the whole drawing.
 2. **Warm palette, amber-led.** Amber `primary` is the hero; teal `signal` is the accent; faint
    `primary-bg` washes and `surface` cards carry the warmth; `border` / `border-strong` are the only
-   outlines. Never a hex — DAWN token classes only.
+   outlines. Never a hex — semantic token classes only.
 3. **Calm + generous.** Big rounded corners (rx 10–22), roomy spacing, one clear focal point, subtle
    opacity layering (0.4–0.6) for depth. A handful of clean shapes, never busy.
 4. **Show the surface.** When depicting an app/product moment, frame it as a **screen or card** with

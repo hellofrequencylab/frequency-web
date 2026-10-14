@@ -249,8 +249,11 @@ Every handler is wrapped twice, and both wrappers are contract-checked:
 
 ## Styling & design tokens (DAWN)
 
-`app/globals.css` is the **single source of truth** for color, and the only file in `app/` or
-`components/` that is a stylesheet at all. Raw hex appears *only* there. The flow:
+`app/globals.css` is the **single source of truth** for the semantic colour names (DAWN's, which
+every design fills). A second design (Frequency, ADR-1737) adds its own token sheets under
+`app/themes/`: the generated `app/themes/frequency/core.css` and the hand-kept alias layer
+`app/themes/frequency.css`. Raw hex appears *only* in those token files; the rules and the gate
+that holds them are [THEME-PROTOCOL §3](THEME-PROTOCOL.md#3-style--the-token-cascade-parentchild-already-shipped). The flow:
 
 1. `:root` (light) and `.dark` define semantic CSS variables (`--color-canvas`, `--color-text`,
    `--color-primary`, `--color-success`, `--color-info`, …).

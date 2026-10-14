@@ -226,7 +226,7 @@ and (2) an interactive editor / Studio / Puck surface* (the §10 boundary).
 
 **A valid block** (the contract, unchanged from PAGE-FRAMEWORK §4.1 / §8.4): a self-fetching async
 Server Component that returns `null` when empty, reads its scope from request context (not props),
-sizes via container queries (`@lg:`/`@2xl:`, portable across slots), uses DAWN tokens only, and is
+sizes via container queries (`@lg:`/`@2xl:`, portable across slots), uses semantic tokens only, and is
 metadata-declared + route-scoped (never leaks across routes; locked by `lib/widgets/modules.test.ts`).
 
 **Conversion = the §8.4 recipe** (Part A: adopt a shell; Part B: the 6 touch-points per section).

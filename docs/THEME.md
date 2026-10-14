@@ -47,6 +47,41 @@ member's own skin applies only when it is authored for the active design (`SkinD
 **Adding a design** = an id in `DesignId` and `DESIGNS`, a sheet in `app/themes/`, and its import in
 `app/layout.tsx`. The test fails until all three agree.
 
+### The rules every component follows, under either design
+
+This is the one statement of them; other docs link here. The gate is `check:tokens`
+([THEME-PROTOCOL §3](THEME-PROTOCOL.md#3-style--the-token-cascade-parentchild-already-shipped), ADR-1742).
+
+- **Colour is a semantic token.** The semantic names are DAWN's (`--color-*`, the `bg-surface` /
+  `text-muted` utilities). Both designs fill them: DAWN in `app/globals.css`, Frequency through the alias
+  layer `app/themes/frequency.css`. A component never names a design's own token (`--fq-*`) and never
+  writes a literal: no hex, `rgb()`, `hsl()`/`oklch()`, named colour (`white`), and no Tailwind default
+  palette (`bg-white`, `text-black`, `bg-black/50`, `text-amber-700`). Those read the same in both designs,
+  which is the bug. `color-mix(in oklab, var(--token) …)` over tokens is fine.
+- **Type is the named scale.** Roles (`text-meta`, `text-body-sm`, `text-body`, `text-card-title`,
+  `text-page-title` …) and the two small steps `text-2xs` / `text-3xs`; never `text-[Npx]`, an inline
+  `fontSize`, or a literal `font-family` (use `font-display` / the `--design-font-*` variables). Each design
+  maps the scale to its own sizes:
+
+  | Step | DAWN (rem on its 106.25% root) | Frequency (design export typography) |
+  |---|---|---|
+  | `text-3xs` | 0.625rem, about 10.6px chrome | 11px, the **label** (uppercase, tracked) |
+  | `text-2xs` | 0.6875rem, about 11.7px chrome | 12px, the **tag** / chip |
+  | `text-meta` | 0.75rem, about 12.75px | 13px, the **floor for read text** |
+  | `text-body-sm` | 0.875rem | 15px, UI text |
+
+  The live values are `app/globals.css` (DAWN) and the type-steps block of `app/themes/frequency.css`;
+  where this table and those files disagree, the files win.
+
+  Frequency's floor is 13px: nothing a member reads is smaller, and the only smaller steps are the 11px
+  label and the 12px tag. Hand-written Frequency CSS holds the same floor.
+- **Hand-written CSS uses tokens too.** A page sheet under `app/themes/` reads `var(--fq-*)` or the
+  semantic names, never a literal; only the token files carry values (`app/globals.css` token declarations,
+  the generated `app/themes/frequency/core.css` and `kit-*.css`, and an alias in `app/themes/frequency.css`
+  whose comment names the export value it mirrors).
+- **A literal that must stay** (a QR quiet zone, a printed sheet) carries its reason on the line:
+  `// token-ok: <reason>`, or `KEEP <utility>: <reason>` for a monochrome class.
+
 ### The Frequency system's own rules (design export, 2026-10-13)
 
 Frequency is its **own system**, not DAWN with new values. Its token vocabulary is the source of

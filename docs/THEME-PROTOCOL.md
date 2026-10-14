@@ -34,7 +34,7 @@ structure/layout/menu, rather than PHP file overrides.
 
 | Layer | What an edit changes | **Parent** (the one place) | **Child** (scoped override) | **Site-wide command** | **Drift-guard** |
 |---|---|---|---|---|---|
-| **Style** | color · type · space · radius · shadow | `app/globals.css` DAWN tokens (Tailwind v4 `@theme inline`) | `[data-theme]` (dark) · per-Space `skin` · `AccentScope` · `page-theme` | edit a token in `globals.css` (or a DB Theme in Theme Studio) | `check:tokens` (no hardcoded hex / `text-[Npx]`) ✅ · registry↔CSS tests |
+| **Style** | color · type · space · radius · shadow | the semantic tokens: DAWN's names in `app/globals.css` (Tailwind v4 `@theme inline`), filled per design (`app/themes/<id>.css`, ADR-1737) | `[data-theme]` (dark) · per-Space `skin` · `AccentScope` · `page-theme` (DAWN only; Frequency collapses them, [THEME.md §0](THEME.md#0-the-design-axis-above-the-four-adr-1737)) | edit a token in the design's token file (or a DB Theme in Theme Studio) | `check:tokens` (§3) ✅ · `lib/theme/design.test.ts` · registry↔CSS tests |
 | **Structure** | headers · shells · page chrome | `components/templates/*` on one `PageHeading`; the one **`PageHero`** band | per-page template slots | edit `PageHero` / `PageHeading` / a template | `check:headers` (no page-level `<h1>` outside a template) ✅ |
 | **Layout** | which modules render, where | module engine `page_settings.layout` **global `'*'` scope** | section → route → space | edit the `'*'` layout or `defaultLayoutFor` | resolver unit tests ✅ |
 | **Copy** | words · hero images | `page_content` + `resolvePageContent` | per-route (per-space) override | edit the global/section `page_content` row | `check:canon` (voice) ⏳ shallow — see §7 |
@@ -48,10 +48,19 @@ and sets the **Copy** cascade as the next build (§7).
 
 ## 3. Style — the token cascade (parent/child, already shipped)
 
-- **Parent:** `app/globals.css` — the DAWN semantic tokens (`--color-primary*`, `--color-ink*`,
-  `--radius-card`, …) declared once on `:root` and exposed to Tailwind via `@theme inline`. Because the
-  utilities reference the variables, overriding a variable on any subtree re-themes everything below with
-  **no rebuild and no re-render**. Raw hex appears **only** in this file.
+- **Parent:** the **semantic tokens**. Their names are DAWN's (`--color-primary*`, `--color-ink*`,
+  `--radius-card`, …), declared once on `:root` in `app/globals.css` and exposed to Tailwind via
+  `@theme inline`. Because the utilities reference the variables, overriding a variable on any subtree
+  re-themes everything below with **no rebuild and no re-render**.
+- **Above the parent: the design (ADR-1737).** One design per deploy, DAWN or Frequency, switched in
+  `lib/theme/design.ts`. DAWN fills the semantic names in `app/globals.css`. Frequency fills the SAME
+  names from its own vocabulary: the generated `app/themes/frequency/core.css` (`--fq-*`, never edited)
+  and the hand-kept alias layer `app/themes/frequency.css` that points each DAWN name at an `--fq-` token.
+  So "DAWN token" in older docs means **semantic token**: the name a component reads, which every design
+  fills. A component never reads `--fq-*` or any design's raw value.
+- **Raw values live only in token files:** `app/globals.css` token declarations, the generated
+  `app/themes/frequency/core.css` and `kit-*.css`, and an alias in `app/themes/frequency.css` whose
+  comment names the export value it mirrors. Nowhere else, CSS included.
 - **Children (scoped, compose over one DOM):** `.dark` (mode), per-Space **`skin`** (`[data-skin]`,
   whole-palette white-label), **`AccentScope`** (re-binds `--color-primary*` for a Space subtree — the
   tightest child-theme precedent), and per-Space **`page-theme`** (`[data-space-theme]`, FONTS ONLY — radius stopped being a Space-theme knob on 2026-09-01, ADR-1193).
@@ -60,11 +69,29 @@ and sets the **Copy** cascade as the next build (§7).
   a theme's override surface, and a child may re-bind a *subset* of it. Components reference semantic
   tokens/utilities, never a raw primitive or a hex. This is the "theme contract": one canonical semantic
   set every theme fills.
-- **Site-wide change example:** change the brand color everywhere → edit `--color-primary` (+ `-hover`/
-  `-strong`/`-bg`) in `:root` and its `.dark` counterpart. Two blocks, one file. Done.
-- **Drift-guard (new):** `check:tokens` fails a PR that hardcodes a hex, an `rgb()` literal, or a
-  `text-[Npx]` in `.tsx`/`.ts` outside the allowlist (token/theme files, maps, raster OG images, color
-  pickers) or without a `// token-ok: <reason>` escape hatch.
+- **Site-wide change example:** change the brand color everywhere → under DAWN, edit `--color-primary`
+  (+ `-hover`/`-strong`/`-bg`) in `:root` and its `.dark` counterpart; under Frequency, the colour is the
+  export's, so re-install the export (`pnpm design:install`), or re-point the alias in
+  `app/themes/frequency.css` if a ROLE moved.
+- **The component rules** (colour, type scale, fonts, hand-written CSS) are written once in
+  [THEME.md §0](THEME.md#the-rules-every-component-follows-under-either-design), including each design's
+  type sizes and Frequency's 13px floor. This doc does not restate them.
+- **Drift-guard:** `check:tokens` (a blocking CI guard; ADR-781, extended by ADR-1742) has three tiers.
+  1. **Hard, in `.ts`/`.tsx`:** raw hex, `rgb()`/`rgba()`, arbitrary type `text-[N(px|rem|em|pt)]`, and
+     the Tailwind default palette and monochromes (`bg-white`, `text-black`, `bg-black/50`,
+     `text-amber-700`). The palette classes read their patterns from the `raw-palette` and
+     `white-black-literals` entries in `scripts/adoption-baselines.json`, whose floors are 0.
+  2. **Ratchet, per file** (`scripts/token-baselines.json`, may fall, never rise; a file not listed holds
+     0): named colours and literal font sizes/families in style objects and SVG attributes; colour
+     functions the hard scan cannot see (`_rgb(` inside an arbitrary class, `hsl()`, `oklch()` …); colour
+     and font-family literals in hand-written CSS (`app/globals.css` outside token declarations, every
+     non-generated sheet under `app/themes/` and elsewhere); and type under Frequency's 13px floor in its
+     hand-written sheets (11px allowed in an uppercase rule, 12px on a tag/chip/badge/pill selector).
+  3. **Escapes:** the file ALLOWLIST (email HTML, raster OG, maps, colour data) for `.ts`/`.tsx`;
+     `// token-ok: <reason>` (or `/* token-ok */`) on the line or the line above; `KEEP <utility>: <reason>`
+     for a monochrome class; generated sheets are skipped by their installer header.
+  After a sweep, bank the fall: `node scripts/check-tokens.mjs --update --reason "<which sweep>"`. A rise
+  is refused unless `--allow-raise` is passed with a reason, and is recorded as raised.
 
 ---
 
@@ -135,7 +162,7 @@ header, and extend `check:canon` to scan `.tsx`/`.ts` string literals for the vo
 
 | I want to change… | Edit this parent | It cascades to |
 |---|---|---|
-| The brand color / any color | `app/globals.css` token (`:root` + `.dark`) | every `bg-*`/`text-*` utility, all children |
+| The brand color / any color | DAWN: `app/globals.css` token (`:root` + `.dark`). Frequency: the export (`pnpm design:install`) or its alias in `app/themes/frequency.css` | every `bg-*`/`text-*` utility, all children |
 | The header look (cover/scrim/slots) | `components/templates/page-hero.tsx` | every hero on the site |
 | The title type scale / eyebrow | `components/templates/page-heading.tsx` | every shell's header |
 | A card's radius everywhere | `--radius-card` in `globals.css` (+ migrate literal `rounded-2xl`) | every `rounded-card` |
@@ -152,7 +179,7 @@ If your change needs a per-page edit to look right, it belongs in a **slot** or 
 1. **Pick a shell** by what the content is (PAGE-FRAMEWORK §8.1) — never hand-roll a layout.
 2. **Fill the header slots** (`title`/`eyebrow`/`description`/`actions`/`back`, and `heroImage` +
    `heroOverlay` for a hero band). No hand-rolled `<h1>`, no hand-rolled back-link or cover.
-3. **Style with tokens only** — semantic utilities, no hex, no `text-[Npx]`.
+3. **Style with semantic tokens only** — the rules in [THEME.md §0](THEME.md#the-rules-every-component-follows-under-either-design); `check:tokens` holds them.
 4. **Register the rail** in `page-chrome.ts`; **assign modules** via the module engine, not hand-stacked
    sections.
 5. **Add a menu item** (if any) as a catalog row.
