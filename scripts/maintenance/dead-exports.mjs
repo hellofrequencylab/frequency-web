@@ -101,3 +101,11 @@ console.log('')
 for (const r of declOnly.sort((a, b) => a.home.localeCompare(b.home)).slice(0, 60)) {
   console.log(`  ${r.home}  ::  ${r.ident}`)
 }
+// `--all` lists every export dead outside its own file (the count the SCAN-502 probe caps at 150),
+// not only the declaration-only ones, so a sweep can see which modules carry them.
+if (process.argv.includes('--all')) {
+  console.log('\nDEAD OUTSIDE THEIR OWN FILE:')
+  for (const r of dead.sort((a, b) => a.home.localeCompare(b.home) || a.ident.localeCompare(b.ident))) {
+    console.log(`  ${r.home}  ::  ${r.ident}`)
+  }
+}

@@ -16,9 +16,11 @@ export function hidesFeedWhy(meta: Record<string, unknown> | null | undefined): 
 export const feedWhyShown = cache(async (profileId: string): Promise<boolean> => {
   try {
     const supabase = await createClient()
-    const { data } = await supabase.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+    const { data, error } = await supabase.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+    if (error) throw error
     return !hidesFeedWhy((data as { meta?: Record<string, unknown> | null } | null)?.meta)
-  } catch {
+  } catch (e) {
+    console.error('[feed-why] preference read failed; the Feed shows its reasons:', e instanceof Error ? e.message : e)
     return true
   }
 })

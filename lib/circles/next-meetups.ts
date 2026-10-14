@@ -36,7 +36,7 @@ export async function loadNextMeetups(circleIds: string[], now: Date = new Date(
       const filter = circleEventScopeFilter(id)
       if (!filter) return [id, null]
       try {
-        const { data } = await admin
+        const { data, error } = await admin
           .from('events')
           .select('id, title, slug, location, starts_at, scope_id, scope_type, scope_circle_id')
           .or(filter)
@@ -47,9 +47,12 @@ export async function loadNextMeetups(circleIds: string[], now: Date = new Date(
           .gte('starts_at', floor)
           .order('starts_at', { ascending: true })
           .limit(5)
+        if (error) throw error
         const rows = (data ?? []) as unknown as CircleEventRow[]
         return [id, selectUpcomingForCircle(rows, id, new Date(floor), 1).events[0] ?? null]
-      } catch {
+      } catch (e) {
+        // The signal that the fail-safe fired: a refused read is a missing Next line, never a silent one.
+        console.error('[next-meetups] read failed; that Circle card shows no Next line:', e instanceof Error ? e.message : e)
         return [id, null]
       }
     }),

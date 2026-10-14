@@ -7,12 +7,12 @@ import { palette } from '@/lib/theme/palette'
 // the receipt's data and nothing else, so lib/billing/__golden__ can pin what it renders. React
 // escapes every value, which is what the string template did by hand.
 
-export interface ReceiptEmailLine {
+interface ReceiptEmailLine {
   label: string
   value: string
 }
 
-export interface ReceiptEmailProps {
+interface ReceiptEmailProps {
   greeting: string
   lead: string
   lines: ReceiptEmailLine[]

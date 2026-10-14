@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getActivePersonas } from '@/lib/personas'
 
 /** `partners.status` for a listing taken down (the column's own vocabulary: pending | active | inactive). */
-export const HIDDEN_PARTNER_STATUS = 'inactive'
+const HIDDEN_PARTNER_STATUS = 'inactive'
 
 /** Hide every listing the profile owns and pause its offers. Returns the slugs it hid (none is
  *  fine: the member may never have published). Saving the listing again republishes it. */
