@@ -14,8 +14,8 @@
 //
 // STATIC ON PURPOSE: nothing here reads cookies, headers or searchParams, so the routes that call it
 // keep their ISR `revalidate` (docs/DEPLOY-SAFETY.md). Public events carry a CITY only, never a
-// coordinate (20240211000000_public_discover_reads.sql), which is why the bodies render the map's
-// LIST and not a pinned map: there is no honest point to pin.
+// coordinate (20240211000000_public_discover_reads.sql), so the map beside the list pins each CITY at
+// its centroid (lib/maps/city-centroids.ts, ./map-pins.ts), never a venue.
 
 import type { PublicEvent } from '@/lib/discover'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
@@ -32,6 +32,8 @@ export interface SiteEvent {
   when: string
   /** The Circle it belongs to, else the city, else nothing. */
   where: string | null
+  /** The event's city, the only place a public event may be pinned (at the city's centroid). */
+  city: string | null
   icon: FqIconName
   /** The pill on the right: the price posture, never an invented "4 spots left". */
   tag: string
@@ -43,6 +45,7 @@ export interface SiteSpace {
   name: string
   /** "Encinitas · Studio" */
   where: string
+  city: string | null
   /** The pill: upcoming gatherings when the read delivered a count, else the Space's kind. */
   tag: string
   rank: number
@@ -77,6 +80,7 @@ function toSiteEvent(e: PublicEvent): SiteEvent {
     title: e.title,
     when: eventWhen(e.starts_at),
     where: e.circle_name ?? e.city ?? null,
+    city: e.city ?? null,
     icon: e.circle_id ? 'circle' : 'event',
     tag: paid ? 'Tickets' : 'Free',
   }
@@ -168,6 +172,7 @@ export async function getRankedSpaces(limit = 6): Promise<RankedSpaces> {
         href: `/spaces/${s.slug}`,
         name: s.name,
         where: [s.city, s.kindLabel].filter(Boolean).join(' · '),
+        city: s.city ?? null,
         tag: s.upcomingEventCount && s.upcomingEventCount > 0 ? `${s.upcomingEventCount} upcoming` : s.kindLabel,
         rank: i + 1,
       }),

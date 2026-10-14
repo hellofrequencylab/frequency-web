@@ -298,7 +298,7 @@ function ResolvedList({ reports }: { reports: ResolvedReport[] }) {
     )
   }
   return (
-    <div className="panel tbl-wrap">
+    <div className="panel tbl-wrap" tabIndex={0} role="region" aria-label="Resolved reports">
       <table className="tbl">
         <thead>
           <tr>
@@ -343,7 +343,7 @@ function BlockedList({ members }: { members: BlockedMember[] }) {
     )
   }
   return (
-    <div className="panel tbl-wrap">
+    <div className="panel tbl-wrap" tabIndex={0} role="region" aria-label="Blocked members">
       <table className="tbl">
         <thead>
           <tr>

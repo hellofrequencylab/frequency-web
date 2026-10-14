@@ -37,6 +37,7 @@ function row(over: Partial<ThisWeekEventRow> & { id: string }): ThisWeekEventRow
     location: null,
     venue_name: null,
     city: null,
+    hide_address: false,
     scope_region_id: NORTH_COUNTY.id,
     ...over,
   }
@@ -144,6 +145,15 @@ describe('grouping by region', () => {
     ]
     const [bundle] = groupEventsByRegion(REGIONS, rows, { now: NOW, baseUrl: BASE })
     expect(bundle.events.map((e) => e.where)).toEqual(['Pine Hall', 'Moonlight Beach', 'Oceanside', null])
+  })
+
+  it('mails only the city when the host hid the address (SCAN-853)', () => {
+    const rows = [
+      row({ id: 'h', venue_name: 'Pine Hall', location: '12 Elm St', city: 'Oceanside', hide_address: true }),
+      row({ id: 'x', venue_name: 'Pine Hall', location: '12 Elm St', city: null, hide_address: true, starts_at: '2026-10-17T11:00:00' }),
+    ]
+    const [bundle] = groupEventsByRegion(REGIONS, rows, { now: NOW, baseUrl: BASE })
+    expect(bundle.events.map((e) => e.where)).toEqual(['Oceanside', null])
   })
 })
 

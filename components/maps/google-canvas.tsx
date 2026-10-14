@@ -9,6 +9,7 @@ import {
   shouldRecluster,
   zoomIntoCluster,
 } from '@/lib/maps/cluster'
+import { googleMapStyles, readBasemapPalette } from '@/lib/maps/basemap-look'
 import { loadGoogleMaps, onGoogleMapsAuthFailure } from '@/lib/maps/google-loader'
 import { MAP_CLUSTER_PAINT, MAP_PIN_KINDS, resolvePinPaint } from '@/lib/maps/pin-kinds'
 import { googleMapsMapId } from '@/lib/maps/provider'
@@ -141,10 +142,14 @@ export default function GoogleCanvas({
         if (cancelled) return
 
         const mapId = googleMapsMapId()
+        // The design's basemap (lib/maps/basemap-look.ts), read at this container so a dark band
+        // gets a dark map. A Cloud Map ID owns styling when set; null under DAWN.
+        const palette = mapId ? null : readBasemapPalette(container)
         map = new maps.Map(container, {
           center: { lat: center[1], lng: center[0] },
           zoom,
           ...(mapId ? { mapId } : {}),
+          ...(palette ? { styles: googleMapStyles(palette), backgroundColor: palette.land } : {}),
           disableDefaultUI: true,
           zoomControl: interactive,
           clickableIcons: false,

@@ -131,6 +131,7 @@ function event(id: string, regionId: string, startsAt = '2026-10-17T10:00:00'): 
     location: null,
     venue_name: null,
     city: null,
+    hide_address: false,
     scope_region_id: regionId,
   }
 }

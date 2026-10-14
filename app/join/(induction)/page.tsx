@@ -106,18 +106,25 @@ export default async function FunnelInductionPage({
       }
     : undefined
 
-  // THE FREQUENCY FRONT (ADR-1737). Under the Frequency design a signed-out visitor on the bare /join,
-  // with nothing parked, sees the design's Get started screen first. Its two short forms run the
-  // induction's own actions (stash + lead capture) and come straight back here with a persona, which
-  // renders the induction below, resumed past its intro. Anything else (a funnel, a persona, a
-  // `next`, a parked run, a signed-in member) is the induction exactly as before, and DAWN never
-  // reaches this branch (SITE_DESIGN is build-time).
+  // THE FREQUENCY BETA ENTRY (ADR-1737, SCAN-879). Under the Frequency design a signed-out visitor on the
+  // bare /join gets the short Beta launch sequence: name and email (saved, and the sign-in link sent),
+  // then a photo and a town, then "check your email". It parks its answers through the induction's own
+  // stash, and the emailed link finishes at /join/complete exactly as the deferred induction does. A run
+  // this browser already parked from the entry (a name and a handle) reopens on its second step instead
+  // of restarting. Anything else (a funnel, a persona, a `next`, a signed-in member) is the induction
+  // exactly as before, and DAWN never reaches this branch (SITE_DESIGN is build-time).
   // It wears the public site's chrome (header, footer, FX) as Join.html does: /join sits outside the
   // (marketing) layout, so the shell is rendered here, around this one branch only.
-  if (SITE_DESIGN === 'frequency' && !user && !parked && !seqSlug && !personaSlug && !nextParam) {
+  if (SITE_DESIGN === 'frequency' && !user && !seqSlug && !personaSlug && !nextParam) {
+    const resumed = !!parked?.displayName && !!parked.handle
     return (
       <SiteShell>
-        <FrequencyJoin />
+        <FrequencyJoin
+          initialStep={resumed ? 2 : 1}
+          initialName={parked?.displayName ?? ''}
+          initialHandle={resumed ? parked!.handle : ''}
+          initialPlace={parked?.location ?? ''}
+        />
       </SiteShell>
     )
   }

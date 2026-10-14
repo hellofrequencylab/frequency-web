@@ -108,7 +108,7 @@ export async function FqEconomyBody({
           <div className="sec-h sec adp-gap">
             <span className="h2">Money paths</span>
           </div>
-          <div className="panel tbl-wrap">
+          <div className="panel tbl-wrap" tabIndex={0} role="region" aria-label="Money paths">
             <table className="tbl">
               <thead>
                 <tr>

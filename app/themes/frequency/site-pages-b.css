@@ -183,6 +183,30 @@
 [data-design="frequency"] [data-kit="site"] .jx-err{margin:0;font-size:var(--fq-text-body-s);line-height:1.4;color:var(--fq-danger)}
 [data-design="frequency"] [data-kit="site"] .jx-alt{display:flex;justify-content:center;gap:6px;font-size:var(--fq-text-body-s);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .jx-alt a{color:var(--fq-text-strong);font:600 var(--fq-text-body-s) var(--fq-font-sans);text-decoration:underline;text-underline-offset:3px}
+/* The beta entry's three steps (SCAN-879, frequency-join.tsx): the step marks over the box, the photo
+   button, the location prompt, the town list and the quiet secondary action. */
+[data-design="frequency"] [data-kit="site"] .jb-box:focus{outline:0}
+[data-design="frequency"] [data-kit="site"] .jb-steps{list-style:none;margin:0;padding:0;display:flex;gap:6px}
+[data-design="frequency"] [data-kit="site"] .jb-steps li{flex:1;height:4px;border-radius:var(--fq-radius-orb);background:color-mix(in srgb,var(--fq-text-strong) 12%,transparent);transition:background var(--fq-dur-slow) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="site"] .jb-steps li[data-on="true"]{background:var(--fq-side);box-shadow:0 0 12px -2px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .jx-box .sub b{color:var(--fq-text-strong);font-weight:600}
+[data-design="frequency"] [data-kit="site"] .jb-photo button{display:flex;align-items:center;gap:16px;border:0;padding:0;background:transparent;cursor:pointer;font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .jb-photo button:hover span:last-child{text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .jb-av{width:72px;height:72px;flex:none;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:var(--fq-side-soft);color:var(--fq-text-strong);font:600 var(--fq-text-h4)/1 var(--fq-font-display);box-shadow:0 0 0 3px var(--fq-surface-card),0 0 0 4.5px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .jb-loc{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--fq-radius-l);background:color-mix(in srgb,var(--fq-text-strong) 4%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .jb-loc-k{font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .jb-loc .btn{width:100%;height:48px}
+[data-design="frequency"] [data-kit="site"] .jx-fine.jb-left{text-align:left}
+[data-design="frequency"] [data-kit="site"] .jb-city{position:relative;display:block}
+[data-design="frequency"] [data-kit="site"] .jb-city input{width:100%}
+[data-design="frequency"] [data-kit="site"] .jb-list{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px;list-style:none;max-height:224px;overflow:auto;border-radius:var(--fq-radius-m);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 18px 40px -18px color-mix(in srgb,var(--fq-text-strong) 40%,transparent)}
+[data-design="frequency"] [data-kit="site"] .jb-list button{display:block;width:100%;padding:10px 12px;border:0;border-radius:var(--fq-radius-s);background:transparent;cursor:pointer;text-align:left;font:500 var(--fq-text-body-s)/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .jb-list button:hover, [data-design="frequency"] [data-kit="site"] .jb-list [aria-selected="true"] button{background:var(--fq-side-soft)}
+[data-design="frequency"] [data-kit="site"] .jb-place{display:flex;align-items:center;gap:10px;margin:0;font:600 var(--fq-text-body-s)/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .jb-place i{width:8px;height:8px;flex:none;border-radius:50%;background:var(--fq-side);box-shadow:0 0 12px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .jb-skip{align-self:center;border:0;padding:6px 8px;background:transparent;cursor:pointer;font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted);text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .jb-skip:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .jb-skip:disabled{opacity:.5;cursor:default}
 @media (max-width:900px){
 [data-design="frequency"] [data-kit="site"] .jx{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="site"] .jx-art{min-height:46vh;padding-top:110px}
