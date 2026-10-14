@@ -39,6 +39,9 @@ import { sisterCircleOffer } from '@/lib/circles/sister'
 import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqCircleShell } from '@/components/frequency/members/circle/circle-shell'
+import { FqCircleSpaceHeader } from '@/components/frequency/members/space/circle-space-header'
+import { owningSpaceSlug } from '@/lib/circles/owning-space'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 // ── THE CIRCLE DETAIL SHELL (PAGE-FRAMEWORK §3, "How templates map to Next.js") ──────────────────
 //
@@ -307,18 +310,22 @@ export default async function CircleDetailLayout({
   // only the placement changes. Build-time constant, so the DAWN tree below is untouched.
   if (SITE_DESIGN === 'frequency') {
     // Memo hit: loadCircleContentFacts asked the same question with the same key above.
-    const upcoming = await loadCircleUpcomingEvents(
-      circle.id,
-      circleEventInsider({ isMember, isHost }),
-      spaceCircleEventScope(circle),
-    )
+    const [upcoming, rootSpaceId] = await Promise.all([
+      loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost }), spaceCircleEventScope(circle)),
+      loadRootSpaceId(),
+    ])
+    // SCAN-881: a Circle that belongs to a Space (its space_id, the root excluded) opens under that
+    // Space's own header, the one its Space pages wear; the Circle's cover, title, tabs and actions
+    // follow below it. A personal Circle renders exactly as before.
+    const owner = owningSpaceSlug(circle, rootSpaceId)
     const spaceName =
       circle.is_space_primary && circle.space && circle.space.type !== 'root'
         ? circle.space.brand_name || circle.space.name
         : null
     const place = circle.neighborhood ?? circle.city ?? null
-    return (
+    const shell = (
       <FqCircleShell
+        inSpace={!!owner}
         notices={
           <>
             {isDraft && (
@@ -423,6 +430,7 @@ export default async function CircleDetailLayout({
         )}
       </FqCircleShell>
     )
+    return owner ? <FqCircleSpaceHeader spaceSlug={owner}>{shell}</FqCircleSpaceHeader> : shell
   }
 
   return (
