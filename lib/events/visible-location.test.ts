@@ -69,6 +69,15 @@ describe('publicVisibleLocation', () => {
 })
 
 describe('every non-attending reader goes through the rule', () => {
+  it('the Frequency home Up next list redacts until the member is going (SCAN-859)', () => {
+    const src = code('lib/feed/frequency-home.ts')
+    expect(src).toContain('publicVisibleLocation(e)')
+    // The rule silently reads undefined if its inputs were never selected.
+    expect(src).toMatch(/EVENT_COLS = `[^`]*hide_address/)
+    // No distance from the exact point while the address is hidden.
+    expect(src).toMatch(/const pt = seesExact \? pointFromGeog\(e\.geog\) : null/)
+  })
+
   // Source-shape, and it is the assertion that matters: this class of bug is not a wrong value, it
   // is a caller that never asked. A route reading the row and publishing `ev.location` straight into
   // a VEVENT is invisible to any runtime test of this module.
