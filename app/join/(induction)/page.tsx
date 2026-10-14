@@ -2,6 +2,7 @@
 // /join. Formerly app/onboarding/beta/page.tsx ("beta induction"); old URLs 308
 // here. Mirrors the legacy onboarding page's auth + completed guards.
 
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveFunnel } from '@/lib/funnels/resolve'
@@ -16,6 +17,17 @@ import FeatureFunnel from './feature-funnel'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+
+// Under Frequency /join is the website's Get started page (Join.html's title and description), so it
+// names itself; DAWN's /join keeps the root defaults it always had. /join stays out of the index
+// (app/robots.ts), so no canonical is declared.
+export async function generateMetadata(): Promise<Metadata> {
+  if (SITE_DESIGN !== 'frequency') return {}
+  return {
+    title: 'Get started',
+    description: 'Free for people, free to host. Tell us where you are and we’ll show you what’s happening.',
+  }
+}
 
 export default async function FunnelInductionPage({
   searchParams,

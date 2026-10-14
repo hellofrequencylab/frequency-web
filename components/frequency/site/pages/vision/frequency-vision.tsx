@@ -53,11 +53,11 @@ export function FrequencyVision() {
         <div className="shade" />
         <div className="fq-grain" />
         <div className="wrap">
-          <div className="crumbs">
+          <nav className="crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <span>/</span>
-            <span>Frequency</span>
-          </div>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Frequency</span>
+          </nav>
           <span className="wingtag">Frequency</span>
           <h1 className="h-xl" style={{ marginTop: 18 }}>
             When a community is ready, <em className="fq-iri-text">it earns a home.</em>

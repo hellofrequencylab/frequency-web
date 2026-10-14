@@ -6,9 +6,9 @@
 // are ported here line for line, with every design-file link (People.html, Features.html#f-zaps, …)
 // mapped to a route that exists in app/. site-nav.test.ts walks app/ and fails if one does not.
 //
-// ONE DESIGN PAGE HAS NO ROUTE YET: the Help accessibility statement. Features (/features) and Stories
-// (/stories) shipped with the Frequency rebuild and are set in ROUTES below, so every menu, the search,
-// the sheet and the footer link to them. A route set to null falls back (FEATURE_FALLBACK, for a build
+// EVERY DESIGN PAGE HAS A ROUTE. Features (/features) and Stories (/stories) shipped with the Frequency
+// rebuild, and the Help accessibility statement is the Help front page's `#accessibility` card, as in
+// Help.html; all are set in ROUTES below, so every menu, the search, the sheet and the footer link to them. A route set to null falls back (FEATURE_FALLBACK, for a build
 // where /features is not served) or is left out, so the header never links to a 404.
 //
 // COPY. Follows guidelines/messaging.md, which wins over the prototype where they differ: the calendar
@@ -34,8 +34,8 @@ export const ROUTES = {
   help: '/help',
   privacy: '/privacy',
   terms: '/terms',
-  /** Help.html#accessibility. No accessibility statement exists yet: falls back to Help. */
-  accessibility: null as string | null,
+  /** Help.html#accessibility: the plain-language statement on the Help front page (frequency-help.tsx). */
+  accessibility: '/help#accessibility' as string | null,
   /** "What we believe" in the footer. */
   about: '/about',
   /** The town calendar, "What's happening". */
@@ -326,6 +326,5 @@ export const FOOTER_LEGAL: SiteLink[] = [
 
 /** Design links with no route of their own, and what each does meanwhile. Read by the test and the report. */
 export const UNROUTED: { design: string; meanwhile: string }[] = [
-  { design: 'Help.html#accessibility', meanwhile: ROUTES.help },
   { design: 'People.html#near', meanwhile: `${ROUTES.happening} (What's happening)` },
 ]
