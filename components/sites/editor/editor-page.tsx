@@ -16,6 +16,7 @@ import type { Space } from '@/lib/spaces/types'
 import { siteAdminLinks, siteChromeBasics } from '../site-page'
 import { mensworkNowLine } from '../menswork-page'
 import { readSiteStyle } from '@/lib/theme/site-style'
+import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { ConnectedWebsiteEditor } from './website-editor'
 import { NETWORK_FONT_CLASS } from '../network-fonts'
 import { WILDHEART_FONT_CLASS } from '../wildheart-fonts'
@@ -49,5 +50,5 @@ export async function WebsiteEditorPage({ host, space: cached, token }: { host: 
     seasonNow: { ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()), next: live.events.find((event) => /circle night/i.test(event.title))?.startsAt ?? null },
     admin: siteAdminLinks(chrome.origin, space.slug, '', 'editor', readSiteStyle(space.preferences).theme === 'network' ? 'network' : readSiteStyle(space.preferences).theme === 'wildheart' ? 'wildheart' : undefined),
   }
-  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures, websiteChrome }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} fontClass={`${NETWORK_FONT_CLASS} ${WILDHEART_FONT_CLASS}`} />
+  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures, websiteChrome }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} defaultAccent={defaultAccentForType(space.type)} fontClass={`${NETWORK_FONT_CLASS} ${WILDHEART_FONT_CLASS}`} />
 }
