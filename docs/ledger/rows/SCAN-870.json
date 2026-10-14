@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-870",
+  "title": "Each occurrence of a repeating event carries its date in the page title, and event meta descriptions read as one line",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(public)/events/[slug]/page.tsx",
+    "ref": "Live scan of frequencylocal.com 2026-10-14: 24 sitemap pages titled \"Circle Night · Frequency\", 14 \"New moon\", 11 \"The Coaches Club\" and more, and descriptions carrying the host's raw line breaks."
+  },
+  "detail": "generateMetadata titled every occurrence with the bare event name, so a series' indexed occurrences competed as duplicate titles, and passed the host's description through with its newlines. A non-anchor occurrence now reads \"<name> · <short date>\" (formatEventDate, UTC like every event date); the series anchor keeps the bare name because its stored start is the first meeting. The description collapses whitespace before the 155-character snippet cut.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(public)/events/[slug]/page.tsx','utf8');const bad=[];if(!s.includes('facts.isAnchor ? event.title :')||!s.includes('formatEventDate(event.starts_at)'))bad.push('occurrences of a repeating event still share one title');if(!/replace\\(\\/\\\\\\\\s\\+\\/g, ' '\\)/.test(s))bad.push('event descriptions keep raw line breaks');if(bad.length){console.error('SCAN-870: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
