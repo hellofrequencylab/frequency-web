@@ -21,6 +21,9 @@ export interface DensityCityRow {
   residents: number
   new_residents_30d: number
   listings: number
+  /** Upcoming public events in the city, counted with public_events' city + gates
+   *  (20270346008800). Optional: a row from the RPC before that migration has none, read as 0. */
+  upcoming_events?: number
 }
 
 /** The Lab-readiness ladder. A city climbs it as supply fills and demand grows. */
@@ -70,6 +73,14 @@ const MOMENTUM_FULL = 0.25 // 25% monthly resident growth maxes the momentum ter
 const W_SATURATION = 0.45
 const W_DEMAND = 0.35
 const W_MOMENTUM = 0.2
+// Upcoming public events (owner ruling 2026-10-14). An ADDITIVE term on top of the three above,
+// weighted at GROWING_SCORE / 100 so a city whose activity is events alone reaches exactly the
+// 'growing' stage (and so a /discover/cities page) at EVENTS_FULL upcoming events. That prices
+// one event at 5 points, about six residents on the demand term (35 points for READY_MEMBERS).
+// The existing rule holds: with no circle members the score caps below READY_SCORE, so events
+// can earn a city page but never a Lab call on their own.
+export const EVENTS_FULL = 8 // upcoming public events at which the events term maxes out
+const W_EVENTS = GROWING_SCORE / 100
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 
@@ -79,12 +90,17 @@ export function scorePlace(row: DensityCityRow): DensityPlace {
   const unmet = Math.max(0, row.residents - row.circle_members)
   const momentum = row.residents > 0 ? row.new_residents_30d / row.residents : 0
 
-  const score = Math.round(
+  const events = row.upcoming_events ?? 0
+
+  const raw = Math.round(
     100 *
       (W_SATURATION * clamp01(saturation) +
         W_DEMAND * clamp01(row.residents / READY_MEMBERS) +
-        W_MOMENTUM * clamp01(momentum / MOMENTUM_FULL)),
+        W_MOMENTUM * clamp01(momentum / MOMENTUM_FULL) +
+        W_EVENTS * clamp01(events / EVENTS_FULL)),
   )
+  // Clamp to 0-100, and keep "no circles caps at growing" now that events can lift a city.
+  const score = Math.min(row.circle_members > 0 ? 100 : READY_SCORE - 1, raw)
   const stage: ExpansionStage =
     score >= READY_SCORE ? 'ready' : score >= GROWING_SCORE ? 'growing' : 'seed'
 
