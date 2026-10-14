@@ -80,6 +80,23 @@ const clock = await import('../../lib/time/wall-clock.ts')
 assert.equal(clock.countdownParts(Date.UTC(2026, 9, 16, 16) + 3_723_000, Date.UTC(2026, 9, 16, 16)).join(':'), '0:1:2:3')
 assert.equal(new Date(clock.wallClockInstant('2026-10-16T09:00', 'America/Los_Angeles')).toISOString(), '2026-10-16T16:00:00.000Z', '9 AM Pacific is 16:00 UTC in October')
 
+// 4c. A Network site's admin is the Website builder alone (no Executive Overview or Yearly Calendar), drawn as
+// its own chip apart from the menu (owner ask 2026-10-14).
+const adminBar = readFileSync('components/sites/site-admin-bar.tsx', 'utf8')
+assert.match(adminBar, /if \(theme === 'network'\) return \{ menu: hrefs\.editor \? \[\{ href: hrefs\.editor, label: 'Website builder'[^\]]*\] : \[\]/, 'Network admin lists only the Website builder')
+assert.ok(readFileSync('components/sites/site-page.tsx', 'utf8').includes("netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network')"), 'the site page asks for the Network admin')
+assert.ok(readFileSync('components/sites/network-css.ts', 'utf8').includes('.hs-nav .hs-nav-admin{display:flex'), 'the admin link is its own chip')
+
+// 4d. The Frequency Space page keeps its own block set (owner ask 2026-10-14): its Home is the module grid, never
+// the website's Network Home, and any Network section on a custom tab is dressed rather than bare markup.
+const landing = readFileSync('components/spaces/space-landing.tsx', 'utf8')
+assert.ok(landing.includes('<NetworkPageScope') && landing.includes('docHasNetworkBlocks(data)'), 'the Space page dresses its Network sections')
+for (const route of ['app/(main)/spaces/[slug]/(profile)/full/page.tsx', 'app/(public)/spaces/[slug]/page.tsx']) assert.ok(!/import \{ SpaceLanding \}/.test(readFileSync(route, 'utf8')), `${route} renders the Space's own blocks`)
+const layout0 = seed.buildProfileLayout()
+assert.ok(layout0.rows.flatMap((r) => r.cells.flat()).every((id) => !/^Network/.test(id)), 'the Space Home is built from Space blocks')
+assert.ok(!JSON.stringify(layout0).includes('*'), 'no voice marks reach the Space blocks')
+assert.ok(!readFileSync('components/spaces/network-page-scope.tsx', 'utf8').includes("from '@/components/sites/network-fonts'"), 'the Space page never registers the Network faces through next/font')
+
 // 5. The seed.
 const prefs = seed.buildPreferences()
 assert.equal(prefs.siteStyle.theme, 'network')

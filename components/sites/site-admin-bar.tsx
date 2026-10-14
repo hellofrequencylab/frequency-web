@@ -16,12 +16,16 @@ export interface SiteAdminNavLink {
 /** The admin links: the two admin pages, on the site's own host or through the console's handoff, then
  *  the console's Leadership page (footer only). The Wildheart theme names the same two pages the way its
  *  handoff does (Vision, Calendar) in its admin chip; the Website builder rides the footer section only. */
+/** The Network theme lists the Website builder alone: Executive Overview and the Yearly Calendar are the Bold
+ *  sites' operating pages, not a Network site's (owner ruling 2026-10-14). Its header draws the link as its
+ *  own admin chip, apart from the site's menu (components/sites/network-css.ts). */
 export function siteAdminNavLinks(
   hrefs: { overview: string; calendar: string; editor?: string; console: string },
   current: 'overview' | 'calendar' | 'editor' | null = null,
-  theme?: 'wildheart',
+  theme?: 'wildheart' | 'network',
 ): { menu: SiteAdminNavLink[]; console: string } {
   const wild = theme === 'wildheart'
+  if (theme === 'network') return { menu: hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor' }] : [], console: hrefs.console }
   return {
     menu: [
       ...(hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor', footerOnly: wild }] : []),

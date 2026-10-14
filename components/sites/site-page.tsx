@@ -342,7 +342,7 @@ export async function SitePage({
         member={memberBadge}
         footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
-        admin={siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
+        admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >
         {website && websitePage && mwLive ? (
           <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
@@ -396,7 +396,7 @@ export async function SitePage({
             pageTitle={pages.find((p) => p.slug === pageSlug)?.label ?? brandName}
             renderOther={(b) => (
               <Suspense fallback={<ProfileBodySkeleton />}>
-                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous onlyIndexes={[mwBlocks.indexOf(b)]} />
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site onlyIndexes={[mwBlocks.indexOf(b)]} />
               </Suspense>
             )}
           />
@@ -406,7 +406,7 @@ export async function SitePage({
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
             <div className="mt-10">
               <Suspense fallback={<ProfileBodySkeleton />}>
-                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site />
               </Suspense>
             </div>
           </div>
@@ -531,7 +531,7 @@ export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], p
 
 /** A Menswork website's blue admin links: the admin pages on the site's own host (base ``), else through
  *  the console's handoff, and the console's Leadership page as the labelled Frequency link. */
-export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null, theme?: 'wildheart') {
+export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null, theme?: 'wildheart' | 'network') {
   const page = (view: 'overview' | 'calendar' | 'editor') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
   return siteAdminNavLinks(
     { overview: page('overview'), calendar: page('calendar'), editor: page('editor'), console: `${origin}/spaces/${slug}/manage/leadership` },
