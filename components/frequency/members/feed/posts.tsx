@@ -111,6 +111,13 @@ export async function FeedStream({
       if (last && last.label === label) last.items.push(p)
       else days.push({ label, items: [p] })
     }
+    if (days.length === 0) {
+      return (
+        <div className="fa-empty">
+          <span className="fa-serif18">The story starts with the first post. Share a moment to begin it.</span>
+        </div>
+      )
+    }
     return (
       <div data-visual-mask="feed-stream">
         {days.map((d) => (
@@ -119,6 +126,18 @@ export async function FeedStream({
             {d.items.map(render)}
           </section>
         ))}
+      </div>
+    )
+  }
+
+  // A first-run member: nothing from anyone yet. Say so plainly and point at the two ways in.
+  if (posts.length === 0 && !milestone && !journey && classifieds.length < 2 && !dispatch) {
+    return (
+      <div className="fa-empty">
+        <span className="fa-serif18">Nothing from your people yet. Join a Circle, or share a moment of your own.</span>
+        <Link href="/circles" className="btn sm">
+          Find a Circle
+        </Link>
       </div>
     )
   }

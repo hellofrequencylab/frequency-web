@@ -20,7 +20,7 @@ import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { track } from '@/lib/analytics/track'
-import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
+import { getPracticesToLogToday, getPartialPracticesToday, getMemberPractices } from '@/lib/practices'
 import { getCachedMemberProgress } from '@/lib/member-progress'
 import { stageUnlocked } from '@/lib/unlocks'
 import { getMemberPillarBalance } from '@/lib/pillars'
@@ -158,12 +158,15 @@ export default async function FeedPage({
   // feed is back at the top of it. LIVE-248 moved them behind the rail's <Suspense>, which did
   // buy the page a little latency — and cost every phone the board entirely, since the rail is
   // `hidden lg:flex`. The board is what the member opens the app for; the two reads are the price.
-  const [practicesToLog, partialPractices, progress, amplitudeMoment, localActivity] = await Promise.all([
+  // Under Frequency the standing panel lists every adopted practice (logged or not), so the adoptions
+  // ride in the same batch; DAWN never makes the read.
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, localActivity, adoptedPractices] = await Promise.all([
     myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getCachedMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
+    myProfileId && SITE_DESIGN === 'frequency' ? getMemberPractices(myProfileId) : Promise.resolve([]),
   ])
   const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
 
@@ -198,6 +201,14 @@ export default async function FeedPage({
     const metaRec = (profile.meta as Record<string, unknown> | null) ?? {}
     const beta = (metaRec.beta ?? {}) as { location?: { label?: string | null } | null }
     const firstPractice = practicesToLog[0] as { id: string; slug?: string | null } | undefined
+    const unlogged = new Set(practicesToLog.map((pr) => pr.id))
+    const practices = adoptedPractices.map((pr) => ({
+      id: pr.id,
+      title: pr.title,
+      href: `/practices/${pr.slug ?? pr.id}`,
+      meta: [pr.duration_min ? `${pr.duration_min} min` : null, pr.cadence ? pr.cadence.toLowerCase() : null].filter(Boolean).join(' · '),
+      done: !unlogged.has(pr.id),
+    }))
     return (
       <>
         {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
@@ -259,6 +270,7 @@ export default async function FeedPage({
               : null
           }
           tuneOutHref={firstPractice ? `/practices/${firstPractice.slug ?? firstPractice.id}` : '/practices'}
+          practices={practices}
         />
       </>
     )

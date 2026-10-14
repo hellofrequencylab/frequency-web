@@ -5,7 +5,10 @@
 //   right — split: the Vera orb (opens the real Vera assistant) and the Vault segment (opens the
 //           Vault panel). Micro rails show the compact face of each.
 // The panel bodies and the tab faces are server-rendered and passed in; this island only owns which
-// panel is open. One open at a time; Escape or an outside click closes it.
+// panel is open. One open at a time. The close rules are shell.js's (2026-10-14): Escape, an outside
+// click, or the page scrolling more than 120px past where the panel opened; and reaching the end of
+// the right rail's own scroll opens the Vault, the way the prototype's dock rises when you run out of
+// rail.
 
 import { useEffect, useRef, useState } from 'react'
 
@@ -14,17 +17,23 @@ function useDock() {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
+    const y0 = window.scrollY
     const onDoc = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false)
     }
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - y0) > 120) setOpen(false)
+    }
     document.addEventListener('click', onDoc)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       document.removeEventListener('click', onDoc)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll)
     }
   }, [open])
   return { open, setOpen, ref }
@@ -81,6 +90,20 @@ export function RailVaultTab({
   panel: React.ReactNode
 }) {
   const { open, setOpen, ref } = useDock()
+  // Reaching the end of the right rail's scroll opens the Vault (only on the crossing, and only when
+  // the rail actually scrolls), as shell.js does.
+  useEffect(() => {
+    const rail = ref.current?.closest('.fqm-rail')?.querySelector<HTMLElement>('.fqm-rail-scroll')
+    if (!rail) return
+    let wasEnd = false
+    const onScroll = () => {
+      const end = rail.scrollTop + rail.clientHeight >= rail.scrollHeight - 4
+      if (end && !wasEnd && rail.scrollHeight > rail.clientHeight + 8) setOpen(true)
+      wasEnd = end
+    }
+    rail.addEventListener('scroll', onScroll, { passive: true })
+    return () => rail.removeEventListener('scroll', onScroll)
+  }, [ref, setOpen])
   const vera = () => {
     setOpen(false)
     window.dispatchEvent(new Event('open-vera'))

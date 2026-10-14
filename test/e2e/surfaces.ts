@@ -1250,6 +1250,12 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'The Frequency Feed post stream (ADR-1740): the same live posts, authors, avatars, counts and relative times as the DAWN stream. The empty pane is not masked.',
   },
   {
+    value: 'feed-practices',
+    file: 'components/frequency/members/feed/standing.tsx',
+    kind: 'live',
+    why: 'The Frequency Feed standing panel’s Your practices block (2026-10-14 export): the member’s adopted practices, each marked done or not on their own today, so it turns over at their midnight.',
+  },
+  {
     value: 'feed-stream',
     file: 'components/feed/feed-list.tsx',
     kind: 'live',

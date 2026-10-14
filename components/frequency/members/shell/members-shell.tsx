@@ -87,6 +87,82 @@ function rankOf(d: DockData): string | null {
 
 const n = (v: number) => v.toLocaleString('en-US')
 
+const DOW_LETTER = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+/** The Vault panel's body (Members.dc.html, 2026-10-14 export): Season standing with the rank chip,
+ *  Your practices (adopted vs logged on the member's today), the seven-day streak and the rank bar.
+ *  The 3-number grid it replaced rides on the tab face. Every reading is the member's own (DockData); the prototype's per-practice timer list needs a read
+ *  the shell does not make on every page, so the practices row is the count and the door to them. */
+function VaultStanding({ d }: { d: DockData }) {
+  const rank = rankOf(d)
+  const adopted = d.practices?.adopted ?? 0
+  const logged = adopted - (d.practices?.toLog ?? 0)
+  const loggedToday = d.todaysMove.kind === 'done'
+  const todayDow = d.today ? new Date(`${d.today}T12:00:00Z`).getUTCDay() : null
+  return (
+    <>
+      <div className="fqm-vault-sec">
+        <span className="k">Season standing</span>
+        {rank && (
+          <span className="fqm-vault-chip">
+            <FqIcon name="standing" />
+            {rank}
+          </span>
+        )}
+      </div>
+      <div className="fqm-vault-block">
+        <div className="fqm-vault-kh">
+          <span className="k">Your practices</span>
+          <small>{adopted > 0 ? `${logged} of ${adopted} today` : 'None adopted yet'}</small>
+        </div>
+        <Link href="/practices" className="fqm-vault-link">
+          {adopted > 0 ? (logged >= adopted ? 'Adopt another practice' : 'Log today’s practice') : 'Adopt a practice'}
+        </Link>
+      </div>
+      {d.last7.length > 0 && (
+        <div className="fqm-vault-block">
+          <div className="fqm-vault-kh">
+            <span className="k">Streak</span>
+            <small>
+              {loggedToday
+                ? `Safe today · ${d.streak} ${d.streak === 1 ? 'day' : 'days'}`
+                : d.streak > 0
+                  ? `Log one to make it ${d.streak + 1}`
+                  : 'Log one to start'}
+            </small>
+          </div>
+          <div className="fqm-vault-week">
+            {d.last7.map((s, i) => {
+              const today = i === d.last7.length - 1
+              const state = s === 'done' ? 'on' : s === 'frozen' ? 'frozen' : today ? 'today' : 'off'
+              const dow = todayDow == null ? null : (todayDow - (d.last7.length - 1 - i) + 7) % 7
+              return (
+                <span key={i} data-s={state}>
+                  <i aria-hidden />
+                  {dow == null ? null : DOW_LETTER[dow]}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      {d.rankProgress.nextLabel && (
+        <div className="fqm-vault-block">
+          <div className="fqm-vault-kh">
+            <span className="k">Rank</span>
+            <small>
+              {n(d.rankProgress.toGo)} Zaps to {d.rankProgress.nextLabel}
+            </small>
+          </div>
+          <span className="fqm-bar">
+            <i style={{ width: `${Math.max(0, Math.min(100, d.rankProgress.pct))}%` }} />
+          </span>
+        </div>
+      )}
+    </>
+  )
+}
+
 export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   const { profile, crew, stats, navAccess, myFrequency } = props
   const profileHref = `/people/${profile.handle}`
@@ -323,24 +399,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             </Suspense>
           </div>
           <Suspense fallback={null}>
-            <WithStats stats={stats}>
-              {(d) => (
-                <div className="fqm-vault-nums">
-                  <span>
-                    <b>{n(d.zaps)}</b>
-                    <small>⚡ Zaps</small>
-                  </span>
-                  <span>
-                    <b>{n(d.vaultGems)}</b>
-                    <small>💎 Gems</small>
-                  </span>
-                  <span>
-                    <b>{n(d.streak)}</b>
-                    <small>Day streak</small>
-                  </span>
-                </div>
-              )}
-            </WithStats>
+            <WithStats stats={stats}>{(d) => <VaultStanding d={d} />}</WithStats>
           </Suspense>
           <Suspense fallback={null}>
             <WithStats stats={stats}>
@@ -393,6 +452,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             messagesUnread={props.messagesUnread}
             streak={stats.then((d) => d?.streak ?? 0)}
             viewer={{ role: gateRole, staffRole: props.staffRole, operatesSpaces: props.operatesSpaces }}
+            circles={circles.slice(0, 5).map((c) => ({ key: c.key, label: c.label, href: c.href, notices: c.notices }))}
           />
           {props.banner}
           <FqRailLayout
