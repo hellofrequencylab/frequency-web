@@ -5,7 +5,7 @@
 // Every answer is built from the canon constants (lib/site.ts, PLAN_STORY, docs/NAMING.md) and the one
 // argument the caller prices from the live offerings. No figure, count, quote or person is typed here.
 // Names follow docs/NAMING.md: the calendar is "What's happening" (ADR-1738), a Space website theme is
-// Default or Bold (ADR-1726, ADR-1736), and tips carry no platform fee, plus card processing (LIVE-913).
+// Default or Bold (ADR-1726, ADR-1748), and tips carry no platform fee, plus card processing (LIVE-913).
 // No em dashes (CONTENT-VOICE). PURE: no Supabase, no React, no Next.
 
 import { CATEGORY_LINE, FOUNDING_PLACE, SITE_NAME, SITE_TAGLINE } from '@/lib/site'

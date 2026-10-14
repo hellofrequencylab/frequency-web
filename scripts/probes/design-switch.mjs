@@ -1,4 +1,4 @@
-// LIVE-908 (ADR-1737): the platform wears one design system, chosen by one setting, and every value a
+// LIVE-920 (ADR-1737): the platform wears one design system, chosen by one setting, and every value a
 // design owns can be replaced. The consequence is held at the four places it could quietly break.
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'

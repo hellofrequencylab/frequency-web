@@ -42,7 +42,7 @@ interface SiteThemeDef {
 
 export const SITE_THEMES: readonly SiteThemeDef[] = [
   {
-    // Labelled Default since ADR-1736 (2026-10-13): "Frequency" now names the platform's design system.
+    // Labelled Default since ADR-1748 (2026-10-13): "Frequency" now names the platform's design system.
     // The id stays `frequency`, because it is the value every saved site style holds.
     id: 'frequency',
     label: 'Default',

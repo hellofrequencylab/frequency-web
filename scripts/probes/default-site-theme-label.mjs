@@ -1,4 +1,4 @@
-// LIVE-907 (ADR-1736): the Space site theme and its font set read "Default", not "Frequency", wherever an
+// LIVE-919 (ADR-1748): the Space site theme and its font set read "Default", not "Frequency", wherever an
 // owner picks them, so "Frequency" is free to name the platform's design system. The stored id stays.
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'

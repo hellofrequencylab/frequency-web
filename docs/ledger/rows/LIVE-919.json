@@ -1,5 +1,5 @@
 {
-  "id": "LIVE-907",
+  "id": "LIVE-919",
   "title": "The default Space site theme and its font set read \"Default\", freeing \"Frequency\" for the platform design system",
   "status": "done",
   "priority": "P2",
@@ -7,7 +7,7 @@
   "size": "S",
   "source": {
     "file": "docs/DECISIONS.md",
-    "ref": "ADR-1736. Owner 2026-10-13: change the name of the default Frequency theme to Default; the new theme will be match the Frequency theme styles."
+    "ref": "ADR-1748. Owner 2026-10-13: change the name of the default Frequency theme to Default; the new theme will be match the Frequency theme styles."
   },
   "detail": "lib/theme/site-style.ts and lib/theme/space-themes.ts label the `frequency` id Default; the website editor's theme picker (components/sites/editor/shell.tsx) labels its DAWN snapshot Default; the help article and NAMING.md follow. Ids are unchanged, so every saved siteStyle.theme and preferences.theme keeps resolving.\n\nShipped 2026-10-13.",
   "verify": {

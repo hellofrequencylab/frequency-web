@@ -1,5 +1,5 @@
 {
-  "id": "LIVE-908",
+  "id": "LIVE-920",
   "title": "One setting picks the platform's design system (DAWN or Frequency), every design-owned value is replaceable, and Frequency switches the older theme layers off",
   "status": "done",
   "priority": "P1",

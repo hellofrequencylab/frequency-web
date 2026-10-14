@@ -586,7 +586,7 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
 - **Theme** (a Space's site theme) = the whole look a Space page and its website wear. Two exist:
   **Default** (the house look, danieltyack.com) and **Bold** (charcoal, a bright accent and angled cuts;
   Heart on Fire), plus the stock **Wildheart**. Member-facing copy: "Theme", "Default theme", "Bold theme".
-  **Renamed from "Frequency"** ([ADR-1736](DECISIONS.md), 2026-10-13): "Frequency" now names the platform's
+  **Renamed from "Frequency"** ([ADR-1748](DECISIONS.md), 2026-10-13): "Frequency" now names the platform's
   own design system, beside DAWN, so a Space theme no longer carries it. The stored id stays `frequency`.
   **Not "Menswork"** in copy (the old name; it survives only as the stored font-set id `menswork`, the
   Menswork skin's code names and the editor's stored `Menswork` snapshot value), **not "house theme"**
@@ -707,7 +707,7 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   themselves are still **People** and **Spaces** (the page names); only the toggle's words
   changed.
 - **Retired with this section:** "What's on" / "What's On" as a label · "Circles, not walls." as
-  the belief line · "Reading as:" and "Experiences" as toggle labels. `LIVE-906` holds the rename in
+  the belief line · "Reading as:" and "Experiences" as toggle labels. `LIVE-918` holds the rename in
   code and the probe that keeps the old label out.
 
 ## Marketplace & Commerce (ADR-596, July 2026; umbrella revived by ADR-868)

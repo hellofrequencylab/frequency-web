@@ -1,4 +1,4 @@
-// LIVE-906 (ADR-1738): no member-facing string still says "What's On". The consequence is the
+// LIVE-918 (ADR-1738): no member-facing string still says "What's On". The consequence is the
 // words a member reads, so this scans string literals and JSX text, never comments, and lets the
 // composer prompt "What's on your mind?" through (NAMING.md collision guard).
 import { readdirSync, readFileSync } from 'node:fs'

@@ -451,7 +451,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // ── FREQUENCY's Site and Theme tabs (Page Editor.html): the design's layout over the REAL settings. Site:
   // this page's search title and description with the design's counters, the website address, and the
   // custom domain the Space has (managed on the Space's website settings; there is no one-click switch for
-  // it, so it is a link, not a toggle). Theme: the site themes (Default / Bold / Wildheart, ADR-1736), the
+  // it, so it is a link, not a toggle). Theme: the site themes (Default / Bold / Wildheart, ADR-1748), the
   // brand accent, the font pairing that comes WITH the theme (ADR-1741: no separate font pick), the global
   // styles and the logo. Nothing here is invented: every control writes what DAWN's tabs write.
   const pageState = (slug: string): PageState => !persisted.published?.pages.some((b) => b.slug === slug) ? 'draft' : changedPages.some((p) => p.slug === slug) ? 'changed' : 'live'
