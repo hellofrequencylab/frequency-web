@@ -88,6 +88,7 @@ export function FqCircleShell({
   hostLine,
   memberCount,
   memberCap,
+  inSpace = false,
   children,
 }: {
   notices: ReactNode
@@ -113,6 +114,8 @@ export function FqCircleShell({
   hostLine: ReactNode
   memberCount: number
   memberCap: number
+  /** The Circle renders under its Space's header (SCAN-881), which owns the page's one h1. */
+  inSpace?: boolean
   children: ReactNode
 }) {
   const open = Math.max(0, memberCap - memberCount)
@@ -127,7 +130,7 @@ export function FqCircleShell({
         <div className="fqm-cl-in">
           <div className="stack">
             <span className={live ? 'tag glass live' : 'tag glass'}>{statusLabel}</span>
-            <h1 className="h1">{name}</h1>
+            {inSpace ? <h2 className="h1">{name}</h2> : <h1 className="h1">{name}</h1>}
             {subline && <span className="fqm-cl-sub">{subline}</span>}
           </div>
           <div className="row wrap">
