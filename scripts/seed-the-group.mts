@@ -91,6 +91,7 @@ export interface Chapter {
   when: string
   where: string
   icon: string
+  city: string
   tagline: string
   about: string
   image: string
@@ -98,33 +99,33 @@ export interface Chapter {
 
 export const CHAPTERS: Chapter[] = [
   {
-    key: 'la-jolla', code: 'lj', short: 'La Jolla', meeting: 'Motivation Mondays', when: 'Mondays, 9:00–10:10 AM', where: 'Parakeet Cafe, Nautilus, 3535 General Atomics Ct, San Diego, CA 92121', icon: 'waves',
+    key: 'la-jolla', code: 'lj', short: 'La Jolla', meeting: 'Motivation Mondays', when: 'Mondays, 9:00–10:10 AM', where: 'Parakeet Cafe, Nautilus, 3535 General Atomics Ct, San Diego, CA 92121', icon: 'waves', city: 'San Diego',
     tagline: 'The Group is Growing · Motivation Mondays in La Jolla',
     about: 'The Group is growing and we are excited to announce the launch of Motivation Monday at Parakeet Cafe at 9:00 am. This new chapter is more than just a gathering. It is a chance to expand our movement of empowerment, inspiration, and support into the heart of San Diego.',
     image: PHOTO('june-harvest'),
   },
   {
     // TODO [confirm]: North Park's day, time and place (the portal lists Team Up Tuesday at Maya Moon).
-    key: 'north-park', code: 'np', short: 'North Park', meeting: 'Team Up Tuesday', when: 'Tuesdays, 9:00–10:10 AM', where: 'Maya Moon, 3349 Adams Ave, San Diego, CA 92116', icon: 'building',
+    key: 'north-park', code: 'np', short: 'North Park', meeting: 'Team Up Tuesday', when: 'Tuesdays, 9:00–10:10 AM', where: 'Maya Moon, 3349 Adams Ave, San Diego, CA 92116', icon: 'building', city: 'San Diego',
     tagline: 'Team Up Tuesday at Maya Moon',
     about: 'Come join the Tuesday Normal Heights chapter at Maya Moon. A weekday morning with your people, close to home.',
     image: PHOTO('patio-coffee'),
   },
   {
     // TODO [confirm]: Oceanside's day, time and place (the portal lists Thrive on Thursday on S Coast Hwy).
-    key: 'oceanside', code: 'oc', short: 'Oceanside', meeting: 'Thrive on Thursday', when: 'Thursdays, 9:00–10:10 AM', where: '1722 S Coast Hwy Ste 2, Oceanside, CA 92054', icon: 'sun',
+    key: 'oceanside', code: 'oc', short: 'Oceanside', meeting: 'Thrive on Thursday', when: 'Thursdays, 9:00–10:10 AM', where: '1722 S Coast Hwy Ste 2, Oceanside, CA 92054', icon: 'sun', city: 'Oceanside',
     tagline: 'Thrive on Thursday in Oceanside',
     about: 'Thursday mornings by the coast in Oceanside: good energy, real conversation and the people who get it.',
     image: PHOTO('rooftop-gathering'),
   },
   {
-    key: 'north-county', code: 'nc', short: 'North County', meeting: 'Coaches Club · House Party', when: 'Monthly', where: 'North County San Diego', icon: 'mountain',
+    key: 'north-county', code: 'nc', short: 'North County', meeting: 'Coaches Club · House Party', when: 'Monthly', where: 'North County San Diego', icon: 'mountain', city: 'Escondido',
     tagline: 'The Coaches Club and The House Party',
     about: 'Monthly gatherings across North County: The Coaches Club for coaches and practitioners building their businesses, and The House Party for the people who build them.',
     image: PHOTO('hall-selfie'),
   },
   {
-    key: 'veterans', code: 'vet', short: 'Veterans', meeting: 'Veteran Community Conversation', when: 'Wednesdays, 11:30 AM–1:00 PM', where: 'Municipal, 1722 S Coast Hwy, Oceanside, CA 92054', icon: 'flag',
+    key: 'veterans', code: 'vet', short: 'Veterans', meeting: 'Veteran Community Conversation', when: 'Wednesdays, 11:30 AM–1:00 PM', where: 'Municipal, 1722 S Coast Hwy, Oceanside, CA 92054', icon: 'flag', city: 'Oceanside',
     tagline: 'Veteran Community Conversation',
     about: 'Veteran Community is a collaborative community within The Group SD where veterans and those who support them come together to listen, learn, and take action. Through honest conversations, shared experiences, resources, mentorship, and meaningful connections, we are creating opportunities that help veterans thrive in every area of life. Together, we’re building stronger individuals, stronger families, and stronger communities, one conversation at a time.',
     image: PHOTO('courtyard-group'),
@@ -456,7 +457,7 @@ export function buildPageDocs(): Record<string, unknown> {
  *  Calendar page lists them; the page blocks read tenancy only, so the Home links there instead of listing. */
 export function buildChapterDoc(c: Chapter): Record<string, unknown> {
   return doc([
-    { type: 'NetworkHero', props: { id: `tg-${c.key}-hero`, eyebrow: `${c.short} chapter · The Group`, title: `${c.meeting === 'Coaches Club · House Party' ? 'Monthly in' : c.meeting + ' in'} *${c.short}.*`, lead: c.about, primaryLabel: 'See the calendar', primaryHref: `/spaces/${chapterSlug(c)}/calendar`, secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: c.image, alt: `The Group ${c.short}`, focus: '50% 50%', crop: 'leaf', featureMatch: '', featureNote: '', featureCta: '', proof: 'Part of The Group', proofNote: '8,500+ members across San Diego', faces: FACES, layout: desktop } },
+    { type: 'NetworkHero', props: { id: `tg-${c.key}-hero`, eyebrow: `${c.short} chapter · The Group`, title: c.key === 'veterans' ? 'Veteran Community *Conversation.*' : `${c.meeting === 'Coaches Club · House Party' ? 'Monthly in' : c.meeting + ' in'} *${c.short}.*`, lead: c.about, primaryLabel: 'See the calendar', primaryHref: `/spaces/${chapterSlug(c)}/calendar`, secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: c.image, alt: `The Group ${c.short}`, focus: '50% 50%', crop: 'leaf', featureMatch: '', featureNote: '', featureCta: '', proof: 'Part of The Group', proofNote: '8,500+ members across San Diego', faces: FACES, layout: desktop } },
     { type: 'NetworkSplit', props: { id: `tg-${c.key}-meeting`, eyebrow: c.meeting, title: 'Come find *your people.*', body: 'No pressure. No pitch. Just good energy, meaningful conversations, and a community where you can show up as yourself.', image: '', alt: '', mediaSide: 'left', facts: [{ icon: 'pin', label: 'Where', value: c.where.split(',')[0], note: c.where.split(',').slice(1).join(',').trim() }, { icon: 'clock', label: 'When', value: c.when.split(',')[0], note: c.when.split(',').slice(1).join(',').trim() }], quote: '', quoteBy: '', primaryLabel: 'All chapters', primaryHref: PAGE('chapters'), secondaryLabel: 'Membership', secondaryHref: PAGE('membership'), layout: desktop } },
   ])
 }
@@ -537,10 +538,10 @@ const qj = (v: unknown): string => `${q(JSON.stringify(v))}::jsonb`
 const qarr = (v: string[]): string => `array[${v.map(q).join(', ')}]::text[]`
 const pt = (date: string, time: string) => `timestamptz '${date} ${time}+00'`
 
-function spaceUpsert(id: string, slug: string, name: string, brand: string, tagline: string, about: string, plan: string, parent: string | null, prefs: Record<string, unknown>, logo: string | null, cover: string | null): string {
+function spaceUpsert(id: string, slug: string, name: string, brand: string, tagline: string, about: string, plan: string, parent: string | null, prefs: Record<string, unknown>, logo: string | null, cover: string | null, city = 'Encinitas'): string {
   return `insert into spaces (id, slug, name, type, status, entity_id, skin, network_connected, visibility, plan, limits_waived, entitlements, owner_profile_id, brand_name, tagline, about, time_zone, brand_logo_url, cover_image_url, parent_id, city, region, country, preferences)
-values (${q(id)}, ${q(slug)}, ${q(name)}, 'business', 'active', (select entity_id from _tg), 'dawn', true, 'network', ${q(plan)}, ${plan === 'collective'}, '{}'::jsonb, ${q(OWNER_ID)}, ${q(brand)}, ${q(tagline)}, ${q(about)}, ${q(TZ)}, ${q(logo)}, ${q(cover)}, ${parent ? q(parent) : 'null'}, 'Encinitas', 'CA', 'US', ${qj(prefs)})
-on conflict (slug) do update set name = excluded.name, status = 'active', network_connected = true, visibility = 'network', plan = excluded.plan, limits_waived = excluded.limits_waived, brand_name = excluded.brand_name, tagline = excluded.tagline, about = excluded.about, time_zone = excluded.time_zone, brand_logo_url = excluded.brand_logo_url, cover_image_url = excluded.cover_image_url, parent_id = excluded.parent_id, preferences = coalesce(spaces.preferences, '{}'::jsonb) || excluded.preferences, updated_at = now()
+values (${q(id)}, ${q(slug)}, ${q(name)}, 'business', 'active', (select entity_id from _tg), 'dawn', true, 'network', ${q(plan)}, ${plan === 'collective'}, '{}'::jsonb, ${q(OWNER_ID)}, ${q(brand)}, ${q(tagline)}, ${q(about)}, ${q(TZ)}, ${q(logo)}, ${q(cover)}, ${parent ? q(parent) : 'null'}, ${q(city)}, 'CA', 'US', ${qj(prefs)})
+on conflict (slug) do update set name = excluded.name, status = 'active', network_connected = true, visibility = 'network', plan = excluded.plan, limits_waived = excluded.limits_waived, brand_name = excluded.brand_name, tagline = excluded.tagline, about = excluded.about, time_zone = excluded.time_zone, brand_logo_url = excluded.brand_logo_url, cover_image_url = excluded.cover_image_url, parent_id = excluded.parent_id, city = excluded.city, preferences = coalesce(spaces.preferences, '{}'::jsonb) || excluded.preferences, updated_at = now()
 where spaces.owner_profile_id = ${q(OWNER_ID)};`
 }
 
@@ -604,7 +605,7 @@ export function renderSql(): string {
     '',
     '-- 2. The five chapters, member Spaces of the Collective (set_collective_member_space\'s rules: same owner,',
     '--    active, network-visible, not a Collective themselves, no children; five is the plan\'s included count).',
-    ...CHAPTERS.map((c) => spaceUpsert(chapterId(c), chapterSlug(c), `The Group ${c.short}`, `The Group ${c.short}`, c.tagline, c.about, 'free', SPACE_ID, buildChapterPreferences(c), LOGO, c.image)),
+    ...CHAPTERS.map((c) => spaceUpsert(chapterId(c), chapterSlug(c), `The Group ${c.short}`, `The Group ${c.short}`, c.tagline, c.about, 'free', SPACE_ID, buildChapterPreferences(c), LOGO, c.image, c.city)),
     '',
     '-- 3. The owner is an admin of every Space (createSpace\'s addSpaceMember). June An, Carol Yeh-Garner, Dr. Lisel',
     '--    and Amie Barsky are not on Frequency yet: they appear by name on the website and are invited from the',
