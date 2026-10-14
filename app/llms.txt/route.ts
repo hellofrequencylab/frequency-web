@@ -82,8 +82,6 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
   { path: '/', label: 'Home', desc: `${SITE_NAME}. ${CATEGORY_LINE} The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then take your first move.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
-  { path: '/the-quest', label: 'The Quest', desc: 'The light game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys. Not a third of the offer.' },
-  { path: '/the-lab', label: 'The Lab', desc: 'The plan for a physical third space, opening in 2028, and why a community needs a room. Not open yet; nothing there is bookable.' },
   { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings, after card processing. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   // /features and /vision are Frequency-design routes (they 404 under DAWN, and app/sitemap.ts lists
   // them only under Frequency), so this list names them only when the deploy serves them.

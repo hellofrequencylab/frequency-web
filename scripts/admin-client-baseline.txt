@@ -596,8 +596,6 @@ app/(marketing)/rsvp/[token]/page.tsx
 app/(marketing)/spaces/page.tsx
 app/(marketing)/start/actions.ts
 app/(marketing)/the-community/page.tsx
-app/(marketing)/the-lab/page.tsx
-app/(marketing)/the-quest/page.tsx
 app/(public)/events/[slug]/opengraph-image.tsx
 app/api/cron/billing-renewals/route.ts
 app/api/cron/event-followups/route.ts

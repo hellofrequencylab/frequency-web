@@ -17,6 +17,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 // would break hydration site-wide. The full inline-script XSS mile is the tracked
 // follow-up; everything around it is enforced today.
 const isDev = process.env.NODE_ENV === 'development'
+// The deploy's design (ADR-1737), read the way lib/theme/design.ts reads it: only the exact id
+// 'frequency' is Frequency. Two merged pages land on Frequency-only routes (/features, /vision), so
+// their redirects split on it (lib/marketing/merged-routes.ts keeps the in-app links on the same split).
+const FREQUENCY_DESIGN = process.env.NEXT_PUBLIC_SITE_DESIGN === 'frequency'
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -581,7 +585,8 @@ const nextConfig: NextConfig = {
       { source: '/lead-funnel-kit', destination: '/tools-for-community-builders', permanent: true },
       { source: '/life-after-the-feed', destination: '/loneliness', permanent: true },
       { source: '/meet-people-new-city', destination: '/friendship-as-an-adult', permanent: true },
-      { source: '/practice', destination: '/the-quest', permanent: true },
+      // Re-pointed past /the-quest (merged 2026-10-14), so the old slug takes one hop, not two.
+      { source: '/practice', destination: FREQUENCY_DESIGN ? '/features#f-zaps' : '/help/the-quest', permanent: FREQUENCY_DESIGN },
       { source: '/social-life-without-drinking', destination: '/how-to-be-more-social', permanent: true },
       { source: '/spread', destination: '/the-community', permanent: true },
       { source: '/what-is-a-third-space', destination: '/loneliness', permanent: true },
@@ -648,6 +653,18 @@ const nextConfig: NextConfig = {
       // every cache, and the route file stays so it can come back by deleting this one rule.
       // lib/marketing/redirect-shadow.test.ts lists it as PARKED, the one shadow it allows.
       { source: '/stories', destination: '/the-community', statusCode: 302 },
+      // /the-quest MERGED into the Features page's Zaps card (owner ruling 2026-10-14). The route file
+      // is deleted; printed QR codes (lib/qr/destinations.ts) keep working through this rule. /features
+      // is Frequency-only, so a DAWN build sends it to the Quest help category with a temporary 307.
+      FREQUENCY_DESIGN
+        ? { source: '/the-quest', destination: '/features#f-zaps', permanent: true }
+        : { source: '/the-quest', destination: '/help/the-quest', permanent: false },
+      // /the-lab MERGED into /vision (owner ruling 2026-10-14): its dated plan and FAQ moved there first.
+      // The printed QR destination keeps working through this rule. /vision is Frequency-only, so a DAWN
+      // build sends it to /about with a temporary 307.
+      FREQUENCY_DESIGN
+        ? { source: '/the-lab', destination: '/vision', permanent: true }
+        : { source: '/the-lab', destination: '/about', permanent: false },
     ]
   },
   images: {

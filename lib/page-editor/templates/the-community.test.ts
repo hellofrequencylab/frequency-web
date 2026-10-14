@@ -8,6 +8,7 @@ import { isRenderable } from '@/lib/page-editor/templates'
 import { config } from '@/lib/page-editor/config'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import type { Data } from '@/lib/page-editor/types'
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 // /the-community renders this template (the coded body is the unreachable legacy rung), and until
 // LIVE-040 it emitted no FAQPage: COMMUNITY_FAQ and its faqSchema() call sat on the branch of
@@ -80,8 +81,11 @@ describe('PillarNav — Lab and Community are the pair, The Quest rides alongsid
 
   it('renders The Lab as a peer, The Quest as a side link, and does not link to itself', () => {
     const html = renderBlocks(pillarNavOf(data))
-    expect(html).toContain('href="/the-lab"')
-    expect(html).toContain('href="/the-quest"')
+    // /the-lab and /the-quest merged (2026-10-14): the links land on the survivors, never a redirect.
+    expect(html).toContain(`href="${LAB_HREF}"`)
+    expect(html).toContain(`href="${QUEST_HREF}"`)
+    expect(html).not.toContain('href="/the-lab"')
+    expect(html).not.toContain('href="/the-quest"')
     expect(html).not.toContain('href="/the-community"')
     expect(html).toContain('aria-current="page"')
     expect(html).not.toContain('The triptych')

@@ -6,6 +6,7 @@ import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { ADVERTISED_SPACE_PLANS, formatBps } from '@/lib/pricing/display'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WHAT IS FREQUENCY — the EIGHTH and LAST seeker article enrolled in the page
@@ -299,12 +300,12 @@ return {
         {
           title: 'The Lab',
           body: 'The plan for a physical third space, opening in 2028: movement studios, a thermal circuit, a cold pool.',
-          href: '/the-lab',
+          href: LAB_HREF,
         },
         {
           title: 'The Quest',
           body: 'The light game everyone plays alongside their Circle: Zaps, Gems, and Journeys.',
-          href: '/the-quest',
+          href: QUEST_HREF,
         },
       ],
       beat: {

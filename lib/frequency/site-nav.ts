@@ -30,7 +30,8 @@ export const ROUTES = {
    *  temporary 302 meanwhile. Set this back to '/stories' and drop that rule to bring it back. */
   stories: null as string | null,
   /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
-   *  Frequency-only route, app/(marketing)/vision, which points on to /the-lab, the full plan. */
+   *  Frequency-only route, app/(marketing)/vision, which also carries the Lab's plan and FAQ since
+   *  /the-lab merged into it (2026-10-14). */
   vision: '/vision',
   join: '/join',
   help: '/help',
@@ -89,7 +90,7 @@ export const FEATURE_FALLBACK: Record<string, string> = {
   reminders: '/help/getting-started/notifications',
   zaps: '/help/the-quest/zaps-and-gems',
   seasons: '/help/the-quest/season-ranks',
-  meter: '/the-quest',
+  meter: '/help/the-quest',
   'membership-p': '/help/membership/your-space-memberships',
   invites: '/help/connecting/find-people',
   host: '/how-to-start-a-circle',

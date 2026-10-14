@@ -306,11 +306,12 @@ describe('app/sitemap emitted URL set', () => {
     )
   })
 
-  it('advertises The Quest below The Community and The Lab (LIVE-254)', async () => {
+  it('advertises no merged or hidden page: each one redirects (owner rulings 2026-10-14)', async () => {
     const byUrl = new Map((await sitemap()).map((e) => [e.url, e]))
     expect(byUrl.get(`${SITE}/the-community`)?.priority).toBe(0.8)
-    expect(byUrl.get(`${SITE}/the-lab`)?.priority).toBe(0.8)
-    expect(byUrl.get(`${SITE}/the-quest`)?.priority).toBe(0.6)
+    for (const gone of ['/the-lab', '/the-quest', '/stories', '/start', '/discover/partners', '/discover/places', '/vs/linktree', '/vs/calendly']) {
+      expect([...byUrl.keys()].filter((u) => u === `${SITE}${gone}` || u.startsWith(`${SITE}${gone}/`)), gone).toEqual([])
+    }
   })
 
   it('never advertises a /discover/places city whose canonical is its density page (SCAN-656)', async () => {

@@ -38,9 +38,7 @@ export const EDITABLE_PAGES = [
   { slug: 'home', title: 'Home', path: '/' },
   { slug: 'about', title: 'About', path: '/about' },
   { slug: 'spaces', title: 'Spaces', path: '/spaces' },
-  { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
   { slug: 'the-community', title: 'The Community', path: '/the-community' },
-  { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
   { slug: 'pricing', title: 'Pricing', path: '/pricing' },
   { slug: 'circles', title: 'Circles', path: '/circles' },
   // The SEEKER ARTICLES (UX-MATURITY-PLAN Lift 5d, ADR-1068). Informational routes, not

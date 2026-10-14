@@ -12,6 +12,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { User, Wrench, Store, Handshake, Lightbulb } from 'lucide-react'
 import { REEL, type ReelSlide } from '@/lib/onboarding/funnel-script'
+import { LAB_HREF } from '@/lib/marketing/merged-routes'
 
 export type PersonaId = 'visitor' | 'practitioner' | 'partner' | 'builder' | 'investor'
 
@@ -130,8 +131,10 @@ const PARTNER: Persona = {
       'A free Space for your place',
       'Discovery by everyone gathering nearby',
     ],
-    learnMoreHref: '/the-lab',
-    learnMoreLabel: 'See the Lab',
+    // Was /the-lab (merged into /vision, 2026-10-14). A local spot learns how a Space works; the Lab
+    // stays out of the wings (messaging.md: Labs are for the Vision page only).
+    learnMoreHref: '/spaces',
+    learnMoreLabel: 'See how a Space works',
   },
 }
 
@@ -174,7 +177,7 @@ const INVESTOR: Persona = {
   reel: [
     { kind: 'render', render: 'events', title: 'A Lab in your town', line: 'Bring Frequency’s home base, The Lab, to your city, and anchor a real community around it.' },
     { kind: 'render', render: 'circles', title: 'Ground-floor partner', line: 'Shape where this goes with a real voice, early access, and your name on the foundation.' },
-    { kind: 'render', render: 'feed', title: 'Build the movement', line: 'Back the places and gatherings that make local community real again.' },
+    { kind: 'render', render: 'feed', title: 'Build it with us', line: 'Back the places and gatherings that make local community real again.' },
   ],
   track: {
     headline: 'Bring Frequency to your town.',
@@ -183,8 +186,8 @@ const INVESTOR: Persona = {
       'A real voice in where this goes',
       'Ground-floor partner, your name on the foundation',
     ],
-    learnMoreHref: '/the-lab',
-    learnMoreLabel: 'See the Lab',
+    learnMoreHref: LAB_HREF,
+    learnMoreLabel: 'See the vision',
   },
 }
 

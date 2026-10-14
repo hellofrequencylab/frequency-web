@@ -232,7 +232,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // into The Community + The Quest (their routes 308-redirect), so a redirected URL
     // is no longer advertised here as canonical.
     { url: `${SITE_URL}/start`, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${SITE_URL}/the-lab`, changeFrequency: "monthly", priority: 0.8 },
+    // /the-lab MERGED into /vision (owner ruling 2026-10-14): it 301s, so it is not listed.
     // Frequency-only pages (ADR-1737): /vision exists in the Frequency design's site map and answers
     // 404 under DAWN, so it is advertised only when the build wears Frequency. /stories is HIDDEN until
     // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
@@ -242,11 +242,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
-    // The Quest is a side thing we all do together, not the centre of the offer (LIVE-254).
-    // It read 0.8 here, level with The Community and The Lab, which told a crawler the game
-    // ranks with the two pillars people actually come for. It keeps a real page and a real
-    // entry; it stops being advertised as a peer.
-    { url: `${SITE_URL}/the-quest`, changeFrequency: "monthly", priority: 0.6 },
+    // /the-quest MERGED into /features#f-zaps (owner ruling 2026-10-14): it 301s, so it is not listed.
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.7 },
     // The core story page — the answer-first "What is Frequency?" explainer of the
     // movement/vision (Article + FAQ schema). Complements /about (the founding narrative).

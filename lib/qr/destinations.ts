@@ -1,8 +1,12 @@
 // Curated in-site destinations for the QR Studio's dynamic-link builder. Each
 // carries a short "value" line so an operator building a funnel understands what
 // the path is good for — point cold ad traffic at the public Discover pages, drive
-// RSVPs to Events, send members to the Quest, etc. Pure data (no imports), safe on
-// client + server.
+// RSVPs to Events, send members to the Quest, etc. Pure data, safe on client + server: its one
+// import (lib/marketing/merged-routes) is a build-time constant over an import-free module.
+// Codes already printed with a retired path (/the-quest, /the-lab) keep working through the
+// next.config.ts redirects; these rows only steer NEW codes to the survivor.
+
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 interface SiteDestination {
   label: string
@@ -39,9 +43,9 @@ export const SITE_DESTINATIONS: SiteDestination[] = [
 
   // ── Membership / story ──────────────────────────────────────────────────────
   { group: 'Membership', label: 'Upgrade', path: '/upgrade', value: 'The membership upgrade path.' },
-  { group: 'Membership', label: 'The Lab', path: '/the-lab', value: 'The physical-space story — for partners and curious visitors.' },
+  { group: 'Membership', label: 'The Lab (vision)', path: LAB_HREF, value: 'The physical-space story — for partners and curious visitors.' },
   { group: 'Membership', label: 'The Community', path: '/the-community', value: 'The community story / pitch.' },
-  { group: 'Membership', label: 'The Quest (story)', path: '/the-quest', value: 'Explains the game — good for the curious.' },
+  { group: 'Membership', label: 'The Quest (story)', path: QUEST_HREF, value: 'Explains the game — good for the curious.' },
 ]
 
 const PATHS = new Set(SITE_DESTINATIONS.map((d) => d.path))

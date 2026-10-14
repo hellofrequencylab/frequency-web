@@ -39,6 +39,7 @@ import { SiteImage } from '@/components/marketing/site-image'
 import { Reveal } from '@/components/marketing/motion'
 import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { safeHref } from '@/lib/page-editor/richtext'
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 // Full-bleed photo hero — the editorial counterpart to PageHero, for pages that
 // open on imagery. Warm ink wash + amber glow + LED light-strip seam, matching
@@ -997,9 +998,11 @@ export function Marquee({ items }: { items: string[] }) {
 // peer of The Lab and The Community. The two story pages sit as a pair; The Quest
 // rides underneath as the side thing we all do together. Place near the bottom of
 // each of those pages, above the BetaCTA. Token-only; Server Component.
+// `key` is the block's stored `current` value (an identifier in published documents, so it keeps the
+// old path); `href` is where the link lands now (/the-lab merged into /vision, 2026-10-14).
 const STORY_PAGES = [
-  { n: '1', label: 'The Lab', href: '/the-lab', tag: 'The place' },
-  { n: '2', label: 'The Community', href: '/the-community', tag: 'The people' },
+  { n: '1', label: 'The Lab', key: '/the-lab', href: LAB_HREF, tag: 'The place' },
+  { n: '2', label: 'The Community', key: '/the-community', href: '/the-community', tag: 'The people' },
 ] as const
 
 export function PillarNav({
@@ -1024,9 +1027,9 @@ export function PillarNav({
         </p>
         <ol className="grid gap-4 sm:grid-cols-2">
           {STORY_PAGES.map((p) => {
-            const active = p.href === current
+            const active = p.key === current
             return (
-              <li key={p.href}>
+              <li key={p.key}>
                 {active ? (
                   <div
                     aria-current="page"
@@ -1065,7 +1068,7 @@ export function PillarNav({
             <>
               The Quest is the light game everyone plays alongside their Circle.{' '}
               <Link
-                href="/the-quest"
+                href={QUEST_HREF}
                 className={isInk ? 'text-primary underline underline-offset-2' : 'text-primary-strong underline underline-offset-2'}
               >
                 How it works

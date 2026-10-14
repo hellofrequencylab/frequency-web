@@ -1,4 +1,5 @@
 import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/article'
+import { QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW TO START A CIRCLE — the FIRST seeker article enrolled in the page editor
@@ -106,7 +107,7 @@ export const spec: ArticleSpec = {
       answer:
         'Because they lean on one person’s energy instead of a structure anyone can keep. Groups die from inconsistency and burnout, not from a quiet host.',
       body: 'When the whole thing rides on the founder being on every week, it ends the first time they are tired, traveling, or having a hard month. A fixed time and a simple, repeatable format take the weight off any single person, so the Circle survives an off night. Build the rails first and the room can outlast your worst week.',
-      links: [{ label: 'See the path we hand new hosts', href: '/the-quest', variant: 'secondary' }],
+      links: [{ label: 'See the path we hand new hosts', href: QUEST_HREF, variant: 'secondary' }],
       beat: {
         kind: 'media',
         image: TABLE_IMAGE,

@@ -19,6 +19,7 @@ import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-rol
 import type { MenuAccess } from '@/lib/menus/types'
 import { STUDIO_WORLDS, STUDIO_LEAVES, type StudioWorld, type StudioLeaf } from './studio'
 import type { NavNode, NavSurface, NavMode } from './types'
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 /** Project one existing rail area (calm spine) into its canonical NavNode. The area's
  *  `key` is the node id AND its icon key (AREA_ICONS is keyed by area key), its `section`
@@ -182,7 +183,7 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       // LIVE-254: The Quest left the tab bar. Grouped here, not deleted. The game is
       // the side thing we all do together; Journeys / Practices / Channels (topics)
       // ride with it so the old Quest panel is still one click from Community.
-      { label: 'The Quest', href: '/the-quest', desc: 'The light game everyone plays alongside their Circle' },
+      { label: 'The Quest', href: QUEST_HREF, desc: 'The light game everyone plays alongside their Circle' },
       { label: 'Journeys', href: '/discover/journeys', desc: 'Guided practices for a season' },
       { label: 'Practices', href: '/discover/practices', desc: 'Browse the practices you can run' },
       { label: 'Channels', href: '/discover/topics', desc: 'Browse by what you practice' },
@@ -220,7 +221,7 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       // here, beside the other story pages, rather than anywhere else: a visitor reading
       // "what is this" reads about the room in the same breath. Copy matches its llms.txt
       // line (app/llms.txt/route.ts) so the two cannot drift.
-      { label: 'The Lab', href: '/the-lab', desc: 'The physical third space, and why a community needs a room' },
+      { label: 'The Lab', href: LAB_HREF, desc: 'The physical third space, and why a community needs a room' },
       { label: 'Help center', href: '/help', desc: 'Answers, guides, and support' },
       { label: 'Privacy', href: '/privacy', desc: 'How we handle your data' },
       { label: 'Terms', href: '/terms', desc: 'The rules of the road' },
@@ -276,8 +277,8 @@ function headerNodes(): NavNode[] {
 const FOOTER_LINK_SEEDS: readonly { id: string; label: string; href: string }[] = [
   { id: 'home', label: 'Home', href: '/' },
   { id: 'the-community', label: 'The Community', href: '/the-community' },
-  { id: 'the-quest', label: 'The Quest', href: '/the-quest' },
-  { id: 'the-lab', label: 'The Lab', href: '/the-lab' },
+  { id: 'the-quest', label: 'The Quest', href: QUEST_HREF },
+  { id: 'the-lab', label: 'The Lab', href: LAB_HREF },
   { id: 'spaces', label: 'Spaces', href: '/spaces' },
   { id: 'about', label: 'About', href: '/about' },
 ] as const
@@ -371,9 +372,9 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
     title: 'Frequency',
     links: [
       { id: 'about', label: 'About', href: '/about' },
-      { id: 'the-lab', label: 'The Lab', href: '/the-lab' },
+      { id: 'the-lab', label: 'The Lab', href: LAB_HREF },
       { id: 'the-community', label: 'The Community', href: '/the-community' },
-      { id: 'the-quest', label: 'The Quest', href: '/the-quest' },
+      { id: 'the-quest', label: 'The Quest', href: QUEST_HREF },
       { id: 'pricing', label: 'Pricing', href: '/pricing' },
       // The /vs comparison hub (SCAN-801). Its only other inbound link sits on the coded
       // branch of /pricing, which stops rendering once an operator publishes the pricing

@@ -1,6 +1,7 @@
 // /vision: third spaces, for partners, investors, civic leaders and press
 // (design_handoff/frequency/templates/website/Vision.html). The Lab stays in the future tense
-// (ADR-1735, LIVE-912); /the-lab is the full plan and this page points at it.
+// (ADR-1735, LIVE-912). /the-lab merged in here (owner ruling 2026-10-14): its plan and FAQ are
+// sections of this page, and the old URL 301s here.
 //
 // A FREQUENCY-ONLY ROUTE, like /stories: a DAWN build answers 404 here and app/sitemap.ts lists it only
 // under Frequency. Static: no request data.
