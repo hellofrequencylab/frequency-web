@@ -25,8 +25,9 @@ import { StandingLeaderboard } from './leaderboard'
 //
 // NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): Freezes used (no freeze ledger) and every trend (no
 // prior-period reader). The design's "This week" tab has no weekly Zap tally, so the tabs are Season and All
-// time. The leaderboard opt-out switch and "Save rules" have no setting behind them and are not drawn (the
-// rates are edited by the janitor's reward editor below).
+// time. The leaderboard is opt-out per member (profiles.meta.leaderboardOptOut, honoured by standing-reads.ts),
+// not a switch an operator holds, so the design's switch reads as that rule in words, and "Save rules" is not
+// drawn (the rates are edited by the janitor's reward editor below). System and demo accounts never count.
 
 function daysLeft(endsAt: string | null): number | null {
   if (!endsAt) return null
@@ -89,6 +90,13 @@ export async function FqStandingBody() {
                   </span>
                 </div>
               ))}
+              <div>
+                <span className="grow">
+                  <span className="t1 adp-block">Show on the leaderboard</span>
+                  <span className="t2">On for everyone. Any member can hide themselves from it.</span>
+                </span>
+                <span className="st ok">On</span>
+              </div>
             </div>
           </div>
         </aside>

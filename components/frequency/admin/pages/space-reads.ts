@@ -101,3 +101,75 @@ export const loadSpaceRevenueSeries = cache(async (spaceId: string, weeks = 12):
     return null
   }
 })
+
+export interface MembershipBilling {
+  /** Paying memberships: an active Stripe subscription whose payment status reconciled to active. */
+  paying: number
+  /** Their list price normalised to a month, in cents (a yearly price divided by 12). */
+  monthlyCents: number
+}
+
+type LooseRows<T> = {
+  select: (cols: string) => LooseQuery<T>
+}
+type LooseQuery<T> = {
+  eq: (col: string, v: string) => LooseQuery<T>
+  in: (col: string, v: string[]) => LooseQuery<T>
+  not: (col: string, op: string, v: null) => LooseQuery<T>
+  order: (col: string) => LooseQuery<T>
+  range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+}
+
+/** What the Space's paying memberships bring in a month, at each tier's list price (Memberships head:
+ *  "$2,860 a month"). Only a membership with a Stripe subscription whose payment status is `active` counts;
+ *  a free join, a pending one and a past-due one do not, so the figure is never a price list times a member
+ *  count. Yearly memberships count a twelfth of their yearly price; a one-time tier counts nothing. Read-only,
+ *  paged past the row cap; null on a read failure (the body shows the empty value). The table and the two
+ *  ADR-1374 columns are read loose: they are newer than lib/database.types.ts (the memberships module's seam). */
+export const loadSpaceMembershipBilling = cache(async (spaceId: string): Promise<MembershipBilling | null> => {
+  if (!spaceId) return null
+  try {
+    const admin = createAdminClient()
+    const memberships: { tier_id: string; billing_interval: string | null }[] = []
+    for (let from = 0; from < MAX_ROWS; from += PAGE) {
+      const { data, error } = await (admin.from('space_memberships') as unknown as LooseRows<{ tier_id: string; billing_interval: string | null }>)
+        .select('tier_id, billing_interval')
+        .eq('space_id', spaceId)
+        .eq('status', 'active')
+        .eq('payment_status', 'active')
+        .not('stripe_subscription_id', 'is', null)
+        .order('id')
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      const rows = data ?? []
+      memberships.push(...rows)
+      if (rows.length < PAGE) break
+    }
+    if (memberships.length === 0) return { paying: 0, monthlyCents: 0 }
+    type TierPrice = { id: string; price_cents: number | null; annual_price_cents: number | null; interval: string | null }
+    const tierIds = [...new Set(memberships.map((m) => m.tier_id))]
+    const { data: tiers, error } = await (admin.from('space_membership_tiers') as unknown as LooseRows<TierPrice>)
+      .select('id, price_cents, annual_price_cents, interval')
+      .eq('space_id', spaceId)
+      .in('id', tierIds)
+      .order('id')
+      .range(0, PAGE - 1)
+    if (error) throw error
+    const price = new Map((tiers ?? []).map((t) => [t.id, t]))
+    let monthly = 0
+    for (const m of memberships) {
+      const t = price.get(m.tier_id)
+      if (!t) continue
+      const cents = t.price_cents ?? 0
+      if (t.interval === 'once') continue
+      // A tier published before ADR-1374 as a yearly twin bills price_cents once a year.
+      if (t.interval === 'year') monthly += cents / 12
+      else if (m.billing_interval === 'year' && t.annual_price_cents && t.annual_price_cents > 0) monthly += t.annual_price_cents / 12
+      else monthly += cents
+    }
+    return { paying: memberships.length, monthlyCents: Math.round(monthly) }
+  } catch (error) {
+    console.error('[frequency/admin] space membership billing read failed:', error)
+    return null
+  }
+})

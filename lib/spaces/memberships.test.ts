@@ -207,6 +207,10 @@ function membershipsBuilder() {
     order() {
       return api
     },
+    // The open-membership read pages with .range() past PostgREST's row cap; one page holds every fixture row.
+    range() {
+      return api
+    },
     insert(rows: Record<string, unknown>[]) {
       pendingInsert = rows[0] ?? null
       return api

@@ -8,7 +8,7 @@
 // It owns only the button + open state; the wizard (and its gating) lives in the modal. Client
 // component, so it is safe to drop into a Server Component surface (e.g. the platform CRM page).
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { UploadCloud } from 'lucide-react'
 import { ContactImportModal } from './contact-import-modal'
 import type { ImportTarget } from '@/lib/crm/import/types'
@@ -19,6 +19,7 @@ export function ImportContactsButton({
   label = 'Import contacts',
   variant = 'primary',
   className = '',
+  icon,
 }: {
   target: ImportTarget
   /** Display name for a space target (shown as the sealed destination in the modal). */
@@ -28,6 +29,8 @@ export function ImportContactsButton({
    *  styling or icon at all, so a design kit can dress the button with `className` alone. */
   variant?: 'primary' | 'subtle' | 'bare'
   className?: string
+  /** A leading icon for the `bare` variant, which otherwise draws none (a design kit brings its own). */
+  icon?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
 
@@ -44,7 +47,7 @@ export function ImportContactsButton({
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className={bare ? className : `${base} ${tone} ${className}`}>
-        {!bare && <UploadCloud className="h-4 w-4" />}
+        {bare ? icon : <UploadCloud className="h-4 w-4" />}
         {label}
       </button>
       <ContactImportModal open={open} onClose={() => setOpen(false)} target={target} spaceName={spaceName} />

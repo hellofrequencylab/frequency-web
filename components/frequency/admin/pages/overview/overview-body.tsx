@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { FqIcon } from '@/components/frequency/icon'
+import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { SpaceDispatchBand } from '@/components/spaces/dashboard/space-dispatch-band'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
@@ -109,7 +109,14 @@ export async function FqOverviewBody({
     ...(noHost > 0 ? [`${noHost} ${noHost === 1 ? 'needs' : 'need'} a host`] : []),
   ].join(' · ')
 
-  const needs: { icon: 'tip' | 'membership' | 'contacts'; title: string; sub: string; href: string; cta: string }[] = []
+  const needs: {
+    icon: 'tip' | 'membership' | 'contacts'
+    title: string
+    sub: string
+    href: string
+    cta: string
+    ctaIcon: FqIconName
+  }[] = []
   if (unanswered > 0) {
     needs.push({
       icon: 'tip',
@@ -117,6 +124,7 @@ export async function FqOverviewBody({
       sub: 'Waiting on your reply',
       href: `/spaces/${slug}/crm/conversations`,
       cta: 'Review',
+      ctaIcon: 'message',
     })
   }
   if (pastDue > 0) {
@@ -126,6 +134,7 @@ export async function FqOverviewBody({
       sub: 'The last payment did not go through',
       href: `/spaces/${slug}/settings/offerings#memberships`,
       cta: 'View',
+      ctaIcon: 'membership',
     })
   }
   if (newFaces > 0) {
@@ -135,6 +144,7 @@ export async function FqOverviewBody({
       sub: 'Send a welcome',
       href: `/spaces/${slug}/manage?section=resonance`,
       cta: 'See who',
+      ctaIcon: 'send',
     })
   }
   if (worklist.rows.length > 0) {
@@ -144,6 +154,7 @@ export async function FqOverviewBody({
       sub: worklist.laterCount > 0 ? `${worklist.laterCount} more later` : 'From your Resonance worklist',
       href: `/spaces/${slug}/crm`,
       cta: 'View',
+      ctaIcon: 'contacts',
     })
   }
 
@@ -164,6 +175,7 @@ export async function FqOverviewBody({
         actions={
           <>
             <Link className="btn" href={`/spaces/${slug}/edit-page`}>
+              <FqIcon name="edit" />
               Edit page
             </Link>
             <Link className="btn pa" href={`/events/new?space=${encodeURIComponent(spaceId)}`}>
@@ -253,7 +265,8 @@ export async function FqOverviewBody({
                           <td>{e.capacity ? `${n(count)} / ${n(e.capacity)}` : n(count)}</td>
                           <td>
                             {!e.host_id ? (
-                              <Link className="btn sm pa" href={`/events/${e.slug}/manage`}>
+                              <Link className="btn sm pa" href={`/events/${e.slug}/manage`} aria-label={`Find a host for ${e.title || 'this event'}`}>
+                                <FqIcon name="host" />
                                 Find a host
                               </Link>
                             ) : full >= 0.9 ? (
@@ -297,6 +310,7 @@ export async function FqOverviewBody({
                       <span className="t2">{item.sub}</span>
                     </span>
                     <Link className="btn sm" href={item.href}>
+                      <FqIcon name={item.ctaIcon} />
                       {item.cta}
                     </Link>
                   </div>
@@ -312,6 +326,7 @@ export async function FqOverviewBody({
               </span>
               <span className="t2">They are in the red tier on Resonance.</span>
               <Link className="btn sm pa self-start" href={`/spaces/${slug}/manage?section=resonance`}>
+                <FqIcon name="contacts" />
                 See who
               </Link>
             </div>

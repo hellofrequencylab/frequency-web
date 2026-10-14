@@ -72,6 +72,25 @@
 /* The page's own cards (the DAWN surface card: a bordered surface with a large radius) wear the glass panel. */
 [data-design="frequency"] [data-kit="admin"] .adp-frame-body :is(.rounded-2xl,.rounded-card,.rounded-xl).border.bg-surface{background:var(--fq-glass-panel);border-color:transparent;border-radius:var(--fq-radius-l);box-shadow:var(--fq-glass-panel-shadow)}
 
+/* Moderation: the inline confirmation on a report card (a destructive action asks once before it runs). */
+[data-design="frequency"] [data-kit="admin"] .adp .soft.adp-tight[role="alertdialog"]{padding:14px 16px}
+
+/* THERMAL NIGHT (.dark): the generated kit draws its hover rows, the Space card, the nav hover and the
+   "bad" pill in day-only literals; at night they re-read from the night tokens so nothing glows white. */
+.dark[data-design="frequency"] [data-kit="admin"] .tbl tr:hover td{background:var(--fq-track)}
+.dark[data-design="frequency"] [data-kit="admin"] .st.bad{background:color-mix(in oklab,var(--fq-danger) 22%,transparent);color:var(--fq-text-strong)}
+.dark[data-design="frequency"] [data-kit="admin"] .ad-space{background:var(--fq-surface-glass)}
+.dark[data-design="frequency"] [data-kit="admin"] .ad-nav a:hover{background:var(--fq-track)}
+
+/* PHONE: a console table keeps its columns and scrolls sideways inside its own rounded wrapper
+   (kit-admin.css gives .tbl-wrap overflow-x:auto); the page itself never scrolls sideways. */
+@media (max-width:640px){
+[data-design="frequency"] [data-kit="admin"] .adp .tbl-wrap{max-width:100%;-webkit-overflow-scrolling:touch}
+[data-design="frequency"] [data-kit="admin"] .adp .tbl-wrap>.tbl{min-width:560px}
+[data-design="frequency"] [data-kit="admin"] .adp .input.adp-search{max-width:none;flex:1 1 100%}
+[data-design="frequency"] [data-kit="admin"] .adp .head .h1{font-size:var(--fq-text-h2)}
+}
+
 @media (max-width:1000px){
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{position:static}

@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { FqIcon } from '@/components/frequency/icon'
 import { Av } from '../shared'
+import { downloadCsv } from '../csv'
 import { Input } from '@/components/ui/field'
 
 // The Contacts chip bar, search, table and Export (templates/admin/Contacts.html). A thin client island over
@@ -129,7 +131,8 @@ export function ContactsTable({ rows }: { rows: ContactRow[] }) {
                     <span className={`st ${r.status.tone}`}>{r.status.label}</span>
                   </td>
                   <td>
-                    <Link className="btn sm txt" href={r.href}>
+                    <Link className="btn sm txt" href={r.href} aria-label={`Open ${r.name}`}>
+                      <FqIcon name="arrow" />
                       Open
                     </Link>
                   </td>
@@ -150,30 +153,18 @@ export function ContactsTable({ rows }: { rows: ContactRow[] }) {
   )
 }
 
-/** One CSV cell: quoted when it holds a comma, quote or line break; a leading formula character is
- *  neutralised so a spreadsheet never runs it. */
-function cell(value: string): string {
-  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value
-  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
-}
-
 /** The head's Export: every row on the page as a CSV file, written in the browser from what the server
  *  already sent. Nothing is fetched. */
 export function ExportContactsButton({ rows, filename }: { rows: ContactRow[]; filename: string }) {
   function download() {
-    const lines = [
+    downloadCsv(filename, [
       ['Name', 'Handle or email', 'Last visit', 'Visits', 'Source', 'Status'],
       ...rows.map((r) => [r.name, r.sub, r.lastVisit, r.visits, r.source, r.status.label]),
-    ].map((line) => line.map(cell).join(','))
-    const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+    ])
   }
   return (
     <button type="button" className="btn" disabled={rows.length === 0} onClick={download}>
+      <FqIcon name="download" />
       Export
     </button>
   )

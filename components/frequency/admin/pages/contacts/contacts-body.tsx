@@ -1,3 +1,4 @@
+import { FqIcon } from '@/components/frequency/icon'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { getSpaceHealth } from '@/lib/dashboard/scores'
 import { tierLabel } from '@/lib/dashboard/verdict'
@@ -97,6 +98,7 @@ export async function FqContactsBody({
             label="Import"
             variant="bare"
             className="btn pa"
+            icon={<FqIcon name="upload" />}
           />
           </>
         }
