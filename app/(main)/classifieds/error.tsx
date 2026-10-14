@@ -5,6 +5,8 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqErrorState } from '@/components/frequency/members/community-error'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -14,6 +16,16 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     // reporting boundary (nearest-boundary-wins) - without this it was invisible.
     Sentry.captureException(error)
   }, [error])
+  if (SITE_DESIGN === 'frequency')
+    return (
+      <FqErrorState
+        title="Classifieds did not load"
+        body="This part of Classifieds hit a snag. Try again, or head back to the full list."
+        href="/classifieds"
+        cta="Back to Classifieds"
+        reset={reset}
+      />
+    )
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center px-4">
       <EmptyState
