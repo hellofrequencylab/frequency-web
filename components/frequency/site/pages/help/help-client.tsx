@@ -10,7 +10,7 @@
 // product has no contact endpoint, so Send opens the visitor's own mail app addressed to the real
 // contact address: nothing is submitted on their behalf, and no new endpoint is invented.
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { Input, Textarea } from '@/components/ui/field'
 
@@ -26,6 +26,13 @@ const matches = (q: string, a: { title: string; description: string }) =>
 
 export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
   const [query, setQuery] = useState('')
+  // The help center's index search submits here as `/help?q=…` (HelpIndexSearch). The page is static,
+  // so the query is read from the URL after hydration, not from searchParams on the server.
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('q')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one read of the URL on arrival
+    if (fromUrl) setQuery(fromUrl)
+  }, [])
   const q = query.trim().toLowerCase()
   const shown = topics
     .map((t) => ({ ...t, articles: t.articles.filter((a) => matches(q, a)) }))
@@ -158,6 +165,60 @@ export function HelpContact({ email }: { email: string }) {
       <small>
         Opens your email app, addressed to <a href={`mailto:${email}`}>{email}</a>.
       </small>
+    </form>
+  )
+}
+
+export interface HelpIndexEntry {
+  title: string
+  topic: string
+  href: string
+}
+
+/**
+ * The help center index's search box (the inner pages' left column). It filters every article title
+ * in place as you type; Enter (or no JavaScript) submits to the front page's search, `/help?q=…`,
+ * which filters titles and summaries across every topic.
+ */
+export function HelpIndexSearch({ entries }: { entries: HelpIndexEntry[] }) {
+  const [query, setQuery] = useState('')
+  const listId = useId()
+  const q = query.trim().toLowerCase()
+  const open = q.length >= 2
+  const hits = open ? entries.filter((e) => `${e.title} ${e.topic}`.toLowerCase().includes(q)).slice(0, 8) : []
+  return (
+    <form className="hc-s" role="search" action="/help" method="get">
+      <label className="hc-sl">
+        <FqIcon name="search" />
+        <Input
+          type="search"
+          name="q"
+          placeholder="Search help"
+          aria-label="Search help articles"
+          aria-controls={open ? listId : undefined}
+          autoComplete="off"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      {open && (
+        <div className="hc-res" id={listId} role="status">
+          {hits.length > 0 ? (
+            <ul>
+              {hits.map((h) => (
+                <li key={h.href}>
+                  <Link href={h.href} onClick={() => setQuery('')}>
+                    <b>{h.title}</b>
+                    <small>{h.topic}</small>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No titles match. Press Enter to search every article.</p>
+          )}
+        </div>
+      )}
     </form>
   )
 }

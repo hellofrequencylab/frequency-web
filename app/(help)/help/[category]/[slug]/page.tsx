@@ -73,12 +73,13 @@ export default async function HelpArticlePage({ params }: Params) {
   const hero = await resolveDetailHero(helpHref(cat.slug, article.slug))
 
   // The Frequency design (ADR-1737, build-time): the same article, ids, schema and neighbours, in the
-  // kit's reading column. DAWN never reaches this branch.
+  // help center (the index beside the reading column). DAWN never reaches this branch.
   if (SITE_DESIGN === 'frequency') {
     return (
       <>
         <JsonLd data={helpArticleJsonLd({ article, category: cat, coverImage: hero.coverImage })} />
         <FrequencyHelpArticle
+          slug={article.slug}
           title={article.title}
           description={article.description}
           body={article.body}
