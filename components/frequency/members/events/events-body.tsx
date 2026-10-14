@@ -127,12 +127,10 @@ export function FqEventsBody({
 
   return (
     <>
-      <section className="ev-hero" aria-labelledby="ev-title">
-        <div
-          className="ev-hero-ph"
-          style={{ backgroundImage: `url('${content.heroImage || '/brand/frequency/photos/night-string-lights-web.jpg'}')` }}
-          aria-hidden="true"
-        />
+      {/* The shared member header (owner, 2026-10-14: one uniform header, no photo on a hub page): the
+          kicker, title and meta, then the search and this area's buttons. ev-hero.is-plain in
+          members-events.css drops the photo band; the editable copy (content.*) still feeds it. */}
+      <section className="ev-hero is-plain" aria-labelledby="ev-title">
         <div className="ev-hero-in">
           <span className="k">What&apos;s happening</span>
           <h1 id="ev-title" className="h1">

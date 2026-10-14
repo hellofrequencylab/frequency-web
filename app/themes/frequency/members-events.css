@@ -185,3 +185,14 @@
 @layer utilities {
 [data-design="frequency"] [data-kit="members"] .ev-search input::placeholder{color:var(--fq-text-faint)}
 }
+
+/* The Events header without its photo (owner, 2026-10-14: one uniform member header, no image on a hub page).
+   ev-hero.is-plain reads like every other member page's .head: dark type on the page, the kicker, title and
+   meta, then the search field and the area's buttons as ordinary kit buttons. */
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain{min-height:0;border-radius:0;overflow:visible;margin-bottom:32px}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain::before{content:none}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .ev-hero-in{padding:0;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .k{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .h1{color:var(--fq-text-strong);font-size:var(--fq-text-h1)}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .body{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .btn.glass{background:var(--fq-glass-panel);color:var(--fq-text-strong);box-shadow:var(--fq-glass-panel-shadow)}
