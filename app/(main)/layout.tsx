@@ -811,6 +811,8 @@ export default async function MainLayout({
         caps={previewingDown ? [] : Array.from(globalCaps)}
         appOverrides={appOverrides}
         chromeOverrides={chromeOverrides}
+        availableContexts={availableContexts}
+        skin={theme.skin}
       >
         {shellChildren}
       </FrequencyMembersShell>

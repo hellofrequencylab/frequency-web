@@ -35,9 +35,21 @@ import { MembersKitRoot } from './kit-root'
 import { FqHeader } from './header'
 import { FqAmbient } from './ambient'
 import { FqRailLayout } from './rail-layout'
-import { RailVaultTab, RailYouTab } from './rail-tabs'
+import { RailFold, RailVaultTab, RailYouTab } from './rail-tabs'
 import { FqToastHost } from './toast-host'
-import { FQ_SHORTCUTS, FQ_YOU_LINKS, canShow, resolveHref } from './nav'
+import {
+  FQ_ACCOUNT_MENU,
+  FQ_SHORTCUTS,
+  FQ_WORK_GROUP_ICON,
+  FQ_WORK_MENU,
+  canShow,
+  groupRows,
+  type FqMenuRow,
+  type FqMenuViewer,
+} from './nav'
+import type { AvailableContext } from '@/lib/context/operator-context'
+import { meetsAccess } from '@/lib/nav-areas'
+import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 import { avatarBg } from './avatar'
 
 type Stats = Promise<DockData | null>
@@ -64,6 +76,10 @@ export interface FrequencyMembersShellProps {
   caps: Capability[]
   appOverrides?: AppOverrides
   chromeOverrides?: ChromeOverrides
+  /** The operator contexts (resolveOperatorContext): one per Space run, plus Admin for staff. */
+  availableContexts: AvailableContext[]
+  /** The member's skin (Settings, Appearance), for the account menu's theme control. */
+  skin: string
   children: React.ReactNode
 }
 
@@ -169,10 +185,24 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   const role = (profile.community_role ?? 'member') as CommunityRole
   const gateRole: CommunityRole | null = props.previewVisitor ? null : role
   const circles = myFrequency?.circles ?? []
-  const spaces = myFrequency?.spaces ?? []
   const shortcuts = FQ_SHORTCUTS.filter((s) => canShow(s, navAccess))
   const badgeFor = (b?: 'messages' | 'notifications') =>
     b === 'messages' ? props.messagesUnread : b === 'notifications' ? Math.max(0, props.unreadCount) : 0
+
+  // ── The avatar menu and the rail-foot work menu (nav.ts, the framework's canon) ────────────────
+  const menuViewer: FqMenuViewer = {
+    navAccess,
+    operatesSpaces: props.operatesSpaces,
+    // DAWN's `minAccess: 'host'` rows, on the view-as role.
+    host: meetsAccess('host', gateRole),
+  }
+  const accountGroups = groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref)
+  // Bottom left: each Space the member runs, straight into its console, then the work rows.
+  const spaceRows: FqMenuRow[] = props.availableContexts.flatMap((c) =>
+    c.kind === 'operator' ? [{ group: 'Your Spaces', label: c.label, href: c.href, icon: 'space' as const }] : [],
+  )
+  const workGroups = groupRows([...spaceRows, ...FQ_WORK_MENU], menuViewer, profileHref)
+  const skins = SELECTABLE_SKINS.map((s) => ({ id: s.id, label: s.label }))
 
   // ── Left rail ────────────────────────────────────────────────────────────────────────────────────
   const leftFull = (
@@ -304,33 +334,32 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           </small>
         </span>
       </Link>
-      <div className="fqm-you-links">
-        {FQ_YOU_LINKS.filter((l) => canShow(l, navAccess) && !(crew && l.href === '/upgrade')).map((l) => (
-          <Link key={l.label} href={resolveHref(l.href, profileHref)}>
-            <FqIcon name={l.icon} />
-            {l.label}
-          </Link>
-        ))}
-      </div>
-      <div className="fqm-run">
-        <b>What you run</b>
-        {spaces.length > 0 ? (
-          <div className="fqm-run-list">
-            {spaces.map((s) => (
-              <Link key={s.key} href={s.href}>
-                {s.label}
-                {s.notices > 0 ? ` · ${s.notices} new` : ''}
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p>Nothing yet.</p>
-        )}
-        <Link href="/circles/new">Start a Circle →</Link>
-      </div>
+      {workGroups.length > 0 && (
+        <nav className="fqm-work" aria-label="Your work">
+          {workGroups.map((g) => {
+            const icon = <FqIcon name={FQ_WORK_GROUP_ICON[g.label] ?? 'more'} />
+            // A one-row group is a plain row; a group of several opens as the kit's fold.
+            if (g.rows.length === 1 && g.rows[0]!.href) {
+              return (
+                <Link key={g.label} href={g.rows[0]!.href} className="rl-row">
+                  {icon}
+                  <span>{g.rows[0]!.label}</span>
+                </Link>
+              )
+            }
+            return (
+              <RailFold key={g.label} label={g.label} icon={icon} defaultOpen={g.label === 'Your Spaces'}>
+                {g.rows.map((r) => (
+                  <Link key={r.key} href={r.href ?? '#'} className="rl-sub">
+                    {r.label}
+                  </Link>
+                ))}
+              </RailFold>
+            )
+          })}
+        </nav>
+      )}
       <div className="fqm-you-foot">
-        <Link href="/settings">Settings</Link>
-        <Link href="/support">Help</Link>
         <Link href="/site-map">Site map</Link>
       </div>
     </>
@@ -453,6 +482,10 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             streak={stats.then((d) => d?.streak ?? 0)}
             viewer={{ role: gateRole, staffRole: props.staffRole, operatesSpaces: props.operatesSpaces }}
             circles={circles.slice(0, 5).map((c) => ({ key: c.key, label: c.label, href: c.href, notices: c.notices }))}
+            accountGroups={accountGroups}
+            workGroups={workGroups}
+            skins={skins}
+            skin={props.skin}
           />
           {props.banner}
           <FqRailLayout

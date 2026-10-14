@@ -10,11 +10,20 @@
 // the right rail's own scroll opens the Vault, the way the prototype's dock rises when you run out of
 // rail.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { FqIcon } from '@/components/frequency/icon'
 
 function useDock() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  // A navigation (a link in the panel) closes it.
+  const pathname = usePathname()
+  const [lastPath, setLastPath] = useState(pathname)
+  if (lastPath !== pathname) {
+    setLastPath(pathname)
+    if (open) setOpen(false)
+  }
   useEffect(() => {
     if (!open) return
     const y0 = window.scrollY
@@ -22,7 +31,14 @@ function useDock() {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key !== 'Escape') return
+      setOpen(false)
+      // Focus that was in the panel goes back to the tab that opened it (the visible face).
+      const root = ref.current
+      if (root && root.contains(document.activeElement)) {
+        const tabs = Array.from(root.querySelectorAll<HTMLElement>('button[aria-expanded]'))
+        tabs.find((b) => b.offsetParent !== null)?.focus()
+      }
     }
     const onScroll = () => {
       if (Math.abs(window.scrollY - y0) > 120) setOpen(false)
@@ -65,11 +81,11 @@ export function RailYouTab({
       <div className="fqm-rise" data-open={open ? '' : undefined} id="fqm-you" inert={!open}>
         <div className="fqm-rise-card">{panel}</div>
       </div>
-      <button type="button" className="fqm-tab fqm-tab-you fqm-full" aria-expanded={open} aria-controls="fqm-you" aria-label={label} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="fqm-tab fqm-tab-you fqm-full" aria-haspopup="true" aria-expanded={open} aria-controls="fqm-you" aria-label={label} onClick={() => setOpen((o) => !o)}>
         {face}
         {CHEV}
       </button>
-      <button type="button" className="fqm-tab fqm-tab-micro fqm-micro" aria-expanded={open} aria-controls="fqm-you" aria-label={label} data-tip="You" onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="fqm-tab fqm-tab-micro fqm-micro" aria-haspopup="true" aria-expanded={open} aria-controls="fqm-you" aria-label={label} data-tip="You" onClick={() => setOpen((o) => !o)}>
         {microFace}
       </button>
     </div>
@@ -133,6 +149,35 @@ export function RailVaultTab({
         <button type="button" className="fqm-vault-btn" aria-expanded={open} aria-controls="fqm-vault" aria-label={label} data-tip="The Vault" onClick={() => setOpen((o) => !o)}>
           {microFace}
         </button>
+      </div>
+    </div>
+  )
+}
+
+/** One group of the You panel's work menu, as the kit's fold (`.rl-mf`, `.rl-mf-btn`, `.rl-mf-body`):
+ *  a row that opens onto its links. */
+export function RailFold({
+  label,
+  icon,
+  defaultOpen = false,
+  children,
+}: {
+  label: string
+  icon: React.ReactNode
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const id = useId()
+  return (
+    <div className={open ? 'rl-mf open' : 'rl-mf'}>
+      <button type="button" className="rl-row rl-mf-btn" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
+        {icon}
+        <span>{label}</span>
+        <FqIcon name="chevron" />
+      </button>
+      <div className="rl-mf-body" id={id} inert={!open}>
+        <div>{children}</div>
       </div>
     </div>
   )

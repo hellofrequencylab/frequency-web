@@ -6,8 +6,9 @@
 //   <header .ap-hdr [.scrolled] [.open]>
 //     .ap-hdr-l   the flowing wordmark (.ap-logo) and the roundel the kit swaps in under 1240px
 //     .ap-hdr-c   the section pill (.ap-nav), Search (⌘K), Messages, Notifications, the Zap button
-//     .ap-hdr-r   the avatar
-//   .ap-mega      the full-width section menu        .ap-sheets  the Zap and Notifications sheets
+//     .ap-hdr-r   the avatar, a menu button opening the account sheet (personal and account rows,
+//                 the look, Sign out; nav.ts FQ_ACCOUNT_MENU and the platform `profile` menu)
+//   .ap-mega      the full-width section menu        .ap-sheets  the Zap, Notifications and account sheets
 //   .ap-scrim     the click-away layer under them
 //
 // The kit owns the look: transparent at the top, frosted once scrolled (`.scrolled`, past 8px) or with
@@ -41,10 +42,14 @@ import type { NotificationItem } from '@/lib/notifications-map'
 import { notificationHref } from '@/lib/notifications/href'
 import { relativeTime, getInitials } from '@/lib/utils'
 import { isFullViewportEditor } from '@/lib/layout/page-chrome'
-import { FEED_HREF, FQ_NAV, FQ_SHORTCUTS, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqNavSection } from './nav'
+import { FEED_HREF, FQ_ABOUT_LINKS, FQ_NAV, MESSAGES_HREF, SEARCH_HREF, FQ_SHORTCUTS, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqMenuGroup, type FqNavSection } from './nav'
 import { avatarBg } from './avatar'
+import { setThemeSkin } from '@/app/(main)/settings/appearance/actions'
+import { canChooseMode } from '@/lib/theme/mode'
+import { hasAccount, readStoredMode, syncMode, writeStoredMode, type ThemeMode } from '@/lib/theme/apply-mode'
+import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
 
-type Open = FqNavSection['key'] | 'zap' | 'bell' | 'drawer' | null
+type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
 
 /** A Circle in the phone drawer (My Frequency, the same rows the left rail shows). */
 export interface FqDrawerCircle {
@@ -65,9 +70,29 @@ export interface FqHeaderProps {
   viewer: NavViewer
   /** The viewer's Circles, for the phone drawer. */
   circles: FqDrawerCircle[]
+  /** The avatar menu (personal and account), resolved and gated on the server (nav.ts). */
+  accountGroups: FqMenuGroup[]
+  /** The work menu (Spaces, Create, Lead and admin), the rail foot's; the phone drawer repeats it. */
+  workGroups: FqMenuGroup[]
+  /** The selectable skins and the member's current one, for the avatar menu's look control. */
+  skins: { id: string; label: string }[]
+  skin: string
 }
 
-export function FqHeader({ profile, profileHref, navAccess, unreadCount, messagesUnread, streak, viewer, circles }: FqHeaderProps) {
+export function FqHeader({
+  profile,
+  profileHref,
+  navAccess,
+  unreadCount,
+  messagesUnread,
+  streak,
+  viewer,
+  circles,
+  accountGroups,
+  workGroups,
+  skins,
+  skin,
+}: FqHeaderProps) {
   const pathname = usePathname() ?? ''
   const router = useRouter()
   const area = areaFor(pathname, profileHref)
@@ -81,7 +106,10 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
   const hdrRef = useRef<HTMLElement>(null)
   const burgerRef = useRef<HTMLButtonElement>(null)
   const drawerRef = useRef<HTMLElement>(null)
+  const meBtnRef = useRef<HTMLButtonElement>(null)
+  const meSheetRef = useRef<HTMLDivElement>(null)
   const drawerOn = open === 'drawer'
+  const meOn = open === 'me'
 
   // A navigation closes any open menu or sheet.
   if (lastPath !== pathname) {
@@ -160,6 +188,18 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
     }
   }, [drawerOn])
 
+  // The avatar menu: focus moves to its first row on open and, if it is still inside when the menu
+  // closes (Escape, the scrim, a row), back to the avatar.
+  useEffect(() => {
+    const sheet = meSheetRef.current
+    const btn = meBtnRef.current
+    if (!meOn || !sheet) return
+    sheet.querySelector<HTMLElement>('a[href],button:not([disabled])')?.focus()
+    return () => {
+      if (sheet.contains(document.activeElement)) btn?.focus()
+    }
+  }, [meOn])
+
   if (isFullViewportEditor(pathname)) return null
 
   const toggle = (k: Exclude<Open, null>) => {
@@ -225,13 +265,13 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
             })}
           </nav>
           <span className="ap-sp" />
-          <Link href="/search" className="ap-search" title="Search ⌘K">
+          <Link href={SEARCH_HREF} className="ap-search" title="Search ⌘K">
             <FqIcon name="search" />
             <span>Search</span>
             <kbd>⌘K</kbd>
           </Link>
           <Link
-            href="/messages"
+            href={MESSAGES_HREF}
             className="ap-ic"
             title="Messages"
             aria-label={messagesUnread > 0 ? `Messages, ${messagesUnread} unread` : 'Messages'}
@@ -246,15 +286,20 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
           </button>
         </div>
         <div className="ap-hdr-r">
-          <Link
-            href={profileHref}
+          <button
+            type="button"
+            ref={meBtnRef}
             className="ap-me"
             title={profile.display_name}
-            aria-label={`Your profile, ${profile.display_name}`}
+            aria-label={`Your account, ${profile.display_name}`}
+            aria-haspopup="dialog"
+            aria-expanded={meOn}
+            aria-controls="fqm-me"
             style={avatarBg(profile.avatar_url)}
+            onClick={() => toggle('me')}
           >
             {profile.avatar_url ? null : getInitials(profile.display_name)}
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -289,6 +334,29 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
         >
           {open === 'bell' && <BellSheet />}
         </div>
+        <div
+          ref={meSheetRef}
+          className={meOn ? 'ap-sheet fqm-acct on' : 'ap-sheet fqm-acct'}
+          id="fqm-me"
+          role="dialog"
+          aria-label="Your account"
+          aria-hidden={!meOn}
+          inert={!meOn}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('a')) setOpen(null)
+          }}
+        >
+          {meOn && (
+            <AccountSheet
+              profile={profile}
+              profileHref={profileHref}
+              groups={accountGroups}
+              skins={skins}
+              skin={skin}
+              onClose={() => setOpen(null)}
+            />
+          )}
+        </div>
       </div>
       <div className={open ? 'ap-scrim on' : 'ap-scrim'} aria-hidden onClick={() => setOpen(null)} />
       <aside
@@ -311,7 +379,13 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
           navAccess={navAccess}
           messagesUnread={messagesUnread}
           circles={circles}
+          workGroups={workGroups}
+          accountGroups={accountGroups}
           onCapture={() => setOpen('zap')}
+          onAction={(a) => {
+            setOpen(null)
+            menuAction(a)
+          }}
         />
       </aside>
 
@@ -331,7 +405,10 @@ function Drawer({
   navAccess,
   messagesUnread,
   circles,
+  workGroups,
+  accountGroups,
   onCapture,
+  onAction,
 }: {
   profile: FqHeaderProps['profile']
   profileHref: string
@@ -339,11 +416,14 @@ function Drawer({
   navAccess?: Record<string, string>
   messagesUnread: number
   circles: FqDrawerCircle[]
+  workGroups: FqMenuGroup[]
+  accountGroups: FqMenuGroup[]
   onCapture: () => void
+  onAction: (a: MenuAction) => void
 }) {
   const first = homeFeedItem(pathname)
   const shortcuts = FQ_SHORTCUTS.filter((s) => canShow(s, navAccess))
-  const listed = new Set(shortcuts.map((s) => s.href))
+  const listed = new Set([first.href, profileHref, ...shortcuts.map((s) => s.href), ...circles.map((c) => c.href)])
   const row = (href: string, label: string, icon: FqIconName, count = 0) => {
     const on = href === pathname
     return (
@@ -384,7 +464,10 @@ function Drawer({
         </div>
       )}
       {FQ_NAV.map((sec) => {
-        const items = sec.cols.flatMap((c) => c.items).filter((it) => canShow(it, navAccess) && !listed.has(it.href))
+        const items = sec.cols
+          .flatMap((c) => c.items)
+          .filter((it) => canShow(it, navAccess) && !listed.has(resolveHref(it.href, profileHref)))
+        items.forEach((it) => listed.add(resolveHref(it.href, profileHref)))
         if (items.length === 0) return null
         return (
           <div key={sec.key} className="rl-g">
@@ -393,15 +476,182 @@ function Drawer({
           </div>
         )
       })}
+      {[...workGroups, ...accountGroups].map((g) => {
+        // The rail foot's work menu and the avatar menu, less what the drawer already listed.
+        const rows = g.rows.filter((r) => !r.href || !listed.has(r.href))
+        rows.forEach((r) => {
+          if (r.href) listed.add(r.href)
+        })
+        if (rows.length === 0) return null
+        return (
+          <div key={g.label} className="rl-g">
+            <span className="rl-h">{g.label}</span>
+            {rows.map((r) =>
+              r.href ? (
+                row(r.href, r.label, r.icon)
+              ) : (
+                <button key={r.key} type="button" className="rl-row" onClick={() => r.action && onAction(r.action)}>
+                  <FqIcon name={r.icon} />
+                  <span>{r.label}</span>
+                </button>
+              ),
+            )}
+          </div>
+        )
+      })}
       <div className="rl-g">
         <span className="rl-h">Frequency</span>
-        {FQ_SITE_LINKS.map((l) => (
+        {[...FQ_SITE_LINKS, ...FQ_ABOUT_LINKS].map((l) => (
           <Link key={l.href} href={l.href} className="rl-sub">
             {l.label}
           </Link>
         ))}
       </div>
+      <div className="rl-g">
+        <SignOut className="rl-row" />
+      </div>
     </nav>
+  )
+}
+
+type MenuAction = NonNullable<FqMenuGroup['rows'][number]['action']>
+
+/** The two sheet-opening rows: the global invite and support sheets (layout.tsx mounts both
+ *  launchers; DAWN's account dropdown dispatches the same events). */
+function menuAction(a: MenuAction) {
+  if (a === 'invite') window.dispatchEvent(new Event('open-invite'))
+  else window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } }))
+}
+
+/** Sign out: the POST to /auth/signout, clearing this device's Spark drafts first (the rule
+ *  components/layout/sign-out-form.tsx documents, without its lucide icon). */
+function SignOut({ className }: { className: string }) {
+  const clear = () => {
+    try {
+      clearAllDrafts(window.localStorage)
+    } catch {
+      // A blocked jar has no drafts to leave behind.
+    }
+  }
+  return (
+    <form action="/auth/signout" method="POST" onSubmit={clear}>
+      <button type="submit" className={className}>
+        <FqIcon name="door" />
+        <span>Sign out</span>
+      </button>
+    </form>
+  )
+}
+
+const MODES: { id: ThemeMode; label: string }[] = [
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+  { id: 'system', label: 'System' },
+]
+
+/** The avatar menu: who you are, the personal and account rows (grouped as DAWN's account menu
+ *  groups them), the look (the skin, and light or dark) and Sign out. */
+function AccountSheet({
+  profile,
+  profileHref,
+  groups,
+  skins,
+  skin,
+  onClose,
+}: {
+  profile: FqHeaderProps['profile']
+  profileHref: string
+  groups: FqMenuGroup[]
+  skins: FqHeaderProps['skins']
+  skin: string
+  onClose: () => void
+}) {
+  // Mounted only while open (after a click, never on the server), so the browser-only stored mode
+  // is read straight into state.
+  const [mode, setMode] = useState<ThemeMode>(() => readStoredMode())
+  const [canMode] = useState(() => canChooseMode(hasAccount()))
+  const [pickedSkin, setPickedSkin] = useState(skin)
+  const [, start] = useTransition()
+  const pickMode = (m: ThemeMode) => {
+    setMode(m)
+    writeStoredMode(m)
+    syncMode()
+  }
+  const pickSkin = (id: string) => {
+    setPickedSkin(id)
+    start(() => setThemeSkin(id))
+  }
+  return (
+    <>
+      <Link href={profileHref} className="fqm-acct-head">
+        <span className="fqm-av" style={{ width: 40, height: 40, ...avatarBg(profile.avatar_url) }} aria-hidden>
+          {profile.avatar_url ? null : getInitials(profile.display_name)}
+        </span>
+        <span>
+          <b>{profile.display_name}</b>
+          <small>@{profile.handle} · View profile</small>
+        </span>
+      </Link>
+      {groups.map((g) => {
+        const rows = g.rows.filter((r) => r.href !== profileHref)
+        if (rows.length === 0) return null
+        return (
+          <div key={g.label} className="fqm-acct-g">
+            {groups.length > 1 && <span className="k">{g.label}</span>}
+            {rows.map((r) =>
+              r.href ? (
+                <Link key={r.key} href={r.href} className="fqm-acct-row">
+                  <FqIcon name={r.icon} />
+                  <span>{r.label}</span>
+                </Link>
+              ) : (
+                <button
+                  key={r.key}
+                  type="button"
+                  className="fqm-acct-row"
+                  onClick={() => {
+                    onClose()
+                    if (r.action) menuAction(r.action)
+                  }}
+                >
+                  <FqIcon name={r.icon} />
+                  <span>{r.label}</span>
+                </button>
+              ),
+            )}
+          </div>
+        )
+      })}
+      <div className="fqm-acct-g">
+        <span className="k">Look</span>
+        {skins.length > 1 && (
+          <div className="fqm-seg" role="group" aria-label="Theme">
+            {skins.map((s) => (
+              <button key={s.id} type="button" aria-pressed={pickedSkin === s.id} onClick={() => pickSkin(s.id)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {canMode && (
+          <div className="fqm-seg" role="group" aria-label="Light or dark">
+            {MODES.map((m) => (
+              <button key={m.id} type="button" aria-pressed={mode === m.id} onClick={() => pickMode(m.id)}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <SignOut className="fqm-acct-row fqm-acct-out" />
+      <nav className="fqm-acct-about" aria-label="About Frequency">
+        {FQ_ABOUT_LINKS.map((l) => (
+          <Link key={l.href} href={l.href}>
+            {l.label}
+          </Link>
+        ))}
+      </nav>
+    </>
   )
 }
 
