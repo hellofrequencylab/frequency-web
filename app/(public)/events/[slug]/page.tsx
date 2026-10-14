@@ -16,7 +16,7 @@ import { EventDetailTemplate } from '@/components/templates'
 import { PosterBand } from '@/components/media/poster-band'
 import { eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
 import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
-import { formatEventDate } from '@/lib/utils'
+import { formatEventDate, eventDateBadge } from '@/lib/utils'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
@@ -183,11 +183,16 @@ export default async function PublicEventPage({
             <span className="tag">This event has ended</span>
           ) : null
         }
+        dateChip={eventDateBadge(event.starts_at)}
         whenLine={formatEventDateTime(event.starts_at)}
         where={whereLine}
         going={joined?.going ?? null}
         joinHeading={joined ? publicJoinHeading(joined.door) : 'Join this event'}
         joinBox={joinBox ?? signUpCard}
+        joinHref={BETA_CTA_HREF}
+        venuePoint={
+          venue.venue?.lat != null && venue.venue?.lng != null ? { lat: venue.venue.lat, lng: venue.venue.lng } : null
+        }
         about={
           event.description ??
           "A real-world gathering near you: a standing time, a handful of regulars, and a seat that gets noticed when it's empty."
