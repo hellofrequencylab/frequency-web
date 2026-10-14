@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DAY_MS, barHeights, countBetween, firstTimers, percentChange, returnRate, visitsByProfile, weeklyCounts, type CheckinRow } from './checkin-stats'
+import { DAY_MS, barHeights, checkinsByEvent, countBetween, firstTimers, percentChange, repeatShare, returnRate, rsvpShowRate, visitsByProfile, weeklyCounts, type CheckinRow } from './checkin-stats'
 
 const NOW = Date.UTC(2026, 9, 13, 12)
 const ago = (days: number) => NOW - days * DAY_MS
@@ -38,5 +38,34 @@ describe('check-in arithmetic', () => {
   it('scales bars to the tallest week and keeps a sliver for zero', () => {
     expect(barHeights([0, 5, 10])).toEqual([3, 50, 100])
     expect(barHeights([0, 0])).toEqual([3, 3])
+  })
+})
+
+describe('event and repeat arithmetic', () => {
+  const at = (profileId: string, days: number, eventId?: string): CheckinRow => ({ profileId, at: ago(days), eventId })
+
+  it('counts check-ins per listed event only', () => {
+    const rows = [at('a', 1, 'e1'), at('b', 1, 'e1'), at('a', 8, 'e2'), at('c', 2, 'other'), at('d', 2)]
+    const by = checkinsByEvent(rows, ['e1', 'e2', 'e3'])
+    expect([...by.entries()]).toEqual([['e1', 2], ['e2', 1], ['e3', 0]])
+  })
+
+  it('reads the repeat share over the window, null with nobody in it', () => {
+    const rows = [at('a', 1), at('a', 30), at('b', 5), at('c', 200), at('c', 210)]
+    expect(repeatShare(rows, NOW, 90)).toEqual({ rate: 50, people: 2 })
+    expect(repeatShare([at('c', 200)], NOW, 90)).toBeNull()
+  })
+
+  it('converts going RSVPs to check-ins on the same event', () => {
+    const going = [
+      { eventId: 'e1', profileId: 'a' },
+      { eventId: 'e1', profileId: 'b' },
+      { eventId: 'e2', profileId: 'a' },
+      { eventId: 'e2', profileId: 'c' },
+    ]
+    // a came to e1 only; c came to e1 (not their RSVP'd event); b never came.
+    const rows = [at('a', 3, 'e1'), at('c', 3, 'e1')]
+    expect(rsvpShowRate(going, rows)).toEqual({ rate: 25, rsvps: 4 })
+    expect(rsvpShowRate([], rows)).toBeNull()
   })
 })

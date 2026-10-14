@@ -37,3 +37,49 @@
     scrollbar-color: color-mix(in oklab, var(--fq-text-strong) 18%, transparent) transparent;
   }
 }
+
+/* THE SHELL POLISH (owner, 2026-10-13: "Make the logo bigger with some header links back to important
+   places. Adjust the spacing and make it feel inviting and open."). Overrides of the kit's own geometry
+   sit here, after it, because kit-admin.css is generated.
+   · LOGO. The design draws the wordmark at 132px; the console's sits at 176px (two thirds of the sidebar's
+     inner width, the wordmark's own 1920:389 ratio kept), with a little air above it. The link wraps the
+     wordmark because the wordmark is a CSS mask, which would clip a focus ring drawn on itself.
+   · LINKS. The top bar's way back (admin-shell.tsx TopLinks): quiet pills, inline on a wide screen; under
+     1100px they fold into a ⋯ disclosure, the Space switcher's own menu idiom.
+   · RHYTHM. Wider gutters in the main column and the top bar, a roomier sidebar, nav rows a touch taller
+     and further apart. The phone layout keeps the kit's tighter values (re-stated below, since a base
+     rule here outranks the kit's own media rule). */
+@layer components {
+[data-design="frequency"] [data-kit="admin"] .ad-logo{display:flex;align-self:flex-start;padding:8px 10px 4px;border-radius:var(--fq-radius-m)}
+[data-design="frequency"] [data-kit="admin"] .ad-logo:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] [data-kit="admin"] .ad-side .ad-logo .fq-logo-flow{width:176px;margin:0}
+[data-design="frequency"] [data-kit="admin"] .ad-side{gap:var(--fq-space-7);padding:28px 18px}
+[data-design="frequency"] [data-kit="admin"] .ad-nav, [data-design="frequency"] [data-kit="admin"] .ad-nav-group{gap:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="admin"] .ad-nav a{height:44px}
+[data-design="frequency"] [data-kit="admin"] .ad-top{gap:var(--fq-space-5);padding:0 var(--fq-space-10)}
+[data-design="frequency"] [data-kit="admin"] .ad-main{padding:var(--fq-space-10) 56px var(--fq-space-13);max-width:1360px}
+
+[data-design="frequency"] [data-kit="admin"] .ad-links{display:flex;align-items:center;gap:var(--fq-space-1)}
+[data-design="frequency"] [data-kit="admin"] .ad-links a{height:36px;display:inline-flex;align-items:center;padding:0 14px;border-radius:var(--fq-radius-orb);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="admin"] .ad-links a:hover{background:var(--fq-track);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] :is(.ad-links a, .ad-more>summary, .ad-more-menu a):focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:1px}
+[data-design="frequency"] [data-kit="admin"] .ad-more{position:relative;display:none;flex:none}
+[data-design="frequency"] [data-kit="admin"] .ad-more>summary{list-style:none}
+[data-design="frequency"] [data-kit="admin"] .ad-more>summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="admin"] .ad-more-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:40;min-width:220px;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:18px;background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .ad-more-menu a{display:flex;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] .ad-more-menu a:hover{background:var(--fq-track)}
+
+@media (max-width:1280px){
+[data-design="frequency"] [data-kit="admin"] .ad-top{padding:0 var(--fq-space-9)}
+[data-design="frequency"] [data-kit="admin"] .ad-main{padding:var(--fq-space-9) var(--fq-space-9) var(--fq-space-13)}}
+@media (max-width:1100px){
+[data-design="frequency"] [data-kit="admin"] .ad-links{display:none}
+[data-design="frequency"] [data-kit="admin"] .ad-more{display:block}}
+@media (max-width:960px){
+[data-design="frequency"] [data-kit="admin"] .ad-side{gap:var(--fq-space-5);padding:16px 18px}
+[data-design="frequency"] [data-kit="admin"] .ad-side .ad-logo .fq-logo-flow{width:132px}
+[data-design="frequency"] [data-kit="admin"] .ad-nav a{height:42px}
+[data-design="frequency"] [data-kit="admin"] .ad-top{gap:var(--fq-space-4);padding:0 18px}
+[data-design="frequency"] [data-kit="admin"] .ad-main{padding:28px 18px 80px}}
+}

@@ -17,10 +17,10 @@
 [data-design="frequency"] [data-kit="admin"] .adp .head .h1{font-size:38px}
 
 /* The two-column console layout: content, then a 360px rail (design: ap-cols with inline columns). */
-[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr) 360px;gap:32px}
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr) 360px;gap:40px}
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{top:92px}
-[data-design="frequency"] [data-kit="admin"] .adp .adp-gap{margin-top:40px}
-[data-design="frequency"] [data-kit="admin"] .adp .stack.adp-wide{gap:32px}
+[data-design="frequency"] [data-kit="admin"] .adp .adp-gap{margin-top:var(--fq-space-10)}
+[data-design="frequency"] [data-kit="admin"] .adp .stack.adp-wide{gap:var(--fq-space-9)}
 [data-design="frequency"] [data-kit="admin"] .adp .stack.adp-mid{gap:14px}
 [data-design="frequency"] [data-kit="admin"] .adp .stack.adp-tight{gap:6px}
 [data-design="frequency"] [data-kit="admin"] .adp .stack.adp-list{gap:16px}
@@ -59,15 +59,15 @@
 [data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back:hover{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back-ic{transform:rotate(180deg)}
 [data-design="frequency"] [data-kit="admin"] .adp-frame .head .meta{max-width:68ch}
-[data-design="frequency"] [data-kit="admin"] .adp-frame .adp-stats{margin-bottom:32px}
-[data-design="frequency"] [data-kit="admin"] .adp-frame-body{display:flex;flex-direction:column;gap:40px;min-width:0}
+[data-design="frequency"] [data-kit="admin"] .adp-frame .adp-stats{margin-bottom:var(--fq-space-9)}
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body{display:flex;flex-direction:column;gap:var(--fq-space-10);min-width:0}
 [data-design="frequency"] [data-kit="admin"] .adp-frame[data-measure="focus"] .adp-frame-body{max-width:760px}
 [data-design="frequency"] [data-kit="admin"] .adp-fsec{min-width:0}
 [data-design="frequency"] [data-kit="admin"] .adp-fsec>.sec-h{align-items:flex-end}
 
 /* THE DASHBOARD PARTS (components/admin/dash.tsx under Frequency): an area is a section head over its tiles,
    parted from the next by the kit's hairline; a tile is the glass panel; a stat is a `.num` over a `.t2`. */
-[data-design="frequency"] [data-kit="admin"] .adp-dash-area{padding-top:40px;box-shadow:0 -1px 0 var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-area{padding-top:var(--fq-space-10);box-shadow:0 -1px 0 var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="admin"] .adp-dash-area:first-child{padding-top:0;box-shadow:none}
 [data-design="frequency"] [data-kit="admin"] .adp-dash-area>.sec-h{margin-bottom:0}
 [data-design="frequency"] [data-kit="admin"] .adp-dash-h{display:flex;align-items:center;gap:10px}
@@ -91,6 +91,30 @@
 [data-design="frequency"] [data-kit="admin"] .tag.adp-count{font-variant-numeric:tabular-nums}
 /* Moderation: the inline confirmation on a report card (a destructive action asks once before it runs). */
 [data-design="frequency"] [data-kit="admin"] .adp .soft.adp-tight[role="alertdialog"]{padding:14px 16px}
+
+/* THE CONSOLE RHYTHM (owner, 2026-10-13: "Adjust the spacing and make it feel inviting and open"). One
+   scale for every console page, kit-built or framed: the page head gets room below it, a KPI row's cards
+   share one inner padding and one gap, a second KPI row continues the first as one grid, and the rail's
+   panels sit apart by the same step as the column's sections. Calm, not sparse: steps of the --fq-space
+   scale, nothing past 48px between blocks. */
+[data-design="frequency"] [data-kit="admin"] .adp>.head, [data-design="frequency"] [data-kit="admin"] .adp-frame>.head{margin-bottom:var(--fq-space-9)}
+[data-design="frequency"] [data-kit="admin"] .adp>.head>div, [data-design="frequency"] [data-kit="admin"] .adp-frame>.head>div{gap:var(--fq-space-4)}
+[data-design="frequency"] [data-kit="admin"] .adp .head .meta{line-height:1.5}
+[data-design="frequency"] [data-kit="admin"] .adp .g4{gap:var(--fq-space-7)}
+[data-design="frequency"] [data-kit="admin"] .adp .g4+.g4.adp-kpi-row{margin-top:var(--fq-space-7)}
+[data-design="frequency"] [data-kit="admin"] .adp .panel.kpi{padding:var(--fq-space-7);gap:var(--fq-space-3);min-height:136px;justify-content:space-between}
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols>.side{gap:var(--fq-space-7)}
+[data-design="frequency"] [data-kit="admin"] .adp .panel>.sec-h{margin-bottom:var(--fq-space-6)}
+[data-design="frequency"] [data-kit="admin"] .adp .side .panel.stack{gap:var(--fq-space-4)}
+
+/* At a glance (the Space Overview's rail): label and its basis on the left, the reading on the right. */
+[data-design="frequency"] [data-kit="admin"] .adp-glance dl{margin:0}
+[data-design="frequency"] [data-kit="admin"] .adp-glance .list>div{align-items:center;padding:14px 0}
+[data-design="frequency"] [data-kit="admin"] .adp-glance dt{min-width:0;display:flex;flex-direction:column;gap:var(--fq-space-1)}
+[data-design="frequency"] [data-kit="admin"] .adp-glance dt .t2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="admin"] .adp-glance dt a.t2:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] .adp-glance dd{margin:0;flex:none}
+[data-design="frequency"] [data-kit="admin"] .adp-glance .num.adp-glance-num{font-size:var(--fq-text-h3);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* THERMAL NIGHT (.dark): the generated kit draws its hover rows, the Space card, the nav hover and the
    "bad" pill in day-only literals; at night they re-read from the night tokens so nothing glows white. */

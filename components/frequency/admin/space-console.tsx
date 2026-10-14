@@ -84,6 +84,13 @@ export async function FrequencySpaceConsole({ slug, children }: { slug: string; 
         }),
       }}
       items={items}
+      links={[
+        { key: 'public', label: 'View public page', href: `/spaces/${space.slug}` },
+        ...(space.domain ? [{ key: 'website', label: 'Your website', href: `https://${space.domain}`, external: true }] : []),
+        { key: 'feed', label: 'Feed', href: '/feed' },
+        { key: 'events', label: 'Events', href: '/events' },
+        { key: 'help', label: 'Help', href: '/help' },
+      ]}
       search={{ href: `/spaces/${space.slug}/manage?section=resonance`, label: 'Search people, events' }}
       alerts={{ href: '/notifications', unread }}
       me={{ name: me?.display_name ?? 'You', avatarUrl: me?.avatar_url ?? null, href: '/profile' }}
