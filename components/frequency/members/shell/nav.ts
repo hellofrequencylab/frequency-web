@@ -1,13 +1,27 @@
-// THE FREQUENCY MEMBER NAV (design_handoff/frequency/templates/members, `navVals()` in Members.dc.html).
+// THE FREQUENCY MEMBER NAV: the canon for the member shell's navigation (owner, 2026-10-14: "Cull it
+// down into a best practice navigation framework. Be sure all surfaces are reachable.").
 //
-// The header's first item, a plain Feed / Home link (homeFeedItem, owner 2026-10-13), then three
-// sections (Community / The Quest / You), each with the two link columns, the photo cards and the
-// footer line the design draws in its mega menu, plus the left rail's
-// shortcuts and the You tab's links. Every design item is MAPPED onto a route that already exists in
-// app/(main); nothing here adds a destination (docs/MENU-CONTRACT.md). Items the design names with no
-// route are left out and listed in NO_ROUTE so the gap is visible in review, not silent.
+// PRINCIPLES. One canonical home per surface. Short menus. The long tail is reached through HUB pages
+// (one click from a menu), plus Search and the Site map. Every surface is within two clicks of the
+// shell. Every row is gated exactly as DAWN gates it (its NAV_AREAS key, or a named gate).
 //
-// Pure and client-safe: the header island and the server rails both read it.
+//   HEADER        Feed / Home (homeFeedItem) · Community · The Quest · You, then Search, Messages,
+//                 Notifications, Zap and the avatar. No more sections.
+//   MEGA MENUS    FQ_NAV: at most 2 columns × 3 rows a section, the photo cards, the footer call to
+//                 action and the Frequency website row (FQ_SITE_LINKS).
+//   LEFT RAIL     FQ_SHORTCUTS (at most 6) and Your Circles.
+//   AVATAR        FQ_ACCOUNT_MENU (at most 8, Sign out included): personal and account. The about and
+//                 policy pages ride under it as a small text row (FQ_ABOUT_LINKS), not as items.
+//   RAIL FOOT     FQ_WORK_MENU (at most 5): Your Spaces (each Space into its console), Create,
+//                 Leadership (host tools), Admin console (staff). One link per console: each console
+//                 owns its own sub-navigation.
+//   HUBS          HUB_LINKS: hub route → the long-tail children that hub page renders (hubLinks()).
+//                 nav-coverage.test.ts checks every DAWN destination is reachable through the above.
+//   PHONE DRAWER  the same framework: shortcuts, Circles, the sections' rows, the work menu, the
+//                 account menu and the website row (header.tsx Drawer).
+//
+// Every item maps onto a route that already exists in app/(main); nothing here adds a destination
+// (docs/MENU-CONTRACT.md). Pure and client-safe: the header island and the server rails both read it.
 
 import type { FqIconName } from '@/components/frequency/icon'
 import { ROUTES } from '@/lib/frequency/site-nav'
@@ -45,9 +59,8 @@ export interface FqNavSection {
 }
 
 /** The header sections after the Feed / Home link, in the design's order. `{profile}` is replaced with
- *  the viewer's profile href. The design's Home section became that link (owner, 2026-10-13); its rows
- *  live on here (Around You and Search under Community, Journal and My Code under You), in the left
- *  rail's shortcuts, the header's Search and Messages, and the You tab, so phones (no rails) keep them. */
+ *  the viewer's profile href. Six rows a section: the most-used real destinations; the rest live on
+ *  each row's hub page (HUB_LINKS). */
 export const FQ_NAV: readonly FqNavSection[] = [
   {
     key: 'community',
@@ -61,7 +74,6 @@ export const FQ_NAV: readonly FqNavSection[] = [
           { label: 'Circles', sub: 'Small groups that meet', href: '/circles', icon: 'circle', navKey: 'circles' },
           { label: 'Events', sub: 'RSVP, tickets, check in', href: '/events', icon: 'event', navKey: 'events' },
           { label: 'Channels', sub: 'Seven topics under four Pillars', href: '/channels', icon: 'program', navKey: 'channels' },
-          { label: 'Around You', sub: 'Dispatches from nearby hosts', href: '/nearby', icon: 'pin', navKey: 'nearby' },
         ],
       },
       {
@@ -70,7 +82,6 @@ export const FQ_NAV: readonly FqNavSection[] = [
           { label: 'Members', sub: 'Friends, people, contacts', href: '/network', icon: 'contacts', navKey: 'people' },
           { label: 'Business Spaces', sub: 'Studios, cafés, non profits', href: '/spaces/directory', icon: 'space', navKey: 'my-spaces' },
           { label: 'Marketplace', sub: 'Market, Classifieds, Housing, Store', href: '/marketplace', icon: 'ticket' },
-          { label: 'Search', sub: 'People, Circles, events, Spaces', href: '/search', icon: 'search' },
         ],
       },
     ],
@@ -125,24 +136,22 @@ export const FQ_NAV: readonly FqNavSection[] = [
         h: 'You',
         items: [
           { label: 'My profile', sub: 'Your page, people and standing', href: '{profile}', icon: 'standing' },
-          { label: 'Orders', sub: 'Tickets, purchases, refunds', href: '/orders', icon: 'ticket' },
-          { label: 'Partners', sub: 'Local offers and plaques', href: '/partners', icon: 'host' },
           { label: 'Journal', sub: 'Your private captured moments', href: '/journal', icon: 'tip', navKey: 'journal' },
           { label: 'My Code', sub: 'Your QR. Connect in person', href: '/codes', icon: 'qr' },
         ],
       },
       {
-        h: 'Account',
+        h: 'Yours',
         items: [
+          { label: 'Orders', sub: 'Tickets, purchases, refunds', href: '/orders', icon: 'ticket' },
+          { label: 'Partners', sub: 'Local offers and plaques', href: '/partners', icon: 'host' },
           { label: 'Join Crew', sub: 'Pay what you want', href: '/upgrade', icon: 'membership' },
-          { label: 'Help and support', sub: 'Ask Vera, open a ticket', href: '/support', icon: 'tip' },
-          { label: 'Settings', sub: 'Notifications, privacy, plan', href: '/settings', icon: 'nudge' },
         ],
       },
     ],
     cards: [
       { kicker: 'The Vault', title: 'Zaps, Gems and your streak', href: '/crew/store', photo: 'gathering-07.jpg' },
-      { kicker: 'Help', title: 'Ask Vera, open a ticket', href: '/support', photo: 'gathering-08.jpg' },
+      { kicker: 'Help', title: 'Ask Vera, open a ticket', href: '/help', photo: 'gathering-08.jpg' },
     ],
     foot: 'Your people stay yours.',
     footCta: 'View profile',
@@ -156,6 +165,10 @@ export const MEMBER_HOME_HREF = '/?home'
 
 /** The member Feed. */
 export const FEED_HREF = '/feed'
+
+/** The header's own Search and Messages doors (icons, not menu rows). */
+export const SEARCH_HREF = '/search'
+export const MESSAGES_HREF = '/messages'
 
 /** Is this route the Feed? */
 export function isFeed(pathname: string): boolean {
@@ -184,7 +197,8 @@ export const FQ_SITE_LINKS: readonly { label: string; href: string }[] = [
   { label: 'Help Center', href: ROUTES.help },
 ]
 
-/** The left rail's shortcuts (Members.dc.html `shortcuts`). `badge` names the live count that rides on it. */
+/** The left rail's shortcuts (Members.dc.html `shortcuts`), at most six. `badge` names the live count
+ *  that rides on it. */
 export const FQ_SHORTCUTS: readonly (FqNavItem & { badge?: 'messages' | 'notifications' })[] = [
   { label: 'Around You', sub: '', href: '/nearby', icon: 'pin', navKey: 'nearby' },
   { label: 'Messages', sub: '', href: '/messages', icon: 'message', navKey: 'messageBoards', badge: 'messages' },
@@ -192,19 +206,161 @@ export const FQ_SHORTCUTS: readonly (FqNavItem & { badge?: 'messages' | 'notific
   { label: 'Marketplace', sub: '', href: '/marketplace', icon: 'ticket' },
   { label: 'Members', sub: '', href: '/network', icon: 'contacts', navKey: 'people' },
   { label: 'Journal', sub: '', href: '/journal', icon: 'tip', navKey: 'journal' },
-  { label: 'My Code', sub: '', href: '/codes', icon: 'qr' },
 ]
 
-/** The You tab's links (Members.dc.html `dockVals().youLinks`). */
-export const FQ_YOU_LINKS: readonly FqNavItem[] = [
-  { label: 'My profile', sub: '', href: '{profile}', icon: 'standing' },
-  { label: 'Journal', sub: '', href: '/journal', icon: 'tip', navKey: 'journal' },
-  { label: 'My Code', sub: '', href: '/codes', icon: 'qr' },
-  { label: 'Orders', sub: '', href: '/orders', icon: 'ticket' },
-  { label: 'Join Crew', sub: '', href: '/upgrade', icon: 'membership' },
-  // Phones have no mega menu, so the website door rides here too.
-  { label: 'Frequency home', sub: '', href: MEMBER_HOME_HREF, icon: 'page' },
+/** The You section's rows (kept as a name for the site map and its test, which read it). */
+export const FQ_YOU_LINKS: readonly FqNavItem[] = FQ_NAV.find((s) => s.key === 'you')!.cols.flatMap((c) => c.items)
+
+// ── The avatar menu and the rail-foot work menu (owner, 2026-10-13: "split some admin functions
+// between the bottom left and top right menus"; culled 2026-10-14) ──────────────────────────────────
+
+/** A viewer gate a row can carry beyond its NAV_AREAS key. Resolved by `menuGateOpen`. */
+export type FqMenuGate =
+  /** Owns or admins at least one Space (hasOperatedSpaces, the layout's `operatesSpaces`). */
+  | 'operatesSpaces'
+  /** Host or above on the trust ladder (DAWN's `minAccess: 'host'`). */
+  | 'host'
+
+/** A row in the avatar or work menu. An `action` row is a button that opens a global sheet. */
+export interface FqMenuRow {
+  group: string
+  label: string
+  icon: FqIconName
+  href?: string
+  action?: 'invite' | 'bug'
+  navKey?: string
+  gate?: FqMenuGate
+}
+
+/** What the gates read. Every field comes from the layout's own per-request reads. */
+export interface FqMenuViewer {
+  navAccess?: Record<string, string>
+  operatesSpaces: boolean
+  host: boolean
+}
+
+/** Is this row visible to the viewer? Its NAV_AREAS key first, then its gate. */
+export function menuGateOpen(row: { navKey?: string; gate?: FqMenuGate }, v: FqMenuViewer): boolean {
+  if (!canShow(row, v.navAccess)) return false
+  switch (row.gate) {
+    case 'operatesSpaces':
+      return v.operatesSpaces
+    case 'host':
+      return v.host
+    default:
+      return true
+  }
+}
+
+/** The rail foot's work menu, in group order (one entry per group; a group of several rows opens as
+ *  a fold). Your Spaces also carries one row per Space the member runs, each into its console,
+ *  drawn above "All your Spaces". */
+export const FQ_WORK_MENU: readonly FqMenuRow[] = [
+  { group: 'Your Spaces', label: 'All your Spaces', href: '/spaces/operating', icon: 'space', gate: 'operatesSpaces' },
+  { group: 'Create', label: 'New event', href: '/events/new', icon: 'event', navKey: 'events' },
+  { group: 'Create', label: 'New Circle', href: '/circles/new', icon: 'circle', navKey: 'circles' },
+  { group: 'Create', label: 'List a product', href: '/market/sell', icon: 'tag', navKey: 'maker' },
+  { group: 'Leadership', label: 'Leadership', href: '/lead', icon: 'standing', navKey: 'lead' },
+  { group: 'Admin console', label: 'Admin console', href: '/admin', icon: 'shield', navKey: 'admin-home' },
 ]
+
+/** The glyph for each work group. */
+export const FQ_WORK_GROUP_ICON: Readonly<Record<string, FqIconName>> = {
+  'Your Spaces': 'space',
+  Create: 'plus',
+  Leadership: 'standing',
+  'Admin console': 'shield',
+}
+
+/** The avatar menu, at most eight with Sign out (drawn after these). View profile is the menu's head. */
+export const FQ_ACCOUNT_MENU: readonly FqMenuRow[] = [
+  { group: 'Account', label: 'View profile', href: '{profile}', icon: 'user' },
+  { group: 'Account', label: 'Settings', href: '/settings', icon: 'settings' },
+  { group: 'Account', label: 'Appearance', href: '/settings#appearance', icon: 'sun' },
+  { group: 'Account', label: 'Plan & billing', href: '/settings/billing', icon: 'wallet' },
+  { group: 'Account', label: 'Drafts', href: '/drafts', icon: 'edit' },
+  { group: 'Account', label: 'Help', href: '/help', icon: 'help' },
+  { group: 'Account', label: 'Report a bug', action: 'bug', icon: 'flag' },
+]
+
+/** The about and policy pages (DAWN's phone drawer foot): a small text row under the avatar menu and
+ *  in the phone drawer's website group. */
+export const FQ_ABOUT_LINKS: readonly { label: string; href: string }[] = [
+  { label: 'What is Frequency', href: '/what-is-frequency' },
+  { label: 'About', href: '/about' },
+  { label: 'Compare', href: '/vs' },
+  { label: 'Guidelines', href: '/guidelines' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Terms', href: '/terms' },
+]
+
+/** A hub's long-tail child. Gated like DAWN gates the same destination. */
+export interface FqHubLink {
+  label: string
+  href: string
+  navKey?: string
+  gate?: FqMenuGate
+}
+
+/** THE HUB CONTRACT: hub route → the children that hub page renders (each hub body draws
+ *  `hubLinks(hub)`), so a surface culled from the menus stays one click from a menu row. The admin
+ *  console's groups are its own navigation (lib/nav/studio.ts), listed here so the guard can check it. */
+export const HUB_LINKS: Readonly<Record<string, readonly FqHubLink[]>> = {
+  '/network': [
+    { label: 'Friends', href: '/network/friends' },
+    { label: 'My Contacts', href: '/network/contacts', navKey: 'connections' },
+    { label: 'Entry points', href: '/entry-points' },
+  ],
+  '/marketplace': [
+    { label: 'Classifieds', href: '/classifieds', navKey: 'market' },
+    { label: 'Market', href: '/market', navKey: 'maker' },
+    { label: 'Housing', href: '/housing', navKey: 'housing' },
+    { label: 'Frequency Store', href: '/store', navKey: 'shop' },
+    { label: 'My storefront', href: '/market/manage', gate: 'host' },
+  ],
+  '/help': [{ label: 'Support tickets', href: '/support' }],
+  '/admin': [
+    { label: 'Community', href: '/admin/community', navKey: 'admin-community' },
+    { label: 'Programs', href: '/admin/programs', navKey: 'admin-programs' },
+    { label: 'Growth', href: '/admin/growth', navKey: 'admin-growth' },
+    { label: 'Resonance CRM', href: '/admin/crm', navKey: 'admin-crm' },
+    { label: 'Vera AI', href: '/admin/vera-ai', navKey: 'admin-vera-ai' },
+    { label: 'Operations', href: '/admin/operations', navKey: 'admin-operations' },
+    { label: 'QR Studio', href: '/admin/qr', navKey: 'admin-qr' },
+    { label: 'Loom Studio', href: '/admin/library', navKey: 'admin-library' },
+    { label: 'Manage Spaces', href: '/admin/spaces', navKey: 'admin-spaces' },
+    { label: 'Market admin', href: '/admin/marketplace', navKey: 'admin-marketplace' },
+  ],
+}
+
+/** The children a hub page draws for this viewer. */
+export function hubLinks(hub: string, v: FqMenuViewer): FqHubLink[] {
+  return (HUB_LINKS[hub] ?? []).filter((l) => menuGateOpen(l, v))
+}
+
+/** A resolved menu group, ready to draw. Plain data, so it crosses into the header island. */
+export interface FqMenuGroup {
+  label: string
+  rows: { key: string; label: string; icon: FqIconName; href?: string; action?: FqMenuRow['action'] }[]
+}
+
+/** Group rows by `group`, in first-seen order, dropping hidden rows and repeated hrefs. */
+export function groupRows(rows: readonly FqMenuRow[], v: FqMenuViewer, profileHref: string): FqMenuGroup[] {
+  const out: FqMenuGroup[] = []
+  const seen = new Set<string>()
+  for (const r of rows) {
+    if (!menuGateOpen(r, v)) continue
+    const href = r.href ? resolveHref(r.href, profileHref) : undefined
+    if (href) {
+      if (seen.has(href)) continue
+      seen.add(href)
+    }
+    let g = out.find((x) => x.label === r.group)
+    if (!g) out.push((g = { label: r.group, rows: [] }))
+    g.rows.push({ key: href ?? `action:${r.action}`, label: r.label, icon: r.icon, href, action: r.action })
+  }
+  return out
+}
 
 /** Design items with no route in app/(main) today. Not rendered; listed so the gap is on the record. */
 export const NO_ROUTE: readonly string[] = ['Site map (footer, You tab)']

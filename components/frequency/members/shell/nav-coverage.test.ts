@@ -182,53 +182,64 @@ const ALLOWLIST: Readonly<Record<string, string>> = {
   // An alert, not a menu row: the janitor-only red pill drawn only while support tickets are open.
   // The queue itself is an operator tool reached from the Admin world.
   '/admin/support': 'conditional janitor Bug Alert pill, not navigation',
+  // A redirect, not a surface: /people forwards to /network (Members), which the menu carries.
+  '/people': 'redirects to /network (Members, Community menu)',
+  // Being merged by the cuts pass: The Lab into /vision and The Quest page into /features, both on
+  // the website row (FQ_SITE_LINKS).
+  '/the-lab': 'merging into /vision (website row)',
+  '/the-quest': 'merging into /features (website row)',
 }
 
-/** MISSING from the Frequency shell today. The shell's nav change (account menu, rail-foot menu, the
- *  live-site links) is adding these; the coordinator empties this list when it merges. Not the
- *  allowlist: an entry here is a bug being fixed, not a decision. */
-const PENDING_NAV_MERGE: readonly string[] = [
-  // Rail
-  '/network/contacts',
-  '/housing',
-  '/store',
-  '/drafts',
-  // Rail Admin section (staff / host+ only)
-  '/admin',
-  '/admin/community',
-  '/lead',
-  '/admin/programs',
-  '/admin/growth',
-  '/admin/crm',
-  '/admin/vera-ai',
-  '/admin/operations',
-  '/admin/qr',
-  '/admin/library',
-  '/admin/spaces',
-  '/admin/marketplace',
-  // Account menu
-  '/settings/billing',
-  '/market/manage',
-  '/network/friends',
-  '/entry-points',
-  // Member footer and drawer foot
-  '/classifieds',
-  '/market',
-  '/people',
-  '/about',
-  '/the-lab',
-  '/the-quest',
-  '/vs',
-  '/what-is-frequency',
-  '/privacy',
-  '/terms',
-  '/guidelines',
-]
+/** MISSING from the Frequency shell today: a bug being fixed, not a decision. Empty. */
+const PENDING_NAV_MERGE: readonly string[] = []
+
+/** Hubs whose page does not draw `hubLinks(hub)` yet: the hub bodies are a parallel branch. The
+ *  coordinator clears this when it merges; an entry here is reachable only by URL until then. */
+const PENDING_HUB_MERGE: readonly string[] = ['/network', '/marketplace', '/help']
+
+/** Where a hub's children are drawn, when the hub is not a member page rendering `hubLinks()`: the
+ *  admin console's own navigation (the operator destination catalog). */
+const HUB_SOURCE_FILES: Readonly<Record<string, string>> = {
+  '/admin': 'lib/nav/studio.ts',
+}
+
+/** Every source file under the member pages and the Frequency components (where a hub body lives). */
+function memberSources(): { file: string; src: string }[] {
+  const out: { file: string; src: string }[] = []
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, e.name)
+      if (e.isDirectory()) walk(full)
+      else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) && !full.endsWith(path.join('shell', 'nav.ts'))) {
+        out.push({ file: full, src: readFileSync(full, 'utf8') })
+      }
+    }
+  }
+  walk(path.join(process.cwd(), 'app', '(main)'))
+  walk(path.join(process.cwd(), 'components', 'frequency'))
+  return out
+}
 
 // ── The checks ────────────────────────────────────────────────────────────────────────────────
 const DAWN = dawnSet()
 const FQ_RAW = frequencyHrefs()
 const FQ = new Set([...FQ_RAW].map(norm))
+
+/** The menus proper: nav.ts's hrefs less the hubs' children (a child is reached THROUGH its hub). */
+const HUB_CHILDREN = new Set(Object.values(fqNav.HUB_LINKS).flatMap((ls) => ls.map((l) => norm(l.href))))
+const MENU = new Set(
+  [...frequencyHrefsExcept('HUB_LINKS')].map(norm),
+)
+
+function frequencyHrefsExcept(skip: string): Set<string> {
+  const raw = new Set<string>()
+  const seen = new Set<unknown>()
+  for (const [name, value] of Object.entries(fqNav)) {
+    if (typeof value === 'function' || name === skip) continue
+    collectHrefs(value, name, raw, seen)
+  }
+  return raw
+}
 
 describe('the nav coverage guard reads real data', () => {
   it('found the routes, the DAWN chrome and the Frequency nav (so nothing below is vacuous)', () => {
@@ -262,6 +273,48 @@ describe('the Frequency chrome reaches every DAWN destination', () => {
 
   it('every href nav.ts exports is a route app/ serves', () => {
     expect([...FQ_RAW].filter((h) => !resolves(h))).toEqual([])
+  })
+})
+
+describe('the hubs carry the long tail (REACHABILITY: a menu row, or one click past one)', () => {
+  const hubs = Object.keys(fqNav.HUB_LINKS)
+  const sources = memberSources()
+
+  it('every hub is itself a menu row', () => {
+    expect(hubs.filter((h) => !MENU.has(norm(h)))).toEqual([])
+  })
+
+  it('every DAWN destination is a menu row or a hub child (outside the allowlist)', () => {
+    const unreachable = [...DAWN.keys()].filter((h) => !MENU.has(h) && !HUB_CHILDREN.has(h) && !(h in ALLOWLIST))
+    expect(unreachable).toEqual([])
+  })
+
+  it('every hub page draws its children (hubLinks), or names them in its own navigation', () => {
+    const silent = hubs.filter((hub) => {
+      if (PENDING_HUB_MERGE.includes(hub)) return false
+      const file = HUB_SOURCE_FILES[hub]
+      if (file) {
+        const src = readFileSync(path.join(process.cwd(), file), 'utf8')
+        return fqNav.HUB_LINKS[hub]!.some((l) => !src.includes(`'${l.href}'`))
+      }
+      return !sources.some(({ src }) => src.includes(`hubLinks('${hub}'`))
+    })
+    expect(silent).toEqual([])
+  })
+
+  it('PENDING_HUB_MERGE holds only hubs still waiting', () => {
+    const drawn = PENDING_HUB_MERGE.filter((hub) => sources.some(({ src }) => src.includes(`hubLinks('${hub}'`)))
+    expect(drawn).toEqual([])
+  })
+
+  it('the framework stays short (nav.ts header): 2 × 3 a section, 6 shortcuts, 8 account rows, 5 work entries', () => {
+    for (const s of fqNav.FQ_NAV) {
+      expect(s.cols.length, s.key).toBeLessThanOrEqual(2)
+      for (const c of s.cols) expect(c.items.length, `${s.key}/${c.h}`).toBeLessThanOrEqual(3)
+    }
+    expect(fqNav.FQ_SHORTCUTS.length).toBeLessThanOrEqual(6)
+    expect(fqNav.FQ_ACCOUNT_MENU.length + 1).toBeLessThanOrEqual(8) // + Sign out
+    expect(new Set(fqNav.FQ_WORK_MENU.map((r) => r.group)).size).toBeLessThanOrEqual(5)
   })
 })
 
