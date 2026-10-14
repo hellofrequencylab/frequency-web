@@ -7,6 +7,7 @@ import {
   WORKER_FILES,
   EXPECTED_SIBLING_SPECIFIER,
   PUBLIC_WORKER_PATH,
+  relativeImports,
 } from './copy-maplibre-worker.mjs'
 import { MAPLIBRE_WORKER_URL } from '../lib/maps/provider'
 
@@ -30,12 +31,18 @@ describe('the MapLibre worker copy rests on assumptions that are still true', ()
     }
   })
 
-  it('the worker still imports its sibling by an unhashed RELATIVE specifier', () => {
-    // THE LOAD-BEARING FACT. Turbopack rewrites references in code it bundles, not inside assets
-    // it copies, so this line survives into the emitted worker and resolves against whatever
-    // directory the worker is served from. Putting the sibling in that directory is the entire fix.
+  it('the worker loads no relative module but the sibling it is co-located with', () => {
+    // THE LOAD-BEARING FACT. Turbopack rewrites references in code it bundles, not inside assets it
+    // copies, so any relative import in the worker resolves against the directory it is served from.
+    // maplibre-gl 6.0–6.12 imported its sibling (co-locating the pair fixed it); 6.13 inlines it and
+    // imports nothing. Either is safe. A third relative file would 404 and blank the map.
     const worker = readFileSync(join('node_modules', 'maplibre-gl', 'dist', WORKER_FILES[0]), 'utf8')
-    expect(worker).toContain(EXPECTED_SIBLING_SPECIFIER)
+    expect(relativeImports(worker).filter((spec) => spec !== EXPECTED_SIBLING_SPECIFIER)).toEqual([])
+  })
+
+  it('reads relative imports out of minified code, static and dynamic', () => {
+    expect(relativeImports('import{a as b}from"./maplibre-gl-shared.mjs";import("./x.mjs");from"pkg"')).toEqual(['./maplibre-gl-shared.mjs', './x.mjs'])
+    expect(relativeImports('var e=1;')).toEqual([])
   })
 
   it('the sibling has no imports of its own, so the pair is the complete closure', () => {
@@ -61,7 +68,7 @@ describe('the MapLibre worker copy rests on assumptions that are still true', ()
     }
   })
 
-  it('refuses to write a worker that does not import the sibling it is co-located with', () => {
+  it('refuses to write a worker that imports a relative file it is not co-located with', () => {
     // The regression that would make this script a liar: a future maplibre inlines or renames the
     // shared chunk, the copy still "succeeds", and the served worker quietly needs something that
     // is not there. Fabricate that package layout and prove the script stops.
@@ -70,7 +77,7 @@ describe('the MapLibre worker copy rests on assumptions that are still true', ()
     writeFileSync(join(fake, WORKER_FILES[0]), 'import { x } from "./somewhere-else.mjs"\n')
     writeFileSync(join(fake, WORKER_FILES[1]), '// shared\n')
     expect(() => copyMaplibreWorker({ srcDir: fake, outDir: join(fake, 'out'), quiet: true })).toThrow(
-      /no longer imports/,
+      /not co-located/,
     )
   })
 
