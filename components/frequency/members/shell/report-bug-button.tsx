@@ -2,10 +2,11 @@
 
 import { FqIcon } from '@/components/frequency/icon'
 
-// Report a bug, in the kit's idiom. The same global support sheet as the DAWN rail's ReportButton
+// Report a bug, in the kit's idiom: one `.fqm-util` BUTTON in the right rail's utilities stack, not a
+// list row (so not a RowCard). The same global support sheet as the DAWN rail's ReportButton
 // (components/support/support-launcher.tsx listens for `open-support`); dispatched here directly so
 // the shell does not carry lucide or DAWN's button classes.
-export function ReportRow() {
+export function ReportBugButton() {
   return (
     <button
       type="button"

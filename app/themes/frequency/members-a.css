@@ -191,7 +191,6 @@
 [data-design="frequency"] [data-kit="members"] .fa-searchbar{height:64px;display:flex;align-items:center;gap:12px;padding:0 22px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fa-searchbar .fq-icon{width:22px;height:22px;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fa-searchbar input{flex:1;min-width:0;border:none;outline:none;background:none;font:500 20px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fa-searchbar input::placeholder{color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="members"] .fa-thumb72{width:72px;height:72px;border-radius:var(--fq-radius-m);flex:none}
 [data-design="frequency"] [data-kit="members"] .fa-cardbody{display:flex;flex-direction:column;gap:6px;padding:18px 20px}
 [data-design="frequency"] [data-kit="members"] .fa-cardph{display:block;height:150px}
@@ -237,4 +236,11 @@
   padding: 11px 18px;
   border-radius: 22px;
   resize: none;
+}
+
+/* The search band's field is the Input primitive's SEAMLESS variant (components/ui/field.tsx), which
+   carries `placeholder:text-subtle`. A utility beats the components layer whatever the specificity, so
+   the kit's fainter placeholder sits in the UTILITIES layer, where this scoped selector outranks it. */
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] .fa-searchbar input::placeholder{color:var(--fq-text-faint)}
 }

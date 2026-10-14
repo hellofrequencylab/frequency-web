@@ -34,7 +34,7 @@ import { getInitials } from '@/lib/utils'
 import { AddToggle } from '../shared/toggles'
 import { avatarBg } from './avatar'
 import { GetStarted } from './get-started'
-import { ReportRow } from './report-row'
+import { ReportBugButton } from './report-bug-button'
 
 type Stats = Promise<DockData | null>
 
@@ -247,7 +247,7 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
         <Suspense fallback={null}>
           <InvitePanel profileId={profileId} />
         </Suspense>
-        <ReportRow />
+        <ReportBugButton />
       </div>
     </div>
   )

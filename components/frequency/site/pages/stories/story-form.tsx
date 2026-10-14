@@ -5,6 +5,8 @@
 // story addressed to the real contact address and its fields laid out. Nothing is submitted on their
 // behalf and no endpoint is invented.
 import { useState } from 'react'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 const KINDS = ['I host a Circle', 'I run a Space', 'I found my people here'] as const
 
@@ -23,19 +25,19 @@ export function StoryForm({ email }: { email: string }) {
     >
       <label className="st-lab">
         Who you are
-        <select value={kind} onChange={(e) => setKind(e.target.value)}>
+        <Select value={kind} onChange={(e) => setKind(e.target.value)}>
           {KINDS.map((k) => (
             <option key={k}>{k}</option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="st-lab">
         Your Circle or Space
-        <input value={where} onChange={(e) => setWhere(e.target.value)} placeholder="Its name, so readers can find it" />
+        <Input value={where} onChange={(e) => setWhere(e.target.value)} placeholder="Its name, so readers can find it" />
       </label>
       <label className="st-lab">
         How it started
-        <textarea
+        <Textarea
           required
           rows={4}
           placeholder="The first night, who came, what changed."

@@ -7,6 +7,7 @@ import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import type { Message } from '@/components/messages/thread'
+import { Input } from '@/components/ui/field'
 
 // HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
 const HOME_TZ = 'America/Los_Angeles'
@@ -146,8 +147,8 @@ export function FqDmThread({
         <TypingIndicator names={typingNames} />
       </div>
       <form className="row fa-pane-f" onSubmit={submit}>
-        <input
-          className="input grow"
+        <Input
+          className="grow"
           value={body}
           onChange={(e) => {
             setBody(e.target.value)
