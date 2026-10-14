@@ -269,6 +269,7 @@ async function MicroGetStarted({ profileId }: { profileId: string }) {
   if (!steps) return null
   const done = steps.filter((s) => s.done).length
   const left = steps.length - done
+  if (left === 0) return null // gone once every step is done, like the full box
   return <MicroItem icon="compass" value={`${done}/${steps.length}`} tip="Get started" sub={`${left} left`} />
 }
 

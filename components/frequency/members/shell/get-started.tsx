@@ -8,8 +8,8 @@ import { FqIcon } from '@/components/frequency/icon'
 // lib/onboarding/status.ts in the design's box. It leads the right rail on every member page, and the
 // Feed repeats it inline below 680px, where the rails are hidden. Done-ness is detected server-side
 // from member state; each CTA opens the step's real flow, so there is no client-side "mark done" and
-// no setup bonus (the prototype's "⚡ 50 added" has no ledger entry behind it). × folds the box away
-// for this visit: the platform keeps the guide until its steps are done (feed-onboarding-guide.tsx).
+// no setup bonus (the prototype's "⚡ 50 added" has no ledger entry behind it). There is no close
+// button (owner, 2026-10-14): the box stays until every step is done, then goes away by itself.
 
 export interface GsStep {
   key: string
@@ -21,13 +21,12 @@ export interface GsStep {
 }
 
 export function GetStarted({ steps, className }: { steps: GsStep[]; className?: string }) {
-  const [hidden, setHidden] = useState(false)
   const [open, setOpen] = useState<string | null>(null)
   const done = steps.filter((s) => s.done).length
   const firstTodo = steps.find((s) => !s.done)?.key ?? null
   const active = open ?? firstTodo
-  if (hidden || steps.length === 0) return null
   const left = steps.length - done
+  if (steps.length === 0 || left === 0) return null
   const later = (key: string) => {
     const i = steps.findIndex((s) => s.key === key)
     const next = [...steps.slice(i + 1), ...steps.slice(0, i)].find((s) => !s.done)
@@ -40,11 +39,8 @@ export function GetStarted({ steps, className }: { steps: GsStep[]; className?: 
         <span className="fqm-gs-ring" data-n={`${done}/${steps.length}`} style={{ '--p': `${Math.round((done / steps.length) * 100)}%` } as CSSProperties} aria-hidden />
         <span className="fqm-grow">
           <b>Get started</b>
-          <small>{left === 0 ? 'All done' : `Set up your network · ${left} left`}</small>
+          <small>{`Set up your network · ${left} left`}</small>
         </span>
-        <button type="button" className="fqm-x" aria-label="Hide for now" title="Hide" onClick={() => setHidden(true)}>
-          <FqIcon name="close" />
-        </button>
       </div>
       <div className="fqm-steps">
         {steps.map((s) => {
