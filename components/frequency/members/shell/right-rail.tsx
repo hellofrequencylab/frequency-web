@@ -253,6 +253,32 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
   )
 }
 
+// ── The phone copy (Feed only) ────────────────────────────────────────────────────────────────
+// Under 768px the rail is hidden, so Today's goals, Your week, the local board and People to know
+// never reached a phone. The Feed carries this copy after Up next, in the rail's order, and hides it
+// at 768px and up where the rail shows (members-shell.css, .fqm-rp-inline). Feed only, not every
+// page: every page would grow too long (design handoff, 2026-10-14). The reads are the rail's own
+// request-cached loaders, so a full page load adds no query.
+
+export function FrequencyPhonePanels({ profileId, stats }: Pick<FrequencyRightRailProps, 'profileId' | 'stats'>) {
+  return (
+    <div className="fqm-rp-inline">
+      <Suspense fallback={null}>
+        <GoalsPanel profileId={profileId} stats={stats} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <YourWeekPanel profileId={profileId} stats={stats} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <BoardPanel profileId={profileId} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PeoplePanel profileId={profileId} />
+      </Suspense>
+    </div>
+  )
+}
+
 // ── The micro rail (76px): one button per panel, a value under each icon ──────────────────────
 
 function MicroItem({ icon, value, tip, sub }: { icon: FqIconName; value: string; tip: string; sub: string }) {
