@@ -1,0 +1,475 @@
+/* THE PAGE-EDITOR BLOCKS IN THE FREQUENCY WEBSITE IDIOM (ADR-1737, ADR-1740, docs/THEME.md §0). Hand-kept.
+
+   The public content pages (/about, /the-lab, /the-quest, the seeker articles, every future page an
+   operator builds in the page editor) are page-editor documents rendered by <BlockRender>. Their blocks
+   are shared with DAWN, so under Frequency the look is a SCOPE over that one markup, the same idiom
+   app/themes/frequency/space-page.css uses for the Space page:
+
+   · `[data-site-blocks]` is stamped by the root render of the block config (lib/page-editor/config.tsx,
+     components/page-editor/site-blocks.tsx) ONLY when SITE_DESIGN is 'frequency', so DAWN's markup is
+     byte-identical. Every rule below also requires `[data-kit="site"]`, the public site shell's kit root
+     (Stage, ADR-1740), so a member Spotlight or the editor canvas, which render the same blocks inside
+     another kit, are untouched.
+   · Rules are UNLAYERED on purpose: Tailwind's utilities sit in `@layer utilities`, and an unlayered rule
+     beats a layered one outright, without an !important (the mechanism space-page.css relies on too).
+   · The vocabulary is the site kit's (templates/website/web/site.css, installed as kit-site.css): `.h-l`
+     display headings in sentence case with an Instrument Serif italic `<em>`, `.label` kickers with the
+     side-coloured rule, `.btn` / `.btn-ghost` pills, `.pc` cards, `.qa` questions, `.phero` photo heroes,
+     `.closer` bands, `.sec` rhythm. Stated here as rules over the blocks' own classes, so a design change
+     is an edit to this file and never to a block.
+
+   The Space page and this file dress some of the same blocks. They agree on the grammar (display face in
+   sentence case, serif italic accents, the pill action, hairline-ring cards); they differ where the
+   surface does: a Space page is Commons (light panels), the website is Stage (UV void, aura bands).
+
+   Colours, faces, radii and motion are --fq-* tokens; a translucent fill is a color-mix of one. Geometry
+   that the export only states as a literal in the kit (a 52px pill, an 18px question card) is the kit's
+   own value (token-ok). */
+
+/* ══ 0. THE SCOPE'S SCALE: the marketing display ladder and the section rhythm, retuned to the kit ══════
+   DISPLAY_TYPE (components/marketing/display-type.ts) reads the --text-mk-* tokens, and the marketing
+   rhythm roles (.mk-beat, .mk-band, .mk-tight) read --space-section*. Redefining them here moves every
+   block that uses them, with no class change. Sizes mirror kit-site.css: .h-xl, .phero .h-xl, .h-l. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] {
+  --text-mk-splash: clamp(44px, 7.4vw, 104px);
+  --text-mk-masthead: clamp(40px, 5.8vw, 86px);
+  --text-mk-feature: clamp(36px, 5vw, 72px);
+  --text-mk-poster: clamp(36px, 5vw, 72px);
+  --text-mk-cover: clamp(32px, 4.6vw, 62px);
+  --text-mk-section: clamp(30px, 4.2vw, 56px);
+  --text-mk-subsection: clamp(22px, 2.4vw, 30px);
+  --text-mk-statement: clamp(32px, 4.6vw, 62px);
+  --text-mk-beat: clamp(32px, 4.6vw, 62px);
+  --text-mk-quote: clamp(28px, 3.4vw, 48px);
+  --text-mk-band-quote: clamp(26px, 3vw, 40px);
+  --text-mk-figure: clamp(40px, 4.6vw, 64px);
+  /* .sec is clamp(88px, 11vw, 140px); a content beat runs a step under it so an article does not drift. */
+  --space-section: clamp(64px, 9vw, 120px);
+  --space-section-tight: clamp(44px, 6vw, 80px);
+  --space-section-loose: clamp(88px, 11vw, 140px);
+}
+
+/* ══ 1. SURFACES: the page sits on the Stage canvas; tones become the kit's bands ══════════════════════ */
+
+/* `surface` is the default band: on the website a section is the canvas itself, not a card-coloured slab. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-surface {
+  background: transparent;
+}
+/* `canvas` is the alternate band: the kit's sunken `.places` / `.pay` sections. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-marketing-canvas {
+  background: var(--fq-bg-sunken);
+}
+/* `ink` (DAWN's wood-slat band) is the UV void lit by the page's mood hues (--fq-m1..3, set on the kit
+   root per route by lib/frequency/site-pages.ts), the way fx.js auras a Stage section. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat {
+  background:
+    radial-gradient(60% 80% at 12% 0%, color-mix(in oklab, var(--fq-m1, var(--fq-aura-1)) 22%, transparent), transparent 70%),
+    radial-gradient(55% 75% at 92% 100%, color-mix(in oklab, var(--fq-m2, var(--fq-aura-2)) 18%, transparent), transparent 72%),
+    var(--fq-uv-void);
+  box-shadow: inset 0 1px 0 var(--fq-border-hair), inset 0 -1px 0 var(--fq-border-hair);
+}
+/* DAWN's arc shoulder and its amber hairline are DAWN's: a flat edge, and the kit's hairline rule. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .arc-top {
+  border-radius: 0;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .rule-amber {
+  background: var(--fq-border-hair);
+}
+
+/* ══ 2. TYPE: Unbounded display in sentence case, Instrument Serif italic accents, Hanken body ═════════ */
+
+/* Every display line a block draws (a page title, a section heading, a statement, a beat, a card title
+   set in the display face): the kit's `.h-l`. Never DAWN's condensed caps. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .font-display {
+  font-family: var(--fq-font-display);
+  font-weight: 600;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .font-display.text-text {
+  color: var(--fq-text-strong);
+}
+/* A page title (h1) is the kit's `.h-xl` register: tighter still. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] h1.font-display {
+  letter-spacing: -0.05em;
+  line-height: 0.96;
+}
+/* The accent word (lib/page-editor/fields.tsx `accentize`) is the kit's `<em>`: the serif, italic, at
+   the display weight's optical partner. It keeps the line's colour, as `.h-xl em` does. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .font-display > span:is(.text-primary, .text-primary-strong, .text-signal-strong) {
+  font-family: var(--fq-font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
+/* A quote is the serif voice (Join.html `.jx-q blockquote`), not a shouted headline. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] blockquote.font-display {
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+/* Kickers: the kit's `.label`, quiet ink. One that opens a heading carries the short side-coloured rule
+   (`.sh .label b::before`); a caption set in the same role (a credit, a card's sub-line) does not. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .eyebrow,
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .mk-hero-photo p.tracking-eyebrow {
+  font-family: var(--fq-font-display);
+  font-size: var(--fq-text-label);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fq-text-muted);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.eyebrow, .mk-hero-photo p.tracking-eyebrow):has(+ :is(h1, h2, h3, .font-display))::before {
+  content: "";
+  display: inline-block;
+  width: 22px;
+  height: 1.5px;
+  margin-right: 12px;
+  vertical-align: middle;
+  background: var(--fq-side);
+  box-shadow: 0 0 10px var(--fq-side);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .mk-hero-photo p.tracking-eyebrow {
+  color: var(--fq-text-body);
+}
+
+/* The italic kicker under a heading is Instrument Serif, at a reading size. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(p, blockquote, figcaption).italic {
+  font-family: var(--fq-font-serif);
+  font-weight: 400;
+  font-size: clamp(20px, 1.9vw, 25px);
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--fq-text-body);
+}
+
+/* Reading text: the kit's `.body-l` ink. DAWN's muted step is a caption colour on Stage. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(p, div).text-muted:is(.leading-relaxed, .space-y-4, .space-y-3) {
+  color: var(--fq-text-body);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(p, div).text-text\/85 {
+  color: var(--fq-text-strong);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] strong.text-text {
+  color: var(--fq-text-strong);
+}
+/* An inline link in operator copy (lib/page-editor/richtext.tsx): the side colour, a quiet underline. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a.underline.text-primary-strong {
+  color: var(--fq-side);
+  text-decoration-color: color-mix(in oklab, var(--fq-side) 45%, transparent);
+  text-underline-offset: 4px;
+}
+
+/* Small caps captions and tags (a card's overline, a timeline tag, a stat's caption): the kit's `.k`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(p, span).uppercase:is(.tracking-widest, .tracking-wider, .tracking-eyebrow, .tracking-wide):not(.font-display) {
+  font-family: var(--fq-font-display);
+  font-size: var(--fq-text-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(p, span).uppercase.text-primary-strong {
+  color: var(--fq-side);
+}
+
+/* A card or row title set in the body face is the kit's `.pc h3`: the display face, tight. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(article, figure, li, details) :is(h3, p, span).font-bold:is(.text-body, .text-body-lg, .text-lead):not(.uppercase) {
+  font-family: var(--fq-font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--fq-text-strong);
+}
+
+/* ══ 3. NUMERALS: the kit's `.num` / `.ledger .pct` ═════════════════════════════════════════════════════ */
+
+/* A step or stage number, a timeline label, a stat figure: display, tight, in the side colour. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(span, p, div).font-display:is(.leading-none, .text-stat, .text-stat-sm) {
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(span, p, div).font-display:is(.text-primary, .text-primary-strong) {
+  color: var(--fq-side);
+}
+
+/* ══ 4. CARDS AND PHOTOGRAPHS: the kit's `.pc` and `.photo` ═════════════════════════════════════════════ */
+
+/* Every bordered card the blocks draw (a feature card, a timeline step, a how-to step, a photo card, a
+   live event row, a plan): no rule, a hairline ring, the kit's 24px corner. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.rounded-card, .rounded-3xl).border:not(a, details) {
+  border-color: transparent;
+  border-radius: var(--fq-radius-l);
+  background-color: var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+/* The operator's "small" corner keeps a smaller corner; a schedule row is the kit's sunken `.lb` row. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] div.rounded-control.border:is(.bg-surface, .bg-on-ink\/5) {
+  border-color: transparent;
+  border-radius: var(--fq-radius-m);
+  background-color: var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] li.rounded-xl:is(.border, .bg-on-ink\/5) {
+  border-color: transparent;
+  border-radius: 14px; /* token-ok: the kit's .lb row corner */
+  background: var(--fq-bg-sunken);
+}
+/* A callout (a safety-net note, a soft aside): the kit's side-tinted wash. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .rounded-card.border.border-primary\/30 {
+  background: var(--fq-side-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fq-side) 30%, transparent);
+}
+/* On an aura band a card is glass (the kit's `.tool`), so the band's light reads through it. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat :is(.rounded-card, .rounded-3xl).border:not(a, details) {
+  background-color: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+/* A link that is a card (the "Keep reading" pillar row): the same card, lit by the side colour on hover. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a.rounded-3xl.border {
+  border-color: transparent;
+  border-radius: var(--fq-radius-l);
+  background-color: var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+  transition: box-shadow var(--fq-dur-fast), transform var(--fq-dur-fast) var(--fq-ease-out);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a.rounded-3xl.border:hover {
+  box-shadow: inset 0 0 0 1.5px var(--fq-side);
+  transform: translateY(-2px);
+}
+/* The chosen card (a recommended plan, the page you are on): the kit's lit `.pop.in > .pc`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.rounded-card, .rounded-3xl).border-primary:not(a) {
+  border-color: transparent;
+  border-radius: var(--fq-radius-l);
+  background-color: var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fq-side) 45%, transparent), 0 0 44px -22px var(--fq-side);
+}
+/* An unbordered soft card, and a raised panel inside a band. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.rounded-card, .rounded-3xl):is(.bg-surface-elevated\/60, .bg-surface):not(.border, a, details, section) {
+  border-radius: var(--fq-radius-l);
+  background-color: var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+/* A photograph's frame (a media-and-text image, a split hero): the kit's `.chap .photo`, no rule, a long
+   shadow into the void. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .grid > :is(.rounded-card, .rounded-3xl).overflow-hidden.border:not(article, figure, li) {
+  border-color: transparent;
+  border-radius: var(--fq-radius-l);
+  box-shadow: 0 40px 90px -40px color-mix(in oklab, var(--fq-uv-void) 90%, transparent);
+}
+/* An icon chip and a date tile (feature icons, value icons, the live event date): the kit's `.pc .ic`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.bg-primary-bg, .bg-primary\/20):is(.rounded-2xl, .rounded-xl, .rounded-pill, .rounded-control) {
+  background: var(--fq-side-soft);
+  color: var(--fq-side);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.bg-primary-bg, .bg-primary\/20) :is(.text-primary-strong, .text-primary) {
+  color: var(--fq-side);
+}
+/* A numbered disc on a photo card: the kit's `.door li a::before`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] span.rounded-pill.bg-primary.font-display {
+  background: var(--fq-side);
+  color: var(--fq-text-on-accent);
+  box-shadow: 0 0 18px -4px var(--fq-side);
+}
+
+/* ══ 5. ACTIONS: the kit's `.btn` pill and `.btn-ghost` ═════════════════════════════════════════════════ */
+
+/* The primary CTA every block draws (components/marketing/marketing-ui.tsx `buttonClasses`, through the
+   kit's CtaButton): a 52px pill in the Stage action colour with its glow. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).bg-primary.text-on-primary {
+  min-height: 52px; /* token-ok: the kit's .btn height */
+  padding-block: 0;
+  padding-inline: 26px;
+  border-radius: var(--fq-radius-orb);
+  background: var(--fq-action-primary);
+  color: var(--fq-action-primary-text);
+  font-family: var(--fq-font-sans);
+  font-size: var(--fq-text-body-size);
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: var(--fq-action-glow);
+  transition: transform var(--fq-dur-fast) var(--fq-ease-out);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).bg-primary.text-on-primary:hover {
+  background: var(--fq-action-primary-hover);
+  transform: translateY(-1px);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).bg-primary.text-on-primary:active {
+  transform: scale(0.97);
+}
+/* The secondary and outline CTAs: `.btn-ghost`, an inset ring on transparent. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).border:not(.bg-primary) {
+  min-height: 52px; /* token-ok: the kit's .btn height */
+  padding-block: 0;
+  padding-inline: 26px;
+  border-color: transparent;
+  border-radius: var(--fq-radius-orb);
+  background: transparent;
+  color: var(--fq-text-strong);
+  font-family: var(--fq-font-sans);
+  font-size: var(--fq-text-body-size);
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1.5px var(--fq-border-strong);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).border:not(.bg-primary):hover {
+  background: color-mix(in oklab, var(--fq-text-strong) 6%, transparent);
+}
+/* An arrow link (`arrowLinkClasses`): the kit's `.go`, sentence case in the side colour. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] a.inline-flex.uppercase.font-bold {
+  font-family: var(--fq-font-sans);
+  font-size: var(--fq-text-body-s);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fq-side);
+}
+
+/* ══ 6. NAMED BLOCKS ════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── The photo hero (Hero `image`, marketing-ui PhotoHero): the kit's `.phero`. Bottom-left lockup over
+   the photograph, the void's shade, the page title at `.phero .h-xl`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo:not(.min-h-screen) {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: min(78vh, 760px);
+  background: var(--fq-uv-void);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo > img {
+  opacity: 0.6;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo > .z-10 {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px; /* token-ok: the kit's .wrap measure */
+  padding-inline: clamp(18px, 4vw, 40px);
+  padding-top: 140px; /* token-ok: the kit's .phero .wrap, clears the floating header */
+  padding-bottom: clamp(56px, 7vw, 88px);
+  text-align: left;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo h1 {
+  max-width: 17ch;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo h1 + p {
+  margin-inline: 0;
+  max-width: 56ch;
+  font-size: clamp(17px, 1.6vw, 20px);
+  line-height: 1.55;
+  color: var(--fq-text-body);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo .justify-center {
+  justify-content: flex-start;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo .mx-auto.max-w-xl {
+  margin-inline: 0;
+}
+/* The kit clips every `section` (kit-site.css `section{overflow:hidden}`), which would cut the fact dock
+   that overhangs a docked hero's bottom edge; the docked hero alone opts back out, as DAWN's does. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-dock {
+  overflow: visible;
+}
+/* The fact dock is the kit's glass panel; its figures, the side colour. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo .glass-ink {
+  border-color: var(--fq-border-hair);
+  border-radius: var(--fq-radius-l);
+  background: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-hero-photo .glass-ink .font-display {
+  color: var(--fq-side);
+}
+
+/* ── A photo beat (PhotoBeat): one display sentence over a photograph, the void's shade. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-band.place-items-center {
+  background: var(--fq-uv-void);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-band.place-items-center > img {
+  opacity: 0.55;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.mk-band.place-items-center p.font-display {
+  max-width: 18ch;
+  margin-inline: auto;
+}
+
+/* ── A statement (Statement): the kit's display line at `.h-l`, centred, a measured column. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section:is(.mk-cream, .mk-ink) > p.font-display {
+  max-width: 20ch;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+/* ── Media and text (MediaText, marketing-ui ZigZag): a chapter (`.chap`). The heading at `.h-l`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .max-w-prose > h2.font-display {
+  font-size: var(--text-mk-section);
+}
+
+/* ── The closing band (CallToAction on ink, BetaCTA, BackTheBuild): the kit's `.closer`. A large
+   centred line, the accent in the iridescent sweep, the mood aura behind it. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat:has(> .amber-glow) {
+  padding-block: clamp(110px, 14vw, 180px);
+  background:
+    radial-gradient(ellipse at 50% 40%, color-mix(in oklab, var(--fq-m1, var(--fq-aura-1)) 26%, transparent), transparent 62%),
+    radial-gradient(40% 60% at 85% 90%, color-mix(in oklab, var(--fq-m3, var(--fq-aura-3)) 16%, transparent), transparent 70%),
+    var(--fq-uv-void);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat:has(> .amber-glow) h2.font-display {
+  font-size: clamp(40px, 6vw, 88px);
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat:has(> .amber-glow) h2.font-display > span {
+  background: var(--fq-iridescent-sweep);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: fq-sweep 9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat:has(> .amber-glow) h2.font-display > span {
+    animation: none;
+  }
+}
+
+/* ── Questions (Accordion, marketing-ui Faq): the kit's `.qa details`. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] details.rounded-card {
+  border-color: transparent;
+  border-radius: 18px; /* token-ok: the kit's .qa details corner */
+  background: var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] details.rounded-card > summary {
+  font-family: var(--fq-font-sans);
+  font-size: 18px; /* token-ok: the kit's .qa summary size */
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--fq-text-strong);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] details.rounded-card > summary > svg {
+  color: var(--fq-side);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] details.rounded-card > summary + div {
+  max-width: 64ch;
+  color: var(--fq-text-body);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] details.rounded-card[open] {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fq-side) 35%, transparent);
+}
+
+/* ── The marquee (Marquee): faint display words between hairlines, the bullet in the side colour. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat > .border-y {
+  border-color: var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat > .border-y .font-display {
+  color: color-mix(in oklab, var(--fq-text-strong) 22%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-slat > .border-y .text-primary {
+  color: var(--fq-side);
+}
