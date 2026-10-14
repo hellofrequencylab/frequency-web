@@ -14,6 +14,10 @@ import { FrequencyArcs, OrganicBlob } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { getCityCategoryHubs } from './_data'
+import { FrequencyDiscoverEvents } from '@/components/frequency/site/pages/discover/frequency-discover-events'
 
 export const metadata: Metadata = {
   title: 'Upcoming events',
@@ -41,6 +45,37 @@ export default async function DiscoverEventsPage() {
     getPublicEvents(50),
     getPublicCounts(),
   ])
+
+  // The Frequency design (ADR-1737): the same calendar read and the same JSON-LD, in the design's body,
+  // plus the town x type hubs as links (the same read app/sitemap.ts enumerates them from). A failed hub
+  // read drops the links, never the calendar. SITE_DESIGN is build-time, so a DAWN build never reaches
+  // this branch and never pays the extra read.
+  if (SITE_DESIGN === 'frequency') {
+    const hubs = await getCityCategoryHubs().catch(() => [])
+    return (
+      <>
+        <JsonLd
+          data={[
+            breadcrumbSchema([
+              { name: 'Discover', path: '/discover' },
+              { name: 'Events', path: '/discover/events' },
+            ]),
+            eventListSchema(events, 'Upcoming events on Frequency'),
+          ]}
+        />
+        <FrequencyDiscoverEvents
+          events={events}
+          counts={counts}
+          today={dayInZone(new Date(), HOME_TZ)}
+          townTypes={hubs.map((h) => ({
+            href: `/discover/events/in/${h.citySlug}/${h.category.slug}`,
+            label: `${h.category.label} in ${h.city}`,
+            count: h.events.length,
+          }))}
+        />
+      </>
+    )
+  }
 
   return (
     <>

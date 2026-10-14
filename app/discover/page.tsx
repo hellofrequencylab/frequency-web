@@ -35,6 +35,9 @@ import {
   eventListSchema,
   faqSchema,
 } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { FrequencyDiscoverHub } from '@/components/frequency/site/pages/discover/frequency-discover-hub'
 
 // Evergreen Q&A — drives the FAQ section below and its FAQPage schema.
 const DISCOVER_FAQS = [
@@ -125,6 +128,34 @@ export default async function DiscoverHubPage() {
     if (c.channel_slug) countByChannel.set(c.channel_slug, (countByChannel.get(c.channel_slug) ?? 0) + 1)
   }
   const liveChannels = channels.filter((ch) => (countByChannel.get(ch.slug) ?? 0) > 0)
+
+  // The Frequency design (ADR-1737): the same six reads, the same JSON-LD and the same FAQ, in the
+  // design's body. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd
+          data={[
+            breadcrumbSchema([{ name: 'Discover', path: '/discover' }]),
+            topicListSchema(channels, 'Topics on Frequency'),
+            eventListSchema(events, 'Upcoming events'),
+            circleListSchema(circles, 'Circles forming now'),
+            faqSchema(DISCOVER_FAQS),
+          ]}
+        />
+        <FrequencyDiscoverHub
+          counts={counts}
+          events={events}
+          circles={circles}
+          channels={liveChannels.map((channel) => ({ channel, circles: countByChannel.get(channel.slug) ?? 0 }))}
+          towns={cityClusters.map((c) => ({ city: c.city, circles: c.circles, events: c.events }))}
+          posts={posts}
+          faqs={DISCOVER_FAQS}
+          today={dayInZone(new Date(), HOME_TZ)}
+        />
+      </>
+    )
+  }
 
   return (
     <>

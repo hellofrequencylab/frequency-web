@@ -10,6 +10,8 @@ import { PlacesFinder } from '@/components/discover/places-finder'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPlacesIndex } from '@/components/frequency/site/pages/discover/frequency-discover-places'
 
 export const revalidate = 3600
 
@@ -33,8 +35,7 @@ export default async function DiscoverPlacesPage() {
   const totalCircles = cities.reduce((n, c) => n + c.circleCount, 0)
   const totalEvents = cities.reduce((n, c) => n + c.eventCount, 0)
 
-  return (
-    <>
+  const schema = (
       <JsonLd
         data={[
           breadcrumbSchema([
@@ -55,6 +56,22 @@ export default async function DiscoverPlacesPage() {
           },
         ]}
       />
+  )
+
+  // The Frequency design (ADR-1737): the same towns and schema, in the design's body, with the kit's
+  // finder. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        {schema}
+        <FrequencyPlacesIndex towns={cities} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      {schema}
 
       <PageHero
         eyebrow="Discover by place"

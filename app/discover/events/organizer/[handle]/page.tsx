@@ -15,6 +15,9 @@ import { breadcrumbSchema, eventListSchema, personSchema } from '@/lib/jsonld'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { FrequencyOrganizer } from '@/components/frequency/site/pages/discover/frequency-discover-events'
 
 export const revalidate = 3600
 
@@ -160,6 +163,36 @@ export default async function OrganizerPage({
   if (!organizer) notFound()
 
   const { displayName, handle: hostHandle, avatarUrl, upcoming, past } = organizer
+
+  // The Frequency design (ADR-1737): the same host read and JSON-LD, in the design's body.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd
+          data={[
+            personSchema({
+              name: displayName,
+              path: `/discover/events/organizer/${hostHandle}`,
+              image: avatarUrl ? avatarSrc(avatarUrl) : avatarUrl,
+            }),
+            breadcrumbSchema([
+              { name: 'Discover', path: '/discover' },
+              { name: 'Events', path: '/discover/events' },
+              { name: displayName, path: `/discover/events/organizer/${hostHandle}` },
+            ]),
+            eventListSchema(upcoming, `Upcoming events hosted by ${displayName}`),
+          ]}
+        />
+        <FrequencyOrganizer
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          upcoming={upcoming}
+          past={past}
+          today={dayInZone(new Date(), HOME_TZ)}
+        />
+      </>
+    )
+  }
 
   // The standard entity cover (PROG-P5, ADR-1136): the operator's /discover/events Settings image,
   // or nothing. An organizer's avatar is identity, not a cover — it stays in the title lockup.

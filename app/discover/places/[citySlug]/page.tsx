@@ -19,6 +19,9 @@ import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, cityEventListSchema, spaceListSchema } from '@/lib/jsonld'
 import { meetsIndexFloor } from '@/lib/seo/index-floor'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { FrequencyTown } from '@/components/frequency/site/pages/discover/frequency-discover-places'
 
 export const revalidate = 3600
 
@@ -105,8 +108,7 @@ export default async function DiscoverPlacePage({
   // The state and country the city's events name, so the Place is Vista, CA and not any Vista.
   const { region, country } = cityRegion(hubs.flatMap((h) => h.events))
 
-  return (
-    <>
+  const schema = (
       <JsonLd
         data={[
           breadcrumbSchema([
@@ -135,6 +137,34 @@ export default async function DiscoverPlacePage({
           spaces.length > 0 && spaceListSchema(spaces, `Local Spaces in ${city}`),
         ].filter(Boolean)}
       />
+  )
+
+  // The Frequency design (ADR-1737): the same reads, lists and schema, in the design's town body.
+  // SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        {schema}
+        <FrequencyTown
+          city={city}
+          base={{ href: '/discover/places', label: 'Places' }}
+          circles={circles}
+          events={events}
+          spaces={spaces}
+          types={hubs.map((h) => ({
+            href: `/discover/events/in/${h.citySlug}/${h.category.slug}`,
+            label: h.category.label,
+            count: h.events.length,
+          }))}
+          today={dayInZone(new Date(), HOME_TZ)}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      {schema}
 
       <PageHero
         eyebrow="Discover by place"
