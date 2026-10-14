@@ -57,6 +57,26 @@ assert.ok(config.includes('...networkComponents') && config.includes('NETWORK_CA
 assert.ok(readFileSync('lib/page-editor/palette-scope.ts', 'utf8').includes("'network'"), 'website pages offer them')
 assert.deepEqual(plan.planMensworkPage([{ type: 'NetworkHero', props: {} }, { type: 'NetworkEvents', props: {} }]).map((p) => p.kind), ['own', 'own'])
 
+// 4b. The Network blocks are Server Components and never call a client function. Every name they import from a
+// 'use client' module must be a component (PascalCase) or a type: a plain function from one is a client
+// reference on the server, and calling it threw on every render of the published Network home
+// (wallClockInstant, LIVE-906).
+const { existsSync } = await import('node:fs')
+for (const file of ['network.tsx']) {
+  const src = readFileSync(`components/page-editor/blocks/${file}`, 'utf8')
+  for (const [, names, spec] of src.matchAll(/^import\s+(?!type\b)\{([^}]*)\}\s+from\s+'(@\/[^']+)'/gm)) {
+    const base = spec.replace(/^@\//, '')
+    const path = ['.tsx', '.ts'].map((ext) => base + ext).find((p) => existsSync(p))
+    if (!path || !/^\s*['"]use client['"]/.test(readFileSync(path, 'utf8'))) continue
+    for (const name of names.split(',').map((n) => n.trim().split(/\s+as\s+/)[0]).filter(Boolean)) {
+      assert.ok(/^type\s/.test(name) || /^[A-Z]/.test(name), `${file} imports ${name} from the client module ${spec}; move it to a shared module`)
+    }
+  }
+}
+const clock = await import('../../lib/time/wall-clock.ts')
+assert.equal(clock.countdownParts(Date.UTC(2026, 9, 16, 16) + 3_723_000, Date.UTC(2026, 9, 16, 16)).join(':'), '0:1:2:3')
+assert.equal(new Date(clock.wallClockInstant('2026-10-16T09:00', 'America/Los_Angeles')).toISOString(), '2026-10-16T16:00:00.000Z', '9 AM Pacific is 16:00 UTC in October')
+
 // 5. The seed.
 const prefs = seed.buildPreferences()
 assert.equal(prefs.siteStyle.theme, 'network')
