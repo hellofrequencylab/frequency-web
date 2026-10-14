@@ -93,6 +93,18 @@ export default async function DiscoverCityPage({
     .catch(() => [])
   // The state and country the city's events name, so the Place is Vista, CA and not any Vista.
   const { region, country } = cityRegion(hubs.flatMap((h) => h.events))
+  // The Event nodes need each event's own zone and city-level place. `events` comes from the
+  // public_events RPC, which projects neither `time_zone` nor region/country, so without this every
+  // startDate fell back to the community zone and every Place lost its state. The hub rows already
+  // carry the privacy-safe columns (city / region / country, never a venue), so merge them by id.
+  // An event with no hub row keeps the old fallback; the city field stays the one the page lists.
+  const enrichedById = new Map(hubs.flatMap((h) => h.events).map((e) => [e.id, e]))
+  const schemaEvents = events.map((e) => {
+    const x = enrichedById.get(e.id)
+    return x
+      ? { ...e, time_zone: x.time_zone, region: x.region, country: x.country, attendance_mode: x.attendance_mode, is_cancelled: x.is_cancelled, currency: x.currency }
+      : e
+  })
 
   return (
     <>
@@ -120,7 +132,7 @@ export default async function DiscoverCityPage({
             },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),
-          events.length > 0 && cityEventListSchema(events, `Upcoming events in ${city}`),
+          events.length > 0 && cityEventListSchema(schemaEvents, `Upcoming events in ${city}`),
           spaces.length > 0 && spaceListSchema(spaces, `Local Spaces in ${city}`),
         ].filter(Boolean)}
       />
@@ -132,7 +144,7 @@ export default async function DiscoverCityPage({
             Find your people in <span className="text-primary-strong">{city}</span>
           </>
         }
-        subtitle={`Circles are meeting and events are happening in ${city} right now. Browse them free, then sign up to join one, RSVP, or start your own. It is the same simple thing every week, with room for you.`}
+        subtitle={`Circles are meeting and events are happening in ${city} right now. Browse them free, then sign up to join one, RSVP, or start your own. Keep coming back and the faces get familiar.`}
       />
 
       {/* ── At a glance ─────────────────────────────────────────── */}

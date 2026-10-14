@@ -109,7 +109,7 @@ const P = priceStringsFrom(input.catalog)
 
 // Every RATE interpolates from the take-rate config the fee code charges, so no answer here can quote a
 // rung the owner has retired. Only the plans that take payments have a fee (ADR-1709): Business,
-// Collective and Non Profit (zero). The personal tiers and the free Space take tips only, at 0% plus card processing, so no
+// Collective and Non Profit (zero). The personal tiers and the free Space take tips only, with no platform fee, plus card processing, so no
 // row quotes the free or personal rungs. The fee is never the reason to take a plan (PLAN_STORY.rate).
 const TAKE = input.values.take_rate
 /** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
@@ -117,7 +117,7 @@ const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, n
 const BUSINESS_RATE = SPACE_RATE('business')
 const NETWORK_RATES = `Business ${BUSINESS_RATE}, Collective ${SPACE_RATE('collective')}, Non Profit ${SPACE_RATE('nonprofit')}`
 /** What a tier that takes no payments carries instead of a rate. */
-const TIPS_NOTE = 'Tips only, 0% plus card processing'
+const TIPS_NOTE = 'Tips only, no platform fee, plus card processing'
 /** The 0%-forever half of the model, stated the same way everywhere it appears. */
 const OWN_AUDIENCE_LINE =
   'It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.'
