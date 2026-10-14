@@ -289,3 +289,19 @@
 [data-design="frequency"] [data-kit="members"] :is(a,button).bg-primary.text-on-primary{background:var(--fq-pa);color:var(--fq-text-strong);border-radius:var(--fq-radius-orb);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
 [data-design="frequency"] [data-kit="members"] :is(h1,h2,h3,h4):is(.font-bold,.font-extrabold,.font-black){font-weight:500}
 [data-design="frequency"] [data-kit="members"] .eyebrow{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+
+/* ── Loading placeholders, one look everywhere (owner, 2026-10-14) ───────────────────────────────────
+   Several loading screens borrowed the kit's photo placeholder (`.ph`, warm sand by design) or rolled
+   their own fill, so skeletons loaded in tan on the cool members canvas. Every skeleton class reads the
+   same neutral ink wash and the same soft pulse; reduced motion holds it still. The `.ph.fqm-sk` arm
+   out-ranks the kit's `.ph` fill. */
+[data-design="frequency"] [data-kit] :is(.ph.fqm-sk, .fqm-sk, .fqm-skel, .ev-skel-bar, .fa-sk, .hp-skel, [class*="mu-sk"]) {
+  background: color-mix(in oklab, var(--fq-text-strong) 6%, transparent);
+  background-image: none;
+  box-shadow: none;
+  animation: fq-sk-pulse 1.6s var(--fq-ease-out) infinite;
+}
+@keyframes fq-sk-pulse { 50% { opacity: .55 } }
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit] :is(.ph.fqm-sk, .fqm-sk, .fqm-skel, .ev-skel-bar, .fa-sk, .hp-skel, [class*="mu-sk"]) { animation: none }
+}
