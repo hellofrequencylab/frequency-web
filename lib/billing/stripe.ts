@@ -54,7 +54,7 @@ const SECRET = process.env.STRIPE_SECRET_KEY
  * wrong version string or a misspelled param is a RUNTIME error here, never a compile error, which
  * is the other reason this is pinned and tested rather than merely passed.
  */
-export const STRIPE_API_VERSION = '2026-08-26.dahlia'
+export const STRIPE_API_VERSION = '2026-09-30.endive'
 
 /** The Stripe client, or null when billing isn't configured. */
 export const stripe = SECRET
