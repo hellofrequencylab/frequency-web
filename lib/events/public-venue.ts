@@ -16,6 +16,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { pointFromGeog } from '@/lib/events/geo'
 import type { EventVenue } from '@/lib/jsonld'
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 export interface PublicEventVenue {
   /** The host's flag. `null` when the read failed: treated as hidden by the schema builder. */
@@ -72,7 +73,9 @@ export async function getPublicEventVenue(slug: string): Promise<PublicEventVenu
     const out = venueFromRow(row ?? null)
     // The host Space's city, for an event with none of its own (SCAN-867: 146 of the 239 city-less
     // public events have one). City-level, so it is publishable whatever the address flag says.
-    const spaceId = row && !row.city?.trim() ? (row.host_space_id ?? row.space_id) : null
+    // The hosting Space through the one resolver (LIVE-075): the root tenant is not a host, so a personal
+    // event never borrows the platform's city.
+    const spaceId = row && !row.city?.trim() ? await resolveHostingSpaceIdFromRow(row) : null
     if (spaceId) {
       const { data: space } = await createAdminClient()
         .from('spaces')
