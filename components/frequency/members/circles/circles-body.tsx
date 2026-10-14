@@ -10,6 +10,8 @@ import { FqCirclesMapBanner, FqFindNearMe } from './circles-map'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
 import { templatesEnabled } from '@/lib/circles/templates-data'
+import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
 
 // CIRCLES, FREQUENCY BODY (templates/members/Circles.html). The head with Start a Circle, the
 // viewer's own Circles as photo cards, then everything else under "Near you" with the Channel chips.
@@ -21,6 +23,12 @@ import { templatesEnabled } from '@/lib/circles/templates-data'
 // Circles fill up and links the network's regions. All of it stays, drawn in the kit: the find row
 // (kit-tools.tsx) under the head, the map behind "Find circles near me", a Featured row, the filling
 // up nudge as a soft panel, and Explore the network as chips at the foot.
+//
+// THE FRAME (SCAN-880). The hub renders inside MembersBody, the members kit's page frame every other
+// Frequency member body wears (the `data-kit="members"` scope and the kit's `.ap-main` column), so it
+// sits on the members wash like the rest of the member site instead of drawing bare in the shell.
+// STARTER CIRCLES (SCAN-880) are their own titled section, never mixed into "Near you", and every one
+// carries art: its own image, else a brand photo picked from its slug (lib/frequency/placeholder-art).
 
 const FORMATS = [
   { value: 'in-person', label: 'In person' },
@@ -33,7 +41,13 @@ const SORTS = [
   { value: 'open', label: 'Open spots' },
 ]
 
+/** A card's art: its own image, else (a Starter only) a brand photo picked from its slug. */
+export function circleTileArt(c: Pick<CircleCardData, 'imageUrl' | 'isStarter' | 'slug'>): string | null {
+  return c.imageUrl || (c.isStarter ? fqPlaceholderArt(c.slug) : null)
+}
+
 function CircleTile({ c, next }: { c: CircleCardData; next?: string }) {
+  const art = circleTileArt(c)
   const href = c.isStarter ? `/circles/starter/${c.slug}` : `/circles/${c.slug}`
   const place = c.context ?? (c.type === 'online' ? 'Online' : null)
   // One of the viewer's own Circles with a meetup coming reads like the reference ("Next: Fri
@@ -48,7 +62,7 @@ function CircleTile({ c, next }: { c: CircleCardData; next?: string }) {
   const second = next ? `Next: ${next}` : place
   return (
     <Link className="card fqm-card" href={href}>
-      <span className="ph" style={c.imageUrl ? { backgroundImage: `url('${c.imageUrl}')` } : undefined}>
+      <span className="ph" style={art ? { backgroundImage: `url('${art}')` } : undefined}>
         {c.isFeatured && <span className="tag glass fqm-corner">Featured</span>}
       </span>
       <span className="fqm-card-b">
@@ -101,7 +115,8 @@ export function FqCirclesBody({
   } = data
   const mine = new Set(myCircleIds)
   const yours = cards.filter((c) => mine.has(c.id))
-  const near = cards.filter((c) => !mine.has(c.id))
+  const starters = cards.filter((c) => c.isStarter && !mine.has(c.id))
+  const near = cards.filter((c) => !c.isStarter && !mine.has(c.id))
   const featured = filtering ? [] : near.filter((c) => c.isFeatured).slice(0, 3)
   const anyFilter = filtering || !!params.sort
 
@@ -207,6 +222,22 @@ export function FqCirclesBody({
         </div>
       )}
 
+      {starters.length > 0 && (
+        <section className="sec" aria-labelledby="fq-starter-circles">
+          <div className="sec-h">
+            <span id="fq-starter-circles" className="h2">
+              Starter Circles
+            </span>
+            <span className="meta">Ready-made Circles waiting for someone to start them near you</span>
+          </div>
+          <div className="g3">
+            {starters.map((c) => (
+              <CircleTile key={c.id} c={c} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="sec">
         <div className="sec-h">
           <span className="h2">{filtering ? 'Results' : 'Near you'}</span>
@@ -273,11 +304,15 @@ export function FqCirclesBody({
 
   // The map shares one state between the filter row's button and the pane above the grid, so the
   // whole body sits inside the zone when there is anything to map.
-  return showMap ? (
-    <MapZone circles={locatable} starterSeeds={starterSeeds}>
-      {body}
-    </MapZone>
-  ) : (
-    body
+  return (
+    <MembersBody>
+      {showMap ? (
+        <MapZone circles={locatable} starterSeeds={starterSeeds}>
+          {body}
+        </MapZone>
+      ) : (
+        body
+      )}
+    </MembersBody>
   )
 }
