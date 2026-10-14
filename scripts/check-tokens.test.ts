@@ -218,7 +218,7 @@ describe('ratchet: inline style literals in .tsx', () => {
 describe('ratchet: hand-written CSS', () => {
   it('parses declarations, not selectors or at-rule preludes', () => {
     const rules = cssDeclarations('a:hover { color: red }\n@media (max-width: 600px) { .x { margin: 0; } }')
-    const decls = rules.flatMap((r: { decls: { prop: string }[] }) => r.decls.map((d) => d.prop))
+    const decls = rules.flatMap((r) => (r?.decls ?? []).map((d: { prop: string }) => d.prop))
     expect(decls).toEqual(['color', 'margin'])
   })
 
@@ -310,10 +310,10 @@ describe('the ratchet: per file, may fall, never rise', () => {
   it('--update writes falls, refuses a rise without --allow-raise, and records a forced one', () => {
     const fell = mergeTheme(counts({ 'css-colour': { 'a.css': 1 } }), base, { reason: 'sweep', at: '2026-10-14' })
     expect(fell.written).toBe(true)
-    expect(fell.next.frozen.direction).toBe('lowered')
+    expect(fell.next?.frozen.direction).toBe('lowered')
     expect(mergeTheme(counts({ 'css-colour': { 'a.css': 3 } }), base, { reason: 'x' }).written).toBe(false)
     const forced = mergeTheme(counts({ 'css-colour': { 'a.css': 3 } }), base, { reason: 'moved', allowRaise: true })
-    expect(forced.next.frozen.direction).toBe('raised')
+    expect(forced.next?.frozen.direction).toBe('raised')
   })
 
   it('tally groups by class and file', () => {
