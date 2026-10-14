@@ -13,7 +13,7 @@ import type { ShowFeed } from '@/lib/airwaves/shows'
 import type { Space } from '@/lib/spaces/types'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 
 // Shared Show page (SCAN-644). The sitemap URL lives under (public); signed-in
 // members of a private Space rewrite to /full. One view so the two routes cannot

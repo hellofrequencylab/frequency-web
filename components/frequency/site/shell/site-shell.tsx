@@ -5,7 +5,8 @@
 //
 // Pages set their state through lib/frequency/site-pages.ts (a row per route, in the first paint) or
 // <SitePage/> (after hydration); they end on <KeepGoing/>; client components read the side with
-// useSiteSide(). The kit stylesheet is imported here, so only the layouts that render this shell load it.
+// useSiteSide(). The kit stylesheet is imported here (through its app/themes/active/ stub), so only the
+// layouts that render this shell load it, and only in a Frequency build: a DAWN build's stub is empty.
 //
 // SURFACE (guidelines/site-themes.md). The layout names its family's theme and a page row can override it:
 //
@@ -29,8 +30,8 @@
 // No request data is read anywhere in the shell: the signed-in state resolves client-side after paint,
 // so every page under it stays static (app/front-door-static.test.ts, docs/DEPLOY-SAFETY.md).
 
-import '@/app/themes/frequency/kit-site.css'
-import '@/app/themes/frequency/site-shell.css'
+import '@/app/themes/active/kit-site'
+import '@/app/themes/active/site-shell'
 import { SiteBody, SiteRoot } from '@/components/frequency/site/shell/site-root'
 import { SiteHeader } from '@/components/frequency/site/shell/site-header'
 import { SiteFooter } from '@/components/frequency/site/shell/site-footer'

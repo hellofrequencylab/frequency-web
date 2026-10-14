@@ -11,7 +11,7 @@ const theme = css.slice(at, css.indexOf('\n}\n', at))
 // 1. The switch is stamped on <html> statically and the design sheets load.
 const layout = read('app/layout.tsx')
 assert.match(layout, /data-design=\{SITE_DESIGN\}/, 'root layout stamps data-design')
-assert.match(layout, /import "\.\/themes\/frequency\.css"/, 'root layout loads the Frequency sheet')
+assert.match(layout, /import "\.\/themes\/active\/alias"/, 'root layout loads the active design sheet (a stub that is empty under DAWN)')
 assert.match(read('lib/theme/design.ts'), /resolveDesign\(process\.env\.NEXT_PUBLIC_SITE_DESIGN\)/, 'one env setting')
 
 // 2. Nothing a design owns is compiled into a utility as a literal.

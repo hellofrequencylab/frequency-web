@@ -6,11 +6,11 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 import { AuthFrame } from '@/components/frequency/auth/auth-frame'
 // global-error renders its own document WITHOUT the root layout's stylesheets (Next's error.md, "Good
 // to know"). The Frequency token sheets and the outside-the-kit primitives are brought here so the
-// frame below has its tokens; each is scoped to [data-design="frequency"], so a DAWN build's page is
-// untouched by them.
-import './themes/frequency/core.css'
-import './themes/frequency.css'
-import './themes/frequency/members-ui.css'
+// frame below has its tokens. Each is an app/themes/active/ stub (scripts/lib/design-styles.mjs), so a
+// DAWN build imports nothing here.
+import './themes/active/core'
+import './themes/active/alias'
+import './themes/active/members-ui'
 
 export default function GlobalError({
   error,

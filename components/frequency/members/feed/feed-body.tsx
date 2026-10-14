@@ -1,4 +1,4 @@
-import '@/app/themes/frequency/members-a.css'
+import '@/app/themes/active/members-a'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'

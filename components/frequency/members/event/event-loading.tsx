@@ -1,5 +1,5 @@
-import '@/app/themes/frequency/members-b.css'
-import '@/app/themes/frequency/members-events.css'
+import '@/app/themes/active/members-b'
+import '@/app/themes/active/members-events'
 
 // THE EVENT PAGE'S WAIT, UNDER FREQUENCY: the split hero card of templates/members/Event.html (photo
 // left, words right) and the About / Host columns under it, so the page lands without a jump. The

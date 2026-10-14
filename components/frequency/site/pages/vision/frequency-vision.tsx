@@ -21,7 +21,7 @@
 // answers are the-lab's own, recovered verbatim except that "meeting weekly" is gone (no line promises
 // a weekly cadence).
 import Link from 'next/link'
-import '@/app/themes/frequency/site-pages-b.css'
+import '@/app/themes/active/site-pages-b'
 import { CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'

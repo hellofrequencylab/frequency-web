@@ -1,4 +1,4 @@
-import '@/app/themes/frequency/members-a.css'
+import '@/app/themes/active/members-a'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SITE_DESIGN } from '@/lib/theme/design'
 

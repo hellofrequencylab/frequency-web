@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import '@/app/themes/frequency/kit-members.css'
-import '@/app/themes/frequency/members-c.css'
+import '@/app/themes/active/kit-members'
+import '@/app/themes/active/members-c'
 import { getCachedViewerProfile } from '@/lib/auth'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { getStaffMember } from '@/lib/staff'

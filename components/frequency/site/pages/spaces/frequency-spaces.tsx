@@ -14,7 +14,7 @@
 // as the design's feature cards. The questions carry FAQPage JSON-LD. Motion is the shell's FX loop and
 // the closing band is the shell's <KeepGoing>.
 
-import '@/app/themes/frequency/site-pages-a.css'
+import '@/app/themes/active/site-pages-a'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getRankedSpaces } from '../shared/data'

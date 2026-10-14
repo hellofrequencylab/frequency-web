@@ -6,7 +6,7 @@
 // visitor last chose (`.half-p` / `.half-e` set the side colour locally, as the design does). Motion is
 // the shell's FX loop; the closing band is the shell's <KeepGoing>.
 
-import '@/app/themes/frequency/site-pages-a.css'
+import '@/app/themes/active/site-pages-a'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'

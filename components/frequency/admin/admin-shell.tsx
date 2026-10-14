@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { AdminCrumb, AdminNav, AdminNavList } from './admin-nav'
 import type { AdminNavItem } from './nav-model'
-import '@/app/themes/frequency/kit-members.css'
-import '@/app/themes/frequency/kit-admin.css'
-import '@/app/themes/frequency/admin-shell.css'
-import '@/app/themes/frequency/admin-pages.css'
+import '@/app/themes/active/kit-members'
+import '@/app/themes/active/kit-admin'
+import '@/app/themes/active/admin-shell'
+import '@/app/themes/active/admin-pages'
 
 // THE FREQUENCY ADMIN SHELL (design_handoff/frequency/templates/admin/shell.js, HANDOFF "Member Admin"). The
 // 264px glass sidebar (logo, the Space switcher, the navigation with the Moderation badge, Back to Frequency

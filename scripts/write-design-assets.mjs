@@ -9,6 +9,11 @@
 //   2. lib/theme/design-fonts/active.ts  one static re-export of ./<design>. app/layout.tsx imports
 //      ./active, so the build graph contains ONLY the active design's next/font registrations: a DAWN
 //      deploy never imports lib/theme/design-fonts/frequency.ts, and so never ships its faces.
+//   3. app/themes/active/<sheet>.ts  one stub per design stylesheet (scripts/lib/design-styles.mjs).
+//      Code imports the stub, never app/themes/<id>/*.css: under the active design the stub imports its
+//      sheet, under any other it is empty. So a DAWN deploy's graph holds NO Frequency CSS (the root
+//      layout's core + alias + members-ui, the site kit every public layout's SiteShell pulled in, the
+//      members kits, the page sheets), and a Frequency deploy loads each sheet where it always did.
 //
 // IDEMPOTENT: a file is written only when its content would change, so a DAWN build on a clean tree
 // leaves the tree clean. The committed copies are DAWN's (lib/theme/design-fonts/active.test.ts).
@@ -16,7 +21,8 @@
 // The env is read the way Next reads it (process.env first, then .env.<mode>.local, .env.local,
 // .env.<mode>, .env), so a local `.env.local` with the variable set gets the same answer here as in
 // the Next build that follows. Run with --experimental-strip-types (Node 22) to import design.ts.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, rmSync, mkdirSync } from 'node:fs'
+import { STUB_DIR, STUB_HEADER, renderStubs } from './lib/design-styles.mjs'
 
 const KEY = 'NEXT_PUBLIC_SITE_DESIGN'
 const mode = process.argv.includes('--dev') ? 'development' : 'production'
@@ -34,11 +40,11 @@ if (process.env[KEY] === undefined) {
   if (v !== undefined) process.env[KEY] = v
 }
 
-const { SITE_DESIGN, designDef } = await import('../lib/theme/design.ts')
+const { SITE_DESIGN, DESIGNS, designDef } = await import('../lib/theme/design.ts')
 const { light } = designDef(SITE_DESIGN).chrome
 
 function writeIfChanged(path, next) {
-  const prev = readFileSync(path, 'utf8')
+  const prev = existsSync(path) ? readFileSync(path, 'utf8') : null
   if (prev === next) return false
   writeFileSync(path, next)
   return true
@@ -60,6 +66,20 @@ if (!existsSync(`lib/theme/design-fonts/${SITE_DESIGN}.ts`)) throw new Error(`no
 const active = readFileSync(ACTIVE, 'utf8').replace(/from '\.\/[a-z0-9-]+'/, `from './${SITE_DESIGN}'`)
 const wroteFonts = writeIfChanged(ACTIVE, active)
 
+// 3. The stylesheet stubs. A stub this generator wrote whose sheet is gone is removed, so a stale import
+// can never reach a build.
+mkdirSync(STUB_DIR, { recursive: true })
+const stubs = renderStubs(SITE_DESIGN, DESIGNS.map((d) => d.id))
+let wroteStyles = 0
+for (const [name, src] of Object.entries(stubs)) if (writeIfChanged(`${STUB_DIR}/${name}.ts`, src)) wroteStyles++
+for (const f of readdirSync(STUB_DIR)) {
+  const path = `${STUB_DIR}/${f}`
+  if (f.endsWith('.ts') && !(f.slice(0, -3) in stubs) && readFileSync(path, 'utf8').startsWith(STUB_HEADER)) {
+    rmSync(path)
+    wroteStyles++
+  }
+}
+
 console.log(
-  `design assets: ${SITE_DESIGN} (manifest ${wroteManifest ? 'written' : 'unchanged'}, fonts ${wroteFonts ? 'written' : 'unchanged'})`,
+  `design assets: ${SITE_DESIGN} (manifest ${wroteManifest ? 'written' : 'unchanged'}, fonts ${wroteFonts ? 'written' : 'unchanged'}, styles ${wroteStyles ? `${wroteStyles} written` : 'unchanged'})`,
 )

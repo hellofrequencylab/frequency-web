@@ -15,7 +15,7 @@ assert.doesNotMatch(core.replace(/\/\*[\s\S]*?\*\//g, ''), /@import|(^|[;{\s])--
 assert.ok(existsSync('design_handoff/frequency/tokens/themes.css'), 'the export is vendored')
 
 const layout = read('app/layout.tsx')
-assert.ok(layout.indexOf('import "./themes/frequency/core.css"') < layout.indexOf('import "./themes/frequency.css"'), 'core loads before aliases')
+assert.ok(layout.indexOf('import "./themes/active/core"') > -1 && layout.indexOf('import "./themes/active/core"') < layout.indexOf('import "./themes/active/alias"'), 'core loads before aliases (through the per-design stubs)')
 const alias = read('app/themes/frequency.css')
 for (const n of ['--color-canvas', '--color-primary', '--design-font-body', '--design-radius-lg', '--design-shadow-md'])
   assert.match(alias, new RegExp(`${n}:\\s*var\\(--fq-`), `${n} points at a Frequency token`)

@@ -7,7 +7,7 @@
 
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import '@/app/themes/frequency/auth.css'
+import '@/app/themes/active/auth'
 
 export function AuthFrame({
   kicker,

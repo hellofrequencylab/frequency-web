@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import { FqIcon } from '@/components/frequency/icon'
 import { priceLabel } from '@/components/marketplace/product-card'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace-core'

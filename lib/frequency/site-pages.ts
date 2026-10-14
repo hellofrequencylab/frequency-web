@@ -56,6 +56,12 @@ export interface SitePageState {
   cta?: HeaderCta
   /** The body's theme. Unset: the layout's default (SiteShell `surface`). */
   surface?: Surface
+  /**
+   * The body's theme on the routes BELOW this row (a section's inner pages), when it differs from the
+   * row's own. Help: the front page is Stage (Help.html), its topics, articles and What's new are long
+   * reading, so Commons.
+   */
+  innerSurface?: Surface
 }
 
 export const DEFAULT_PAGE: SitePageState = { mood: 'page', energy: 'flow', hues: ['v', 'm', 'a'], side: 'p', locked: true }
@@ -83,7 +89,9 @@ export const SITE_PAGES: Record<string, SitePageState> = {
   // switch (`data-set`), as Join.html runs it, and it reads `#people` / `#spaces` on arrival. Its
   // header carries no primary action, as in the reference: the page IS the action.
   [ROUTES.join]: { mood: 'join', energy: 'flow', hues: ['side', 'm', 'v'], side: 'p', locked: false, cta: 'none' },
-  // Help: orbs in the hero only, and the header's action is Get started (Help.html).
+  // Help: orbs in the hero only, and the header's action is Get started (Help.html). The front page is
+  // the dark Stage Help.html draws; a topic, an article and What's new are reading, so Commons (owner,
+  // 2026-10-14: "light for articles").
   [ROUTES.help]: {
     mood: 'help',
     energy: 'still',
@@ -92,6 +100,8 @@ export const SITE_PAGES: Record<string, SitePageState> = {
     locked: true,
     quiet: 2,
     cta: { href: ROUTES.join, label: 'Get started' },
+    surface: 'stage',
+    innerSurface: 'commons',
   },
   [ROUTES.vision]: {
     mood: 'vision',
@@ -111,7 +121,9 @@ export function resolveSitePage(pathname: string | null | undefined): SitePageSt
   for (const route of Object.keys(SITE_PAGES)) {
     if (route !== '/' && path.startsWith(`${route}/`) && (!best || route.length > best.length)) best = route
   }
-  return best ? SITE_PAGES[best] : DEFAULT_PAGE
+  if (!best) return DEFAULT_PAGE
+  const row = SITE_PAGES[best]
+  return row.innerSurface ? { ...row, surface: row.innerSurface } : row
 }
 
 /** The kit root's mood custom properties (`--fq-m1..3`), as a React style object. */

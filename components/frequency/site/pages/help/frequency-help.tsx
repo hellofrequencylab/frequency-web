@@ -7,7 +7,7 @@
 // are unchanged. The reference's hand-written answers are not reproduced: several described the old
 // model (a free Space selling with a share taken), and the articles are the maintained answers.
 import Link from 'next/link'
-import '@/app/themes/frequency/site-pages-b.css'
+import '@/app/themes/active/site-pages-b'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { HelpCenter, HelpContact, type HelpTopic } from './help-client'
 import { hubLinks } from '@/components/frequency/members/shell/nav'

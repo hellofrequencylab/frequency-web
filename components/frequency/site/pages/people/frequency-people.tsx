@@ -13,7 +13,7 @@
 // Motion (pop-in reveals, parallax, the hero lift) is the shell's FX loop; the closing band is the
 // shell's <KeepGoing>. The questions carry FAQPage JSON-LD, as the DAWN body's accordion does.
 
-import '@/app/themes/frequency/site-pages-a.css'
+import '@/app/themes/active/site-pages-a'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getWhatsOn } from '../shared/data'

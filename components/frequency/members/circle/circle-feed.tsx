@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import '@/app/themes/frequency/members-a.css'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-a'
+import '@/app/themes/active/members-b'
 import { Composer } from '@/components/feed/composer'
 import { getCircleContext } from '@/lib/circles/active-circle'
 import { ARRIVAL_NAMES_SHOWN, ARRIVAL_WINDOW_DAYS, arrivalNames, newArrivals } from '@/lib/circles/arrivals'

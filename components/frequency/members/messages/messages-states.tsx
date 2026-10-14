@@ -1,7 +1,7 @@
 'use client'
 
-import '@/app/themes/frequency/members-a.css'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-a'
+import '@/app/themes/active/members-b'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 

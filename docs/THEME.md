@@ -33,19 +33,33 @@ redeploy.
 | DAWN's tokens (the base every design falls back to) | `app/globals.css`, unscoped `:root` / `.dark` |
 | The design layer: radius steps, shadows, fonts, map paint | `app/globals.css`, `--design-*` |
 | Another design's tokens | `app/themes/<id>.css`, under `:root[data-design="<id>"]` and `.dark[data-design="<id>"]` |
-| The contract (scope, known names, loaded by the layout) | `lib/theme/design.test.ts` |
+| The active design's sheets, one stub each (generated) | `app/themes/active/*.ts`, `scripts/lib/design-styles.mjs` |
+| The contract (scope, known names, loaded by the layout, stubs only) | `lib/theme/design.test.ts` |
 
 **Frequency overrides everything.** Under it the four axes below collapse: no Space skin, no
 generation (`balanced`), no occasion, no Space font set or accent, no Theme Studio `<style>`. A
 member's own skin applies only when it is authored for the active design (`SkinDef.designs`);
 **Midnight** is a member theme under DAWN until a Frequency Midnight exists.
 
-**Preview locally.** `?design=frequency` on any URL stamps a token-only preview (stored in
-`localStorage['freq-design']`); `?design=off` clears it. For the whole behaviour, put
-`NEXT_PUBLIC_SITE_DESIGN=frequency` in `.env.local` and restart `pnpm dev`.
+**Load per design.** A design's CSS ships only in a build that wears it, as its faces do
+(`lib/theme/design-fonts/active.ts`). A CSS import is not tree-shaken by a runtime `SITE_DESIGN` branch,
+so nothing imports `app/themes/<id>.css` or `app/themes/<id>/*.css` directly: each sheet has one stub,
+`app/themes/active/<sheet>.ts` (the alias layer is `alias`), and code imports the stub
+(`import '@/app/themes/active/kit-site'`). `scripts/write-design-assets.mjs` (prebuild, predev, and
+`pnpm design:use <id>`) rewrites every stub from `NEXT_PUBLIC_SITE_DESIGN` (`scripts/lib/design-styles.mjs`):
+under Frequency a stub is one `import '../frequency/<sheet>.css'`, so each sheet still loads only where
+its importer renders and in the same order; under DAWN every stub is empty, so a DAWN deploy carries no
+Frequency CSS. The committed stubs are DAWN's, and `lib/theme/design.test.ts` fails on a committed
+Frequency stub, a missing or stray stub, or any direct import of a design sheet.
 
-**Adding a design** = an id in `DesignId` and `DESIGNS`, a sheet in `app/themes/`, and its import in
-`app/layout.tsx`. The test fails until all three agree.
+**Preview locally.** `?design=frequency` stamps the attribute only (stored in
+`localStorage['freq-design']`; `?design=off` clears it): since the sheets load per design, it shows
+Frequency only in a build whose stubs already import them. For the real thing, `pnpm design:use frequency`
+and restart `pnpm dev`; `pnpm design:use dawn` before committing.
+
+**Adding a design** = an id in `DesignId` and `DESIGNS`, its sheets in `app/themes/<id>.css` and
+`app/themes/<id>/`, and `pnpm design:use dawn` once to write their (empty) stubs. The test fails until
+they agree.
 
 ### The rules every component follows, under either design
 

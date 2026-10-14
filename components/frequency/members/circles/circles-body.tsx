@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import type { CirclesIndexData } from '@/lib/circles/index-data'
 import type { CircleCardData } from '@/components/circles/circle-card'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
