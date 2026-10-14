@@ -49,6 +49,8 @@ export interface ThisWeekEventRow {
   location: string | null
   venue_name: string | null
   city: string | null
+  /** The host's "hide the exact address" switch. True means the email carries the city only. */
+  hide_address: boolean | null
   scope_region_id: string | null
 }
 
@@ -122,8 +124,11 @@ function selectUpcomingEvents(rows: readonly ThisWeekEventRow[], now: Date): Thi
 }
 
 /** The "where" line: the venue a host named, else the free-text location, else the city. */
-function eventWhere(row: Pick<ThisWeekEventRow, 'venue_name' | 'location' | 'city'>): string | null {
-  for (const v of [row.venue_name, row.location, row.city]) {
+function eventWhere(row: Pick<ThisWeekEventRow, 'venue_name' | 'location' | 'city' | 'hide_address'>): string | null {
+  // A hidden address is never mailed out: the venue and the free-text line both carry it, so only
+  // the city is left (SCAN-853, the rule lib/events/visible-location.ts states for every surface).
+  const lines = row.hide_address === true ? [row.city] : [row.venue_name, row.location, row.city]
+  for (const v of lines) {
     const s = (v ?? '').trim()
     if (s) return s
   }
