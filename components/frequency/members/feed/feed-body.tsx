@@ -8,6 +8,8 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
 import { Standing, type StandingPractice } from './standing'
+import { FqIcon, type FqIconName } from '@/components/frequency/icon'
+import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { FeedPlanner } from './planner'
 import { feedWhyShown } from '@/lib/feed/why-pref'
 import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type GsStep } from './islands'
@@ -62,13 +64,14 @@ const SORTS: [FeedSort, string][] = [
 
 export async function FrequencyFeed(p: FrequencyFeedProps) {
   const admin = createAdminClient()
-  const [{ data: memberships }, zapRows] = await Promise.all([
+  const [{ data: memberships }, zapRows, operates] = await Promise.all([
     admin
       .from('memberships')
       .select('circle_id, circles!circle_id ( id, name )')
       .eq('profile_id', p.profileId)
       .eq('status', 'active'),
     loadZapBreakdown(p.profileId),
+    hasOperatedSpaces(p.profileId),
   ])
   const circles = ((memberships ?? []) as unknown as { circles: { id: string; name: string } | null }[])
     .map((m) => m.circles)
@@ -141,6 +144,17 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         />
       </div>
 
+      {/* Four ways to your own things (owner, 2026-10-13, "smart mix"): the Spaces you run, or your
+          Circles; then events, messages and practices. */}
+      <nav className="fa-quick" aria-label="Your shortcuts">
+        {quickLinks(operates).map((l) => (
+          <Link key={l.href} href={l.href}>
+            <FqIcon name={l.icon} />
+            <span>{l.label}</span>
+          </Link>
+        ))}
+      </nav>
+
       <Suspense fallback={<section className="fa-hero" aria-busy="true"><div className="fa-hero-body"><span className="k">Up next for you</span></div></section>}>
         <PlannerSection eventsP={eventsP} hasHome={!!p.home} profileId={p.profileId} />
       </Suspense>
@@ -176,6 +190,17 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       </Suspense>
     </div>
   )
+}
+
+function quickLinks(operatesSpaces: boolean): { label: string; href: string; icon: FqIconName }[] {
+  return [
+    operatesSpaces
+      ? { label: 'Your Spaces', href: '/spaces/operating', icon: 'space' }
+      : { label: 'Your Circles', href: '/circles', icon: 'circle' },
+    { label: 'Events', href: '/events', icon: 'event' },
+    { label: 'Messages', href: '/messages', icon: 'message' },
+    { label: 'Practices', href: '/practices', icon: 'checkin' },
+  ]
 }
 
 async function ContextLine({ eventsP }: { eventsP: Promise<HomeEvents> }) {

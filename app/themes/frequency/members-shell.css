@@ -381,6 +381,9 @@
 /* The stats box sizes itself to its rail (220-320px, or a dragged width), never the viewport: the panel is
    a size container, numbers scale with it, rows wrap instead of clipping (owner, 2026-10-13). */
 [data-design="frequency"] [data-kit="members"] .fqm-stats{container-type:inline-size}
+/* No panel behind it (owner, 2026-10-13: "feels small in that rail ... remove the background"): the
+   box sits bare like the left rail, its content spanning the rail's full width; the tiles keep their wash. */
+[data-design="frequency"] [data-kit="members"] .fqm-rp.fqm-stats{padding:4px 0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;border-radius:0}
 [data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-rp-h{flex-wrap:wrap;row-gap:4px}
 [data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-rp-h b{white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-rp-h span{min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -494,14 +497,13 @@
    kit's 48px top pad: the body already starts 24px under the header, so the page heading now sits level
    with the left rail's profile card (both start 8px into their columns). */
 [data-design="frequency"] [data-kit="members"] .fqm-center .ap-main { padding-top: 8px }
-/* Owner, 2026-10-14: the Feed's own stats row repeats the right rail's Stats & streaks box. While the
-   rail shows its full panels (pinned open, or auto at 1240px+), the Feed drops its row; phones and the
-   folded rail keep it, since there the Feed's row is the only stats on screen. `.fa-standing` is a
-   box-less wrapper so the Feed's spacing is unchanged when it shows. */
+/* Owner, 2026-10-13: the Feed leads with its own stats box (expanded), then a row of four links, then
+   Up next. The right rail drops its Stats & streaks box on /feed instead (right-rail.tsx), so the two
+   never repeat. `.fa-standing` is a box-less wrapper so the Feed's spacing is unchanged. */
 [data-design="frequency"] [data-kit="members"] .fa-standing { display: contents }
-@media (min-width: 1001px) {
-  [data-design="frequency"] [data-kit="members"] .fqm-body[data-r="full"]:has(.fqm-rail-r) .fa-standing { display: none }
-}
-@media (min-width: 1240px) {
-  [data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"]:has(.fqm-rail-r) .fa-standing { display: none }
-}
+[data-design="frequency"] [data-kit="members"] .fa-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px }
+[data-design="frequency"] [data-kit="members"] .fa-quick a { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px 16px; border-radius: var(--fq-radius-m); background: var(--fqm-white-60); box-shadow: inset 0 0 0 1px var(--fqm-white-90); color: var(--fq-text-strong); font: 500 var(--fq-text-body-s)/1.2 var(--fq-font-sans); transition: background var(--fq-dur-fast) var(--fq-ease-out) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a:hover { background: var(--fqm-white-75); color: var(--fq-text-strong) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a svg { width: 18px; height: 18px; flex: none; color: var(--fq-text-muted) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+@media (max-width: 720px) { [data-design="frequency"] [data-kit="members"] .fa-quick { grid-template-columns: repeat(2, minmax(0, 1fr)) } }

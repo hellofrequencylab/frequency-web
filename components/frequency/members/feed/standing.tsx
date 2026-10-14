@@ -26,7 +26,7 @@ export interface StandingPractice {
   done: boolean
 }
 
-const BOX_KEY = 'fq-streak-box'
+const BOX_KEY = 'fq-streak-box-v2' // v2 (2026-10-13): the box leads the Feed and opens expanded
 const boxSubs = new Set<() => void>()
 function readBox(): boolean {
   try {

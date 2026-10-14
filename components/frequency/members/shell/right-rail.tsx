@@ -213,9 +213,12 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
       <Suspense fallback={null}>
         <GetStartedPanel profileId={profileId} />
       </Suspense>
-      <Suspense fallback={null}>
-        <RailStats profileId={profileId} stats={stats} withActivity={pathname !== '/practices'} />
-      </Suspense>
+      {/* The Feed leads with its own stats box (owner, 2026-10-13), so the rail's copy stands down there. */}
+      {pathname !== '/feed' && (
+        <Suspense fallback={null}>
+          <RailStats profileId={profileId} stats={stats} withActivity={pathname !== '/practices'} />
+        </Suspense>
+      )}
       <Suspense fallback={null}>
         <GoalsPanel profileId={profileId} stats={stats} />
       </Suspense>
