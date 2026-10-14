@@ -62,7 +62,7 @@ export const SKINS: readonly SkinDef[] = [
     selectable: true,
     // `default` carries no overrides, so it is the base of every design.
     designs: ['dawn', 'frequency'],
-    copy: { frequency: { label: 'Frequency', description: 'The signature look: warm sand by day, the thermal room at night.' } },
+    copy: { frequency: { label: 'Default', description: 'The signature look: warm sand by day, the thermal room at night.' } },
   },
   {
     id: 'midnight',

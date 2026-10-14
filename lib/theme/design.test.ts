@@ -86,7 +86,7 @@ describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) 
 })
 
 describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
-  it('wears Frequency, switches the older layers off, and offers Frequency and its own Midnight', async () => {
+  it('wears Frequency, switches the older layers off, and offers Default (Frequency) and its own Midnight', async () => {
     const { vi } = await import('vitest')
     vi.resetModules()
     vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', 'frequency')
@@ -97,7 +97,7 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
       expect(design.LEGACY_THEME_AXES).toBe(false)
       expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
       // The picker names the default skin after the design it is, never "Dawn" under Frequency.
-      expect(skins.SELECTABLE_SKINS.map((s) => s.label)).toEqual(['Frequency', 'Midnight'])
+      expect(skins.SELECTABLE_SKINS.map((s) => s.label)).toEqual(['Default', 'Midnight'])
       expect(skins.resolveSkin('midnight')).toBe('midnight')
     } finally {
       vi.unstubAllEnvs()
