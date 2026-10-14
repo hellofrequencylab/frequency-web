@@ -97,6 +97,9 @@ import { isAdmitted } from '@/lib/events/admission'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqEventBody } from '@/components/frequency/members/event/event-body'
 
+/** The Event.html kit anatomy for the event page under Frequency. Off by owner ruling (2026-10-14). */
+const FQ_EVENT_KIT_LAYOUT = false
+
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
 type EventDetail = {
@@ -2070,7 +2073,12 @@ export default async function EventDetailPage({
 
   // THE FREQUENCY BODY (ADR-1737 switch, templates/members/Event.html). Same reads, same gates, same
   // join box: only the placement changes. Build-time constant, so the DAWN return below is untouched.
-  if (SITE_DESIGN === 'frequency') {
+  //
+  // OFF (owner, 2026-10-14): "very similar layout to the original in the repo". Under Frequency the
+  // event page keeps the original EventDetailTemplate layout below, styled by the Frequency primitives
+  // and app/themes/frequency/event-detail.css, instead of the Event.html kit anatomy. The kit body is
+  // kept, switched off, so the decision can be reversed in one line.
+  if (SITE_DESIGN === 'frequency' && FQ_EVENT_KIT_LAYOUT) {
     const cadenceLine =
       event.recurrence_type !== 'none' || event.parent_event_id
         ? [
