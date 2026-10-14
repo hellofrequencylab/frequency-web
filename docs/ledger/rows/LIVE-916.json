@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-916",
+  "title": "City pages list public events that are not attached to a Circle",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "supabase/migrations/20270346008700_public_events_standalone_city.sql",
+    "ref": "owner ruling 2026-10-14"
+  },
+  "detail": "public.public_events (the anon listing behind /discover/events, /discover/places and the density-gated /discover/cities/<slug> pages) returned city = c.city only, through the LEFT join to circles, so a standalone event (no Circle, ADR-254) came back with city = null and every city page dropped it. Migration 20270346008700 create-or-replaces it with city = coalesce(nullif(trim(circle city),''), nullif(trim(events.city),'')): a Circle event keeps the Circle's city, a standalone event (or one on a cityless Circle) lists under its own city. Same signature, RETURNS TABLE, SECURITY DEFINER, search_path, five gates (ADR-903) and grants as 20270345002100. A hide_address event still lists by city: ADR-825 keeps city-level discovery and SCAN-209 kept events.city anon-readable; no street, postal code, venue, location line or geog is returned. pgTAP guard: supabase/tests/public_events_standalone_city.test.sql. Migration applies at merge (owner). Not changed: density_by_city() counts no events at all, so a city whose only activity is standalone events still does not clear the city-page density gate; that is a separate scoring decision. Verify after applying: select count(*) filter (where circle_id is null and city is not null) from public.public_events(200); is > 0 whenever an upcoming public standalone event has events.city set.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d='supabase/migrations/';const f=fs.readdirSync(d).filter(n=>/^\\d{14}_.*\\.sql$/.test(n)&&/function public\\.public_events\\(/i.test(fs.readFileSync(d+n,'utf8'))).sort().pop();const s=fs.readFileSync(d+f,'utf8');if(!/coalesce\\(\\s*nullif\\(\\s*trim\\(\\s*c\\.city\\s*\\)\\s*,\\s*''\\s*\\)\\s*,\\s*nullif\\(\\s*trim\\(\\s*e\\.city\\s*\\)/i.test(s)){console.error('LIVE-916: the latest public_events ('+f+') derives city from the Circle only, so standalone events drop off every city page');process.exit(1)}if(!fs.existsSync('supabase/tests/public_events_standalone_city.test.sql')){console.error('LIVE-916: the pgTAP guard is missing');process.exit(1)}\""
+  },
+  "closed": "2026-10-13",
+  "wave": "W7"
+}
