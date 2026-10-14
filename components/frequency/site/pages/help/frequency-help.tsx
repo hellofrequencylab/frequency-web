@@ -10,6 +10,11 @@ import Link from 'next/link'
 import '@/app/themes/frequency/site-pages-b.css'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { HelpCenter, HelpContact, type HelpTopic } from './help-client'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
+
+// The Help hub's children (the shell's HUB_LINKS). This page is statically generated, so it reads no
+// viewer: only ungated children show, the way a signed-out reader would see them.
+const HELP_CHILDREN = hubLinks('/help', { operatesSpaces: false, host: false })
 
 export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
   return (
@@ -75,6 +80,11 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
               <span className="k">Still stuck?</span>
               <h3>Write to us.</h3>
               <p>A real person reads every message.</p>
+              {HELP_CHILDREN.map((l) => (
+                <p key={l.href}>
+                  <Link href={l.href}>{l.label}</Link>
+                </p>
+              ))}
             </div>
             <HelpContact email={CONTACT_EMAIL} />
           </div>

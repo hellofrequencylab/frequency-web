@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import '@/app/themes/frequency/members-b.css'
 import { FqIcon } from '@/components/frequency/icon'
 import { priceLabel } from '@/components/marketplace/product-card'
@@ -7,6 +8,9 @@ import { marketGroupForKind, type MarketItem } from '@/lib/commerce/types'
 import type { ProductRating } from '@/lib/commerce/reviews'
 import { FqItemGrid, type FqGridItem } from './item-grid'
 import { FqHiddenAreaNote, FqMarketAreas } from './areas'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks, type FqMenuViewer } from '@/components/frequency/members/shell/nav'
+import { AREA_PREFIX } from '@/lib/marketplace/visibility'
 
 // MARKETPLACE, FREQUENCY BODIES (templates/members/Marketplace.html). Two doors share the one
 // reference layout: the head, the filter chips and the four-up portrait grid.
@@ -60,6 +64,11 @@ function Intro({ body, ctaLabel, ctaHref }: { body: string | null; ctaLabel: str
     </div>
   )
 }
+
+/** The Marketplace hub's children less its four areas, which the area tabs above already draw (gated
+ *  by area visibility, FqMarketAreas). */
+const AREA_HREFS: readonly string[] = Object.values(AREA_PREFIX)
+const marketplaceHubLinks = (v: FqMenuViewer) => hubLinks('/marketplace', v).filter((l) => !AREA_HREFS.includes(l.href))
 
 export function FqClassifiedsBody({
   listings,
@@ -152,6 +161,9 @@ export function FqClassifiedsBody({
       ) : (
         <FqItemGrid sections={[{ items }]} placeholder="Search listings" nearMe={listings.some((l) => l.lat != null)} />
       )}
+      <Suspense fallback={null}>
+        <HubLinks title="Marketplace" links={marketplaceHubLinks} />
+      </Suspense>
     </>
   )
 }
@@ -255,6 +267,9 @@ export function FqMarketBody({
       ) : (
         <FqItemGrid sections={sections} placeholder="Search the Market" />
       )}
+      <Suspense fallback={null}>
+        <HubLinks title="Marketplace" links={marketplaceHubLinks} />
+      </Suspense>
     </>
   )
 }

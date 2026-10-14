@@ -4,6 +4,8 @@ import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 import { visibleModuleOrder } from '@/components/frequency/members/shared/module-order'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 import { QuestFinishCelebration } from '@/components/widgets/quest/quest-finish-celebration'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CrewContext } from '@/lib/quest/crew-context'
@@ -411,6 +413,9 @@ export async function CrewBody({ ctx, headerImage }: { ctx: CrewContext; headerI
               {sections[id]}
             </Suspense>
           ))}
+          <Suspense fallback={null}>
+            <HubLinks title="The Quest" boxed links={(v) => hubLinks('/crew', v)} />
+          </Suspense>
         </aside>
       </div>
     </MembersBody>

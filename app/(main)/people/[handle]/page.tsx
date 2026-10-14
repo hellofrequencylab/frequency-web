@@ -66,6 +66,8 @@ import { roleUnlocked, stageUnlocked } from '@/lib/unlocks'
 import { getCachedMemberProgress } from '@/lib/member-progress'
 import { supporterMarkShows } from '@/lib/pricing/catalog-config'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 import {
   ProfileBody, ProfilePhoto, ProfileCircles, ProfileStanding, ProfileAchievements, ProfilePractice,
 } from '@/components/frequency/members/profile/profile-body'
@@ -774,6 +776,15 @@ export default async function ProfilePage({
                   <span className="h3">You&apos;re Crew this season.</span>
                   <span className="t2">Thank you for backing the community. Your rank shows on your profile while you are Crew.</span>
                 </div>
+              )}
+              {isOwner && (
+                <Suspense fallback={null}>
+                  <HubLinks
+                    title="You"
+                    boxed
+                    links={(v) => hubLinks('{profile}', v).filter((l) => !(isCrew && l.href === '/upgrade'))}
+                  />
+                </Suspense>
               )}
             </>
           }

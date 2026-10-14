@@ -48,6 +48,9 @@ import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 import { NetworkTabs } from '@/components/people/network-tabs'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -581,6 +584,12 @@ export default async function CommunityPage({
         </aside>
       </div>
       </IndexTemplate>
+      {/* Frequency: the Members hub's "More in" row. DAWN keeps its tab strip and Invite as they were. */}
+      {SITE_DESIGN === 'frequency' && (
+        <Suspense fallback={null}>
+          <HubLinks title="Members" links={(v) => hubLinks('/network', v)} />
+        </Suspense>
+      )}
     </div>
   )
 }

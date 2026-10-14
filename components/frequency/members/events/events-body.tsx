@@ -14,6 +14,8 @@ import { FqEventsMapPane } from './events-map-pane'
 import { FqEventsCalendar } from './events-calendar'
 import { buildCalendarMonth, chipTime, resolveMonth } from './calendar-month'
 import { FqEventsForYou, FqPeopleToMeet } from './events-lanes'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 
 // EVENTS, FREQUENCY BODY (templates/members/Events.html + app/events.css + app/events.js, the
 // 2026-10-14 export). The shell owns the kit root, header and rails; this is the page body: the
@@ -367,6 +369,9 @@ export function FqEventsBody({
               </span>
             )}
           </div>
+          <Suspense fallback={null}>
+            <HubLinks title="Events" boxed links={(v) => hubLinks('/events', v)} />
+          </Suspense>
         </aside>
       </div>
     </>

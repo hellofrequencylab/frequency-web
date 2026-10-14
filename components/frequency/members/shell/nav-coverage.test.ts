@@ -195,7 +195,7 @@ const PENDING_NAV_MERGE: readonly string[] = []
 
 /** Hubs whose page does not draw `hubLinks(hub)` yet: the hub bodies are a parallel branch. The
  *  coordinator clears this when it merges; an entry here is reachable only by URL until then. */
-const PENDING_HUB_MERGE: readonly string[] = ['/network', '/marketplace', '/help']
+const PENDING_HUB_MERGE: readonly string[] = []
 
 /** Where a hub's children are drawn, when the hub is not a member page rendering `hubLinks()`: the
  *  admin console's own navigation (the operator destination catalog). */
