@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react'
 import Link from 'next/link'
 import {
@@ -57,6 +58,7 @@ import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 // minified in the browser build. A type import is erased at build time, so nothing follows it here.
 import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
 import { monthKey } from '@/lib/calendar/month-window'
+import { dayForKey, isWeekendDay } from '@/lib/calendar/day-grid-nav'
 import {
   EMPTY_MONTH_ITEMS,
   EMPTY_MONTH_KEYS,
@@ -190,6 +192,17 @@ function MonthLoadError({
   )
 }
 
+/** THE GRID ROLE around the weekday header and the weeks, only when the host asked for a day grid.
+ *  A fragment otherwise, so every other mount's DOM is exactly what it was. */
+function DayGridFrame({ on, label, fill, children }: { on: boolean; label: string; fill: boolean; children: ReactNode }) {
+  if (!on) return <>{children}</>
+  return (
+    <div role="grid" aria-label={label} className={cn(fill && 'flex min-h-0 flex-1 flex-col')}>
+      {children}
+    </div>
+  )
+}
+
 /** How close to either end of the scroller the reader has to be before the band grows there, in
  *  px. Two of these is comfortably less than one month band, so growth stays a month ahead. */
 const EXTEND_PX = 400
@@ -227,6 +240,9 @@ export function EventCalendar({
   hostChrome = false,
   hostViewSwitch = false,
   audience = 'member',
+  dayGrid = false,
+  todayKey,
+  onMonthItems,
 }: {
   events: CalendarEvent[]
   /** Absolute app origin when embedded on a separate website host. */
@@ -316,6 +332,19 @@ export function EventCalendar({
    *  date reads "Production" there and "Event" on a member-facing mount. docs/NAMING.md draws that
    *  line; the colour and the form are the same row of the registry either way. */
   audience?: CalendarAudience
+  /** THE DAY GRID (the Frequency calendar planner). The month becomes an ARIA grid: weeks are rows,
+   *  days are cells with one roving tab stop, the arrow keys move between days (Home / End to the
+   *  week's ends, crossing into the next or previous month), Enter or a click on a day's empty space
+   *  calls `onCreateAt`, and each day carries `data-day-*` marks (past, weekend, today, outside the
+   *  month) for the host's sheet to shade. Off, the grid is exactly what it always was. Paged flow
+   *  only: the month scroll has no single month for the keys to stand in. */
+  dayGrid?: boolean
+  /** The host's today as a day key in the Space's zone, so the today ring and the past shading are
+   *  the same on the server and in the browser. Absent, the viewer's own day decides as before. */
+  todayKey?: string
+  /** Everything on hand for the month showing, hidden layers included, whenever it changes: what a
+   *  host counts its layer chips from. */
+  onMonthItems?: (items: CalendarEvent[]) => void
 }) {
   const [internalMonth, setInternalMonth] = useState({ year: initialYear, month1: initialMonth1 })
   const narrowGrid = useNarrowGrid()
@@ -502,7 +531,7 @@ export function EventCalendar({
     [onSelectEvent],
   )
 
-  const today = useMemo(() => localToday(), [])
+  const today = useMemo(() => todayKey ?? localToday(), [todayKey])
   const todayYear = Number(today.slice(0, 4))
   const todayMonth1 = Number(today.slice(5, 7))
   const onCurrentMonth = year === todayYear && month1 === todayMonth1
@@ -669,19 +698,28 @@ export function EventCalendar({
   }
 
   // Every item on hand: the page's set plus fetched months, deduped (months overlap at their edges).
-  const all = useMemo(() => {
+  // Every item on hand, hidden layers included: what a host counts its chips from (`onMonthItems`).
+  const everything = useMemo(() => {
     const seen = new Set<string>()
     const out: CalendarEvent[] = []
     for (const ev of [...events, ...[...fetched.values()].flat()]) {
       const k = itemKey(ev)
       if (seen.has(k)) continue
       seen.add(k)
-      if (hiddenLayers.has(ev.layer ?? 'events')) continue
       const held = ev.entryId ? heldMoves.get(ev.entryId) : undefined
       out.push(held ? withMovedDay(ev, held) : ev)
     }
     return out
-  }, [events, fetched, hiddenLayers, heldMoves])
+  }, [events, fetched, heldMoves])
+  const all = useMemo(() => everything.filter((ev) => !hiddenLayers.has(ev.layer ?? 'events')), [everything, hiddenLayers])
+
+  // The month showing, told to a host that counts it. A prop call, not a state write.
+  useEffect(() => {
+    if (!onMonthItems) return
+    const from = `${shownKey}-01`
+    const to = `${shownKey}-31`
+    onMonthItems(everything.filter((ev) => ev.dayKey <= to && (ev.endDayKey ?? ev.dayKey) >= from))
+  }, [everything, shownKey, onMonthItems])
 
   // MOVING A DATE BY HAND (PROG-CAL15). Off unless the host passed `onMoveEntry`. A planned move is
   // held here on the way past, so the chip is on its new day in the same frame the person let go of
@@ -740,6 +778,37 @@ export function EventCalendar({
     }
     return map
   }, [all])
+
+  // ── THE DAY GRID'S KEYBOARD (`dayGrid`) ──────────────────────────────────────────────────────
+  // One roving tab stop: the day last focused, else today when it is in this month, else the 1st.
+  // An arrow past the grid's edge pages the month and focus follows onto the new month's cell once
+  // it has rendered (the effect below), so a keyboard reader walks straight through October into
+  // November without ever landing on the body.
+  const [focusDay, setFocusDay] = useState<string | null>(null)
+  const focusWanted = useRef(false)
+  const inWeeks = (day: string) => weeks.some((w) => w.some((c) => c.date === day))
+  const rovingDay =
+    focusDay && inWeeks(focusDay) ? focusDay : today.slice(0, 7) === shownKey ? today : `${shownKey}-01`
+  useEffect(() => {
+    if (!focusWanted.current || !focusDay) return
+    focusWanted.current = false
+    rootRef.current?.querySelector<HTMLElement>(`[data-grid-day="${focusDay}"]`)?.focus()
+  }, [focusDay, shownKey])
+  const onDayKeyDown = (e: KeyboardEvent<HTMLDivElement>, day: string) => {
+    // Only the day itself: a chip inside it keeps its own keys (Shift and an arrow moves a date).
+    if (e.target !== e.currentTarget) return
+    if ((e.key === 'Enter' || e.key === ' ') && onCreateAt) {
+      e.preventDefault()
+      onCreateAt(day)
+      return
+    }
+    const next = dayForKey(day, e.key)
+    if (!next) return
+    e.preventDefault()
+    if (!inWeeks(next)) goTo({ year: Number(next.slice(0, 4)), month1: Number(next.slice(5, 7)) })
+    focusWanted.current = true
+    setFocusDay(next)
+  }
 
   // Items per month (by first day) for the jump panel's markers.
   const countByMonth = useMemo(() => countByMonthKey(all), [all])
@@ -805,7 +874,7 @@ export function EventCalendar({
               // pills visible and its body cut off at the clip edge, on 5-row and 6-row months alike,
               // which is why the report says "any month". `flex-1` stays (the fill test reads it off
               // this className); `min-h-0` is what makes it mean share.
-              <div key={week[0].date} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'min-h-0 flex-1', scroll && 'flex-none')}>
+              <div key={week[0].date} role={dayGrid ? 'row' : undefined} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'min-h-0 flex-1', scroll && 'flex-none')}>
                 {week.map((cell) => {
                   // A PADDED DAY IS A PLACEHOLDER UNDER THE SCROLL (LIVE-530). monthMatrix pads each
                   // month to whole weeks, so 2026-09-30 is a cell in BOTH the September and the
@@ -845,6 +914,36 @@ export function EventCalendar({
                       // highlight never nudges a neighbour or reflows the week.
                       {...(owned ? { [DAY_CELL_ATTR]: cell.date } : {})}
                       data-drop-target={isDropTarget || undefined}
+                      // THE DAY GRID (`dayGrid`): a cell with a name, one roving tab stop, and the
+                      // marks the host's sheet shades. Every one of these is absent otherwise.
+                      role={dayGrid ? 'gridcell' : undefined}
+                      tabIndex={dayGrid ? (cell.date === rovingDay ? 0 : -1) : undefined}
+                      aria-label={
+                        dayGrid
+                          ? `${shortDateLabel(cell.date)}${isToday ? ', today' : ''}${dayEvents.length ? `, ${dayEvents.length} on the calendar` : ''}`
+                          : undefined
+                      }
+                      data-grid-day={dayGrid ? cell.date : undefined}
+                      data-day-past={(dayGrid && cell.date < today) || undefined}
+                      data-day-weekend={(dayGrid && isWeekendDay(cell.date)) || undefined}
+                      data-day-today={(dayGrid && isToday) || undefined}
+                      data-day-outside={(dayGrid && !cell.inMonth) || undefined}
+                      onKeyDown={dayGrid ? (e) => onDayKeyDown(e, cell.date) : undefined}
+                      onFocus={
+                        dayGrid
+                          ? (e) => {
+                              if (e.target === e.currentTarget) setFocusDay(cell.date)
+                            }
+                          : undefined
+                      }
+                      onClick={
+                        dayGrid && onCreateAt && owned
+                          ? (e) => {
+                              // The day's empty space, not a chip or a control inside it.
+                              if (!(e.target as HTMLElement).closest('button, a, input')) onCreateAt(cell.date)
+                            }
+                          : undefined
+                      }
                       onDragOver={move.enabled && owned ? (e) => move.overDay(e, cell.date) : undefined}
                       onDragLeave={move.enabled && owned ? (e) => move.leaveDay(e, cell.date) : undefined}
                       onDrop={move.enabled && owned ? (e) => move.dropOnDay(e, cell.date) : undefined}
@@ -1383,9 +1482,10 @@ export function EventCalendar({
             activeKey={activeSeries}
             onToggle={(key) => setActiveSeries((cur) => (cur === key ? null : key))}
           />
-          <div className="grid grid-cols-7 border-b border-border">
+          <DayGridFrame on={dayGrid && !scroll} label={monthLabel(year, month1)} fill={fill}>
+          <div className="grid grid-cols-7 border-b border-border" role={dayGrid ? 'row' : undefined}>
             {WEEKDAY_LABELS.map((label) => (
-              <div key={label} className="px-2 py-2 text-center text-2xs font-semibold text-muted">
+              <div key={label} role={dayGrid ? 'columnheader' : undefined} className="px-2 py-2 text-center text-2xs font-semibold text-muted">
                 <span className="hidden sm:inline">{label}</span>
                 <span className="sm:hidden">{label[0]}</span>
               </div>
@@ -1447,6 +1547,7 @@ export function EventCalendar({
           <div
             key={monthKey(year, month1)}
             data-calendar-month={shownKey}
+            role={dayGrid ? 'rowgroup' : undefined}
             // 🔴 THE CLASS MUST NOT OUTLIVE THE ANIMATION (PROG-CAL13). `slide` used to be set on a
             // month change and never cleared, so this wrapper carried its animation class forever.
             // The console's whole point is that its panel set is MOVED between two DOM homes, and
@@ -1467,6 +1568,7 @@ export function EventCalendar({
           </div>
           )}
           </div>
+          </DayGridFrame>
         </>
       )}
 
