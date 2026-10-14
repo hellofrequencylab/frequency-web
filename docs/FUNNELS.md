@@ -94,7 +94,7 @@ it is data already written to members, rows, and browsers (the `beta_audit_log` 
 | `/join` | The induction: default Funnel, or `?seq=<slug>` for an audience Funnel; `?persona=`, `?next=` honoured | `/onboarding/beta` |
 | `/join/<slug>` | A code Funnel's splash, or a Circle invite token | `/beta/<slug>` (splashes) |
 | `/join/complete` | Deferred completion landing (post sign-in) | `/onboarding/beta/complete` |
-| `/join/preview` | Public no-auth visual preview | `/onboarding/beta/preview` |
+| `/join/preview` | Staff-only visual preview (admin + janitor; others go to `/join`) | `/onboarding/beta/preview` |
 
 `/beta` (the "Join the Beta" marketing page) did not move: it is about the Beta *program* and now
 points its CTAs at `/join`. All /join routes are noindex (robots.ts disallows the segment; the
@@ -231,7 +231,7 @@ live (`onboarding.funnel_entered`, ADR-617 Phase 1); the bounce dashboard is pen
 | Path | Role |
 |---|---|
 | `app/join/(induction)/page.tsx` | Server page: auth guard, resolve the Funnel, fetch profile + regions |
-| `app/join/(induction)/preview/page.tsx` | **Public, no-auth visual preview** (`/join/preview`): sample data, no writes; noindexed |
+| `app/join/(induction)/preview/page.tsx` | **Staff-only visual preview** (`/join/preview`, `isStaff` gate, everyone else redirected to `/join`): sample data, no writes; noindexed |
 | `app/join/(induction)/induction.tsx` | Client flow: 4 beats (`preview` prop mocks the auth-dependent calls) |
 | `app/join/(induction)/feature-funnel.tsx` | The feature-Funnel renderer (ADR-619): playable demo + the same deferred signup |
 | `app/join/(induction)/actions.ts` | `completeInduction`, `stashPendingInduction`; reads the `?seq` cookie → records `meta.beta.sequence` + stamps the cohort tag + applies grants |
