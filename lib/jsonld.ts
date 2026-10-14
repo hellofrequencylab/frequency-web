@@ -127,8 +127,10 @@ export function breadcrumbSchema(items: { name: string; path: string }[]) {
 }
 
 // ── Event ─────────────────────────────────────────────────────────────────────
-// City-level location only (addressLocality + city-level region/country; never a
-// street/venue/geo point — ADR-186). Google requires `location` and `startDate`.
+// City-level location by default (addressLocality + city-level region/country, ADR-186). The exact
+// venue (name, street, postal code, geo point) is published ONLY when the caller passes it AND the
+// host has positively left the address visible (`hide_address === false`), per ADR-1743, which
+// amends ADR-186 / ADR-825 / ADR-1189 for this one surface. Google requires `location` and `startDate`.
 // For online events we emit a schema.org VirtualLocation pointing at the PUBLIC
 // event page (never the members-only join link). Optional B1 enrichment
 // (attendance_mode / is_cancelled / category / region / country) drives
@@ -196,6 +198,50 @@ type EventSchemaEnrichment = {
    *  to pay for them), and not a `0.00` price, which reads as free. Saying nothing is the only
    *  honest option this vocabulary offers. The caller decides; this publishes. */
   payouts_ready?: boolean | null
+  /** The host's "hide the address until registration" flag (`events.hide_address`, ADR-825).
+   *  THREE-STATE, and only an explicit `false` publishes the venue below: `undefined` means the
+   *  caller did not read the flag, and an unread privacy flag is treated as set. */
+  hide_address?: boolean | null
+  /** The exact venue (ADR-1743). Read with the service role by lib/events/public-venue.ts, which
+   *  already drops it for a hidden-address event; this builder checks `hide_address` again so a
+   *  caller that forgets cannot publish it. Blank parts are omitted, never emitted as "". */
+  venue?: EventVenue | null
+}
+
+/** The exact-venue half of an Event's Place (ADR-1743). Every part optional. */
+export interface EventVenue {
+  name?: string | null
+  street?: string | null
+  postal_code?: string | null
+  lat?: number | null
+  lng?: number | null
+}
+
+const clean = (v: string | null | undefined): string | null => {
+  const t = typeof v === 'string' ? v.trim() : ''
+  return t ? t : null
+}
+
+/** The venue parts an Event may publish, or null when it may publish none. The privacy rule lives
+ *  here, in one place: no venue unless `hide_address` is explicitly false. Geo needs BOTH
+ *  coordinates, finite and in range; a half point is no point. */
+export function publishableVenue(
+  hideAddress: boolean | null | undefined,
+  venue: EventVenue | null | undefined,
+): { name: string | null; street: string | null; postal: string | null; geo: { lat: number; lng: number } | null } | null {
+  if (hideAddress !== false || !venue) return null
+  const name = clean(venue.name)
+  const street = clean(venue.street)
+  const postal = clean(venue.postal_code)
+  const lat = venue.lat
+  const lng = venue.lng
+  const geo =
+    typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+      ? { lat, lng }
+      : null
+  if (!name && !street && !postal && !geo) return null
+  return { name, street, postal, geo }
 }
 
 const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
@@ -220,20 +266,33 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   // City-level Place: addressLocality + optional city-level region/country, built from WHICHEVER
   // of the three exist (SCAN-790): Google treats location.address as required for a physical
   // Place, so an event with a region or country but no city still gets an address rather than
-  // the bare placeholder. We never include streetAddress, venue name, or coordinates, and never
-  // fall back to location / street / venue_name (SCAN-209, ADR-825). An event with none of the
-  // three is knowingly ineligible for the Event rich result; nothing is invented for it.
+  // the bare placeholder. It never falls back to the free-text `location` line (SCAN-209), which is
+  // whatever the host typed. An event with no place at all is knowingly ineligible for the Event
+  // rich result; nothing is invented for it.
+  //
+  // THE EXACT VENUE (ADR-1743, owner-ruled 2026-10-14): venue name, streetAddress, postalCode and a
+  // GeoCoordinates point join the Place ONLY when the host left the address visible
+  // (`hide_address === false`). A hidden-address event, or a caller that did not read the flag,
+  // keeps exactly the city-level Place above (SCAN-209, ADR-825). See publishableVenue.
+  const venue = publishableVenue(event.hide_address, event.venue)
   const addr = {
+    ...(venue?.street ? { streetAddress: venue.street } : {}),
     ...(event.city ? { addressLocality: event.city } : {}),
     ...(event.region ? { addressRegion: event.region } : {}),
+    ...(venue?.postal ? { postalCode: venue.postal } : {}),
     ...(event.country ? { addressCountry: event.country } : {}),
   }
-  const placeName = event.city ?? event.region ?? event.country ?? null
+  const placeName = venue?.name ?? event.city ?? event.region ?? event.country ?? null
+  const hasAddress = Object.keys(addr).length > 0
+  const geo = venue?.geo
+    ? { geo: { '@type': 'GeoCoordinates', latitude: venue.geo.lat, longitude: venue.geo.lng } }
+    : {}
   const place = placeName
     ? {
         '@type': 'Place',
         name: placeName,
-        address: { '@type': 'PostalAddress', ...addr },
+        ...(hasAddress ? { address: { '@type': 'PostalAddress', ...addr } } : {}),
+        ...geo,
       }
     : { '@type': 'Place', name: 'Location shared with members' }
 

@@ -1,3 +1,4 @@
+# ADR-1743: lib/events/public-venue.ts reads one PUBLIC published event's venue columns (revoked from anon by SCAN-209) for its JSON-LD, drops every venue column on the server when hide_address is not explicitly false, and writes nothing.
 # EMAIL-022: the Space inbox address module provisions and routes mail from the Resend webhook and the settings action after their own authorization (owner guard on the action, signed webhook on inbound); it reads and writes only space_inbox_addresses and the conversation rows it opens, under service role because no member session exists on the inbound path.
 # EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
 # LIVE-902: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
@@ -929,6 +930,7 @@ lib/events/placement.ts
 lib/events/plan-link.ts
 lib/events/poster-media.ts
 lib/events/poster-quality.ts
+lib/events/public-venue.ts
 lib/events/questions.ts
 lib/events/reactions.ts
 lib/events/revenue-splits-store.ts

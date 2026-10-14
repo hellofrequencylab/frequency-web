@@ -2003,9 +2003,10 @@ export default async function EventDetailPage({
   })
 
   // Event structured data (schema.org) for SEO + AI answer engines, built from the shared
-  // eventSchema helper so the canonical /events/<slug> page emits the same richer, city-level
-  // schema as /discover (offers/validFrom/availability included; the exact venue is NEVER
-  // leaked — city-level only, matching this page's own city-only meta description per ADR-186).
+  // eventSchema helper so the canonical /events/<slug> page emits the same schema as the public
+  // page. The exact venue rides along ONLY when the HOST left the address visible (ADR-1743): the
+  // event's own `hide_address` flag decides, never this viewer's registration, so a registered
+  // member's copy of the page publishes exactly what an anonymous one does.
   const eventJsonLd = eventSchema({
     id: event.id,
     slug: event.slug,
@@ -2048,6 +2049,20 @@ export default async function EventDetailPage({
     // at the door (LIVE-314), so the price is a fact about the event rather than an offer we make,
     // and `undefined` there leaves the Offer exactly as it was.
     ...(ticketsMode ? { payouts_ready: hostPayoutReady } : {}),
+    hide_address: extra?.hide_address ?? null,
+    venue:
+      extra && extra.hide_address === false && attendanceMode !== 'online'
+        ? (() => {
+            const point = pointFromGeog(extra.geog)
+            return {
+              name: extra.venue_name,
+              street: extra.street,
+              postal_code: extra.postal_code,
+              lat: point?.lat ?? null,
+              lng: point?.lng ?? null,
+            }
+          })()
+        : null,
   })
 
   // (`hostAskSpaces` — the ADR-911 host handshake's Space side — is resolved in the social wave

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment } from '@/app/discover/events/_data'
+import { getPublicEventVenue } from '@/lib/events/public-venue'
 import { SignInCta } from '@/components/discover/cards'
 import { EventDetailTemplate } from '@/components/templates'
 import { PosterBand } from '@/components/media/poster-band'
@@ -71,7 +72,9 @@ export default async function PublicEventPage({
   const event = await getPublicEventBySlug(slug)
   if (!event) notFound()
 
-  const enrichment = await getEventEnrichment(slug)
+  // The exact venue for the JSON-LD (ADR-1743): published only when the host left the address
+  // visible. getPublicEventVenue applies the flag server-side and returns no venue otherwise.
+  const [enrichment, venue] = await Promise.all([getEventEnrichment(slug), getPublicEventVenue(slug)])
   const hasEnded = hasEventEnded(event)
 
   return (
@@ -79,7 +82,7 @@ export default async function PublicEventPage({
       structuredData={
         <JsonLd
           data={[
-            eventSchema({ ...event, ...(enrichment ?? {}) }),
+            eventSchema({ ...event, ...(enrichment ?? {}), hide_address: venue.hide_address, venue: venue.venue }),
             breadcrumbSchema([
               { name: 'Events', path: '/events' },
               { name: event.title, path: `/events/${event.slug}` },
