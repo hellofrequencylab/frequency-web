@@ -12,6 +12,7 @@ import { useWebsiteFeatureSource } from './feature-source-context'
 import { FQ_EDITOR, k, on } from './skin'
 import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSectionSpacing } from '@/lib/sites/editor/layout'
 import { cleanSectionAnchor, resolveWebsiteChrome, validWebsiteChrome, type WebsiteChrome, type Device, type SectionDisplay, type SectionTone, type SectionWidth } from '@/lib/sites/editor/state'
+import { slugify } from '@/lib/utils'
 
 // THE FREQUENCY DESIGN AND ADVANCED TABS (design_handoff/frequency/templates/admin/editor/editor.js renderInsp):
 // background tone, content width, align, spacing in four steps, columns; then reveal on scroll, show on each
@@ -110,7 +111,7 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
     return <>
       <div className="fld"><span className="l">Reveal on scroll</span><div className="seg" role="group" aria-label="Reveal on scroll">{([['none', 'None'], ['fade', 'Fade'], ['rise', 'Rise']] as const).map(([id, label]) => { const active = (display.animation ?? 'none') === id; return <button type="button" key={id} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onDisplay({ ...display, animation: id })}>{label}</button> })}</div></div>
       {visibility && onVisibility && <div className="fld"><span className="l">Show on</span>{(['desktop', 'tablet', 'phone'] as const).map((d) => <div className="tg" key={d}><span>{DEVICE_LABEL[d]}</span><button type="button" className={`sw${on(visibility[d])}`} role="switch" aria-checked={visibility[d]} aria-label={`Show on ${d}`} onClick={() => onVisibility(d, !visibility[d])} /></div>)}</div>}
-      {onBase && <AnchorField key={block.props.id} value={base.anchor} fallback={String(config.components[block.type]?.label ?? block.type).toLowerCase().replace(/[^a-z0-9]+/g, '-')} onCommit={(anchor) => onBase({ anchor })} />}
+      {onBase && <AnchorField key={block.props.id} value={base.anchor} fallback={slugify(String(config.components[block.type]?.label ?? block.type))} onCommit={(anchor) => onBase({ anchor })} />}
       <details className="drw"><summary>Custom code</summary><label className="fld">Class name<Input className="in" value={display.className ?? ''} onChange={(e) => onDisplay({ ...display, className: e.target.value })} placeholder="my-section" /></label><label className="fld">Data attributes<Input className="in" value={display.attributes ?? ''} onChange={(e) => onDisplay({ ...display, attributes: e.target.value })} placeholder="data-campaign=autumn" /></label></details>
     </>
   }

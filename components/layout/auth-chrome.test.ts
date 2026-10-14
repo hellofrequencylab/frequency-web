@@ -103,9 +103,10 @@ describe('/sign-in is not a destination for someone already signed in', () => {
   it('honours a validated `next` and nothing else', () => {
     // Same-origin absolute path only — the shape /auth/callback and proxy.ts already enforce.
     // Without the guard this redirect is an open redirect on the product's own login URL.
-    expect(SIGN_IN).toMatch(
-      /const nextTarget =\s*\n?\s*next && next\.startsWith\('\/'\) && !next\.startsWith\('\/\/'\) && !next\.startsWith\("?'?\/\\\\/
-    )
+    // The rule lives once in lib/auth/safe-next.ts (same-origin path; no //, no backslash, no control
+    // characters), shared with the actions and /auth/callback; its own test pins the shapes it refuses.
+    expect(SIGN_IN).toMatch(/const nextTarget = safeNextPath\(next\)/)
+    expect(SIGN_IN).toContain("from '@/lib/auth/safe-next'")
   })
 
   it('validates once, so the redirect and the form cannot disagree', () => {
