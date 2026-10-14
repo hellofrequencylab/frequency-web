@@ -8,7 +8,8 @@ import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { canSeeMenuItem, flattenCategoryTree, viewerRoleFor, type MenuViewer } from '@/components/layout/menu-role'
 import type { ResolvedCategory, ResolvedItem } from '@/lib/menus/types'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
-import type { StaffRole } from '@/lib/core/staff-roles'
+import { staffCan, type StaffRole } from '@/lib/core/staff-roles'
+import { canModeratePlatform } from '@/lib/moderation/scope'
 import type { FqIconName } from '@/components/frequency/icon'
 import { AdminShell } from './admin-shell'
 import type { AdminNavItem } from './nav-model'
@@ -35,8 +36,12 @@ const WORLD_ICON: Record<string, FqIconName> = {
   platform: 'settings',
 }
 
-/** The pending report queue, fail-quiet: a read error shows no badge rather than a wrong one. */
-async function pendingReports(): Promise<number> {
+/** The pending report queue, fail-quiet: a read error shows no badge rather than a wrong one. The count is
+ *  platform-wide, so it is read only for a viewer whose queue IS platform-wide (a platform moderator or
+ *  community-write staff, scopeReportsToViewer); a Circle host's queue is narrowed to their own Circles, so
+ *  they get no badge rather than a number that counts reports they cannot open. */
+async function pendingReports(webRole: WebRole, staffRole: StaffRole | null): Promise<number> {
+  if (!canModeratePlatform(webRole) && !staffCan(staffRole, 'community', 'write')) return 0
   try {
     const { count } = await createAdminClient().from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending')
     return count ?? 0
@@ -86,7 +91,7 @@ export async function FrequencyAdminConsole({ profileId, role, webRole, staffRol
   const viewer: MenuViewer = { viewerRole: viewerRoleFor({ loggedIn: true, communityRole: role, webRole }), staffRole }
   const [menu, reports, me, contexts, unread] = await Promise.all([
     getMenu('admin_header'),
-    pendingReports(),
+    pendingReports(webRole, staffRole),
     getCachedViewerProfile(),
     resolveOperatorContext({ id: profileId, webRole }),
     getUnreadCount().catch(() => 0),

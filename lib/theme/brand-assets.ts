@@ -7,7 +7,7 @@ import { SITE_DESIGN, type DesignId } from '@/lib/theme/design'
 // Keep this module a leaf: it is reachable from components/layout/app-shell.tsx, which
 // check:shell-weight budgets, so it imports one constant and holds data only.
 
-export interface BrandAssets {
+interface BrandAssets {
   wordmark: {
     /** A file under /public. */
     src: string

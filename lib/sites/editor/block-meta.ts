@@ -8,13 +8,13 @@ import type { FqEditorIconName, FqIconName } from '@/components/frequency/icon'
 // presentation from it, so a new block that joins a registry category is presented with no edit here.
 // PURE: no React, no editor state.
 
-export type EditorBlockGroup = 'Sections' | 'Content' | 'Live' | 'Media'
-export const EDITOR_BLOCK_GROUPS: readonly EditorBlockGroup[] = ['Sections', 'Content', 'Live', 'Media']
+type EditorBlockGroup = 'Sections' | 'Content' | 'Live' | 'Media'
+const EDITOR_BLOCK_GROUPS: readonly EditorBlockGroup[] = ['Sections', 'Content', 'Live', 'Media']
 
 /** The design's suggestion sets (editor.js `SUG`) are keyed by these kinds; `_` is the general set. */
-export type EditorBlockKind = 'Hero' | 'About' | 'FAQ' | 'CTA' | '_'
+type EditorBlockKind = 'Hero' | 'About' | 'FAQ' | 'CTA' | '_'
 
-export interface EditorBlockMeta {
+interface EditorBlockMeta {
   icon: FqIconName | FqEditorIconName
   group: EditorBlockGroup
   /** Reads the Space's own data (events, people, plans, numbers, answers) at render time. */

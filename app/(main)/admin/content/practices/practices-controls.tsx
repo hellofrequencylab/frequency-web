@@ -309,7 +309,7 @@ export function PracticeSavedViews() {
           <button
             type="button"
             onClick={save}
-            className="flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center gap-2 rounded-control-nested px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
           >
             <Bookmark className="h-3.5 w-3.5" aria-hidden /> Save the current view
           </button>
@@ -321,7 +321,7 @@ export function PracticeSavedViews() {
               views.map((view) => (
                 <div
                   key={view.name}
-                  className="group flex items-center gap-1 rounded-control pl-2.5 pr-1 transition-colors hover:bg-surface-elevated"
+                  className="group flex items-center gap-1 rounded-control-nested pl-2.5 pr-1 transition-colors hover:bg-surface-elevated"
                 >
                   <button
                     type="button"

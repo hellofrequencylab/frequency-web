@@ -548,7 +548,7 @@ export function Button({
 // that each is typed once.
 const ARROW_LINK = {
   inline: 'inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide hover:underline',
-  band: 'inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-eyebrow hover:underline',
+  band: 'inline-flex items-center gap-2 eyebrow hover:underline',
 } as const
 
 export function arrowLinkClasses({

@@ -44,7 +44,14 @@ const { SITE_DESIGN, DESIGNS, designDef } = await import('../lib/theme/design.ts
 const { light } = designDef(SITE_DESIGN).chrome
 
 function writeIfChanged(path, next) {
-  const prev = existsSync(path) ? readFileSync(path, 'utf8') : null
+  // Read, and treat a missing file as absent, in one call: an existsSync() check before the read is a
+  // check-then-use race (CodeQL js/file-system-race).
+  let prev = null
+  try {
+    prev = readFileSync(path, 'utf8')
+  } catch (e) {
+    if (e?.code !== 'ENOENT') throw e
+  }
   if (prev === next) return false
   writeFileSync(path, next)
   return true

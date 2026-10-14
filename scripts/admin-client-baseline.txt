@@ -1,3 +1,16 @@
+# OVERHAUL (Frequency design, PR #3434): each Frequency body below re-reads what its DAWN counterpart already reads under service role; none returns a row the DAWN page would not.
+#   app/(main)/messages/inbox-data.ts: peer presence (profiles.last_seen_at), moved verbatim out of DAWN app/(main)/messages/page.tsx, which no longer imports the client.
+#   app/(main)/search/search-data.ts: people/posts/events search moved out of DAWN app/(main)/search/page.tsx (directory-visibility, public-only filters kept); Circles now read under the session.
+#   components/frequency/admin/admin-console.tsx: the pending-reports head-count DAWN components/admin/admin-info-rail.tsx reads, now only for platform moderators/community-write staff.
+#   components/frequency/admin/pages/moderation/moderation-reads.ts: resolved reports narrowed by scopeReportsToViewer, the DAWN components/widgets/admin/admin-moderation-queue.tsx scoping; Blocked is platform-moderator only.
+#   components/frequency/admin/pages/space-reads.ts: manage-gated Space aggregates (check-ins, follows, paid memberships), as DAWN lib/events/event-stats.ts, lib/spaces/follows.ts, lib/commerce/seller-audience.ts; other members' rows RLS cannot serve.
+#   components/frequency/admin/pages/standing/standing-reads.ts: requireAdmin platform standing over profiles, the DAWN app/(main)/crew/leaderboard/page.tsx read; opt-outs never named.
+#   components/frequency/members/crew/crew-body.tsx: the viewer's Circle board, the DAWN app/(main)/crew/leaderboard/page.tsx read; profiles RLS is in-region only, so co-members' rows need the bypass.
+#   components/frequency/members/settings/feed-why-actions.ts: writes one key of the caller's own profiles.meta via mergeProfileMeta, as DAWN app/(main)/crew/leaderboard/actions.ts does for the opt-out.
+#   lib/circles/next-meetups.ts: next published event of the viewer's own Circles, the DAWN app/(main)/circles/[slug]/(circle)/tab-facts.ts query.
+#   lib/feed/frequency-home.ts, lib/feed/frequency-rail.ts: friends' RSVPs/streaks and Circle-mates' standing (profiles RLS is in-region only), as DAWN lib/feed/feed-people.ts and the crew leaderboard read them.
+#   lib/journeys/friends-on-journey.ts: accepted friends (blocks dropped) enrolled in one Journey, cross-user enrolment rows RLS does not serve; as DAWN lib/feed/feed-people.ts names friends.
+#   lib/profile/in-person.ts: count-only check-in/met/tenure numbers on a profile, the stats DAWN app/(main)/people/[handle]/page.tsx reads; practice counts owner-only.
 # ADR-1743: lib/events/public-venue.ts reads one PUBLIC published event's venue columns (revoked from anon by SCAN-209) for its JSON-LD, drops every venue column on the server when hide_address is not explicitly false, and writes nothing.
 # EMAIL-022: the Space inbox address module provisions and routes mail from the Resend webhook and the settings action after their own authorization (owner guard on the action, signed webhook on inbound); it reads and writes only space_inbox_addresses and the conversation rows it opens, under service role because no member session exists on the inbound path.
 # EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
@@ -539,7 +552,7 @@ app/(main)/lead/load-led-circles.ts
 app/(main)/library/actions.ts
 app/(main)/market/service-actions.ts
 app/(main)/messages/actions.ts
-app/(main)/messages/page.tsx
+app/(main)/messages/inbox-data.ts
 app/(main)/messages/r/[roomId]/page.tsx
 app/(main)/messages/rooms/actions.ts
 app/(main)/n/[nodeId]/page.tsx
@@ -564,6 +577,7 @@ app/(main)/people/[handle]/vcard/route.ts
 app/(main)/people/friend-actions.ts
 app/(main)/practices/admin-actions.ts
 app/(main)/search/page.tsx
+app/(main)/search/search-data.ts
 app/(main)/settings/billing/actions.ts
 app/(main)/settings/billing/section.tsx
 app/(main)/settings/connections/match-actions.ts
@@ -648,6 +662,12 @@ components/feed/feed-list.tsx
 components/feed/profile-feed.tsx
 components/feed/profile-posts.tsx
 components/feed/system-line.tsx
+components/frequency/admin/admin-console.tsx
+components/frequency/admin/pages/moderation/moderation-reads.ts
+components/frequency/admin/pages/space-reads.ts
+components/frequency/admin/pages/standing/standing-reads.ts
+components/frequency/members/crew/crew-body.tsx
+components/frequency/members/settings/feed-why-actions.ts
 components/layout/impersonation-banner.tsx
 components/messages/crew-lead-quick-action.tsx
 components/people/directory-facets.tsx
@@ -786,6 +806,7 @@ lib/circles/effort-board.ts
 lib/circles/events.ts
 lib/circles/handoff.ts
 lib/circles/join.ts
+lib/circles/next-meetups.ts
 lib/circles/remix.ts
 lib/circles/sister.ts
 lib/circles/social-fuel.ts
@@ -946,6 +967,8 @@ lib/events/waitlist-notify.test.ts
 lib/events/waitlist-notify.ts
 lib/feed/density.ts
 lib/feed/feed-people.ts
+lib/feed/frequency-home.ts
+lib/feed/frequency-rail.ts
 lib/feed/post-embeddings.ts
 lib/feed/post-interest.ts
 lib/feed/post-origin.ts
@@ -970,6 +993,7 @@ lib/journeys/compose.ts
 lib/journeys/current-leg.ts
 lib/journeys/drip-sends.ts
 lib/journeys/free-enrol-gate.ts
+lib/journeys/friends-on-journey.ts
 lib/journeys/grants.ts
 lib/journeys/launch-access.ts
 lib/journeys/learn.ts
@@ -1082,6 +1106,7 @@ lib/pricing/space-bundle.ts
 lib/pricing/space-plan.ts
 lib/privacy/export.ts
 lib/profile/awards.ts
+lib/profile/in-person.ts
 lib/profile/profile-theme-actions.ts
 lib/profiles/account-email.ts
 lib/profiles/public-profile.ts

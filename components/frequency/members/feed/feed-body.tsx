@@ -1,7 +1,7 @@
 import '@/app/themes/active/members-a'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { loadHomeEvents, loadNeedsYou, loadZapBreakdown, type HomeEvents } from '@/lib/feed/frequency-home'
 import { SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
@@ -63,9 +63,10 @@ const SORTS: [FeedSort, string][] = [
 ]
 
 export async function FrequencyFeed(p: FrequencyFeedProps) {
-  const admin = createAdminClient()
+  // The viewer's own active Circles: their own membership rows, so the session client reads them under RLS.
+  const supabase = await createClient()
   const [{ data: memberships }, zapRows, operates] = await Promise.all([
-    admin
+    supabase
       .from('memberships')
       .select('circle_id, circles!circle_id ( id, name )')
       .eq('profile_id', p.profileId)

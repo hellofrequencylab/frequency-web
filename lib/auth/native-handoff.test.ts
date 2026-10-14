@@ -24,7 +24,7 @@ describe('decideNativeReturn: the native sign-in return, opened in a browser', (
   })
 
   it('an unsafe next is dropped everywhere (no open redirect)', () => {
-    for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', '/%09/evil.com'.replace('%09', '\t')]) {
+    for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', '/\t/evil.com']) {
       const d = decide(`code=${CODE}&next=${encodeURIComponent(bad)}`)
       if (d.kind !== 'handoff') throw new Error('expected handoff')
       expect(d.next).toBe('')

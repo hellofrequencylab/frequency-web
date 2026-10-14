@@ -26,7 +26,7 @@ function inlineText(md: string): string {
     .trim()
 }
 
-export interface HelpTocEntry {
+interface HelpTocEntry {
   id: string
   title: string
 }

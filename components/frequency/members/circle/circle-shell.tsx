@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-community'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import type { CircleUpcomingEvent } from '@/lib/events/circle-upcoming'
 import { meetupWhen } from '@/lib/circles/meetup-when'
@@ -17,13 +17,14 @@ import { FqRouteTabs } from '@/components/frequency/members/route-tabs'
 // The tab bodies render as `children`, exactly as under DAWN.
 
 /** The next meetup panel. Streams: the going count and the viewer's own answer are two light reads
- *  the cover should never wait on. */
+ *  the cover should never wait on. Both are the viewer's own RSVP and an event the panel already shows
+ *  them, so the session client reads them under RLS; a refused cover read just keeps the bare tile. */
 async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; myProfileId: string | null }) {
-  const admin = createAdminClient()
+  const supabase = await createClient()
   const [counts, mine, cover] = await Promise.all([
     goingCountsByEvent([event.id]),
     myProfileId
-      ? admin
+      ? supabase
           .from('event_rsvps')
           .select('status')
           .eq('event_id', event.id)
@@ -33,14 +34,14 @@ async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; 
       : Promise.resolve(null),
     // The event's own cover for the photo tile (the reference's 88px thumb). Public bucket, so the
     // URL is the same one the Events list draws; an event with no cover keeps the bare tile.
-    admin
+    supabase
       .from('events')
       .select('cover_image_path')
       .eq('id', event.id)
       .maybeSingle()
       .then(({ data }) => {
         const path = (data as { cover_image_path: string | null } | null)?.cover_image_path
-        return path ? admin.storage.from('event-media').getPublicUrl(path).data.publicUrl : null
+        return path ? supabase.storage.from('event-media').getPublicUrl(path).data.publicUrl : null
       }),
   ])
   const going = counts[event.id] ?? 0

@@ -197,8 +197,15 @@ function main() {
   // Owner, 2026-10-13: economy entries the export marks as design placeholders are not real rules, so
   // they are removed on install (the two `bonus` entries of the 12:23 export).
   const econ = join(VENDOR, 'assets/economy/economy.json')
-  if (existsSync(econ)) {
-    const data = JSON.parse(readFileSync(econ, 'utf8'))
+  // One read, ENOENT as absent: an existsSync() check first is a check-then-use race (CodeQL js/file-system-race).
+  let econSrc = null
+  try {
+    econSrc = readFileSync(econ, 'utf8')
+  } catch (e) {
+    if (e?.code !== 'ENOENT') throw e
+  }
+  if (econSrc !== null) {
+    const data = JSON.parse(econSrc)
     const drop = (o) => {
       if (!o || typeof o !== 'object') return
       for (const [k, v] of Object.entries(o)) {

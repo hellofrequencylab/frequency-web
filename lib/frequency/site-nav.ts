@@ -121,13 +121,13 @@ export function featuresWingHref(side: Side): string {
   return side === 'e' ? ROUTES.spaces : ROUTES.people
 }
 
-export interface FeatureJob {
+interface FeatureJob {
   /** The job the visitor is doing: Find, Show up, Come back, … */
   job: string
   features: { id: string; label: string }[]
 }
 
-export interface FeatureSide {
+interface FeatureSide {
   side: Side
   label: string
   jobs: FeatureJob[]
@@ -167,7 +167,7 @@ export interface MegaCard {
   title: string
 }
 
-export interface WingMenu {
+interface WingMenu {
   key: Wing
   label: string
   cols: { heading: string; links: SiteLink[] }[]

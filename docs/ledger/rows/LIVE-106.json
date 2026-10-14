@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-106",
+  "wave": "W7",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs'); const S='components/layout/marketing-mobile-menu.tsx',H='components/layout/marketing-header.tsx',M='scripts/maintenance/menu-drift.mjs',R='lib/nav/registry.ts'; if(!fs.existsSync(S)||!fs.existsSync(H)||!fs.existsSync('scripts/maintenance/menu-drift.mjs')||!fs.existsSync(R))process.exit(79); const s=fs.readFileSync(S,'utf8'),h=fs.readFileSync(H,'utf8'),f=[]; if(/headerTriggers/.test(s))f.push('the sheet still projects the registry trigger nodes flat, so every child destination stays unreachable on a phone'); if(!/categoryTriggers/.test(s))f.push('the sheet does not use the shared panel-or-link projection, so it can disagree with the desktop bar about a destination'); if(!/flattenCategoryTree/.test(s))f.push(\\\"the sheet does not flatten a category tree, so a panel's child columns would not render\\\"); if(!/<MarketingMobileMenu[^>]*headerMenu=\\\\{headerMenu\\\\}/.test(h))f.push('MarketingHeader does not hand the sheet the DB-backed headerMenu, so an operator menu edit never reaches a phone'); import(require('url').pathToFileURL(process.cwd()+'/'+M).href).then(function(m){ const hrefs=new Set(m.codeLeaves(fs.readFileSync(R,'utf8')).map(function(l){return l.href})); const WAS=['/discover/practices','/discover/spaces','/for/coaches-and-healers','/for/community-builders','/for/event-hosts','/for/nonprofits','/for/studios','/pricing','/what-is-frequency','/help','/privacy','/terms']; const gone=WAS.filter(function(x){return !hrefs.has(x)}); if(gone.length)f.push('the header menu the sheet renders no longer declares: '+gone.join(', ')); if(f.length){console.error(f.join('; '));process.exit(1)} process.exit(0); }).catch(function(e){console.error('probe could not run: '+e.message);process.exit(1)});\""
+    }
+  },
+  "append": {
+    "detail": "── PROBE RE-POINTED 2026-10-14 (overhaul, PR #3434). Owner ruling 2026-10-14 merged /discover/partners into /discover/spaces (next.config.ts redirects both the index and /:slug), so the header no longer declares it and is not meant to. /discover/spaces, the merged destination, stays in the required list; the rest of the probe is unchanged."
+  }
+}

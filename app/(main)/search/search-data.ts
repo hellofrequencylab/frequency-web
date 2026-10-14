@@ -1,5 +1,6 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import {
   DIRECTORY_VISIBILITY_COLUMNS,
   isListableInDirectory,
@@ -145,9 +146,11 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS): Promise
   return { rows: folded.slice(0, limit), truncated: folded.length > limit }
 }
 
-/** Live, listed Circles by name. "Private" Circles are unlisted, so they never answer a search. */
+/** Live, listed Circles by name. "Private" Circles are unlisted, so they never answer a search. Read under
+ *  the viewer's session, the way the DAWN Circles index reads them (lib/circles/index-data.ts). */
 export async function searchCircles(safe: string, limit = CIRCLE_RESULTS): Promise<Window<CircleRow>> {
-  let q = createAdminClient()
+  const supabase = await createClient()
+  let q = supabase
     .from('circles')
     .select('id, name, slug, member_count, image_url, neighborhood, unlisted, is_demo')
     .ilike('name', `%${safe}%`)

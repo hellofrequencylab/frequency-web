@@ -86,7 +86,7 @@ export function streakReading(streak: number, last7: readonly ('done' | 'missed'
   return { loggedToday, line }
 }
 
-export interface SparkBar {
+interface SparkBar {
   key: string
   label: string
   minutes: number
@@ -129,7 +129,7 @@ export interface Goal {
   href: string
 }
 
-export interface GoalInputs {
+interface GoalInputs {
   /** Practices the member has adopted. */
   adopted: number
   /** Adopted practices not yet logged on the member's today. */
@@ -203,7 +203,7 @@ export interface BoardRow {
   optedOut: boolean
 }
 
-export interface BoardEntry {
+interface BoardEntry {
   n: number
   id: string
   name: string

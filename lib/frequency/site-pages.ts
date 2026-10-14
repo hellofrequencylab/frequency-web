@@ -30,7 +30,7 @@ export type Surface = 'stage' | 'commons'
 /** The hue keys fx.js uses: violet, magenta, aqua, sun, UV cyan, UV lime, and the side colour. */
 export type Hue = 'v' | 'm' | 'a' | 's' | 'c' | 'l' | 'side'
 
-export const HUE_VAR: Record<Hue, string> = {
+const HUE_VAR: Record<Hue, string> = {
   v: 'var(--fq-x-violet-neon)',
   m: 'var(--fq-x-magenta-neon)',
   a: 'var(--fq-x-aqua-neon)',
@@ -41,7 +41,7 @@ export const HUE_VAR: Record<Hue, string> = {
 }
 
 /** The header's primary action: the side pair (p-only / e-only), none, or a page's own. */
-export type HeaderCta = 'side' | 'none' | { href: string; label: string }
+type HeaderCta = 'side' | 'none' | { href: string; label: string }
 
 export interface SitePageState {
   /** `data-mood`, the page's name in fx.js. */

@@ -14,11 +14,11 @@ import { buildBoard, buildWeek, type Board, type BoardRow, type WeekDay, type We
 
 function note(section: string, error: unknown): void {
   if (!error) return
-  const detail = typeof error === 'object' && error && 'message' in error ? String((error as { message: unknown }).message) : String(error)
+  const detail = typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : String(error)
   console.error(`[frequency-rail] ${section} read failed; that panel degraded to empty:`, detail)
 }
 
-export interface RailStep {
+interface RailStep {
   key: string
   label: string
   blurb: string
@@ -98,7 +98,7 @@ export const loadLocalBoard = cache(async (profileId: string): Promise<Board | n
   return buildBoard(rows, profileId)
 })
 
-export interface RailPerson {
+interface RailPerson {
   id: string
   handle: string
   name: string

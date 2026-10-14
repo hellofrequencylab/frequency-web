@@ -27,7 +27,13 @@ if (id === 'frequency' && !existsSync('app/themes/frequency/core.css')) {
 
 const FILE = '.env.local'
 const LINE = `NEXT_PUBLIC_SITE_DESIGN=${id}`
-const before = existsSync(FILE) ? readFileSync(FILE, 'utf8') : ''
+// One read, ENOENT as empty: an existsSync() check first is a check-then-use race (CodeQL js/file-system-race).
+let before = ''
+try {
+  before = readFileSync(FILE, 'utf8')
+} catch (e) {
+  if (e?.code !== 'ENOENT') throw e
+}
 const re = /^\s*(?:export\s+)?NEXT_PUBLIC_SITE_DESIGN\s*=.*$/m
 const after = re.test(before) ? before.replace(re, LINE) : `${before.replace(/\n*$/, '\n')}${LINE}\n`
 if (after !== before) writeFileSync(FILE, after)

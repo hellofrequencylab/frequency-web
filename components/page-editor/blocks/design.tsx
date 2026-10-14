@@ -328,7 +328,7 @@ export function EditorialSectionBlock({
             <dt className={`font-display ${DISPLAY_TYPE.figure} leading-none text-primary-strong`}>
               {s.value}
             </dt>
-            <dd className="mt-2 text-body-sm font-semibold uppercase tracking-eyebrow text-muted">{s.label}</dd>
+            <dd className="mt-2 eyebrow text-muted">{s.label}</dd>
           </div>
         ))}
       </dl>

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getMyConnectionPrefs, getConnectionSettings } from '@/lib/connections/connection-settings'
 import { getMyProfileId } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { getMatchingConsent } from '@/lib/resonance/matches'
 import { getMyMatchPrefs } from '@/lib/match/prefs'
 import { ConnectionPrefsForm } from '@/components/settings/connection-prefs-form'
@@ -23,15 +23,20 @@ import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 // suite only offered on the board itself (Show me on leaderboards). Each pane is a Server Component the
 // pane switcher keeps mounted behind its own Suspense.
 
+// The viewer's own profile row and sign-in email, read the way the DAWN profile settings page reads
+// them (app/(main)/settings/profile/page.tsx): the session client under RLS, by the signed-in auth
+// user, and the email off that same session. Nothing here is anyone else's, so no bypass.
 async function viewerRow() {
-  const me = await getMyProfileId()
-  if (!me) return null
-  const { data } = await createAdminClient()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website, home_label, meta, auth_user_id')
-    .eq('id', me)
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, home_label, meta')
+    .eq('auth_user_id', user.id)
     .maybeSingle()
-  return data as unknown as {
+  if (!data) return null
+  return { ...(data as object), email: user.email ?? null } as unknown as {
     id: string
     display_name: string
     handle: string
@@ -42,21 +47,15 @@ async function viewerRow() {
     website: string | null
     home_label: string | null
     meta: Record<string, unknown> | null
-    auth_user_id: string
-  } | null
+    email: string | null
+  }
 }
 
 /** Account: the reference's photo, name, email and About you, saved in place. */
 export async function AccountPaneForm() {
   const row = await viewerRow()
   if (!row) return null
-  let email: string | null = null
-  try {
-    const { data } = await createAdminClient().auth.admin.getUserById(row.auth_user_id)
-    email = data.user?.email ?? null
-  } catch {
-    email = null
-  }
+  const email = row.email
   return (
     <div className="stack mc-gap-20">
       <div className="row mc-gap-16">

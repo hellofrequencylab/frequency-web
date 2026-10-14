@@ -23,7 +23,7 @@ import { meetupWhen } from './meetup-when'
 // FAIL-SAFE: a read that throws drops that card's line. The index never breaks over a teaser.
 
 /** How many of the viewer's Circles get a Next line (one small read each, in parallel). */
-export const NEXT_MEETUP_CIRCLES = 12
+const NEXT_MEETUP_CIRCLES = 12
 
 export async function loadNextMeetups(circleIds: string[], now: Date = new Date()): Promise<Map<string, string>> {
   const out = new Map<string, string>()

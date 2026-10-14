@@ -175,9 +175,9 @@ export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnap
 /** A section's background tone, content width and link anchor (the Frequency page editor's Design and Advanced
  *  tabs, design_handoff/frequency/templates/admin/editor/HANDOFF-PAGE-EDITOR.md §6). All three are OPTIONAL and
  *  read from the desktop entry only: absent, the section renders exactly as it always has. */
-export const SECTION_TONES = ['white', 'sand', 'pastel', 'ink'] as const
+const SECTION_TONES = ['white', 'sand', 'pastel', 'ink'] as const
 export type SectionTone = (typeof SECTION_TONES)[number]
-export const SECTION_WIDTHS = ['narrow', 'default', 'wide', 'full'] as const
+const SECTION_WIDTHS = ['narrow', 'default', 'wide', 'full'] as const
 export type SectionWidth = (typeof SECTION_WIDTHS)[number]
 /** An anchor is a lowercase slug: the section's `id` on the live page, so `#visit` links to it. */
 export function cleanSectionAnchor(value: unknown): string | undefined {

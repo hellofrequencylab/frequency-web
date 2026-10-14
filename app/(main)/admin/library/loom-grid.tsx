@@ -465,7 +465,7 @@ function BulkBar({
                     key={c.id}
                     type="button"
                     onClick={() => run(() => addAssetsToCollection(c.id, ids))}
-                    className="flex w-full items-center justify-between gap-2 rounded-control px-3 py-1.5 text-left text-body-sm text-text hover:bg-surface-elevated"
+                    className="flex w-full items-center justify-between gap-2 rounded-control-nested px-3 py-1.5 text-left text-body-sm text-text hover:bg-surface-elevated"
                   >
                     <span className="truncate">{c.title}</span>
                     <span className="shrink-0 text-meta text-subtle">{c.count}</span>
@@ -482,7 +482,7 @@ function BulkBar({
                       return addAssetsToCollection(created.id, ids)
                     })
                   }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-control border-t border-border px-3 py-1.5 text-left text-body-sm font-medium text-primary-strong hover:bg-surface-elevated"
+                  className="mt-1 flex w-full items-center gap-2 rounded-control-nested border-t border-border px-3 py-1.5 text-left text-body-sm font-medium text-primary-strong hover:bg-surface-elevated"
                 >
                   <FolderInput className="h-4 w-4" /> New collection…
                 </button>

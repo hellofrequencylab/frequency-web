@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getEventContext } from '@/lib/events/active-event'
 import { showsOrganizerCredit } from '@/lib/events/platform-credit'
 import { normalizeHttpUrl, safeHttpUrl } from '@/lib/safe-url'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 import { FqIcon } from '@/components/frequency/icon'
 import { FqEventMap } from './event-map'
@@ -110,12 +110,16 @@ export function FqEventWhere() {
   )
 }
 
-/** How many past, uncancelled gatherings this person has hosted: the reference's "Hosted 38 times". */
+/** How many past, uncancelled, published gatherings this person has hosted: the reference's "Hosted 38
+ *  times". Read under the viewer's session (RLS), so the count is made only of gatherings this viewer
+ *  could open; it never counts a draft or a private event to someone outside it. */
 async function hostedCount(hostId: string): Promise<number> {
-  const { count } = await createAdminClient()
+  const supabase = await createClient()
+  const { count } = await supabase
     .from('events')
     .select('id', { count: 'exact', head: true })
     .eq('host_id', hostId)
+    .eq('status', 'published')
     .eq('is_cancelled', false)
     .lt('starts_at', new Date().toISOString())
   return count ?? 0

@@ -7,14 +7,14 @@
 // app/themes/<id>.css. Popup HTML is real DOM, so it uses `var(--design-map-*)` directly.
 
 /* token-ok: DAWN's map colours, the fallback before CSS resolves; the live values are the CSS tokens. */
-export const MAP_COLOR_FALLBACK = {
+const MAP_COLOR_FALLBACK = {
   '--design-map-pin': '#E2912F', // token-ok: mirrors --design-map-pin
   '--design-map-pin-ring': '#FFFFFF', // token-ok: mirrors --design-map-pin-ring
   '--design-map-count': '#2A1B06', // token-ok: mirrors --design-map-count
   '--design-map-starter': '#7C5CD6', // token-ok: mirrors --design-map-starter
 } as const
 
-export type MapColorToken = keyof typeof MAP_COLOR_FALLBACK
+type MapColorToken = keyof typeof MAP_COLOR_FALLBACK
 
 /** The resolved colour of a map token on <html>, or DAWN's value when it has not resolved. */
 export function mapColor(token: MapColorToken): string {

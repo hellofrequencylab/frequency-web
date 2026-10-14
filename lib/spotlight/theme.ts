@@ -14,7 +14,7 @@ import type { CSSProperties } from 'react'
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
 // stack references its variable with a system fallback. No member @font-face — the set is
 // a closed allowlist. ──
-export type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk'
+type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk'
 export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: string }[] = [
   { id: 'sans', label: 'Clean sans', stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
   { id: 'serif', label: 'Elegant serif', stack: 'var(--font-playfair), Georgia, Cambria, "Times New Roman", serif' },

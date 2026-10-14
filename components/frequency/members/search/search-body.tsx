@@ -4,7 +4,7 @@ import '@/app/themes/active/members-community'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { getCachedViewerProfile } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
@@ -93,18 +93,20 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
   ])
 
   const me = viewer?.id ?? null
-  const admin = createAdminClient()
+  // The viewer's own RSVPs and friendships, and the memberships of Circles they share with each person
+  // (the memberships policy reads same-Circle rows), so the session client answers all three under RLS.
+  const supabase = await createClient()
   const eventIds = events.rows.map((e) => e.id)
   const personIds = people.rows.map((p) => p.id).filter((id) => id !== me)
   const [rsvpR, friendR, goingN, memberR] = await Promise.all([
-    me && eventIds.length ? admin.from('event_rsvps').select('event_id, status').eq('profile_id', me).in('event_id', eventIds) : Promise.resolve({ data: [] }),
+    me && eventIds.length ? supabase.from('event_rsvps').select('event_id, status').eq('profile_id', me).in('event_id', eventIds) : Promise.resolve({ data: [] }),
     me && personIds.length
-      ? admin.from('friendships').select('user_a_id, user_b_id, status').or(`user_a_id.eq.${me},user_b_id.eq.${me}`)
+      ? supabase.from('friendships').select('user_a_id, user_b_id, status').or(`user_a_id.eq.${me},user_b_id.eq.${me}`)
       : Promise.resolve({ data: [] }),
     eventIds.length ? goingCountsByEvent(eventIds).catch((): Record<string, number> => ({})) : Promise.resolve({} as Record<string, number>),
     // The Circles a person shares with the viewer: the reference's "4 mutual Circles".
     me && personIds.length
-      ? admin.from('memberships').select('profile_id, circle_id').eq('status', 'active').in('profile_id', [me, ...personIds])
+      ? supabase.from('memberships').select('profile_id, circle_id').eq('status', 'active').in('profile_id', [me, ...personIds])
       : Promise.resolve({ data: [] }),
   ])
   const circlesOf = new Map<string, Set<string>>()
@@ -116,7 +118,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
   }
   const mineCircles = me ? circlesOf.get(me) ?? new Set<string>() : new Set<string>()
   const mutual = (id: string) => [...(circlesOf.get(id) ?? [])].filter((c) => mineCircles.has(c)).length
-  const coverOf = (path: string | null | undefined) => (path ? admin.storage.from('event-media').getPublicUrl(path).data.publicUrl : null)
+  const coverOf = (path: string | null | undefined) => (path ? supabase.storage.from('event-media').getPublicUrl(path).data.publicUrl : null)
   const going = new Set(((rsvpR.data ?? []) as { event_id: string; status: string }[]).filter((r) => r.status === 'going' || r.status === 'waitlist').map((r) => r.event_id))
   const edge = new Map<string, 'pending' | 'friends'>()
   for (const f of (friendR.data ?? []) as { user_a_id: string; user_b_id: string; status: string }[]) {

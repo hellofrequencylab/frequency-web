@@ -32,7 +32,7 @@ type Admin = ReturnType<typeof createAdminClient>
 
 function note(section: string, error: unknown): void {
   if (!error) return
-  const detail = typeof error === 'object' && error && 'message' in error ? String((error as { message: unknown }).message) : String(error)
+  const detail = typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : String(error)
   console.error(`[frequency-home] ${section} read failed; that section degraded to empty:`, detail)
 }
 

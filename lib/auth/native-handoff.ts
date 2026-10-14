@@ -35,7 +35,7 @@ const CODE_SHAPE = /^[A-Za-z0-9-]{16,128}$/
 
 type Params = { get(name: string): string | null }
 
-export type NativeReturn =
+type NativeReturn =
   /** A usable code: show the hand-off page. */
   | { kind: 'handoff'; code: string; next: string; appUrl: string; webSignIn: string; handoffPath: string }
   /** Supabase said no, or there is nothing to hand over: back to sign-in with a closed-set code. */

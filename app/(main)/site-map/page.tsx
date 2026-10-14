@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { getCachedViewerProfile } from '@/lib/auth'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
@@ -32,8 +33,11 @@ export default async function SiteMapPage() {
 
   if (SITE_DESIGN === 'frequency') return <SiteMapBody columns={columns} website={website} />
 
+  // The one browse-page hero band every IndexTemplate draws (LIVE-117), from the operator's header image or
+  // the section default.
+  const hero = await resolveIndexHero('/site-map')
   return (
-    <IndexTemplate title="Site map" description="Every part of the member site in one place.">
+    <IndexTemplate {...hero} title="Site map" description="Every part of the member site in one place.">
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         {[...columns, { area: 'The website', links: website }].map((col) => (
           <nav key={col.area} aria-label={col.area}>

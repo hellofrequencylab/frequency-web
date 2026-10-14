@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 // "Show why I see things" (Settings, Feed): the short reason the Feed prints on a pick or a post
 // ("From your Circle", "Near you"). On by default; a member who turns it off stores
@@ -11,10 +11,12 @@ export function hidesFeedWhy(meta: Record<string, unknown> | null | undefined): 
   return Boolean(meta?.feedWhyHidden)
 }
 
-/** Request-cached: should the Feed print its why-labels for this member? Fails open (shown). */
+/** Request-cached: should the Feed print its why-labels for this member? Fails open (shown). The member's
+ *  own row, so the session client under RLS reads it. */
 export const feedWhyShown = cache(async (profileId: string): Promise<boolean> => {
   try {
-    const { data } = await createAdminClient().from('profiles').select('meta').eq('id', profileId).maybeSingle()
+    const supabase = await createClient()
+    const { data } = await supabase.from('profiles').select('meta').eq('id', profileId).maybeSingle()
     return !hidesFeedWhy((data as { meta?: Record<string, unknown> | null } | null)?.meta)
   } catch {
     return true

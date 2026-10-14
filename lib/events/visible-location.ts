@@ -64,13 +64,13 @@ export function publicVisibleLocation(ev: EventLocationFields): string | null {
 }
 
 /** The venue parts the public page may receive: what lib/events/public-venue.ts returns. */
-export interface PublicPageVenue {
+interface PublicPageVenue {
   name?: string | null
   street?: string | null
   postal_code?: string | null
 }
 
-export interface PublicPageWhere {
+interface PublicPageWhere {
   /** The where-line: `Venue · street, city` when the host left the address visible, else the city. */
   line: string | null
   /** A Maps search link for the exact venue. Null whenever the line is city-only. */

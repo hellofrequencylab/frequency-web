@@ -22,7 +22,7 @@ function yearStartIso(now = new Date()): string {
   return new Date(Date.UTC(now.getUTCFullYear(), 0, 1)).toISOString()
 }
 
-export interface InPersonCounts {
+interface InPersonCounts {
   checkinsThisYear: number
   peopleMet: number
 }
@@ -61,7 +61,7 @@ export async function getInPersonCounts(profileId: string): Promise<InPersonCoun
   }
 }
 
-export interface CircleTenure {
+interface CircleTenure {
   joinedAt: string | null
   checkins: number
 }
@@ -104,7 +104,7 @@ export async function getCircleTenure(profileId: string, circleIds: string[]): P
   return out
 }
 
-export interface PracticeCount {
+interface PracticeCount {
   id: string
   title: string
   slug: string | null

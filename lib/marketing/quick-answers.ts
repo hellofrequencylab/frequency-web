@@ -12,7 +12,7 @@ import { CATEGORY_LINE, FOUNDING_PLACE, SITE_NAME, SITE_TAGLINE } from '@/lib/si
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { HOME_TZ } from '@/lib/time/zone'
 
-export interface QuickAnswer {
+interface QuickAnswer {
   q: string
   a: string
 }
