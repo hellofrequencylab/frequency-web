@@ -670,6 +670,11 @@ const nextConfig: NextConfig = {
       // picker replaced it. EXACT source: /start/[flow] stays live, because printed QR codes and the
       // lead flows (lib/entry-points/templates.ts) point at /start/welcome, /start/event, /start/partner.
       { source: '/start', destination: '/join', permanent: true },
+      // /discover/places MERGED into /discover/cities: one town template, which now renders any town
+      // with something public (noindex below the local index floor) as well as the density cities, and
+      // one index carrying both lists. The slug is the same citySlug() form on both sides.
+      { source: '/discover/places', destination: '/discover/cities', permanent: true },
+      { source: '/discover/places/:citySlug', destination: '/discover/cities/:citySlug', permanent: true },
     ]
   },
   images: {

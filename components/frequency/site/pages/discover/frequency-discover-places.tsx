@@ -1,6 +1,6 @@
-// BY TOWN under the Frequency design: /discover/cities (the density-gated towns), /discover/places (every
-// town with something live), and one town's page, which both detail routes share (cities/[citySlug] and
-// places/[citySlug] render the same CityHub shape from the same public reads).
+// BY TOWN under the Frequency design: /discover/cities (the density-gated towns, then every town with
+// something live, since /discover/places merged in on 2026-10-14) and one town's page
+// (cities/[citySlug], which renders a density city or any live town in the same CityHub shape).
 //
 // The figures on a town page are the lengths of the lists printed under them, never a separate count, so
 // the number and the page can never disagree. A town section with nothing in it says so plainly instead
@@ -9,7 +9,7 @@
 import Link from 'next/link'
 import type { PublicCircle, PublicEvent } from '@/lib/discover'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
-import { BETA_CTA_HREF, BETA_CTA_LABEL, FOUNDING_PLACE } from '@/lib/site'
+import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import {
   DxCalendar,
@@ -25,8 +25,8 @@ import {
 } from './parts'
 import { FrequencyPlacesFinder, type FinderTown } from './frequency-places-finder'
 
-/** /discover/cities: the towns with real momentum. */
-export function FrequencyCitiesIndex({ cities }: { cities: { city: string; slug: string }[] }) {
+/** /discover/cities: the towns with real momentum, then every town with something to show up to. */
+export function FrequencyCitiesIndex({ cities, towns }: { cities: { city: string; slug: string }[]; towns: FinderTown[] }) {
   return (
     <div className="dx-page">
       <DxHero
@@ -53,13 +53,23 @@ export function FrequencyCitiesIndex({ cities }: { cities: { city: string; slug:
               </Link>
             </DxNote>
           )}
-          <div className="dx-foot">
-            <Link className="dx-link" href="/discover/places">
-              Browse every town →
-            </Link>
-          </div>
+          {towns.length > 0 && (
+            <div className="dx-foot">
+              <a className="dx-link" href="#towns">
+                Browse every town →
+              </a>
+            </div>
+          )}
         </div>
       </section>
+      {towns.length > 0 && (
+        <section className="dx-sec" id="towns" data-screen-label="03 Every town">
+          <div className="wrap">
+            <DxHead label="Where it’s happening" sub="Browse by town" title="Every town here has something to show up to." />
+            <FrequencyPlacesFinder towns={towns} />
+          </div>
+        </section>
+      )}
       <KeepGoing
         title="Your city is built one room at a time."
         body="Frequency is free to join, and it stays free. Find a Circle near you, or start the first one."
@@ -70,60 +80,7 @@ export function FrequencyCitiesIndex({ cities }: { cities: { city: string; slug:
   )
 }
 
-/** /discover/places: every town with a public Circle or an upcoming event, with a finder. */
-export function FrequencyPlacesIndex({ towns }: { towns: FinderTown[] }) {
-  const circles = towns.reduce((n, t) => n + t.circleCount, 0)
-  const events = towns.reduce((n, t) => n + t.eventCount, 0)
-  return (
-    <div className="dx-page">
-      <DxHero
-        crumbs={[{ href: '/discover', label: 'Discover' }, { label: 'Places' }]}
-        photo={dxPhoto('day-beach-hoop.jpg')}
-        title={
-          <>
-            Find your people, <em className="fq-iri-text">near you.</em>
-          </>
-        }
-        lede="Somewhere close to you, neighbors are already meeting this week. Pick your town to see the Circles forming and the events coming up there."
-      />
-      <section className="dx-sec" data-screen-label="02 Towns">
-        <div className="wrap">
-          <DxHead
-            label="Where it’s happening"
-            sub="Browse by town"
-            title="Every town here has something to show up to."
-          />
-          {towns.length > 0 && (circles > 0 || events > 0) && (
-            <dl className="dx-stats dx-gap">
-              <DxStat value={towns.length} label={towns.length === 1 ? 'town' : 'towns'} />
-              {circles > 0 && <DxStat value={circles} label={circles === 1 ? 'Circle' : 'Circles'} />}
-              {events > 0 && <DxStat value={events} label={events === 1 ? 'upcoming event' : 'upcoming events'} />}
-            </dl>
-          )}
-          {towns.length > 0 ? (
-            <FrequencyPlacesFinder towns={towns} />
-          ) : (
-            <DxNote>
-              <b>The first Circles are forming now in {FOUNDING_PLACE}.</b>
-              <p>Check back soon to browse by town, or join free and help start the first one where you live.</p>
-              <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
-                {BETA_CTA_LABEL}
-              </Link>
-            </DxNote>
-          )}
-        </div>
-      </section>
-      <KeepGoing
-        title="Don’t see your town yet?"
-        body="Frequency grows one neighborhood at a time. Join free and help start the first Circle where you live."
-        primary={{ href: BETA_CTA_HREF, label: `${BETA_CTA_LABEL} →` }}
-        secondary={{ href: '/how-to-start-a-circle', label: 'Start a Circle' }}
-      />
-    </div>
-  )
-}
-
-/** One town (cities/[citySlug] and places/[citySlug]). */
+/** One town (cities/[citySlug]). */
 export function FrequencyTown({
   city,
   base,
@@ -135,7 +92,7 @@ export function FrequencyTown({
   today,
 }: {
   city: string
-  /** The index this page sits under: /discover/cities or /discover/places. */
+  /** The index this page sits under (/discover/cities). */
   base: { href: string; label: string }
   circles: PublicCircle[]
   events: PublicEvent[]

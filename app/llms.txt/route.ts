@@ -96,7 +96,7 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
   { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). Two themes, Default and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
   { path: '/tools-for-community-builders', label: 'Tools for community builders', desc: 'The operator toolkit: Circles, Events, a calendar, email, a CRM and a storefront, for the people who gather others.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
-  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, each with the Circles meeting and events happening there.' },
+  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, then every town with a Circle meeting or an event coming up.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
 ]
 
@@ -111,7 +111,6 @@ const DIRECTORIES: { path: string; label: string; desc: string }[] = [
   { path: '/discover/partners', label: 'Partners', desc: 'Partner venues and organizations working with Frequency.' },
   { path: '/discover/practices', label: 'Practice library', desc: 'The public practice library: small real-world practices from the community.' },
   { path: '/discover/journeys', label: 'Journeys', desc: 'Guided multi-week Journeys you can take with a group.' },
-  { path: '/discover/places', label: 'Places', desc: 'Every active city, each with the Circles meeting and the events happening there.' },
   { path: '/discover/topics', label: 'Channels', desc: 'The Channels (Movement, Spirituality, and more), each with its Circles and events.' },
 ]
 

@@ -173,7 +173,7 @@ vi.mock('@/lib/marketplace', () => ({
 vi.mock('@/lib/help/content', () => ({ getAllArticles: async () => [], getAllCategories: async () => [] }))
 vi.mock('@/app/discover/events/_data', () => ({ getCityCategoryHubs: async () => [] }))
 const cityReads = vi.hoisted(() => ({ places: [] as { slug: string; eventCount?: number }[], density: [] as { slug: string }[] }))
-vi.mock('@/app/discover/places/_data', () => ({ listDiscoverCities: async () => cityReads.places }))
+vi.mock('@/app/discover/cities/_towns', () => ({ listDiscoverCities: async () => cityReads.places }))
 vi.mock('@/app/discover/cities/_data', () => ({ listDensityCities: async () => cityReads.density }))
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: async () => ({ data: [] }) }) }))
 // The admin client answers per TABLE, so a LIVE-331 test can hand the real partners reader the
@@ -314,21 +314,21 @@ describe('app/sitemap emitted URL set', () => {
     }
   })
 
-  it('never advertises a /discover/places city whose canonical is its density page (SCAN-656)', async () => {
+  it('lists a density city once, and every other floor-clearing town on the same template (SCAN-656, 2026-10-14 merge)', async () => {
     // Both clear the LIVE-807 index floor, so only the density dedup can drop one.
     cityReads.places = [{ slug: 'encinitas', eventCount: 3 }, { slug: 'carlsbad', eventCount: 3 }]
     cityReads.density = [{ slug: 'encinitas' }]
     const urls = (await sitemap()).map((e) => e.url)
-    expect(urls).toContain(`${SITE}/discover/cities/encinitas`)
-    expect(urls).toContain(`${SITE}/discover/places/carlsbad`)
-    expect(urls).not.toContain(`${SITE}/discover/places/encinitas`)
+    expect(urls.filter((u) => u === `${SITE}/discover/cities/encinitas`)).toHaveLength(1)
+    expect(urls).toContain(`${SITE}/discover/cities/carlsbad`)
+    expect(urls.filter((u) => u.includes('/discover/places'))).toEqual([])
   })
 
   it('advertises a place only at the index floor, 3 or more upcoming Events (LIVE-807)', async () => {
     cityReads.places = [{ slug: 'vista', eventCount: 2 }, { slug: 'oceanside', eventCount: 3 }]
     const urls = (await sitemap()).map((e) => e.url)
-    expect(urls).toContain(`${SITE}/discover/places/oceanside`)
-    expect(urls).not.toContain(`${SITE}/discover/places/vista`)
+    expect(urls).toContain(`${SITE}/discover/cities/oceanside`)
+    expect(urls).not.toContain(`${SITE}/discover/cities/vista`)
   })
 
   it('escapes XML-reserved characters in image URLs, so one & in a cover cannot break the file (SCAN-785)', async () => {

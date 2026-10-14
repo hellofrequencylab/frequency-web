@@ -254,7 +254,7 @@ export default async function DiscoverHubPage() {
           )}
           {cityClusters.length > 0 && (
             <div className="text-center mt-8">
-              <Link href="/discover/places" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
+              <Link href="/discover/cities#towns" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
                 Browse every town <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

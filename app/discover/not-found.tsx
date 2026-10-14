@@ -28,7 +28,7 @@ export default function NotFound() {
         <Link className="btn btn-ghost fq-iri-rim" href="/discover/events">
           What’s happening
         </Link>
-        <Link className="btn btn-ghost fq-iri-rim" href="/discover/places">
+        <Link className="btn btn-ghost fq-iri-rim" href="/discover/cities">
           Browse by town
         </Link>
       </SiteStatus>

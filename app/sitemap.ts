@@ -29,7 +29,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { listPublishedSpotlightHandles } from "@/lib/spotlight/data";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
-import { listDiscoverCities } from "@/app/discover/places/_data";
+import { listDiscoverCities } from "@/app/discover/cities/_towns";
 import { meetsIndexFloor } from "@/lib/seo/index-floor";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
@@ -263,12 +263,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Public Business Spaces directory — the indexable, no-rail twin of the in-app /spaces/directory (the
     // per-type hubs /discover/spaces/[type] are dynamic, below).
     { url: `${SITE_URL}/discover/spaces`, changeFrequency: "daily", priority: 0.8 },
-    // Browse-by-place hub — the local-intent landing index (per-city pages are dynamic, below).
-    { url: `${SITE_URL}/discover/places`, changeFrequency: "daily", priority: 0.8 },
-    // Density-gated city landing hub (GE11-2) — only cities above the density
-    // threshold get a per-city landing page (those are dynamic, below); this index
-    // lists them.
-    { url: `${SITE_URL}/discover/cities`, changeFrequency: "daily", priority: 0.7 },
+    // The city hub (GE11-2): the density-ranked cities, then every live town. /discover/places merged
+    // in here on 2026-10-14 (301), so this is the one browse-by-town index, at the priority the places
+    // hub carried.
+    { url: `${SITE_URL}/discover/cities`, changeFrequency: "daily", priority: 0.8 },
     // Comparison ("alternative to X") hub + one page per named alternative
     // (GE11-1). The set is a static registry, so the per-page URLs are safe to
     // advertise here directly.
@@ -532,19 +530,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-    // A city that also earns the density landing page canonicalises there
-    // (app/discover/places/[citySlug]/page.tsx), so advertising its /discover/places URL
-    // sends crawlers to a page that points elsewhere (SCAN-656). The density slug and the
-    // places slug are the same `citySlug(name)` form, so set membership is the page's rule.
+    // One town template since /discover/places merged into /discover/cities (2026-10-14): a density
+    // city is already listed above (densityCityRoutes), so a town is added here only when it is NOT a
+    // density city, and the same URL is never listed twice (SCAN-656's dedup, now by set membership
+    // over one path). The density slug and the town slug are the same `citySlug(name)` form.
     const densitySlugs = new Set(densityCities.map((c) => c.slug));
-    // THE LOCAL INDEX FLOOR (LIVE-807): a place page is advertised only when it says index, the
-    // same rule its robots meta reads. The summary carries no Space count (a Space never creates
+    // THE LOCAL INDEX FLOOR (LIVE-807): a town page is advertised only when it says index, the
+    // same rule its robots meta reads (app/discover/cities/[citySlug]/page.tsx). The summary carries no Space count (a Space never creates
     // a place URL on its own), so the sitemap asks the Event half of the floor.
     const placeRoutes: MetadataRoute.Sitemap = cities
       .filter((c) => !densitySlugs.has(c.slug))
       .filter((c) => meetsIndexFloor({ upcomingEvents: c.eventCount }))
       .map((c) => ({
-      url: `${SITE_URL}/discover/places/${c.slug}`,
+      url: `${SITE_URL}/discover/cities/${c.slug}`,
       changeFrequency: "daily" as const,
       priority: 0.6,
     }));
