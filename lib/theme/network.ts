@@ -159,9 +159,9 @@ function schemeVars(s: NetworkScheme, id: NetworkSchemeId): string {
 const NETWORK_SHARED_VARS = `${NETWORK_TAGS.map((c, i) => `--nw-tag-${i + 1}:${c}`).join(';')};
 --nw-sec-y:clamp(96px,11vw,168px);--nw-gutter:clamp(20px,4vw,48px);--nw-wave-fill:${WAVE_FILL};
 --nw-grain:${GRAIN};--nw-mottle:${MOTTLE};--nw-wave:${NETWORK_WAVE};--nw-grain-opacity:.22;--nw-mottle-opacity:.07;
---nw-shadow-sm:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(48,40,30,.05),0 10px 26px -18px rgba(48,40,30,.2);
---nw-shadow-md:inset 0 1px 0 rgba(255,255,255,.7),0 2px 6px rgba(48,40,30,.05),0 24px 48px -26px rgba(48,40,30,.26);
---nw-shadow-lg:inset 0 1px 0 rgba(255,255,255,.7),0 4px 12px rgba(48,40,30,.05),0 38px 80px -42px rgba(48,40,30,.34);
+--nw-lift-sm:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(48,40,30,.05),0 10px 26px -18px rgba(48,40,30,.2);
+--nw-lift-md:inset 0 1px 0 rgba(255,255,255,.7),0 2px 6px rgba(48,40,30,.05),0 24px 48px -26px rgba(48,40,30,.26);
+--nw-lift-lg:inset 0 1px 0 rgba(255,255,255,.7),0 4px 12px rgba(48,40,30,.05),0 38px 80px -42px rgba(48,40,30,.34);
 --nw-ring-focus:0 0 0 2px var(--nw-surface),0 0 0 4px var(--nw-ink);
 --nw-c-soot:#000;--nw-c-soot-78:rgba(18,18,18,.78);--nw-c-earth-10:rgba(60,40,20,.10);--nw-c-glow-10:rgba(255,214,170,.10);--nw-c-shade-18:rgba(15,30,40,.18);--nw-c-shade-35:rgba(15,30,40,.35);--nw-c-shade-40:rgba(15,30,40,.4);--nw-c-shade-50:rgba(15,30,40,.5);--nw-c-shade-60:rgba(15,30,40,.6);--nw-c-umber-12:rgba(48,40,30,.12);--nw-c-chalk:#fff;--nw-c-chalk-06:rgba(255,255,255,.06);--nw-c-chalk-07:rgba(255,255,255,.07);--nw-c-chalk-08:rgba(255,255,255,.08);--nw-c-chalk-10:rgba(255,255,255,.1);--nw-c-chalk-12:rgba(255,255,255,.12);--nw-c-chalk-14:rgba(255,255,255,.14);--nw-c-chalk-22:rgba(255,255,255,.22);--nw-c-chalk-82:rgba(255,255,255,.82);--nw-c-chalk-88:rgba(255,255,255,.88);
 --nw-r-sm:${NETWORK_SHAPE.sm};--nw-r-card:${NETWORK_SHAPE.card};--nw-r-cover:${NETWORK_SHAPE.cover};--nw-r-pill:${NETWORK_SHAPE.pill};--nw-r-leaf:${NETWORK_SHAPE.leaf};
