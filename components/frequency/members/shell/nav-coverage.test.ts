@@ -186,8 +186,7 @@ const ALLOWLIST: Readonly<Record<string, string>> = {
   '/people': 'redirects to /network (Members, Community menu)',
   // Being merged by the cuts pass: The Lab into /vision and The Quest page into /features, both on
   // the website row (FQ_SITE_LINKS).
-  '/the-lab': 'merging into /vision (website row)',
-  '/the-quest': 'merging into /features (website row)',
+  '/help/the-quest': 'DAWN-only target of the merged /the-quest link (ADR-1747); under Frequency the same link goes to /features#f-zaps, which the website row carries',
 }
 
 /** MISSING from the Frequency shell today: a bug being fixed, not a decision. Empty. */
