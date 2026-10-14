@@ -1,8 +1,9 @@
 /* ══ FREQUENCY · the member shell's own rules (kept by hand) ═══════════════════════════════════════
-   The members kit (kit-members.css, GENERATED) carries app.css: the header, footer and toast from
-   shell.js. The Feed prototype (templates/members/Members.dc.html) draws more chrome than the kit
-   has classes for: the scroll-aware header, the mega menu and its sheets, the resizable rails with
-   their micro state, the rail tabs and the tooltip. Those live here, written from the prototype's
+   The members kit (kit-members.css, GENERATED) carries app.css: the official app shell from shell.js
+   (header, section pill, mega menu, Zap and Notifications sheets, scrim, ambient layer), the footer
+   and the toast. Only the owner's rulings over that shell sit here. The Feed prototype
+   (templates/members/Members.dc.html) draws more chrome than the kit has classes for: the resizable
+   rails with their micro state, the rail tabs and the tooltip. Those live here, written from the prototype's
    inline styles, scoped the way the kit is and reading only --fq- tokens. Ink and white tints are
    color-mix() of the Commons tokens, so the night room re-tints them instead of keeping day values.
 
@@ -25,7 +26,6 @@
   --fqm-white-75:color-mix(in oklab,var(--fq-surface-raised) 75%,transparent);
   --fqm-white-90:color-mix(in oklab,var(--fq-surface-raised) 90%,transparent);
   --fqm-lilac-22:color-mix(in oklab,var(--fq-x-violet-neon) 18%,transparent);
-  --fqm-frost:color-mix(in oklab,var(--fq-surface-card) 92%,transparent);
   --fqm-float:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent);
   --fqm-glass-chip:linear-gradient(150deg,var(--fqm-white-75),color-mix(in oklab,var(--fq-surface-raised) 35%,transparent));
   --fqm-glass-tab:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 86%,transparent),color-mix(in oklab,var(--fq-surface-card) 62%,transparent));
@@ -36,93 +36,44 @@
 [data-design="frequency"] [data-kit="members"] .fqm-skip{position:absolute;left:16px;top:-80px;z-index:60;height:44px;display:inline-flex;align-items:center;padding:0 18px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);color:var(--fq-text-strong);font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);box-shadow:var(--fqm-float)}
 [data-design="frequency"] [data-kit="members"] .fqm-skip:focus{top:16px}
 
-[data-design="frequency"] [data-kit="members"] .fq-wash .fq-grain{opacity:.07}
+/* ── Header, mega menu, sheets, scrim ────────────────────────────────────────────────────────────
+   The kit's official app shell draws all of it (kit-members.css .ap-hdr, .ap-nav, .ap-mega, .ap-sheet,
+   .ap-scrim; header.tsx renders shell.js's markup). Only what the kit does not cover, and the owner's
+   rulings over the design, live here. */
 
-/* ── Header ─────────────────────────────────────────────────────────────────────────────────────── */
-[data-design="frequency"] [data-kit="members"] .fqm-top{position:sticky;top:0;z-index:40}
-[data-design="frequency"] [data-kit="members"] .fqm-top .ap-hdr{position:relative;z-index:2;transition:background var(--fq-dur-slow) var(--fq-ease-breath),box-shadow var(--fq-dur-slow) var(--fq-ease-breath),backdrop-filter var(--fq-dur-slow) var(--fq-ease-breath)}
-[data-design="frequency"] [data-kit="members"] .fqm-top .ap-hdr::before{transition:opacity var(--fq-dur-slow) var(--fq-ease-breath)}
-[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="top"]{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 1px 0 transparent}
-[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="top"]::before{opacity:0}
-[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="active"]{background:color-mix(in oklab,var(--fq-surface-card) 86%,transparent);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 1px 0 var(--fq-border-hair),0 18px 40px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent)}
-[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="active"]::before{opacity:.9}
-[data-design="frequency"] [data-kit="members"] .ap-hdr[data-hdr="idle"]{background:color-mix(in oklab,var(--fq-surface-card) 52%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);box-shadow:0 1px 0 var(--fqm-ink-3)}
+/* Owner ruling (2026-10-13): the pill's first item is a plain Feed / Home link, not a menu button, so
+   it wears the kit's `.ap-nav button` look, which the kit no longer gives a link. */
+[data-design="frequency"] [data-kit="members"] .ap-nav>a{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 16px 0 12px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:-.01em;white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .ap-nav>a:hover{color:var(--fq-text-strong);background:var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .ap-nav>a svg{width:17px;height:17px;opacity:.75}
+@media (max-width:1180px){[data-design="frequency"] [data-kit="members"] .ap-nav>a{padding:0 12px}
+[data-design="frequency"] [data-kit="members"] .ap-nav>a span{display:none}}
+/* Phones keep the section pill (existing phone behaviour): the kit hides it under 720px for its burger,
+   which opens a left-rail drawer this shell does not have, so the burger is not drawn. */
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .ap-hdr .ap-nav{display:flex}}
+/* shell.js draws the search glyph at 17px in the muted ink (an inline style there). */
+[data-design="frequency"] [data-kit="members"] .ap-search svg{width:17px;height:17px;flex:none;color:var(--fq-text-muted)}
+/* Real data only (owner ruling): the kit's .ap-me paints a stock photo; a member with no picture gets
+   their initials on the ink tint. A real avatar arrives as an inline background-image (avatar.ts). */
+[data-design="frequency"] [data-kit="members"] .ap-me{display:flex;align-items:center;justify-content:center;background:var(--fqm-ink-6) center/cover no-repeat;color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
 
-[data-design="frequency"] [data-kit="members"] .ap-logo.fqm-logo{width:max(var(--fqm-lw,200px),200px);transition:width var(--fq-dur-base) var(--fq-ease-out)}
-@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .ap-logo.fqm-logo{width:110px}}
-[data-design="frequency"] [data-kit="members"] .fqm-cluster{flex:0 1 1216px;min-width:0;display:flex;align-items:center;gap:8px}
+/* Owner ruling (2026-10-13): the mega menu paints NO panel background. The kit's .ap-mega frosts a card
+   fill with a blur and a drop shadow; all three are that panel, so only they are cleared. The
+   highlighted section button and the footer CTA keep their fill. */
+[data-design="frequency"] [data-kit="members"] .ap-mega{background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+/* On a phone the photo cards take one column (the kit spans two, which would add a column). */
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .ap-mega-cards{grid-column:auto}}
+/* Owner ruling: every section ends with the Frequency website row (FQ_SITE_LINKS). */
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site{max-width:1280px;margin:0 auto;padding:18px 32px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;border-top:1px solid var(--fqm-ink-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site .k{padding-right:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site a{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong);padding:6px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site a:hover{opacity:.65;color:var(--fq-text-strong)}
 
-/* The section pill's triggers are buttons (they open a menu), styled as the kit styles its links. */
-[data-design="frequency"] [data-kit="members"] .ap-nav button{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 16px 0 12px;border:none;border-radius:var(--fq-radius-orb);background:transparent;color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:-.01em;white-space:nowrap;cursor:pointer;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
-[data-design="frequency"] [data-kit="members"] .ap-nav button:hover{color:var(--fq-text-strong);background:var(--fqm-white-60)}
-[data-design="frequency"] [data-kit="members"] .ap-nav button.on{background:var(--fq-pa);color:var(--fq-text-strong);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
-[data-design="frequency"] [data-kit="members"] .ap-nav button svg{width:17px;height:17px}
-[data-design="frequency"] [data-kit="members"] .ap-nav button:not(.on) svg{opacity:.75}
-@media (max-width:1180px){[data-design="frequency"] [data-kit="members"] .ap-nav button{padding:0 12px}
-[data-design="frequency"] [data-kit="members"] .ap-nav button span{display:none}}
-/* The pill's first item is a link (Feed / Home), worn exactly like the section buttons beside it. */
-[data-design="frequency"] [data-kit="members"] .ap-nav a{letter-spacing:-.01em}
-[data-design="frequency"] [data-kit="members"] .ap-nav a:hover{color:var(--fq-text-strong);background:var(--fqm-white-60)}
-[data-design="frequency"] [data-kit="members"] .ap-nav a:not(.on) svg{opacity:.75}
-@media (max-width:1180px){[data-design="frequency"] [data-kit="members"] .ap-nav a{padding:0 12px}
-[data-design="frequency"] [data-kit="members"] .ap-nav a span{display:none}}
-[data-design="frequency"] [data-kit="members"] .ap-search svg{width:17px;height:17px;color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .ap-search span{flex:1}
-[data-design="frequency"] [data-kit="members"] button.ap-ic{border:none;background:transparent;cursor:pointer;padding:0}
-[data-design="frequency"] [data-kit="members"] .ap-ic svg{width:20px;height:20px}
-[data-design="frequency"] [data-kit="members"] .btn.pa.fqm-zap{height:44px;padding:0 18px 0 14px;margin-left:6px;font-size:var(--fq-text-body-s)}
-[data-design="frequency"] [data-kit="members"] .fqm-me-end{flex:1 1 0;min-width:max-content;display:flex;align-items:center;justify-content:flex-end}
-[data-design="frequency"] [data-kit="members"] .ap-me.fqm-me{display:flex;align-items:center;justify-content:center;background:var(--fqm-ink-6) center/cover no-repeat;color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
-@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-me-end{flex:none;min-width:0}}
-
-/* Mega menu: no panel background (owner, 2026-10-13); the highlighted link keeps its fill. Sheets: frosted panels under the 76px header. */
-[data-design="frequency"] [data-kit="members"] .fqm-panel{position:absolute;left:0;right:0;top:76px;z-index:1;max-height:calc(100vh - 76px);overflow-y:auto;background:none}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-grid{max-width:1280px;margin:0 auto;padding:36px 32px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:40px}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-col{display:flex;flex-direction:column;gap:2px}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-h{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:var(--fq-track-label);text-transform:uppercase;color:var(--fq-text-faint);padding:0 0 14px}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-link{display:flex;gap:14px;align-items:flex-start;padding:10px 0;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-link:hover{opacity:.65;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-link svg{width:20px;height:20px;color:var(--fq-text-muted);margin-top:1px}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-link b{display:block;font:600 15px/1.15 var(--fq-font-sans)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-link small{display:block;margin-top:5px;font:400 var(--fq-text-body-s)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-cards{grid-column:span 2;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-panel-cards{grid-column:auto}}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-card{display:flex;flex-direction:column;gap:12px;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-card .ph{height:170px;border-radius:var(--fq-radius-l)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-card b{font:500 17px/1.2 var(--fq-font-display);letter-spacing:-.03em}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-foot{max-width:1280px;margin:32px auto 0;padding:22px 32px 26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--fqm-ink-6)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-foot span{flex:1;font:400 italic 21px/1.2 var(--fq-font-serif);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-foot .btn{height:48px;font-size:var(--fq-text-body-s)}
-/* The website row: Home and every primary website page, on every section of the menu. */
-[data-design="frequency"] [data-kit="members"] .fqm-panel-site{max-width:1280px;margin:0 auto;padding:18px 32px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;border-top:1px solid var(--fqm-ink-6)}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-site .fqm-panel-h{padding:0 6px 0 0}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-site a{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong);padding:6px 0}
-[data-design="frequency"] [data-kit="members"] .fqm-panel-site a:hover{opacity:.65}
-
-[data-design="frequency"] [data-kit="members"] .fqm-sheet-wrap{position:absolute;left:0;right:0;top:76px;z-index:1;pointer-events:none}
-[data-design="frequency"] [data-kit="members"] .fqm-sheet-row{max-width:1280px;margin:0 auto;padding:10px 32px;display:flex;justify-content:flex-end}
-[data-design="frequency"] [data-kit="members"] .fqm-sheet{pointer-events:auto;width:340px;max-width:calc(100vw - 32px);padding:22px;border-radius:28px;background:var(--fqm-frost);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:var(--fqm-float);display:flex;flex-direction:column;gap:18px}
-[data-design="frequency"] [data-kit="members"] .fqm-sheet.bell{width:360px;padding:20px 22px;gap:4px;max-height:calc(100vh - 110px);overflow-y:auto}
-@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-sheet-row{padding:10px 16px}}
-[data-design="frequency"] [data-kit="members"] .fqm-sheet-title{font:400 italic 20px/1 var(--fq-font-serif);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-zap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-[data-design="frequency"] [data-kit="members"] .fqm-zap-tile{display:flex;flex-direction:column;align-items:center;gap:9px;padding:0;border:none;background:none;cursor:pointer;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-body)}
-[data-design="frequency"] [data-kit="members"] .fqm-zap-tile>span{width:54px;height:54px;border-radius:50%;background:var(--fqm-ink-4);display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-zap-tile svg{width:21px;height:21px}
-[data-design="frequency"] [data-kit="members"] .fqm-mindless{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:var(--fqm-ink-3);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-mindless .fq-aura{opacity:.35}
-[data-design="frequency"] [data-kit="members"] .fqm-orb{position:relative;flex:none;width:40px;height:40px;border-radius:50%;background:var(--fq-pa-orb)}
-[data-design="frequency"] [data-kit="members"] .fqm-mindless b{position:relative;display:block;font:600 15px/1 var(--fq-font-sans)}
-[data-design="frequency"] [data-kit="members"] .fqm-mindless small{position:relative;display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-soon{font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
-[data-design="frequency"] [data-kit="members"] .fqm-bell-h{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px}
-[data-design="frequency"] [data-kit="members"] .fqm-bell-h b{font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-bell-h a{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-note{display:flex;gap:12px;align-items:flex-start;padding:10px 0;font:400 var(--fq-text-body-s)/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
-[data-design="frequency"] [data-kit="members"] .fqm-note svg{width:18px;height:18px;color:var(--fq-text-muted);margin-top:2px}
-[data-design="frequency"] [data-kit="members"] .fqm-note small{display:block;margin-top:4px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-faint)}
-[data-design="frequency"] [data-kit="members"] .fqm-note.unread>span::after{content:"";display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--fq-pa);vertical-align:middle}
-[data-design="frequency"] [data-kit="members"] .fqm-scrim{position:fixed;inset:76px 0 0;z-index:0;background:var(--fqm-ink-6)}
+/* The Zap actions are real buttons and links where shell.js draws spans. */
+[data-design="frequency"] [data-kit="members"] .ap-zapg>button,[data-design="frequency"] [data-kit="members"] .ap-zapg>a{display:flex;justify-content:center;padding:0;border:none;background:none;cursor:pointer;font:inherit}
+/* The notifications sheet scrolls once the list outgrows the window; an unread row carries the dot. */
+[data-design="frequency"] [data-kit="members"] .ap-sheet[data-s="bell"]{max-height:calc(100vh - 110px);overflow-y:auto}
+[data-design="frequency"] [data-kit="members"] .ap-note.unread>span>span:first-child::after{content:"";display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--fq-pa);vertical-align:middle}
 
 /* ── The rail grid ──────────────────────────────────────────────────────────────────────────────── */
 /* Both rails share one width W (220-320, default 260); a collapsed rail is the 76px micro rail.
@@ -282,8 +233,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-tip{position:fixed;z-index:80;transform:translateY(-50%);pointer-events:none;max-width:240px;padding:9px 13px;border-radius:14px;background:var(--fq-tip-bg);color:var(--fq-bg-canvas);display:flex;flex-direction:column;gap:3px}
 [data-design="frequency"] [data-kit="members"] .fqm-tip b{font:500 var(--fq-text-meta)/1.25 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"] .fqm-tip small{font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);opacity:.7}
-
-[data-design="frequency"] [data-kit="members"] .ap-foot .ap-sp{flex:1}
 
 /* ── The right rail's panels (README §3; right-rail.tsx) ─────────────────────────────────────────────
    Glass sections, radius 24, padding 22, 20px apart. Get started is the stronger glass with an aura;

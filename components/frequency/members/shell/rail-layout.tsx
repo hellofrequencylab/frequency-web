@@ -177,13 +177,15 @@ export function FqRailLayout({
   }
   useEffect(() => () => endDrag.current?.(), [])
 
-  // The header's wordmark sits over the left rail at the rail's width (README §1 Logo).
+  // The header's wordmark sits over the left rail at the rail's width (README §1 Logo): the kit sizes
+  // the header's first column and the logo by --fq-rail, so the member's rail width feeds it (never
+  // under 200px, so a micro rail keeps a readable wordmark).
   useEffect(() => {
     const root = bodyRef.current?.closest<HTMLElement>('[data-kit]')
     if (!root) return
     const apply = () => {
-      if (!showL || window.innerWidth < 680) root.style.removeProperty('--fqm-lw')
-      else root.style.setProperty('--fqm-lw', `${microNow('L') ? MICRO : (w ?? DEFAULT_W)}px`)
+      if (!showL || window.innerWidth < 680) root.style.removeProperty('--fq-rail')
+      else root.style.setProperty('--fq-rail', `${Math.max(microNow('L') ? MICRO : (w ?? DEFAULT_W), 200)}px`)
     }
     apply()
     window.addEventListener('resize', apply)

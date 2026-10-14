@@ -4,8 +4,9 @@
 // rendering DAWN exactly as before.
 //
 //   kit root  <div data-kit="members" data-area="…">   (kit-root.tsx; area from the route)
-//     skip link, background wash + grain
-//     header    animated wordmark, section pill + mega menu, search, messages, notifications, Zap, avatar
+//     skip link, background wash, the ambient glows + grain (ambient.tsx, the kit's .fq-amb)
+//     header    the kit's .ap-hdr: wordmark, section pill + .ap-mega menu, search, messages,
+//               notifications and Zap (.ap-sheets), avatar
 //     banner    the announcement bar slot, unchanged
 //     rail grid left rail · <main id="main"> · right rail, resizable and collapsible (rail-layout.tsx)
 //     footer    "Frequency · Community Collective"
@@ -32,6 +33,7 @@ import { RANK_LABELS } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { MembersKitRoot } from './kit-root'
 import { FqHeader } from './header'
+import { FqAmbient } from './ambient'
 import { FqRailLayout } from './rail-layout'
 import { RailVaultTab, RailYouTab } from './rail-tabs'
 import { FqToastHost } from './toast-host'
@@ -381,9 +383,8 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           <a className="fqm-skip" href="#main">
             Skip to content
           </a>
-          <div className="fq-wash" aria-hidden>
-            <div className="fq-grain" />
-          </div>
+          <div className="fq-wash" aria-hidden />
+          <FqAmbient />
           <FqHeader
             profile={profile}
             profileHref={profileHref}
