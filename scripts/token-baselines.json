@@ -8,9 +8,9 @@
     "The class definitions and what each one exempts are in the header of the THEME GATE section of check-tokens.mjs."
   ],
   "frozen": {
-    "at": "2026-10-13",
-    "direction": "seed",
-    "reason": "Seed: the theme gate's first measurement of the overhaul tree, taken while six fix lanes are still landing (ADR-1742)"
+    "at": "2026-10-14",
+    "direction": "lowered",
+    "reason": "Six theme-bulletproofing scans merged into overhaul (2026-10-14): colour functions, CSS colour literals and sub-13px CSS sizes retired"
   },
   "counts": {
     "tsx-style-colour": {},
@@ -20,28 +20,17 @@
       "components/sites/house-sections.tsx": 12
     },
     "tsx-style-font-family": {},
-    "tsx-colour-function": {
-      "app/(main)/spaces/[slug]/(profile)/layout.tsx": 1,
-      "app/spaces/claim/[token]/page.tsx": 1,
-      "components/page-editor/blocks/design.tsx": 1
-    },
+    "tsx-colour-function": {},
     "css-colour": {
-      "app/globals.css": 3,
-      "app/themes/frequency.css": 3,
-      "app/themes/frequency/members-a.css": 40,
-      "app/themes/frequency/members-b.css": 4,
-      "app/themes/frequency/members-c.css": 1,
-      "app/themes/frequency/members-ui.css": 10,
-      "app/themes/frequency/site-pages-a.css": 3
+      "app/themes/frequency.css": 3
     },
     "css-font-family": {},
     "css-font-size-floor": {
-      "app/themes/frequency/editor-shell.css": 2,
+      "app/themes/frequency/editor-shell.css": 1,
       "app/themes/frequency/members-a.css": 1,
-      "app/themes/frequency/members-shell.css": 3,
-      "app/themes/frequency/members-ui.css": 3,
-      "app/themes/frequency/site-pages-a.css": 3,
-      "app/themes/frequency/site-pages-b.css": 1
+      "app/themes/frequency/members-shell.css": 2,
+      "app/themes/frequency/members-ui.css": 1,
+      "app/themes/frequency/site-pages-a.css": 3
     }
   },
   "history": [
@@ -57,6 +46,20 @@
         "css-colour": 64,
         "css-font-family": 0,
         "css-font-size-floor": 13
+      }
+    },
+    {
+      "at": "2026-10-14",
+      "direction": "lowered",
+      "reason": "Six theme-bulletproofing scans merged into overhaul (2026-10-14): colour functions, CSS colour literals and sub-13px CSS sizes retired",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 3,
+        "css-font-family": 0,
+        "css-font-size-floor": 8
       }
     }
   ]
