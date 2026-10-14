@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-875",
+  "title": "Joining a Circle is free for any signed-in member: the Join button no longer opens the Crew upgrade, and Crew stays the tier for hosting",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/circles/[slug]/(circle)/layout.tsx",
+    "ref": "Owner 2026-10-14 (decision 1A, confirmed: \"1 join free\"): Circle Join is free to join; Crew stays for hosting."
+  },
+  "detail": "Both Join buttons on a Circle (the Frequency cover's and DAWN's) were wrapped in CrewGateButton, so a member who was not on Crew got the upgrade lightbox instead of joining, though the join itself (lib/circles/join.ts, admin client) already admits a free member. The wrapper is gone, so Join joins. The layout no longer reads isPaidViewer for it. Hosting and the other Crew gates are unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/circles/[slug]/(circle)/layout.tsx','utf8');if(/<CrewGateButton[^>]*label=.Join/.test(s)){console.error('SCAN-875: the Circle Join button still opens the Crew upgrade');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

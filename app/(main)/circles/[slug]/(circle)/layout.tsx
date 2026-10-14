@@ -7,14 +7,12 @@ import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { leaveCircle } from '../../actions'
 import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { CircleHandoffBanner } from '@/components/circles/circle-handoff-banner'
-import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CircleCreateMenu } from '@/components/circles/circle-create-menu'
 import { CircleMemberMenu } from '@/components/circles/circle-member-menu'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { CircleLocked } from '@/components/circles/circle-locked'
 import { DeviceNudge } from '@/components/push/device-nudge'
-import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DetailTemplate, PageHero } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
@@ -215,15 +213,14 @@ export default async function CircleDetailLayout({
   const isMember = !!myProfileId && members.some((m) => m.profile?.id === myProfileId)
   const isHost = !!myProfileId && circle.host?.id === myProfileId
 
-  // Round 2. Four independent reads in one batch. `user` gates the signed-in-only banners, caps
-  // drives the manager rules, isPaidViewer feeds the Crew gate on Join, and the content facts
-  // decide which tabs exist at all.
-  const [user, caps, isCrew, content, hero] = await Promise.all([
+  // Round 2. Independent reads in one batch. `user` gates the signed-in-only banners, caps drives the
+  // manager rules, and the content facts decide which tabs exist at all. Joining a Circle is free
+  // (owner, 2026-10-14): Crew is for hosting one, so Join no longer asks whether the viewer pays.
+  const [user, caps, content, hero] = await Promise.all([
     getCachedUser(),
     // Request-memoized, so the tab page under `children` asking the same question is a memo hit
     // rather than a second capability resolution (lib/circles/detail-access.ts).
     circleCapabilities(circle.id),
-    myProfileId ? isPaidViewer() : Promise.resolve(false),
     // `insider` keys the memoized events read, and it is derived from the roster (not from caps)
     // so the Events tab can derive the SAME key and hit the memo. See circleEventInsider.
     loadCircleContentFacts(
@@ -356,9 +353,7 @@ export default async function CircleDetailLayout({
               <CircleCreateMenu circleId={circle.id} circleSlug={circle.slug} canPost={isMember || isHost} canManage={canManage} />
             )}
             {primary === 'join' && (
-              <CrewGateButton isCrew={isCrew} label="Join" buttonClassName="btn pa">
-                <JoinCircleButton circleId={circle.id} circleSlug={circle.slug} label="Join" className="btn pa" />
-              </CrewGateButton>
+              <JoinCircleButton circleId={circle.id} circleSlug={circle.slug} label="Join" className="btn pa" />
             )}
             {!isMember && myProfileId && full && (
               <button type="button" className="btn" disabled>
@@ -584,14 +579,12 @@ export default async function CircleDetailLayout({
                 )}
 
                 {primary === 'join' && (
-                  <CrewGateButton isCrew={isCrew} label="Join" buttonClassName={buttonClasses('primary')}>
-                    <JoinCircleButton
-                      circleId={circle.id}
-                      circleSlug={circle.slug}
-                      label="Join"
-                      className={buttonClasses('primary')}
-                    />
-                  </CrewGateButton>
+                  <JoinCircleButton
+                    circleId={circle.id}
+                    circleSlug={circle.slug}
+                    label="Join"
+                    className={buttonClasses('primary')}
+                  />
                 )}
 
                 {!isMember && myProfileId && full && (
