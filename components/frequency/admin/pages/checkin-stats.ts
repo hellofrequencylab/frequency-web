@@ -7,6 +7,8 @@ export interface CheckinRow {
   profileId: string
   /** Epoch ms of the check-in. */
   at: number
+  /** The event checked into (the ledger row's context.eventId), when the read carried it. */
+  eventId?: string
 }
 
 export const DAY_MS = 86_400_000
@@ -96,4 +98,37 @@ export function barHeights(values: number[]): number[] {
   const max = Math.max(0, ...values)
   if (max <= 0) return values.map(() => 3)
   return values.map((v) => Math.max(3, Math.round((v / max) * 100)))
+}
+
+/** Check-ins per event, for the events in `eventIds` only. */
+export function checkinsByEvent(rows: CheckinRow[], eventIds: readonly string[]): Map<string, number> {
+  const out = new Map<string, number>(eventIds.map((id) => [id, 0]))
+  for (const r of rows) {
+    if (!r.eventId) continue
+    const cur = out.get(r.eventId)
+    if (cur !== undefined) out.set(r.eventId, cur + 1)
+  }
+  return out
+}
+
+/** Of the people who checked in during the last `days` days, the share who checked in two or more times in
+ *  that window. Null when nobody checked in (no reading, not zero). */
+export function repeatShare(rows: CheckinRow[], now: number, days = 90): { rate: number; people: number } | null {
+  const since = now - days * DAY_MS
+  const visits = new Map<string, number>()
+  for (const r of rows) if (r.at >= since && r.at < now) visits.set(r.profileId, (visits.get(r.profileId) ?? 0) + 1)
+  if (visits.size === 0) return null
+  let repeat = 0
+  for (const v of visits.values()) if (v >= 2) repeat += 1
+  return { rate: Math.round((repeat / visits.size) * 100), people: visits.size }
+}
+
+/** RSVP to check-in: of the going RSVPs on a set of events, the share whose person checked into that same
+ *  event. Null when there were no going RSVPs to convert. */
+export function rsvpShowRate(going: readonly { eventId: string; profileId: string }[], rows: CheckinRow[]): { rate: number; rsvps: number } | null {
+  if (going.length === 0) return null
+  const came = new Set<string>()
+  for (const r of rows) if (r.eventId) came.add(`${r.eventId}:${r.profileId}`)
+  const showed = going.reduce((sum, g) => (came.has(`${g.eventId}:${g.profileId}`) ? sum + 1 : sum), 0)
+  return { rate: Math.round((showed / going.length) * 100), rsvps: going.length }
 }

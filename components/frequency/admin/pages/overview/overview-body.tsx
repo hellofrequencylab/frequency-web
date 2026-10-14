@@ -13,8 +13,8 @@ import { listSpaceMemberships } from '@/lib/spaces/memberships'
 import { isPastDueSpaceMembership } from '@/lib/spaces/membership-dunning'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, WeekBars, n, trendOf, usd } from '../shared'
-import { countBetween, firstTimers, percentChange, returnRate, weeklyCounts } from '../checkin-stats'
-import { loadSpaceCheckins } from '../space-reads'
+import { checkinsByEvent, countBetween, firstTimers, percentChange, repeatShare, returnRate, rsvpShowRate, weeklyCounts } from '../checkin-stats'
+import { loadGoingRsvps, loadSpaceCheckins, loadSpaceCircleTotals, loadSpaceFollowerCounts, loadSpaceMembershipBilling } from '../space-reads'
 
 // THE SPACE OVERVIEW, FREQUENCY (design_handoff/frequency/templates/admin/Overview.html). The console's
 // Home tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/dashboard/space-dashboard.tsx. The
@@ -30,6 +30,21 @@ import { loadSpaceCheckins } from '../space-reads'
 // NO READING, SO THE DESIGN'S EMPTY VALUE ("—"), never a sample number: a check-in read that failed, and
 // a return rate with nobody in its window. Active members has no prior-period reader, so it carries the
 // weekly-active note instead of a trend.
+//
+// THE SECOND ROW AND AT A GLANCE (owner, 2026-10-13: "Implement more statistics"). Each is a real reading:
+//   Followers            space_follows, all time; the note is follows begun in the last 30 days.
+//   Memberships          listSpaceMemberships (active, not waitlist); the note is joins since the 1st of
+//                        this month, Pacific. No trend: a cancelled membership leaves that list.
+//   RSVPs, next 7 days   the going counts on this week's events (the table's own RSVP column, summed).
+//   Events, next 30 days listEventsForSpace over the next 30 days, cancelled dropped.
+//   Avg. check-ins / event, Top event   the check-in ledger's context.eventId over the events that
+//                        started in the last 30 days.
+//   Came more than once  repeatShare: of the people who checked in in 90 days, those who came twice or more.
+//   RSVP to check-in     the going RSVPs on those past events whose person checked into that same event.
+//   Paying memberships   loadSpaceMembershipBilling (active Stripe subscriptions), with the monthly figure.
+//   Circles              the Space's Circles, archived dropped, with their member seats summed.
+// A failed read is the empty value; a row whose reading needs a denominator (an average, a share) is
+// the empty value when the denominator is zero, never 0%.
 
 const WEEK_DAYS = 7
 
@@ -71,7 +86,7 @@ export async function FqOverviewBody({
 }) {
   const now = new Date()
   const today = dayInZone(now, HOME_TZ)
-  const [earnings, earnings60, health, memberIds, worklist, conversations, weekEvents, viewer, checkins, memberships] = await Promise.all([
+  const [earnings, earnings60, health, memberIds, worklist, conversations, weekEvents, viewer, checkins, memberships, monthEvents, pastEvents, followers, billing, circles] = await Promise.all([
     spaceEarningsSummary(spaceId, 30),
     spaceEarningsSummary(spaceId, 60),
     getSpaceHealth(spaceId),
@@ -83,6 +98,11 @@ export async function FqOverviewBody({
     // All time, not a 90-day window: "first timers" must see a regular's older visits. Every other stat windows itself.
     loadSpaceCheckins(spaceId),
     listSpaceMemberships(spaceId),
+    listEventsForSpace(spaceId, { fromDay: today, toDay: addDays(today, 30), limit: 500 }),
+    listEventsForSpace(spaceId, { fromDay: addDays(today, -30), toDay: addDays(today, 1), limit: 500 }),
+    loadSpaceFollowerCounts(spaceId),
+    loadSpaceMembershipBilling(spaceId),
+    loadSpaceCircleTotals(spaceId),
   ])
   const nowMs = now.getTime()
   const checkins30 = checkins ? countBetween(checkins, nowMs, 30) : null
@@ -94,10 +114,63 @@ export async function FqOverviewBody({
   const revenueTrend = trendOf(percentChange(earnings.netCents, earnings60.netCents - earnings.netCents))
 
   const events = weekEvents.filter((e) => !e.is_cancelled)
-  const [going, hosts] = await Promise.all([
+  const past = pastEvents.filter((e) => !e.is_cancelled && Date.parse(e.starts_at) <= nowMs)
+  const pastIds = past.map((e) => e.id)
+  const [going, hosts, pastGoing] = await Promise.all([
     goingCountsByEvent(events.map((e) => e.id)),
     getProfileSummaries(events.map((e) => e.host_id).filter((id): id is string => !!id)),
+    loadGoingRsvps(pastIds),
   ])
+  const rsvpsWeek = events.reduce((sum, e) => sum + (going[e.id] ?? 0), 0)
+  const upcoming30 = monthEvents.filter((e) => !e.is_cancelled).length
+  const openMemberships = memberships.filter((m) => m.status === 'active')
+  const monthStart = `${today.slice(0, 8)}01`
+  const joinedThisMonth = openMemberships.filter((m) => {
+    const at = Date.parse(m.startedAt)
+    return Number.isFinite(at) && dayInZone(new Date(at), HOME_TZ) >= monthStart
+  }).length
+  const perEvent = checkins ? checkinsByEvent(checkins, pastIds) : null
+  const pastCheckins = perEvent ? [...perEvent.values()].reduce((a, b) => a + b, 0) : 0
+  const avgPerEvent = perEvent && past.length > 0 ? pastCheckins / past.length : null
+  const top = perEvent ? past.reduce<{ event: SpaceEvent; count: number } | null>((best, e) => {
+    const count = perEvent.get(e.id) ?? 0
+    return count > 0 && (!best || count > best.count) ? { event: e, count } : best
+  }, null) : null
+  const repeat = checkins ? repeatShare(checkins, nowMs, 90) : null
+  const showRate = checkins && pastGoing ? rsvpShowRate(pastGoing, checkins) : null
+  const glance: { label: string; value: string; sub?: string; href?: string }[] = [
+    {
+      label: 'Avg. check-ins per event',
+      value: avgPerEvent === null ? EMPTY : avgPerEvent.toFixed(1).replace(/\.0$/, ''),
+      sub: past.length > 0 ? `${n(past.length)} ${past.length === 1 ? 'event' : 'events'}, last 30 days` : 'No events in the last 30 days',
+    },
+    {
+      label: 'Top event, 30 days',
+      value: top ? n(top.count) : EMPTY,
+      sub: top ? top.event.title || 'Event' : 'No check-ins yet',
+      href: top ? `/events/${top.event.slug}` : undefined,
+    },
+    {
+      label: 'Came more than once',
+      value: repeat ? `${repeat.rate}%` : EMPTY,
+      sub: repeat ? `Of ${n(repeat.people)} ${repeat.people === 1 ? 'person' : 'people'}, last 90 days` : 'No check-ins in 90 days',
+    },
+    {
+      label: 'RSVP to check-in',
+      value: showRate ? `${showRate.rate}%` : EMPTY,
+      sub: showRate ? `Of ${n(showRate.rsvps)} ${showRate.rsvps === 1 ? 'RSVP' : 'RSVPs'}, last 30 days` : 'No RSVPs on past events',
+    },
+    {
+      label: 'Paying memberships',
+      value: billing ? n(billing.paying) : EMPTY,
+      sub: billing && billing.paying > 0 ? `${usd(billing.monthlyCents)} a month` : undefined,
+    },
+    {
+      label: 'Circles',
+      value: circles ? n(circles.circles) : EMPTY,
+      sub: circles && circles.circles > 0 ? `${n(circles.seats)} member ${circles.seats === 1 ? 'seat' : 'seats'}` : undefined,
+    },
+  ]
   const noHost = events.filter((e) => !e.host_id).length
   const unanswered = conversations.filter((r) => r.awaitingReply).length
   const firstName = viewer?.get(viewerProfileId ?? '')?.displayName?.trim().split(/\s+/)[0] ?? null
@@ -200,6 +273,21 @@ export async function FqOverviewBody({
           trend={revenueTrend}
           note={earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
         />
+      </div>
+
+      <div className="g4 adp-kpi-row">
+        <Kpi
+          label="Followers"
+          value={followers ? n(followers.total) : EMPTY}
+          note={followers ? `${n(followers.last30)} new in 30 days` : undefined}
+        />
+        <Kpi label="Memberships" value={n(openMemberships.length)} note={`${n(joinedThisMonth)} new this month`} />
+        <Kpi
+          label="RSVPs, next 7 days"
+          value={n(rsvpsWeek)}
+          note={`Across ${n(events.length)} ${events.length === 1 ? 'event' : 'events'}`}
+        />
+        <Kpi label="Events, next 30 days" value={n(upcoming30)} note={noHost > 0 ? `${n(noHost)} this week ${noHost === 1 ? 'needs' : 'need'} a host` : undefined} />
       </div>
 
       <div className="ap-cols adp-split sec adp-gap">
@@ -317,6 +405,28 @@ export async function FqOverviewBody({
                 ))
               )}
             </div>
+          </div>
+          <div className="panel stack adp-glance">
+            <span className="k">At a glance</span>
+            <dl className="list">
+              {glance.map((row) => (
+                <div key={row.label}>
+                  <dt className="grow">
+                    <span className="t1 adp-block">{row.label}</span>
+                    {row.sub ? (
+                      row.href ? (
+                        <Link className="t2" href={row.href}>
+                          {row.sub}
+                        </Link>
+                      ) : (
+                        <span className="t2">{row.sub}</span>
+                      )
+                    ) : null}
+                  </dt>
+                  <dd className="num adp-glance-num">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
           {health.atRisk > 0 && (
             <div className="soft stack">
