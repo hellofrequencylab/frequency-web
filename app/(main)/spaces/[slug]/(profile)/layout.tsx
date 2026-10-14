@@ -41,6 +41,9 @@ import { foundingBadgeForSpace } from '@/lib/founding/status'
 import { FoundingBusinessBadge } from '@/lib/community-roles'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
+import { FqSpaceFacts } from '@/components/frequency/members/space/space-facts'
+import { readPublicSpaceFacts } from '@/lib/spaces/public-facts'
+import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 // ── THE NETWORKED ENTITY PROFILE CHROME (ENTITY-SPACES-BUILD §A.4 / §B.1) ────────────────────────
 // This is the profile's ONE cohesive header for every public tab (Facebook/LinkedIn business-page
@@ -710,10 +713,28 @@ export default async function SpaceProfileChromeLayout({
   // keeps Boost), then the body. SITE_DESIGN is build-time, so a deploy ships one branch.
   if (SITE_DESIGN === 'frequency') {
     const frost = 'btn fqs-frost'
+    // SIGNED OUT (SCAN-883): a visitor on a Space tab reads this chrome under the public site shell
+    // (app/(main)/layout.tsx publicChrome), which has no centred column and no right rail. `public` opens
+    // the same frame the share root (app/(public)/spaces/[slug]/page.tsx) does, and the side column
+    // carries the same viewer-free key facts. A signed-in member keeps the shell's column and rail.
+    const signedOut = !viewerProfileId
+    const facts = signedOut && isNetwork ? await readPublicSpaceFacts(space, { tagline }) : null
     return (
       <>
         {structuredData}
         <FqSpaceChrome
+          public={signedOut}
+          aside={
+            facts ? (
+              <FqSpaceFacts
+                facts={facts}
+                brandName={brandName}
+                joinHref={BETA_CTA_HREF}
+                joinLabel={BETA_CTA_LABEL}
+                calendarHref={tabs.find((t) => t.href === `${base}/calendar`)?.href ?? null}
+              />
+            ) : undefined
+          }
           coverImage={coverSrc}
           coverFocus={coverFocus}
           tall={isHero}
