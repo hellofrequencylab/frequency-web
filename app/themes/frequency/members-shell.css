@@ -67,10 +67,8 @@
    their initials on the ink tint. A real avatar arrives as an inline background-image (avatar.ts). */
 [data-design="frequency"] [data-kit="members"] .ap-me{display:flex;align-items:center;justify-content:center;background:var(--fqm-ink-6) center/cover no-repeat;color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
 
-/* Owner ruling (2026-10-13): the mega menu paints NO panel background. The kit's .ap-mega frosts a card
-   fill with a blur and a drop shadow; all three are that panel, so only they are cleared. The
-   highlighted section button and the footer CTA keep their fill. */
-[data-design="frequency"] [data-kit="members"] .ap-mega{background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+/* The mega menu wears the kit's own frosted panel. The 2026-10-13 "no background" ruling was reversed
+   on 2026-10-14: with no panel the menu's links sat directly over the page beneath and could not be read. */
 /* On a phone the photo cards take one column (the kit spans two, which would add a column). */
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .ap-mega-cards{grid-column:auto}}
 /* Owner ruling: every section ends with the Frequency website row (FQ_SITE_LINKS). */
