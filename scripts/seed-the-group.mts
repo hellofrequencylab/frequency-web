@@ -434,7 +434,7 @@ export function buildPageDocs(): Record<string, unknown> {
     { type: 'NetworkHero', props: { id: 'tg-membership-hero', eyebrow: 'Membership', title: 'Your journey *starts here.*', lead: 'Share your journey, your passions, and your dreams. Let your soul shine through and connect with those around you. Embrace the power of community and support on this amazing adventure.', primaryLabel: 'Become a member today', primaryHref: `/spaces/${SLUG}/memberships`, secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: PHOTO('rooftop-gathering'), alt: 'Members of The Group together on a rooftop', focus: '50% 50%', crop: 'leaf', featureMatch: '', featureNote: '', featureCta: '', proof: '8,500+ members', proofNote: 'Free to start, upgrade any time', faces: FACES, layout: desktop } },
     { type: 'NetworkSplit', props: { id: 'tg-membership-cares', eyebrow: 'Join The Group', title: 'A community *that cares.*', body: "Welcome to The Group Coastal, where connection, collaboration, and community come first. We believe that success isn't just about what you do, but who you do it with. By signing up for our Membership, you're joining a heart-centered network of entrepreneurs, professionals, and changemakers who genuinely support each other in business and in life.\nAs a member, you'll gain access to our events, including our uplifting Feel Good Fridays, where we come together to share ideas, find inspiration, and build meaningful relationships. This isn't just another networking group, it's a movement of people who believe in growing together and making a real impact.\nWe're excited to welcome you in.", image: PHOTO('hall-selfie'), alt: 'Members celebrating together', mediaSide: 'right', facts: [], quote: '', quoteBy: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', layout: desktop } },
     { type: 'NetworkTiers', props: { id: 'tg-membership-tiers', eyebrow: 'Choose your membership', title: 'Get more involved *in every chapter.*', lead: 'Start free. Basic opens every chapter and includes Frequency Crew; Premium adds the members circle and Premium journeys.', tiers: TIERS.map((t, i) => ({ ...TIER_CARDS[i], features: t.benefits.join('\n') })), footnote: 'Any paid membership includes Frequency Crew. Change or cancel any time.', layout: desktop } },
-    { type: 'CardGrid', props: { id: 'tg-membership-frequency', role: 'list', eyebrow: 'On Frequency', title: 'What membership *opens up.*', subtitle: 'The Group runs on Frequency, so your membership travels with you: every chapter, every circle and every event in one place.', columns: 2, cards: [
+    { type: 'CardGrid', props: { id: 'tg-membership-frequency', role: 'list', eyebrow: 'On Frequency', title: 'What membership opens up.', subtitle: 'The Group runs on Frequency, so your membership travels with you: every chapter, every circle and every event in one place.', columns: 2, cards: [
       { icon: '', title: 'Every chapter', body: 'One membership counts in La Jolla, North Park, Oceanside, North County and Veterans.\nEvery chapter\'s mornings on one calendar.' },
       { icon: '', title: 'Circles and events', body: 'Join open circles between Fridays.\nRSVP to every gathering, and get member tickets to members-only events.' },
       { icon: '', title: 'Frequency Crew', body: 'Any paid membership includes Crew.\nHost your own circles, events and journeys, with a monthly Boost for a circle or Space you love.' },
@@ -508,6 +508,64 @@ const PROFILE_DATA = {
   offerings: STUDIO.map((s) => ({ title: `Incubator Studios: ${s.title}`, blurb: s.blurb, price: s.price, currency: 'usd', priceModel: 'fixed', ...(s.durationMinutes ? { durationMinutes: s.durationMinutes } : {}), recurring: 'once', visibility: 'listed' })),
 }
 
+/** THE SPACE PAGE'S HOME (preferences.profileLayout, lib/entity-blocks/layout.ts). The Frequency Space page keeps
+ *  its own block set: no Network section renders there. Each website section is mapped onto the Space block that
+ *  carries the same content, reading the copy straight off the website Home doc so the two never drift; the
+ *  live blocks (events, circles, memberships, offerings, contact) read the Space's real rows. Voice marks
+ *  (`*word*`) are dropped: the Space blocks set every heading in one face. A Space carries one of each block,
+ *  so a section with no block of its own left (the merch row: the Shop tab; the Instagram row: Find us online)
+ *  folds into the nearest one. */
+export function buildProfileLayout(): Record<string, unknown> {
+  const home = (buildPageDocs().home as { content: { props: Record<string, unknown> }[] }).content
+  const s = (id: string) => home.find((b) => b.props.id === id)?.props ?? {}
+  const t = (v: unknown) => String(v ?? '').replace(/\*/g, '').replace(/\s+/g, ' ').trim()
+  const hero = s('tg-home-hero'), stats = s('tg-home-stats'), fridays = s('tg-home-fridays'), band = s('tg-home-pitchfest')
+  const events = s('tg-home-events'), first = s('tg-home-first'), chapters = s('tg-home-chapters'), circles = s('tg-home-circles')
+  const june = s('tg-home-june'), team = s('tg-home-team'), tiers = s('tg-home-membership'), studio = s('tg-home-studio')
+  const podcast = s('tg-home-podcast'), coffee = s('tg-coffee-contact')
+  const facts = (fridays.facts as { label: string; value: string; note: string }[]) ?? []
+  const steps = (first.steps as { title: string; body: string }[]) ?? []
+  const firstVideo = ((podcast.items as { videoId: string }[]) ?? [])[0]?.videoId
+  const row = (id: string, cells: string[][], extra: Record<string, unknown> = {}) => ({ id, columns: cells.length, cells, ...extra })
+  return {
+    rows: [
+      row('r0', [['about'], ['memberships']], { ratio: 'lead' }),
+      row('r1', [['features']]),
+      row('r2', [['zigzag']]),
+      row('r3', [['accentBeat']]),
+      row('r4', [['events']]),
+      row('r5', [['editorial']]),
+      row('r6', [['cardGrid']]),
+      row('r7', [['circles']]),
+      row('r8', [['quote'], ['story']], { ratio: 'trail' }),
+      row('r9', [['offerings']]),
+      row('ra', [['embed']]),
+      row('rb', [['callout'], ['contact', 'business']], { ratio: 'lead' }),
+    ],
+    content: {
+      about: { eyebrow: t(hero.eyebrow), title: t(hero.title), body: t(hero.lead) },
+      memberships: { eyebrow: t(tiers.eyebrow), title: t(tiers.title), body: t(tiers.lead), ctaLabel: 'See memberships', note: 'Any paid membership includes Frequency Crew.' },
+      features: { source: 'custom', layout: 'stats', columns: '3', items: ((stats.items as { icon: string; value: string; label: string }[]) ?? []).map((i) => ({ icon: i.icon, title: i.value, text: i.label })) },
+      zigzag: { eyebrow: t(fridays.eyebrow), title: t(fridays.title), body: [t(fridays.body), ...facts.map((f) => `${f.label}: ${f.value}, ${f.note}.`)].join('\n\n'), image: fridays.image, alt: t(fridays.alt), mediaSide: 'left' },
+      accentBeat: { eyebrow: t(band.eyebrow), title: t(band.title), body: t(band.body), buttonLabel: t(band.primaryLabel), buttonUrl: band.primaryHref },
+      events: { eyebrow: t(events.eyebrow), title: t(events.title), view: 'cards', columns: '3' },
+      editorial: { eyebrow: t(first.eyebrow), title: t(first.title), body: steps.map((st, i) => `${i + 1}. ${st.title}. ${st.body}`).join('\n\n') },
+      cardGrid: {
+        eyebrow: t(chapters.eyebrow), title: t(chapters.title), columns: '3', shape: 'top',
+        cards: ((chapters.chips as { name: string; line: string; when: string; href: string }[]) ?? []).map((c) => ({ title: c.name, text: `${c.line} · ${c.when}`, link: c.href, button: { label: `Visit ${c.name}`, href: c.href } })),
+      },
+      circles: { eyebrow: t(circles.eyebrow), title: t(circles.title), columns: '2' },
+      quote: { text: t(june.quote).replace(/^"|"$/g, ''), by: t(june.eyebrow).replace(/^Meet /, '') },
+      // The Team block lists the Space's real members; the core team is not on Frequency yet, so their words
+      // ride the Story block.
+      story: { eyebrow: t(team.eyebrow), title: t(team.title), body: [t(team.lead), t(team.note)].filter(Boolean).join('\n\n') },
+      offerings: { eyebrow: t(studio.eyebrow), title: t(studio.title), ctaLabel: 'Reserve' },
+      ...(firstVideo ? { embed: { url: `https://www.youtube.com/watch?v=${firstVideo}` } } : {}),
+      callout: { title: t(coffee.title), body: t(coffee.body), buttonLabel: t(coffee.ctaLabel), buttonUrl: coffee.ctaHref, image: coffee.image, aspect: 'horizontal' },
+    },
+  }
+}
+
 /** The Network site style (lib/theme/site-style.ts): the website and a synced Space page on Network. */
 const SITE_STYLE = { theme: 'network', synced: true, spaceFonts: 'modern' }
 
@@ -522,6 +580,7 @@ export function buildPreferences(): Record<string, unknown> {
     siteHero: SITE_HERO,
     siteFooter: SITE_FOOTER,
     profileData: PROFILE_DATA,
+    profileLayout: buildProfileLayout(),
     storefront: { tabLabel: 'Merch', published: true },
     coverScrim: 'none',
     logoBackdrop: 'none',
