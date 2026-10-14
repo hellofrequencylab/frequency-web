@@ -21,6 +21,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
+import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import type { Side } from '@/lib/frequency/site-nav'
 import { moodStyle, resolveSitePage, type SitePageState, type Surface } from '@/lib/frequency/site-pages'
 
@@ -147,6 +148,7 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
         className="fq-site"
         style={moodStyle(page) as React.CSSProperties}
       >
+        <NavProgress />
         {children}
       </div>
     </SiteContext.Provider>

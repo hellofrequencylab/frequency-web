@@ -305,3 +305,29 @@
 @media (prefers-reduced-motion: reduce) {
   [data-design="frequency"] [data-kit] :is(.ph.fqm-sk, .fqm-sk, .fqm-skel, .ev-skel-bar, .fa-sk, .hp-skel, [class*="mu-sk"]) { animation: none }
 }
+
+/* ── Navigation progress (components/frequency/shared/nav-progress.tsx) ─────────────────────────────
+   A 3px iridescent bar along the top edge from the click until the next route lands, so a slow page
+   never reads as a dead link. Reduced motion: it holds as a static bar instead of sweeping. */
+[data-design="frequency"] .fq-navprog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 3px;
+  background: var(--fq-pa);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fq-dur-fast) var(--fq-ease-out);
+}
+[data-design="frequency"] .fq-navprog.on {
+  opacity: 1;
+  animation: fq-navprog 8s var(--fq-ease-out) forwards;
+}
+@keyframes fq-navprog { 0% { transform: scaleX(0) } 20% { transform: scaleX(.45) } 100% { transform: scaleX(.92) } }
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] .fq-navprog.on { animation: none; transform: scaleX(1) }
+}

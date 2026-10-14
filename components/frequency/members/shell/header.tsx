@@ -48,6 +48,7 @@ import { setThemeSkin } from '@/app/(main)/settings/appearance/actions'
 import { canChooseMode } from '@/lib/theme/mode'
 import { hasAccount, readStoredMode, syncMode, writeStoredMode, type ThemeMode } from '@/lib/theme/apply-mode'
 import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
+import { NavProgress } from '@/components/frequency/shared/nav-progress'
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
 
@@ -224,6 +225,7 @@ export function FqHeader({
 
   return (
     <>
+      <NavProgress />
       <header className={hdrClass} ref={hdrRef}>
         <div className="ap-hdr-l">
           <button
