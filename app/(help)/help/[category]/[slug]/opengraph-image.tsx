@@ -179,7 +179,7 @@ export default async function Image({
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 color: palette.ogAccentSoft,
-                backgroundColor: 'rgba(99,102,241,0.24)',
+                backgroundColor: `${palette.ogAccent}38`,
               }}
             >
               {eyebrow.length > 40 ? `${eyebrow.slice(0, 37)}…` : eyebrow}
