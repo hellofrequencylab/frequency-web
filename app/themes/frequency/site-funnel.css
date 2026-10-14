@@ -1,0 +1,128 @@
+/* SITE PAGES, LANE E (funnel, niche and comparison pages): /start, /start/<flow>, /go/<door>, /subscribe,
+   /subscribe/confirm, /rsvp/<token>, /mindless, /vs, /vs/<slug>, /for/<niche>, the capture doors (/checkin,
+   /exchange, /intro, /unlock) and /listings/claim/<token>. The bodies compose the "site" kit's own pieces
+   (.wrap, .sec, .sh, .label, .h-xl, .h-l, .btn, .pc, .qa, .mx, .band, .never) and the Join / Help / Vision
+   pieces in site-pages-b.css (.jx-f form dress, .jx-chips, .vz-steps, .pb-empty, .pb-note, .qa a.hp-a).
+   This sheet carries only what none of those has: a photo-less page hero, a centred single-action column,
+   an outcome lockup, a list of plan rows, the breathing timer's frame and a contact card.
+   Scoped exactly like kit-site.css, so it matches nothing under DAWN. --fq- tokens only; an off-scale
+   step (a fluid clamp, a 14px or 20px radius) is the design's own literal, which the export has no token
+   for (token-ok). Imported by components/frequency/site/pages/funnel/. */
+@layer components {
+/* ── The page hero without a photo (the Help inner-page hero, generalised) ── */
+[data-design="frequency"] [data-kit="site"] .fn-hero{position:relative;padding:150px 0 40px;overflow:hidden}
+[data-design="frequency"] [data-kit="site"] .fn-hero>.wrap{position:relative;z-index:1}
+[data-design="frequency"] [data-kit="site"] .fn-hero .rings{right:-14%;top:-20%}
+[data-design="frequency"] [data-kit="site"] .fn-hero .label{margin-bottom:22px}
+[data-design="frequency"] [data-kit="site"] .fn-hero .h-xl{font-size:clamp(40px,5.4vw,80px);max-width:18ch;text-wrap:balance}
+[data-design="frequency"] [data-kit="site"] .fn-hero.fn-c{text-align:center}
+[data-design="frequency"] [data-kit="site"] .fn-hero.fn-full{min-height:min(72vh,680px);display:flex;align-items:center;padding-bottom:72px}
+[data-design="frequency"] [data-kit="site"] .fn-hero.fn-full>.wrap{width:100%;box-sizing:border-box}
+[data-design="frequency"] [data-kit="site"] .fn-hero.fn-c .fn-box{text-align:left}
+[data-design="frequency"] [data-kit="site"] .fn-hero.fn-c .h-xl, [data-design="frequency"] [data-kit="site"] .fn-hero.fn-c .fn-lede{margin-left:auto;margin-right:auto}
+[data-design="frequency"] [data-kit="site"] .fn-hero.fn-c .label, [data-design="frequency"] [data-kit="site"] .fn-hero.fn-c .ctas{justify-content:center}
+[data-design="frequency"] [data-kit="site"] .fn-lede{margin:22px 0 0;max-width:60ch;font-size:clamp(17px,1.5vw,20px);line-height:1.55;color:var(--fq-text-body);text-wrap:pretty}
+[data-design="frequency"] [data-kit="site"] .fn-meta{margin:12px 0 0;font:500 var(--fq-text-body-s)/1.5 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .fn-hero .ctas{margin-top:30px}
+[data-design="frequency"] [data-kit="site"] .fn-hero .fn-meta + .ctas{margin-top:22px}
+
+/* The kicker over the kit's photo hero (.phero is always dark: the side colour reads on it). */
+[data-design="frequency"] [data-kit="site"] .phero .fn-pk{display:inline-block;margin-bottom:18px;font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-side)}
+
+/* Fine print under the photo hero's actions, and the strong / soft beats of the niche door. */
+[data-design="frequency"] [data-kit="site"] .phero p.fn-micro{margin:14px 0 0;font-size:var(--fq-text-body-s);line-height:1.5}
+[data-design="frequency"] [data-kit="site"] .phero .ctas + p.fn-micro{margin-top:22px}
+[data-design="frequency"] [data-kit="site"] .fn-sec.fn-first{padding-top:40px}
+[data-design="frequency"] [data-kit="site"] .pb-note.fn-strong{font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .fn-after-s{margin-top:24px}
+[data-design="frequency"] [data-kit="site"] .pc.fn-soft{background:transparent;box-shadow:inset 0 0 0 1.5px var(--fq-border-hair)}
+
+/* ── A section that follows a hero without the full .sec gap ── */
+[data-design="frequency"] [data-kit="site"] .fn-sec{position:relative;padding:24px 0 clamp(64px,8vw,104px)}
+[data-design="frequency"] [data-kit="site"] .fn-sec + .fn-sec{padding-top:0}
+
+/* ── The single-action column (forms, outcomes, the timer) ── */
+[data-design="frequency"] [data-kit="site"] .fn-col{max-width:520px;margin:0 auto}
+[data-design="frequency"] [data-kit="site"] .fn-box{border-radius:var(--fq-radius-xl);padding:clamp(24px,4vw,36px);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);display:flex;flex-direction:column;gap:18px}
+[data-design="frequency"] [data-kit="site"] .fn-box h2{margin:0;font:600 clamp(24px,2.6vw,32px)/1.05 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] [data-kit="site"] .fn-box p{margin:0;font-size:var(--fq-text-body-size);line-height:1.55;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .fn-box .jx-fine{text-align:left}
+[data-design="frequency"] [data-kit="site"] .fn-box .ctas{margin-top:4px}
+[data-design="frequency"] [data-kit="site"] .fn-after{margin-top:clamp(32px,5vw,56px)}
+[data-design="frequency"] [data-kit="site"] .fn-shows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+[data-design="frequency"] [data-kit="site"] .fn-shows li{display:flex;gap:10px;font-size:15px;line-height:1.45;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .fn-shows li::before{content:"";flex:none;width:6px;height:6px;margin-top:8px;border-radius:50%;background:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .fn-fs{border:0;margin:0;padding:0;min-width:0}
+[data-design="frequency"] [data-kit="site"] .fn-fs legend{padding:0;margin-bottom:8px}
+[data-design="frequency"] [data-kit="site"] .fn-opt{font-weight:500;color:var(--fq-text-muted)}
+
+/* A capture door's own lockup inside the box: kicker, h1, the done state. */
+[data-design="frequency"] [data-kit="site"] .fn-box .fn-k{font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .fn-box .fn-h1{margin:0;font:600 clamp(28px,3vw,40px)/1.02 var(--fq-font-display);letter-spacing:-0.045em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] [data-kit="site"] .fn-done{display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] [data-kit="site"] .fn-done .btn{width:100%}
+[data-design="frequency"] [data-kit="site"] .jx-fine.fn-consent{text-align:left}
+
+/* ── An outcome: a done, a dead link, a cancelled event. One lockup, one action. ── */
+[data-design="frequency"] [data-kit="site"] .fn-out{align-items:flex-start}
+[data-design="frequency"] [data-kit="site"] .fn-out .fn-dot{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--fq-side);background:var(--fq-side-soft)}
+[data-design="frequency"] [data-kit="site"] .fn-out .fn-dot svg{width:22px;height:22px}
+[data-design="frequency"] [data-kit="site"] .fn-out[data-tone="danger"] .fn-dot{color:var(--fq-danger);background:color-mix(in srgb,var(--fq-danger) 14%,transparent)}
+[data-design="frequency"] [data-kit="site"] .fn-out[data-tone="success"] .fn-dot{color:var(--fq-success);background:color-mix(in srgb,var(--fq-success) 14%,transparent)}
+
+/* ── A link row inside a box (the claim sign-in, the intro "No thanks") ── */
+[data-design="frequency"] [data-kit="site"] .fn-box .btn{width:100%}
+[data-design="frequency"] [data-kit="site"] .fn-box .ctas .btn{width:auto}
+
+/* ── Doors: three cards, each a choice with its own action ── */
+[data-design="frequency"] [data-kit="site"] .fn-doors .pc .btn{margin-top:auto;align-self:flex-start}
+[data-design="frequency"] [data-kit="site"] .fn-doors .pc p{flex:none}
+[data-design="frequency"] [data-kit="site"] .fn-doors .pc h2{margin:4px 0 0;font:600 clamp(22px,2vw,28px)/1.05 var(--fq-font-display);letter-spacing:-0.035em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] [data-kit="site"] .fn-doors button.pc{font:inherit;text-align:left;cursor:pointer;border:0;width:100%;color:inherit}
+[data-design="frequency"] [data-kit="site"] .fn-doors button.pc[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 32px -12px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .fn-doors .pc ul li::before{background:var(--fq-side)}
+
+/* ── The comparison grid: a list of links, two to a row ── */
+[data-design="frequency"] [data-kit="site"] .fn-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:none}
+[data-design="frequency"] [data-kit="site"] .mx td.fn-us{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .mx thead th.fn-us{color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .mx tbody th.fn-dim{padding:14px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--fq-border-hair);font:600 15px/1.4 var(--fq-font-sans);color:var(--fq-text-strong);width:24%}
+[data-design="frequency"] [data-kit="site"] .mx tbody td{vertical-align:top;line-height:1.45}
+[data-design="frequency"] [data-kit="site"] .mx thead th{padding:14px 12px;text-align:left}
+
+/* ── Plan rows (the niche door's pricing beat): name + line on the left, the catalog price on the right ── */
+[data-design="frequency"] [data-kit="site"] .fn-rows{list-style:none;margin:0;padding:0;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);overflow:hidden;max-width:760px}
+[data-design="frequency"] [data-kit="site"] .fn-rows li{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px}
+[data-design="frequency"] [data-kit="site"] .fn-rows li + li{border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .fn-rows li[data-featured="true"]{background:var(--fq-side-soft)}
+[data-design="frequency"] [data-kit="site"] .fn-rows b{display:block;font:600 var(--fq-text-h4)/1.2 var(--fq-font-display);letter-spacing:-0.02em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .fn-rows small{display:block;margin-top:4px;font-size:var(--fq-text-body-s);line-height:1.45;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .fn-rows .fn-price{flex:none;text-align:right;font:600 var(--fq-text-h3)/1 var(--fq-font-display);letter-spacing:-0.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .fn-rows .fn-price s{margin-right:8px;font-size:var(--fq-text-body-size);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="site"] .fn-rows .fn-price em{display:block;margin-top:4px;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);font-style:normal;color:var(--fq-text-muted)}
+
+/* ── The breathing timer's frame (the visualizer draws itself) ── */
+[data-design="frequency"] [data-kit="site"] .fn-timer{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+[data-design="frequency"] [data-kit="site"] .fn-timer .fn-vis{width:100%;max-width:320px;aspect-ratio:1}
+[data-design="frequency"] [data-kit="site"] .fn-timer .fn-clock{margin:0;font:600 var(--fq-text-display-l)/1 var(--fq-font-display);letter-spacing:-0.04em;font-variant-numeric:tabular-nums;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .fn-timer .ctas{justify-content:center}
+
+/* ── A contact card handed back (the share-back), and a listing preview ── */
+[data-design="frequency"] [data-kit="site"] .fn-card{border-radius:var(--fq-radius-l);padding:18px 20px;background:color-mix(in srgb,var(--fq-text-strong) 4%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair);display:flex;flex-direction:column;gap:6px}
+[data-design="frequency"] [data-kit="site"] .fn-card b{font:600 var(--fq-text-body-l)/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .fn-card span{font-size:var(--fq-text-body-s);line-height:1.5;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .fn-card a{color:var(--fq-side);font-weight:600;text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .fn-card .fn-k{font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .fn-card img{display:block;width:calc(100% + 40px);max-height:224px;margin:-18px -20px 8px;object-fit:cover;border-radius:var(--fq-radius-l) var(--fq-radius-l) 0 0}
+[data-design="frequency"] [data-kit="site"] .fn-card .fn-desc{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+
+/* The honeypot: off-screen, never announced, never tab-reachable. */
+[data-design="frequency"] [data-kit="site"] .fn-hp{position:absolute;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden}
+
+@media (max-width:860px){
+[data-design="frequency"] [data-kit="site"] .fn-links{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="site"] .fn-hero{padding-top:120px}}
+@media (max-width:520px){
+[data-design="frequency"] [data-kit="site"] .fn-rows li{flex-direction:column;align-items:flex-start}
+[data-design="frequency"] [data-kit="site"] .fn-rows .fn-price{text-align:left}}
+}

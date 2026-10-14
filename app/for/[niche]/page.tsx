@@ -6,6 +6,8 @@ import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 import { NicheFunnel } from '@/components/marketing/funnel/niche-funnel'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyNiche } from '@/components/frequency/site/pages/funnel/frequency-niche'
 
 // THE OPERATOR FUNNEL DOOR (ADR-591). One chrome-free conversion template, one config per niche. STATIC:
 // generated at build from the funnel registry; `dynamicParams=false` so an unknown niche 404s. ISR: the
@@ -73,7 +75,8 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
           }),
         ]}
       />
-      <NicheFunnel config={config} />
+      {/* The Frequency design (ADR-1737): the same config, prices, Start href and schema, in its body. */}
+      {SITE_DESIGN === 'frequency' ? <FrequencyNiche config={config} /> : <NicheFunnel config={config} />}
     </>
   )
 }

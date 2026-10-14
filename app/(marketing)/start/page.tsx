@@ -6,6 +6,8 @@ import { Illustration, type IllustrationName } from '@/components/marketing/illu
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyStart } from '@/components/frequency/site/pages/funnel/frequency-start'
 
 // The role picker (ADR-180 keeps this a coded page, not a Puck slug). One decision:
 // Build, Practice, or Spread. Each card routes to a DISTINCT destination that keeps its
@@ -77,7 +79,24 @@ const ROLES: Role[] = [
   },
 ]
 
+// The four pillar answers under "Not ready to pick a door?", shared by both designs (LIVE-256).
+const GUIDES = [
+  { href: '/friendship-as-an-adult', label: 'It is hard to make friends as an adult', note: 'Why it gets harder after 30, and what actually works.' },
+  { href: '/how-to-be-more-social', label: 'I want to be more social', note: 'Without a new personality, and without drinking.' },
+  { href: '/calm-down-fast', label: 'I cannot switch off', note: 'What to do in the next five minutes when you are wired.' },
+  { href: '/events', label: 'I would rather start with something to do', note: 'A run club, a cold plunge, a supper club. Find one near you.' },
+]
+
 export default function StartPage() {
+  // The Frequency design (ADR-1737): the same doors, hrefs and guides, in the design's body.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={breadcrumbSchema([{ name: 'Start', path: '/start' }])} />
+        <FrequencyStart doors={ROLES} guides={GUIDES} />
+      </>
+    )
+  }
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: 'Start', path: '/start' }])} />
@@ -134,12 +153,7 @@ export default function StartPage() {
           Start with whichever one sounds like your week. Each is a plain answer, no signup.
         </p>
         <ul className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
-          {[
-            { href: '/friendship-as-an-adult', label: 'It is hard to make friends as an adult', note: 'Why it gets harder after 30, and what actually works.' },
-            { href: '/how-to-be-more-social', label: 'I want to be more social', note: 'Without a new personality, and without drinking.' },
-            { href: '/calm-down-fast', label: 'I cannot switch off', note: 'What to do in the next five minutes when you are wired.' },
-            { href: '/events', label: 'I would rather start with something to do', note: 'A run club, a cold plunge, a supper club. Find one near you.' },
-          ].map((g) => (
+          {GUIDES.map((g) => (
             <li key={g.href}>
               <Link
                 href={g.href}

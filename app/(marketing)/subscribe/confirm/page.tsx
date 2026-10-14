@@ -4,6 +4,9 @@ import { X } from 'lucide-react'
 import { verifyOptinToken } from '@/lib/crm/optin/tokens'
 import { Button, Outcome, OutcomeSkeleton } from '@/components/marketing/marketing-ui'
 import { ConfirmSubscribeButton } from './confirm-button'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FnOutcomePage, FnOutcomeSkeleton, FnStage } from '@/components/frequency/site/pages/funnel/parts'
+import { FrequencyConfirmSubscribe } from '@/components/frequency/site/pages/funnel/confirm-subscribe'
 
 export const metadata: Metadata = {
   title: 'Confirm your email',
@@ -20,7 +23,7 @@ export default function SubscribeConfirmPage({
   searchParams: Promise<{ e?: string; x?: string; t?: string }>
 }) {
   return (
-    <Suspense fallback={<OutcomeSkeleton />}>
+    <Suspense fallback={SITE_DESIGN === 'frequency' ? <FnOutcomeSkeleton /> : <OutcomeSkeleton />}>
       <SubscribeConfirmOutcome searchParams={searchParams} />
     </Suspense>
   )
@@ -40,6 +43,27 @@ async function SubscribeConfirmOutcome({
   const email = (e || '').trim().toLowerCase()
   const exp = Number(x)
   const tokenOk = !!email && !!t && verifyOptinToken(email, exp, t)
+
+  // The Frequency design (ADR-1737): the same verify-on-load, confirm-on-click split, in its outcome box.
+  if (SITE_DESIGN === 'frequency') {
+    if (tokenOk) {
+      return (
+        <FnStage>
+          <FrequencyConfirmSubscribe e={email} x={x as string} t={t as string} />
+        </FnStage>
+      )
+    }
+    return (
+      <FnOutcomePage
+        tone="danger"
+        icon="close"
+        title="This link didn't work."
+        action={{ href: '/subscribe', label: 'Send a new link' }}
+      >
+        It may have expired or been mistyped. Enter your email again and we&apos;ll send a fresh confirm link.
+      </FnOutcomePage>
+    )
+  }
 
   if (tokenOk) return <ConfirmSubscribeButton e={email} x={x as string} t={t as string} />
 

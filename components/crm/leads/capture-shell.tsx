@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCaptureShell } from '@/components/frequency/site/pages/funnel/capture'
 
 // The shared chrome for a PUBLIC lead-capture surface (front doors 2 to 5). A centered card with the
 // Frequency wordmark, mirroring the double-opt-in confirm / unsubscribe surfaces — a self-contained
@@ -15,6 +17,14 @@ export function CaptureShell({
   description?: React.ReactNode
   children: React.ReactNode
 }) {
+  // The Frequency design (ADR-1737): the same eyebrow, title, line and door, inside the site shell.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FrequencyCaptureShell eyebrow={eyebrow} title={title} description={description}>
+        {children}
+      </FrequencyCaptureShell>
+    )
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
       <div className="w-full max-w-md">

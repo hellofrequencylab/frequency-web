@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { ArrowRight, Check, ExternalLink } from 'lucide-react'
 import { Input } from '@/components/ui/field'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCaptureForm } from '@/components/frequency/site/pages/funnel/capture'
 
 // The shared client form behind the public capture doors 3 to 5 (event / lead magnet / share-back).
 // One anti-enumeration, honeypot-guarded form; each door passes its own bound server action, submit
@@ -31,21 +33,28 @@ export type CaptureSubmit = (input: {
   company: string
 }) => Promise<CaptureSubmitResult>
 
-export function CaptureForm({
-  token,
-  submit,
-  submitLabel,
-  consentNote,
-  showPhone = false,
-  namePlaceholder = 'Your name',
-}: {
+type CaptureFormProps = {
   token: string
   submit: CaptureSubmit
   submitLabel: string
   consentNote?: React.ReactNode
   showPhone?: boolean
   namePlaceholder?: string
-}) {
+}
+
+/** The design switch (ADR-1737): the Frequency door draws the same form, same action, same honeypot. */
+export function CaptureForm(props: CaptureFormProps) {
+  return SITE_DESIGN === 'frequency' ? <FrequencyCaptureForm {...props} /> : <DawnCaptureForm {...props} />
+}
+
+function DawnCaptureForm({
+  token,
+  submit,
+  submitLabel,
+  consentNote,
+  showPhone = false,
+  namePlaceholder = 'Your name',
+}: CaptureFormProps) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')

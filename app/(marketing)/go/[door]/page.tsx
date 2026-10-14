@@ -7,6 +7,8 @@ import { notFound } from 'next/navigation'
 import { LAUNCH_DOORS, launchDoorBySlug } from '@/lib/marketing/launch-doors'
 import { buttonClasses } from '@/components/ui/button'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FnHero } from '@/components/frequency/site/pages/funnel/parts'
 
 export const dynamicParams = false
 
@@ -36,6 +38,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function LaunchDoorPage({ params }: Params) {
   const door = launchDoorBySlug((await params).door)
   if (!door) notFound()
+
+  // The Frequency design (ADR-1737): the same one promise and one button, as the design's hero.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FnHero center full kicker={door.name} title={door.promise} lede={door.detail}>
+        <div className="ctas">
+          <Link className="btn fq-iri-btn" href={door.buttonHref}>
+            {door.buttonLabel} →
+          </Link>
+        </div>
+      </FnHero>
+    )
+  }
 
   return (
     <section className="mx-auto flex max-w-2xl flex-col items-center px-4 py-16 text-center sm:py-24">
