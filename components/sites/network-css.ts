@@ -73,6 +73,16 @@ ${N} .hs-header .hs-btn-dark{min-height:46px;padding:0 22px;font-size:16px}
 ${N} .hs-menu-button{min-width:44px;min-height:44px;border-radius:var(--nw-r-pill);background:var(--nw-surface);color:var(--nw-ink);box-shadow:0 0 0 1px var(--nw-line)}
 ${N} .hs-menu-panel{border-radius:var(--nw-r-card);${CARD}}
 ${N} .hs-menu-panel a{font-family:var(--nw-body);font-weight:500;font-size:18px;color:var(--nw-ink)}
+/* The admin link is not part of the menu: a dark chip at the end of the nav, a pencil and "Website builder",
+   so the owner never reads it as a page of the site (owner ask 2026-10-14). */
+${N} .hs-nav .hs-nav-admin{display:flex;align-items:center;gap:8px;margin-left:14px;padding:4px 4px 4px 14px;border-radius:var(--nw-r-pill);background:var(--nw-ink);align-self:center}
+${N} .hs-nav-admin-tag{font-family:var(--nw-body);font-weight:500;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:0;color:var(--nw-on-ink-muted);display:flex;align-items:center}
+${N} .hs-nav-admin-colon,${N} .hs-nav-admin-sep{display:none}
+${N} .hs-nav .hs-nav-admin a{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--nw-r-pill);background:color-mix(in srgb,var(--nw-on-ink) 14%,transparent);color:var(--nw-on-ink);font-weight:600;font-size:14px}
+${N} .hs-nav .hs-nav-admin a::before{content:"";width:14px;height:14px;flex:none;background:currentColor;-webkit-mask:var(--nw-pencil) center/contain no-repeat;mask:var(--nw-pencil) center/contain no-repeat}
+${N} .hs-nav .hs-nav-admin a::after{display:none}
+${N} .hs-nav .hs-nav-admin a:hover,${N} .hs-nav .hs-nav-admin a[aria-current="page"]{background:color-mix(in srgb,var(--nw-on-ink) 26%,transparent);color:var(--nw-on-ink)}
+${N} .hs-menu-panel a.hs-nav-admin{margin-top:8px;padding:12px 16px;border-radius:var(--nw-r-pill);background:var(--nw-ink);color:var(--nw-on-ink);font-weight:600}
 ${N} .hs-member{border-radius:var(--nw-r-pill);font-family:var(--nw-body);font-weight:500}
 @media (max-width:939px){${N} .hs-nav{display:none}${N} .hs-pill{min-height:80px}${N} .hs-menu-panel{top:88px}}
 @media (max-width:560px){${N} .hs-brand{font-size:24px;gap:10px}${N} .hs-logo-avatar,${N} .hs-logo{width:48px;height:48px}${N} .hs-header .hs-btn-dark{display:none}}
