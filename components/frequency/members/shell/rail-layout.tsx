@@ -33,6 +33,7 @@ import type { Capability } from '@/lib/core/capabilities'
 import type { WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/staff'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
+import { isConsoleRoute } from '@/lib/nav/console-route'
 
 export interface RailFaces {
   full: React.ReactNode
@@ -122,7 +123,7 @@ export function FqRailLayout({
   const endDrag = useRef<(() => void) | null>(null)
 
   const takeover = isFullViewportEditor(pathname)
-  const edge = takeover || isFullWidthEditor(pathname)
+  const edge = takeover || isFullWidthEditor(pathname) || isConsoleRoute(pathname)
   const showL = !edge && leftRailFor(pathname) === 'global'
   const showR = !edge && !!right && mergeChrome(railFor(pathname), chromeOverrides ?? {}, pathname) === 'global'
   const has = showL && showR ? 'lr' : showL ? 'l' : showR ? 'r' : 'none'

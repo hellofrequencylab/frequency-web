@@ -411,3 +411,11 @@
 [data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util) .text-muted{font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-muted)}
 }
 @media (prefers-reduced-motion:reduce){@layer utilities{[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util):hover{transform:none}}}
+
+/* ── Console routes (lib/nav/console-route.ts) ───────────────────────────────────────────────────────
+   The operator and Space consoles wear their own chrome (components/frequency/admin). The member shell
+   stays mounted so client navigation in and out keeps working, but on a console route its header,
+   menus, sheets, drawer and wash step aside; the rail layout goes edge-to-edge (rail-layout.tsx). */
+[data-design="frequency"] [data-kit="members"][data-console] :is(.ap-hdr, .ap-mega, .ap-sheets, .ap-scrim, .fqm-drawer, .fq-wash) { display: none }
+/* Edge mode (consoles, full-width editors): no 860px reading measure; the page owns the full width. */
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-edge] .fqm-center { max-width: none; justify-self: stretch }

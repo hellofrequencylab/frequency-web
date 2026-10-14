@@ -134,10 +134,6 @@ function isAnonPublicEvent(p: string | null): boolean {
  * that throws on the signed-out path would take down every public route with it.
  */
 /** Admin and Space console routes, which carry their own Frequency chrome (components/frequency/admin). */
-function isConsoleRoute(path: string | null): boolean {
-  return !!path && /^\/(admin(\/|$)|spaces\/[^/]+\/(manage|crm|settings)(\/|$))/.test(path)
-}
-
 async function resolvePublicTwin(pathname: string | null): Promise<string | null> {
   const match = matchPublicTwin(pathname)
   if (!match) return null
@@ -774,11 +770,12 @@ export default async function MainLayout({
     {/* THE DESIGN SWITCH (ADR-1737). Frequency wears its own member chrome
         (components/frequency/members/shell, the design handoff's shell.js + Feed rails); DAWN keeps
         AppShell exactly as it was. Same data, same children, same overlays. */}
-    {SITE_DESIGN === 'frequency' && isConsoleRoute(reqPath) ? (
-      // The admin and Space console routes wear their own Frequency chrome (264px glass sidebar and
-      // top bar, components/frequency/admin), so the member header and rails step aside there.
-      <>{shellChildren}</>
-    ) : SITE_DESIGN === 'frequency' ? (
+    {SITE_DESIGN === 'frequency' ? (
+      // ALWAYS the member shell, console routes included: a layout does not re-render on a client
+      // navigation, so a bare console render would strand the next member page without its chrome (and
+      // a member render would wrap the console in a second header). The shell reads the live path and
+      // steps aside on console routes itself (lib/nav/console-route.ts: kit root `data-console`, rail
+      // layout edge mode), so the console's own chrome stands alone on every move.
       // The member's theme (Settings, Appearance: Frequency or Midnight) as [data-skin] on a box-less
       // wrapper, so the kit's tokens re-resolve for everything inside the shell (app/themes/frequency.css).
       <div data-skin={theme.skin} className="contents">
