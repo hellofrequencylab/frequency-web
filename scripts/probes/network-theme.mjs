@@ -69,7 +69,10 @@ for (const file of ['network.tsx']) {
     const path = ['.tsx', '.ts'].map((ext) => base + ext).find((p) => existsSync(p))
     if (!path || !/^\s*['"]use client['"]/.test(readFileSync(path, 'utf8'))) continue
     for (const name of names.split(',').map((n) => n.trim().split(/\s+as\s+/)[0]).filter(Boolean)) {
-      assert.ok(/^type\s/.test(name) || /^[A-Z]/.test(name), `${file} imports ${name} from the client module ${spec}; move it to a shared module`)
+      // A field config (`...Field`) may come from a client module when it is only ever spread: the spread of a
+      // client reference reads as nothing on the server, and the editor gets the real control.
+      const spreadOnly = /Field$/.test(name) && [...src.matchAll(new RegExp(`(\\.\\.\\.)?\\b${name}\\b`, 'g'))].slice(1).every((m) => m[1])
+      assert.ok(/^type\s/.test(name) || /^[A-Z]/.test(name) || spreadOnly, `${file} imports ${name} from the client module ${spec}; move it to a shared module`)
     }
   }
 }

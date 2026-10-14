@@ -134,22 +134,30 @@ export const CHAPTERS: Chapter[] = [
 export const chapterSlug = (c: Chapter) => `${SLUG}-${c.key}`
 export const chapterId = (c: Chapter) => uuidFrom(`chapter:${c.key}`)
 
-// ── Membership tiers (space_membership_tiers), the full lists from site-content.md ──────────────
+// ── Membership tiers (space_membership_tiers) ─────────────────────────────────────────────────────
+// Built on what a Frequency membership actually is, never The Group's other portal or its sales platform
+// (owner ruling 2026-10-14). Free is joining the Space. Any PAID tier grants the member Frequency Crew
+// (lib/billing/crew-grants.ts), and a Collective's paid membership counts in every chapter
+// (lib/collective/shared-membership.ts). The members-only levers are Frequency's own: a tier-linked circle
+// (space_membership_tiers.circle_id), members-only ticket tiers (lib/events/membership-included.ts) and
+// tier-gated Journeys (lib/journeys/tier-gate.ts).
+// TODO [confirm]: the members-only event, the Premium circle and the Premium Journeys are set up by the
+// owner in Frequency; the copy names the levers, not specific programs.
 export const TIERS = [
   {
     id: uuidFrom('tier:free'), name: 'Free', priceCents: 0, sort: 0,
-    description: 'FREE Group Membership. Start meeting the community and exploring what The Group has to offer.',
-    benefits: ['Access to The Group Portal', 'Community events calendar', 'Member subgroups', 'Community conversations and updates', 'Job board and opportunity listings', 'Referral requests', 'Event ticket support', 'Access to free and paid Group events'],
+    description: 'Join The Group on Frequency and start meeting the community.',
+    benefits: ['Join The Group on Frequency', 'RSVP to Feel Good Fridays and every open event', "Every chapter's calendar in one place", 'Join open circles between Fridays', 'Member updates by email'],
   },
   {
     id: uuidFrom('tier:basic'), name: 'Basic', priceCents: 1999, sort: 1,
-    description: 'Basic Group Membership. Get more involved, increase your visibility and begin actively building through the community.',
-    benefits: ['Everything in Free', 'Access to the member directory', 'Ability to create and lead subgroups', 'Ability to create and submit events', 'Access to local chapters', 'Opportunities for Instagram shoutouts and reshares', 'Member pricing and discounts on select events', 'Discounts on Group merchandise', 'Opportunities to sponsor events', 'Advertising and promotional opportunities within the member community', 'Additional ways to showcase your business, services and expertise'],
+    description: 'One membership in every chapter, with Frequency Crew included.',
+    benefits: ['Everything in Free', 'One membership that counts in all five chapters', 'Frequency Crew included: host your own circles, events and journeys', 'A monthly Boost for a circle or Space you love', 'Member tickets to members-only events'],
   },
   {
     id: uuidFrom('tier:premium'), name: 'Premium', priceCents: 2999, sort: 2,
-    description: 'Premium Group Membership. Get the community and the business system: everything in Free and Basic, plus access to AMP, a business growth platform powered by GoHighLevel.',
-    benefits: ['Everything in Free and Basic', 'AMP, a business growth platform powered by GoHighLevel', 'Contact and lead management', 'Sales pipelines and opportunity tracking', 'Email marketing', 'Text message marketing', 'Social media planning and scheduling', 'Forms and landing pages', 'Appointment calendars and booking', 'Automated follow-up', 'Workflows and customer journeys', 'Website chat and chatbots', 'AI-assisted funnels and communication', 'Prospecting and outreach', 'Advertising and campaign management', 'Tracking where leads come from and what happens next'],
+    description: 'Everything in Basic, plus the Premium circle and Premium journeys.',
+    benefits: ['Everything in Basic', 'The Premium members circle', 'Premium journeys from The Group', 'First access to signature events'],
   },
 ]
 
@@ -334,10 +342,10 @@ const NOTES = [
   { icon: 'compass', title: 'Expand Possibilities', body: 'Nurture your network tree with the magic of organic connections, where roots run deep and branches reach high.' },
 ]
 const TIER_CARDS = [
-  { icon: 'sprout', name: 'Free', price: '$0', cadence: '', tagline: 'Start meeting the community.', features: 'The Group Portal\nEvents calendar\nMember subgroups\nReferral requests and job board', ctaLabel: 'Join free', ctaHref: `/spaces/${SLUG}/memberships`, badge: '', featured: false },
+  { icon: 'sprout', name: 'Free', price: '$0', cadence: '', tagline: 'Start meeting the community.', features: 'Feel Good Fridays and open events\nEvery chapter\'s calendar\nOpen circles\nMember updates', ctaLabel: 'Join free', ctaHref: `/spaces/${SLUG}/memberships`, badge: '', featured: false },
   // TODO [confirm]: the "Most members" badge on Basic.
-  { icon: 'users', name: 'Basic', price: '$19.99', cadence: '/ mo', tagline: 'Get involved and get seen.', features: 'Member directory\nCreate and lead subgroups\nLocal chapters\nInstagram shoutouts', ctaLabel: 'Join Basic', ctaHref: `/spaces/${SLUG}/memberships`, badge: 'Most members', featured: true },
-  { icon: 'rocket', name: 'Premium', price: '$29.99', cadence: '/ mo', tagline: 'The community and the business system.', features: 'Everything in Basic\nAMP growth platform\nPipelines, email and text\nBooking and automations', ctaLabel: 'Join Premium', ctaHref: `/spaces/${SLUG}/memberships`, badge: '', featured: false },
+  { icon: 'users', name: 'Basic', price: '$19.99', cadence: '/ mo', tagline: 'Every chapter, and Crew included.', features: 'All five chapters\nFrequency Crew included\nHost circles, events and journeys\nMembers-only events', ctaLabel: 'Join Basic', ctaHref: `/spaces/${SLUG}/memberships`, badge: 'Most members', featured: true },
+  { icon: 'rocket', name: 'Premium', price: '$29.99', cadence: '/ mo', tagline: 'The deepest way in.', features: 'Everything in Basic\nThe Premium members circle\nPremium journeys\nFirst access to signature events', ctaLabel: 'Join Premium', ctaHref: `/spaces/${SLUG}/memberships`, badge: '', featured: false },
 ]
 const STUDIO_CARDS = STUDIO.map((s, i) => ({ title: s.title, price: `$${s.price}`, unit: s.unit, body: s.short, ctaLabel: 'Reserve', ctaHref: PAGE('contact'), featured: i === 1 }))
 const EPISODES = ['mGOSomOf9E4', 'DmyPqNhNf_E', 'Bwmo5Iu5Vk8'].map((videoId) => ({ title: '', videoId, href: '', image: '' }))
@@ -425,10 +433,12 @@ export function buildPageDocs(): Record<string, unknown> {
   const membership = doc([
     { type: 'NetworkHero', props: { id: 'tg-membership-hero', eyebrow: 'Membership', title: 'Your journey *starts here.*', lead: 'Share your journey, your passions, and your dreams. Let your soul shine through and connect with those around you. Embrace the power of community and support on this amazing adventure.', primaryLabel: 'Become a member today', primaryHref: `/spaces/${SLUG}/memberships`, secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: PHOTO('rooftop-gathering'), alt: 'Members of The Group together on a rooftop', focus: '50% 50%', crop: 'leaf', featureMatch: '', featureNote: '', featureCta: '', proof: '8,500+ members', proofNote: 'Free to start, upgrade any time', faces: FACES, layout: desktop } },
     { type: 'NetworkSplit', props: { id: 'tg-membership-cares', eyebrow: 'Join The Group', title: 'A community *that cares.*', body: "Welcome to The Group Coastal, where connection, collaboration, and community come first. We believe that success isn't just about what you do, but who you do it with. By signing up for our Membership, you're joining a heart-centered network of entrepreneurs, professionals, and changemakers who genuinely support each other in business and in life.\nAs a member, you'll gain access to our events, including our uplifting Feel Good Fridays, where we come together to share ideas, find inspiration, and build meaningful relationships. This isn't just another networking group, it's a movement of people who believe in growing together and making a real impact.\nWe're excited to welcome you in.", image: PHOTO('hall-selfie'), alt: 'Members celebrating together', mediaSide: 'right', facts: [], quote: '', quoteBy: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', layout: desktop } },
-    { type: 'NetworkTiers', props: { id: 'tg-membership-tiers', eyebrow: 'Choose your membership', title: 'Get more involved *and get seen.*', lead: 'Start free. Basic adds the directory, chapters and visibility; Premium adds AMP, the business system.', tiers: TIERS.map((t, i) => ({ ...TIER_CARDS[i], features: t.benefits.join('\n') })), footnote: 'Basic and Premium members save 10% on Group merchandise.', layout: desktop } },
-    { type: 'CardGrid', props: { id: 'tg-membership-amp', role: 'list', eyebrow: 'Premium · AMP', title: 'One place for your *business system.*', subtitle: 'AMP gives you one place to organize leads, manage relationships, communicate with customers and build smarter marketing systems.', columns: 2, cards: [
-      { icon: '', title: 'Relationships and sales', body: 'Contact and lead management\nSales pipelines and opportunity tracking\nProspecting and outreach\nTracking where leads come from and what happens next\nAppointment calendars and booking\nAutomated follow-up' },
-      { icon: '', title: 'Marketing and communication', body: 'Email marketing\nText message marketing\nSocial media planning and scheduling\nForms and landing pages\nWorkflows and customer journeys\nWebsite chat and chatbots\nAI-assisted funnels and communication\nAdvertising and campaign management' },
+    { type: 'NetworkTiers', props: { id: 'tg-membership-tiers', eyebrow: 'Choose your membership', title: 'Get more involved *in every chapter.*', lead: 'Start free. Basic opens every chapter and includes Frequency Crew; Premium adds the members circle and Premium journeys.', tiers: TIERS.map((t, i) => ({ ...TIER_CARDS[i], features: t.benefits.join('\n') })), footnote: 'Any paid membership includes Frequency Crew. Change or cancel any time.', layout: desktop } },
+    { type: 'CardGrid', props: { id: 'tg-membership-frequency', role: 'list', eyebrow: 'On Frequency', title: 'What membership *opens up.*', subtitle: 'The Group runs on Frequency, so your membership travels with you: every chapter, every circle and every event in one place.', columns: 2, cards: [
+      { icon: '', title: 'Every chapter', body: 'One membership counts in La Jolla, North Park, Oceanside, North County and Veterans.\nEvery chapter\'s mornings on one calendar.' },
+      { icon: '', title: 'Circles and events', body: 'Join open circles between Fridays.\nRSVP to every gathering, and get member tickets to members-only events.' },
+      { icon: '', title: 'Frequency Crew', body: 'Any paid membership includes Crew.\nHost your own circles, events and journeys, with a monthly Boost for a circle or Space you love.' },
+      { icon: '', title: 'Journeys', body: 'Guided journeys from The Group, with Premium journeys for Premium members.' },
     ], layout: desktop } },
     coffee(),
   ])

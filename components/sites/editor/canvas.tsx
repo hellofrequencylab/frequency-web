@@ -11,6 +11,7 @@ import { mensworkSeason } from '@/lib/theme/menswork'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { networkScheme } from '@/lib/theme/network'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
+import { fieldTextTargets, type FieldFocus } from '@/lib/sites/editor/field-sync'
 import { findInlineTextMatch, inlineTextValue, inlineFieldValue, replaceInlineField, replaceInlineTextSegment, type InlineTextMatch } from '@/lib/sites/editor/inline-edit'
 import { EDITABLE_GRIDS, dragElementPlacement, placeElementWithoutOverlap, sectionDeviceLayout, snapSectionSpacing, SECTION_SPACING_STEPS } from '@/lib/sites/editor/layout'
 import type { WebsiteTheme, Device, SiteComment, SectionDisplay, WebsitePresence, WebsiteSnapshot } from '@/lib/sites/editor/state'
@@ -18,6 +19,7 @@ import { resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/edito
 import { WebsiteDocument } from '../website-document'
 import { SiteChrome, siteHref } from '../site-chrome'
 import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
+import { NETWORK_BLOCK_CSS, docHasNetworkBlocks } from '../network-css'
 
 const CANVAS_CSS = `
 html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
@@ -29,7 +31,7 @@ html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
 .we-micro{position:sticky;top:8px;display:flex;align-items:center;gap:2px;z-index:5;width:max-content;margin:0 auto -42px;padding:4px;background:var(--ed-field);border:1px solid var(--th-muted);color:var(--th-text);border-radius:var(--th-r)}
 .we-micro button{display:grid;place-items:center;width:32px;height:32px;border:0;background:transparent;color:inherit;cursor:pointer}.we-micro button:hover{background:var(--ed-chrome)}.we-micro button:disabled{opacity:.3;cursor:default}
 .we-typography{position:relative}.we-typography summary{display:grid;place-items:center;width:32px;height:32px;cursor:pointer;list-style:none}.we-typography-panel{position:absolute;top:40px;right:0;min-width:190px;display:grid;gap:8px;background:var(--ed-field);border:1px solid var(--ed-line);padding:12px;color:var(--th-text)}.we-typography-panel button{width:auto!important;padding:4px;font-size:11px}.we-typography-panel label{display:grid;gap:4px;font:12px var(--th-body-render)}.we-typography-panel select{background:var(--th-raised);color:var(--th-text);border:1px solid var(--ed-line);padding:5px}.we-spacing-handle{position:absolute;left:calc(50% - 24px);width:48px;height:8px;z-index:7;border:1px solid var(--th-accent);border-radius:4px;background:var(--ed-field);opacity:.75;cursor:ns-resize;touch-action:none}.we-spacing-top{top:0}.we-spacing-bottom{bottom:0}.we-micro button:focus-visible{outline:2px solid var(--th-accent)}
-.we-section:has([data-site-text-selected=true]):not([data-manipulating=true]){outline-color:transparent}.we-section [data-site-text-selected=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}.we-section [contenteditable=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}
+.we-section:has([data-site-text-selected=true]):not([data-manipulating=true]){outline-color:transparent}.we-section [data-site-text-selected=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}.we-section [data-site-field-focus=true]{outline:2px solid var(--th-accent);outline-offset:4px;border-radius:2px;background:color-mix(in srgb,var(--th-accent) 12%,transparent)}.we-section [contenteditable=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}
 .we-collaborator-cursor{position:absolute;z-index:8;pointer-events:none;display:flex;align-items:flex-start;gap:4px;color:var(--th-season);font:700 12px var(--th-body-render);transform:translate(-2px,-2px)}.we-collaborator-cursor>span:first-child{font-size:24px;line-height:1}.we-collaborator-cursor>span:last-child{background:var(--th-season);color:var(--th-on-season);padding:4px 7px;border-radius:var(--th-r);white-space:nowrap}.we-layout-handles{position:absolute;inset:0;pointer-events:none;z-index:6}.we-layout-handles{border:1px solid transparent}.we-layout-handles[data-active=true]{border-color:var(--th-accent)}[data-layout-element=true]:has([data-site-text-selected=true])>.we-layout-handles,[data-layout-element=true][data-site-text-selected=true]>.we-layout-handles{border-color:transparent}.we-layout-handles:not([data-active=true]) button{opacity:0}.we-layout-handles:hover button,.we-layout-handles:focus-within button,[data-layout-element=true]:hover>.we-layout-handles button{opacity:1}.we-layout-handles:focus-within{border-color:var(--th-accent)}.we-layout-handles button{pointer-events:auto;position:absolute;width:26px;height:26px;background:var(--ed-field);border:1px solid var(--th-accent);color:var(--th-text);cursor:grab;touch-action:none}.we-move-handle{top:-6px;left:0}.we-resize-handle{bottom:-6px;right:0;cursor:nwse-resize!important}.we-pin{position:absolute;right:12%;top:25%;z-index:6;display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--th-accent);color:var(--th-on-accent);border:1px solid var(--th-muted);font:800 12px var(--th-body-render);cursor:pointer}
 .we-insert{display:block;width:100%;height:22px;border:0;background:transparent;color:var(--th-accent-text);font:600 12px var(--th-body-render);cursor:pointer}.we-insert:hover,.we-insert:focus-visible{background:color-mix(in srgb,var(--th-accent) 12%,transparent);outline:1px solid var(--th-accent)}
 @media(pointer:coarse){.we-micro button{width:44px;height:44px}.we-section-label{opacity:1!important}.we-insert{height:44px}}
@@ -51,7 +53,7 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, look = {}, fullFooter = true }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true }: {
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
   title: string; brandName: string; logo?: string | null; brandAccent?: string | null
   nav: { slug: string; label: string }[]
@@ -66,6 +68,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   onChromeSelect?: (surface: 'header' | 'footer') => void
   onTextSelect?: (selection: { blockId: string; field: string; path: (string | number)[]; value: string } | null) => void
   onInsert: (index: number) => void
+  /** The inspector field being edited: its words are lit on the canvas and scrolled into view. */
+  focusField?: FieldFocus | null
   /** The site's global styles that differ from its theme, and whether its footer is the full one (ADR-1728). */
   look?: ComponentProps<typeof SiteChrome>['look']
   fullFooter?: boolean
@@ -283,6 +287,25 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     }, 50)
     return () => { iframe.removeEventListener('load', attach); window.clearInterval(retry) }
   }, [attach])
+  // Inspector → canvas: light every line the focused field draws, and bring the first into view.
+  const focusKey = focusField ? JSON.stringify(focusField) : ''
+  useEffect(() => {
+    if (!mount) return
+    for (const node of mount.querySelectorAll<HTMLElement>('[data-site-field-focus=true]')) node.removeAttribute('data-site-field-focus')
+    if (!focusField) return
+    const block = doc.content.find((b) => b.props.id === focusField.blockId)
+    const section = mount.querySelector<HTMLElement>(`.we-section[data-block-id="${CSS.escape(focusField.blockId)}"]`)
+    if (!block || !section) return
+    const targets = new Set(fieldTextTargets(block.props, focusField.field, focusField.path))
+    if (!targets.size) return
+    const lit: HTMLElement[] = []
+    for (const node of section.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6,p,blockquote,figcaption,li,dt,dd,a,button,label,summary,span,small,strong,em,b')) {
+      if (node.closest('.we-micro,.we-section-label,.we-layout-handles,.we-insert') || lit.some((done) => done.contains(node))) continue
+      if (targets.has(inlineTextValue(renderedText(node)))) { node.setAttribute('data-site-field-focus', 'true'); lit.push(node) }
+    }
+    lit[0]?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-light per focused field and per edit
+  }, [focusKey, doc, mount])
   function renderedText(node: HTMLElement): string {
     const copy = node.cloneNode(true) as HTMLElement
     for (const decoration of copy.querySelectorAll('[aria-hidden=true],.we-layout-handles,.we-spacing-handle,svg,style,script')) decoration.remove()
@@ -412,7 +435,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   }
   return <iframe ref={frame} className="we-frame" title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
     {mount && createPortal(<div data-website-theme={theme} style={websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
-      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' ? '' : FREQUENCY_PAGE_CSS)}</style>
+      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '')}</style>
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
       <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />

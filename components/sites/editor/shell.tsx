@@ -19,6 +19,7 @@ import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
 const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.WebsiteCanvas), { ssr: false })
+import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock } from './vera-dock'
@@ -145,6 +146,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [replies, setReplies] = useState<Record<string, string>>({})
   const [request, setRequest] = useState('')
   const [textSelection, setTextSelection] = useState<{ blockId: string; field: string; path: (string | number)[]; value: string } | null>(null)
+  // The field the owner is typing in on the inspector, lit on the canvas (lib/sites/editor/field-sync.ts).
+  const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [veraStatus, setVeraStatus] = useState('')
   const [asking, setAsking] = useState(false)
@@ -222,7 +225,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     window.addEventListener('beforeunload', guard)
     return () => window.removeEventListener('beforeunload', guard)
   }, [])
-  function select(id: string) { if (id !== selectedId) setTextSelection(null); setSelectedId(id); setPanel('inspect'); setRight(true) }
+  function select(id: string) { if (id !== selectedId) { setTextSelection(null); setFieldFocus(null) } setSelectedId(id); setPanel('inspect'); setRight(true) }
   function insert(index: number) { setInsertAt(index); setFilter(''); setModal('insert') }
   function pickBlock(type: string) {
     const added = addBlock(page.doc, config, type)
@@ -244,7 +247,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!moving.length || target < 0) return
     updateDoc({ ...page.doc, content: [...remaining.slice(0, target), ...moving, ...remaining.slice(target)] })
   }
-  function pickPage(slug: string) { setTextSelection(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia('(max-width:767px)').matches) setLeft(false) }
+  function pickPage(slug: string) { setTextSelection(null); setFieldFocus(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia('(max-width:767px)').matches) setLeft(false) }
   function keys(e: KeyboardEvent) {
     const target = e.target as HTMLElement
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return }
@@ -368,7 +371,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-fold"><Icon label={left ? 'Fold left rail' : 'Open left rail'} onClick={() => setLeft(!left)}>{left ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}</Icon></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={setTextSelection} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+      <div className="we-frame-scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
       {!preview && <VeraDock>
         {(asking || veraStatus || proposal) && <div className="we-thread">
           <p role="status">{asking ? 'Vera is preparing a proposal…' : veraStatus}</p>{proposal && <div className="we-proposal"><div className="we-caption">Proposed text</div><p>{proposal.after}</p><div className="we-actions"><button type="button" className="we-action" onClick={applyProposal}>Apply</button><button type="button" className="we-action secondary" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Discard</button></div></div>}</div>}
@@ -383,7 +386,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       {right ? <><div className="we-inspector-head"><Settings2 size={16} /><span className="we-spacer">{panel === 'comments' ? 'Comments' : panel === 'seo' ? 'SEO and sharing' : panel === 'header' ? 'Header and navigation' : panel === 'footer' ? 'Footer' : panel === 'page' ? 'Page settings' : selected ? config.components[selected.type]?.label ?? selected.type : 'Page'}<small style={{ display: 'block' }}>{panel === 'header' || panel === 'footer' ? 'All pages and devices' : panel !== 'inspect' ? 'This page' : device === 'phone' ? 'Phone only' : device === 'tablet' ? 'Tablet only' : 'All devices'}</small></span><Icon label="Close inspector" onClick={() => setRight(false)}><X size={16} /></Icon></div>
         <div className="we-rail-scroll">
           {!!error && <div className="we-error" role="alert">{error}{status === 'error' && <button type="button" className="we-row" onClick={() => void save()}>Retry save</button>}{status === 'conflict' && <button type="button" className="we-row" onClick={() => window.location.reload()}>Reload newer draft</button>}</div>}
-          {panel === 'inspect' && (selected ? <WebsiteInspector key={`${page.slug}:${selectedId}`} metadata={metadata} sourceSettingsHref={`${origin}/spaces/${links.slug}/settings/${selected.type === 'SpaceOfferings' || selected.props.source === 'offerings' ? 'offerings' : /Events/.test(selected.type) || selected.props.source === 'events' ? 'calendar' : selected.props.source === 'memberships' ? 'memberships' : selected.props.source === 'tickets' ? 'tickets' : ''}`} config={config} block={selected} doc={page.doc} device={device} onChange={(props) => editProps(selectedId!, props)} onDisplay={(value) => updateDisplay(selectedId!, value)} /> : <div className="we-note">Click text to select it. Double-click or press Enter to edit. Drag a grip to move or resize. Press / to add a section.</div>)}
+          {panel === 'inspect' && (selected ? <WebsiteInspector key={`${page.slug}:${selectedId}`} metadata={metadata} sourceSettingsHref={`${origin}/spaces/${links.slug}/settings/${selected.type === 'SpaceOfferings' || selected.props.source === 'offerings' ? 'offerings' : /Events/.test(selected.type) || selected.props.source === 'events' ? 'calendar' : selected.props.source === 'memberships' ? 'memberships' : selected.props.source === 'tickets' ? 'tickets' : ''}`} config={config} block={selected} doc={page.doc} device={device} focus={textSelection && textSelection.blockId === selectedId ? { field: textSelection.field, path: textSelection.path } : null} onFieldFocus={(focus) => setFieldFocus(focus && selectedId ? { blockId: selectedId, ...focus } : null)} onChange={(props) => editProps(selectedId!, props)} onDisplay={(value) => updateDisplay(selectedId!, value)} /> : <div className="we-note">Click text to select it. Double-click or press Enter to edit. Drag a grip to move or resize. Press / to add a section.</div>)}
           {(panel === 'header' || panel === 'footer') && <WebsiteChromeInspector area={panel} chrome={draft.chrome} defaults={chromeDefaults} sourceSettingsHref={`${origin}/spaces/${links.slug}/settings`} onChange={(chrome) => commit({ ...draft, chrome })} onTheme={() => { setTab('Theme'); setLeft(true) }} onPages={() => { setTab('Pages'); setLeft(true) }} onMenu={() => setModal('menu')} />}
           {panel === 'page' && <><label className="we-field">Page name<Input variant="seamless" key={`${page.slug}:${page.label}`} defaultValue={page.label} maxLength={80} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); if (event.key === 'Escape') { event.currentTarget.value = page.label; event.currentTarget.blur() } }} onBlur={(event) => { if (event.target.value.trim()) commit({ ...draft, pages: draft.pages.map((item) => item.slug === page.slug ? { ...item, label: event.target.value } : item) }) }} /></label><p className="we-note">Changing the name updates navigation. The page address stays the same.</p>
             {/* A THEME PER PAGE (LIVE-699): the shared site style's per-page override, live at once like the theme. */}

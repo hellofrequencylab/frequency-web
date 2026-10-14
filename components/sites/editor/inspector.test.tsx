@@ -83,3 +83,26 @@ it('lets a header URL be typed through intermediate invalid text and commits onl
   expect(container.querySelector('[role="alert"]')).toBeNull()
   act(() => root.unmount()); container.remove()
 })
+
+it('follows a canvas click into the card it came from, and reports the field the owner types in', () => {
+  const config: Config = { components: { FeatureGrid: { fields: { heading: { type: 'text' }, body: { type: 'textarea' }, items: { type: 'array', arrayFields: { title: { type: 'text' }, body: { type: 'text' } } } }, render: () => null } } }
+  const block = { type: 'FeatureGrid', props: { id: 'cards', heading: 'Heading', body: 'Words', items: [{ title: 'First', body: 'One' }, { title: 'Second', body: 'Two' }] } }
+  const focused = vi.fn()
+  Element.prototype.scrollIntoView = vi.fn()
+  const container = document.createElement('div'); document.body.append(container); const root = createRoot(container)
+  const render = (focus: { field: string; path: (string | number)[] } | null) => act(() => root.render(<WebsiteInspector config={config} block={block} doc={{ root: {}, content: [block] }} device="desktop" focus={focus} onFieldFocus={focused} onDisplay={vi.fn()} onChange={vi.fn()} />))
+  // A click on the second card's body opens that card and lights its body field.
+  render({ field: 'items', path: [1, 'body'] })
+  expect(container.querySelector<HTMLInputElement>('input[aria-label="body"]')?.value).toBe('Two')
+  expect(container.querySelector('.we-inspector')?.getAttribute('data-lit')).toBe('body')
+  // A click on top-level copy returns to the section's own fields.
+  render({ field: 'body', path: [] })
+  expect(container.querySelector<HTMLInputElement>('input[aria-label="heading"]')?.value).toBe('Heading')
+  // Typing in a field tells the canvas which words to light, card path included.
+  act(() => container.querySelector<HTMLInputElement>('input[aria-label="heading"]')!.focus())
+  expect(focused).toHaveBeenLastCalledWith({ field: 'heading', path: [] })
+  render({ field: 'items', path: [0, 'title'] })
+  act(() => container.querySelector<HTMLInputElement>('input[aria-label="title"]')!.focus())
+  expect(focused).toHaveBeenLastCalledWith({ field: 'items', path: [0, 'title'] })
+  act(() => root.unmount()); container.remove()
+})

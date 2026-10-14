@@ -20,7 +20,7 @@ import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
 import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { networkAccentVars, networkScheme } from '@/lib/theme/network'
 import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
-import { NETWORK_CSS } from '@/components/sites/network-css'
+import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -325,6 +325,8 @@ export async function SitePage({
       <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={siteFontClass}>
       {website && skin && <style>{WEBSITE_TOKEN_CSS}</style>}
       {websitePage && !skin && <style>{FREQUENCY_PAGE_CSS}</style>}
+      {/* Network sections on a site that does not wear Network bring their own sheet, in the site's palette. */}
+      {!netSite && docHasNetworkBlocks(websitePage?.doc ?? mwBlocks) && <style>{NETWORK_BLOCK_CSS}</style>}
       <SiteChrome
         brandName={websiteChrome.name}
         homeHref={homeHref}

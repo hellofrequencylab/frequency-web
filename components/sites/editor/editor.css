@@ -83,3 +83,21 @@
 .we-field input:is([type=checkbox],[type=radio]){width:auto;align-self:flex-start;accent-color:var(--th-accent)}
 @media(max-width:767px){.we-stage[data-device=phone] .we-frame{max-width:100%}.we-vera-dock{top:auto;bottom:12px}.we-vera-dock[data-open=true]{top:8px;bottom:auto}.we-vera-toggle span{font-size:11px}.we-inspector-head small{font-size:11px}}
 .we-choice-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.we-choice-row .we-action{padding:6px 10px;font-size:13px}.we-choice-row .we-action[aria-pressed=true]{background:var(--th-accent);color:var(--th-on-accent);box-shadow:none}
+
+/* THE INSPECTOR, ONE SELECTION WITH THE CANVAS (lib/sites/editor/field-sync.ts). A click on the page names
+   the field being edited at the top of the rail and lights its row; the rows are compact, named in plain
+   words with a quiet hint under the label, in the order the words appear on the page. */
+.we-inspector{display:block}
+.we-editing{position:sticky;top:-6px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 -10px 4px;padding:9px 18px;background:color-mix(in srgb,var(--th-accent) 14%,var(--ed-chrome));border-bottom:1px solid var(--ed-line);font-size:12px;color:var(--th-secondary)}
+.we-editing::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--th-accent)}
+.we-editing strong{color:var(--th-text);font-weight:700}.we-editing span{color:var(--th-muted)}
+.we-inspector [data-field]{border-radius:var(--th-r);transition:background-color .2s ease,box-shadow .2s ease;scroll-margin-top:48px}
+.we-inspector [data-field]>div,.we-inspector [data-field]>button{padding:12px 8px;border-color:var(--ed-line)}
+.we-inspector [data-field] label,.we-inspector [data-field]>div>div:first-child{font-size:13px;font-weight:600;color:var(--th-text);margin-bottom:6px}
+.we-inspector [data-field] label>span{font-size:12px;font-weight:400;color:var(--th-muted);margin-top:2px;line-height:1.4}
+.we-inspector [data-field] :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select){min-height:40px;font-size:14px}
+.we-inspector [data-field] textarea{min-height:88px;font-size:14px;line-height:1.5}
+.we-inspector [data-field] ul button{min-height:40px;font-size:13px}
+.we-inspector .we-caption{padding-top:18px}
+.we-inspector .we-caption:first-of-type{padding-top:6px}
+@media(prefers-reduced-motion:reduce){.we-inspector [data-field]{transition:none}}
