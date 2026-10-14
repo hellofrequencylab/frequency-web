@@ -1,4 +1,5 @@
 import type { Config, Data } from '@/lib/page-editor/types'
+import type { WebsiteSnapshot } from './state'
 
 // THE PUBLISH MODAL'S CHECKS (design_handoff/frequency/templates/admin/Page Editor.html: "Every image has alt
 // text", "Page title and description set"). PURE reads of the draft the editor already holds: nothing is
@@ -64,7 +65,7 @@ export interface PublishCheck {
 }
 
 /** The modal's checks over every page in the draft, in the design's words when they pass. */
-export function publishChecks(pages: { label: string; doc: Data; seo: { title: string; description: string } }[], config: Config): PublishCheck[] {
+export function publishChecks(pages: { label: string; doc: Data; seo: { title: string; description: string } }[], config: Config, options: { otherChanged?: string[] } = {}): PublishCheck[] {
   const altMissing = pages.reduce((sum, p) => sum + missingAltText(p.doc, config), 0)
   // A blank title falls back to "Page | Site" on the live page, so only a missing description is a gap.
   const noSeo = pages.filter((p) => !p.seo.description.trim()).map((p) => p.label)
@@ -75,5 +76,25 @@ export function publishChecks(pages: { label: string; doc: Data; seo: { title: s
     noSeo.length === 0
       ? { ok: true, text: 'Page title and description set' }
       : { ok: false, text: `Add a search description to ${noSeo.length <= 3 ? noSeo.join(', ') : `${noSeo.length} pages`}` },
+    // The design's third check: publishing sends the whole website, so OTHER pages' unpublished changes go live
+    // too. Said as a warning, never a gate. Only when the caller names them (the Frequency modal).
+    ...(options.otherChanged?.length ? [{ ok: false, text: `${options.otherChanged.length <= 3 ? options.otherChanged.join(', ') : `${options.otherChanged.length} other pages`} ${options.otherChanged.length === 1 ? 'page has' : 'have'} unpublished changes that go live too` }] : []),
   ]
+}
+
+/** What a draft holds that its published version does not, as the change log's human labels (the Frequency
+ *  publish modal and badge). The editor seeds its log with these when it opens on unpublished work, then adds
+ *  each edit's own label ("Edited Hero") as it happens. Comments never count: they are not published. */
+export function pendingChangeLabels(draft: WebsiteSnapshot, published: WebsiteSnapshot | null): string[] {
+  const labels: string[] = []
+  for (const page of draft.pages) {
+    const live = published?.pages.find((p) => p.slug === page.slug)
+    if (!live || JSON.stringify({ ...page, comments: [] }) !== JSON.stringify(live)) labels.push(`Updated ${page.label}`)
+  }
+  for (const page of published?.pages ?? []) if (!draft.pages.some((p) => p.slug === page.slug)) labels.push(`Removed page ${page.label}`)
+  if (JSON.stringify(draft.pages.map(({ slug, label }) => ({ slug, label }))) !== JSON.stringify(published?.pages.map(({ slug, label }) => ({ slug, label })))) labels.push('Navigation')
+  if (JSON.stringify(draft.chrome) !== JSON.stringify(published?.chrome)) labels.push('Header and footer')
+  if (JSON.stringify(draft.brand) !== JSON.stringify(published?.brand)) labels.push('Brand settings')
+  if (draft.theme !== published?.theme) labels.push('Theme')
+  return labels
 }

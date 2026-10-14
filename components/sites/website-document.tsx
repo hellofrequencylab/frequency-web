@@ -7,6 +7,19 @@ import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import type { WebsiteTheme } from '@/lib/sites/editor/state'
 import { normalizeWebsiteFields } from '@/lib/sites/website-fields'
 import { safeDataAttributes } from '@/lib/sites/editor/layout'
+import { cleanSectionAnchor } from '@/lib/sites/editor/state'
+
+/** Each tone as the site theme's own colours (DAWN aliases the website theme maps onto, WEBSITE_TOKEN_CSS),
+ *  never a literal: White is the raised surface, Sand the theme's surface, Pastel a wash of its accent and
+ *  Ink its darkest colour with the on-ink text. */
+const SECTION_TONE_STYLE: Record<string, Record<string, string>> = {
+  white: { background: 'var(--color-surface-elevated)' },
+  sand: { background: 'var(--color-surface)' },
+  pastel: { background: 'linear-gradient(120deg,var(--color-primary-bg),transparent),var(--color-canvas)' },
+  ink: { background: 'var(--color-ink, var(--color-text))', color: 'var(--color-on-ink, var(--color-canvas))', '--color-text': 'var(--color-on-ink, var(--color-canvas))', '--color-text-muted': 'var(--color-on-ink-muted, var(--color-border-strong))' },
+}
+/** The design's content widths (editor.js `W`): narrow 760, wide 1200, full edge to edge. Default adds nothing. */
+const SECTION_WIDTH_MAX: Record<string, string> = { narrow: '760px', wide: '1200px', full: 'none' }
 import { MensworkPage } from './menswork-page'
 
 // Shared by the website and its editor iframe. The renderer never imports editor
@@ -85,10 +98,18 @@ export function WebsiteDocument({ doc, config, metadata, live, links, origin, ti
       const rules = `.${sectionClass}.${sectionClass} :is(.mw-story,.mw-hero-inner,.mw-head,.mw-grid,.mw-photos,.mw-lists,.hs-split,.hs-hero-grid,.hs-steps,.hs-facts,.hs-stats-grid,.hs-cards,.hs-band-grid,.grid){${grid}}${heading}${textFont}${bodyRules}${align}${stacking}${placements}${motion}`
       customRules += d === 'desktop' ? rules : `@media(max-width:${d === 'tablet' ? 1024 : 600}px){${rules}}`
     }
+    // TONE, WIDTH AND ANCHOR (the Frequency page editor's Design / Advanced tabs). Each is optional and adds
+    // nothing when absent, so a section without them renders byte for byte as before. A tone re-points the
+    // site theme's own colour aliases inside the section, so the section's text and cards follow it.
+    const tone = typeof layout.desktop?.tone === 'string' ? SECTION_TONE_STYLE[layout.desktop.tone as string] : undefined
+    if (tone) Object.assign(vars, tone)
+    const width = typeof layout.desktop?.width === 'string' ? SECTION_WIDTH_MAX[layout.desktop.width as string] : undefined
+    if (width) customRules += `.${sectionClass}.${sectionClass} .mw-wrap{max-width:${width}!important}`
+    const anchor = cleanSectionAnchor(layout.desktop?.anchor)
     const custom = typeof layout.desktop?.className === 'string' ? layout.desktop.className.replace(/[^a-zA-Z0-9_ -]/g, '') : ''
     const animation = ['fade', 'rise'].includes(layout.desktop?.animation) ? layout.desktop.animation : 'none'
     const contentKey = `${id}:${JSON.stringify(indexes.map((index) => doc.content[index]))}`
-    const section = <div key={contentKey} className={`site-doc-section ${sectionClass} ${custom}`} data-site-animation={animation} {...safeDataAttributes(layout.desktop?.attributes)} style={vars as CSSProperties}><style>{customRules}</style>{node}</div>
+    const section = <div key={contentKey} id={anchor} className={`site-doc-section ${sectionClass} ${custom}`} data-site-animation={animation} data-site-tone={tone ? layout.desktop.tone : undefined} {...safeDataAttributes(layout.desktop?.attributes)} style={vars as CSSProperties}><style>{customRules}</style>{node}</div>
     return wrapSection ? wrapSection(section, indexes) : section
   }
   return <>

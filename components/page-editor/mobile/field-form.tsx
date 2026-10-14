@@ -60,11 +60,13 @@ function labelFor(key: string, field: AnyField): string {
 }
 
 // One labelled row wrapping a control. Generous vertical rhythm, >=44px targets.
-function Row({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+// `count` (the Frequency website editor's inspector, design: "Headline 12") shows the text's length beside its label.
+function Row({ label, htmlFor, count, children }: { label: string; htmlFor?: string; count?: number; children: React.ReactNode }) {
   return (
     <div className="border-b border-border px-4 py-4">
       <label htmlFor={htmlFor} className="mb-2 block text-body-sm font-medium text-text">
         {label}
+        {count !== undefined && <em>{count}</em>}
       </label>
       {children}
     </div>
@@ -78,12 +80,14 @@ function FieldControl({
   value,
   onChange,
   onPushScreen,
+  counts,
 }: {
   fieldKey: string
   field: AnyField
   value: unknown
   onChange: (v: unknown) => void
   onPushScreen: (req: PushRequest) => void
+  counts?: boolean
 }) {
   const id = useId()
   const label = labelFor(fieldKey, field)
@@ -91,7 +95,7 @@ function FieldControl({
   switch (field.type) {
     case 'text':
       return (
-        <Row label={label} htmlFor={id}>
+        <Row label={label} htmlFor={id} count={counts ? String(value ?? '').length : undefined}>
           <Input
             id={id}
             type="text" className="min-h-[44px]"
@@ -308,11 +312,14 @@ export function FieldForm({
   value,
   onChange,
   onPushScreen,
+  counts,
 }: {
   fields: FieldsSchema
   value: Record<string, unknown>
   onChange: (value: Record<string, unknown>) => void
   onPushScreen: (req: PushRequest) => void
+  /** Show each text field's character count beside its label. Off unless asked for. */
+  counts?: boolean
 }) {
   return (
     <div>
@@ -324,6 +331,7 @@ export function FieldForm({
           value={value?.[key]}
           onChange={(v) => onChange({ ...value, [key]: v })}
           onPushScreen={onPushScreen}
+          counts={counts}
         />
       ))}
     </div>

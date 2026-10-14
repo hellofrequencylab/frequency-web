@@ -8,14 +8,56 @@
    literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
    export has no token for (token-ok). */
 @layer components {
+/* THE HANDOFF'S GEOMETRY (HANDOFF-PAGE-EDITOR.md §1): a 56px top bar, a 280px rail and a 320px inspector.
+   Restated for every fold so it wins over the kit's mock values at equal specificity; preview carries all
+   three attributes so it beats any fold combination. */
+[data-design="frequency"] [data-kit="editor"] .pe{grid-template-rows:56px minmax(0,1fr)}
+@media (min-width:821px){
+[data-design="frequency"] [data-kit="editor"] .pe{grid-template-columns:280px minmax(0,1fr) 320px}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="1"]{grid-template-columns:60px minmax(0,1fr) 320px}
+[data-design="frequency"] [data-kit="editor"] .pe[data-rf="1"]{grid-template-columns:280px minmax(0,1fr) 0}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="1"][data-rf="1"]{grid-template-columns:60px minmax(0,1fr) 0}
+[data-design="frequency"] [data-kit="editor"] .pe[data-preview="1"][data-lf][data-rf]{grid-template-columns:0 minmax(0,1fr) 0}
+}
+/* Sprite icons (components/frequency/icon.tsx) where the kit sizes an inline svg by its parent. */
+[data-design="frequency"] [data-kit="editor"] .search .fq-icon{width:17px;height:17px;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .pick>button .fq-icon, [data-design="frequency"] [data-kit="editor"] .chg .fq-icon{width:16px;height:16px}
+[data-design="frequency"] [data-kit="editor"] .ih .ic .fq-icon{width:18px;height:18px}
+/* Design tab swatches: each tone in the SITE theme's own colours (the website renders the same aliases). */
+[data-design="frequency"] [data-kit="editor"] .opts i[data-tone="white"]{background:var(--color-surface-elevated)}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-tone="sand"]{background:var(--color-surface)}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-tone="pastel"]{background:linear-gradient(120deg,var(--color-primary-bg),transparent),var(--color-canvas)}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-tone="ink"]{background:var(--color-ink,var(--color-text))}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-width]{box-shadow:inset 0 0 0 1px var(--fq-border-hair);background:linear-gradient(90deg,transparent var(--w-gap),var(--fq-text-faint) var(--w-gap) calc(100% - var(--w-gap)),transparent calc(100% - var(--w-gap))) center/100% 4px no-repeat}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-width="narrow"]{--w-gap:34%}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-width="default"]{--w-gap:22%}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-width="wide"]{--w-gap:12%}
+[data-design="frequency"] [data-kit="editor"] .opts i[data-width="full"]{--w-gap:0%}
+[data-design="frequency"] [data-kit="editor"] .fld>.l em, [data-design="frequency"] [data-kit="editor"] .fld>label em{font-style:normal;font-weight:400;color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="editor"] .fld>.l{display:flex;justify-content:space-between}
+/* The shared field form's labels carry the design's character count on the right. */
+[data-design="frequency"] [data-kit="editor"] .fields label:has(>em){display:flex;justify-content:space-between;gap:8px}
+[data-design="frequency"] [data-kit="editor"] .fields label>em{font-style:normal;font-weight:400;color:var(--fq-text-faint)}
+/* Theme tab: the theme card's two swatches, the accent choices and the theme's own type sample. */
+[data-design="frequency"] [data-kit="editor"] .theme .sw i[data-swatch="bg"]{background:var(--th-bg)}
+[data-design="frequency"] [data-kit="editor"] .theme .sw i[data-swatch="accent"]{background:var(--th-accent)}
+[data-design="frequency"] [data-kit="editor"] .swatches button[data-swatch="theme"]{background:var(--th-accent)}
+[data-design="frequency"] [data-kit="editor"] .swatch-pick{position:relative;width:30px;height:30px;border-radius:50%;overflow:hidden;background:conic-gradient(var(--fq-x-violet-deep),var(--fq-pa),var(--fq-success),var(--fq-reward),var(--fq-x-violet-deep));box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="editor"] .swatch-pick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+[data-design="frequency"] [data-kit="editor"] .ic.type-aa{font:600 var(--fq-text-body-s)/1 var(--th-display-render)}
+[data-design="frequency"] [data-kit="editor"] .tg .btn{flex:none}
+[data-design="frequency"] [data-kit="editor"] .vera .chips button:disabled{opacity:.5;cursor:default}
+[data-design="frequency"] [data-kit="editor"] .vera .reply .acts{padding:0}
+[data-design="frequency"] [data-kit="editor"] .modal .drw{margin-top:18px}
 [data-design="frequency"] [data-kit="editor"] .save{border:0;background:none;padding:0;cursor:pointer;max-width:300px;overflow:hidden;text-overflow:ellipsis}
 [data-design="frequency"] [data-kit="editor"] .save span{overflow:hidden;text-overflow:ellipsis}
-[data-design="frequency"] [data-kit="editor"] .save-alert{position:absolute;top:68px;left:50%;transform:translateX(-50%);z-index:30;max-width:min(560px,90vw);padding:10px 16px;border:0;border-radius:var(--fq-radius-m);background:var(--fq-surface-raised);color:var(--fq-danger);font:500 var(--fq-text-meta)/1.4 var(--fq-font-sans);box-shadow:0 20px 40px -24px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="editor"] .save-alert{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:30;max-width:min(560px,90vw);padding:10px 16px;border:0;border-radius:var(--fq-radius-m);background:var(--fq-surface-raised);color:var(--fq-danger);font:500 var(--fq-text-meta)/1.4 var(--fq-font-sans);box-shadow:0 20px 40px -24px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="editor"] .faces span{display:grid;place-items:center;background:var(--fq-pa);color:var(--fq-text-strong);font:600 var(--fq-text-label)/1 var(--fq-font-sans)}
 /* The change count on Publish is a badge: the design's 12px badge step (#pubn in Page Editor.html). */
 [data-design="frequency"] [data-kit="editor"] .pub-badge{margin-left:2px;font:600 12px/1 var(--fq-font-sans);opacity:.75}
 [data-design="frequency"] [data-kit="editor"] .dot.live{background:var(--fq-success)}
-[data-design="frequency"] [data-kit="editor"] .dot.draft{background:var(--fq-reward)}
+[data-design="frequency"] [data-kit="editor"] .dot.changed{background:var(--fq-reward)}
+[data-design="frequency"] [data-kit="editor"] .dot.draft{background:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="editor"] .cap button:disabled{opacity:.4;cursor:default}
 [data-design="frequency"] [data-kit="editor"] .row:disabled, [data-design="frequency"] [data-kit="editor"] .blk:disabled{opacity:.45;cursor:default;transform:none}
 [data-design="frequency"] [data-kit="editor"] .ih .grow{flex:1;min-width:0}
@@ -71,8 +113,8 @@
 [data-design="frequency"] [data-kit="editor"] .stage .we-canvas-loading{color:var(--fq-text-muted);font:500 var(--fq-text-meta)/1.4 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="editor"] .rail .note b{color:var(--fq-text-strong)}
 @media (min-width:821px) and (max-width:1100px){
-[data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="0"]{grid-template-columns:264px minmax(0,1fr) 320px}
-[data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="0"][data-rf="1"]{grid-template-columns:264px minmax(0,1fr) 0}
+[data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="0"]{grid-template-columns:280px minmax(0,1fr) 320px}
+[data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="0"][data-rf="1"]{grid-template-columns:280px minmax(0,1fr) 0}
 [data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="1"][data-rf="1"]{grid-template-columns:60px minmax(0,1fr) 0}
 [data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .tabs{flex-direction:row;padding:10px 10px 0}
 [data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .tabs button{height:52px;border-radius:14px 14px 0 0}
@@ -80,7 +122,7 @@
 [data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail .body{display:block}
 [data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail .foot .lbl{display:inline}}
 @media (max-width:820px){
-[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"]:not([data-preview="1"]) .rail, [data-design="frequency"] [data-kit="editor"] .pe[data-rf="0"]:not([data-preview="1"]) .insp{visibility:visible;position:fixed;top:60px;bottom:0;z-index:30;width:min(340px,88vw);box-shadow:0 30px 60px -30px var(--fq-ink)}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"]:not([data-preview="1"]) .rail, [data-design="frequency"] [data-kit="editor"] .pe[data-rf="0"]:not([data-preview="1"]) .insp{visibility:visible;position:fixed;top:56px;bottom:0;z-index:30;width:min(320px,88vw);box-shadow:0 30px 60px -30px var(--fq-ink)}
 [data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail{left:0}
 [data-design="frequency"] [data-kit="editor"] .pe[data-rf="0"] .insp{right:0}
 [data-design="frequency"] [data-kit="editor"] .scroller{padding:12px 12px 132px}
