@@ -2,13 +2,40 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
 import { ReturnHome } from './return-home'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { AuthFrame } from '@/components/frequency/auth/auth-frame'
 
 export const metadata: Metadata = {
   title: 'Check Your Email',
   robots: { index: false, follow: false },
 }
 
+const MAIL_PATH =
+  'M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75'
+
 export default function ConfirmPage() {
+  // FREQUENCY (ADR-1737, build-time): the doorway frame, the same words, the same way back.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <AuthFrame
+        kicker="Magic link sent"
+        title="Check your email"
+        lead="We sent a magic link to your email address. Click the link to sign in. It expires in 60 minutes."
+      >
+        <span className="fqa-orb" aria-hidden="true">
+          <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d={MAIL_PATH} />
+          </svg>
+        </span>
+        <p className="fqa-note">
+          Didn&apos;t get it? Check your spam folder, or <Link href="/sign-in" className="fqa-link">try again</Link>.
+          Open the link on this device.
+        </p>
+        <ReturnHome />
+      </AuthFrame>
+    )
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-surface px-4">
       <FocusTemplate

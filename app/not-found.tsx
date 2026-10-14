@@ -1,11 +1,26 @@
 import Link from 'next/link'
 import { Radio } from 'lucide-react'
 import { NOT_FOUND_METADATA } from '@/lib/seo/not-found-metadata'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+import { SiteNotFound } from '@/components/frequency/site/shell/site-status'
 
 // One robots directive in the head, never two (LIVE-214, ADR-1276): see the module.
 export const metadata = NOT_FOUND_METADATA
 
 export default function NotFound() {
+  // FREQUENCY (ADR-1737, build-time). This is the 404 an unmatched URL gets (the (main) catch-all closes
+  // its params, so Next answers here at routing time). It stood bare on DAWN's canvas with a DAWN tile;
+  // under Frequency it is the website's own not-found hero inside the site shell, so a dead link still
+  // has the header, the search and the footer to find a way back. The shell reads no request data, so
+  // this stays static.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <SiteShell>
+        <SiteNotFound />
+      </SiteShell>
+    )
+  }
   return (
     <div className="min-h-screen bg-canvas flex items-center justify-center px-4">
       <div className="text-center max-w-sm">

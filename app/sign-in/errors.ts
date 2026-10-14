@@ -28,9 +28,25 @@ export const SIGN_IN_ERRORS = {
   oauth: 'Google sign-in did not go through. Try again, or use the email link.',
   /** /auth/callback could not exchange the code (expired, already used, different browser). */
   callback: 'That link did not work. Ask for a new one and open it on this device.',
+  /** The emailed link was past its expiry, or had already been used once (Supabase `otp_expired`). */
+  expired: 'That link has expired. Links work once and only for a short while, so ask for a new one.',
+  /** The person backed out of Google's consent screen (`access_denied` with no OTP code). */
+  denied: 'Google sign-in was cancelled. Try again, or use the email link.',
 } as const
 
 export type SignInErrorCode = keyof typeof SIGN_IN_ERRORS
+
+/**
+ * The code for an /auth/callback failure, read from what Supabase put on the callback URL. An expired
+ * or reused email link and a cancelled Google consent used to share the `callback` line, which told
+ * someone who pressed Cancel on Google to "ask for a new" link.
+ */
+export function callbackErrorCode(params: { error?: string | null; error_code?: string | null }): SignInErrorCode {
+  if (params.error_code === 'otp_expired') return 'expired'
+  if (params.error === 'access_denied') return 'denied'
+  return 'callback'
+}
+
 
 /** The generic line, for an absent or unrecognised code. */
 export const SIGN_IN_ERROR_FALLBACK = 'Something went wrong. Try that again.'

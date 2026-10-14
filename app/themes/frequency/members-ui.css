@@ -114,6 +114,8 @@
 [data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="cleared"] .ic{background:var(--color-success-bg);color:var(--fq-success)}
 [data-design="frequency"] [data-kit="members"] .mu-empty .t2{max-width:42ch}
 [data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act{margin-top:8px;display:flex;justify-content:center}
+/* The member status screens' row of ways back in (components/frequency/members/member-status.tsx). */
+[data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act.mu-ways{flex-wrap:wrap;gap:10px}
 
 /* StatCard: a `.panel` with the kit's `.k` label and `.num` reading; two denser sizes. */
 [data-design="frequency"] [data-kit="members"] .panel.mu-stat{display:flex;flex-direction:column;gap:8px;min-width:0}

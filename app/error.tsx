@@ -5,8 +5,30 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+import { SiteError } from '@/components/frequency/site/shell/site-error'
 
 export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  // FREQUENCY (ADR-1737, build-time): the website's "hit a snag" hero in the site shell. SiteError
+  // reports to Sentry itself, so the effect below is skipped on this branch (it would report twice).
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <SiteShell>
+        <SiteError error={error} reset={reset} lead="Something broke on our end. Try again, or head back home." />
+      </SiteShell>
+    )
+  }
+  return <DawnError error={error} reset={reset} />
+}
+
+function DawnError({
   error,
   reset,
 }: {
