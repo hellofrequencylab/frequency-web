@@ -40,9 +40,9 @@ describe('the Space console sidebar', () => {
 })
 
 describe('the operator console sidebar', () => {
-  const leaf = (id: string, label: string, href: string): ResolvedItem => ({ id, label, href, position: 0, colSpan: 1, mode: 'active', roleModes: {}, minAccess: 'host' })
+  const leaf = (id: string, label: string, href: string, minAccess: ResolvedItem['minAccess'] = 'host'): ResolvedItem => ({ id, label, href, position: 0, colSpan: 1, mode: 'active', roleModes: {}, minAccess })
   const categories: ResolvedCategory[] = [
-    { id: 'c0', label: 'Overview', position: 0, colSpan: 1, minAccess: 'admin', items: [leaf('o', 'Overview', '/admin')], children: [] },
+    { id: 'c0', label: 'Overview', position: 0, colSpan: 1, minAccess: 'admin', items: [leaf('o', 'Overview', '/admin', 'admin')], children: [] },
     {
       id: 'c1', label: 'Community', position: 1, colSpan: 1, minAccess: 'host', items: [leaf('c', 'Community', '/admin/community')],
       children: [{ id: 'c1a', label: 'Trust', position: 0, colSpan: 1, items: [leaf('m', 'Moderation', '/admin/moderation'), leaf('s', 'Support', '/admin/support')], children: [] }],
@@ -55,6 +55,16 @@ describe('the operator console sidebar', () => {
     expect(community.children?.map((c) => [c.label, c.badge])).toEqual([['Moderation', 3], ['Support', undefined]])
     expect(itemBadge(community)).toBe(3)
     expect(activeNav(items, '/admin/moderation', q()).leaf?.label).toBe('Moderation')
+  })
+  it('shows a section by its reachable pages, not its own floor (ADR-1745)', () => {
+    // A janitor-floored section holding one admin-gated tool (Platform holding Market): an admin who is
+    // not a janitor still reaches the tool, so the section shows and lands on it.
+    const platform: ResolvedCategory = {
+      id: 'c2', label: 'Platform', position: 2, colSpan: 1, minAccess: 'janitor', items: [leaf('p', 'Platform', '/admin/operations', 'janitor')],
+      children: [{ id: 'c2a', label: 'Commerce', position: 0, colSpan: 1, minAccess: 'janitor', items: [leaf('mk', 'Market', '/admin/marketplace', 'admin')], children: [] }],
+    }
+    const items = adminNavItems([platform], { viewerRole: 'admin' }, 0)
+    expect(items.map((i) => [i.label, i.href])).toEqual([['Platform', '/admin/marketplace']])
   })
   it('shows no badge on an empty queue', () => {
     const items = adminNavItems(categories, { viewerRole: 'janitor' }, 0)

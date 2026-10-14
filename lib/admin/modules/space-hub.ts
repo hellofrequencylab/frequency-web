@@ -34,11 +34,15 @@ export type { SpaceHubSection }
  *  a real tab now (ADR-788), NOT a header button, so Plan & Billing + Team + Reviews are one tap away. */
 export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string; blurb: string }[] = [
   { key: 'dashboard', label: 'Home', blurb: 'Your command center: revenue, members, what needs attention, and the latest activity.' },
-  { key: 'resonance', label: 'Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, and connections.' },
-  { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, QR codes, lead capture, and automation.' },
-  { key: 'offerings', label: 'Offerings & Money', blurb: 'Everything your space sells: bookings, memberships, donations, tickets, and the shop.' },
-  { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: practices, journeys, and recordings.' },
-  { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and roles, reviews, plan and billing, and the danger zone.' },
+  // The CRM tab's name is NAMING.md's "Community Resonance" (ADR-827: a Space's CRM tab), never the bare
+  // "Resonance", which is also the feed sort and the match header inside the tab (ADR-1745).
+  // Each blurb names what the tab's catalog rows actually hold (ADR-1745 audit): lead capture and
+  // automation sit on this tab, not Marketing, and no Space tool sells tickets (events do).
+  { key: 'resonance', label: 'Community Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, lead capture, and automation.' },
+  { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, its design and style, and QR codes.' },
+  { key: 'offerings', label: 'Offerings & Money', blurb: 'Getting paid, and everything your space sells: bookings, memberships, donations, and the shop.' },
+  { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: the calendar, practices, journeys, circles, recordings, and images.' },
+  { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and collaborators, reviews, plan and billing, and the danger zone.' },
 ]
 
 /** The default landing tab: the command-center Home (ADR-796). */
@@ -78,7 +82,7 @@ export function isSettingsModule(module: SpaceModule): boolean {
 /** The display name for each section (including the header-level Profile & Settings surface). */
 export const SPACE_HUB_SECTION_LABEL: Record<SpaceHubSection, string> = {
   dashboard: 'Home',
-  resonance: 'Resonance',
+  resonance: 'Community Resonance',
   marketing: 'Marketing',
   offerings: 'Offerings & Money',
   programs: 'Content & Programs',

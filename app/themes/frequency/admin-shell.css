@@ -11,6 +11,7 @@
 [data-design="frequency"] [data-kit="admin"] .ad-sub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px}
 [data-design="frequency"] [data-kit="admin"] .ad-sub a{height:34px;padding:0 12px 0 42px;font-size:var(--fq-text-meta);border-radius:12px}
 [data-design="frequency"] [data-kit="admin"] .ad-sub a.on{background:var(--fq-pa-soft);box-shadow:none}
+[data-design="frequency"] [data-kit="admin"] .ad-sub-h{padding:8px 12px 2px 42px;font-size:var(--fq-text-meta);font-weight:600;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch{position:relative}
 [data-design="frequency"] [data-kit="admin"] .ad-switch>summary{list-style:none;cursor:pointer}
 [data-design="frequency"] [data-kit="admin"] .ad-switch>summary::-webkit-details-marker{display:none}
