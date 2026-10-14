@@ -49,8 +49,8 @@
 [data-design="frequency"] [data-kit="members"] .ap-nav>a{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 16px 0 12px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:-.01em;white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
 [data-design="frequency"] [data-kit="members"] .ap-nav>a:hover{color:var(--fq-text-strong);background:var(--fqm-white-60)}
 [data-design="frequency"] [data-kit="members"] .ap-nav>a svg{width:17px;height:17px;opacity:.75}
-@media (max-width:1180px){[data-design="frequency"] [data-kit="members"] .ap-nav>a{padding:0 12px}
-[data-design="frequency"] [data-kit="members"] .ap-nav>a span{display:none}}
+/* The Home/Feed link keeps its word at every width (owner, 2026-10-14): an unlabelled house icon read as
+   decoration, and it is the member's one way back to the website. The section pills still go icon-only. */
 /* Phones follow the kit: under 720px the section pill and Zap give way to .ap-burger, which opens the
    left rail as a drawer (header.tsx draws it as .ap-rail-l; the kit slides it in on .rl-drawer). The
    drawer exists only where the kit shows the burger, and drops its slide under reduced motion. */
