@@ -5,7 +5,7 @@ import { headers, cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { FUNNELS } from '@/lib/funnels/definitions'
-import type { SignInErrorCode } from './errors'
+import { SIGN_IN_ERRORS, type SignInErrorCode } from './errors'
 // 🔴 A 'use server' module may export ONLY async functions: exporting this constant from here failed the
 // production build ("The module has no exports at all"), which tsc and vitest cannot see. It lives in
 // the pure helper instead.
@@ -161,6 +161,40 @@ export async function signInWithMagicLink(formData: FormData) {
   }
 
   redirect('/sign-in/confirm')
+}
+
+/**
+ * The Frequency beta entry's send (SCAN-879, components/frequency/site/pages/join/frequency-join.tsx).
+ * The SAME throttle buckets, the same post-login cookie, the same bare callback and the same signup
+ * OTP as signInWithMagicLink, which an unknown address turns into a new account exactly as the join
+ * induction always has. The one difference is the ending: it RETURNS instead of redirecting to
+ * /sign-in/confirm, because the entry sends the email as soon as the name and address are in and keeps
+ * the visitor on the page for the photo-and-location step while it travels. Errors are our own
+ * sentences (./errors.ts), never Supabase's.
+ */
+export async function sendSignupLink(formData: FormData): Promise<{ ok: true } | { ok: false; error: string }> {
+  const email = String(formData.get('email') ?? '').trim()
+  const mailbox = email.toLowerCase()
+  if (!mailbox) return { ok: false, error: SIGN_IN_ERRORS.send }
+  const next = safeNext(formData.get('next'))
+  if (!(await rateLimitOk('signin:ip', await callerIp(), IP_LIMIT, WINDOW, OPEN_WHEN_UNSET))) {
+    return { ok: false, error: SIGN_IN_ERRORS.rate }
+  }
+  if (!(await rateLimitOk('signin:email', mailbox, EMAIL_LIMIT, WINDOW, OPEN_WHEN_UNSET))) {
+    return { ok: false, error: SIGN_IN_ERRORS.rate }
+  }
+
+  await stashNext(next)
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: await getCallbackUrl(), shouldCreateUser: true },
+  })
+  if (error) {
+    console.error('[sign-in] signup link failed:', error.message)
+    return { ok: false, error: isProviderThrottle(error) ? SIGN_IN_ERRORS.rate : SIGN_IN_ERRORS.send }
+  }
+  return { ok: true }
 }
 
 /** Supabase's answer when `shouldCreateUser` is false and the address has no account: HTTP 422,
