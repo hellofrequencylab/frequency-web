@@ -48,6 +48,8 @@ interface EmailFooterInput {
    *  tokenless /manage-emails page so the link is never dead. */
   manageUrl?: string
   brand?: EmailBrand
+  /** A free Space's campaign carries one quiet "Sent with Frequency" line (ADR-1709, LIVE-751). */
+  sentWithFrequency?: boolean
 }
 
 interface EmailDocumentShellInput extends EmailFooterInput {
@@ -117,6 +119,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
       <p style="margin:0 0 14px;font-size:13px;line-height:1.6;">${links}</p>
       <p style="margin:0 0 4px;font-size:11px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
       <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
+      ${input.sentWithFrequency ? `<p style="margin:8px 0 0;font-size:11px;color:${colors.subtle};line-height:1.6;">Sent with <a href="${escapeHtml(base)}" style="color:${colors.subtle};">Frequency</a>.</p>` : ''}
     </td></tr>
   </table>`
 }
@@ -179,6 +182,8 @@ interface CompileEmailOptions extends RenderEmailOptions {
   unsubscribeUrl?: string
   /** The "Manage emails" preference-page URL for this recipient (see EmailFooterInput.manageUrl). */
   manageUrl?: string
+  /** See EmailFooterInput.sentWithFrequency. */
+  sentWithFrequency?: boolean
 }
 
 /**
@@ -197,10 +202,12 @@ export function compileEmailDoc(
     unsubscribeUrl: opts.unsubscribeUrl,
     manageUrl: opts.manageUrl,
     brand: opts.brand,
+    sentWithFrequency: opts.sentWithFrequency,
   })
   const footerLines: string[] = []
   if (opts.unsubscribeUrl) footerLines.push(`Unsubscribe: ${opts.unsubscribeUrl}`)
   if (opts.manageUrl) footerLines.push(`Manage emails: ${opts.manageUrl}`)
+  if (opts.sentWithFrequency) footerLines.push('Sent with Frequency.')
   const footerText = footerLines.length ? `\n\n---\n${footerLines.join('\n')}` : ''
   return { html, text: `${text}${footerText}`, subject: doc.subject, preheader: doc.preheader }
 }

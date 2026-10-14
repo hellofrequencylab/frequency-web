@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { promoteMembership } from '@/lib/spaces/memberships-actions'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // PROMOTE (ADR-824): flip a waitlist spot to an active membership. Space-admin gated server-side;
-// the action re-checks capacity so a promotion can't overfill the tier.
+// the action re-checks capacity so a promotion can't overfill the tier. Under Frequency the button is the
+// kit's small text button; DAWN markup is unchanged.
 
 export function MembershipPromoteButton({ membershipId }: { membershipId: string }) {
   const router = useRouter()
@@ -32,7 +34,11 @@ export function MembershipPromoteButton({ membershipId }: { membershipId: string
         type="button"
         onClick={promote}
         disabled={pending}
-        className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+        className={
+          SITE_DESIGN === 'frequency'
+            ? 'btn sm txt'
+            : 'inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50'
+        }
       >
         {pending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
         Promote

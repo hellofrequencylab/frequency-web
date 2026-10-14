@@ -40,6 +40,7 @@ import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canEmailContact, type ContactPurpose } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
+import { resolveSpaceInboxFrom } from '@/lib/comms/space-inbox-address'
 import type { NotificationTopic } from '@/lib/notification-preferences'
 import { normalizeEmailTopic } from './email-topics'
 import { recordContactInteraction } from '@/lib/crm/interactions'
@@ -548,8 +549,11 @@ async function deliverSpaceCampaign(
   } catch (err) {
     return fail(err instanceof Error ? err.message : 'Your campaign sender is unavailable. Nothing was sent.')
   }
-  // Reply-To: only set when the owner configured a real reply address; v1 has none on the Space, so
-  // replies go to the verified sender. (A per-Space reply inbox is a later, additive step.)
+  // Reply-To: the Space's own inbox address (hello@<slug>.<root>, EMAIL-022) once it is verified, so a
+  // reply lands in the Space's Conversations instead of the sender, which on the shared Frequency
+  // sender is a noreply. Null (no header) when the Space has no verified address: replies then go to
+  // the From, which is the owner's own verified sender when they set one (SCAN-865).
+  const replyTo = await resolveSpaceInboxFrom(spaceId)
 
   let sent = 0
   let suppressed = 0
@@ -648,6 +652,7 @@ async function deliverSpaceCampaign(
           subject,
           html: personalizedHtml,
           from: fromLine,
+          ...(replyTo ? { replyTo } : {}),
           headers,
           // The ledger row this job must move on at drain time (runSpaceCampaignEmail below). The
           // generic 'email' kind DISCARDS sendRawEmail's provider id, which would strand this row
@@ -831,6 +836,7 @@ export const runSpaceCampaignEmail: JobHandler = async (p, context) => {
     html: (p.html as string) ?? '',
     headers: (p.headers as Record<string, string> | undefined) ?? undefined,
     from: typeof p.from === 'string' ? p.from : undefined,
+    replyTo: typeof p.replyTo === 'string' ? p.replyTo : undefined,
   }, context)
   try {
     const db = createAdminClient() as unknown as {

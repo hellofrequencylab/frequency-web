@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-924",
+  "title": "Under Frequency a phone Feed shows the right rail's Today's goals, Your week, Your Circles this season and People to know after Up next",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/members/shell/right-rail.tsx",
+    "ref": "Frequency design system build handoff 2026-10-14, area 2: under 768px the right rail is hidden, so Your week, Today's goals, People to know and the local board never reach a phone. Recommended: a phone copy on the Feed only, after Up next, in the same order."
+  },
+  "detail": "FrequencyPhonePanels (right-rail.tsx) renders the rail's own GoalsPanel, YourWeekPanel, BoardPanel and PeoplePanel, each behind its own Suspense with a null fallback, so a panel with nothing to say still renders nothing. The Feed mounts it after the Up next planner. It is hidden at 768px and up (.fqm-rp-inline in members-shell.css), where the rail shows the originals. The reads are the rail's request-cached loaders (loadYourWeek, loadLocalBoard, loadPeopleToKnow) and loadGameStats, the same cache() read the layout starts, so a full page load adds no query. Feed only: every page would grow too long.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const rail=r('components/frequency/members/shell/right-rail.tsx'),feed=r('components/frequency/members/feed/feed-body.tsx'),css=r('app/themes/frequency/members-shell.css');const bad=[];const m=rail.match(/export function FrequencyPhonePanels[\\s\\S]*?\\n}\\n/);if(!m)bad.push('no phone copy of the rail panels');else for(const p of ['GoalsPanel','YourWeekPanel','PeoplePanel'])if(!m[0].includes('<'+p))bad.push('the phone copy lacks '+p);if(!/<FrequencyPhonePanels/.test(feed))bad.push('the Feed does not mount the phone panels');if(!/min-width:768px\\)\\{[^}]*\\.fqm-rp-inline\\{display:none\\}/.test(css))bad.push('the phone panels are not hidden where the rail shows');if(bad.length){console.error('LIVE-924: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

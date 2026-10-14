@@ -3,7 +3,7 @@
 // THE FREQUENCY PUBLIC HEADER (header v4): templates/website/web/megamenu.js, ported to React with the
 // kit's class names verbatim (app/themes/frequency/kit-site.css). Data: lib/frequency/site-nav.ts.
 //
-//   Left   logo (home; a member's feed), Feed first when signed in, then For people · For spaces · Features (menus) and Pricing · Stories (links).
+//   Left   logo (home; a member's feed), Feed first for everyone (Home on the Feed itself), then For people · For spaces · Features (menus) and Pricing · Stories (links).
 //   Right  search, Log in and the page's primary action; signed in, search and "Your feed".
 //   Menus  open on hover (fine pointers, 180ms intent, 60ms when one is already open, 280ms forgiving
 //          close) or click; ArrowDown opens and focuses the first link; Escape closes and returns focus.
@@ -31,7 +31,7 @@ import {
   WING_MENUS,
   featureHref,
   featuresWingHref,
-  memberFeedLink,
+  feedHomeLink,
   searchSite,
   siteLogoHref,
   type MegaCard,
@@ -209,7 +209,7 @@ export function SiteHeader() {
   const [hidden, setHidden] = useState(false)
   const [viewer, setViewer] = useState<{ initial: string } | null>(null)
   const member = useSyncExternalStore(noSubscribe, readAccountMarker, signedOutOnServer) || !!viewer
-  const feedLink = memberFeedLink(member)
+  const feedLink = feedHomeLink(pathname, member)
 
   const open = menu.isOpen ? menuKey : null
   const showMenu = useCallback(
@@ -394,11 +394,9 @@ export function SiteHeader() {
         </Link>
 
         <nav className="mm-bar" aria-label="Main">
-          {feedLink && (
-            <Link className="mm-trig" href={feedLink.href!} onMouseEnter={() => intent(hideMenu, 180)}>
-              {feedLink.label}
-            </Link>
-          )}
+          <Link className="mm-trig" href={feedLink.href} onMouseEnter={() => intent(hideMenu, 180)}>
+            {feedLink.label}
+          </Link>
           {([...WING_MENUS.map((m) => [m.key, m.label] as const), ['packages', FEATURES_LABEL] as const]).map(([k, label]) => (
             <button
               key={k}
@@ -579,11 +577,9 @@ export function SiteHeader() {
                 </>
               )}
             </div>
-            {feedLink && (
-              <Link className="mm-shlink" href={feedLink.href!}>
-                {feedLink.label}
-              </Link>
-            )}
+            <Link className="mm-shlink" href={feedLink.href}>
+              {feedLink.label}
+            </Link>
             {WING_MENUS.map((m) => (
               <details key={m.key} open={here === m.key}>
                 <summary>{m.label}</summary>

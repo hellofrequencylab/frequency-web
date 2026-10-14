@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-925",
+  "title": "The header's first item is Feed for everyone and reads Home on the Feed; a signed-out visitor opens /feed and gets a free-membership prompt after 30 seconds",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/site/shell/site-header.tsx",
+    "ref": "Owner 2026-10-14: 'Logged out view should start with Feed. When a logged out visitor clicks that, it opens the feed with a 30 second timeout popup for them to sign up for a free membership to view. Logged in visitors would see the same menu but feed would take them to the feed. When logged in visitors are on feed, the first button in the menu reads Home. Home: frequencylocal.com. Feed: frequencylocal.com/feed.'"
+  },
+  "detail": "Audit: the public header (site-header.tsx) drew Feed only for a signed-in member (memberFeedLink returned null signed out), and /feed was protected twice (proxy.ts PROTECTED_PATHS sent a visitor to /sign-in, and the (main) layout sends a signed-out request to /); the Feed page's signed-out branch rendered an empty list (FeedList returns nothing without a viewer). The member shell already did Feed / Home (homeFeedItem). Now: feedHomeLink (lib/frequency/site-nav.ts) is the public header's first item for everyone, in the bar and the phone sheet, reading Home on /feed (to /, or /?home for a member past the front door's Feed redirect). proxy.ts rewrites a signed-out bare /feed to app/(public)/feed-preview, so the address stays /feed and the page wears the public chrome; every /feed/* stays protected. The preview draws the public posts and next public events /discover already shows (lib/discover.ts public RPCs, no new data exposed), is noindex and covered by robots.ts's /feed disallow, and mounts FeedJoinGate: after 30 seconds (lib/feed/join-gate.ts, kept in sessionStorage so a reload does not reset it) a prompt to join free, log in, or go back to Home. Default chosen: the prompt does not close on Escape or a backdrop click.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const px=r('proxy.ts'),pg=r('app/(public)/feed-preview/page.tsx'),pf=r('components/feed/public-feed.tsx'),gate=r('lib/feed/join-gate.ts'),hdr=r('components/frequency/site/shell/site-header.tsx'),nav=r('lib/frequency/site-nav.ts');const bad=[];if(!/!user && pathname === FEED_PATH\\)[\\s\\S]{0,200}FEED_PREVIEW_PATH/.test(px))bad.push('a signed-out /feed is not rewritten to the preview');if(!/FEED_PREVIEW_PATH = '\\/feed-preview'/.test(px))bad.push('the preview path is not /feed-preview');if(!/<PublicFeed/.test(pg))bad.push('the preview page does not draw the public Feed');if(!/<FeedJoinGate/.test(pf))bad.push('the public Feed has no join prompt');if(!/FEED_PREVIEW_MS = 30_000/.test(gate))bad.push('the join prompt is not at 30 seconds');if(!/feedHomeLink\\(pathname, member\\)/.test(hdr)||/feedLink &&/.test(hdr))bad.push('the public header does not lead with Feed for everyone');if(!/label: 'Home'/.test(nav))bad.push('the first item never reads Home on the Feed');if(bad.length){console.error('LIVE-925: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

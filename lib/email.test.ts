@@ -12,6 +12,7 @@ vi.mock('@/lib/queue/outbox', () => ({
   },
 }))
 vi.mock('@/lib/suppression', () => ({ isSuppressed: async () => false }))
+vi.mock('@/lib/unsubscribe-tokens', () => ({ buildUnsubscribeUrl: () => 'https://frequencylocal.com/unsubscribe/t' }))
 
 import { emailShell, sendSignupRecoveryEmail, sendWelcomeEmail } from './email'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
@@ -75,5 +76,36 @@ describe('welcome email referral promise (LIVE-914)', () => {
       expect(part).toContain('you earn Zaps once they join a Circle or pick up a Practice')
       expect(part).not.toContain('\u2014')
     }
+  })
+})
+
+// SCAN-849: the 24h / 2h event reminder and the dispatch notice printed member-written text (an
+// event title, a location, a dispatch title and excerpt, a name) into the HTML part unescaped, so a
+// title like `<a href=...>` rendered as live markup in every attendee's inbox.
+describe('member text is escaped in the reminder and dispatch HTML (SCAN-849)', () => {
+  const evil = '<a href="https://evil.example">Win</a> & co'
+  const safe = '&lt;a href=&quot;https://evil.example&quot;&gt;Win&lt;/a&gt; &amp; co'
+
+  it('event reminder: title, name, when and location', async () => {
+    const { sendEventReminderEmail } = await import('./email')
+    await sendEventReminderEmail({
+      to: 'a@example.com', recipientName: evil, recipientProfileId: 'p1', eventTitle: evil,
+      whenLabel: 'tomorrow', whenAbsolute: 'Fri, Oct 16', location: evil, eventUrl: 'https://frequencylocal.com/events/x', lead: '24h',
+    })
+    const { html, text } = enqueued[0]
+    expect(html).not.toContain('<a href="https://evil.example">')
+    expect(html.split(safe).length - 1).toBe(3)
+    expect(text).toContain(evil)
+  })
+
+  it('dispatch notice: author, title, excerpt and name', async () => {
+    const { sendDispatchNotificationEmail } = await import('./email')
+    await sendDispatchNotificationEmail({
+      to: 'a@example.com', recipientName: evil, recipientProfileId: 'p1', authorName: evil,
+      dispatchTitle: evil, excerpt: evil, dispatchUrl: 'https://frequencylocal.com/d/x',
+    })
+    const { html } = enqueued[0]
+    expect(html).not.toContain('<a href="https://evil.example">')
+    expect(html.split(safe).length - 1).toBe(4)
   })
 })

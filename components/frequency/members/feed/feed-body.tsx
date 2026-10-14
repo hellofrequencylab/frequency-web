@@ -14,6 +14,8 @@ import { FeedPlanner } from './planner'
 import { feedWhyShown } from '@/lib/feed/why-pref'
 import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type GsStep } from './islands'
 import { FeedStream, type FeedSort, type JourneyRun } from './posts'
+import { FrequencyPhonePanels } from '../shell/right-rail'
+import { loadGameStats } from '@/components/sidebar/right-sidebar'
 
 // THE FREQUENCY MEMBER FEED (design_handoff/frequency/templates/members/README.md, the centre
 // column). Order: greeting, standing, Get started, one ranked pick, Near you, your people's plans,
@@ -118,8 +120,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
           Feed carries the same box inline there and nowhere else (.fqm-gs-inline). It sits above
           Standing for the rail's own order (Get started, then Stats and streaks): on a phone,
-          Standing IS the stats box. The rail's Your week has no phone copy, so an empty week shows
-          nothing there either. */}
+          Standing IS the stats box. The rail's other panels follow Up next (FrequencyPhonePanels). */}
       {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
 
       {/* Hidden on desktop while the right rail shows its full Stats & streaks box (members-shell.css). */}
@@ -159,6 +160,10 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       <Suspense fallback={<section className="fa-hero" aria-busy="true"><div className="fa-hero-body"><span className="k">Up next for you</span></div></section>}>
         <PlannerSection eventsP={eventsP} hasHome={!!p.home} profileId={p.profileId} />
       </Suspense>
+
+      {/* The right rail's panels, on a phone only (hidden at 768px and up). loadGameStats is the
+          layout's request-cached read, so this is the same promise's data, not a second query. */}
+      <FrequencyPhonePanels profileId={p.profileId} stats={loadGameStats(p.profileId).catch(() => null)} />
 
       <Suspense fallback={null}>
         <NeedsSection profileId={p.profileId} nextLesson={nextLesson} />
