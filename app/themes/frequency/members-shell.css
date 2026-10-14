@@ -751,3 +751,20 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 /* The header Zap's hover glow (Members.dc.html). */
 [data-design="frequency"] [data-kit="members"] .ap-zap:hover{box-shadow:0 18px 34px -14px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent)}
 }
+
+/* THE JOIN OVERLAY ON THE ANONYMOUS FEED (SCAN-889: components/frequency/members/feed/anon-join-gate.tsx).
+   The dialog IS the full-screen layer: the viewport, dimmed and blurred over the Feed, with the Join box
+   centred in it. Its ::backdrop stays clear so the one blur is this layer's own. The box is the kit's glass
+   card with the iridescent primary (.btn.pa). */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-join{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:var(--fq-space-4);border:0;background:color-mix(in oklab,var(--fq-ink) 45%,transparent);backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1);color:var(--fq-text-body);overflow:auto}
+[data-design="frequency"] [data-kit="members"] .fqm-join[open]{display:grid;place-items:center}
+[data-design="frequency"] [data-kit="members"] .fqm-join::backdrop{background:transparent}
+[data-design="frequency"] [data-kit="members"] .fqm-join-box{position:relative;width:min(460px,100%);border-radius:var(--fq-radius-l);overflow:hidden;background:color-mix(in oklab,var(--fq-surface-card) 92%,transparent);backdrop-filter:blur(24px) saturate(1.3);-webkit-backdrop-filter:blur(24px) saturate(1.3);box-shadow:var(--fq-shadow-float)}
+[data-design="frequency"] [data-kit="members"] .fqm-join-box>.fq-aura{opacity:.35}
+[data-design="frequency"] [data-kit="members"] .fqm-join-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:var(--fq-space-7) var(--fq-space-6) var(--fq-space-5);text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-join-h{font-size:clamp(26px,4vw,32px);line-height:1.05}
+[data-design="frequency"] [data-kit="members"] .fqm-join-p{margin:0;max-width:34ch;font:400 15px/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-join-acts{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-join-acts .btn{width:100%}
+}

@@ -18,7 +18,16 @@ import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { LEGACY_THEME_AXES, SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyMembersShell } from '@/components/frequency/members/shell/members-shell'
-import { FrequencyRightMicro, FrequencyRightRail } from '@/components/frequency/members/shell/right-rail'
+import {
+  FrequencyAnonRightMicro,
+  FrequencyAnonRightRail,
+  FrequencyRightMicro,
+  FrequencyRightRail,
+} from '@/components/frequency/members/shell/right-rail'
+import { AnonJoinGate } from '@/components/frequency/members/feed/anon-join-gate'
+import { isAnonShellFeed } from '@/lib/nav/anon-feed'
+import { ANON_FEED_PROFILE } from '@/lib/feed/anon-feed'
+import { DEFAULT_SKIN } from '@/lib/theme/skins'
 import type { DockData } from '@/components/sidebar/game-stats-dock'
 // The Frequency members kit and the shell's own rules. Both are scoped to
 // [data-design="frequency"] [data-kit="members"], so under DAWN they match nothing.
@@ -242,6 +251,46 @@ export default async function MainLayout({
   const user = await getCachedUser()
 
   if (!user) {
+    // THE FEED AS ANONYMOUS (SCAN-889; owner, 2026-10-14: "When a visitor goes to the feed, I want them to
+    // see the actual feed with their account as Anonymous"). Under Frequency a signed-out request for the
+    // bare /feed (proxy.ts lets exactly that one through, lib/nav/anon-feed.ts) renders the REAL member
+    // shell around the real Feed page, with a stand-in "Anonymous" viewer: no photo, no standing, no
+    // counts, no Circles, no admin. Nothing here reads for a viewer: the nav is the visitor column of the
+    // access matrix (pure), the rail is the public rail, and the Feed page reads public data only
+    // (lib/feed/anon-feed.ts). This layout is already a per-request render (headers() and the session read
+    // above), so nothing of this visitor is cached for anyone else. The join overlay rides over it all.
+    if (isAnonShellFeed(currentPath, SITE_DESIGN)) {
+      const visitorNav: Record<string, AccessLevel> = Object.fromEntries(
+        NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, { loggedIn: false }) : 'full']),
+      )
+      return (
+        <div data-skin={DEFAULT_SKIN} className="contents">
+          <FrequencyMembersShell
+            anonymous
+            profile={ANON_FEED_PROFILE}
+            previewVisitor
+            crew={false}
+            stats={Promise.resolve(null)}
+            sidebar={<FrequencyAnonRightRail />}
+            sidebarMicro={<FrequencyAnonRightMicro />}
+            banner={null}
+            unreadCount={0}
+            messagesUnread={0}
+            navAccess={visitorNav}
+            myFrequency={null}
+            operatesSpaces={false}
+            staffRole={null}
+            webRole="none"
+            caps={[]}
+            availableContexts={[]}
+            skin={DEFAULT_SKIN}
+          >
+            {children}
+            <AnonJoinGate />
+          </FrequencyMembersShell>
+        </div>
+      )
+    }
     if (isPublicView) return publicChrome()
     // The in-app Business Spaces directory (/spaces/directory) has a PUBLIC twin at /discover/spaces.
     // Send a logged-out visitor who lands on the member URL (e.g. a shared link) to the public browse
