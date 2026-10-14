@@ -20,14 +20,11 @@ import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 //   Notifications  the four-channel grid
 //   Privacy        Show me on leaderboards, who can find you, location precision, Resonance matching
 //   Location       home base, live location
-//   Feed           how far the feed reaches, and what the feed always does (it ends; night is Appearance)
+//   Feed           how far the feed reaches, Show why I see things (profiles.meta.feedWhyHidden, read
+//                  by the Feed's posts and planner, lib/feed/why-pref.ts), and what the feed always does
 //   Membership     plan and billing, then the Spaces you belong to
-//   Appearance     light or dark (and, under DAWN only, Midnight: the skin registry filters by design,
-//                  ADR-1737, so this pane never offers it here)
+//   Appearance     the theme (Frequency or Midnight, lib/theme/skins.ts) and light or dark
 //   Install the app
-//
-// The reference's "Show why I see things" switch is not drawn: nothing stores or reads that choice yet,
-// and a switch that saves nothing would be a lie.
 
 function Pending({ rows }: { rows: number }) {
   return (
@@ -118,7 +115,7 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
       anchors: [],
       content: (
         <>
-          <PaneHead title="Feed" intro="How far your feed reaches. The ripple still widens it on its own when your area is quiet." />
+          <PaneHead title="Feed" intro="How far your feed reaches, and what it tells you. Changes save instantly." />
           <Suspense fallback={<Pending rows={2} />}>
             <FeedPane />
           </Suspense>
@@ -150,7 +147,7 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
         <>
           <PaneHead
             title="Appearance"
-            intro={`Pick ${SELECTABLE_SKINS.length > 1 ? 'the palette, and ' : ''}light or dark. Changes save instantly.`}
+            intro={`Pick ${SELECTABLE_SKINS.length > 1 ? `your theme (${SELECTABLE_SKINS.map((s) => s.label).join(' or ')}), and ` : ''}light or dark. Changes save instantly.`}
           />
           <Suspense fallback={<Pending rows={2} />}>
             <AppearanceSection />

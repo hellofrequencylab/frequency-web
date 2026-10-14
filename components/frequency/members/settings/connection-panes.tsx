@@ -12,6 +12,8 @@ import { MatchPrefsForm } from '@/components/settings/match-prefs-form'
 import { BoardVisibilitySwitch } from '@/components/frequency/members/shared/board-visibility'
 import { isOptedOut } from '@/app/(main)/crew/leaderboard/opt-out'
 import { AccountForm } from './account-form'
+import { FeedWhySwitch } from './feed-why-switch'
+import { hidesFeedWhy } from '@/lib/feed/why-pref'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 
 // The Settings panes that the DAWN suite keeps in ONE "Connections and location" section
@@ -143,12 +145,19 @@ export async function LocationPane() {
 }
 
 export async function FeedPane() {
-  const prefs = await getMyConnectionPrefs()
+  const [prefs, row] = await Promise.all([getMyConnectionPrefs(), viewerRow()])
   if (!prefs) return null
   return (
     <div className="stack mc-gap-20">
       <FeedRadiusSlider initialRadiusM={prefs.feedRadiusM} />
       <div className="list">
+        <div>
+          <span className="grow">
+            <span className="t1 mc-block">Show why I see things</span>
+            <span className="t2">A short reason on picks and posts, like From your Circle or Near you.</span>
+          </span>
+          <FeedWhySwitch shown={!hidesFeedWhy(row?.meta)} />
+        </div>
         <div>
           <span className="grow">
             <span className="t1 mc-block">The feed ends when you are caught up</span>

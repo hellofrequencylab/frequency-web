@@ -75,14 +75,19 @@ export function JourneyBody({
   const learnHref = `/journeys/${plan.slug}/learn`
   const nextNumber = next ? numberOf.get(next.id) : undefined
 
-  const metaParts = [
-    `${tree.phases.length} ${tree.phases.length === 1 ? 'phase' : 'phases'}`,
-    `${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'}`,
-  ]
+  // A Journey with no lessons yet says so: never "0 phases · 0 lessons", never a Start that opens
+  // an empty player.
+  const empty = lessons.length === 0
+  const metaParts = empty
+    ? ['No lessons yet']
+    : [
+        `${tree.phases.length} ${tree.phases.length === 1 ? 'phase' : 'phases'}`,
+        `${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'}`,
+      ]
   if (tracked && next && nextNumber) metaParts.push(`Lesson ${nextNumber} next`)
   metaParts.push(peopleLine(plan.adoptCount))
 
-  const primary = inside ? (
+  const primary = empty ? null : inside ? (
     <Link className="btn pa lg" href={learnHref}>
       {tracked && tree.doneRequired > 0 ? 'Continue lesson' : 'Open the course'}
     </Link>
@@ -117,11 +122,15 @@ export function JourneyBody({
           <span>{percent}%</span>
         </div>
         <div className="stack grow mc-gap-10">
-          <span className="k">{tree.complete && tracked ? 'Every lesson done' : 'Up next'}</span>
+          <span className="k">{empty ? 'Still being written' : tree.complete && tracked ? 'Every lesson done' : 'Up next'}</span>
           <span className="h2">
             {next ? `${nextNumber ? `Lesson ${nextNumber} · ` : ''}${next.title}` : plan.title}
           </span>
-          {plan.summary && <span className="why">{plan.summary}</span>}
+          {plan.summary ? (
+            <span className="why">{plan.summary}</span>
+          ) : empty ? (
+            <span className="why">The first lessons land here as the guide writes them.</span>
+          ) : null}
           <div className="row wrap">
             {primary}
             {next && minutesLine(next) && <span className="t2">{minutesLine(next)}</span>}
@@ -141,9 +150,11 @@ export function JourneyBody({
             return (
               <div key={phase.id} id={i === 0 ? 'the-path' : undefined}>
                 <div className={i === 0 ? 'sec-h' : 'sec-h sec'}>
-                  <span className="h2">{phase.title}</span>
+                  <span className="h2">{phase.title?.trim() || `Phase ${i + 1}`}</span>
                   <span className="meta">
-                    {tracked
+                    {phaseLessons.length === 0
+                      ? 'No lessons yet'
+                      : tracked && phase.totalRequired > 0
                       ? `${phase.doneRequired} of ${phase.totalRequired} done`
                       : `${phaseLessons.length} ${phaseLessons.length === 1 ? 'lesson' : 'lessons'}`}
                   </span>

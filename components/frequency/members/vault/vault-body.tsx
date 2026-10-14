@@ -224,6 +224,11 @@ export async function VaultBody() {
         <div className="panel">
           <span className="k">Zaps · real world</span>
           <div className="list mc-top-8">
+            {zapCfg.length === 0 && (
+              <div>
+                <span className="t2">The Zap table is being set for this season.</span>
+              </div>
+            )}
             {zapCfg.map((r) => (
               <div key={r.action_type}>
                 <span className="t1 grow">{earnLabel(r)}</span>
@@ -235,6 +240,11 @@ export async function VaultBody() {
         <div className="panel">
           <span className="k">Gems · online, capped daily</span>
           <div className="list mc-top-8">
+            {gemCfg.length === 0 && (
+              <div>
+                <span className="t2">The Gem table is being set for this season.</span>
+              </div>
+            )}
             {gemCfg.map((r) => (
               <div key={r.action_type}>
                 <span className="t1 grow">{earnLabel(r)}</span>

@@ -116,16 +116,21 @@ export function JourneyCourseBody({
   const openCount = locks.filter((l) => !l.locked).length
   const currentIndex = cycle?.phaseIndex ?? next?.phaseIndex ?? Math.max(0, openCount - 1)
   const nextNumber = next ? numberOf.get(next.lesson.id) : undefined
+  // No lessons yet (a fresh Journey, or one whose author has not written the path): say so. Never
+  // "Week 1 of 0", "0 of 0 lessons done", or a Start that opens an empty player.
+  const empty = lessons.length === 0
 
   const metaParts: string[] = []
-  if (tree.phases.length > 0) {
+  if (tree.phases.length > 0 && !empty) {
     metaParts.push(`${unitWord(unit)} ${currentIndex + 1} of ${tree.phases.length}${cycle ? ` · Year ${cycle.year}` : ''}`)
   }
   if (next && nextNumber) metaParts.push(`Lesson ${nextNumber} next`)
   metaParts.push(`${adoptCount.toLocaleString()} ${adoptCount === 1 ? 'person' : 'people'} on this Journey`)
 
-  const kicker = tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : 'Up next'
-  const heroTitle = next
+  const kicker = empty ? 'Still being written' : tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : 'Up next'
+  const heroTitle = empty
+    ? 'No lessons yet.'
+    : next
     ? `${nextNumber ? `Lesson ${nextNumber} · ` : ''}${next.lesson.title}`
     : tree.complete
       ? cycle
@@ -134,7 +139,9 @@ export function JourneyCourseBody({
       : waiting && nextLock
         ? `${unlockLine(nextLock.unlockAt)}.`
         : title
-  const heroWhy = next
+  const heroWhy = empty
+    ? 'The path appears here as the guide writes it. You are enrolled, so it shows up for you the day it lands.'
+    : next
     ? phaseFocusById[tree.phases[next.phaseIndex]?.id ?? ''] || summary
     : tree.complete
       ? 'Every lesson is done. Revisit any of them below, any time.'
@@ -178,16 +185,20 @@ export function JourneyCourseBody({
           <span className="k">{kicker}</span>
           <span className="h2">{heroTitle}</span>
           {heroWhy && <span className="why">{heroWhy}</span>}
-          <div className="row wrap">
-            <Link className="btn pa lg" href={playHref(slug, next?.lesson.id)}>
-              {cta}
-            </Link>
-            {ctaSub && <span className="t2">{ctaSub}</span>}
-          </div>
-          <span className="t2">
-            {tree.doneRequired} of {tree.totalRequired} lessons done
-            {nextLock?.unlockAt && !waiting ? ` · Next ${unit} ${unlockLine(nextLock.unlockAt).toLowerCase()}` : ''}
-          </span>
+          {!empty && (
+            <div className="row wrap">
+              <Link className="btn pa lg" href={playHref(slug, next?.lesson.id)}>
+                {cta}
+              </Link>
+              {ctaSub && <span className="t2">{ctaSub}</span>}
+            </div>
+          )}
+          {tree.totalRequired > 0 && (
+            <span className="t2">
+              {tree.doneRequired} of {tree.totalRequired} lessons done
+              {nextLock?.unlockAt && !waiting ? ` · Next ${unit} ${unlockLine(nextLock.unlockAt).toLowerCase()}` : ''}
+            </span>
+          )}
         </div>
       </section>
 
@@ -217,7 +228,7 @@ export function JourneyCourseBody({
             </div>
           )}
 
-          {tree.phases.length === 0 && (
+          {empty && (
             <div className="empty">
               <p className="why">No lessons yet. The path appears here as the author writes it.</p>
             </div>
@@ -233,7 +244,13 @@ export function JourneyCourseBody({
                 <div className={i === 0 ? 'sec-h' : 'sec-h sec'}>
                   <span className="h2">{phaseHeading(p, i, unit)}</span>
                   <span className="meta">
-                    {lock.locked ? unlockLine(lock.unlockAt) : `${p.doneRequired} of ${p.totalRequired} done`}
+                    {lock.locked
+                      ? unlockLine(lock.unlockAt)
+                      : phaseLessons.length === 0
+                        ? 'No lessons yet'
+                        : p.totalRequired === 0
+                          ? 'Optional'
+                          : `${p.doneRequired} of ${p.totalRequired} done`}
                   </span>
                 </div>
                 {!lock.locked && phaseFocusById[p.id] && <p className="why mc-bottom-12">{phaseFocusById[p.id]}</p>}

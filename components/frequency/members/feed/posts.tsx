@@ -16,6 +16,7 @@ import type { PostScopeContext } from '@/components/feed/post-card'
 import { relativeTime } from '@/lib/utils'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FqAvatar, phStyle } from '../shared/avatar'
+import { feedWhyShown } from '@/lib/feed/why-pref'
 
 // THE STREAM (Frequency Member Feed, section 9). Posts sit between hairlines with no card, a dot
 // marks the source, and each can say why it is there. The rows are the platform's own feed RPC
@@ -57,11 +58,13 @@ export async function FeedStream({
   journey: JourneyRun | null
 }) {
   const fetchSort = sort === 'story' ? 'recent' : sort === 'nearby' && !nearby ? 'recent' : sort
-  const [loaded, orbit, hideDemo, dispatch] = await Promise.all([
+  const [loaded, orbit, hideDemo, dispatch, showWhy] = await Promise.all([
     loadFeedPage({ profileId: myProfileId, sort: fetchSort, nearby }),
     getMyOrbit(200),
     viewerHidesDemo(),
     sort === 'story' ? Promise.resolve(null) : loadLeadDispatch(myProfileId, nearby),
+    // Settings, Feed: "Show why I see things" (lib/feed/why-pref.ts).
+    feedWhyShown(myProfileId),
   ])
 
   if (loaded.kind === 'error') {
@@ -97,7 +100,7 @@ export async function FeedStream({
       key={p.id}
       post={p}
       scope={resolve(p.scope_id, p.author.id)}
-      why={sort === 'story' ? null : whyFor(p, people, mine)}
+      why={sort === 'story' || !showWhy ? null : whyFor(p, people, mine)}
       myProfileId={myProfileId}
       viewerRole={viewerRole}
     />
@@ -127,7 +130,7 @@ export async function FeedStream({
     <div data-visual-mask="feed-stream">
       {pinned.map(render)}
       {rest.slice(0, 2).map(render)}
-      {milestone && <MilestoneItem m={milestone} />}
+      {milestone && <MilestoneItem m={milestone} showWhy={showWhy} />}
       {journey && <JourneyRunItem journey={journey} />}
       {rest.slice(2, 5).map(render)}
       {classifieds.length >= 2 && <ClassifiedsItem tiles={classifieds} />}
@@ -291,7 +294,7 @@ function JourneyRunItem({ journey }: { journey: JourneyRun }) {
   )
 }
 
-function MilestoneItem({ m }: { m: StreakMilestoneItem }) {
+function MilestoneItem({ m, showWhy }: { m: StreakMilestoneItem; showWhy: boolean }) {
   const first = m.name.trim().split(/\s+/)[0] || m.name
   return (
     <article className="fa-post fa-milestone">
@@ -305,7 +308,7 @@ function MilestoneItem({ m }: { m: StreakMilestoneItem }) {
           </span>
           <span className="fa-src">Practice streak</span>
         </span>
-        <span className="fa-whytag">From your people</span>
+        {showWhy && <span className="fa-whytag">From your people</span>}
       </div>
       <div className="row wrap" style={{ gap: 12 }}>
         <Link href={`/people/${m.handle}`} className="btn">

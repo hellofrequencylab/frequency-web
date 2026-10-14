@@ -24,7 +24,9 @@
 
 :root[data-design="frequency"],
 [data-design="frequency"] [data-surface="stage"],
-[data-design="frequency"][data-surface="stage"] {
+[data-design="frequency"][data-surface="stage"],
+[data-design="frequency"] [data-skin],
+[data-design="frequency"][data-skin] {
   /* ── Faces (lib/theme/design-fonts/frequency.ts registers them through next/font) ── */
   --fq-font-display: var(--font-unbounded, 'Unbounded'), var(--font-hanken, 'Hanken Grotesk'), system-ui, sans-serif;
   --fq-font-serif: var(--font-instrument-serif, 'Instrument Serif'), Georgia, serif;
@@ -183,4 +185,54 @@
 /* The wordmark is an image: the export's --logo-filter turns it light on Stage and at night. */
 [data-design="frequency"] [data-brand-wordmark] {
   filter: var(--fq-logo-filter, none);
+}
+
+/* ══ MIDNIGHT, the member theme (owner, 2026-10-13, ADR-1737) ═══════════════════════════════════════
+   A member picks Midnight in Settings, Appearance; the members layout stamps [data-skin] on a wrapper
+   around the shell. The export has no Midnight, so this is Frequency's own palette moved cooler, built
+   only from export tokens: blue hour by day (sky haze over linen, UV ink), the UV temple (Night A) at
+   night, keeping Commons-at-night's violet action and aqua focus. The alias rule above lists these
+   selectors too (any [data-skin]), so every DAWN name re-resolves here and DAWN's own [data-skin="midnight"] block,
+   which retunes DAWN's palette, never shows through. */
+[data-design="frequency"] [data-skin="midnight"],
+[data-design="frequency"][data-skin="midnight"] {
+  --fq-bg-canvas: color-mix(in oklab, var(--fq-sky-haze) 30%, var(--fq-linen));
+  --fq-bg-sunken: color-mix(in oklab, var(--fq-sky-haze) 50%, var(--fq-linen));
+  --fq-surface-card: color-mix(in oklab, var(--fq-sky-haze) 10%, var(--fq-linen));
+  --fq-surface-glass: color-mix(in oklab, var(--fq-surface-card) 74%, transparent);
+  --fq-glass-panel: linear-gradient(150deg, color-mix(in oklab, var(--fq-linen) 70%, transparent), color-mix(in oklab, var(--fq-sky-haze) 34%, transparent));
+  --fq-text-strong: var(--fq-uv-900);
+  --fq-text-body: color-mix(in oklab, var(--fq-uv-800) 45%, var(--fq-ink-2));
+  --fq-border-hair: color-mix(in oklab, var(--fq-uv-900) 9%, transparent);
+  --fq-border-strong: color-mix(in oklab, var(--fq-uv-900) 20%, transparent);
+  --fq-track: color-mix(in oklab, var(--fq-uv-900) 7%, transparent);
+}
+.dark[data-design="frequency"] [data-skin="midnight"],
+.dark[data-design="frequency"][data-skin="midnight"] {
+  --fq-bg-canvas: var(--fq-uv-void);
+  --fq-bg-sunken: color-mix(in oklab, var(--fq-uv-void) 70%, var(--fq-th-void));
+  --fq-surface-card: var(--fq-uv-900);
+  --fq-surface-raised: var(--fq-uv-800);
+  --fq-surface-glass: color-mix(in oklab, var(--fq-uv-800) 60%, transparent);
+  --fq-glass-panel: linear-gradient(150deg, color-mix(in oklab, var(--fq-uv-800) 70%, transparent), color-mix(in oklab, var(--fq-uv-800) 45%, transparent));
+  --fq-text-strong: var(--color-on-ink);
+  --fq-text-body: var(--color-on-ink-muted);
+  --fq-text-muted: var(--color-on-ink-subtle);
+  --fq-text-faint: color-mix(in oklab, var(--color-on-ink-subtle) 70%, var(--fq-uv-900));
+  --fq-border-hair: color-mix(in oklab, var(--color-on-ink) 9%, transparent);
+  --fq-border-strong: color-mix(in oklab, var(--color-on-ink) 20%, transparent);
+  --fq-track: color-mix(in oklab, var(--color-on-ink) 8%, transparent);
+}
+
+/* The Frequency swatch inside a Midnight room (the Appearance picker's preview strip): back to the
+   export's own Commons day and Thermal night, so each card shows its own palette. */
+[data-design="frequency"] [data-skin="midnight"] [data-skin="default"] {
+  --fq-bg-canvas: var(--fq-sand-50);
+  --fq-bg-sunken: var(--fq-sand-100);
+  --fq-surface-card: var(--fq-linen);
+}
+.dark[data-design="frequency"] [data-skin="midnight"] [data-skin="default"] {
+  --fq-bg-canvas: var(--fq-th-void);
+  --fq-bg-sunken: var(--fq-th-900);
+  --fq-surface-card: var(--fq-th-900);
 }

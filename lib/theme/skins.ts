@@ -48,6 +48,9 @@ export interface SkinDef {
    * system. Outside this list the skin is neither offered nor applied; it resolves to `default`.
    */
   designs: readonly DesignId[]
+  /** The label and line a picker shows under a design whose look differs from DAWN's (the default
+   *  skin IS the design, so under Frequency it is called Frequency, not Dawn). */
+  copy?: Partial<Record<DesignId, { label: string; description: string }>>
 }
 
 /** Every registered skin. `default` (DAWN) is first; it is the fallback everywhere. */
@@ -59,6 +62,7 @@ export const SKINS: readonly SkinDef[] = [
     selectable: true,
     // `default` carries no overrides, so it is the base of every design.
     designs: ['dawn', 'frequency'],
+    copy: { frequency: { label: 'Frequency', description: 'The signature look: warm sand by day, the thermal room at night.' } },
   },
   {
     id: 'midnight',
@@ -71,16 +75,22 @@ export const SKINS: readonly SkinDef[] = [
     // skin changes the FEEL and not just the hue.
     //
     // Owner call, 2026-10-13 (ADR-1737): Midnight becomes a theme for users. Members pick it in
-    // Settings, Appearance. It is authored over DAWN's tokens, so it is offered and applied under DAWN
-    // only until a Frequency Midnight is written (add 'frequency' to `designs` with its CSS).
+    // Settings, Appearance. DAWN's Midnight lives in app/globals.css; Frequency's own Midnight (blue
+    // hour by day, the UV temple at night, built from the export's tokens) in app/themes/frequency.css.
     selectable: true,
-    designs: ['dawn'],
+    designs: ['dawn', 'frequency'],
+    copy: { frequency: { label: 'Midnight', description: 'A cooler, deeper take: blue hour by day, the UV room at night.' } },
   },
 ]
 
 /** The skins a member may actually pick. Every user-facing picker reads THIS, never SKINS —
  *  SKINS is the full registry and stays the source of truth for resolution and rendering. */
-export const SELECTABLE_SKINS: readonly SkinDef[] = SKINS.filter((s) => s.selectable && s.designs.includes(SITE_DESIGN))
+export const SELECTABLE_SKINS: readonly SkinDef[] = SKINS.filter((s) => s.selectable && s.designs.includes(SITE_DESIGN)).map(
+  (s) => {
+    const copy = s.copy?.[SITE_DESIGN]
+    return copy ? { ...s, ...copy } : s
+  },
+)
 
 /** The fallback skin id. An unknown or missing `spaces.skin` value resolves to this. */
 export const DEFAULT_SKIN: SkinId = 'default'
