@@ -106,12 +106,13 @@ vi.mock('@/lib/queue/outbox', async (orig) => ({
 // The provider seam, now reached only by the DRAIN half (runSpaceCampaignEmail). Returns the fake
 // Resend id (`nextSendId`; null models sending-disabled/suppressed) and throws on `throwOnSend` so
 // the handler's retry posture can be asserted.
-const rawSends: { to: string; subject: string; from?: string; headers?: Record<string, string> }[] = []
+const rawSends: { to: string; subject: string; from?: string; replyTo?: string; headers?: Record<string, string> }[] = []
 vi.mock('@/lib/email', () => ({
   sendRawEmail: async (payload: {
     to: string
     subject: string
     from?: string
+    replyTo?: string
     headers?: Record<string, string>
   }) => {
     if (throwOnSend) throw new Error('provider boom')
@@ -307,6 +308,8 @@ function outreachBuilder() {
 
 const identity = vi.hoisted(() => ({ resolve: vi.fn(async (): Promise<{ identityId: string; from: string } | null> => null) }))
 vi.mock('./email-domain-onboarding', () => ({ resolveSpaceEmailDefaultIdentity: identity.resolve }))
+const inbox = vi.hoisted(() => ({ from: vi.fn(async (): Promise<string | null> => null) }))
+vi.mock('@/lib/comms/space-inbox-address', () => ({ resolveSpaceInboxFrom: inbox.from }))
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -546,6 +549,27 @@ describe('sendSpaceCampaign: the owner-chosen Campaigns sender (EMAIL-011/012)',
     const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
     expect('error' in r && r.error).toMatch(/not verified yet/)
     expect(sends).toHaveLength(0)
+  })
+})
+
+// SCAN-865: a Space campaign went out with no Reply-To, so on the shared Frequency sender a reply
+// landed at a noreply. Once the Space's own inbox address is verified, replies go there.
+describe('sendSpaceCampaign: replies reach the Space (SCAN-865)', () => {
+  it('sets Reply-To to the Space inbox address when it is verified, and the drain passes it on', async () => {
+    inbox.from.mockResolvedValueOnce('River Studio <hello@river.frequencylocal.com>')
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r).toBe(false)
+    expect(inbox.from).toHaveBeenCalledWith('space-A')
+    expect(sends[0]!.replyTo).toBe('River Studio <hello@river.frequencylocal.com>')
+    db.outreach.push(seedQueuedRow('send-rt'))
+    await runSpaceCampaignEmail({ ...sends[0], outreachSendId: 'send-rt' })
+    expect(rawSends[0].replyTo).toBe('River Studio <hello@river.frequencylocal.com>')
+  })
+
+  it('sets no Reply-To when the Space has no verified inbox address', async () => {
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r).toBe(false)
+    expect('replyTo' in sends[0]!).toBe(false)
   })
 })
 
