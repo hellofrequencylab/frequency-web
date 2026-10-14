@@ -4,6 +4,8 @@ import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { SupportChatLauncher } from '@/components/chat/support-chat-launcher'
 import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
 import { Wordmark } from '@/components/layout/wordmark'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Shared chrome for every public /discover page: the SiteHeader (light variant,
 // since these are content pages rather than the hero splash) and a footer. The
@@ -20,6 +22,20 @@ import { Wordmark } from '@/components/layout/wordmark'
 // round trips plus the page's own full query set, on every hit. Now the anonymous shell (which IS
 // the indexable view) renders statically and a member's chrome swaps in after hydration.
 export default function DiscoverLayout({ children }: { children: React.ReactNode }) {
+  // THE DESIGN SWITCH (ADR-1737, build-time), as app/(marketing)/layout.tsx makes it. Under Frequency the
+  // town calendar and the directories wear the public Frequency chrome (header v4, whose signed-in state
+  // and Feed link resolve after paint, so these pages stay static), on COMMONS: they are listings, where
+  // people find and RSVP, not a pitch (guidelines/site-themes.md). A page can choose Stage with a row in
+  // lib/frequency/site-pages.ts. DAWN is unchanged below.
+  if (SITE_DESIGN === 'frequency') {
+    const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
+    return (
+      <SiteShell surface="commons" after={chat}>
+        {children}
+      </SiteShell>
+    )
+  }
+
   return (
     <ViewerProvider>
       <SiteHeader variant="light" authMode="client" />

@@ -17,8 +17,10 @@ export default async function PublicShareLayout({ children }: { children: React.
   // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency these share pages wear the public
   // Frequency chrome, exactly as app/(marketing)/layout.tsx does, so a listing or a product opened
   // from the member Marketplace never lands in DAWN's header. SiteShell reads no request data, so
-  // the ISR pages under this group stay static.
-  if (SITE_DESIGN === 'frequency') return <SiteShell>{children}</SiteShell>
+  // the ISR pages under this group stay static. Public detail pages are COMMONS (a Space, a listing, an
+  // event: things to read and act on, guidelines/site-themes.md), so the members kit bodies here (the
+  // Space chrome) wear the light theme they were drawn for.
+  if (SITE_DESIGN === 'frequency') return <SiteShell surface="commons">{children}</SiteShell>
   const [headerMenu, footerMenu, menuTimings] = await Promise.all([
     getMenu('header'),
     getMenu('footer'),

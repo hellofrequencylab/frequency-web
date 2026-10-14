@@ -13,6 +13,20 @@ import { ROUTES, type Side } from '@/lib/frequency/site-nav'
 
 export type Energy = 'still' | 'flow' | 'charge'
 
+/**
+ * Which of the two site themes a page's BODY wears (guidelines/site-themes.md, ADR-1740). The header and
+ * the footer are Stage on every page; only <main> changes.
+ *
+ *   stage    dark, the design's marketing pages: sell the feeling (Home, People, Spaces, Pricing, …).
+ *   commons  light (Thermal at night), where doing and reading happen: listings and the town calendar
+ *            (/discover), public detail pages (app/(public)), legal and utility pages. The site-themes
+ *            rule: never put long reading on Stage.
+ *
+ * Each layout passes its family's default to <SiteShell surface>; a row here (or <SitePage surface>)
+ * overrides it for one route. Rendered as `data-surface` on the kit root, so a body's CSS can follow it.
+ */
+export type Surface = 'stage' | 'commons'
+
 /** The hue keys fx.js uses: violet, magenta, aqua, sun, UV cyan, UV lime, and the side colour. */
 export type Hue = 'v' | 'm' | 'a' | 's' | 'c' | 'l' | 'side'
 
@@ -40,6 +54,8 @@ export interface SitePageState {
   /** 1 = Pricing (fewer, fainter orbs), 2 = Help (orbs in the hero only). */
   quiet?: 1 | 2
   cta?: HeaderCta
+  /** The body's theme. Unset: the layout's default (SiteShell `surface`). */
+  surface?: Surface
 }
 
 export const DEFAULT_PAGE: SitePageState = { mood: 'page', energy: 'flow', hues: ['v', 'm', 'a'], side: 'p', locked: true }

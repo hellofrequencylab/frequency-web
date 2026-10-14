@@ -129,6 +129,9 @@ export const COMPOSITIONS = {
   CaptureShell: 'components/crm/leads/capture-shell.tsx',
   // The /unsubscribe card every state renders inside (confirm, done, invalid, preference center).
   UnsubscribeFrame: 'app/unsubscribe/card.tsx',
+  // The legal page frame (/privacy, /terms, /guidelines, /space-email-policy): FocusTemplate under DAWN,
+  // the site's reading layout under Frequency (ADR-1737).
+  LegalPage: 'components/legal/legal-page.tsx',
   // The podcast show page, shared by the public and in-app routes: DetailTemplate with a show band.
   ShowPageView: 'components/airwaves/show-page-view.tsx',
   // The onboarding wizard and the persona sequence runner: both are WizardShell walks.
