@@ -6,10 +6,12 @@ import { contactIdFromRowId, isContactRowId, loadSpaceResonanceRoster } from '@/
 import type { MemberSummary } from '@/lib/people/member-viewer'
 import type { ResonanceTier } from '@/lib/traits/compute'
 import { HOME_TZ } from '@/lib/time/zone'
-import { AdminHead, AdminPageBody, EMPTY, n } from '../shared'
+import { SpaceMemberViewer } from '@/components/spaces/crm/space-member-viewer'
+import { AdminHead, AdminPageBody, EMPTY, Kpi, n } from '../shared'
 import { DAY_MS, visitsByProfile } from '../checkin-stats'
 import { loadSpaceCheckins } from '../space-reads'
 import { ContactsTable, ExportContactsButton, type ContactRow, type ContactTone } from './contacts-table'
+import { ContactsViews } from './contacts-views'
 
 // THE SPACE CONTACTS, FREQUENCY (design_handoff/frequency/templates/admin/Contacts.html). The console's
 // Resonance tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/crm/space-resonance-crm.tsx. The
@@ -21,6 +23,12 @@ import { ContactsTable, ExportContactsButton, type ContactRow, type ContactTone 
 // Last visit and Visits are the verified check-ins on this Space's events (space-reads.ts loadSpaceCheckins),
 // per member. An imported contact has no profile to check in with, and a failed read has no reading: both
 // show the design's empty value ("—"). Export writes the rows on screen to a CSV in the browser.
+//
+// THE WORKSPACE (owner, 2026-10-14: the new console lost the old contact system). Above the table sit the four
+// health numbers the DAWN stat row showed, and the page opens on the Workspace view: the SAME master-detail
+// roster DAWN renders (SpaceMemberViewer: search, sort, Role/Business/Activity/Tier/Lifecycle facets, the
+// selected person's card with stats, timeline, deal stage, notes, custom fields, win-back and the message
+// composer), so nothing the old page did is lost. Table is the design's flat list, one click away.
 
 const TIERS: readonly ResonanceTier[] = ['resonant', 'cooling', 'at_risk']
 const TONE: Record<ResonanceTier, ContactTone> = { resonant: 'ok', cooling: 'warn', at_risk: 'bad' }
@@ -103,7 +111,21 @@ export async function FqContactsBody({
           </>
         }
       />
-      <ContactsTable rows={rows} />
+      <div className="g4 adp-kpi-row">
+        <Kpi label="Members" value={n(health.members)} note={health.members === 1 ? 'scored member' : 'scored members'} />
+        <Kpi
+          label="Active this week"
+          value={n(health.weeklyActive)}
+          note={health.members === 0 ? 'no members scored yet' : `of ${n(health.members)} scored`}
+        />
+        <Kpi label="At risk" value={n(health.atRisk)} note="in the red tier" />
+        <Kpi
+          label="Resonance health"
+          value={health.members === 0 ? EMPTY : n(Math.round(health.meanHealth))}
+          note={`${n(health.resonant)} resonant · ${n(health.cooling)} cooling`}
+        />
+      </div>
+      <ContactsViews workspace={<SpaceMemberViewer spaceId={spaceId} slug={slug} />} table={<ContactsTable rows={rows} />} />
     </AdminPageBody>
   )
 }

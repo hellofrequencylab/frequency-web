@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completenessScore, isRealName } from '@/lib/crm/completeness'
 import { rosterFromProfileIds } from '@/lib/people/roster-from-ids'
@@ -144,7 +145,11 @@ async function loadSpaceResonanceContacts(
 
 /** THE unified space Resonance roster: every active member + every un-stitched contact, newest first.
  *  The single source the space Community Resonance master-detail renders. Caller gates space-manage. */
-export async function loadSpaceResonanceRoster(spaceId: string): Promise<MemberSummary[]> {
+export const loadSpaceResonanceRoster = cache(loadSpaceResonanceRosterUncached)
+
+// Request-cached above: the Frequency Contacts page reads the roster for its table and its Workspace view in
+// one render, and the reads behind it are a service-role fan-out worth doing once.
+async function loadSpaceResonanceRosterUncached(spaceId: string): Promise<MemberSummary[]> {
   const members = await loadSpaceResonanceMembers(spaceId)
   const memberIds = new Set(members.map((m) => m.id))
   const contacts = await loadSpaceResonanceContacts(spaceId, memberIds)
