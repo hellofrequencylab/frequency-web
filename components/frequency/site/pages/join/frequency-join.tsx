@@ -1,147 +1,275 @@
 'use client'
 
-// The /join FRONT on the Frequency design (templates/website/Join.html): the two-pane Get started
-// screen, Looking or Hosting, and a short form.
+// The /join BETA ENTRY on the Frequency design (SCAN-879): the stock way in, one short sequence with as
+// little in the way as possible. Drawn in the Join template's two-pane grammar
+// (templates/website/Join.html: `.jx`, `.jx-art`, `.jx-panel`, `.jx-box`, `.jx-f`).
 //
-// 🔴 NO NEW AUTH PATH. The reference's forms were front-end only (README: "wire form.jx-f to the
-// backend"). They are wired to the induction's OWN actions, in the order the induction itself uses
-// them, and then hand the visitor to the existing induction, which still collects the name and
-// handle and signs them in through signInWithMagicLink / signInWithGoogle at its last beat:
-//   1. stashPendingInduction parks the town (and the interests) at beat 1, so /join resumes the
-//      induction past its intro with the town already filled in;
-//   2. captureLead opens the lead row with the email (the induction's Beat 0 capture, same source,
-//      bounded to two seconds exactly like persistForAuth, because lead bookkeeping must never hold
-//      a visitor on a spinner);
-//   3. the browser goes to /join with a persona (and, for a host, `next=/spaces/new`, the same safe
-//      in-app destination path the induction already honours), which renders the induction.
-// The reference's success panels (sample events near you, a Space "on the map") are not rendered:
-// they were sample data, and the real next screen is the induction.
+//   1. Name and email. Saved the moment they are sent (the parked-induction cookie and the lead row),
+//      and the sign-in email goes out straight away.
+//   2. A photo and a place: "Turn on location" (the browser's own prompt), a typed town as the fallback.
+//      Both are optional; each is saved as it is given.
+//   3. Check your email. The link signs them in at /join/complete, which writes the profile.
 //
-// CHROME. app/join/(induction)/page.tsx renders this inside the site shell (<SiteShell>), so /join
-// wears the design's header, footer and FX like every other public page; this body is the page
-// between them (a `div.jx`, since the shell owns <main>).
+// 🔴 NO NEW AUTH PATH AND NO NEW DATA. Everything runs through actions that already exist:
+//   · stashPendingInduction parks the answers in the cookie /join/complete's finalizer reads after sign-in
+//     (finalizePendingInduction -> writeInduction), exactly as the deferred induction does;
+//   · captureLead / updateLead keep the follow-up lead row, bounded so lead bookkeeping never holds anyone
+//     on a spinner;
+//   · sendSignupLink is signInWithMagicLink's own send (same throttle, same post-login cookie, same signup
+//     OTP), returning instead of redirecting so the visitor stays for step 2;
+//   · the photo is parked in localStorage under the key the finalizer uploads from, shrunk first through
+//     the same prep the induction uses (prepareImageForUpload + downscaleImageFile).
+// The profile needs a handle; the induction asks for one, this entry derives it from the name (the
+// induction's own suggestion rule) and checks it against /api/check-handle, adding digits if it is taken.
+// A member changes it later in settings.
 //
-// SIDE STATE IS THE SHELL'S. Join.html is the one page besides Home whose side is not locked: its
-// Looking / Hosting switch is a `data-set` toggle, remembered with the rest of the site's side and
-// chosen by `#people` / `#spaces` on arrival (lib/frequency/site-pages.ts). So the switch reads and
-// sets the shell's side (useSiteSide), and `--fq-side`, the art, the copy and the form all follow it.
-// Each half still renders conditionally, so only the picked form is in the DOM.
+// CHROME. app/join/(induction)/page.tsx renders this inside the site shell (<SiteShell>); this body is
+// the page between the header and the footer (a `div.jx`, since the shell owns <main>).
+
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useSiteSide } from '@/components/frequency/site/shell/site-root'
 import '@/app/themes/active/site-pages-b'
 import { stashPendingInduction } from '@/app/join/(induction)/actions'
-import { captureLead } from '@/app/join/(induction)/lead-actions'
-import type { PersonaId } from '@/lib/onboarding/personas'
-import { PLAN_STORY } from '@/lib/pricing/plan-story'
+import { captureLead, updateLead } from '@/app/join/(induction)/lead-actions'
+import { sendSignupLink } from '@/app/sign-in/actions'
 import { Input } from '@/components/ui/field'
-import { Select } from '@/components/ui/select'
+import { getBrowserPosition } from '@/lib/geo-browser'
+import { reversePlace, searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
+import { downscaleImageFile } from '@/lib/images/downscale-image'
+import { prepareImageForUpload } from '@/lib/library/image-shrink'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { getInitials } from '@/lib/utils'
 
-const INTERESTS = ['Moving', 'Making', 'Eating', 'Sitting still', 'Going out'] as const
-
-/** The reference's Space types, each mapped to the induction persona that branches its reel. */
-const SPACE_TYPES: { label: string; persona: PersonaId }[] = [
-  { label: 'Studio', persona: 'partner' },
-  { label: 'Coach or practitioner', persona: 'practitioner' },
-  { label: 'Event host', persona: 'builder' },
-  { label: 'Café or venue', persona: 'partner' },
-  { label: 'Non Profit', persona: 'builder' },
-]
-
-/** Where a host lands once the induction completes: Create a Space. */
-const HOST_NEXT = '/spaces/new'
-
+/** The key /join/complete's finalizer uploads the parked photo from (complete/finalizer.tsx). */
+const PENDING_AVATAR_KEY = 'fq_pending_avatar'
+/** Where the emailed link lands: the finalizer that writes the profile. */
+const COMPLETE_PATH = '/join/complete'
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+const HANDLE_RE = /^[a-z0-9_]{3,30}$/
+const STEP_LABELS = ['Your name', 'Your photo and place', 'Check your email'] as const
 
-/** captureLead, bounded: a hung limiter or attribution read must never become a stuck form. */
-async function captureBounded(input: Parameters<typeof captureLead>[0]) {
+type Step = 1 | 2 | 3
+type Place = { label: string; lat: number | null; lng: number | null }
+
+/** The induction's suggestion rule ("Daniel Tyack" -> "danieltyack"), padded to the three-letter floor. */
+function baseHandle(name: string): string {
+  const h = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24)
+  return h.length >= 3 ? h : `${h || 'member'}${'000'.slice(h.length)}`.slice(0, 24)
+}
+
+async function handleFree(handle: string): Promise<boolean> {
   try {
-    await Promise.race([captureLead(input), new Promise((resolve) => setTimeout(resolve, 2000))])
+    const res = await fetch(`/api/check-handle?handle=${encodeURIComponent(handle)}&userId=`)
+    const { available } = (await res.json()) as { available: boolean }
+    return available
+  } catch {
+    return false
+  }
+}
+
+/** A free handle for this name: the plain one, else up to three tries with four digits on the end. If
+ *  every check fails the last candidate is kept; the finalizer reports a clash rather than guessing. */
+async function pickHandle(name: string): Promise<string> {
+  const base = baseHandle(name)
+  if (HANDLE_RE.test(base) && (await handleFree(base))) return base
+  let candidate = base
+  for (let i = 0; i < 3; i++) {
+    candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`
+    if (await handleFree(candidate)) break
+  }
+  return candidate
+}
+
+/** Lead bookkeeping, bounded: a hung limiter or attribution read must never become a stuck form. */
+async function bounded(p: Promise<unknown>) {
+  try {
+    await Promise.race([p, new Promise((resolve) => setTimeout(resolve, 2000))])
   } catch {
     /* the lead row is a follow-up aid, never a precondition for joining */
   }
 }
 
-export function FrequencyJoin() {
-  const router = useRouter()
-  const [side, setSide] = useSiteSide()
-  const [picked, setPicked] = useState<string[]>([])
+export function FrequencyJoin({
+  initialStep = 1,
+  initialName = '',
+  initialHandle = '',
+  initialPlace = '',
+}: {
+  /** RESUME: a browser that already sent its name and email reopens on step 2. */
+  initialStep?: 1 | 2
+  initialName?: string
+  initialHandle?: string
+  initialPlace?: string
+}) {
+  const [side] = useSiteSide()
+  const [step, setStep] = useState<Step>(initialStep)
+  const [name, setName] = useState(initialName)
+  const [email, setEmail] = useState('')
+  const [handle, setHandle] = useState(initialHandle)
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
+  const [resent, setResent] = useState(false)
 
-  function toggle(interest: string) {
-    setPicked((p) => (p.includes(interest) ? p.filter((x) => x !== interest) : [...p, interest]))
-  }
+  // Step 2
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [place, setPlace] = useState<Place | null>(initialPlace ? { label: initialPlace, lat: null, lng: null } : null)
+  const [locating, setLocating] = useState(false)
+  const [locNote, setLocNote] = useState('')
+  const [query, setQuery] = useState(initialPlace)
+  const [results, setResults] = useState<PlaceSuggestion[]>([])
+  const cityRef = useRef<HTMLInputElement>(null)
 
-  function park(town: string, interests: string) {
+  // Move focus to the new step's panel, so keyboard and screen-reader users land on it.
+  const boxRef = useRef<HTMLDivElement>(null)
+  const firstPaint = useRef(true)
+  useEffect(() => {
+    if (firstPaint.current) {
+      firstPaint.current = false
+      return
+    }
+    boxRef.current?.focus({ preventScroll: true })
+  }, [step])
+
+  // Town typeahead (Photon, the same source the induction's city field uses).
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2 || term === place?.label) return
+    const ctrl = new AbortController()
+    const t = setTimeout(async () => setResults(await searchPlaces(term, ctrl.signal)), 280)
+    return () => {
+      clearTimeout(t)
+      ctrl.abort()
+    }
+  }, [query, place])
+
+  function park(fields: { displayName: string; handle: string; place: Place | null; beat: number }) {
     return stashPendingInduction({
-      displayName: '',
-      handle: '',
+      displayName: fields.displayName,
+      handle: fields.handle,
       bio: '',
-      location: town,
-      lat: null,
-      lng: null,
+      location: fields.place?.label ?? '',
+      lat: fields.place?.lat ?? null,
+      lng: fields.place?.lng ?? null,
       intent: '',
-      interests,
+      interests: '',
       heardAbout: '',
-      beat: 1,
+      beat: fields.beat,
     })
   }
 
-  function onLooking(e: React.FormEvent<HTMLFormElement>) {
+  async function send(address: string): Promise<boolean> {
+    const fd = new FormData()
+    fd.set('email', address)
+    fd.set('next', COMPLETE_PATH)
+    const res = await sendSignupLink(fd)
+    if (!res.ok) setError(res.error)
+    return res.ok
+  }
+
+  function onStart(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    const town = String(fd.get('town') ?? '').trim()
-    const email = String(fd.get('email') ?? '').trim()
-    if (!EMAIL_RE.test(email)) return setError('That email doesn’t look right. Check it and try again.')
+    const displayName = name.trim()
+    const address = email.trim()
+    if (!displayName) return setError('Add your name so people know who they’re meeting.')
+    if (!EMAIL_RE.test(address)) return setError('That email doesn’t look right. Check it and try again.')
     setError('')
     startTransition(async () => {
       try {
-        await park(town, picked.join(', '))
-        await captureBounded({
-          email,
-          step: 1,
-          source: 'beta_induction',
-          payload: { town, interests: picked, side: 'looking' },
-        })
-        router.push('/join?persona=visitor')
+        const h = handle || (await pickHandle(displayName))
+        setHandle(h)
+        // Saved first: the answers outlive a failed send, a closed tab, or a link opened tomorrow.
+        await park({ displayName, handle: h, place, beat: 1 })
+        await bounded(
+          captureLead({ email: address, step: 1, source: 'beta_induction', displayName, handle: h, payload: { entry: 'beta' } }),
+        )
+        if (await send(address)) setStep(2)
       } catch {
         setError('Something went wrong on our side. Try again in a moment.')
       }
     })
   }
 
-  function onHosting(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    const name = String(fd.get('name') ?? '').trim()
-    const type = SPACE_TYPES.find((t) => t.label === fd.get('type')) ?? SPACE_TYPES[0]!
-    const town = String(fd.get('town') ?? '').trim()
-    const email = String(fd.get('email') ?? '').trim()
-    if (!EMAIL_RE.test(email)) return setError('That email doesn’t look right. Check it and try again.')
+  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoError('')
+    const prepared = await prepareImageForUpload(file)
+    if ('error' in prepared) return setPhotoError(prepared.error)
+    const small = await downscaleImageFile(prepared.file)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(String(r.result))
+        r.onerror = reject
+        r.readAsDataURL(small)
+      })
+      localStorage.setItem(PENDING_AVATAR_KEY, dataUrl)
+      setPhoto(URL.createObjectURL(small))
+    } catch {
+      setPhotoError('That photo would not save here. You can add one later from your profile.')
+    }
+  }
+
+  function choose(p: PlaceSuggestion) {
+    setPlace(p)
+    setQuery(p.label)
+    setResults([])
+  }
+
+  async function turnOnLocation() {
+    setLocNote('')
+    setLocating(true)
+    const pos = await getBrowserPosition()
+    if (!pos) {
+      setLocating(false)
+      setLocNote('Location is off for this site. Type your town instead.')
+      cityRef.current?.focus()
+      return
+    }
+    const found = await reversePlace(pos.lat, pos.lng)
+    setLocating(false)
+    if (!found) {
+      setLocNote('We found you but not your town’s name. Type it instead.')
+      cityRef.current?.focus()
+      return
+    }
+    choose(found)
+  }
+
+  function onFinish(skip: boolean) {
     setError('')
     startTransition(async () => {
       try {
-        await park(town, '')
-        await captureBounded({
-          email,
-          step: 1,
-          source: 'beta_induction',
-          payload: { town, spaceName: name, spaceType: type.label, side: 'hosting' },
-        })
-        router.push(`/join?persona=${type.persona}&next=${encodeURIComponent(HOST_NEXT)}`)
+        const chosen = skip ? null : place
+        if (chosen) {
+          await park({ displayName: name.trim(), handle, place: chosen, beat: 2 })
+          void updateLead({ step: 2, payload: { location: chosen.label } }).catch(() => {})
+        }
+        setStep(3)
       } catch {
         setError('Something went wrong on our side. Try again in a moment.')
       }
+    })
+  }
+
+  function onResend() {
+    setError('')
+    setResent(false)
+    startTransition(async () => {
+      if (await send(email.trim())) setResent(true)
     })
   }
 
   const looking = side === 'p'
+  const label = STEP_LABELS[step - 1]
+  const photoSrc = safeUploadPreviewSrc(photo)
 
   return (
-    <div className="jx" data-screen-label="01 Get started">
+    <div className="jx" data-screen-label={`0${step} ${label}`}>
       <div className="jx-art">
         <Image
           src={looking ? '/brand/frequency/photos/day-meditation-circle.jpg' : '/brand/frequency/photos/gathering-09.jpg'}
@@ -152,100 +280,213 @@ export function FrequencyJoin() {
         />
         <span className="rings" aria-hidden="true" />
         <div className="jx-q">
-          <span className="k">{looking ? 'For people' : 'For spaces'}</span>
-          {looking ? (
-            <blockquote>
-              A hundred contacts. <em>No one to call on a Tuesday.</em>
-            </blockquote>
-          ) : (
-            <blockquote>
-              You’ve built a community. <em>Let them find it.</em>
-            </blockquote>
-          )}
-          {!looking && (
-            <span className="jx-proof">
-              <i className="fq-breathe" />
-              <span>Spaces rank by how often they gather, never by who paid.</span>
-            </span>
-          )}
+          <span className="k">Beta launch</span>
+          <blockquote>
+            A hundred contacts. <em>No one to call on a Tuesday.</em>
+          </blockquote>
+          <span className="jx-proof">
+            <i className="fq-breathe" />
+            <span>Free while we’re in beta. No card.</span>
+          </span>
         </div>
       </div>
       <div className="jx-panel">
-        <div className="jx-box">
-          <div>
-            <h1>Get started</h1>
-          </div>
-          <p className="sub">
-            {looking
-              ? 'Free, forever. Tell us where you are and we’ll show you what’s happening.'
-              : 'Free until you charge. Your contacts stay yours.'}
-          </p>
-          <div className="jx-seg" role="group" aria-label="I am" data-on={side}>
-            <span className="thumb" />
-            <button type="button" data-set="p" aria-pressed={looking} onClick={() => setSide('p')}>
-              Looking<small>for an experience</small>
-            </button>
-            <button type="button" data-set="e" aria-pressed={!looking} onClick={() => setSide('e')}>
-              Hosting<small>an experience</small>
-            </button>
-          </div>
+        <div
+          key={step}
+          ref={boxRef}
+          tabIndex={-1}
+          role="group"
+          aria-label={`Step ${step} of 3: ${label}`}
+          className="jx-box jb-box"
+        >
+          <ol className="jb-steps" aria-label={`Step ${step} of 3`}>
+            {STEP_LABELS.map((s, i) => (
+              <li key={s} data-on={i + 1 <= step} aria-current={i + 1 === step ? 'step' : undefined}>
+                <span className="sr-only">{s}</span>
+              </li>
+            ))}
+          </ol>
 
-          {looking ? (
-            <form className="jx-f" onSubmit={onLooking}>
-              <label>
-                Your town
-                <Input name="town" required placeholder="San Diego" autoComplete="address-level2" />
-              </label>
-              <div className="jx-lab" role="group" aria-labelledby="jx-likes">
-                <span id="jx-likes">What do you like doing?</span>
-                <span className="jx-chips">
-                  {INTERESTS.map((i) => (
-                    <button key={i} type="button" aria-pressed={picked.includes(i)} onClick={() => toggle(i)}>
-                      {i}
-                    </button>
-                  ))}
-                </span>
+          {step === 1 && (
+            <>
+              <div>
+                <h1>Get started</h1>
               </div>
-              <label>
-                Email
-                <Input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
-              </label>
-              {error && <p className="jx-err" role="alert">{error}</p>}
-              <button className="btn fq-iri-btn" type="submit" disabled={pending}>
-                {pending ? 'One sec…' : 'Show me what’s happening'}
-              </button>
-              <p className="jx-fine">One email when something you’d like is near you. No feed, no spam.</p>
-            </form>
-          ) : (
-            <form className="jx-f" onSubmit={onHosting}>
-              <label>
-                Space name
-                <Input name="name" required placeholder="Saltwater Studio" />
-              </label>
-              <div className="jx-row">
+              <p className="sub">Your name and email. That’s it. We’ll send a link to sign you in.</p>
+              <form className="jx-f" noValidate onSubmit={onStart}>
                 <label>
-                  Type
-                  <Select name="type" defaultValue={SPACE_TYPES[0]!.label}>
-                    {SPACE_TYPES.map((t) => (
-                      <option key={t.label}>{t.label}</option>
-                    ))}
-                  </Select>
+                  Your name
+                  <Input
+                    name="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Sam Rivera"
+                    autoComplete="name"
+                  />
                 </label>
                 <label>
-                  Town
-                  <Input name="town" required placeholder="San Diego" autoComplete="address-level2" />
+                  Email
+                  <Input
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
                 </label>
+                {error && (
+                  <p className="jx-err" role="alert">
+                    {error}
+                  </p>
+                )}
+                <button className="btn fq-iri-btn" type="submit" disabled={pending}>
+                  {pending ? 'One sec…' : 'Continue'}
+                </button>
+                <p className="jx-fine">Saved as soon as you continue. No feed, no spam.</p>
+              </form>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <div>
+                <h1>Add a face and a place</h1>
               </div>
-              <label>
-                Email
-                <Input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
-              </label>
-              {error && <p className="jx-err" role="alert">{error}</p>}
-              <button className="btn fq-iri-btn" type="submit" disabled={pending}>
-                {pending ? 'One sec…' : 'Open my Space'}
-              </button>
-              <p className="jx-fine">{`Free to host. 0% on your own regulars, ${PLAN_STORY.plusProcessing}.`}</p>
-            </form>
+              <p className="sub">
+                Your link is on its way. While it travels: a photo helps people say yes, and your town shows you
+                what’s near.
+              </p>
+
+              <div className="jb-photo">
+                <button type="button" onClick={() => fileRef.current?.click()}>
+                  {photoSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- a blob: preview this browser minted
+                    <img src={photoSrc} alt="Your photo" className="jb-av" />
+                  ) : (
+                    <span className="jb-av" aria-hidden="true">
+                      {getInitials(name) || '?'}
+                    </span>
+                  )}
+                  <span>{photoSrc ? 'Change photo' : 'Add a photo'}</span>
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPhoto} />
+              </div>
+              {photoError && <p className="jx-err">{photoError}</p>}
+
+              <div className="jx-f">
+                <div className="jb-loc">
+                  <span className="jb-loc-k">Your town</span>
+                  <button className="btn btn-ghost fq-iri-rim" type="button" onClick={turnOnLocation} disabled={locating}>
+                    {locating ? 'Finding you…' : 'Turn on location'}
+                  </button>
+                  <span className="jx-fine jb-left">Your browser asks first. We keep the town, not your street.</span>
+                  {locNote && (
+                    <p className="jx-err" role="status">
+                      {locNote}
+                    </p>
+                  )}
+                </div>
+                <label>
+                  Or type your town
+                  <span className="jb-city">
+                    <Input
+                      ref={cityRef}
+                      type="text"
+                      role="combobox"
+                      aria-expanded={results.length > 0}
+                      aria-controls="jb-city-list"
+                      aria-autocomplete="list"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value)
+                        setPlace(null)
+                        if (e.target.value.trim().length < 2) setResults([])
+                      }}
+                      placeholder="San Diego"
+                      autoComplete="off"
+                    />
+                    {results.length > 0 && (
+                      <ul id="jb-city-list" role="listbox" aria-label="Town suggestions" className="jb-list">
+                        {results.map((r) => (
+                          <li key={`${r.label}-${r.lat}`} role="option" aria-selected={place?.label === r.label}>
+                            <button type="button" onMouseDown={() => choose(r)}>
+                              {r.label}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </span>
+                </label>
+                {place && (
+                  <p className="jb-place" role="status">
+                    <i className="fq-breathe" aria-hidden="true" />
+                    {place.label}
+                  </p>
+                )}
+                {error && (
+                  <p className="jx-err" role="alert">
+                    {error}
+                  </p>
+                )}
+                <button className="btn fq-iri-btn" type="button" onClick={() => onFinish(false)} disabled={pending}>
+                  {pending ? 'One sec…' : 'Continue'}
+                </button>
+                <button className="jb-skip" type="button" onClick={() => onFinish(true)} disabled={pending}>
+                  Skip for now
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <div>
+                <h1>Check your email</h1>
+              </div>
+              <p className="sub">
+                {email ? (
+                  <>
+                    We sent a sign-in link to <b>{email}</b>. Open it on this device and you’re in.
+                  </>
+                ) : (
+                  <>Open the sign-in link we sent you, on this device, and you’re in.</>
+                )}
+              </p>
+              <p className="jx-fine jb-left">It can take a minute. Check spam if it hasn’t arrived.</p>
+              {error && (
+                <p className="jx-err" role="alert">
+                  {error}
+                </p>
+              )}
+              {resent && (
+                <p className="jb-place" role="status">
+                  <i className="fq-breathe" aria-hidden="true" />
+                  Sent again.
+                </p>
+              )}
+              <div className="jx-f">
+                {email && (
+                  <button className="btn btn-ghost fq-iri-rim" type="button" onClick={onResend} disabled={pending}>
+                    {pending ? 'Sending…' : 'Send it again'}
+                  </button>
+                )}
+                <button
+                  className="jb-skip"
+                  type="button"
+                  onClick={() => {
+                    setError('')
+                    setResent(false)
+                    setStep(1)
+                  }}
+                >
+                  Use a different email
+                </button>
+              </div>
+            </>
           )}
 
           <div className="jx-alt">

@@ -52,10 +52,10 @@ its importer renders and in the same order; under DAWN every stub is empty, so a
 Frequency CSS. The committed stubs are DAWN's, and `lib/theme/design.test.ts` fails on a committed
 Frequency stub, a missing or stray stub, or any direct import of a design sheet.
 
-**Preview locally.** `?design=frequency` stamps the attribute only (stored in
-`localStorage['freq-design']`; `?design=off` clears it): since the sheets load per design, it shows
-Frequency only in a build whose stubs already import them. For the real thing, `pnpm design:use frequency`
-and restart `pnpm dev`; `pnpm design:use dawn` before committing.
+**Preview locally.** `pnpm design:use frequency` and restart `pnpm dev`; `pnpm design:use dawn` before committing.
+There is no `?design=` URL switch: it stamped an attribute whose sheets the build did not carry and
+unstyled production for anyone who opened such a link (SCAN-850). The pre-paint script clears its old
+`localStorage['freq-design']` key.
 
 **Adding a design** = an id in `DesignId` and `DESIGNS`, its sheets in `app/themes/<id>.css` and
 `app/themes/<id>/`, and `pnpm design:use dawn` once to write their (empty) stubs. The test fails until

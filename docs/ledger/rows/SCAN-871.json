@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-871",
+  "title": "On a phone the home story's What's on panel shows its events instead of an empty dark box, and the Browse / Host switch steps aside while the visitor scrolls down",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/themes/frequency/site-pages-a.css",
+    "ref": "Owner 2026-10-14: the mobile design needs tune ups (two phone screenshots of the home page: an empty band above 01 Find, and the floating switch over the heading)."
+  },
+  "detail": "Under 900px kit-site.css sets .fqm{height:auto!important} and site-pages-a.css places the story panel's list absolutely, so the What's on panel in the 01 Find chapter collapsed to 0px and a phone saw an empty 16:11 frame above the heading. The panel now fills its chapter frame. The home dock (the Browse / Host switch) spans the column on a phone and sat on whatever the visitor was reading; at 760px and below it shows only while they scroll back up (site-fx.tsx), and it is unchanged on larger screens.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const css=fs.readFileSync('app/themes/frequency/site-pages-a.css','utf8'),fx=fs.readFileSync('components/frequency/site/shell/site-fx.tsx','utf8');const bad=[];if(!/\\.chap-map \\.fqm\\.pa-static\\{height:100%!important\\}/.test(css))bad.push('the story panel still collapses on phones');if(!/phone\\.matches \\|\\| y < lastY/.test(fx))bad.push('the dock still covers text while a phone scrolls down');if(bad.length){console.error('SCAN-871: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

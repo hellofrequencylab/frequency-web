@@ -405,3 +405,6 @@
   [data-design="frequency"] [data-kit="admin"] .ad-main .adp-planner .adp-plan-hide-s { display: none; }
   [data-design="frequency"] [data-kit="admin"] .ad-main .adp-planner .adp-plan-menu { right: auto; left: 0; }
 }
+
+/* Contacts: the Workspace / Table switch sits between the health numbers and the view it picks. */
+[data-design="frequency"] [data-kit="admin"] .adp .chips.adp-views{margin:var(--fq-space-7) 0 20px}

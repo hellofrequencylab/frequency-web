@@ -12,6 +12,7 @@
 #   lib/journeys/friends-on-journey.ts: accepted friends (blocks dropped) enrolled in one Journey, cross-user enrolment rows RLS does not serve; as DAWN lib/feed/feed-people.ts names friends.
 #   lib/profile/in-person.ts: count-only check-in/met/tenure numbers on a profile, the stats DAWN app/(main)/people/[handle]/page.tsx reads; practice counts owner-only.
 # ADR-1743: lib/events/public-venue.ts reads one PUBLIC published event's venue columns (revoked from anon by SCAN-209) for its JSON-LD, drops every venue column on the server when hide_address is not explicitly false, and writes nothing.
+# SCAN-867: lib/events/public-join-door.ts reads one public event's tiers, capacity and booking window for the signed-out RSVP and ticket forms on the ISR share page (a session client would void the cache). It writes nothing and returns only what the member page already shows a signed-out visitor.
 # EMAIL-022: the Space inbox address module provisions and routes mail from the Resend webhook and the settings action after their own authorization (owner guard on the action, signed webhook on inbound); it reads and writes only space_inbox_addresses and the conversation rows it opens, under service role because no member session exists on the inbound path.
 # EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
 # LIVE-902: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
@@ -949,6 +950,7 @@ lib/events/placement.ts
 lib/events/plan-link.ts
 lib/events/poster-media.ts
 lib/events/poster-quality.ts
+lib/events/public-join-door.ts
 lib/events/public-venue.ts
 lib/events/questions.ts
 lib/events/reactions.ts

@@ -37,6 +37,7 @@ import {
   parseThemeMode,
   resolveDarkMode,
 } from './mode'
+import { DESIGN_PREVIEW_KEY } from './design'
 
 /* ── Harness ──────────────────────────────────────────────────────────────── */
 
@@ -313,3 +314,19 @@ function runBootstrapKeepingStorage(s: Scenario): { dark: boolean } {
   const out = runBootstrap({ ...s, stored })
   return out
 }
+
+/* ── No URL design switch (SCAN-850) ──────────────────────────────────────── */
+
+describe('a ?design= link cannot restyle the site', () => {
+  it('ignores ?design= and clears a stuck preview key', () => {
+    window.localStorage.clear()
+    window.localStorage.setItem(DESIGN_PREVIEW_KEY, 'dawn')
+    window.history.replaceState({}, '', '/?design=dawn')
+    document.documentElement.setAttribute('data-design', 'frequency')
+
+    new Function(THEME_BOOTSTRAP_SCRIPT)()
+
+    expect(document.documentElement.getAttribute('data-design')).toBe('frequency')
+    expect(window.localStorage.getItem(DESIGN_PREVIEW_KEY)).toBeNull()
+  })
+})

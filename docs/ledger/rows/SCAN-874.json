@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-874",
+  "title": "A Space website wears its own house theme on DAWN again instead of picking up the Frequency design's fonts and colours",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/sites/site-design-reset.tsx",
+    "ref": "Owner 2026-10-14: the danieltyack.com styles got trashed in the last redesign; the theme is supposed to be Default and based on the DAWN system."
+  },
+  "detail": "The root layout stamps <html data-design> with the platform design, and app/themes/frequency.css re-points DAWN's names (--color-*, --design-*, --font-sans and the faces) at Frequency's tokens under data-design=\"frequency\". Every Space website's house theme (lib/sites/house-theme.ts) is drawn on those DAWN names, so when production switched to Frequency, danieltyack.com's Default theme rendered in Hanken Grotesk and Unbounded with Frequency's surfaces. A layout at app/hosted/[host] and app/sites/[slug] now renders SiteDesignReset first: under Frequency a synchronous inline script sets data-design=\"dawn\" on the root before the site's body paints (the root carries suppressHydrationWarning for exactly this re-stamp). The layouts read no request data, so the site pages stay static. DAWN builds render nothing extra.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const c=r('components/sites/site-design-reset.tsx');const bad=[];if(!c.includes(\\\"setAttribute('data-design','dawn')\\\"))bad.push('no reset to DAWN for Space websites');for(const p of ['app/hosted/[host]/layout.tsx','app/sites/[slug]/layout.tsx'])if(!r(p).includes('<SiteDesignReset />'))bad.push(p+' does not reset the design');if(bad.length){console.error('SCAN-874: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

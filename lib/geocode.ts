@@ -81,6 +81,27 @@ export async function searchPlaces(
 }
 
 /**
+ * The town at a point (the beta entry's "turn on location", SCAN-879): Photon's reverse lookup,
+ * restricted to the same populated-place layers as searchPlaces and labelled the same way, so a
+ * located town reads exactly like a typed one. Same fail-quiet contract: any failure is null, and the
+ * caller falls back to typing.
+ */
+export async function reversePlace(lat: number, lng: number, signal?: AbortSignal): Promise<PlaceSuggestion | null> {
+  const params = new URLSearchParams({ lat: String(lat), lon: String(lng), limit: '1', lang: 'en' })
+  for (const layer of ['city', 'locality', 'district']) params.append('layer', layer)
+  try {
+    const res = await fetch(`https://photon.komoot.io/reverse?${params.toString()}`, { signal })
+    if (!res.ok) return null
+    const data = (await res.json()) as { features?: Array<{ properties?: Record<string, string | undefined> }> }
+    const p = data.features?.[0]?.properties ?? {}
+    const label = [p.name ?? p.city, p.state, p.country].filter(Boolean).join(', ')
+    return label ? { label, lat, lng } : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Venue / address typeahead. Unlike searchPlaces (populated places only), this returns
  * businesses, POIs, and street addresses, with the structured parts so a pick can fill
  * venue + street + city + region + country + postal code AND drop the map pin.

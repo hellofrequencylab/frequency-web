@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-872",
+  "title": "The Frequency Space console's Contacts page opens on a two-pane Workspace (every person on the left; the selected person's card, stats, timeline, notes and messaging on the right) with the four health numbers, and keeps the design's table one click away",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/admin/pages/contacts/contacts-body.tsx",
+    "ref": "Owner 2026-10-14: the new console's Contacts (Community Resonance) page is missing a lot of the last design's functionality, the messaging and tracking system with all contacts on the left and their contact card and stats on the right. Phase 1 of 3."
+  },
+  "detail": "Under SITE_DESIGN=frequency the Resonance tab rendered only FqContactsBody, a flat table whose rows linked out, so the master-detail viewer (search, sort, Role/Business/Activity/Tier/Lifecycle facets, the selected person's CRM card with engagement stats, timeline, deal stage, Vera's About facts, matches, notes, custom fields, win-back and the message composer) was unreachable. The page now shows the DAWN stat row's four numbers (Members, Active this week, At risk, Resonance health) as kit KPIs, then a Workspace / Table switch: Workspace (default) mounts SpaceMemberViewer, the same space-gated master-detail DAWN renders; Table is the design's list. loadSpaceResonanceRoster is request-cached so the two views read the roster once. Phases 2 and 3 restyle the card and composer in the kit and bring Conversations, Pipeline, Tasks, Leads, Doors and Shared into the console.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('components/frequency/admin/pages/contacts/contacts-body.tsx','utf8'),r=fs.readFileSync('lib/spaces/resonance-roster.ts','utf8');const bad=[];if(!/<ContactsViews workspace=\\{<SpaceMemberViewer/.test(b))bad.push('the Frequency Contacts page has no master-detail Workspace');if(!/label=.At risk./.test(b))bad.push('the health numbers are missing');if(!/loadSpaceResonanceRoster = cache\\(/.test(r))bad.push('the roster is read twice per render');if(bad.length){console.error('SCAN-872: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
