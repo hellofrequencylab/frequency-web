@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // After sending the magic link there's nothing more to do on this page, so we offer
 // a way back home — an immediate button plus a gentle visible countdown that returns
@@ -21,6 +22,21 @@ export function ReturnHome() {
     const t = setTimeout(() => setRemaining((s) => s - 1), 1000)
     return () => clearTimeout(t)
   }, [remaining, router])
+
+  // FREQUENCY (ADR-1737, build-time): the kit's quiet pill and small print; the countdown is the same.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <div className="fqa-head">
+        <button type="button" onClick={() => router.push('/')} className="btn">
+          <ArrowLeft aria-hidden="true" />
+          Back to home
+        </button>
+        <p className="fqa-small" aria-live="polite">
+          Returning home in {remaining}s…
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col items-center gap-2">

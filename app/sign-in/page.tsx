@@ -9,6 +9,9 @@ import { BETA_CTA_HREF } from '@/lib/site'
 import { signInWithMagicLink, signInWithGoogle } from './actions'
 import { signInErrorMessage } from './errors'
 import { SignInSubmit } from './submit'
+import { safeNextPath } from '@/lib/auth/safe-next'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySignIn } from './frequency-sign-in'
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -34,8 +37,10 @@ export default async function SignInPage({
   // absolute path only, so an open redirect cannot ride in on the query string. It is computed
   // before this branch and reused by the form below, so the two can never disagree about what a
   // legal `next` is.
-  const nextTarget =
-    next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : ''
+  //
+  // The rule lives in lib/auth/safe-next.ts, shared with both, and also refuses a control character
+  // (`/%09/evil.com` decodes to a tab the browser strips, leaving `//evil.com`).
+  const nextTarget = safeNextPath(next)
   const supabase = await createClient()
   const {
     data: { user },
@@ -70,6 +75,19 @@ export default async function SignInPage({
   const hint = decodeSignInHint(jar.get(SIGN_IN_HINT_COOKIE)?.value)
   const pendingNewEmail = jar.get(NEW_ACCOUNT_EMAIL_COOKIE)?.value
   const newAccountEmail = step === 'new-account' && isEmail(pendingNewEmail) ? pendingNewEmail : null
+
+  // FREQUENCY (ADR-1737, build-time): the same answers, drawn in the doorway frame. DAWN is unchanged.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FrequencySignIn
+        errorMessage={errorMessage}
+        nextValue={nextValue}
+        emailValue={emailValue}
+        hintSentence={hint ? signInHintSentence(hint) : null}
+        newAccountEmail={newAccountEmail}
+      />
+    )
+  }
 
   return (
     <PhotoHero

@@ -17,6 +17,10 @@ export function isSafeInAppPath(url: string | null | undefined): url is string {
   if (!url.startsWith('/')) return false
   // '//host' and '/\host' are protocol-relative jumps to another origin.
   if (/^\/[/\\]/.test(url)) return false
+  // A control character, a space or a backslash anywhere: `/%09/evil.com` decodes to `/<tab>/evil.com`,
+  // which passes the check above, and the browser strips the tab from the Location header and follows
+  // `//evil.com` off-site. A real in-app path carries these only percent-encoded.
+  if (/[\\\u0000-\u0020\u007f]/.test(url)) return false
   // Any scheme (a colon before the first '/') means it isn't a bare path.
   if (url.includes('://') || /^[^/]*:/.test(url)) return false
   return true

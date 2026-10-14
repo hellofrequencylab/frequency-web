@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqSettingsLoading } from '@/components/frequency/members/utility-states'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // Route-level loading UI for the unified Settings page (PAGE-FRAMEWORK §5). Paints the
@@ -20,6 +22,8 @@ function SettingRowSkeleton() {
 }
 
 export default function SettingsLoading() {
+  // Under Frequency (build-time) the wait is the kit's own head and pending rows (utility-states.tsx).
+  if (SITE_DESIGN === 'frequency') return <FqSettingsLoading />
   return (
     <div className="mx-auto w-full max-w-3xl">
       {/* Header band (FocusTemplate / PageHeading: title + description + rule) */}
