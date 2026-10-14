@@ -1,0 +1,63 @@
+{
+  "_readme": [
+    "Per-file baselines for the theme ratchet in scripts/check-tokens.mjs (ADR-1742).",
+    "counts[class][file] is the number of literals that file may hold; a file not listed may hold 0.",
+    "A count may hold or fall; a rise fails check:tokens. Re-freeze after a sweep, never by hand:",
+    "  node scripts/check-tokens.mjs --update --reason \"<which sweep retired them>\"",
+    "A rise is refused unless --allow-raise is passed, and is then recorded as direction raised.",
+    "The class definitions and what each one exempts are in the header of the THEME GATE section of check-tokens.mjs."
+  ],
+  "frozen": {
+    "at": "2026-10-13",
+    "direction": "seed",
+    "reason": "Seed: the theme gate's first measurement of the overhaul tree, taken while six fix lanes are still landing (ADR-1742)"
+  },
+  "counts": {
+    "tsx-style-colour": {},
+    "tsx-style-font-size": {
+      "components/billing/payment-marks.tsx": 1,
+      "components/marketing/funnel/funnel-graphics.tsx": 8,
+      "components/sites/house-sections.tsx": 12
+    },
+    "tsx-style-font-family": {},
+    "tsx-colour-function": {
+      "app/(main)/spaces/[slug]/(profile)/layout.tsx": 1,
+      "app/spaces/claim/[token]/page.tsx": 1,
+      "components/page-editor/blocks/design.tsx": 1
+    },
+    "css-colour": {
+      "app/globals.css": 3,
+      "app/themes/frequency.css": 3,
+      "app/themes/frequency/members-a.css": 40,
+      "app/themes/frequency/members-b.css": 4,
+      "app/themes/frequency/members-c.css": 1,
+      "app/themes/frequency/members-ui.css": 10,
+      "app/themes/frequency/site-pages-a.css": 3
+    },
+    "css-font-family": {},
+    "css-font-size-floor": {
+      "app/themes/frequency/editor-shell.css": 2,
+      "app/themes/frequency/members-a.css": 1,
+      "app/themes/frequency/members-shell.css": 3,
+      "app/themes/frequency/members-ui.css": 3,
+      "app/themes/frequency/site-pages-a.css": 3,
+      "app/themes/frequency/site-pages-b.css": 1
+    }
+  },
+  "history": [
+    {
+      "at": "2026-10-13",
+      "direction": "seed",
+      "reason": "Seed: the theme gate's first measurement of the overhaul tree, taken while six fix lanes are still landing (ADR-1742)",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 3,
+        "css-colour": 64,
+        "css-font-family": 0,
+        "css-font-size-floor": 13
+      }
+    }
+  ]
+}

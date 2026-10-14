@@ -151,7 +151,7 @@ function compile(pattern) {
  * its `KEEP bg-white:` above the `return (`, one line further out again. A window that has to be
  * tuned to the length of someone's sentence is not a rule.
  */
-function escapeChecker(entry) {
+export function escapeChecker(entry) {
   if (!entry.escape) return null
   if ((entry.mode ?? 'matches') === 'files') {
     throw new Error(
