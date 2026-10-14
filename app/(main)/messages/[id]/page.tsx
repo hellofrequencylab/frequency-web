@@ -166,7 +166,7 @@ export default async function ConversationPage({
         pane={
           <section className="panel fa-pane" aria-label={displayName}>
             <div className="row fa-pane-h">
-              <Link href="/messages" className="btn txt sm" aria-label="All messages">←</Link>
+              <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
               {peer ? (
                 <FqAvatar url={peer.avatar_url} name={peer.display_name} size="m" />
               ) : (
@@ -177,7 +177,10 @@ export default async function ConversationPage({
                 <span className="t2">{isGroup ? `${participants.length} people` : peer ? `@${peer.handle}` : ''}</span>
               </span>
               {peer ? (
-                <Link className="btn sm" href={`/people/${peer.handle}`}>Profile</Link>
+                <Link className="btn sm" href={`/people/${peer.handle}`}>
+                  <FqIcon name="user" />
+                  Profile
+                </Link>
               ) : isGroup ? (
                 <>
                   <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />

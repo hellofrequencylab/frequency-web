@@ -135,7 +135,10 @@ export function HelpBody({
           <span className="h3">Still stuck?</span>
           <span className="t2">Send us a note. A person reads every one, and the reply lands here.</span>
         </span>
-        <SupportButton />
+        <span className="row wrap mc-gap-8">
+          <SupportButton type="bug" label="Report a bug" icon="flag" className="btn" />
+          <SupportButton />
+        </span>
       </div>
     </MembersBody>
   )

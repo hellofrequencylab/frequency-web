@@ -201,7 +201,7 @@ export default async function RoomPage({
         pane={
           <section className="panel fa-pane" aria-label={r.name}>
             <div className="row fa-pane-h">
-              <Link href="/messages" className="btn txt sm" aria-label="All messages">←</Link>
+              <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
               <span className="ic" aria-hidden><FqIcon name="circle" /></span>
               <span className="grow">
                 <span className="t1" style={{ display: 'block' }}>{r.name}</span>

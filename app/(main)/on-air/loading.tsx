@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { MindlessLoading } from '@/components/frequency/members/mindless/mindless-loading'
 
 // Route-level loading UI for On Air / Mindless (PAGE-FRAMEWORK §5). The route is
 // a no-rail Focus surface (page-chrome 'none'); this paints the centered, narrow
@@ -6,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 // member's adopted practices and remembered setup load, so the surface holds its
 // place instead of flashing blank before the session mounts (no layout shift).
 export default function OnAirLoading() {
+  // FREQUENCY (ADR-1737): the door's head and orb hold the screen instead of the Focus skeleton.
+  if (SITE_DESIGN === 'frequency') return <MindlessLoading />
   return (
     <div className="mx-auto w-full max-w-lg">
       {/* Header band (PageHeading without divider: eyebrow + title + description) */}

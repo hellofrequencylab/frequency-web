@@ -103,9 +103,25 @@ export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activ
             {t.unread > 0 && <span className="dot" aria-label={`${t.unread} unread`} />}
           </Link>
         ))}
-        {shown.length === 0 && (
-          <p className="why fqm-pad">{q ? 'Nothing matches that.' : tab === 'rooms' ? 'No rooms joined yet.' : 'No conversations yet.'}</p>
-        )}
+        {shown.length === 0 &&
+          (q ? (
+            <p className="why fqm-pad" role="status">
+              Nothing matches that.{' '}
+              <button type="button" className="btn txt sm" onClick={() => setFind('')}>
+                Clear
+              </button>
+            </p>
+          ) : tab === 'rooms' ? (
+            <p className="why fqm-pad">No rooms joined yet. Start one with Room, or join an open one.</p>
+          ) : (
+            <div className="stack fqm-pad fqm-gap-sm">
+              <p className="why">No conversations yet.</p>
+              <span className="t2">Say hi to someone you met. Their profile has a Message button.</span>
+              <Link className="btn sm fqm-tag-start" href="/network">
+                Find people
+              </Link>
+            </div>
+          ))}
       </nav>
     </>
   )

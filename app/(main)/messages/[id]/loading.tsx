@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqMessagesLoading } from '@/components/frequency/members/messages/messages-states'
 
 function MessageBubbleSkeleton({ align }: { align: 'left' | 'right' }) {
   const isRight = align === 'right'
@@ -13,6 +15,8 @@ function MessageBubbleSkeleton({ align }: { align: 'left' | 'right' }) {
 }
 
 export default function ConversationLoading() {
+  // FREQUENCY (ADR-1737): the kit's frame, conversation side, instead of the DAWN takeover skeleton.
+  if (SITE_DESIGN === 'frequency') return <FqMessagesLoading inThread />
   // Bleed the chat surface to the shell's edges. The negative margin must MIRROR the shell's
   // responsive padding (px-4 sm:px-6 lg:px-8); a flat -mx-6 over-pulled on mobile (bleeding 8px
   // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so

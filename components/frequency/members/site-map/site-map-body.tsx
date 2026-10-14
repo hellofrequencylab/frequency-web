@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { FQ_SITE_LINKS } from '@/components/frequency/members/shell/nav'
 
 // THE MEMBER SITE MAP (design_handoff/frequency/templates/members/Site Map.html): the four areas of
 // the member site and the pages in each, as plain links. SITE_MAP is the short list the DAWN page
@@ -8,6 +9,11 @@ import { MembersBody } from '@/components/frequency/members/shared/members-body'
 // map is never shorter than the menu. Every href is a live route; the reference's per-item pages (one
 // Event, one Circle) are their index pages here. "Host tools" is not a link: what a member runs is
 // listed in the You panel, per Space, because there is no single host door to send everyone to.
+//
+// Under the four member columns, "The website": the public pages the mega menu's site row offers
+// (FQ_SITE_LINKS, read from the shell's nav, never copied), so a member can find Pricing or the Help
+// Center from here as well. site-map-body.test.ts fails when a menu, shortcut, You-tab or website link
+// is missing from this page, so a new door in the header cannot leave the map behind.
 
 export const SITE_MAP: { area: string; links: { label: string; href: string }[] }[] = [
   {
@@ -87,6 +93,8 @@ export const FQ_SITE_MAP: { area: string; links: { label: string; href: string }
       { label: 'My Code', href: '/codes' },
       { label: 'The Vault', href: '/crew/store' },
       { label: 'Orders', href: '/orders' },
+      { label: 'Partners', href: '/partners' },
+      { label: 'Join Crew', href: '/upgrade' },
       { label: 'Settings', href: '/settings' },
       { label: 'Help', href: '/support' },
       { label: 'Help center', href: '/help' },
@@ -117,6 +125,16 @@ export function SiteMapBody() {
           </nav>
         ))}
       </div>
+      <nav className="sec stack mc-gap-4" aria-label="The website">
+        <span className="k mc-k-gap">The website</span>
+        <div className="row wrap mc-site-links">
+          {FQ_SITE_LINKS.map((l) => (
+            <Link key={l.href} className="mc-maplink" href={l.href}>
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
     </MembersBody>
   )
 }

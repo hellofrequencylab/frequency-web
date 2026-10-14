@@ -91,6 +91,30 @@ export async function FrequencyMessages({
     })
   }
 
+  // Public rooms to join. Beside the list on a wide screen (the empty pane); under the list on a phone,
+  // where the pane is hidden until a conversation opens.
+  const roomsToJoin =
+    discoverRooms.length > 0 ? (
+      <div className="stack fqm-pane-more">
+        <span className="k">Rooms to join</span>
+        <div className="list">
+          {discoverRooms.slice(0, 6).map((room) => (
+            <Link key={room.id} href={`/messages/r/${room.id}`}>
+              <span className="ic" aria-hidden>
+                <FqIcon name="circle" />
+              </span>
+              <span className="grow">
+                <span className="t1 fqm-block">{room.name}</span>
+                <span className="t2">
+                  {[`${room.member_count} ${room.member_count === 1 ? 'member' : 'members'}`, room.description].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    ) : null
+
   return (
     <div className={pane ? 'ap-cols l fa-msg in-thread' : 'ap-cols l fa-msg'}>
       <FqToaster />
@@ -101,12 +125,14 @@ export async function FrequencyMessages({
           </h1>
           <span className="row fqm-gap-sm">
             <NewRoomCompose buttonLabel="Room" buttonClass="btn sm" />
-            <Link href="/network" className="btn sm pa">
+            <Link href="/network" className="btn sm pa" aria-label="New message: pick someone from Members">
+              <FqIcon name="plus" />
               New
             </Link>
           </span>
         </div>
         <InboxList threads={threads} activeKey={activeKey} />
+        {!pane && roomsToJoin && <div className="fqm-phone-only">{roomsToJoin}</div>}
       </aside>
       {pane ?? (
         <section className="panel fa-pane" aria-label="Conversation">
@@ -117,26 +143,7 @@ export async function FrequencyMessages({
             <span className="h3">Pick a conversation</span>
             <span className="t2">Or start one from anyone’s profile.</span>
           </div>
-          {discoverRooms.length > 0 && (
-            <div className="stack fqm-pane-more">
-              <span className="k">Rooms to join</span>
-              <div className="list">
-                {discoverRooms.slice(0, 6).map((room) => (
-                  <Link key={room.id} href={`/messages/r/${room.id}`}>
-                    <span className="ic" aria-hidden>
-                      <FqIcon name="circle" />
-                    </span>
-                    <span className="grow">
-                      <span className="t1 fqm-block">{room.name}</span>
-                      <span className="t2">
-                        {[`${room.member_count} ${room.member_count === 1 ? 'member' : 'members'}`, room.description].filter(Boolean).join(' · ')}
-                      </span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          {roomsToJoin}
         </section>
       )}
     </div>
