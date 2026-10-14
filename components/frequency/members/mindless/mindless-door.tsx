@@ -4,6 +4,8 @@ import { useState, useSyncExternalStore } from 'react'
 import { OnAirSession, type OnAirPractice } from '@/components/on-air/session'
 import { loadLiveSession } from '@/lib/on-air/live-session'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { FqIcon } from '@/components/frequency/icon'
+import { useMovement } from '@/components/on-air/movement'
 
 // THE MINDLESS DOOR under Frequency (design_handoff/frequency/templates/members/Mindless.html): Tune
 // out, the breathing orb, a length, Start. Start hands straight to the one timer (OnAirSession, the
@@ -16,6 +18,9 @@ import { MembersBody } from '@/components/frequency/members/shared/members-body'
 //   - The full setup (mode, breath pattern, bells, ambient sound): "More options" opens the engine on
 //     its own setup screen instead of auto-starting.
 //   - The presence line (members who practised today, shown at three or more, as the engine does).
+//   - Get Moving. The one timer has two modes (the header's Mindless door: "Be Still or Get Moving");
+//     this door is Be Still, and Get Moving opens the movement timer through the same Mindless overlay
+//     (useMovement), so the walk, run or stretch logs exactly as it does from anywhere else.
 //
 // A sit that is already running (crash-recovered from this device) skips the door: the engine owns the
 // screen and resumes it, exactly as the route did before.
@@ -62,6 +67,7 @@ export function MindlessDoor({
     ? [lockedMinutes]
     : Array.from(new Set([...LENGTHS, own ?? rememberedMinutes])).sort((a, b) => a - b)
   const [stage, setStage] = useState<'door' | 'start' | 'setup'>('door')
+  const movement = useMovement()
 
   if (running) return <OnAirSession {...session} />
   const chosen = { ...session, defaultPracticeId: practiceId || session.defaultPracticeId, explicitPracticeId: practiceId || undefined }
@@ -132,12 +138,18 @@ export function MindlessDoor({
       </div>
       <div className="stack mc-gap-10 mc-center">
         <button type="button" className="btn pa lg" onClick={() => setStage('start')}>
+          <FqIcon name="breath" />
           Start
         </button>
-        <button type="button" className="btn txt" onClick={() => setStage('setup')}>
-          More options
-        </button>
-        {practicedToday >= 3 && <span className="t2">{practicedToday.toLocaleString()} members practiced today.</span>}
+        <span className="row mc-chips-center mc-gap-8">
+          <button type="button" className="btn txt" onClick={() => setStage('setup')}>
+            More options
+          </button>
+          <button type="button" className="btn txt" onClick={() => movement.open()}>
+            Get Moving instead
+          </button>
+        </span>
+        {practicedToday >= 3 && <span className="t2">{practicedToday.toLocaleString('en-US')} members practiced today.</span>}
       </div>
     </MembersBody>
   )

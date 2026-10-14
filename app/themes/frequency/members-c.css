@@ -95,11 +95,14 @@
 [data-design="frequency"] [data-kit="members"] .mc-faq>summary .t2{display:inline-block;transition:transform var(--fq-dur-fast)}
 [data-design="frequency"] [data-kit="members"] .mc-faq[open]>summary .t2{transform:rotate(45deg)}
 [data-design="frequency"] [data-kit="members"] .body.mc-faq-body{margin-top:12px;font-size:15px}
+[data-design="frequency"] [data-kit="members"] .panel.mc-results.stack{padding:18px 22px}
+[data-design="frequency"] [data-kit="members"] .mc-self-start{align-self:flex-start}
 
 /* Site map. */
 [data-design="frequency"] [data-kit="members"] .mc-gap-4{gap:4px}
 [data-design="frequency"] [data-kit="members"] .k.mc-k-gap{margin-bottom:10px}
 [data-design="frequency"] [data-kit="members"] .mc-maplink{padding:8px 0;font:500 15px/1.2 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .mc-site-links{gap:0 28px}
 
 /* Journey course home, the Journeys index (members pass). */
 [data-design="frequency"] [data-kit="members"] .mc-bottom-12{margin-bottom:12px}

@@ -134,6 +134,26 @@
 [data-design="frequency"] [data-kit="members"] .fqm-pad{padding:14px}
 [data-design="frequency"] [data-kit="members"] .fqm-daysep{align-self:center;text-align:center}
 [data-design="frequency"] [data-kit="members"] .fqm-pane-more{padding:0 28px 28px;overflow-y:auto}
+/* The transcript's log region, the offline and failed-send lines, and the composer that grows. */
+[data-design="frequency"] [data-kit="members"] .fqm-log{display:flex;flex-direction:column;gap:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-text-center{text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-pane-note{padding:10px 22px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-danger{color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .fa-pane-f.row{align-items:flex-end}
+[data-design="frequency"] [data-kit="members"] .fa-pane-f textarea.fqm-composer{height:auto;min-height:44px;max-height:160px;padding:11px 18px;border-radius:22px;resize:none;line-height:1.45;overflow-y:auto}
+[data-design="frequency"] [data-kit="members"] .btn.fqm-msg-back{display:none}
+@media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .btn.fqm-msg-back{display:inline-flex}}
+[data-design="frequency"] [data-kit="members"] .fqm-phone-only{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-phone-only>.fqm-pane-more{padding:16px 0 0}
+@media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .fqm-phone-only{display:block}}
+/* The loading frame's quiet rows (messages-states.tsx). */
+[data-design="frequency"] [data-kit="members"] .fqm-skel-row{display:flex;gap:12px;align-items:center;padding:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-skel{display:block;border-radius:var(--fq-radius-orb);background:var(--fq-border-hair);animation:fqm-skel 1.4s ease-in-out infinite}
+[data-design="frequency"] [data-kit="members"] .fqm-skel-av{width:48px;height:48px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-skel-line{height:12px;width:70%}
+[data-design="frequency"] [data-kit="members"] .fqm-skel-line.short{width:45%}
+@keyframes fqm-skel{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-skel{animation:none}}
 }
 
 /* The find band's field is the Input primitive's SEAMLESS variant (components/ui/field.tsx), which

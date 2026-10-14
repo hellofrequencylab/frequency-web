@@ -5,6 +5,8 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqMessagesError } from '@/components/frequency/members/messages/messages-states'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -14,6 +16,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     // reporting boundary (nearest-boundary-wins) - without this it was invisible.
     Sentry.captureException(error)
   }, [error])
+  // FREQUENCY (ADR-1737): the same words and the same two ways out, in the kit's pane.
+  if (SITE_DESIGN === 'frequency') return <FqMessagesError reset={reset} />
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center px-4">
       <EmptyState
