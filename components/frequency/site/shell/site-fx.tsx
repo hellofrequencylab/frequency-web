@@ -302,6 +302,10 @@ function run(root: HTMLElement): () => void {
   // the closer's own CTAs; a page with no closer keeps the footer rule.
   const dockEnd = root.querySelector<HTMLElement>('.closer')
   const dockHero = root.querySelector<HTMLElement>('.phero,.hero')
+  // On a phone the dock spans the column, so it covers whatever the visitor is reading. There it shows
+  // only while they scroll back up (reaching for the switch), and steps aside while they read down.
+  const phone = matchMedia('(max-width: 760px)')
+  let lastY = scrollY
 
   function frame() {
     raf = 0
@@ -354,7 +358,9 @@ function run(root: HTMLElement): () => void {
     if (dock && dockHero) {
       const on =
         dockHero.getBoundingClientRect().bottom < 80 &&
-        (dockEnd ? dockEnd.getBoundingClientRect().top >= vh * 0.6 : !foot || foot.getBoundingClientRect().top > vh * 0.9)
+        (dockEnd ? dockEnd.getBoundingClientRect().top >= vh * 0.6 : !foot || foot.getBoundingClientRect().top > vh * 0.9) &&
+        (!phone.matches || y < lastY)
+      lastY = y
       w.push(() => dock.classList.toggle('on', on))
     }
     w.forEach((f) => f())
