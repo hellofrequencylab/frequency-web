@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-865",
+  "title": "A Space campaign's replies reach the Space: Reply-To is the Space's verified inbox address",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "lib/spaces/email.ts",
+    "ref": "Production to Frequency handoff 2026-10-14, section 9: Space emails get a Reply-To, so replies reach the Space; today they go to noreply even though the UI claims otherwise. Checked against main at 80c303c."
+  },
+  "detail": "deliverSpaceCampaign (every Space campaign: the composer, the scheduled cron, the drip runner, the event broadcast) set no Reply-To, so on the shared Frequency sender a reply went to noreply@send.frequencylocal.com, while the Space inbox card tells the owner its address is the Reply-To for anything the Space sends. The delivery core now resolves the Space's inbox address (resolveSpaceInboxFrom, EMAIL-022: verified only, null on any miss) and the campaign job carries it; runSpaceCampaignEmail passes it to the provider. A Space with no verified address sends as before: no header, replies to the From, which is the owner's own verified sender when they chose one. The global Email Studio broadcast keeps the brand Reply-To.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.existsSync('lib/spaces/email.ts')?fs.readFileSync('lib/spaces/email.ts','utf8'):'';const bad=[];if(!/const replyTo = await resolveSpaceInboxFrom\\(spaceId\\)/.test(s))bad.push('a Space campaign does not resolve the Space inbox address as its Reply-To');if(!/[.]{3}\\(replyTo [?] [{] replyTo [}] : [{][}]\\)/.test(s))bad.push('the campaign job does not carry the Reply-To');if(!/replyTo: typeof p[.]replyTo === 'string'/.test(s))bad.push('the drain drops the Reply-To before the provider');if(bad.length){console.error('SCAN-865: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

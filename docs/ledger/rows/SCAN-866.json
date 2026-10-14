@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-866",
+  "title": "A Space's block email runs the same send checks as a plain campaign: the campaigns-a-month meter, the free plan's Sent with Frequency line, and no sent stamp when nobody was reached",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "lib/spaces/email-drafts.ts",
+    "ref": "Production to Frequency handoff 2026-10-14, section 9: the block-email send gets the same checks as plain emails: the monthly limit, the free-plan footer and the 0 sent check. Checked against main at 80c303c."
+  },
+  "detail": "sendSpaceCampaign in lib/spaces/campaigns.ts (the plain composer) checks checkCampaignMonthMeter (space_campaigns_month, LIVE-751), appends frequencyFooterHtml for a free Space (ADR-1709), and refuses to stamp a campaign sent when the seam delivered to nobody (SCAN-704). The block-email sends in lib/spaces/email-drafts.ts (sendSpaceEmailDraft and sendSpaceEmailDraftToRecipients) did none of the three: a free Space could send unlimited designed emails, without the Frequency line, and an all-suppressed send was stamped sent with 0. Both now run the meter before the send, compile with sentWithFrequency for a free plan (a new optional line in the Email Studio shell footer and its text twin; every other caller is unchanged), and fail with the plain send's sentence when nothing went out. The 1:1 conversation send (sendSpaceEmailDraftAsConversations) is transactional mail and keeps its own gates. lib/spaces/email-drafts-send-gates.test.ts pins both senders.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const d=r('lib/spaces/email-drafts.ts'),sh=r('lib/email-studio/shell.ts');const bad=[];const n=(re)=>(d.match(re)||[]).length;if(n(/await checkCampaignMonthMeter\\(spaceId\\)/g)<2)bad.push('a block-email send skips the campaigns-a-month meter');if(n(/sentWithFrequency: campaignCarriesFrequencyFooter\\(space[.]plan\\)/g)<2)bad.push('a free Space block email lacks the Sent with Frequency line');if(n(/if \\(!res[.]data[.]sent\\) return fail/g)<2)bad.push('a block-email send that reached nobody is stamped sent');if(!/input[.]sentWithFrequency [?]/.test(sh))bad.push('the email shell footer cannot carry the Sent with Frequency line');if(bad.length){console.error('SCAN-866: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
