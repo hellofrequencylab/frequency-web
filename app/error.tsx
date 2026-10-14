@@ -6,7 +6,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SITE_DESIGN } from '@/lib/theme/design'
-import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+import '@/app/themes/frequency/kit-site.css'
+import '@/app/themes/frequency/site-shell.css'
+import { SiteBody, SiteRoot } from '@/components/frequency/site/shell/site-root'
+import { SiteHeader } from '@/components/frequency/site/shell/site-header'
 import { SiteError } from '@/components/frequency/site/shell/site-error'
 
 export default function Error({
@@ -18,11 +21,19 @@ export default function Error({
 }) {
   // FREQUENCY (ADR-1737, build-time): the website's "hit a snag" hero in the site shell. SiteError
   // reports to Sentry itself, so the effect below is skipped on this branch (it would report twice).
+  // This boundary is a CLIENT component, so it cannot render SiteShell: SiteShell carries the server-only
+  // footer and resolved to an undefined lazy element here, crashing the error page itself. The client
+  // parts of the shell (root, header, body) are enough to put the snag hero in the site's frame.
   if (SITE_DESIGN === 'frequency') {
     return (
-      <SiteShell>
-        <SiteError error={error} reset={reset} lead="Something broke on our end. Try again, or head back home." />
-      </SiteShell>
+      <SiteRoot>
+        <SiteHeader />
+        <main id="main">
+          <SiteBody>
+            <SiteError error={error} reset={reset} lead="Something broke on our end. Try again, or head back home." />
+          </SiteBody>
+        </main>
+      </SiteRoot>
     )
   }
   return <DawnError error={error} reset={reset} />
