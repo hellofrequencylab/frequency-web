@@ -224,7 +224,7 @@ export async function FrequencySpaces() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="Features">
+      <section className="sec sec-next" data-screen-label="Features">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -254,7 +254,7 @@ export async function FrequencySpaces() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="05 Questions">
+      <section className="sec sec-next" data-screen-label="05 Questions">
         <div className="fq-aura" style={aura(0.22)} />
         <div className="wrap">
           <div className="sh">
@@ -275,7 +275,7 @@ export async function FrequencySpaces() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} id="guides" data-screen-label="05x Guides">
+      <section className="sec sec-next" id="guides" data-screen-label="05x Guides">
         <div className="wrap">
           <div className="sh">
             <div className="label">

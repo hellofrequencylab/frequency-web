@@ -990,25 +990,6 @@ export async function cancelEventSeriesScoped(id: string): Promise<{
   }
 }
 
-export async function updateEventDetails(id: string, fd: FormData) {
-  const caps = await getEventCapabilities(id)
-  await requireScopedManage(await getCallerProfile(), caps.has('event.editSettings'), 'community')
-  const admin = createAdminClient()
-  const startsAt = fd.get('starts_at') as string
-  const endsAt   = fd.get('ends_at') as string
-  const { error } = await admin.from('events').update({
-    title:       (fd.get('title') as string).trim(),
-    description: (fd.get('description') as string)?.trim() || null,
-    location:    (fd.get('location') as string)?.trim() || null,
-    starts_at:   startsAt ? new Date(startsAt).toISOString() : undefined,
-    ends_at:     endsAt   ? new Date(endsAt).toISOString()   : null,
-  }).eq('id', id)
-  if (error) throw new Error(error.message)
-  revalidatePath('/admin/events')
-  revalidatePath('/events')
-  revalidatePath('/feed')
-}
-
 // ── Crew task verification ────────────────────────────────────────────────────
 
 /** The scope of a HELD crew completion (SCAN-753): the member who logged it and whether the caller

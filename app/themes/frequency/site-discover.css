@@ -66,7 +66,6 @@
 [data-design="frequency"] [data-kit="site"] .dx-aside{display:grid;gap:12px;margin-top:40px;max-width:900px}
 [data-design="frequency"] [data-kit="site"] .dx-aside .dx-ask{margin-top:0}
 [data-design="frequency"] [data-kit="site"] .dx-aside .sh{margin-bottom:20px}
-[data-design="frequency"] [data-kit="site"] .dx-gap{margin-bottom:28px}
 /* ── chips, cards, towns, posts ── */
 [data-design="frequency"] [data-kit="site"] .dx-chips{display:flex;flex-wrap:wrap;gap:8px}
 [data-design="frequency"] [data-kit="site"] .dx-chips a{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-strong);text-decoration:none;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);transition:box-shadow var(--fq-dur-fast)}
@@ -123,7 +122,10 @@
 
 /* Sections run tighter than a persuasion page's .sec: a directory is read, not scrolled through. */
 [data-design="frequency"] [data-kit="site"] .sec.dd-sec{padding:clamp(48px,7vw,88px) 0}
-[data-design="frequency"] [data-kit="site"] .sec.dd-sec+.sec.dd-sec{padding-top:0}
+/* Two directory sections hand over at half a gap each, so the fx seam (drawn at a borderless .sec's top)
+   sits mid-gap and the next heading never touches it; the total gap is the one section pad, as before. */
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec:has(+.sec.dd-sec){padding-bottom:clamp(24px,3.5vw,44px)}
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec+.sec.dd-sec{padding-top:clamp(24px,3.5vw,44px)}
 [data-design="frequency"] [data-kit="site"] .dd-sec .sh{margin-bottom:28px}
 [data-design="frequency"] [data-kit="site"] .dd-sec .sh .body-l{margin:0}
 
@@ -178,8 +180,6 @@
 [data-design="frequency"] [data-kit="site"] .dd-list li small{margin-left:auto;flex:none;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .qa.dd-qa summary small{display:block;margin-top:6px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .qa.dd-qa .dd-list{padding:0 0 20px}
-[data-design="frequency"] [data-kit="site"] .tools.dd-offers{margin-top:0}
-[data-design="frequency"] [data-kit="site"] .dd-offers .tool p{margin:0;color:var(--fq-text-body);line-height:1.5}
 [data-design="frequency"] [data-kit="site"] .panel.dd-panel{display:flex;flex-direction:column;gap:14px;padding:24px}
 [data-design="frequency"] [data-kit="site"] .dd-panel h2{margin:0;font:600 var(--fq-text-h4)/var(--fq-lh-h4) var(--fq-font-display);letter-spacing:var(--fq-track-h4);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .dd-panel p{margin:0;line-height:1.55;color:var(--fq-text-body)}

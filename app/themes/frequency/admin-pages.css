@@ -215,7 +215,7 @@
   box-shadow: none;
 }
 /* The accent wash (a callout, a selected row, a recommended band) is the kit's `.soft`, not a violet tint. */
-[data-design="frequency"] [data-kit="admin"] .ad-main :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15, .bg-primary\/20, .bg-accent-bg):not(:is([data-space-theme], [data-space-page]) *) {
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15, .bg-primary\/20):not(:is([data-space-theme], [data-space-page]) *) {
   background: var(--fq-pa-soft);
 }
 [data-design="frequency"] [data-kit="admin"] .ad-main :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15, .bg-primary\/20).text-primary-strong:not(:is([data-space-theme], [data-space-page]) *) {
