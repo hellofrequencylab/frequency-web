@@ -1,7 +1,7 @@
 {
   "id": "SCAN-854",
   "title": "A paid Space membership tier can be saved below the price floor, because the floor check is never called",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -14,5 +14,6 @@
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['lib/spaces/memberships.ts','lib/spaces/memberships-actions.ts'].map(r).join('\\n').search(/membershipTierPriceError|isValidTierPrice/)>-1===true)?0:1)\""
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-14"
 }
