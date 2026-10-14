@@ -231,6 +231,29 @@ export function computeUserHasEvents(hostedOrPostedCount: number | null): boolea
   return (hostedOrPostedCount ?? 0) > 0
 }
 
+const FACET_KEYS = ['category', 'format', 'date', 'price', 'energy', 'spots', 'near'] as const
+export type FacetKey = (typeof FACET_KEYS)[number]
+export type FacetCounts = Record<string, Record<string, number>>
+
+/** Per facet option, how many cards the list would draw with that option chosen and every other
+ *  active facet left as it is; `''` is the facet cleared. Pure: the caller hands it the predicate
+ *  (`passes(row, { key, value })`) and the counter (the list's own series fold), so the numbers are
+ *  the list's numbers by construction. */
+export function countFacetOptions<T>(
+  rows: T[],
+  facets: { key: FacetKey; values: string[] }[],
+  passes: (row: T, over: { key: FacetKey; value: string | null }) => boolean,
+  count: (rows: T[]) => number,
+): FacetCounts {
+  const out: FacetCounts = {}
+  for (const f of facets) {
+    const per: Record<string, number> = { '': count(rows.filter((r) => passes(r, { key: f.key, value: null }))) }
+    for (const v of f.values) per[v] = count(rows.filter((r) => passes(r, { key: f.key, value: v })))
+    out[f.key] = per
+  }
+  return out
+}
+
 export interface EventsIndexParams {
   q?: string
   category?: string
@@ -284,6 +307,15 @@ export interface EventsIndexData {
   /** Toolbar inputs. */
   facets: CatalogFacet[]
   sortOptions: SortOption[]
+  /** Cards each facet option would draw, keyed `facetCounts[paramKey][value]`; `''` is the
+   *  facet cleared (the "All" tab). Only shown facets are counted. */
+  facetCounts: FacetCounts
+  /** Every matching, uncancelled date (unfolded), soonest first: the month grid's rows. */
+  calendarEvents: EventRow[]
+  /** The member's home base as they named it (or their city); null when unset or signed out. */
+  homeLabel: string | null
+  /** Whether a home location is set (Distance and Nearest exist only then). */
+  hasHome: boolean
 }
 
 /** Assemble everything the /events Catalog renders, from the URL facets. */
@@ -300,16 +332,20 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   let myCircles: { id: string; name: string }[] = []
 
   let myGeocell: { lat: number; lng: number } | null = null
+  let homeLabel: string | null = null
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, membership_tier, home_geocell_lat, home_geocell_lng')
+      .select('id, community_role, membership_tier, home_geocell_lat, home_geocell_lng, home_label, city')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (profile) {
       myProfileId = profile.id
+      // The member's own words for their home base (Settings > Location), else their city. Shown on
+      // the Frequency body's location pill; never an address (the geocell is the fuzzed ~1km cell).
+      homeLabel = (profile.home_label || profile.city || '').trim() || null
       if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
         myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
       }
@@ -668,16 +704,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     }
     return null
   }
-  const withinBand = (e: EventRow) => {
-    if (!myGeocell || !nearKm) return true
-    const km = eventDistanceKm(e)
-    if (km == null) return false // no honest distance → can't claim it's near
-    return km <= nearKm
-  }
-
-  // Date-range facet → starts_at window.
-  const dateWindow = dateRangeWindow(date, nowDate)
-
   // Free-text search over the fields we have client-side (title / location /
   // host). The richer FTS/embedding path (EVENTS-REWORK B2) lives server-side;
   // here we keep the listing honest with a simple contains match.
@@ -693,21 +719,40 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
 
   const isFree = (e: EventRow) => e.price_cents == null || e.price_cents === 0
 
-  const filteredEvents = events.filter((e) => {
-    if (category && e.category !== category) return false
-    if (format && (e.attendance_mode ?? 'in_person') !== format) return false
-    if (energy && e.energy_tag !== energy) return false
-    if (price === 'free' && !isFree(e)) return false
-    if (price === 'paid' && isFree(e)) return false
-    if (spots === '1' && !hasSpots(e)) return false
-    if (nearKm && !withinBand(e)) return false
-    if (dateWindow) {
+  // ONE predicate per facet, so the list and every count next to a facet option ask the same
+  // question. `passes(e, over)` evaluates the active URL facets with ONE of them replaced: that is
+  // how "Body 12" is measured (the other facets as they stand, category = body).
+  const windows = new Map<string, { from: Date; to: Date } | null>()
+  const active: Record<FacetKey, string | undefined> = { category, format, date, price, energy, spots, near }
+  const facetTest: Record<FacetKey, (e: EventRow, v: string) => boolean> = {
+    category: (e, v) => e.category === v,
+    format: (e, v) => (e.attendance_mode ?? 'in_person') === v,
+    energy: (e, v) => e.energy_tag === v,
+    price: (e, v) => (v === 'free' ? isFree(e) : v === 'paid' ? !isFree(e) : true),
+    spots: (e, v) => (v === '1' ? hasSpots(e) : true),
+    near: (e, v) => {
+      const km = Number(v)
+      if (!myGeocell || !km) return true
+      const d = eventDistanceKm(e)
+      return d != null && d <= km // no honest distance → can't claim it's near
+    },
+    date: (e, v) => {
+      if (!windows.has(v)) windows.set(v, dateRangeWindow(v, nowDate))
+      const w = windows.get(v)
+      if (!w) return true
       const t = new Date(e.starts_at).getTime()
-      if (t < dateWindow.from.getTime() || t > dateWindow.to.getTime()) return false
+      return t >= w.from.getTime() && t <= w.to.getTime()
+    },
+  }
+  const passes = (e: EventRow, over?: { key: FacetKey; value: string | null }): boolean => {
+    for (const key of FACET_KEYS) {
+      const v = over && over.key === key ? over.value : active[key]
+      if (v && !facetTest[key](e, v)) return false
     }
-    if (!matchesQuery(e)) return false
-    return true
-  })
+    return matchesQuery(e)
+  }
+
+  const filteredEvents = events.filter((e) => passes(e))
   const filtering = !!(query || category || format || date || price || energy || spots || nearKm)
 
   // ── Sort ────────────────────────────────────────────────────────────────────
@@ -840,6 +885,24 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     { label: 'Spots', paramKey: 'spots', options: SPOTS_OPTIONS },
     { label: 'Distance', paramKey: 'near', options: NEAR_OPTIONS, show: !!myGeocell },
   ]
+  // THE COUNTS NEXT TO EVERY TAB AND FACET OPTION (Frequency body, templates/members/Events.html).
+  // Each is the number of cards that option would draw: the same predicate, the same series fold
+  // the list runs, so a count can never promise a card the list then withholds.
+  const foldCount = (rows: EventRow[]) =>
+    collapseSeries(rows, { perSeries: cardsPerSeries, upcomingFrom: listableFrom }).rows.length
+  const facetCounts = countFacetOptions(
+    events,
+    facets.filter((f) => f.show !== false).map((f) => ({ key: f.paramKey as FacetKey, values: f.options.map((o) => o.value) })),
+    passes,
+    foldCount,
+  )
+
+  // The month grid needs every matching DATE, not the folded cards: a weekly class is on the
+  // calendar every week. Soonest first, the same rows the fold started from.
+  const calendarEvents = [...filteredEvents]
+    .filter((e) => !e.is_cancelled)
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+
   const sortOptions: SortOption[] = [
     SORT_DATE,
     ...(myGeocell ? [SORT_DISTANCE] : []),
@@ -874,5 +937,9 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     showForYou,
     facets,
     sortOptions,
+    facetCounts,
+    calendarEvents,
+    homeLabel,
+    hasHome: !!myGeocell,
   }
 }

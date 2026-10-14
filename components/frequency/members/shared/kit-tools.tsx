@@ -59,6 +59,7 @@ export function FqFacetMenu({
   anyLabel = 'Any',
   clearable = true,
   icon,
+  counts,
 }: {
   label: string
   paramKey: string
@@ -70,6 +71,8 @@ export function FqFacetMenu({
   /** A sort menu always has a value, so it has no clear item. */
   clearable?: boolean
   icon?: 'filter' | 'chart' | 'pin'
+  /** Real counts per option value (`''` = cleared), drawn beside each item. Omit to draw none. */
+  counts?: Record<string, number>
 }) {
   if (options.length === 0) return null
   const value = current[paramKey]
@@ -81,10 +84,11 @@ export function FqFacetMenu({
         {active ? (clearable ? active.label : `${label}: ${active.label}`) : label}
         <FqIcon name="chevron" className="fqm-chev" />
       </summary>
-      <div className="fqm-menu-p" role="menu" aria-label={label}>
+      <div className={counts ? 'fqm-menu-p counted' : 'fqm-menu-p'} role="menu" aria-label={label}>
         {clearable && (
           <Link role="menuitem" href={hrefWith(base, current, { [paramKey]: null })} className={value ? undefined : 'on'}>
             {anyLabel}
+            {counts && counts[''] != null && <span className="ev-n-tag">{counts['']}</span>}
           </Link>
         )}
         {options.map((o) => (
@@ -96,6 +100,7 @@ export function FqFacetMenu({
             aria-current={o.value === value ? 'true' : undefined}
           >
             {o.label}
+            {counts && counts[o.value] != null && <span className="ev-n-tag">{counts[o.value]}</span>}
           </Link>
         ))}
       </div>
