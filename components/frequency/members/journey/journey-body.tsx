@@ -18,7 +18,7 @@ import { OnThisJourneyPanel, MoreJourneysPanel, peopleLine, type MoreJourney } f
 // Every number is read: progress is the member's own completed lessons, the head counts the tree,
 // and "on this Journey" is the plan's adopt_count. Nothing is drawn from the reference's sample copy.
 
-export interface JourneyBodyPlan {
+interface JourneyBodyPlan {
   slug: string
   title: string
   summary: string | null

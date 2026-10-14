@@ -23,7 +23,7 @@ export function FqErrorState({
     <div className="empty stack" role="alert">
       <h1 className="h3">{title}</h1>
       <span className="t2">{body}</span>
-      <div className="row wrap fqm-center">
+      <div className="row wrap fqm-row-center">
         <button type="button" className="btn" onClick={reset}>
           Try again
         </button>

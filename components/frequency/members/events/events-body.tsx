@@ -43,7 +43,7 @@ const VIEWS: { key: ViewKey; label: string; icon: FqIconName }[] = [
   { key: 'calendar', label: 'Calendar', icon: 'event' },
 ]
 
-export function asView(raw: string | undefined): ViewKey {
+function asView(raw: string | undefined): ViewKey {
   return raw === 'map' || raw === 'calendar' ? raw : 'list'
 }
 

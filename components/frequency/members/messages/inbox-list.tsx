@@ -73,7 +73,7 @@ export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activ
           <Input variant="seamless" value={find} onChange={(e) => setFind(e.target.value)} placeholder="Find a conversation" aria-label="Find a conversation" />
         </label>
       </div>
-      <div className="fqm-seg" role="group" aria-label="Sort">
+      <div className="fqm-sort" role="group" aria-label="Sort">
         {SORTS.map(([k, label]) => (
           <button key={k} type="button" className={sort === k ? 'on' : undefined} aria-pressed={sort === k} onClick={() => setSort(k)}>
             {label}

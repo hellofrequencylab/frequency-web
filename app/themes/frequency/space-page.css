@@ -293,7 +293,7 @@
 [data-design="frequency"] [data-kit="members"] .fqs-tagline a{color:inherit;text-decoration:underline dashed;text-underline-offset:4px}
 [data-design="frequency"] [data-kit="members"] .fqs-tagline .serif{font-size:1.1em}
 [data-design="frequency"] [data-kit="members"] .fqs-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-/* On the photo the quiet buttons are frosted glass (the Circle cover's `.fqm-frost`). */
+/* On the photo the quiet buttons are frosted glass. */
 [data-design="frequency"] [data-kit="members"] .fqs-hero .btn.fqs-frost{background:color-mix(in oklab,var(--fq-surface-card) 86%,transparent);box-shadow:none;color:var(--fq-ink);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 [data-design="frequency"] [data-kit="members"] .fqs-badges{display:flex;gap:6px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqs-back{display:inline-block;margin-bottom:16px}

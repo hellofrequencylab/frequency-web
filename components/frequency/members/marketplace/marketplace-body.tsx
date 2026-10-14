@@ -27,7 +27,7 @@ import { AREA_PREFIX } from '@/lib/marketplace/visibility'
 // verified seller and Founding marks. All of it stays, in the kit: the doors as tabs, the counts in
 // the meta line, the search and Near me in the find row (item-grid.tsx), the marks on the card.
 
-export type FqClassified = {
+type FqClassified = {
   id: string
   title: string
   kind: ListingKind

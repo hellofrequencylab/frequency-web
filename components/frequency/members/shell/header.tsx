@@ -53,14 +53,14 @@ import { NavProgress } from '@/components/frequency/shared/nav-progress'
 type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
 
 /** A Circle in the phone drawer (My Frequency, the same rows the left rail shows). */
-export interface FqDrawerCircle {
+interface FqDrawerCircle {
   key: string
   label: string
   href: string
   notices: number
 }
 
-export interface FqHeaderProps {
+interface FqHeaderProps {
   profile: { display_name: string; handle: string; avatar_url: string | null }
   profileHref: string
   navAccess?: Record<string, string>
@@ -845,7 +845,7 @@ function BellSheet() {
     <>
       <div className="rr-h">
         <span className="h3">Notifications</span>
-        <Link href="/settings/notifications" className="t2">
+        <Link href="/settings#notifications" className="t2">
           Manage
         </Link>
       </div>

@@ -7,9 +7,6 @@
    Sizes, radii and durations read the --fq- scale; an off-scale step (15px UI text, a 28px hero
    radius) is the prototype's own literal, which the export has no token for (token-ok). */
 @layer components {
-[data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
-[data-design="frequency"] [data-kit="members"] .av.m .fa-initials{font-size:15px}
 [data-design="frequency"] [data-kit="members"] .fa-col{min-width:0;width:100%;max-width:860px;margin:0 auto;display:flex;flex-direction:column}
 
 /* Greeting */

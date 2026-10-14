@@ -54,7 +54,7 @@ import { avatarBg } from './avatar'
 
 type Stats = Promise<DockData | null>
 
-export interface FrequencyMembersShellProps {
+interface FrequencyMembersShellProps {
   profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role?: string | null }
   previewVisitor: boolean
   /** Holds Crew (the paid tier), for the "Crew" mark beside the rank. */

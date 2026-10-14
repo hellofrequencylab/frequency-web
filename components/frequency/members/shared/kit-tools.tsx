@@ -82,7 +82,7 @@ export function FqFacetMenu({
       <summary className={active && clearable ? 'chip on' : 'chip'}>
         {icon && <FqIcon name={icon} />}
         {active ? (clearable ? active.label : `${label}: ${active.label}`) : label}
-        <FqIcon name="chevron" className="fqm-chev" />
+        <FqIcon name="chevron" className="fqm-menu-chev" />
       </summary>
       <div className={counts ? 'fqm-menu-p counted' : 'fqm-menu-p'} role="menu" aria-label={label}>
         {clearable && (

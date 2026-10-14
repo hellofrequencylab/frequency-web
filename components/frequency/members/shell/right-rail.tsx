@@ -45,7 +45,7 @@ import { ReportBugButton } from './report-bug-button'
 
 type Stats = Promise<DockData | null>
 
-export interface FrequencyRightRailProps {
+interface FrequencyRightRailProps {
   profileId: string
   role: CommunityRole
   pathname: string

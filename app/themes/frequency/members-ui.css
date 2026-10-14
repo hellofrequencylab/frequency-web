@@ -44,8 +44,6 @@
 [data-design="frequency"] [data-kit="members"] .mu-back{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .mu-back:hover{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .mu-back svg{width:16px;height:16px}
-[data-design="frequency"] [data-kit="members"] .mu-badges{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-[data-design="frequency"] [data-kit="members"] .mu-cover{position:relative;width:100%;overflow:hidden;border-radius:var(--fq-radius-l);aspect-ratio:16/6}
 [data-design="frequency"] [data-kit="members"] .mu-toolbar{margin-bottom:28px}
 [data-design="frequency"] [data-kit="members"] .mu-stats{margin-bottom:40px}
 [data-design="frequency"] [data-kit="members"] .mu-flow{display:flex;flex-direction:column;gap:40px}

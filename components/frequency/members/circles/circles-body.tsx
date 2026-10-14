@@ -258,7 +258,7 @@ export function FqCirclesBody({
           </div>
           <nav className="chips" aria-label="Regions">
             {nexuses.map((nx) => (
-              <Link key={nx.slug} className="chip" href={`/nexuses/${nx.slug}`}>
+              <Link key={nx.slug} className="chip" href={`/spaces/${nx.slug}`}>
                 {nx.name} <span className="t2">{nx.count}</span>
               </Link>
             ))}

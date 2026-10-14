@@ -9,8 +9,8 @@ import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
 // characters and every time label formats in UTC. `today` is the community's day in HOME_TZ
 // (dayInZone), passed in by the caller that owns the clock.
 
-export type CalendarChip = { id: string; href: string; title: string; time: string; going: boolean }
-export type CalendarCell = {
+type CalendarChip = { id: string; href: string; title: string; time: string; going: boolean }
+type CalendarCell = {
   /** YYYY-MM-DD, or null for a blank lead / trail cell outside the month. */
   key: string | null
   day: number | null

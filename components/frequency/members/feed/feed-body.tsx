@@ -23,7 +23,7 @@ import { FeedStream, type FeedSort, type JourneyRun } from './posts'
 // Server Component. The slow reads (ranked events, the queue, the stream) stream behind their
 // own <Suspense>, so the greeting and standing paint first (PAGE-FRAMEWORK §5).
 
-export interface FrequencyFeedProps {
+interface FrequencyFeedProps {
   profileId: string
   firstName: string | null
   displayName: string

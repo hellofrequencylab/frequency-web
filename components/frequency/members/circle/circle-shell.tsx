@@ -162,7 +162,7 @@ export function FqCircleShell({
           )}
           <div className="panel stack">
             <span className="k">This Circle</span>
-            <div className="g2 fqm-stats">
+            <div className="g2 fqm-cstats">
               <div>
                 <span className="num">{memberCount}</span>
                 <div className="t2">{memberCount === 1 ? 'Member' : 'Members'}</div>

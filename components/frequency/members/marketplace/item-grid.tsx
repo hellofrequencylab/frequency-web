@@ -31,7 +31,7 @@ export interface FqGridItem {
   lng?: number | null
 }
 
-export interface FqGridSection {
+interface FqGridSection {
   title?: string
   seeAll?: string
   items: FqGridItem[]

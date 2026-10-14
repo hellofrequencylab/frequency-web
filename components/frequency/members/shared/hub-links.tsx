@@ -26,16 +26,12 @@ import type { FqHubLink, FqMenuViewer } from '@/components/frequency/members/she
 // Space's per-vertical nav hides are the one layout input not repeated (no hub child is a vertical's
 // area). Every href is a live route; nothing here carries a count.
 
-/** A viewer for a page that must not read the request (a statically generated page): no navAccess,
- *  so only ungated children show. */
-export const STATIC_HUB_VIEWER: FqMenuViewer = { operatesSpaces: false, host: false }
-
 function navAccessFor(hats: Hats): Record<string, string> {
   return Object.fromEntries(NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, hats) : 'full']))
 }
 
 /** The shell's viewer, rebuilt for a hub body (request-cached reads the layout already made). */
-export async function hubViewer(): Promise<FqMenuViewer> {
+async function hubViewer(): Promise<FqMenuViewer> {
   const profile = await getCachedViewerProfile()
   if (!profile) return { navAccess: navAccessFor({ loggedIn: false }), operatesSpaces: false, host: false }
   const realRole = (profile.community_role ?? 'member') as CommunityRole
@@ -68,7 +64,7 @@ export async function hubViewer(): Promise<FqMenuViewer> {
 }
 
 /** The row itself: plain data in, chips out. Nothing when the viewer has no children to see. */
-export function HubLinkRow({ title, links, boxed = false }: { title: string; links: readonly FqHubLink[]; boxed?: boolean }) {
+function HubLinkRow({ title, links, boxed = false }: { title: string; links: readonly FqHubLink[]; boxed?: boolean }) {
   if (links.length === 0) return null
   const label = `More in ${title}`
   return (

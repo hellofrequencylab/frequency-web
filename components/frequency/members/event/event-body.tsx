@@ -19,7 +19,7 @@ import { FqEventCalendar, FqEventHost, FqEventPlan, FqEventWhere } from './event
 // album, the host's co host controls, a manager's inline description editor) still render through
 // <FqModules>, so none of them is re-derived here.
 
-export type FqGoingPerson = { id: string; name: string; handle: string; avatarUrl: string | null }
+type FqGoingPerson = { id: string; name: string; handle: string; avatarUrl: string | null }
 
 export function FqEventBody({
   structuredData,

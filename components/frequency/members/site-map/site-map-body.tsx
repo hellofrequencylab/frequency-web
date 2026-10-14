@@ -25,19 +25,19 @@ import type { DesignId } from '@/lib/theme/design'
 // (FQ_SITE_LINKS, read from the shell's nav, never copied); Features, Stories and Vision are
 // Frequency-only routes (a DAWN build answers 404), so the DAWN page leaves them out.
 
-export interface SiteMapGate {
+interface SiteMapGate {
   minAccess: NavAccess
   staffDomain?: StaffDomain
 }
 
-export interface SiteMapLink {
+interface SiteMapLink {
   label: string
   href: string
   /** Absent = every signed-in member. */
   gate?: SiteMapGate
 }
 
-export interface SiteMapColumn {
+interface SiteMapColumn {
   area: string
   links: SiteMapLink[]
 }
@@ -156,7 +156,7 @@ export function websiteLinks(design: DesignId): SiteMapLink[] {
 }
 
 /** The viewer the map gates against: the ladder role (null = visitor preview) and the staff role. */
-export interface SiteMapViewer {
+interface SiteMapViewer {
   role: CommunityRole | null
   staffRole: StaffRole | null
 }

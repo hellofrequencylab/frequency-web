@@ -6,7 +6,7 @@ import '@/app/themes/active/members-b'
 // of faces, name and role. The page keeps the reads and the gates; a manager's role picker rides
 // under each face it may change, exactly as it does under DAWN.
 
-export type FqRosterPerson = {
+type FqRosterPerson = {
   id: string
   handle: string
   name: string
@@ -41,8 +41,8 @@ export function FqMembersPane({
       {empty ?? (
         <div className="g4 fqm-pane">
           {people.map((p) => (
-            <div key={p.id} className="fqm-person">
-              <Link className="fqm-person" href={`/people/${p.handle}`}>
+            <div key={p.id} className="fqm-roster">
+              <Link className="fqm-roster" href={`/people/${p.handle}`}>
                 <span className="av l" style={p.avatarUrl ? { backgroundImage: `url('${p.avatarUrl}')` } : undefined} />
                 <span className="t1">{p.name}</span>
                 <span className="t2">{p.role}</span>

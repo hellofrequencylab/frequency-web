@@ -20,7 +20,7 @@ import { HOME_TZ, isEventPast } from '@/lib/time/zone'
 // RSVP from a list, so its button is a link there; everything else gets the real Go / Going swap.
 
 /** Is this a ticket sale (checkout on the event page) rather than an RSVP? */
-export function needsTicket(e: EventRow, priceLabel: string | null | undefined): boolean {
+function needsTicket(e: EventRow, priceLabel: string | null | undefined): boolean {
   if (!TICKETING_ENABLED || e.join_mode === 'rsvp') return false
   return e.join_mode === 'tickets' || (e.price_cents ?? 0) > 0 || (!!priceLabel && priceLabel !== 'Free')
 }

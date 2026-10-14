@@ -13,6 +13,11 @@
    export has no token for (token-ok). */
 
 @layer components {
+/* FqAvatar (components/frequency/members/shared/avatar.tsx): the initials a photo-less .av shows. Here,
+   not in a page sheet, because the avatar is drawn on every member page. */
+[data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
+[data-design="frequency"] [data-kit="members"] .av.m .fa-initials{font-size:15px}
 [data-design="frequency"] [data-kit="members"]{
   --app-header-h:76px;
   --tab-bar-clearance:0px;
@@ -244,16 +249,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-you-head{display:flex;gap:12px;align-items:center}
 [data-design="frequency"] [data-kit="members"] .fqm-you-head b{display:block;font:500 15px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-you-head small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-you-links{display:flex;flex-direction:column}
-[data-design="frequency"] [data-kit="members"] .fqm-you-links a{display:flex;align-items:center;gap:14px;height:40px;color:var(--fq-text-body);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans)}
-[data-design="frequency"] [data-kit="members"] .fqm-you-links a:hover{color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-you-links svg{width:18px;height:18px;color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-run{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:20px;background:var(--fq-pa-soft)}
-[data-design="frequency"] [data-kit="members"] .fqm-run b{font:500 var(--fq-text-body-s)/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-run p{margin:0;font:400 var(--fq-text-meta)/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
-[data-design="frequency"] [data-kit="members"] .fqm-run a{align-self:flex-start;font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-run-list{display:flex;flex-direction:column;gap:8px}
-[data-design="frequency"] [data-kit="members"] .fqm-run-list a{font:500 var(--fq-text-meta)/1.2 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"] .fqm-you-foot{display:flex;justify-content:space-between;font:400 var(--fq-text-meta)/1 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"] .fqm-you-foot a{color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-h{display:flex;justify-content:space-between;align-items:baseline}
@@ -299,7 +294,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar{height:4px;border-radius:4px;background:var(--fqm-ink-6);overflow:hidden}
 [data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar i{border-radius:4px;transition:width var(--fq-dur-slow) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar.iri i{background:var(--fq-iridescent-sweep-deep);background-size:220% 100%}
-[data-design="frequency"] [data-kit="members"] .fqm-rp-more{align-self:flex-start;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-rp-foot{font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="members"] .fqm-rp-foot:hover{color:var(--fq-text-strong)}
 
@@ -313,9 +307,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-gs-ring{position:relative;width:46px;height:46px;flex:none;border-radius:50%;background:var(--fqm-ink-8)}
 [data-design="frequency"] [data-kit="members"] .fqm-gs-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--fq-pa);-webkit-mask:conic-gradient(black var(--p,0%),transparent 0);mask:conic-gradient(black var(--p,0%),transparent 0)}
 [data-design="frequency"] [data-kit="members"] .fqm-gs-ring::after{content:attr(data-n);position:absolute;inset:4px;border-radius:50%;background:var(--fq-surface-raised);display:flex;align-items:center;justify-content:center;font:500 var(--fq-text-meta)/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-x{width:32px;height:32px;flex:none;border:none;border-radius:50%;background:none;color:var(--fq-text-faint);cursor:pointer;display:flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fqm-x:hover{background:var(--fqm-ink-5);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-x svg{width:16px;height:16px}
 [data-design="frequency"] [data-kit="members"] .fqm-steps{display:flex;flex-direction:column}
 [data-design="frequency"] [data-kit="members"] .fqm-step{display:flex;flex-direction:column;border-top:1px solid var(--fqm-ink-6)}
 [data-design="frequency"] [data-kit="members"] .fqm-step>button{min-height:44px;display:flex;align-items:center;gap:12px;padding:0;border:none;background:none;text-align:left;cursor:pointer;font:500 var(--fq-text-body-s)/1.25 var(--fq-font-sans);color:var(--fq-text-strong)}

@@ -35,7 +35,7 @@ import type { StaffRole } from '@/lib/staff'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { isConsoleRoute } from '@/lib/nav/console-route'
 
-export interface RailFaces {
+interface RailFaces {
   full: React.ReactNode
   micro: React.ReactNode
   tab: React.ReactNode

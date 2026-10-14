@@ -8,6 +8,7 @@ import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
 import { QuestFinishCelebration } from '@/components/widgets/quest/quest-finish-celebration'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { HOME_TZ } from '@/lib/time/zone'
 import type { CrewContext } from '@/lib/quest/crew-context'
 import { readSeasonMap, readPillarProgress, weeksLeft, seasonStartState, type JourneyArc } from '@/lib/quest/season-map-data'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
@@ -30,7 +31,7 @@ const SIDE = new Set(['quest-next-gathering', 'quest-leaderboard', 'quest-explor
 const ARC_ICON: Record<JourneyArc['pillar'], FqIconName> = { Mind: 'breath', Body: 'practice', Spirit: 'moon' }
 
 function when(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleString('en-US', { timeZone: HOME_TZ, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
 async function SeasonArcs({ ctx }: { ctx: CrewContext }) {

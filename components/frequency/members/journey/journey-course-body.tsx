@@ -4,6 +4,7 @@ import { MembersBody, SerifTail } from '@/components/frequency/members/shared/me
 import { upNext, playHref, type OngoingCycle } from '@/components/journey/v2/learn/course-home'
 import { unlockLine, type PhaseLockState } from '@/lib/journeys/schedule'
 import type { JourneyTree, Lesson, Phase } from '@/lib/journeys/tree'
+import { HOME_TZ } from '@/lib/time/zone'
 
 // THE COURSE HOME under Frequency (design_handoff/frequency/templates/members/Journey.html). The
 // reference IS the enrolled member's view ("Week 2 of 4 · Lesson 6 next", Continue lesson, the week's
@@ -56,10 +57,10 @@ function lessonSub(l: Lesson, done: boolean, pillar: string | undefined, anchor:
 }
 
 function when(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleString('en-US', { timeZone: HOME_TZ, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-export type PhaseEvents = Record<
+type PhaseEvents = Record<
   string,
   { meetup: { slug: string; title: string; startsAt: string } | null; gathering: { slug: string; title: string; startsAt: string } | null }
 >

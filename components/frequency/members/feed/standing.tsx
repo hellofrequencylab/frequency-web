@@ -52,7 +52,7 @@ function setBox(open: boolean) {
 
 type Stat = 'streak' | 'zaps' | 'gems' | 'rank'
 
-export interface StandingProps {
+interface StandingProps {
   streak: number
   loggedToday: boolean
   atRisk: boolean

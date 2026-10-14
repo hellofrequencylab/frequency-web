@@ -7,10 +7,6 @@
    export has no token for (token-ok). */
 
 @layer components {
-
-/* The body frame (components/frequency/members/shared/members-body.tsx). A nested kit scope must not
-   repaint the canvas over the shell's wash. */
-[data-design="frequency"] [data-kit="members"] [data-kit="members"]{background:transparent}
 [data-design="frequency"] [data-kit="members"] .mc-block{display:block}
 [data-design="frequency"] [data-kit="members"] .mc-faint{color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="members"] .mc-dim{opacity:.6}
@@ -113,8 +109,6 @@
 [data-design="frequency"] [data-kit="members"] .mc-jcard-ph .fq-icon{width:28px;height:28px}
 [data-design="frequency"] [data-kit="members"] .mc-jcard-body{padding:18px 20px 20px}
 [data-design="frequency"] [data-kit="members"] .list>[aria-disabled="true"]{cursor:default}
-[data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
 [data-design="frequency"] [data-kit="members"] .faces a{display:flex;margin-left:-8px;border-radius:50%}
 [data-design="frequency"] [data-kit="members"] .faces a:first-child{margin-left:0}
 [data-design="frequency"] [data-kit="members"] .faces a .av{margin-left:0}

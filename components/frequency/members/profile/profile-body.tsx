@@ -14,12 +14,12 @@ import { MembersBody, SerifTail } from '@/components/frequency/members/shared/me
 //   columns        Story · Posts · Circles · Practice tabs (?tab=, server-rendered)  |  what they run,
 //                  standing, achievements, awards, the Crew card
 
-export interface ProfileStat {
+interface ProfileStat {
   value: string
   label: string
 }
 
-export interface ProfileTabLink {
+interface ProfileTabLink {
   key: string
   label: string
   href: string

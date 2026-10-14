@@ -15,7 +15,7 @@ import { SupportButton } from './support-button'
 // lib/help/content): the topics are its categories, the questions are each topic's lead article with
 // its own summary, and every link goes into the existing article pages. No answer is written here.
 
-export interface HelpReport {
+interface HelpReport {
   id: string
   ref: string | number
   subject: string

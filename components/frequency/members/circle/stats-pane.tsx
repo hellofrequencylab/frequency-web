@@ -37,7 +37,7 @@ async function Momentum({ circleId }: { circleId: string }) {
         <span className="k">Momentum</span>
         <span className="meta">{warming ? 'Warming up this week.' : 'Quiet this week. A good time to gather.'}</span>
       </div>
-      <div className="g4 fqm-stats">
+      <div className="g4 fqm-cstats">
         {cells.map(([n, label]) => (
           <div key={label}>
             <span className="num">{n.toLocaleString()}</span>
@@ -193,7 +193,7 @@ export function FqCircleStatsPane({
           Together with this <span className="serif">Circle.</span>
         </h2>
         <span className="t2">Every practice you log adds to the same total. This one belongs to the group.</span>
-        <div className="row fqm-goal">
+        <div className="row fqm-cgoal">
           <span className="num">{total.toLocaleString()}</span>
           <span className="t2 grow">of {target.toLocaleString()} Zaps</span>
           <span className="t1">{pct}%</span>

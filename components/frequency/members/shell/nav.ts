@@ -26,9 +26,9 @@
 import type { FqIconName } from '@/components/frequency/icon'
 import { ROUTES } from '@/lib/frequency/site-nav'
 
-export type MemberArea = 'community' | 'quest' | 'you' | ''
+type MemberArea = 'community' | 'quest' | 'you' | ''
 
-export interface FqNavItem {
+interface FqNavItem {
   label: string
   sub: string
   href: string
@@ -37,7 +37,7 @@ export interface FqNavItem {
   navKey?: string
 }
 
-export interface FqNavCard {
+interface FqNavCard {
   kicker: string
   title: string
   href: string
@@ -171,7 +171,7 @@ export const SEARCH_HREF = '/search'
 export const MESSAGES_HREF = '/messages'
 
 /** Is this route the Feed? */
-export function isFeed(pathname: string): boolean {
+function isFeed(pathname: string): boolean {
   return pathname === FEED_HREF || pathname.startsWith(FEED_HREF + '/')
 }
 
@@ -215,7 +215,7 @@ export const FQ_YOU_LINKS: readonly FqNavItem[] = FQ_NAV.find((s) => s.key === '
 // between the bottom left and top right menus"; culled 2026-10-14) ──────────────────────────────────
 
 /** A viewer gate a row can carry beyond its NAV_AREAS key. Resolved by `menuGateOpen`. */
-export type FqMenuGate =
+type FqMenuGate =
   /** Owns or admins at least one Space (hasOperatedSpaces, the layout's `operatesSpaces`). */
   | 'operatesSpaces'
   /** Host or above on the trust ladder (DAWN's `minAccess: 'host'`). */
@@ -396,9 +396,6 @@ export function groupRows(rows: readonly FqMenuRow[], v: FqMenuViewer, profileHr
   return out
 }
 
-/** Design items with no route in app/(main) today. Not rendered; listed so the gap is on the record. */
-export const NO_ROUTE: readonly string[] = ['Site map (footer, You tab)']
-
 /** Swap the `{profile}` placeholder for the viewer's own profile href. */
 export function resolveHref(href: string, profileHref: string): string {
   return href === '{profile}' ? profileHref : href
@@ -416,7 +413,7 @@ const AREA_PREFIXES: readonly [Exclude<MemberArea, ''>, readonly string[]][] = [
   // `quest`; Profile, Journal, My Code, The Vault and Settings wear `you`. Feed, Search, Messages,
   // Help and Site map wear none. The Vault sits under `/crew`, so `you` is checked before `quest`.
   ['you', ['/crew/store', '/settings', '/orders', '/upgrade', '/partners', '/profile', '/journal', '/codes']],
-  ['community', ['/events', '/nearby', '/circles', '/hubs', '/nexuses', '/channels', '/network', '/spaces', '/marketplace', '/market', '/classifieds', '/housing', '/friends']],
+  ['community', ['/events', '/nearby', '/circles', '/channels', '/network', '/spaces', '/marketplace', '/market', '/classifieds', '/housing', '/friends']],
   ['quest', ['/crew', '/journeys', '/practices', '/on-air']],
 ]
 
