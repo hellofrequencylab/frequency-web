@@ -89,7 +89,7 @@ export function ContactsTable({ rows }: { rows: ContactRow[] }) {
         />
       </div>
 
-      <div className="panel tbl-wrap" tabIndex={0} role="region" aria-label="Contacts">
+      <div className="panel tbl-wrap">
         <table className="tbl">
           <thead>
             <tr>

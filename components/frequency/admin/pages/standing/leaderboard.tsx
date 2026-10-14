@@ -32,7 +32,7 @@ export function StandingLeaderboard({ season, allTime }: { season: StandingRow[]
           ))}
         </div>
       </div>
-      <div className="panel tbl-wrap" role="tabpanel" tabIndex={0} aria-label={board === 'season' ? 'Season leaderboard' : 'All time leaderboard'}>
+      <div className="panel tbl-wrap" role="tabpanel">
         <table className="tbl">
           <thead>
             <tr>
