@@ -65,7 +65,10 @@ function readRails(): Rails {
     // The prototype's own migration: a v1 shared width `w` seeds both rails.
     const s = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY) || 'null') as Record<string, unknown> | null
     if (!s) return AUTO
-    return { l: num(s.l ?? s.w), r: num(s.r ?? s.w), lc: bool(s.lc), rc: bool(s.rc) }
+    // Both rails load at the left rail's width (owner, 2026-10-13: "the same width on both sides when it
+    // loads"); a right-rail drag holds for the visit and the next load mirrors the left again.
+    const l = num(s.l ?? s.w)
+    return { l, r: l ?? num(s.r ?? s.w), lc: bool(s.lc), rc: bool(s.rc) }
   } catch {
     return AUTO
   }
