@@ -126,7 +126,7 @@ export async function FqMembershipsBody({
             {n(members.length)} {members.length === 1 ? 'person' : 'people'} · renewal dates live in Stripe for now
           </span>
         </div>
-        <div className="panel tbl-wrap">
+        <div className="panel tbl-wrap" tabIndex={0} role="region" aria-label="Members">
           <table className="tbl">
             <thead>
               <tr>

@@ -12,7 +12,7 @@
 // the client toggles, the middleware-adjacent code and the unit test can all read one file. The DOM
 // half lives beside it in apply-mode.ts.
 
-import { DESIGNS, DESIGN_PREVIEW_KEY, SITE_DESIGN, designDef } from './design'
+import { DESIGN_PREVIEW_KEY, SITE_DESIGN, designDef } from './design'
 
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
@@ -225,7 +225,5 @@ var m=document.querySelector('meta[name="theme-color"]');
 if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}
 m.setAttribute('content',dark?${JSON.stringify(THEME_COLOR_DARK)}:${JSON.stringify(THEME_COLOR_LIGHT)});
 var skin=localStorage.getItem(${JSON.stringify(SKIN_STORAGE_KEY)});if(skin){d.setAttribute('data-skin',skin);}
-var dq=(location.search.match(/[?&]design=([a-z]+)/)||[])[1];
-if(dq==='off'){localStorage.removeItem(${JSON.stringify(DESIGN_PREVIEW_KEY)});}else if(dq&&${JSON.stringify(DESIGNS.map((x) => x.id))}.indexOf(dq)>-1){localStorage.setItem(${JSON.stringify(DESIGN_PREVIEW_KEY)},dq);}
-var ds=localStorage.getItem(${JSON.stringify(DESIGN_PREVIEW_KEY)});if(ds&&${JSON.stringify(DESIGNS.map((x) => x.id))}.indexOf(ds)>-1){d.setAttribute('data-design',ds);}
+localStorage.removeItem(${JSON.stringify(DESIGN_PREVIEW_KEY)});
 }catch(e){}})();`

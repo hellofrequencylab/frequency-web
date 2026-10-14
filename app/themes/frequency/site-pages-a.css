@@ -252,6 +252,10 @@
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static{min-height:420px}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-map{display:grid;place-items:center;overflow:hidden}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-map .rings{right:auto;left:62%;translate:-50% 0}
+/* The live map (shared/whats-on-map.tsx) sits right of the 340px list, so no pin lands under it, and
+   under the kit's vignette (.fqm-map::after, z 250). Hidden where the list fills the frame. */
+[data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-live-map{position:absolute;inset:0 0 0 372px;z-index:1}
+[data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static .fqm-live-map{display:none}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-it{text-decoration:none}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static[data-fqmap="spaces"] .fqm-it .ic{background:color-mix(in oklab,var(--fq-x-sun-neon) 12%,transparent);color:var(--fq-x-sun-neon)}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static[data-fqmap="spaces"] .fqm-live{color:var(--fq-x-sun-neon)}
@@ -260,5 +264,8 @@
 [data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static{min-height:0}
 @media (max-width:900px){[data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-map{display:none}
 [data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static .fqm-list{position:absolute;inset:0;border-radius:inherit}
-[data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static .fqm-items{flex-direction:column;overflow:auto}}
+[data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static .fqm-items{flex-direction:column;overflow:auto}
+/* The kit sets .fqm{height:auto!important} under 900px, which collapsed the story's What's on panel to 0px
+   (its list is absolutely placed), so a phone saw an empty dark box. Inside the chapter frame it fills the frame. */
+[data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static{height:100%!important}}
 }

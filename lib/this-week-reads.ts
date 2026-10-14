@@ -28,7 +28,7 @@ export async function listUpcomingPublicEventsByRegion(now: Date): Promise<ThisW
   const { fromIso, toIso } = thisWeekQueryBand(now)
   const { data, error } = await createAdminClient()
     .from('events')
-    .select('id, slug, title, starts_at, time_zone, location, venue_name, city, scope_region_id')
+    .select('id, slug, title, starts_at, time_zone, location, venue_name, city, hide_address, scope_region_id')
     .eq('scope_type', 'public')
     .not('scope_region_id', 'is', null)
     .eq('status', 'published')

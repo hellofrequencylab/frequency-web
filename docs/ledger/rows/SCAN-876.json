@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-876",
+  "title": "The public event page is a full Frequency event page: the event's own blurred cover as the backdrop, a poster with a date chip, the facts and going count beside the RSVP box, About, Where with the map, and an event chat that asks a visitor to join",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/members/event/public-event-body.tsx",
+    "ref": "Owner 2026-10-14 on the public event page: ok but not great; the background is wrong and it needs all the info with RSVP (social proof), map, chat box (pop up to join) and a killer best practice event design with Frequency vibes."
+  },
+  "detail": "FqPublicEventBody drew a light split card on the Commons pastel with About and Where only. It now opens its own kit scope full width with the event's cover, blurred under a night scrim, as the backdrop of the top of the page; on it a 4:5 poster with the mode tag and a calendar chip (eventDateBadge) beside the kicker, a display-size title, the when, where and host lines with icons, the going count with an iridescent stack, and the join box in a solid card anchored at #rsvp. Below, About and Where (FqEventMap at the venue's point, passed only when the host left the address visible) sit in solid panels, then PublicEventChat: the chat's shape and a Say hi box whose tap opens a dialog to join free or RSVP as a guest; no member's words are read on the public, ISR page. The page still makes no request read.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('components/frequency/members/event/public-event-body.tsx','utf8');const bad=[];if(!b.includes('fqm-pe-backdrop'))bad.push('no event backdrop');if(!b.includes('<FqEventMap'))bad.push('no map');if(!b.includes('<PublicEventChat'))bad.push('no chat-to-join');if(!b.includes('id=\\\"rsvp\\\"'))bad.push('no RSVP anchor');if(!fs.existsSync('components/frequency/members/event/public-event-chat.tsx'))bad.push('chat component missing');if(bad.length){console.error('SCAN-876: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

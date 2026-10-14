@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-879",
+  "title": "A new visitor joins through one short Beta launch sequence on the Frequency design: name and email, a photo and a town, then check your email",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/site/pages/join/frequency-join.tsx",
+    "ref": "Owner 2026-10-14 (site scan thread): make the Frequency join flow a simple single-sequence Beta Launch entry with minimal barrier; parks SCAN-851 and SCAN-852."
+  },
+  "detail": "Under SITE_DESIGN=frequency a signed-out visitor on the bare /join now gets three steps in the Join template's two-pane layout inside the site shell. 1: name and email; on Continue the answers are parked at once through stashPendingInduction (with a handle derived from the name and checked against /api/check-handle), the lead row opens through captureLead, and the sign-in email is sent through sendSignupLink, a new action in app/sign-in/actions.ts that is signInWithMagicLink's own send (same throttle buckets, post-login cookie and signup OTP) returning instead of redirecting. 2: an optional photo (shrunk and parked in localStorage under fq_pending_avatar, which /join/complete uploads) and an optional town: Turn on location uses the browser prompt (getBrowserPosition) and a new Photon reverse lookup (reversePlace in lib/geocode.ts), with a typed-town typeahead as the fallback; the town is re-parked and added to the lead. 3: Check your email, with Send it again and Use a different email. The emailed link lands on /join/complete, whose finalizer writes the profile exactly as for the deferred induction. A browser that already parked a name and handle reopens on step 2 rather than the DAWN induction. /join?seq=, ?persona= and ?next= links, signed-in members and every DAWN build are unchanged. No SQL. Open: the link must be opened in the same browser for the parked answers to apply (the existing deferred-induction limit); the old Looking / Hosting switch and its host route to /spaces/new are gone from the bare /join.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const j=r('components/frequency/site/pages/join/frequency-join.tsx');const a=r('app/sign-in/actions.ts');const pg=r('app/join/(induction)/page.tsx');const bad=[];if(!a.includes('export async function sendSignupLink'))bad.push('no in-place signup send');for(const k of ['sendSignupLink','stashPendingInduction','getBrowserPosition','reversePlace','fq_pending_avatar','Check your email'])if(!j.includes(k))bad.push('the beta entry lacks '+k);if(!pg.includes('<FrequencyJoin')||pg.includes('!user && !parked &&'))bad.push('/join does not open the beta entry');if(bad.length){console.error('SCAN-879: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

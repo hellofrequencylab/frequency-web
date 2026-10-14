@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyOrbit } from '@/lib/connections/resonance'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { pointFromGeog } from '@/lib/events/geo'
+import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { listableOnly } from '@/lib/events/market-listing'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { listDueReminders } from '@/lib/connections/store'
@@ -36,7 +37,7 @@ function note(section: string, error: unknown): void {
   console.error(`[frequency-home] ${section} read failed; that section degraded to empty:`, detail)
 }
 
-const EVENT_COLS = `id, slug, title, location, starts_at, ends_at, category, energy_tag, cover_image_path,
+const EVENT_COLS = `id, slug, title, location, venue_name, city, region, hide_address, starts_at, ends_at, category, energy_tag, cover_image_path,
   geog, scope_id, scope_type, host_id, host_space_id, is_demo, theme,
   host:profiles!host_id ( display_name )`
 
@@ -45,6 +46,10 @@ interface EventRow {
   slug: string
   title: string
   location: string | null
+  venue_name: string | null
+  city: string | null
+  region: string | null
+  hide_address: boolean | null
   starts_at: string
   ends_at: string | null
   category: string | null
@@ -168,13 +173,17 @@ export async function loadHomeEvents(args: {
   }
 
   const inputs: HomeEventInput[] = rows.map((e) => {
-    const pt = pointFromGeog(e.geog)
+    // A hidden address stays hidden until the member is going (or hosting): the line drops to the
+    // city and no distance is worked out from the exact point (SCAN-859, lib/events/visible-location.ts).
+    const status = myStatus.get(e.id) ?? null
+    const seesExact = e.hide_address !== true || status === 'going' || e.host_id === profileId
+    const pt = seesExact ? pointFromGeog(e.geog) : null
     const coverUrl = e.cover_image_path ? admin.storage.from('event-media').getPublicUrl(e.cover_image_path).data.publicUrl : null
     return {
       id: e.id,
       slug: e.slug,
       title: e.title,
-      location: e.location,
+      location: seesExact ? e.location : publicVisibleLocation(e),
       startsAt: e.starts_at,
       endsAt: e.ends_at,
       category: e.category,
@@ -187,7 +196,7 @@ export async function loadHomeEvents(args: {
       distanceMi: home && pt ? milesBetween(home, pt) : null,
       goingCount: counts[e.id] ?? 0,
       friends: friendsByEvent.get(e.id) ?? [],
-      myStatus: myStatus.get(e.id) ?? null,
+      myStatus: status,
     }
   })
 

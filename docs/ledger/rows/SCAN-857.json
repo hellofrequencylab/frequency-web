@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-857",
+  "title": "Share cards for events, Circles, cities, Journeys, practices and help still carry DAWN indigo",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/og/event-card.tsx",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: the bar reads the per-design palette.ogAccent, but the chip behind it hardcodes DAWN indigo rgba(99,102,241,0.22) in lib/og/event-card.tsx:75 and the opengraph-image routes under app/discover, app/(help) and app/(public)/events. Every shared link previews in the old colour. THE FIX: read the chip from the design palette.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['lib/og/event-card.tsx'].map(r).join('\\n').search(/rgba\\(99, ?102, ?241/)>-1===false && ['app/(public)/events/[slug]/opengraph-image.tsx'].map(r).join('\\n').search(/rgba\\(99, ?102, ?241/)>-1===false && ['app/(help)/help/[category]/[slug]/opengraph-image.tsx'].map(r).join('\\n').search(/rgba\\(99, ?102, ?241/)>-1===false)?0:1)\""
+  },
+  "wave": "W7"
+}

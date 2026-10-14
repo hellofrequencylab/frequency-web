@@ -5,6 +5,8 @@ import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { SiteEvent, SiteSpace } from './data'
+import { eventCityPins, spaceCityPins } from './map-pins'
+import { WhatsOnMap } from './whats-on-map'
 
 export interface Act {
   href: string
@@ -93,8 +95,9 @@ export function WhatsOnList({
   const count = sp ? (spaces?.length ?? 0) : (events?.length ?? 0)
   return (
     <div className="fqm pa-static" data-fqmap={mode} style={style}>
-      <div className="fqm-map" aria-hidden="true">
-        <span className="rings" />
+      <div className="fqm-map">
+        <span className="rings" aria-hidden="true" />
+        <WhatsOnMap pins={sp ? spaceCityPins(spaces ?? []) : eventCityPins(events ?? [])} />
       </div>
       <aside className="fqm-list" aria-label={title}>
         <div className="fqm-top">
