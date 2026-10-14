@@ -211,8 +211,8 @@
     "app/auth/native/route.ts": {
       "verdict": "public",
       "reason": "The native sign-in return path (LIVE-718). Reads nothing and grants nothing: it forwards the query string unchanged to the web's own /auth/callback on the same origin, which does the PKCE exchange and validates next. No caller data crosses.",
-      "checked": "2026-10-06",
-      "digest": "3629805b1c6af11c"
+      "checked": "2026-10-14",
+      "digest": "2e60323f375e2635"
     },
     "app/hosted/[host]/robots.txt/route.ts": {
       "verdict": "public",
