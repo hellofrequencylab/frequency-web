@@ -6,7 +6,8 @@ import { safeImageUrl, safeUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
 import { InlineText } from '@/components/sites/inline-text'
-import { NetworkCountdown, countdownParts, wallClockInstant } from '@/components/sites/network-countdown'
+import { NetworkCountdown } from '@/components/sites/network-countdown'
+import { countdownParts, wallClockInstant } from '@/lib/time/wall-clock'
 import {
   ArrowRight, Briefcase, Building2, CalendarDays, Camera, Check, Clock, Coffee, Compass, Eye, Flag, Gift, HandHeart, Heart, Lightbulb,
   Mail, MapPin, Mic, Mountain, Music, Phone, Play, Rocket, Sparkles, Sprout, Star, Sun, Users, Video, Waves, Wind, type LucideIcon,
