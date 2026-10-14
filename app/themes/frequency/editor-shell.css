@@ -12,7 +12,8 @@
 [data-design="frequency"] [data-kit="editor"] .save span{overflow:hidden;text-overflow:ellipsis}
 [data-design="frequency"] [data-kit="editor"] .save-alert{position:absolute;top:68px;left:50%;transform:translateX(-50%);z-index:30;max-width:min(560px,90vw);padding:10px 16px;border:0;border-radius:var(--fq-radius-m);background:var(--fq-surface-raised);color:var(--fq-danger);font:500 var(--fq-text-meta)/1.4 var(--fq-font-sans);box-shadow:0 20px 40px -24px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="editor"] .faces span{display:grid;place-items:center;background:var(--fq-pa);color:var(--fq-text-strong);font:600 var(--fq-text-label)/1 var(--fq-font-sans)}
-[data-design="frequency"] [data-kit="editor"] .pubn{margin-left:2px;font:600 12px/1 var(--fq-font-sans);opacity:.75}
+/* The change count on Publish is a badge: the design's 12px badge step (#pubn in Page Editor.html). */
+[data-design="frequency"] [data-kit="editor"] .pub-badge{margin-left:2px;font:600 12px/1 var(--fq-font-sans);opacity:.75}
 [data-design="frequency"] [data-kit="editor"] .dot.live{background:var(--fq-success)}
 [data-design="frequency"] [data-kit="editor"] .dot.draft{background:var(--fq-reward)}
 [data-design="frequency"] [data-kit="editor"] .cap button:disabled{opacity:.4;cursor:default}
@@ -65,6 +66,10 @@
 [data-design="frequency"] [data-kit="editor"] .vera .reply .lbl{display:block;margin-top:6px}
 [data-design="frequency"] [data-kit="editor"] .vera .reply p{margin:6px 0 10px}
 [data-design="frequency"] [data-kit="editor"] .vera .bar .btn:disabled{opacity:.45}
+/* The inspector's empty state (the design's "Nothing selected") and the canvas while it loads. */
+[data-design="frequency"] [data-kit="editor"] .insp .empty b{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="editor"] .stage .we-canvas-loading{color:var(--fq-text-muted);font:500 var(--fq-text-meta)/1.4 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="editor"] .rail .note b{color:var(--fq-text-strong)}
 @media (min-width:821px) and (max-width:1100px){
 [data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="0"]{grid-template-columns:264px minmax(0,1fr) 320px}
 [data-design="frequency"] [data-kit="editor"] .pe:not([data-preview="1"])[data-lf="0"][data-rf="1"]{grid-template-columns:264px minmax(0,1fr) 0}

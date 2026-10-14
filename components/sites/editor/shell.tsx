@@ -4,7 +4,7 @@
 
 import { slugify } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
 import { ArrowUp, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, FileText, Globe, Layers, MessageSquare, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Home, ExternalLink, Trash2, Smartphone, Sparkles, Tablet, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 import { addBlock, buildOutline, derivePickerGroups, duplicateBlockDeep, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
@@ -19,7 +19,8 @@ import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
-const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.WebsiteCanvas), { ssr: false })
+// The canvas loads on the client; until it does the stage says so instead of standing empty.
+const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.WebsiteCanvas), { ssr: false, loading: () => <div className="we-canvas-loading" role="status">Loading your page…</div> })
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock } from './vera-dock'
@@ -45,6 +46,15 @@ export interface WebsiteEditorShellProps {
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
+}
+/** What the shortcut handler reads: a React key event (DAWN's root onKeyDown) or the document's (Frequency). */
+type KeyLike = Pick<globalThis.KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'shiftKey' | 'target' | 'preventDefault'>
+/** The design's search-description length (Page Editor.html, Site tab: "Description 118 / 160") and title length. */
+const SEO_TITLE_ADVISED = 60
+const SEO_DESCRIPTION_ADVISED = 160
+function savedAgo(at: number, now: number) {
+  const minutes = Math.floor((now - at) / 60000)
+  return minutes < 1 ? 'just now' : minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hr ago`
 }
 function readMobileViewport() { return window.matchMedia('(max-width:767px)').matches }
 function subscribeViewport(callback: () => void) {
@@ -83,8 +93,8 @@ function Dialog({ label, children }: { label: string; children: ReactNode }) {
   return <div ref={root} className={k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onKeyDown={trap} onClick={(event) => event.stopPropagation()}>{children}</div>
 }
 
-function Icon({ label, children, className = '', ...props }: { label: string; children: ReactNode; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={label} {...props}>{children}</button>
+function Icon({ label, hint, children, className = '', ...props }: { label: string; hint?: string; children: ReactNode; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
 export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, onStyle }: WebsiteEditorShellProps) {
@@ -164,6 +174,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [dropId, setDropId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const toastTimer = useRef<number | undefined>(undefined)
+  // When the draft last saved, for the design's "Draft saved · 2 min ago"; the clock ticks once a minute.
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { if (!FQ_EDITOR) return; const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer) }, [])
+  const veraInput = useRef<HTMLInputElement>(null)
+  const pickRef = useRef<HTMLDivElement>(null)
+  const uid = useId()
   function say(message: string) {
     setToast(message)
     window.clearTimeout(toastTimer.current)
@@ -222,6 +239,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!next) return
     if (redo) history.current.push(latest.current); else future.current.push(latest.current)
     setDraft(next); latest.current = next; setStatus('unsaved'); setHistoryCounts({ past: history.current.length, future: future.current.length })
+    say(redo ? 'Redone' : 'Undone')
   }
   const save = useCallback(async (publish = false, schedule?: string | null) => {
     if (busy.current) return
@@ -235,9 +253,11 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       saved.current = JSON.stringify(captured)
       setPersisted(result.state)
       setStatus(JSON.stringify(latest.current) === saved.current ? 'saved' : 'unsaved')
-      if (publish || schedule) setModal(null)
+      setSavedAt(Date.now()); setNow(Date.now())
+      if (publish || schedule) { setModal(null); say(schedule ? `Scheduled for ${new Date(schedule).toLocaleString()}` : `Published to ${host}`) }
     } catch { setStatus('error'); setError('Could not reach your website. Your changes are still here. Try saving again.') }
     finally { busy.current = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- say() and host only phrase the toast
   }, [onSave])
   useEffect(() => {
     if (status !== 'unsaved' || snapshotKey === saved.current) return
@@ -260,8 +280,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   function action(id: string, kind: 'up' | 'down' | 'copy' | 'comment' | 'delete') {
     if (kind === 'comment') { setSelectedId(id); setPanel('comments'); setRight(true); return }
     if (kind === 'up' || kind === 'down') updateDoc(nudgeBlock(page.doc, config, id, kind === 'up' ? -1 : 1))
-    if (kind === 'copy') { const next = duplicateBlockDeep(page.doc, config, id); updateDoc(next.data); if (next.id) select(next.id) }
-    if (kind === 'delete') { updateDoc(removeBlockDeep(page.doc, config, id).data); setSelectedId(null) }
+    const name = config.components[findBlockDeep(page.doc, config, id)?.type ?? '']?.label ?? 'Section'
+    if (kind === 'copy') { const next = duplicateBlockDeep(page.doc, config, id); updateDoc(next.data); if (next.id) select(next.id); say(`${name} duplicated`) }
+    if (kind === 'delete') { updateDoc(removeBlockDeep(page.doc, config, id).data); setSelectedId(null); say(`${name} removed. Undo with ⌘Z.`) }
   }
   function reorderSections(ids: string[], targetId: string) {
     const content = page.doc.content
@@ -272,14 +293,35 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     updateDoc({ ...page.doc, content: [...remaining.slice(0, target), ...moving, ...remaining.slice(target)] })
   }
   function pickPage(slug: string) { setTextSelection(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia('(max-width:767px)').matches) setLeft(false) }
-  function keys(e: KeyboardEvent) {
+  function togglePreview(next = !preview) { setPreview(next); if (FQ_EDITOR) say(next ? 'Preview. Press Esc to keep editing.' : 'Back to editing') }
+  function keys(e: KeyLike) {
     const target = e.target as HTMLElement
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return }
-    if (e.key === 'Escape') { setModal(null); setPreview(false); setPickOpen(false); return }
-    if (target.closest('input,textarea,select,[contenteditable=true]')) return
+    const mod = e.metaKey || e.ctrlKey
+    if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return }
+    // The design's shortcuts (Page Editor.html): ⌘P previews, ⌘K asks Vera. Frequency only; DAWN keeps its set.
+    if (FQ_EDITOR && mod && e.key.toLowerCase() === 'p') { e.preventDefault(); togglePreview(); return }
+    if (FQ_EDITOR && mod && e.key.toLowerCase() === 'k') { e.preventDefault(); if (preview) setPreview(false); veraInput.current?.focus(); return }
+    if (e.key === 'Escape') { setModal(null); if (preview) togglePreview(false); setPickOpen(false); return }
+    if (!target?.closest || target.closest('input,textarea,select,[contenteditable=true]')) return
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); travel(e.shiftKey) }
     if (e.key === '/') { e.preventDefault(); insert(page.doc.content.length) }
   }
+  // Frequency listens on the document, so the shortcuts work before anything in the editor has focus.
+  const keysRef = useRef(keys)
+  useEffect(() => { keysRef.current = keys })
+  useEffect(() => {
+    if (!FQ_EDITOR) return
+    const listener = (event: globalThis.KeyboardEvent) => { if (!event.defaultPrevented) keysRef.current(event) }
+    document.addEventListener('keydown', listener)
+    return () => document.removeEventListener('keydown', listener)
+  }, [])
+  // The page menu closes on a click outside it, as the design's does.
+  useEffect(() => {
+    if (!pickOpen) return
+    const close = (event: MouseEvent) => { if (!pickRef.current?.contains(event.target as Node)) setPickOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [pickOpen])
   function newPage(template: string) {
     const label = pageName.trim()
     if (!label) return
@@ -345,7 +387,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   function renderLayers(nodes: OutlineNode[], parentId: string | null = null, slotKey: string | null = null, depth = 0): ReactNode {
     return nodes.map((node, index) => <div key={node.id} draggable onDragStart={(event) => { event.stopPropagation(); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', node.id) }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); if (dropId !== node.id) setDropId(node.id) }} onDragEnd={() => setDropId(null)} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); setDropId(null); const id = event.dataTransfer.getData('text/plain'); if (id !== node.id && findBlockDeep(page.doc, config, id)) updateDoc(moveBlockTo(page.doc, config, id, { parentId, slotKey, index })) }}>
       {FQ_EDITOR
-        ? <button type="button" className={`row${on(selectedId === node.id)}${dropId === node.id ? ' drop-before' : ''}${depth === 0 && sectionDeviceLayout(page.doc, node.id, device).hidden ? ' off' : ''}`} style={{ paddingLeft: 8 + depth * 14 }} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><span className="grip" aria-hidden>⋮⋮</span><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">{node.label}{node.summary && node.summary !== node.label && <small>{node.summary}</small>}</span>{/^(Space|Live)/.test(node.type) && <span className="meta">Live</span>}</button>
+        ? <button type="button" className={`row${on(selectedId === node.id)}${dropId === node.id ? ' drop-before' : ''}${depth === 0 && sectionDeviceLayout(page.doc, node.id, device).hidden ? ' off' : ''}`} style={{ paddingLeft: 8 + depth * 14 }} aria-pressed={selectedId === node.id} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown" title="Drag, or press Alt and an arrow key, to move" onClick={() => select(node.id)} onKeyDown={(event) => { if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return; event.preventDefault(); updateDoc(nudgeBlock(page.doc, config, node.id, event.key === 'ArrowUp' ? -1 : 1)) }}><span className="grip" aria-hidden>⋮⋮</span><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">{node.label}{node.summary && node.summary !== node.label && <small>{node.summary}</small>}</span>{/^(Space|Live)/.test(node.type) && <span className="meta">Live</span>}</button>
         : <button type="button" className="we-row" style={{ paddingLeft: 10 + depth * 14 }} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><Layers size={15} aria-hidden /><span>{node.summary || node.label}</span>{/^(Space|Live)/.test(node.type) && <small>Live</small>}</button>}
       {node.slots.map((slot) => <div key={slot.key}>{slot.children.length > 0 && <span className={k('we-layer-slot')} style={{ paddingLeft: 24 + depth * 14 }}>{slot.label}</span>}{renderLayers(slot.children, node.id, slot.key, depth + 1)}</div>)}
     </div>)
@@ -362,7 +404,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // DAWN names under DAWN, the Frequency kit's under Frequency. The handlers are the same either way.
   const pressedChoice = (pressed: boolean) => (FQ_EDITOR ? on(pressed).trim() || undefined : 'we-action secondary')
   const layersTab = FQ_EDITOR
-    ? <><div className="cap">Page · {page.label}<button type="button" onClick={() => insert(page.doc.content.length)}>+ Add</button></div><button type="button" className="row chrome" onClick={() => openChrome('header')}><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">Header and navigation</span><span className="meta">Site</span></button>{renderLayers(outline)}<button type="button" className="row chrome" onClick={() => openChrome('footer')}><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">Footer</span><span className="meta">Site</span></button><button type="button" className="row" onClick={() => insert(page.doc.content.length)}><span className="ic"><Plus size={16} aria-hidden /></span><span className="t">Add section</span></button></>
+    ? <><div className="cap">Page · {page.label}<button type="button" onClick={() => insert(page.doc.content.length)}>+ Add</button></div><button type="button" className="row chrome" onClick={() => openChrome('header')}><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">Header and navigation</span><span className="meta">Site</span></button>{outline.length ? renderLayers(outline) : <div className="note"><b>This page is empty.</b> Add a section to start, or pick one from the Add tab.</div>}<button type="button" className="row chrome" onClick={() => openChrome('footer')}><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">Footer</span><span className="meta">Site</span></button><button type="button" className="row" onClick={() => insert(page.doc.content.length)}><span className="ic"><Plus size={16} aria-hidden /></span><span className="t">Add section</span></button></>
     : <><div className="we-caption">{page.label}</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button>{renderLayers(outline)}<button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => insert(page.doc.content.length)}><Plus size={15} />Add section</button></>
   const pagesTab = FQ_EDITOR
     ? <><div className="cap">{draft.pages.length} {draft.pages.length === 1 ? 'page' : 'pages'}<button type="button" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}>+ New page</button></div>{draft.pages.map((p) => { const isLive = !!persisted.published?.pages.some((b) => b.slug === p.slug); return <button type="button" className={`row${on(p.slug === page.slug)}`} key={p.slug} aria-current={p.slug === page.slug} onClick={() => pickPage(p.slug)}><span className="ic"><FileText size={16} aria-hidden /></span><span className="t">{p.label}<small>/{p.slug === 'home' ? '' : p.slug} · {isLive ? 'Live' : 'Draft'}</small></span><span className={`dot ${isLive ? 'live' : 'draft'}`} aria-hidden /></button> })}
@@ -378,10 +420,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
     <div className={k('we-caption')}>Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className={k('we-field')}>{FQ_EDITOR ? <span className="l">{LOOK_LABEL[key]}</span> : LOOK_LABEL[key]}<div className={k('we-choice-row')} role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className={pressedChoice(siteLook(lookStyle)[key] === o.id)} aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
     {styleError && <p role="alert" className={k('we-note')}>{styleError}</p>}
-    <div className={k('we-caption')}>Logo</div>{activeLogo && <img src={activeLogo} alt={`${brandName} logo`} style={{ width: 44, height: 44, objectFit: 'contain', margin: 8 }} />}
+    <div className={k('we-caption')}>Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
     <div className={k('we-actions')}><button type="button" className={k('we-action secondary')} onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className={k('we-action secondary')} onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
     <div className={k('we-caption')}>Brand accent</div><label className={k('we-field')}>Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className={k('we-action secondary')} onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className={k('we-swatch-list')}><span className={k('we-swatch')} style={{ background: 'var(--th-accent)' }} /><span className={k('we-swatch')} style={{ background: 'var(--th-season)' }} /><span className={k('we-swatch')} style={{ background: 'var(--th-text)' }} /></div>
-    <div className={k('we-caption')}>Type</div>{['display', 'body', 'mono'].map((role) => <div className={k('we-note')} key={role}>{role}<strong style={{ display: 'block', color: 'var(--th-text)', fontFamily: `var(--th-${role}-render)` }}>{String(websiteThemeVars(draft.theme)[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
+    <div className={k('we-caption')}>Type</div>{['display', 'body', 'mono'].map((role) => <div className={k('we-note')} key={role}>{role}<strong className="we-type-sample" data-role={role}>{String(websiteThemeVars(draft.theme)[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
     <div className={k('we-note')}>The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>
   const railBody = <>
     {tab === 'Pages' && pagesTab}
@@ -402,7 +444,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       {/* A THEME PER PAGE (LIVE-699): the shared site style's per-page override, live at once like the theme. */}
       <div className={k('we-field')}>{FQ_EDITOR ? <span className="l">Page theme</span> : 'Page theme'}<div className={k('we-choice-row')} role="group" aria-label="Page theme">{[{ id: null as SiteThemeId | null, label: 'Same as site' }, ...SITE_THEMES.map((t) => ({ id: t.id as SiteThemeId | null, label: t.label }))].map((o) => <button type="button" key={o.id ?? 'site'} className={pressedChoice(pageTheme === o.id)} aria-pressed={pageTheme === o.id} onClick={() => { if (pageTheme === o.id) return; const pages = { ...style.pages }; if (o.id) pages[page.slug] = o.id; else delete pages[page.slug]; void saveStyle({ pages: { [page.slug]: o.id } }, { ...style, pages }) }}>{o.label}</button>)}</div></div>
       <p className={k('we-note')}>This page can wear the other theme. Same as site follows the Theme tab, and the change shows on your live website at once.</p>{styleError && <p role="alert" className={k('we-note')}>{styleError}</p>}<div className={k('we-actions')}><button type="button" className={k('we-action secondary')} disabled={draft.pages.indexOf(page) <= 1 || page.slug === 'home'} onClick={() => movePage(-1)}>Move earlier</button><button type="button" className={k('we-action secondary')} disabled={draft.pages.indexOf(page) >= draft.pages.length - 1 || page.slug === 'home'} onClick={() => movePage(1)}>Move later</button></div><button type="button" className={k('we-row')} onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button>{page.slug !== 'home' && <button type="button" className={k('we-row')} onClick={() => setModal('delete-page')}><Trash2 size={15} />Remove page</button>}</>}
-    {panel === 'seo' && <><label className={k('we-field')}>Page title<Input variant="seamless" value={page.seo.title} placeholder={`${page.label} | ${brandName}`} maxLength={200} onChange={(e) => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, seo: { ...p.seo, title: e.target.value } } : p) })} /></label><label className={k('we-field')}>Description<Textarea variant="seamless" value={page.seo.description} maxLength={500} onChange={(e) => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, seo: { ...p.seo, description: e.target.value } } : p) })} /></label><div className={k('we-caption')}>Share preview</div><div className={k('we-share-card')}><small>{host}</small><strong>{page.seo.title || `${page.label} | ${brandName}`}</strong><p>{page.seo.description}</p></div><div className={k('we-note')}>Search and sharing changes go live when you publish.</div></>}
+    {panel === 'seo' && (FQ_EDITOR ? <><div className="fld"><label htmlFor={`${uid}-title`}>Page title <em>{page.seo.title.length} / {SEO_TITLE_ADVISED}</em></label><Input id={`${uid}-title`} className="in" value={page.seo.title} placeholder={`${page.label} | ${brandName}`} maxLength={200} onChange={(e) => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, seo: { ...p.seo, title: e.target.value } } : p) })} /></div><div className="fld"><label htmlFor={`${uid}-description`}>Description <em>{page.seo.description.length} / {SEO_DESCRIPTION_ADVISED}</em></label><Textarea id={`${uid}-description`} className="in" value={page.seo.description} maxLength={500} onChange={(e) => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, seo: { ...p.seo, description: e.target.value } } : p) })} /></div>{(page.seo.title.length > SEO_TITLE_ADVISED || page.seo.description.length > SEO_DESCRIPTION_ADVISED) && <p className="note">Search results cut titles past {SEO_TITLE_ADVISED} characters and descriptions past {SEO_DESCRIPTION_ADVISED}.</p>}<div className="cap">Share preview</div><div className="share"><small>{host}</small><strong>{page.seo.title || `${page.label} | ${brandName}`}</strong><p>{page.seo.description}</p></div><div className="note">Search and sharing changes go live when you publish.</div></> : <><label className={k('we-field')}>Page title<Input variant="seamless" value={page.seo.title} placeholder={`${page.label} | ${brandName}`} maxLength={200} onChange={(e) => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, seo: { ...p.seo, title: e.target.value } } : p) })} /></label><label className={k('we-field')}>Description<Textarea variant="seamless" value={page.seo.description} maxLength={500} onChange={(e) => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, seo: { ...p.seo, description: e.target.value } } : p) })} /></label><div className={k('we-caption')}>Share preview</div><div className={k('we-share-card')}><small>{host}</small><strong>{page.seo.title || `${page.label} | ${brandName}`}</strong><p>{page.seo.description}</p></div><div className={k('we-note')}>Search and sharing changes go live when you publish.</div></>)}
     {panel === 'comments' && <><div className={k('we-note')}>{selectedId ? pinPosition?.blockId === selectedId ? 'Comment pinned at the selected position.' : 'Shift-click the page to choose a precise pin position.' : 'Select a section to pin a comment.'}</div>{page.comments.filter((c) => !c.resolved).map((c) => <article className={k('we-comment')} key={c.id}><button type="button" className={k('we-row')} onClick={() => setSelectedId(c.blockId)}><strong>{c.author}</strong></button><small>{new Date(c.createdAt).toLocaleString()}</small><p>{c.text}</p>{c.replies?.map((reply) => <div className={k('we-comment-reply')} key={reply.id}><strong>{reply.author}</strong><small>{new Date(reply.createdAt).toLocaleString()}</small><p>{reply.body}</p></div>)}{(c.replies?.length ?? 0) < 100 && <><label className={k('we-field')}>Reply to {c.author}<Textarea variant="seamless" aria-label={`Reply to comment by ${c.author}`} value={replies[c.id] ?? ''} maxLength={2000} onChange={(event) => setReplies((previous) => ({ ...previous, [c.id]: event.target.value }))} /></label><button type="button" className={k('we-action secondary')} disabled={!replies[c.id]?.trim()} onClick={() => replyToComment(c.id)}>Post reply</button></>}<button type="button" className={k('we-row')} onClick={() => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, comments: p.comments.map((x) => x.id === c.id ? { ...x, resolved: true } : x) } : p) })}>Resolve</button></article>)}
       <label className={k('we-field')}>Comment<Textarea variant="seamless" value={comment} maxLength={2000} onChange={(e) => setComment(e.target.value)} /></label><button type="button" className={k('we-action')} disabled={!comment.trim() || !selectedId} onClick={addComment}>Post comment</button></>}
   </>
@@ -425,13 +467,19 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // (Content, Design, Advanced, Notes) and the publish modal. Folding is the kit's data-lf / data-rf.
   if (FQ_EDITOR) {
     const veraVisible = asking || !!veraStatus || !!proposal
-    return <div data-editor-root data-kit="editor" data-website-theme={draft.theme} style={{ ...websiteThemeVars(draft.theme, activeAccent), position: 'relative', zIndex: 60 }} onKeyDown={keys}>
+    // The design's save line: "Saving…", then "Draft saved · 2 min ago". A failed save says so and the line retries.
+    const fqSaveLabel = status === 'saving' ? 'Saving…' : status === 'saved' ? (savedAt ? `Draft saved · ${savedAgo(savedAt, now)}` : 'Draft saved') : status === 'unsaved' ? 'Unsaved changes' : status === 'conflict' ? 'A newer draft exists' : 'Not saved · Retry'
+    // "Section 2 of 8" (the design's inspector header) for a top-level section; nested blocks keep the scope line.
+    const sectionIndex = selectedId ? page.doc.content.findIndex((block) => block.props.id === selectedId) : -1
+    const fqScope = panel === 'inspect' && sectionIndex >= 0 ? `Section ${sectionIndex + 1} of ${page.doc.content.length} · ${inspectorScope}` : inspectorScope
+    const nothingSelected = panel === 'inspect' && !selected
+    return <div data-editor-root data-kit="editor" data-website-theme={draft.theme} style={{ ...websiteThemeVars(draft.theme, activeAccent), position: 'relative', zIndex: 60 }}>
       <style>{WEBSITE_TOKEN_CSS}</style>
       <div className="pe" data-lf={left ? '0' : '1'} data-rf={right ? '0' : '1'} data-preview={preview ? '1' : '0'}>
         <header className="top">
           <a className="ib" aria-label="Back to Space home" title="Back to Space home" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer"><ChevronLeft size={18} aria-hidden /></a>
           <div className="brand"><span className="av" style={activeLogo ? { backgroundImage: `url(${JSON.stringify(activeLogo)})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' } : { backgroundImage: 'none' }} aria-hidden /><span><b>{draft.chrome?.name || brandName}</b><small>{host}</small></span></div>
-          <div className="pick">
+          <div className="pick" ref={pickRef}>
             <button type="button" aria-haspopup="menu" aria-expanded={pickOpen} onClick={() => setPickOpen(!pickOpen)}><span>{page.label}</span><ChevronDown size={16} aria-hidden /></button>
             <div className={`menu${on(pickOpen)}`} role="menu" aria-label="Pages">
               {draft.pages.map((p) => <button type="button" role="menuitem" key={p.slug} onClick={() => { pickPage(p.slug); setPickOpen(false) }}>{p.label}<span className="sp" /><span className={`dot ${persisted.published?.pages.some((b) => b.slug === p.slug) ? 'live' : 'draft'}`} aria-hidden /></button>)}
@@ -439,18 +487,18 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
               <button type="button" role="menuitem" disabled={draft.pages.length >= 30} onClick={() => { setModal('templates'); setPickOpen(false) }}>+ New page</button>
             </div>
           </div>
-          <button type="button" className={`save${status === 'saved' ? '' : ' dirty'}`} onClick={() => void save()} title="Save draft" aria-label="Save draft" role="status"><i aria-hidden /><span>{saveLabel}</span></button>
+          <button type="button" className={`save${status === 'saved' ? '' : ' dirty'}`} onClick={() => void save()} title="Save draft ⌘S" aria-label="Save draft" aria-describedby={`${uid}-save`}><i aria-hidden /><span id={`${uid}-save`} role="status">{fqSaveLabel}</span></button>
           <span className="sp" />
           {!!error && <button type="button" className="save-alert" role="alert" onClick={() => setRight(true)}>{error}</button>}
           <Icon label={left ? 'Fold left rail' : 'Open left rail'} onClick={() => setLeft(!left)}><PanelLeft size={18} aria-hidden /></Icon>
           <div className="seg dev" role="group" aria-label="Preview width">{DEVICES.map(({ id, icon: DeviceIcon, label }) => <button type="button" key={id} className={on(device === id).trim() || undefined} aria-label={label} title={label} aria-pressed={device === id} onClick={() => setDevice(id)}><DeviceIcon size={17} aria-hidden /></button>)}</div>
           <Icon label={right ? 'Fold inspector' : 'Open inspector'} onClick={() => setRight(!right)}><PanelRight size={18} aria-hidden /></Icon>
-          <Icon label="Undo" disabled={!historyCounts.past} onClick={() => travel(false)}><Undo2 size={18} aria-hidden /></Icon>
-          <Icon label="Redo" disabled={!historyCounts.future} onClick={() => travel(true)}><Redo2 size={18} aria-hidden /></Icon>
-          <Icon label={preview ? 'Back to editor' : 'Preview'} aria-pressed={preview} onClick={() => setPreview(!preview)}><Eye size={18} aria-hidden /></Icon>
-          <span className="faces" title={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')}>{[{ key: 'me', name: author }, ...people.map((person) => ({ key: person.profileId, name: person.name }))].map((person) => <span key={person.key} aria-label={`${person.name} · editing`}>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</span>
+          <Icon label="Undo" hint="Undo ⌘Z" aria-keyshortcuts="Meta+Z Control+Z" disabled={!historyCounts.past} onClick={() => travel(false)}><Undo2 size={18} aria-hidden /></Icon>
+          <Icon label="Redo" hint="Redo ⇧⌘Z" aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z" disabled={!historyCounts.future} onClick={() => travel(true)}><Redo2 size={18} aria-hidden /></Icon>
+          <Icon label={preview ? 'Back to editor' : 'Preview'} hint={preview ? 'Back to editor · Esc' : 'Preview ⌘P'} aria-keyshortcuts="Meta+P Control+P" aria-pressed={preview} onClick={() => togglePreview()}><Eye size={18} aria-hidden /></Icon>
+          <span className="faces" role="img" aria-label={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')} title={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')}>{[{ key: 'me', name: author }, ...people.map((person) => ({ key: person.profileId, name: person.name }))].map((person) => <span key={person.key} aria-hidden>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</span>
           <button type="button" className="btn sm" onClick={() => void share()}>Share</button>
-          <button type="button" className="btn pa" onClick={() => setModal('publish')}>Publish{changeCount > 0 && <span className="pubn">{changeCount}</span>}</button>
+          <button type="button" className="btn pa" onClick={() => setModal('publish')}>Publish{changeCount > 0 && <span className="pub-badge">{changeCount}</span>}</button>
         </header>
         <aside className="rail" aria-label="Website navigation">
           <div className="tabs" role="tablist" aria-label="Website tools">{TABS.map(({ label, icon: TabIcon }) => <button type="button" role="tab" key={label} aria-selected={tab === label} className={on(tab === label).trim() || undefined} title={label} onClick={() => { setTab(label); setLeft(true) }}><TabIcon size={18} aria-hidden /><span>{label}</span></button>)}</div>
@@ -464,7 +512,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is preparing a proposal…' : veraStatus}{proposal && <><b className="lbl">Proposed text</b><p>{proposal.after}</p><div className="acts"><button type="button" className="btn sm pa" onClick={applyProposal}>Apply</button><button type="button" className="btn sm" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Discard</button></div></>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
               <span className="orb" aria-hidden />
-              <Input aria-label="Ask Vera" placeholder="Ask Vera to change something, or type / to add" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder="Ask Vera to change something, or type / to add" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
               <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking} aria-label="Send to Vera">Ask</button>
             </form>
@@ -472,8 +520,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           </div>}
         </main>
         <aside className="insp" aria-label="Inspector">
-          {right && <>
-            <div className="ih"><span className="ic">{panel === 'comments' ? <MessageSquare size={18} aria-hidden /> : <Settings2 size={18} aria-hidden />}</span><span className="grow"><b>{inspectorTitle}</b><small>{inspectorScope}</small></span><Icon label="Close inspector" onClick={() => setRight(false)}><PanelRight size={18} aria-hidden /></Icon></div>
+          {right && nothingSelected && <>{!!error && <div className="note err" role="alert">{error}{status === 'error' && <button type="button" className="row" onClick={() => void save()}>Retry save</button>}{status === 'conflict' && <button type="button" className="row" onClick={() => window.location.reload()}>Reload newer draft</button>}</div>}
+            <div className="empty"><span className="orb" aria-hidden /><b>Nothing selected</b>Click any section on the page, or pick one in Layers.</div></>}
+          {right && !nothingSelected && <>
+            <div className="ih"><span className="ic">{panel === 'comments' ? <MessageSquare size={18} aria-hidden /> : <Settings2 size={18} aria-hidden />}</span><span className="grow"><b>{inspectorTitle}</b><small>{fqScope}</small></span><Icon label="Close inspector" onClick={() => setRight(false)}><PanelRight size={18} aria-hidden /></Icon></div>
             {(panel === 'inspect' || panel === 'comments') && <div className="isub"><div className="seg" role="tablist" aria-label="Inspector">{INSPECTOR_TABS.map((t) => <button type="button" role="tab" key={t.id} aria-selected={shownTab === t.id} className={on(shownTab === t.id).trim() || undefined} onClick={() => { if (t.id === 'notes') setPanel('comments'); else { setInspectorTab(t.id); setPanel('inspect') } }}>{t.label}{t.id === 'notes' && activeComments.length > 0 ? ` ${activeComments.length}` : ''}</button>)}</div></div>}
             <div className="fields">{inspectorBody}</div>
             {panel === 'inspect' && selected && selectedId && <div className="ifoot"><button type="button" className="btn sm" onClick={() => action(selectedId, 'copy')}><Copy size={16} aria-hidden />Duplicate</button><button type="button" className="btn sm danger" onClick={() => action(selectedId, 'delete')}><Trash2 size={16} aria-hidden />Delete</button></div>}
@@ -496,7 +546,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="seg when" role="group" aria-label="When"><button type="button" className={on(publishWhen === 'now').trim() || undefined} aria-pressed={publishWhen === 'now'} onClick={() => setPublishWhen('now')}>Publish now</button><button type="button" className={on(publishWhen === 'schedule').trim() || undefined} aria-pressed={publishWhen === 'schedule'} onClick={() => setPublishWhen('schedule')}>Schedule</button></div>
           {publishWhen === 'schedule' && <label className="fld"><span className="l">Publish date and time <em>Your local time zone</em></span><Input className="in" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} /></label>}
           {scheduledNotice}
-          <div className="acts end"><a className="btn" href={`https://${host}/`} target="_blank" rel="noreferrer">View website</a><button type="button" className="btn pa" disabled={publishDisabled} onClick={publishAction}>{publishLabel}<ArrowRight size={16} aria-hidden /></button></div>{error && <p className="note err" role="alert">{error}</p>}
+          <div className="acts end"><button type="button" className="btn" onClick={() => setModal(null)}>Keep editing</button><button type="button" className="btn pa" disabled={publishDisabled} onClick={publishAction}>{publishLabel}<ArrowRight size={16} aria-hidden /></button></div>{error && <p className="note err" role="alert">{error}</p>}
           <div className="cap">Versions</div>{versionsList}</>}
       </Dialog></div>}
     </div>
