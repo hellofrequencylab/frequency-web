@@ -38,11 +38,12 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('names the three themes Frequency, Bold and Wildheart, each with its own default fonts', () => {
+  it('names the four themes Frequency, Bold, Wildheart and Network, each with its own default fonts', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
       ['frequency', 'Frequency', 'frequency'],
       ['bold', 'Bold', 'menswork'],
       ['wildheart', 'Wildheart', 'classic'],
+      ['network', 'Network', 'modern'],
     ])
     // A stock theme: no stored value from before it existed reads as Wildheart.
     expect(readSiteStyle({ theme: 'classic' }).theme).toBe('frequency')

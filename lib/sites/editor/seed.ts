@@ -90,5 +90,6 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   if (theme.toLowerCase() === 'dawn') return 'DAWN'
   // Only a SAVED site style reads as Wildheart: nothing applies the theme on its own (owner ruling 2026-10-12).
   if (siteTheme(preferences) === 'wildheart') return 'Wildheart'
+  if (siteTheme(preferences) === 'network') return 'Network'
   return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
 }

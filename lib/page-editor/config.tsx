@@ -26,6 +26,7 @@ import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 import { profileComponents } from '@/components/page-editor/blocks/profile'
 import { designComponents } from '@/components/page-editor/blocks/design'
 import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
+import { networkComponents, NETWORK_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 
 export const config: Config = {
@@ -61,6 +62,7 @@ export const config: Config = {
     ...profileComponents,
     ...designComponents,
     ...wildheartComponents,
+    ...networkComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -148,6 +150,12 @@ export const config: Config = {
     wildheart: {
       title: 'Astrology calendar',
       components: ['WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine', 'WildheartSeasonBand', 'WildheartMoonPath', 'WildheartSealCards', 'WildheartRetreatBand', 'WildheartMarkSplit', 'WildheartPhoto', 'WildheartOrnament', 'WildheartMoonStrip', 'WildheartModules', 'WildheartFirstNight'],
+    },
+    // The Network theme's section family (The Group's design handoff): website pages only, like the
+    // Wildheart family. Dates and next-up cards read the Space's events through `metadata.space`.
+    network: {
+      title: 'Network sections',
+      components: [...NETWORK_CATEGORY_COMPONENTS],
     },
   },
 }

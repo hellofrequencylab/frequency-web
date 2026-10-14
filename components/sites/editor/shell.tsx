@@ -47,10 +47,10 @@ function subscribeViewport(callback: () => void) {
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
  *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Frequency', Midnight: 'Midnight', Wildheart: 'Wildheart' }
-const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Frequency', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network' }
+const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network' }
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : 'frequency')
 const LOOK_LABEL: Record<SiteLookKey, string> = { corners: 'Corners', spacing: 'Spacing', header: 'Header', footer: 'Footer' }
 const DEFAULT_STYLE: SiteStyle = { theme: 'frequency', fonts: 'frequency', synced: true, spaceFonts: 'frequency', look: { corners: null, spacing: null, header: null, footer: null } }
 
@@ -112,7 +112,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const websiteBrand = resolveWebsiteBrand(draft, { logo, accent: brandAccent })
   const activeLogo = websiteBrand.logo
   const chromeDefaults = { name: brandName, tagline: (metadata?.websiteChrome as { tagline?: string | null } | undefined)?.tagline ?? null, cta: (metadata?.websiteChrome as { cta?: { label: string; href: string } | null } | undefined)?.cta ?? null }
-  const activeAccent = draft.theme === 'Menswork' || draft.theme === 'Wildheart' ? websiteBrand.accent : draft.brand?.accent
+  const activeAccent = draft.theme === 'Menswork' || draft.theme === 'Wildheart' || draft.theme === 'Network' ? websiteBrand.accent : draft.brand?.accent
   const accentValue = String(websiteThemeVars(draft.theme, activeAccent)['--th-accent' as keyof React.CSSProperties])
   const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const latest = useRef(initial.draft)
