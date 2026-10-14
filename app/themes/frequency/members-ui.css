@@ -331,3 +331,18 @@
 @media (prefers-reduced-motion: reduce) {
   [data-design="frequency"] .fq-navprog.on { animation: none; transform: scaleX(1) }
 }
+
+/* ── Hand-built switches (owner, 2026-10-14: "the crazy purple color is still there") ─────────────────
+   About a dozen DAWN forms draw their own `role="switch"` with `bg-primary` when on, which Frequency
+   resolves to its saturated action violet. The kit's switch (.sw) is the iridescent --fq-pa when on and
+   --fq-track when off; every hand-built switch in the app kits now reads the same. */
+[data-design="frequency"] [data-kit] [role="switch"]:is(.bg-primary, [aria-checked="true"]):not(.sw),
+[data-design="frequency"] [data-kit] [role="switch"][aria-checked="true"] > .bg-primary {
+  background: var(--fq-pa);
+  border-color: transparent;
+}
+[data-design="frequency"] [data-kit] [role="switch"]:is(.bg-border, .bg-surface-elevated, [aria-checked="false"]):not(.sw),
+[data-design="frequency"] [data-kit] [role="switch"][aria-checked="false"] > :is(.bg-border, .bg-surface-elevated) {
+  background: var(--fq-track);
+  border-color: transparent;
+}
