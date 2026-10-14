@@ -210,6 +210,8 @@ type EventSchemaEnrichment = {
 
 /** The exact-venue half of an Event's Place (ADR-1743). Every part optional. */
 export interface EventVenue {
+  /** The host's free-text venue line (events.location), used when the parts are empty (SCAN-867). */
+  location?: string | null
   name?: string | null
   street?: string | null
   postal_code?: string | null
@@ -267,22 +269,28 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   // of the three exist (SCAN-790): Google treats location.address as required for a physical
   // Place, so an event with a region or country but no city still gets an address rather than
   // the bare placeholder. It never falls back to the free-text `location` line (SCAN-209), which is
-  // whatever the host typed. An event with no place at all is knowingly ineligible for the Event
-  // rich result; nothing is invented for it.
+  // whatever the host typed, EXCEPT when the host left the address visible (SCAN-867, below). An
+  // event with no place at all is knowingly ineligible for the Event rich result; nothing is
+  // invented for it.
   //
   // THE EXACT VENUE (ADR-1743, owner-ruled 2026-10-14): venue name, streetAddress, postalCode and a
   // GeoCoordinates point join the Place ONLY when the host left the address visible
   // (`hide_address === false`). A hidden-address event, or a caller that did not read the flag,
   // keeps exactly the city-level Place above (SCAN-209, ADR-825). See publishableVenue.
   const venue = publishableVenue(event.hide_address, event.venue)
+  // SCAN-867: 147 public events carried their full address only in the free-text line, with the
+  // address visible, and published a nameless Place. Under the same visible-only rule as the parts,
+  // that line stands in for the street (and the name) when the parts are empty.
+  const freeLine = event.hide_address === false ? clean(event.venue?.location) : null
+  const street = venue?.street ?? freeLine
   const addr = {
-    ...(venue?.street ? { streetAddress: venue.street } : {}),
+    ...(street ? { streetAddress: street } : {}),
     ...(event.city ? { addressLocality: event.city } : {}),
     ...(event.region ? { addressRegion: event.region } : {}),
     ...(venue?.postal ? { postalCode: venue.postal } : {}),
     ...(event.country ? { addressCountry: event.country } : {}),
   }
-  const placeName = venue?.name ?? event.city ?? event.region ?? event.country ?? null
+  const placeName = venue?.name ?? (venue?.street ? null : freeLine) ?? event.city ?? event.region ?? event.country ?? null
   const hasAddress = Object.keys(addr).length > 0
   const geo = venue?.geo
     ? { geo: { '@type': 'GeoCoordinates', latitude: venue.geo.lat, longitude: venue.geo.lng } }

@@ -38,6 +38,15 @@
 [data-design="frequency"] [data-kit="members"] .fqm-time{width:72px;flex:none}
 [data-design="frequency"] [data-kit="members"] .fqm-where{height:240px;border-radius:var(--fq-radius-l)}
 [data-design="frequency"] [data-kit="members"] .fqm-gap-sm{gap:8px}
+/* The signed-out event share page (public-event-body.tsx): its own kit scope inside the site's .wrap,
+   with no ground of its own so the Commons surface shows through. */
+[data-design="frequency"] [data-kit="members"].fqm-public{background:transparent;padding-bottom:var(--fq-space-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-pre{white-space:pre-line}
+/* The share page sits inside the site kit, whose own .sec (a marketing section's padding), .side (a
+   promo tile) and .panel classes would also match: put the members kit's meaning back. */
+[data-design="frequency"] [data-kit="members"].fqm-public .ap-cols.sec{padding:0;margin-top:56px}
+[data-design="frequency"] [data-kit="members"].fqm-public .ap-cols>.side{overflow:visible;border-radius:0;padding:0;min-height:0;box-shadow:none;justify-content:flex-start;gap:20px}
+[data-design="frequency"] [data-kit="members"].fqm-public .panel{background-image:none}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-ev-in{padding:22px}
 [data-design="frequency"] [data-kit="members"] .fqm-ev-ph{min-height:240px}}
 
