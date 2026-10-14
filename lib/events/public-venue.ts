@@ -16,11 +16,15 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { pointFromGeog } from '@/lib/events/geo'
 import type { EventVenue } from '@/lib/jsonld'
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 export interface PublicEventVenue {
   /** The host's flag. `null` when the read failed: treated as hidden by the schema builder. */
   hide_address: boolean | null
   venue: EventVenue | null
+  /** The hosting Space's city and region (SCAN-867), city-level and public whatever the flag: the
+   *  fallback for an event that carries no city of its own. Absent when there is none. */
+  area?: { city: string | null; region: string | null }
 }
 
 /** Pure: shape one row into what the schema may receive. Exported for the tests. */
@@ -30,15 +34,18 @@ export function venueFromRow(row: {
   street: string | null
   postal_code: string | null
   geog: unknown
+  location?: string | null
 } | null): PublicEventVenue {
   if (!row) return { hide_address: null, venue: null }
   // NULL in the column is not "visible": only an explicit false publishes (the column defaults to
   // false, so a real row always carries one or the other).
   if (row.hide_address !== false) return { hide_address: row.hide_address ?? null, venue: null }
   const point = pointFromGeog(row.geog)
+  const location = row.location?.trim() || null
   return {
     hide_address: false,
     venue: {
+      ...(location ? { location } : {}),
       name: row.venue_name,
       street: row.street,
       postal_code: row.postal_code,
@@ -54,7 +61,7 @@ export async function getPublicEventVenue(slug: string): Promise<PublicEventVenu
   try {
     const { data, error } = await createAdminClient()
       .from('events')
-      .select('hide_address, venue_name, street, postal_code, geog')
+      .select('hide_address, venue_name, street, postal_code, geog, location, city, host_space_id, space_id')
       .eq('slug', slug)
       .eq('visibility', 'public')
       .eq('status', 'published')
@@ -62,7 +69,23 @@ export async function getPublicEventVenue(slug: string): Promise<PublicEventVenu
       .limit(1)
       .maybeSingle()
     if (error) throw error
-    return venueFromRow((data as Parameters<typeof venueFromRow>[0]) ?? null)
+    const row = data as (Parameters<typeof venueFromRow>[0] & { city: string | null; host_space_id: string | null; space_id: string | null }) | null
+    const out = venueFromRow(row ?? null)
+    // The host Space's city, for an event with none of its own (SCAN-867: 146 of the 239 city-less
+    // public events have one). City-level, so it is publishable whatever the address flag says.
+    // The hosting Space through the one resolver (LIVE-075): the root tenant is not a host, so a personal
+    // event never borrows the platform's city.
+    const spaceId = row && !row.city?.trim() ? await resolveHostingSpaceIdFromRow(row) : null
+    if (spaceId) {
+      const { data: space } = await createAdminClient()
+        .from('spaces')
+        .select('city, region')
+        .eq('id', spaceId)
+        .maybeSingle()
+      const s = space as { city: string | null; region: string | null } | null
+      if (s?.city?.trim()) out.area = { city: s.city.trim(), region: s.region?.trim() || null }
+    }
+    return out
   } catch (e) {
     console.error('[public-venue] read failed; the event schema falls back to the city-level Place:', e instanceof Error ? e.message : e)
     return { hide_address: null, venue: null }

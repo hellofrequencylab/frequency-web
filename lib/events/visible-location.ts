@@ -92,12 +92,22 @@ export function publicPageWhere(input: {
   hide_address: boolean | null | undefined
   venue: PublicPageVenue | null | undefined
   city: string | null | undefined
+  /** The host's free-text line (events.location), from the same server-side venue read. */
+  location?: string | null
 }): PublicPageWhere {
   const city = trimmed(input.city)
-  const venue = input.hide_address === false ? input.venue : null
+  const visible = input.hide_address === false
+  const venue = visible ? input.venue : null
   const name = trimmed(venue?.name)
   const street = trimmed(venue?.street)
-  if (!name && !street) return { line: city, mapsHref: null, exact: false }
+  if (!name && !street) {
+    // SCAN-867: most imported events carry their whole address in the free-text line and nothing
+    // in the parts ("Municipal, 1722 S Coast Hwy, Oceanside, CA 92054"). With the address visible
+    // that line IS the venue, exactly as publicVisibleLocation already treats it.
+    const free = visible ? trimmed(input.location) : null
+    if (free) return { line: free, mapsHref: mapsSearchUrl(free), exact: true }
+    return { line: city, mapsHref: null, exact: false }
+  }
   const address = [street, city].filter(Boolean).join(', ')
   const line = [name, address].filter(Boolean).join(' · ')
   const query = [name, street, city, trimmed(venue?.postal_code)].filter(Boolean).join(', ')
