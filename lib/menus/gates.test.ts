@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { applyRegistryGates, registryGateFor, normalizeGateHref, REGISTRY_GATES } from './gates'
 import { defaultMenu } from './defaults'
-import { STUDIO_LEAVES } from '@/lib/nav/studio'
+import { readFileSync } from 'node:fs'
+import { STUDIO_LEAVES, ADMIN_GROUP_SPECS } from '@/lib/nav/studio'
+import { NAV_AREAS } from '@/lib/nav-areas'
 import type { ResolvedItem, ResolvedMenu } from './types'
 
 // The gate contract (owner decision 2026-08-06, docs/MENU-AUDIT-2026-08-06.md §4.2-§4.4).
@@ -113,9 +115,11 @@ describe('applyRegistryGates — the unknown-href floor', () => {
 
   it('Business Seeder is NOT one of these — the registry declares it', () => {
     // The audit (§4.4) called this row DB-only because it is not a NAV_AREA. It is a Studio
-    // leaf, so the registry does gate it, at janitor. Worth pinning: it is the difference
-    // between "the escape hatch is in use on the live rail" and "it is not."
-    expect(registryGateFor('/admin/business-seeder')?.minAccess).toBe('janitor')
+    // leaf, so the registry does gate it, at its page's own gate (admin + structure since the
+    // catalog-side gate fix, ADR-1746). Worth pinning: it is the difference between "the escape
+    // hatch is in use on the live rail" and "it is not."
+    expect(registryGateFor('/admin/business-seeder')?.minAccess).toBe('admin')
+    expect(registryGateFor('/admin/business-seeder')?.staffDomain).toBe('structure')
   })
 
   it('does not LOWER a stricter floor on an undeclared operator page', () => {
@@ -221,9 +225,37 @@ describe('admin_header is seven job sections, each item gated by its own page (A
   it('gates a merged-in tool by its own page, never its new section', () => {
     expect([find('/admin/qr').minAccess, find('/admin/qr').staffDomain]).toEqual(['admin', 'qr'])
     expect([find('/admin/marketplace').minAccess, find('/admin/marketplace').staffDomain]).toEqual(['admin', 'platform'])
-    // A FROZEN_GATE_DEBT row carries its PAGE's gate, so the menu never promises what the page denies.
+    // A former FROZEN_GATE_DEBT row now states its PAGE's gate on the leaf itself (ADR-1746).
     expect([find('/admin/crm/pipeline').minAccess, find('/admin/crm/pipeline').staffDomain]).toEqual(['janitor', undefined])
     // Member Roster was stamped host + community by its section, a dead link for every host.
     expect([find('/admin/members').minAccess, find('/admin/members').staffDomain]).toEqual(['janitor', 'members'])
+  })
+})
+
+// ── The owner rulings of 2026-10-14 (ADR-1746) ──────────────────────────────────────────────────────
+describe('one IA across the console, the /admin dashboard and the member rail (ADR-1746)', () => {
+  const console7 = defaultMenu('admin_header').categories.map((c) => c.label)
+
+  it("the /admin dashboard draws the console's seven sections, same order, same labels", () => {
+    expect(ADMIN_GROUP_SPECS.map((g) => g.label)).toEqual(console7)
+  })
+
+  it('every operator leaf is still a dashboard card (the CRM roster included)', () => {
+    const cards = new Set(ADMIN_GROUP_SPECS.flatMap((g) => g.links.map((l) => l.leaf)))
+    expect(STUDIO_LEAVES.filter((l) => !cards.has(l.id)).map((l) => l.id)).toEqual([])
+  })
+
+  it('the member rail Admin rows carry no retired section label', () => {
+    const labels = NAV_AREAS.filter((a) => a.section === 'Admin').map((a) => a.label)
+    for (const retired of ['Dashboard', 'Programs', 'Operations', 'Market admin']) expect(labels).not.toContain(retired)
+    expect(labels).toEqual(
+      expect.arrayContaining(['Overview', 'Community', 'Content', 'Growth', 'Resonance CRM', 'Vera AI', 'Platform']),
+    )
+  })
+
+  it('Default Funnel is a tab of Funnels: no catalog row of its own, and its old route 301s to the tab', () => {
+    expect(STUDIO_LEAVES.some((l) => l.href === '/pages/splash')).toBe(false)
+    const cfg = readFileSync('next.config.ts', 'utf8')
+    expect(cfg).toContain("{ source: '/pages/splash', destination: '/pages/sequences?tab=default', statusCode: 301 }")
   })
 })

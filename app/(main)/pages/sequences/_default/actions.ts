@@ -8,7 +8,8 @@ import { DEFAULT_FUNNEL } from '@/lib/funnels/definitions'
 import { saveFunnelOverride, deleteFunnelVersion } from '@/lib/funnels/overrides'
 import { resolveDefaultFunnel } from '@/lib/funnels/resolve'
 
-// Server actions for the default Funnel's live-preview editor (/pages/splash).
+// Server actions for the default Funnel's live-preview editor (the Funnels page's Default Funnel tab,
+// /pages/sequences?tab=default; /pages/splash until ADR-1746).
 // Janitor-gated like the rest of the pages surface. Saving writes the `beta-default`
 // row in sequence_overrides; the live /join flow resolves it on the next
 // request (lib/funnels/resolve.ts). Reset deletes the row, falling back to the coded
@@ -39,7 +40,7 @@ function cleanVera(input: unknown): VeraCopy {
 
 function revalidate() {
   revalidatePath('/join')
-  revalidatePath('/pages/splash')
+  revalidatePath('/pages/sequences')
   revalidatePath('/pages')
 }
 

@@ -8,11 +8,12 @@
 // on, in `SpaceModule.hub` (ADR-1313); this list describes the shape, it does not decide it:
 //   • Resonance — the space's people + communication: CRM (pipeline/contacts/cockpit), Conversations,
 //     lead capture, connections, and the automation/drip that runs over those contacts.
-//   • Marketing — outbound reach + growth: Email (compose/design/style), QR codes + scans.
+//   • Marketing — outbound reach + growth: Email (compose/design/style), QR codes + scans, and Your reach
+//     (the ranking receipt, beside Reach since ADR-1746).
 //   • Offerings & Money — everything the space sells: booking, memberships, donations, Get paid, and the
 //     Shop.
 //   • Content & Programs — what the space teaches + hosts: Practices, Journeys, Circles, the Program,
-//     Airwaves, Loom Studio, the Calendar, and Your reach.
+//     Airwaves, Loom Studio, and the Calendar.
 //
 // Profile & Settings trails them as a real tab (ADR-788 reversed ADR-785's header placement), and since
 // ADR-1336 it is the ONE door to a Space's settings: Team + Reviews + Plan & usage cards, the identity
@@ -39,7 +40,7 @@ export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string;
   // Each blurb names what the tab's catalog rows actually hold (ADR-1745 audit): lead capture and
   // automation sit on this tab, not Marketing, and no Space tool sells tickets (events do).
   { key: 'resonance', label: 'Community Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, lead capture, and automation.' },
-  { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, its design and style, and QR codes.' },
+  { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, its design and style, QR codes, and your reach across the network.' },
   { key: 'offerings', label: 'Offerings & Money', blurb: 'Getting paid, and everything your space sells: bookings, memberships, donations, and the shop.' },
   { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: the calendar, practices, journeys, circles, recordings, and images.' },
   { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and collaborators, reviews, plan and billing, and the danger zone.' },

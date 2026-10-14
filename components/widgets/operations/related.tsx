@@ -34,7 +34,7 @@ export async function OperationsRelated() {
 
   return (
     <RelatedAreas
-      current="operations"
+      current="platform"
       role={roles.role}
       webRole={roles.webRole}
       staffRole={roles.staffRole}

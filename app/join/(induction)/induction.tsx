@@ -69,7 +69,7 @@ type Props = {
    *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
    *  stamp meta.persona + the persona tag, and branches the tour reel. */
   persona?: PersonaId
-  /** Open the flow at a specific beat (0–3). Two callers: the /pages/splash editor, which
+  /** Open the flow at a specific beat (0–3). Two callers: the Default Funnel editor (/pages/sequences?tab=default), which
    *  previews the REAL component one beat at a time, and the RESUME path, which reopens an
    *  induction this browser left unfinished. The flow logic is untouched by either. */
   initialBeat?: number

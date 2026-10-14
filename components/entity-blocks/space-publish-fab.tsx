@@ -76,7 +76,7 @@ export function SpacePublishFab({
   // unpersisted work and none of the guards below knew it. `seed` deliberately does not set it, so
   // merely opening your own page never arms a prompt.
   //
-  // Same shape as the repo's other editors (admin/walkthroughs, pages/splash): preventDefault +
+  // Same shape as the repo's other editors (admin/walkthroughs, the Default Funnel tab): preventDefault +
   // returnValue is all a browser honours. The string is ignored by every modern browser, which is
   // exactly why the in-page copy below has to carry the message too — this dialog can only ask
   // "leave?", it cannot explain why.

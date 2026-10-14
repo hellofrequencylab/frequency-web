@@ -182,7 +182,7 @@ export async function setSequenceStatusAction(slug: string, status: FunnelPublis
 export async function deleteSequenceVersionAction(slug: string): Promise<void> {
   if (!(await getJanitor())) return
   // Only DB-created versions are deletable; code sequences are immutable here, and
-  // the default flow's override is reset from /pages/splash, not deleted here.
+  // the default flow's override is reset from the Default Funnel tab, not deleted here.
   if (slug === DEFAULT_FUNNEL || listCodeFunnels().some((s) => s.slug === slug)) return
   await deleteFunnelVersion(slug)
   revalidatePath('/pages/sequences')

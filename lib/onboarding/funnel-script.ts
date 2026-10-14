@@ -75,7 +75,7 @@ export const REEL: ReelSlide[] = [
  *
  *  Ships as WRITING PROMPTS, not finished copy: this is the default Funnel
  *  template every custom funnel clones, so each beat carries fill-in guidance the
- *  operator replaces in the /pages/splash + funnel editors.
+ *  operator replaces in the Default Funnel + funnel editors.
  *  Keep the beat structure; the copy stays plain prompts, no em dashes. */
 export const VERA = {
   intro: {
