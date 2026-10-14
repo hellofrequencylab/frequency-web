@@ -70,6 +70,7 @@ const sends: {
   to: string
   subject: string
   from?: string
+  replyTo?: string
   headers?: Record<string, string>
   outreachSendId?: string
   __kind?: string
