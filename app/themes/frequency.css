@@ -236,3 +236,18 @@
   --fq-bg-sunken: var(--fq-th-900);
   --fq-surface-card: var(--fq-th-900);
 }
+
+/* THE APP SURFACES (owner, 2026-10-14: "a lot of rogue styles"). The member and admin kits paint their
+   pages on the card surface (kit-members/kit-admin `[data-kit]{background:var(--fq-surface-card)}`) under
+   the ambient glows, not on Commons sand. DAWN components inside them still asked for the canvas, the
+   raised surface and the chrome, which resolve to sand here, so callouts, table heads, comments and
+   skeletons landed as tan blocks. Inside the two app kits those roles take the kits' own sunken idiom:
+   a faint ink wash over the card surface (the members kit's `.input` fill), so every DAWN panel reads as
+   the kit's. The website kit keeps Commons sand, which is its design. */
+[data-design="frequency"] [data-kit="members"],
+[data-design="frequency"] [data-kit="admin"] {
+  --color-canvas: var(--fq-surface-card);
+  --color-surface-elevated: color-mix(in oklab, var(--fq-text-strong) 4%, var(--fq-surface-card));
+  --color-chrome: color-mix(in oklab, var(--fq-text-strong) 4%, var(--fq-surface-card));
+  --color-chrome-hover: color-mix(in oklab, var(--fq-text-strong) 7%, var(--fq-surface-card));
+}
