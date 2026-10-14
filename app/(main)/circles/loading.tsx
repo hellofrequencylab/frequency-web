@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading UI for the Circles index (PAGE-FRAMEWORK §5).
 //
@@ -33,6 +35,8 @@ function CircleCardSkeleton() {
 }
 
 export default function CirclesLoading() {
+  // Under Frequency (build-time) the wait is the kit's own head, find row and card grid.
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Circles" shape="circles" />
   return (
     <div>
       <Skeleton className="min-h-[15rem] w-full rounded-3xl sm:min-h-[24rem]" />

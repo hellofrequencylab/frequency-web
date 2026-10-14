@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqCircleLoading } from '@/components/frequency/members/community-states'
 
 // Instant loading state for ONE circle. Opening a circle card is an App Router navigation, and
 // until this file existed the nearest boundary above it was app/(main)/circles/loading.tsx — the
@@ -17,6 +19,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 // badge row, then the tab strip and a body. Skeletons are dimension-matched so nothing jumps when
 // the real header swaps in (PAGE-FRAMEWORK §5.4).
 export default function CircleDetailLoading() {
+  // Under Frequency (build-time) the wait is the kit's Circle: the cover, the meetup, the side panels.
+  if (SITE_DESIGN === 'frequency') return <FqCircleLoading />
   return (
     <div>
       {/* The standard Detail cover (16:6). */}

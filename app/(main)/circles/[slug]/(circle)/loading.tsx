@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqPaneLoading } from '@/components/frequency/members/community-states'
 
 // Instant loading state for a TAB BODY. A loading.tsx in the same folder as a layout renders inside
 // it (Next 16, loading.js "Behavior"), so this one covers only what changes when you move between
@@ -10,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // screen while the strip already shows the new tab as current, which reads as a click that did
 // nothing. The cold-open skeleton for the whole shell is one level up, at [slug]/loading.tsx.
 export default function CircleTabLoading() {
+  if (SITE_DESIGN === 'frequency') return <FqPaneLoading />
   return (
     <div className="space-y-3 pt-4">
       <Skeleton className="h-5 w-40" />

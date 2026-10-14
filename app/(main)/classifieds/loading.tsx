@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading UI for the Marketplace index (PAGE-FRAMEWORK §5). Mirrors
 // the IndexTemplate header + the kind-filter tab row, the "Near me" control, and
@@ -22,6 +24,7 @@ function ListingCardSkeleton() {
 }
 
 export default function MarketLoading() {
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Classifieds" shape="items" />
   return (
     <div>
       {/* Header band (PageHeading: title + description + rule) */}

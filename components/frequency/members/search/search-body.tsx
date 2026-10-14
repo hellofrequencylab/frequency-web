@@ -1,5 +1,6 @@
 import '@/app/themes/frequency/members-a.css'
 import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/frequency/members-community.css'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { getCachedViewerProfile } from '@/lib/auth'
@@ -138,7 +139,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
   return (
     <div>
       <FqToaster />
-      <div className="stack" style={{ gap: 20 }}>
+      <div className="stack fqm-search-head">
         <h1 className="k">Search</h1>
         <form method="GET" action="/search" className="fa-searchbar" role="search">
           <FqIcon name="search" />
@@ -155,7 +156,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
         </nav>
       </div>
 
-      <div className="ap-cols sec" style={{ marginTop: 40 }}>
+      <div className="ap-cols sec fqm-search-cols">
         <div>
           {!ready && <p className="why">{query.length === 1 ? 'Keep typing.' : 'Type at least two letters to search.'}</p>}
           {ready && total === 0 && <p className="why">Nothing matching “{query}” yet. Try another word.</p>}
@@ -223,7 +224,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
                   <div key={p.id}>
                     <FqAvatar url={p.avatar_url} name={p.display_name} size="m" />
                     <span className="grow">
-                      <Link href={`/people/${p.handle}`} className="t1" style={{ display: 'block' }}>{p.display_name}</Link>
+                      <Link href={`/people/${p.handle}`} className="t1 fqm-block">{p.display_name}</Link>
                       <span className="t2">
                         {[`@${p.handle}`, p.id === me ? 'you' : null, me && p.id !== me && mutual(p.id) > 0 ? `${mutual(p.id)} mutual ${mutual(p.id) === 1 ? 'Circle' : 'Circles'}` : null]
                           .filter(Boolean)
@@ -293,7 +294,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
                   <Link key={post.id} href={post.author ? `/people/${post.author.handle}` : '/feed'}>
                     <FqAvatar url={post.author?.avatar_url} name={post.author?.display_name ?? 'Member'} />
                     <span className="grow">
-                      <span className="t1" style={{ display: 'block' }}>{post.author?.display_name ?? 'Member'}</span>
+                      <span className="t1 fqm-block">{post.author?.display_name ?? 'Member'}</span>
                       <span className="t2">{excerpt(post.body)} · {relativeTime(post.created_at)}</span>
                     </span>
                   </Link>
@@ -316,7 +317,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
                       <FqIcon name="arrow" />
                     </span>
                     <span className="grow">
-                      <span className="t1" style={{ display: 'block' }}>{d.label}</span>
+                      <span className="t1 fqm-block">{d.label}</span>
                       <span className="t2">{d.group}</span>
                     </span>
                   </Link>
@@ -341,7 +342,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
 }
 
 function More({ n, noun }: { n: number; noun: string }) {
-  return <p className="meta" style={{ marginTop: 16 }}>Showing the first {n} {noun}. Add another word to narrow the search.</p>
+  return <p className="meta fqm-more">Showing the first {n} {noun}. Add another word to narrow the search.</p>
 }
 
 function excerpt(body: string): string {

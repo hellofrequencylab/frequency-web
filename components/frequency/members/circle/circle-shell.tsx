@@ -2,9 +2,11 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/frequency/members-community.css'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import type { CircleUpcomingEvent } from '@/lib/events/circle-upcoming'
+import { meetupWhen } from '@/lib/circles/meetup-when'
 import { GoButton } from '@/components/frequency/members/go-button'
 import { FqRouteTabs } from '@/components/frequency/members/route-tabs'
 
@@ -13,17 +15,6 @@ import { FqRouteTabs } from '@/components/frequency/members/route-tabs'
 // pieces: the cover with its title and buttons, the next meetup, the tab strip over the real tab
 // ROUTES (Feed, What's Happening, Members, Circle Stats), and the About / This Circle side panels.
 // The tab bodies render as `children`, exactly as under DAWN.
-
-function whenShort(iso: string): string {
-  // Stored as the event's wall clock in UTC parts.
-  const d = new Date(iso)
-  const day = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
-  const time = d
-    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
-    .replace(' ', '')
-    .toLowerCase()
-  return `${day} ${time}`
-}
 
 /** The next meetup panel. Streams: the going count and the viewer's own answer are two light reads
  *  the cover should never wait on. */
@@ -53,7 +44,7 @@ async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; 
       }),
   ])
   const going = counts[event.id] ?? 0
-  const line = [whenShort(event.starts_at), event.location, going > 0 ? `${going} going` : null]
+  const line = [meetupWhen(event.starts_at, new Date()), event.location, going > 0 ? `${going} going` : null]
     .filter(Boolean)
     .join(' · ')
   return (

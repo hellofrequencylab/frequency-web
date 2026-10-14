@@ -29,15 +29,19 @@ const SORTS = [
   { value: 'open', label: 'Open spots' },
 ]
 
-function CircleTile({ c }: { c: CircleCardData }) {
+function CircleTile({ c, next }: { c: CircleCardData; next?: string }) {
   const href = c.isStarter ? `/circles/starter/${c.slug}` : `/circles/${c.slug}`
+  const place = c.context ?? (c.type === 'online' ? 'Online' : null)
+  // One of the viewer's own Circles with a meetup coming reads like the reference ("Next: Fri
+  // 6:15am"), and its place moves up beside the count; every other card keeps the place line.
   const first = [
     `${c.member_count} ${c.member_count === 1 ? 'member' : 'members'}`,
     c.isStarter ? 'Starter' : c.status === 'forming' ? 'Forming' : null,
+    next ? place : null,
   ]
     .filter(Boolean)
     .join(' · ')
-  const second = c.context ?? (c.type === 'online' ? 'Online' : null)
+  const second = next ? `Next: ${next}` : place
   return (
     <Link className="card fqm-card" href={href}>
       <span className="ph" style={c.imageUrl ? { backgroundImage: `url('${c.imageUrl}')` } : undefined}>
@@ -52,7 +56,16 @@ function CircleTile({ c }: { c: CircleCardData }) {
   )
 }
 
-export function FqCirclesBody({ data, params }: { data: CirclesIndexData; params: Params }) {
+export function FqCirclesBody({
+  data,
+  params,
+  nextMeetups,
+}: {
+  data: CirclesIndexData
+  params: Params
+  /** The viewer's own Circles' next meetup, by Circle id (lib/circles/next-meetups.ts). */
+  nextMeetups?: Map<string, string>
+}) {
   const {
     cards,
     myCircleIds,
@@ -134,7 +147,7 @@ export function FqCirclesBody({ data, params }: { data: CirclesIndexData; params
       {yours.length > 0 ? (
         <div className="g3">
           {yours.map((c) => (
-            <CircleTile key={c.id} c={c} />
+            <CircleTile key={c.id} c={c} next={nextMeetups?.get(c.id)} />
           ))}
         </div>
       ) : (

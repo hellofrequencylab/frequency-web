@@ -13,6 +13,8 @@ import { CircleRolePicker } from '@/components/circles/circle-role-picker'
 import { circleRoleFromStoredValue, CIRCLE_ROLE_LABEL } from '@/lib/core/circle-roles'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqMembersPane } from '@/components/frequency/members/circle/members-pane'
+import { ARRIVAL_WINDOW_DAYS } from '@/lib/circles/arrivals'
+import { isoDaysAgo } from '@/lib/utils'
 
 // ── THE MEMBERS TAB ─────────────────────────────────────────────────────────────────────────────
 // A BODY, not a shell: the cover, the title, the capacity bar and the tab strip all belong to the
@@ -54,6 +56,14 @@ export default async function CircleMembersPage({
   // THE FREQUENCY ROSTER (templates/members/Circle.html, Members tab). Same roster, same gates, same
   // role picker and invite door; only the grid changes.
   if (SITE_DESIGN === 'frequency') {
+    // The reference labels a newcomer "New" (Sunny, Jonah). Only a plain Member who joined inside the
+    // greeting strip's own window (lib/circles/arrivals.ts) reads that way; a Host or a Crew rung keeps
+    // its name, and an unreadable join date is never called new.
+    const since = Date.parse(isoDaysAgo(ARRIVAL_WINDOW_DAYS))
+    const isNew = (joinedAt: string | null | undefined) => {
+      const t = joinedAt ? Date.parse(joinedAt) : NaN
+      return Number.isFinite(t) && t >= since
+    }
     return (
       <FqMembersPane
         people={members.map((m) => {
@@ -64,7 +74,7 @@ export default async function CircleMembersPage({
             handle: m.profile.handle,
             name: m.profile.display_name,
             avatarUrl: m.profile.avatar_url,
-            role: CIRCLE_ROLE_LABEL[isOwner ? 'host' : rung],
+            role: !isOwner && rung === 'member' && isNew(m.joined_at) ? 'New' : CIRCLE_ROLE_LABEL[isOwner ? 'host' : rung],
             control:
               canSetRoles && !isOwner ? (
                 <CircleRolePicker
