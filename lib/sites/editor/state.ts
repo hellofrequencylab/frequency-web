@@ -172,11 +172,27 @@ export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnap
   }
 }
 
-export interface SectionDisplay { padding?: number; hidden?: boolean; gap?: number; columns?: number; textSize?: number; bodySize?: number; bodyFont?: 'display' | 'body' | 'mono'; textFont?: 'display' | 'body' | 'mono'; align?: 'left' | 'center' | 'right'; animation?: 'none' | 'fade' | 'rise'; className?: string; attributes?: string; placements?: Record<string, { column: number; span: number; row: number; height?: number }> }
+/** A section's background tone, content width and link anchor (the Frequency page editor's Design and Advanced
+ *  tabs, design_handoff/frequency/templates/admin/editor/HANDOFF-PAGE-EDITOR.md §6). All three are OPTIONAL and
+ *  read from the desktop entry only: absent, the section renders exactly as it always has. */
+export const SECTION_TONES = ['white', 'sand', 'pastel', 'ink'] as const
+export type SectionTone = (typeof SECTION_TONES)[number]
+export const SECTION_WIDTHS = ['narrow', 'default', 'wide', 'full'] as const
+export type SectionWidth = (typeof SECTION_WIDTHS)[number]
+/** An anchor is a lowercase slug: the section's `id` on the live page, so `#visit` links to it. */
+export function cleanSectionAnchor(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const slug = value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
+  return slug ? slug : undefined
+}
+export interface SectionDisplay { tone?: SectionTone; width?: SectionWidth; anchor?: string; padding?: number; hidden?: boolean; gap?: number; columns?: number; textSize?: number; bodySize?: number; bodyFont?: 'display' | 'body' | 'mono'; textFont?: 'display' | 'body' | 'mono'; align?: 'left' | 'center' | 'right'; animation?: 'none' | 'fade' | 'rise'; className?: string; attributes?: string; placements?: Record<string, { column: number; span: number; row: number; height?: number }> }
 export function sectionDisplay(doc: Data, id: string, device: Device): SectionDisplay {
   const layout = doc.root.props?.websiteLayout ?? {}
   const entry = layout[id] ?? {}
   const clean = (x: SectionDisplay): SectionDisplay => ({
+    ...((SECTION_TONES as readonly string[]).includes(x.tone ?? '') ? { tone: x.tone } : {}),
+    ...((SECTION_WIDTHS as readonly string[]).includes(x.width ?? '') ? { width: x.width } : {}),
+    ...(cleanSectionAnchor(x.anchor) ? { anchor: cleanSectionAnchor(x.anchor) } : {}),
     ...(typeof x.padding === 'number' && Number.isFinite(x.padding) ? { padding: Math.min(160, Math.max(0, x.padding)) } : {}),
     ...(typeof x.hidden === 'boolean' ? { hidden: x.hidden } : {}),
     ...(typeof x.gap === 'number' && Number.isFinite(x.gap) ? { gap: Math.min(160, Math.max(0, x.gap)) } : {}),
@@ -201,6 +217,45 @@ export function updateSectionDisplay(doc: Data, id: string, device: Device, valu
   if (value === null) delete entry[device]
   else entry[device] = device === 'desktop' ? value : Object.fromEntries(Object.entries(value).filter(([key, setting]) => JSON.stringify(setting) !== JSON.stringify(entry.desktop?.[key as keyof SectionDisplay])))
   return { ...doc, root: { ...doc.root, props: { ...props, websiteLayout: { ...layout, [id]: entry } } } }
+}
+
+/** Set or clear (undefined) section settings that live on the desktop BASE entry for every device: the tone,
+ *  width and anchor. Other devices' entries are left as they are. */
+export function patchSectionBase(doc: Data, id: string, patch: Pick<SectionDisplay, 'tone' | 'width' | 'anchor'>): Data {
+  const props = doc.root.props ?? {}
+  const layout = props.websiteLayout ?? {}
+  const entry: Partial<Record<Device, SectionDisplay>> = { ...layout[id] }
+  const desktop: SectionDisplay = { ...entry.desktop }
+  for (const [key, value] of Object.entries(patch) as [keyof SectionDisplay, unknown][]) {
+    if (value === undefined) delete desktop[key]
+    else (desktop as Record<string, unknown>)[key] = value
+  }
+  entry.desktop = desktop
+  return { ...doc, root: { ...doc.root, props: { ...props, websiteLayout: { ...layout, [id]: entry } } } }
+}
+
+/** Show or hide a section on ONE device (the design's rule: "Hide applies to the current device only").
+ *  Desktop is the base the other devices inherit, so hiding on desktop first pins tablet and phone to what
+ *  they show now; showing or hiding on tablet or phone writes that device alone. */
+export function setSectionVisibility(doc: Data, id: string, device: Device, visible: boolean): Data {
+  const props = doc.root.props ?? {}
+  const layout = props.websiteLayout ?? {}
+  const entry: Partial<Record<Device, SectionDisplay>> = { ...layout[id] }
+  if (device === 'desktop') {
+    for (const other of ['tablet', 'phone'] as const) {
+      if (typeof entry[other]?.hidden === 'boolean') continue
+      entry[other] = { ...entry[other], hidden: entry.desktop?.hidden === true }
+    }
+  }
+  entry[device] = { ...entry[device], hidden: !visible }
+  return { ...doc, root: { ...doc.root, props: { ...props, websiteLayout: { ...layout, [id]: entry } } } }
+}
+
+/** Whether a section shows on each device, as the renderer resolves it. */
+export function sectionVisibility(doc: Data, id: string): Record<Device, boolean> {
+  const entry = doc.root.props?.websiteLayout?.[id] ?? {}
+  const hidden = (device: Device) => (device === 'desktop' ? entry.desktop?.hidden : entry[device]?.hidden ?? entry.desktop?.hidden) === true
+  return { desktop: !hidden('desktop'), tablet: !hidden('tablet'), phone: !hidden('phone') }
 }
 
 export interface WebsitePresence {
