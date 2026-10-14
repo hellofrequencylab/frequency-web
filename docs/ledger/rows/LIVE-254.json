@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-254",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const Q=String.fromCharCode(39);const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/nav/registry.ts\",\"utf8\");const m=s.match(/const HEADER_TRIGGER_SEEDS[\\s\\S]*?\\] as const/);if(!m)fail(\"HEADER_TRIGGER_SEEDS missing\");const block=m[0];const ids=[...block.matchAll(new RegExp(\"id:\\\\s*\"+Q+\"([^\"+Q+\"]+)\"+Q,\"g\"))].map(x=>x[1]);if(ids.length!==3)fail(\"header triggers \"+ids.length+\" not 3: \"+ids.join(\",\"));const want=[\"the-community\",\"spaces\",\"about\"];if(want.some((id)=>!ids.includes(id)))fail(\"expected \"+want.join(\" \")+\", got \"+ids.join(\" \"));if(ids.includes(\"the-quest\"))fail(\"The Quest is still a header trigger\");const marker=\"id: \"+Q+\"the-community\"+Q;const i=block.indexOf(marker);if(i<0)fail(\"The Community trigger missing\");const rest=block.slice(i+marker.length);const n=rest.indexOf(\"id: \");const panel=n<0?rest:rest.slice(0,n);if(!panel.includes(\"href: \"+Q+\"/the-quest\"+Q)&&!panel.includes(\"href: QUEST_HREF\"))fail(\"/the-quest is not a row in The Community panel\");console.log(\"LIVE-254 ok: 3 header triggers, /the-quest under The Community\")'",
+      "note": "Tree half: three HEADER_TRIGGER_SEEDS, /the-quest inside The Community, Quest not a trigger. Live half recorded 2026-09-19 on azsqfeonabsbmemvddqd: three parentless header categories Community/Spaces/About; /the-quest under Community. The header is DB rows, so the cmd cannot see production; the SQL reading is the close evidence. Re-pointed 2026-10-14 (ADR-1745): the row may name QUEST_HREF, the survivor of the /the-quest merge."
+    }
+  },
+  "append": {
+    "detail": "\n\nRE-POINTED 2026-10-14 (ADR-1745). /the-quest merged into /features#f-zaps (a 301; DAWN builds 307 to /help/the-quest), so the Community panel row reads its href from QUEST_HREF in lib/marketing/merged-routes.ts instead of naming the retired path. The consequence is unchanged and still measured: three header triggers, The Quest is not one of them, and The Quest is a row in The Community panel."
+  }
+}

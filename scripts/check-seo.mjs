@@ -95,6 +95,10 @@ export function siteName(src) {
 // there is no page to hold metadata, so there is nothing to exclude.
 const INTENTIONALLY_EXCLUDED = new Map([
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
+  // PARKED, not live: next.config.ts answers /stories with a temporary 302 to /the-community before the
+  // filesystem router runs (owner ruling 2026-10-14, ADR-1745), so no visitor or crawler reaches this
+  // page until three real stories exist. The file is kept so it can come back by deleting that rule.
+  ['/stories', 'hidden behind a temporary 302 until three real stories exist (ADR-1745); page kept to return'],
 ])
 
 // ── Route helpers ─────────────────────────────────────────────────────────────

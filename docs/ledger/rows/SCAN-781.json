@@ -1,0 +1,17 @@
+{
+  "id": "SCAN-781",
+  "patch": {
+    "source": {
+      "file": "app/(marketing)/about/page.tsx",
+      "ref": "found 2026-10-05 by the scan-seven pages finder; confirmed by an independent skeptic"
+    },
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(marketing)/about/page.tsx\",\"app/(marketing)/spaces/page.tsx\",\"app/(marketing)/pricing/page.tsx\"];if(!files.every((p)=>fs.existsSync(p))){console.error(\"SCAN-781: a file the probe must read is missing\");process.exit(79)}const dateless=files.filter((p)=>{const s=fs.readFileSync(p,\"utf8\");const tag=s.match(/<BlockDocJsonLd[\\s\\S]*?\\/>/);return !tag||!/published=/.test(tag[0]);});if(dateless.length){console.error(\"SCAN-781: \"+dateless.length+\" editor-built marketing pages still emit an Article JSON-LD with no datePublished or dateModified (\"+dateless.map((p)=>p.split(\"/\")[2]).join(\", \")+\"), so crawlers get no freshness signal.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it. Re-pointed 2026-10-14: /the-lab merged into /vision (ADR-1745) and its route file is deleted, so the probe reads the three editor-built pages that remain."
+    }
+  },
+  "append": {
+    "detail": "\n\nRE-POINTED 2026-10-14 (ADR-1745). /the-lab merged into /vision and app/(marketing)/the-lab/page.tsx is deleted (the URL 301s), so the source and the probe move to the three editor-built marketing pages that still render an Article: about, spaces and pricing. /vision carries its own WebPage node (lib/seo/frequency-pages.ts), which invents no date by design. The probe is not weakened for the pages it still reads."
+  }
+}

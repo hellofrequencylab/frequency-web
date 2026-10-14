@@ -63,7 +63,7 @@ export const data: Data = {
         // R7 (ADR-1735, LIVE-910): the published home document carries the same headline and subhead.
         title: 'Your people are closer than you think.',
         titleAccent: 'closer than you think',
-        subtitle: 'Small groups that keep meeting, near you. People join free. Businesses host free.',
+        subtitle: 'Small groups that keep meeting, near you. Join free. Businesses host free.',
         image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
         focal: 'center',
         minHeight: 'screen',

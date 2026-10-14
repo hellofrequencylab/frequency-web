@@ -113,7 +113,6 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   { prefix: '/help', image: null, size: 'large', keyOn: 'section' },
   { prefix: '/partners', image: null, size: 'large' },
   { prefix: '/housing/roommates', image: null, size: 'large' },
-  { prefix: '/discover/partners', image: null, size: 'large' },
   { prefix: '/discover/practices', image: null, size: 'large', keyOn: 'section' },
   // Utility — a member or an operator came here to get something done, so `short` + the gradient,
   // and `inheritHero: false` so the section photo above them cannot quietly overturn that.

@@ -384,7 +384,8 @@ describe('the ADR-1136 adoption rows change zero pixels by construction', () => 
     // exactly what an unmapped route resolves to. A row that gains a real `image` or flips its
     // `tail` is a deliberate visual change and belongs in its own PR.
     const adopted = ['/channels', '/circles', '/journeys', '/people', '/partners', '/store', '/nearby',
-      '/help', '/lead/training-library', '/discover/journeys', '/discover/partners', '/discover/events']
+      '/help', '/lead/training-library', '/discover/journeys', '/discover/events']
+    // '/discover/partners' left with its route (merged into /discover/spaces, ADR-1745).
     for (const prefix of adopted) {
       const row = DETAIL_HERO_DEFAULTS.find((r) => r.prefix === prefix)
       expect(row, prefix).toBeDefined()
