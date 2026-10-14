@@ -15,7 +15,7 @@ export const revalidate = 3600
 
 const TITLE = 'Find your people by city'
 const DESCRIPTION =
-  'The cities where Frequency is taking root: local Circles meeting and real-world events happening near you. Browse by city. Free to join, always.'
+  'The cities where Frequency is taking root: local Circles meeting and real-world events happening near you. Browse by city. Free to join.'
 
 export function generateMetadata(): Metadata {
   const canonical = '/discover/cities'

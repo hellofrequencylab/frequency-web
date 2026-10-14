@@ -73,6 +73,44 @@ export function websiteSchema() {
   }
 }
 
+// ── WebPage (a landing page, not an article) ──────────────────────────────────
+// The page node for a coded marketing page: a landing page is a WebPage that is part of the one
+// WebSite, never an Article headlined by its hero line (SCAN-802). Every field is read from what the
+// page shows (its h1 and lede); nothing is dated, rated or counted, because a landing page has none
+// of those facts to state. Used by the Frequency design's coded pages (lib/seo/frequency-pages.ts).
+
+export function webPageSchema(page: {
+  /** The page's canonical path. Becomes the node's url and @id. */
+  path: string
+  /** The page's name: what its <title> calls it. */
+  name: string
+  /** The visible h1, as plain text. */
+  headline?: string | null
+  /** The visible lede, as plain text. */
+  description: string
+  /** One or more image URLs (absolute, or root-relative). */
+  image?: string | string[] | null
+  /** WebPage (default), or a more specific page type the content really is. */
+  type?: 'WebPage' | 'CollectionPage' | 'AboutPage'
+}) {
+  const images = page.image
+    ? (Array.isArray(page.image) ? page.image : [page.image]).map((src) => (src.startsWith('http') ? src : abs(src)))
+    : undefined
+  return {
+    '@context': 'https://schema.org',
+    '@type': page.type ?? 'WebPage',
+    '@id': abs(page.path),
+    url: abs(page.path),
+    name: page.name,
+    ...(page.headline ? { headline: page.headline } : {}),
+    description: page.description,
+    inLanguage: 'en-US',
+    isPartOf: { '@id': WEBSITE_ID },
+    publisher: { '@id': ORG_ID },
+    ...(images && images.length ? { primaryImageOfPage: { '@type': 'ImageObject', url: images[0] }, image: images } : {}),
+  }
+}
+
 // ── Breadcrumbs ───────────────────────────────────────────────────────────────
 
 export function breadcrumbSchema(items: { name: string; path: string }[]) {

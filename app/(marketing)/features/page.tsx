@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
-import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyFeatures } from '@/components/frequency/site/pages/features/frequency-features'
 
@@ -14,22 +13,15 @@ import { FrequencyFeatures } from '@/components/frequency/site/pages/features/fr
 //
 // Static: no request reads. The page carries no data, so it prerenders once per deploy.
 
-const DESCRIPTION =
-  'Everything Frequency does for people and Spaces, from the town calendar to door check-in, programs and payouts.'
-
-export const metadata: Metadata = {
-  title: 'Features',
-  description: DESCRIPTION,
-  alternates: { canonical: '/features' },
-  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: 'Features · Frequency', description: DESCRIPTION, url: '/features' },
-  twitter: { card: 'summary_large_image', title: 'Features · Frequency', description: DESCRIPTION },
-}
+// Title, description, canonical and share card from the one table (lib/seo/frequency-pages.ts),
+// unchanged from what this route shipped with.
+export const metadata: Metadata = frequencyPageMetadata(FREQUENCY_PAGE_SEO.features)
 
 export default function FeaturesPage() {
   if (SITE_DESIGN !== 'frequency') notFound()
   return (
     <>
-      <JsonLd data={breadcrumbSchema([{ name: 'Features', path: '/features' }])} />
+      <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.features)} />
       <FrequencyFeatures />
     </>
   )
