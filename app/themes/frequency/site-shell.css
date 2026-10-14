@@ -9,11 +9,16 @@
 
 @layer components {
   /* The document canvas behind the kit: Stage's void, so overscroll and the first paint are dark (fx.js
-     set this on <html> from script; here it is in the first paint). */
-  [data-design="frequency"]:has([data-kit="site"]),
-  [data-design="frequency"]:has([data-kit="site"]) body {
+     set this on <html> from script; here it is in the first paint). A Commons page keeps the root's own
+     canvas (sand, or Thermal at night) and colour scheme. */
+  [data-design="frequency"]:has([data-kit="site"][data-surface="stage"]),
+  [data-design="frequency"]:has([data-kit="site"][data-surface="stage"]) body {
     background: var(--fq-uv-void);
     color-scheme: dark;
+  }
+  [data-design="frequency"]:has([data-kit="site"][data-surface="commons"]),
+  [data-design="frequency"]:has([data-kit="site"][data-surface="commons"]) body {
+    background: var(--fq-bg-canvas);
   }
 
   /* The kit root is the prototype's <body>: it paints the canvas, and it is the stacking context the
@@ -81,5 +86,51 @@
   [data-design="frequency"] [data-kit="site"] .next .fq-kg-body {
     margin: 10px 0 0;
     font-size: var(--fq-text-body-size);
+  }
+
+  /* ── SURFACE: Commons (guidelines/site-themes.md; SiteShell's header says which routes) ───────────
+     The header and the footer sit in a Stage band on every page: a box with no box of its own, there
+     only to carry the Stage tokens. */
+  [data-design="frequency"] [data-kit="site"] .fq-stage-band,
+  [data-design="frequency"] [data-kit="site"] .fq-body {
+    display: contents;
+  }
+
+  /* The side colour on Commons is the DEEP hue (site-themes: "Never put neon hues on Commons light"):
+     presence for People, reward for Spaces, each lifted to stay AA in the Thermal room at night. The
+     Stage band keeps the neon one. */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="p"] {
+    --fq-side: var(--fq-presence);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="e"] {
+    --fq-side: var(--fq-reward);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="p"] .fq-stage-band {
+    --fq-side: var(--fq-x-aqua-neon);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="e"] .fq-stage-band {
+    --fq-side: var(--fq-x-sun-neon);
+  }
+
+  /* The fixed bar is transparent over a Stage hero by design. Over a light page it needs its own night,
+     so on Commons it is solid from the first paint. */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] .fq-stage-band header.nav {
+    background: var(--fq-bg-canvas);
+  }
+
+  /* The kit's few Stage literals that a Commons body meets: crumbs, and the focus ring. */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs {
+    color: var(--fq-text-muted);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs a {
+    color: var(--fq-text-body);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main :is(a, button):focus-visible {
+    outline-color: var(--fq-focus-ring);
+  }
+
+  /* Chrome-free (SiteShell chrome={false}): there is no fixed bar to clear. */
+  [data-design="frequency"] [data-kit="site"] main.fq-main.fq-bare {
+    padding-top: 0;
   }
 }

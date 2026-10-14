@@ -5,7 +5,9 @@
 // The prototype hangs its state on <body>: data-side, data-lock, data-mood, data-energy-page and the
 // mood hues. Here they hang on ONE element, `<div data-kit="site">`, because app/themes/frequency/
 // kit-site.css is scoped to `[data-design="frequency"] [data-kit="site"]` and the root layout owns
-// <body>. `data-surface="stage"` sits beside it so the Stage tokens apply (ADR-1740).
+// <body>. `data-surface` sits beside it: "stage" applies the Stage tokens (ADR-1740) to the whole page;
+// "commons" leaves the root's Commons tokens in force for the body, and SiteShell wraps the header and
+// the footer in their own Stage band (lib/frequency/site-pages.ts `Surface` says which family is which).
 //
 // The page state is resolved from the pathname (lib/frequency/site-pages.ts), so the server renders the
 // right attributes in the first paint; `usePathname` keeps static rendering static. A page can override
@@ -20,12 +22,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import type { Side } from '@/lib/frequency/site-nav'
-import { moodStyle, resolveSitePage, type SitePageState } from '@/lib/frequency/site-pages'
+import { moodStyle, resolveSitePage, type SitePageState, type Surface } from '@/lib/frequency/site-pages'
 
 export const SIDE_STORAGE_KEY = 'fq-home-side'
 
 interface SiteState {
   page: SitePageState
+  /** The body's theme: the page row's, else the layout's default. */
+  surface: Surface
   side: Side
   /** Sets the side. A locked page ignores it, as side.js does. */
   setSide: (side: Side) => void
@@ -86,12 +90,15 @@ function subscribeSide(listener: () => void) {
   }
 }
 
-export function SiteRoot({ children }: { children: React.ReactNode }) {
+export function SiteRoot({ children, surface: fallback = 'stage' }: { children: React.ReactNode; surface?: Surface }) {
   const pathname = usePathname()
   const [override, setOverride] = useState<Partial<SitePageState> | null>(null)
   const page = useMemo(() => ({ ...resolveSitePage(pathname), ...override }), [pathname, override])
   const chosen = useSyncExternalStore(subscribeSide, readChosenSide, () => null)
   const side: Side = page.locked ? page.side : (chosen ?? page.side)
+  const surface: Surface = page.surface ?? fallback
+  // Commons keeps the aura to the hero, low (site-themes: "Hero areas only, low opacity").
+  const quiet = page.quiet ?? (surface === 'commons' ? 2 : undefined)
 
   const setSide = useCallback(
     (next: Side) => {
@@ -125,18 +132,18 @@ export function SiteRoot({ children }: { children: React.ReactNode }) {
   }, [side, pathname])
 
   // Overrides belong to the page that set them: SitePage clears its own on unmount.
-  const value = useMemo<SiteState>(() => ({ page, side, setSide, setOverride }), [page, side, setSide])
+  const value = useMemo<SiteState>(() => ({ page, surface, side, setSide, setOverride }), [page, surface, side, setSide])
 
   return (
     <SiteContext.Provider value={value}>
       <div
-        data-surface="stage"
+        data-surface={surface}
         data-kit="site"
         data-side={side}
         data-lock={page.locked ? side : undefined}
         data-mood={page.mood}
         data-energy-page={page.energy}
-        data-fx-quiet={page.quiet}
+        data-fx-quiet={quiet}
         className="fq-site"
         style={moodStyle(page) as React.CSSProperties}
       >
@@ -144,4 +151,16 @@ export function SiteRoot({ children }: { children: React.ReactNode }) {
       </div>
     </SiteContext.Provider>
   )
+}
+
+/**
+ * The page body's box inside <main>: `display: contents`, so it draws nothing. On Commons it is
+ * `.fq-commons-body`, the scope where the shared primitives (Button, Badge, cards, fields) wear the members
+ * idiom through the bridge in app/themes/frequency/members-ui.css (part 2), because the site kit has no
+ * rules for them and its own `.btn` / `.panel` / `.meter` / `.sw` mean something else. The element is the
+ * same on both surfaces, so a page that changes surface after hydration does not remount its body.
+ */
+export function SiteBody({ children }: { children: React.ReactNode }) {
+  const { surface } = useSite()
+  return <div className={surface === 'commons' ? 'fq-body fq-commons-body' : 'fq-body'}>{children}</div>
 }

@@ -1,0 +1,24 @@
+/* Site pages, LEGAL AND UTILITY (/privacy, /terms, /guidelines, /space-email-policy, /manage-emails,
+   /unsubscribe, /code-unavailable): what the help reading idiom (site-pages-b.css `.hp-*`) needs for a
+   policy and for a one-card landing. The design draws neither; both are Commons pages
+   (components/frequency/site/pages/legal/legal-reading.tsx). Scoped like the kit, so it matches nothing
+   under DAWN. --fq- variables only. Geometry reads the --fq- scale; an off-scale step left as a literal
+   (a 20px radius, 15px UI text) is the kit's own value, which the export has no token for (token-ok). */
+@layer components {
+/* ── A policy: numbered <section>s, each an h2 and its paragraphs ─────────────────────────────── */
+[data-design="frequency"] [data-kit="site"] .lg-hero{padding-bottom:40px}
+[data-design="frequency"] [data-kit="site"] .lg-prose section:first-child>:first-child{margin-top:0}
+[data-design="frequency"] [data-kit="site"] .lg-prose section+section{margin-top:8px}
+/* The "Draft pending legal review" box on /terms. */
+[data-design="frequency"] [data-kit="site"] .lg-prose .lg-note{margin:0 0 28px;padding:18px 20px;border-radius:var(--fq-radius-m);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .lg-prose .lg-note>:last-child{margin-bottom:0}
+
+/* ── A one-card landing: the card centred on the canvas, below the fixed bar ─────────────────── */
+[data-design="frequency"] [data-kit="site"] .lg-util{padding:clamp(48px,8vw,96px) 0;min-height:70dvh;display:flex;align-items:center}
+[data-design="frequency"] [data-kit="site"] .lg-util>.wrap{width:100%}
+[data-design="frequency"] [data-kit="site"] .lg-card{max-width:520px;margin:0 auto;padding:clamp(28px,4vw,40px);border-radius:var(--fq-radius-xl);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .lg-card-h{margin:0;font:600 clamp(26px,3vw,36px)/1.05 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] [data-kit="site"] .lg-card-d{margin:14px 0 0;font-size:var(--fq-text-body-size);line-height:1.55;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .lg-card-b{margin-top:24px;display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] [data-kit="site"] .lg-card-b .btn{align-self:flex-start}
+}
