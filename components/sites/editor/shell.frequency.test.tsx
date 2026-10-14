@@ -74,7 +74,7 @@ it('duplicates from the inspector footer and saves through the same draft', asyn
 it('opens the publish modal with the change list and the now / schedule switch', () => {
   const { node, click } = mount()
   const publish = node.querySelector<HTMLButtonElement>('.top .btn.pa')!
-  expect(publish.querySelector('.pubn')?.textContent).toBe('4')
+  expect(publish.querySelector('.pub-badge')?.textContent).toBe('4')
   act(() => publish.click())
   const dialog = node.querySelector('.ov.on [role=dialog].modal')
   expect(dialog?.querySelector('h2')?.textContent).toBe('Ready to publish?')
@@ -107,4 +107,51 @@ it('shares the live website address', async () => {
   await act(async () => { click('Share'); await Promise.resolve() })
   expect(writeText).toHaveBeenCalledWith('https://hearts.example/')
   expect(node.querySelector('.toast')?.textContent).toContain('Website link copied')
+})
+
+it('shows the design empty inspector when nothing is selected, and the empty page note in Layers', () => {
+  const { node } = mount()
+  act(() => (Array.from(node.querySelectorAll('.pick .menu button')).find((b) => b.textContent === 'About') as HTMLButtonElement).click())
+  expect(node.querySelector('.insp .empty')?.textContent).toContain('Nothing selected')
+  expect(node.querySelector('.rail .body .note')?.textContent).toContain('This page is empty.')
+})
+
+it('numbers the selected section in the inspector header', () => {
+  const { node } = mount()
+  expect(node.querySelector('.insp .ih small')?.textContent).toBe('Section 1 of 1 · All devices')
+})
+
+it('previews with ⌘P from anywhere and leaves with Escape', () => {
+  const { node } = mount()
+  act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', metaKey: true, bubbles: true })) })
+  expect(node.querySelector('.pe')?.getAttribute('data-preview')).toBe('1')
+  expect(node.querySelector('.toast')?.textContent).toContain('Press Esc')
+  act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })) })
+  expect(node.querySelector('.pe')?.getAttribute('data-preview')).toBe('0')
+})
+
+it('moves a layer with Alt and an arrow key', async () => {
+  const { node, click, onSave } = mount()
+  click('Duplicate')
+  const rows = () => Array.from(node.querySelectorAll<HTMLButtonElement>('.rail .row[aria-keyshortcuts]'))
+  expect(rows()).toHaveLength(2)
+  act(() => { rows()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true })) })
+  await act(async () => { click('Save draft'); await Promise.resolve() })
+  const ids = onSave.mock.calls.at(-1)?.[1].pages[0].doc.content.map((block: { props: { id?: string } }) => block.props.id)
+  expect(ids?.[1]).toBe('cards')
+})
+
+it('counts the search title and description against the design limits', () => {
+  const { node } = mount()
+  act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Pages') as HTMLButtonElement).click())
+  act(() => (Array.from(node.querySelectorAll('.rail .row')).find((b) => b.textContent === 'SEO and sharing') as HTMLButtonElement).click())
+  const labels = Array.from(node.querySelectorAll('.insp .fld > label')).map((l) => l.textContent)
+  expect(labels).toEqual(['Page title 0 / 60', 'Description 0 / 160'])
+})
+
+it('closes the publish modal with Keep editing', () => {
+  const { node, click } = mount()
+  act(() => node.querySelector<HTMLButtonElement>('.top .btn.pa')!.click())
+  click('Keep editing')
+  expect(node.querySelector('[role=dialog]')).toBeNull()
 })

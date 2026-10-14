@@ -10,7 +10,7 @@
   "frozen": {
     "at": "2026-10-14",
     "direction": "lowered",
-    "reason": "Six theme-bulletproofing scans merged into overhaul (2026-10-14): colour functions, CSS colour literals and sub-13px CSS sizes retired"
+    "reason": "Page editor maturity pass: the Publish change count is the design's 12px badge step (editor-shell.css .pub-badge)"
   },
   "counts": {
     "tsx-style-colour": {},
@@ -26,7 +26,6 @@
     },
     "css-font-family": {},
     "css-font-size-floor": {
-      "app/themes/frequency/editor-shell.css": 1,
       "app/themes/frequency/members-a.css": 1,
       "app/themes/frequency/members-shell.css": 2,
       "app/themes/frequency/members-ui.css": 1,
@@ -60,6 +59,20 @@
         "css-colour": 3,
         "css-font-family": 0,
         "css-font-size-floor": 8
+      }
+    },
+    {
+      "at": "2026-10-14",
+      "direction": "lowered",
+      "reason": "Page editor maturity pass: the Publish change count is the design's 12px badge step (editor-shell.css .pub-badge)",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 3,
+        "css-font-family": 0,
+        "css-font-size-floor": 7
       }
     }
   ]
