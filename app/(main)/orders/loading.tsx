@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqUtilityLoading } from '@/components/frequency/members/utility-states'
 
 // Route-level loading skeleton for My Orders. The page is force-dynamic and awaits the buyer's
 // order + dispute reads before first paint; this renders instantly during those awaits so the
@@ -23,6 +25,8 @@ function OrderCardSkeleton() {
 }
 
 export default function OrdersLoading() {
+  // Under Frequency (build-time) the wait is the kit's own head and pending rows (utility-states.tsx).
+  if (SITE_DESIGN === 'frequency') return <FqUtilityLoading title="My orders" label="Loading your orders" />
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 space-y-2">

@@ -129,8 +129,10 @@ export async function LocationPane() {
   if (!prefs) return null
   return (
     <div className="stack mc-gap-20">
+      {/* A caption over a read-only value and a link, not a label: there is no control for it to name
+          (check:labels, ADR-966). The kit's `.mu-label` is the same 13px muted line `.field label` draws. */}
       <div className="field">
-        <label>Home base</label>
+        <p className="mu-label">Home base</p>
         <div className="row wrap">
           <span className="t1 grow">{row?.home_label || row?.city || 'Not set yet'}</span>
           <Link className="btn sm" href="/settings/profile">

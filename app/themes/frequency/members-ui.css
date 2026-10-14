@@ -116,6 +116,9 @@
 [data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act{margin-top:8px;display:flex;justify-content:center}
 /* The member status screens' row of ways back in (components/frequency/members/member-status.tsx). */
 [data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act.mu-ways{flex-wrap:wrap;gap:10px}
+/* The Settings wait's side list (components/frequency/members/utility-states.tsx): the kit's nav pill
+   drawn on a span, so it needs the box a <button> gets for free. */
+[data-design="frequency"] [data-kit="members"] .mc-navbtn.mu-sk-nav{display:flex;align-items:center;cursor:default}
 
 /* StatCard: a `.panel` with the kit's `.k` label and `.num` reading; two denser sizes. */
 [data-design="frequency"] [data-kit="members"] .panel.mu-stat{display:flex;flex-direction:column;gap:8px;min-width:0}
