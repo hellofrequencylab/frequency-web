@@ -29,6 +29,7 @@ assert.match(read('app/(main)/layout.tsx'), /LEGACY_THEME_AXES \? await loadActi
 assert.match(read('components/spaces/accent-scope.tsx'), /data-space-theme=\{LEGACY_THEME_AXES \? theme : undefined\}/, 'Space font set')
 
 // 4. Midnight is a member theme, scoped to the design it is authored for.
-assert.match(read('lib/theme/skins.ts'), /id: 'midnight'[\s\S]*?selectable: true,\s*designs: \['dawn'\]/, 'Midnight offered under DAWN')
+assert.match(read('lib/theme/skins.ts'), /id: 'midnight'[\s\S]*?selectable: true,\s*designs: \['dawn', 'frequency'\]/, 'Midnight offered under DAWN and Frequency')
+assert.match(read('app/themes/frequency.css'), /\.dark\[data-design="frequency"\] \[data-skin="midnight"\]/, 'Frequency authors its own Midnight')
 
 console.log('One setting picks the design; every design-owned value is replaceable; Frequency switches the older layers off.')

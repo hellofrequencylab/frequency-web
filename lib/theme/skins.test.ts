@@ -71,8 +71,10 @@ describe('skin selectability is separate from skin existence', () => {
   })
 
   it('never applies a skin under a design it was not authored for', () => {
-    // Midnight retunes DAWN's tokens; under Frequency it would paint DAWN's palette over Frequency.
-    expect(resolveSkin('midnight', 'frequency')).toBe(DEFAULT_SKIN)
+    // Midnight is authored for both designs (DAWN's in globals.css, Frequency's in
+    // app/themes/frequency.css), so it resolves under each; every skin names at least one design.
+    expect(resolveSkin('midnight', 'frequency')).toBe('midnight')
+    expect(SKINS.find((s) => s.id === 'midnight')?.designs).toEqual(['dawn', 'frequency'])
     for (const s of SKINS) expect(s.designs.length).toBeGreaterThan(0)
     expect(SKINS.find((s) => s.id === DEFAULT_SKIN)?.designs).toEqual(['dawn', 'frequency'])
   })
@@ -83,7 +85,7 @@ describe('skin selectability is separate from skin existence', () => {
   })
 
   it('offers only skins that are actually registered', () => {
-    for (const s of SELECTABLE_SKINS) expect(SKINS).toContain(s)
+    for (const s of SELECTABLE_SKINS) expect(SKINS.map((k) => k.id)).toContain(s.id)
   })
 })
 

@@ -779,6 +779,9 @@ export default async function MainLayout({
       // top bar, components/frequency/admin), so the member header and rails step aside there.
       <>{shellChildren}</>
     ) : SITE_DESIGN === 'frequency' ? (
+      // The member's theme (Settings, Appearance: Frequency or Midnight) as [data-skin] on a box-less
+      // wrapper, so the kit's tokens re-resolve for everything inside the shell (app/themes/frequency.css).
+      <div data-skin={theme.skin} className="contents">
       <FrequencyMembersShell
         profile={{ ...profile, community_role: effectiveRole }}
         previewVisitor={previewVisitor}
@@ -811,6 +814,7 @@ export default async function MainLayout({
       >
         {shellChildren}
       </FrequencyMembersShell>
+      </div>
     ) : (
     <AppShell
       railFold={railFold}

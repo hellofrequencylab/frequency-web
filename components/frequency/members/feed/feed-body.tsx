@@ -9,6 +9,7 @@ import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
 import { Standing } from './standing'
 import { FeedPlanner } from './planner'
+import { feedWhyShown } from '@/lib/feed/why-pref'
 import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type GsStep } from './islands'
 import { FeedStream, type FeedSort, type JourneyRun } from './posts'
 
@@ -132,7 +133,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
 
       <Suspense fallback={<section className="fa-hero" aria-busy="true"><div className="fa-hero-body"><span className="k">Up next for you</span></div></section>}>
-        <PlannerSection eventsP={eventsP} hasHome={!!p.home} />
+        <PlannerSection eventsP={eventsP} hasHome={!!p.home} profileId={p.profileId} />
       </Suspense>
 
       <Suspense fallback={null}>
@@ -181,9 +182,9 @@ async function ContextLine({ eventsP }: { eventsP: Promise<HomeEvents> }) {
   return <span className="fa-ctx">{line}</span>
 }
 
-async function PlannerSection({ eventsP, hasHome }: { eventsP: Promise<HomeEvents>; hasHome: boolean }) {
-  const { ranked, plans, doorZaps } = await eventsP
-  return <FeedPlanner events={ranked} plans={plans} doorZaps={doorZaps} hasHome={hasHome} />
+async function PlannerSection({ eventsP, hasHome, profileId }: { eventsP: Promise<HomeEvents>; hasHome: boolean; profileId: string }) {
+  const [{ ranked, plans, doorZaps }, showWhy] = await Promise.all([eventsP, feedWhyShown(profileId)])
+  return <FeedPlanner events={ranked} plans={plans} doorZaps={doorZaps} hasHome={hasHome} showWhy={showWhy} />
 }
 
 async function NeedsSection({ profileId, nextLesson }: { profileId: string; nextLesson: Parameters<typeof loadNeedsYou>[0]['nextLesson'] }) {

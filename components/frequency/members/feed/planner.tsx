@@ -40,11 +40,14 @@ export function FeedPlanner({
   plans,
   doorZaps,
   hasHome,
+  showWhy = true,
 }: {
   events: RankedHomeEvent[]
   plans: HomePlan[]
   doorZaps: number
   hasHome: boolean
+  /** Settings, Feed: "Show why I see things" (lib/feed/why-pref.ts). */
+  showWhy?: boolean
 }) {
   const [status, setStatus] = useState<Record<string, Status>>(() => Object.fromEntries(events.map((e) => [e.id, e.myStatus])))
   const [pick, setPick] = useState(0)
@@ -135,7 +138,7 @@ export function FeedPlanner({
               </span>
             </span>
             {/* The where line already carries the distance; a why that only restates it is dropped. */}
-            {!(distanceLabel(hero.distanceMi) && /^(Close to home\.|[\d.]+ mi from home\.)$/.test(hero.why)) && <span className="why">{hero.why}</span>}
+            {showWhy && !(distanceLabel(hero.distanceMi) && /^(Close to home\.|[\d.]+ mi from home\.)$/.test(hero.why)) && <span className="why">{hero.why}</span>}
             {!heroDone ? (
               <div className="fa-actions">
                 <button
