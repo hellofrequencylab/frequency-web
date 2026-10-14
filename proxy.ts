@@ -341,8 +341,8 @@ export async function proxy(request: NextRequest) {
   const isPublicVcard = /^\/people\/[^/]+\/vcard$/.test(pathname)
   // The Funnels front door (ADR-068, renamed ADR-1090) lives at /join, which is
   // deliberately NOT in PROTECTED_PATHS: signed-out visitors run the whole
-  // cinematic induction (sign-in embedded) at /join, the no-auth preview at
-  // /join/preview, and the splash/invite pages at /join/<slug>. The pages
+  // cinematic induction (sign-in embedded) at /join, the staff-only preview at
+  // /join/preview (the page gates staff itself), and the splash/invite pages at /join/<slug>. The pages
   // themselves auth-gate every write. Old /onboarding/beta URLs 308 to /join in
   // next.config.ts BEFORE this proxy runs, so the '/onboarding' protected prefix
   // never sees them and needs no carve-out any more.

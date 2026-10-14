@@ -214,7 +214,7 @@ made as a guest shows up in the app.
 | URL | When |
 |---|---|
 | `frequency://auth/callback` | The app's own scheme, for OAuth in an in-app browser session. |
-| `https://frequencylocal.com/auth/native` | Magic links. With the app installed, iOS opens the app (the path is claimed in the association file). Without it, the web route forwards the code to `/auth/callback` and the person is signed in on the web. |
+| `https://frequencylocal.com/auth/native` | Magic links. With the app installed, iOS opens the app (the path is claimed in the association file). When the link opens in a browser instead, the web cannot finish it: the PKCE code_verifier is in the app. The route never exchanges the code. It sends a good code to `/auth/native/open`, which offers **Open the app** (`frequency://auth/callback?code=…&next=…`, the same handler as OAuth) and **Sign in on the web** (a fresh web link). An expired, denied, missing or malformed code goes to `/sign-in?error=…` (`lib/auth/native-handoff.ts`). |
 
 Both must be on the Supabase Auth redirect allow-list (dashboard config, an owner step when the
 app is built, `OWN-091`).
