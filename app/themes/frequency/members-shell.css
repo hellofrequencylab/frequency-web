@@ -553,38 +553,42 @@
     position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:62px;
     display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;padding:0 4px;
     border-radius:var(--fq-radius-orb);
-    background:color-mix(in oklab,var(--fq-surface-card) 95%,transparent);
-    backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);
-    box-shadow:inset 0 0 0 1px var(--fqm-white-90),0 1px 0 var(--fqm-ink-6),var(--fq-shadow-float);
+    background:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 98%,transparent),color-mix(in oklab,var(--fq-surface-card) 95%,transparent));
+    backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+    box-shadow:0 14px 34px -20px color-mix(in oklab,var(--fq-ink) 45%,transparent),inset 0 0 0 1px var(--fqm-white-90);
   }
   /* The header's iridescent wash, so the bar reads as the same glass as the frosted header. */
-  [data-design="frequency"] [data-kit="members"] .fqm-tabbar::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--fq-pa-soft);opacity:.9;pointer-events:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-tabbar::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--fq-pa-soft);opacity:.6;pointer-events:none}
   [data-design="frequency"] [data-kit="members"] .fqm-tb{
     position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
     border:none;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;
-    color:var(--fq-text-muted);font:500 var(--fq-text-label)/1 var(--fq-font-sans);letter-spacing:-.005em;
+    color:var(--fq-text-muted);font:500 12px/1 var(--fq-font-sans);letter-spacing:-.01em; /* token-ok: the kit's 12px tab-label step (.rmi, .ap-zapg), which has no token */
     transition:color var(--fq-dur-fast) var(--fq-ease-out);
   }
   [data-design="frequency"] [data-kit="members"] .fqm-tb:hover{color:var(--fq-text-strong)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-l{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-ic{position:relative;width:48px;height:30px;border-radius:var(--fq-radius-orb);display:flex;align-items:center;justify-content:center;transition:transform var(--fq-dur-base) var(--fq-ease-out),background var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-base)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic svg{width:21px;height:21px}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic>i{position:absolute;top:3px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--fq-x-magenta-deep);box-shadow:0 0 0 2px var(--fq-surface-card)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb:active .fqm-tb-ic{transform:scale(.92)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic svg{width:21px;height:21px;opacity:.75}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic svg{opacity:1}
+  /* The kit's unread dot (.ap-ic i): 7px of the accent gradient on a card ring. */
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic>i{position:absolute;top:2px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--fq-pa);box-shadow:0 0 0 2px var(--fq-surface-card)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb:active .fqm-tb-ic{transform:scale(.97)}
   /* The active tab wears the section pill's gradient and glow (.ap-nav button.on). */
   [data-design="frequency"] [data-kit="members"] .fqm-tb.on{color:var(--fq-text-strong)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic{background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px var(--fqm-white-60);animation:fqm-tb-pop var(--fq-dur-slow) var(--fq-ease-out)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic{background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-l{font-weight:600}
 
-  /* Zap: the raised orb. A ring of the bar's own glass seats it; a soft halo breathes behind it. */
+  /* Zap: DAWN's raised action, kept (owner: bring the old bar back), drawn as the kit's primary: the
+     --fq-pa fill and glow of .btn.pa, seated in a ring of the bar's own glass. It does not breathe:
+     breathing is for living things (README, Motion). */
   [data-design="frequency"] [data-kit="members"] .fqm-tb-zap{justify-content:flex-end;padding-bottom:9px;color:var(--fq-text-strong)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-orb{position:absolute;left:50%;top:-16px;width:54px;height:54px;margin-left:-27px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:var(--fq-pa);color:var(--fq-text-strong);
     box-shadow:0 0 0 5px color-mix(in oklab,var(--fq-surface-card) 92%,transparent),var(--fq-pa-glow),0 14px 30px -12px color-mix(in oklab,var(--fq-x-violet-deep) 55%,transparent);
     transition:transform var(--fq-dur-base) var(--fq-ease-out)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb::before{content:"";position:absolute;inset:-9px;border-radius:50%;background:var(--fq-pa);opacity:.35;filter:blur(10px);z-index:-1;animation:fq-breath var(--fq-breath-flow) var(--fq-ease-breath) infinite}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg{width:24px;height:24px;transition:transform var(--fq-dur-base) var(--fq-ease-out)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:active .fqm-tb-orb{transform:scale(.94)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:active .fqm-tb-orb{transform:scale(.97)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:hover .fqm-tb-orb{box-shadow:0 0 0 5px color-mix(in oklab,var(--fq-surface-card) 92%,transparent),0 18px 34px -14px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-zap.on .fqm-tb-orb svg{transform:rotate(90deg)}
 
   /* The page clears the bar: the content column and the footer end above the lane. */
@@ -599,11 +603,10 @@
   /* The Zap sheet rises from the bar on a phone: full width less the gutter, above the orb. */
   [data-design="frequency"] [data-kit="members"] #fqm-zap{position:fixed;top:auto;left:12px;right:12px;width:auto;bottom:calc(var(--tab-bar-h) + var(--tab-bar-lift) + 14px);transform:translateY(16px) scale(.98);transform-origin:bottom center}
   [data-design="frequency"] [data-kit="members"] #fqm-zap.on{transform:none}
-  [data-design="frequency"] [data-kit="members"] #fqm-zap{background:color-mix(in oklab,var(--fq-surface-card) 97%,transparent);box-shadow:inset 0 0 0 1px var(--fqm-white-90),var(--fq-shadow-float)}
+  [data-design="frequency"] [data-kit="members"] #fqm-zap{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent),inset 0 0 0 1px var(--fqm-white-90)}
   [data-design="frequency"] [data-kit="members"] #fqm-zap .ap-zapg i{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
 }
 @media (min-width:768px){[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{display:none}}
-@keyframes fqm-tb-pop{0%{transform:scale(.7);opacity:.4}60%{transform:scale(1.06);opacity:1}100%{transform:none}}
 [data-design="frequency"] [data-kit="members"][data-console] .fqm-tabbar{display:none}
 
 /* The drawer's head: the member's standing (on a phone the rails that carry it are away), Ask Vera
@@ -635,7 +638,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-tile>b{position:absolute;top:4px;right:calc(50% - 30px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--fq-x-magenta-deep);color:var(--fq-text-on-accent);font:600 var(--fq-text-label)/18px var(--fq-font-sans)}
 
 @media (prefers-reduced-motion:reduce){
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb::before,[data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic{animation:none}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-ic,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg,[data-design="frequency"] [data-kit="members"] #fqm-zap{transition:none}
 }
 }
@@ -701,6 +703,7 @@
 @layer components {
 [data-design="frequency"] [data-kit="members"] .fqm-sheet-orb{width:40px;height:40px;flex:none}
 [data-design="frequency"] [data-kit="members"] .fqm-drawer-learn{padding:14px;border-radius:var(--fq-radius-m);background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
+[data-design="frequency"] [data-kit="members"] .fqm-drawer-learn .rl-h{padding:0}
 }
 /* The narrowest phones (320-380): four 44px header controls and the wordmark overran the row, so the
    wordmark and the controls step down a size and the row loses its gaps. */
@@ -711,4 +714,37 @@
   [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-logo{width:92px}
   [data-design="frequency"] [data-kit="members"] :is(.ap-hdr .ap-ic,.ap-hdr .ap-me,.ap-hdr .ap-search){width:40px;height:40px}
 }
+}
+
+/* ── THE KIT, CARRIED THE REST OF THE WAY (design-system audit, 2026-10-14) ───────────────────────────
+   What the members spec (templates/members/README.md) and app.css draw that the shell had not taken yet. */
+@layer components {
+/* The generator moved app.css's `html{scroll-behavior;scroll-padding-top}` onto the kit root, which never
+   scrolls; the document does, so in-page anchors land under the header without it. */
+html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequency"]:has([data-kit="members"]){scroll-behavior:smooth;scroll-padding-top:calc(var(--fq-hdr,76px) + 20px)}
+@media (prefers-reduced-motion:reduce){html[data-design="frequency"]:has([data-kit="members"]){scroll-behavior:auto}}
+/* Header idle (README §1): once scrolling rests the shadow and the wash settle; the 96% fill stays
+   (owner ruling above: text never shows through the header). */
+[data-design="frequency"] [data-kit="members"] .ap-hdr.scrolled.idle{box-shadow:none;border-bottom-color:var(--fqm-ink-3)}
+[data-design="frequency"] [data-kit="members"] .ap-hdr.scrolled.idle::before{opacity:.35}
+/* The header's side padding is the body's 40px, so the wordmark caps the rail it sits over. */
+@media (min-width:768px){[data-design="frequency"] [data-kit="members"] .ap-hdr{padding-inline:40px}}
+/* The Notifications sheet is 360px (README §1). */
+[data-design="frequency"] [data-kit="members"] .ap-sheet[data-s="bell"]{width:min(360px,calc(100vw - 24px))}
+/* The toast (README §5): ink pill, readable in the night room too, and never squeezed to half a phone. */
+[data-design="frequency"] [data-kit="members"] .ap-toast{color:var(--fq-bg-canvas);width:max-content;max-width:min(360px,calc(100vw - 2 * var(--fq-gutter-mobile)));text-align:center;border-radius:20px;box-shadow:0 24px 50px -24px color-mix(in oklab,var(--fq-ink) 50%,transparent)}
+/* The micro-rail tooltip: frosted, with the sub line at 12px. */
+[data-design="frequency"] [data-kit="members"] .fqm-tip{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 30px -16px color-mix(in oklab,var(--fq-ink) 50%,transparent);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-tip small{font-size:12px} /* token-ok: Members.dc.html's 12px tooltip sub line, no token */
+/* Rail tabs: the split tab is not itself a button, so it does not lift; its two halves are. */
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split{cursor:default}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split:hover{transform:none}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split>button{border-radius:var(--fq-radius-orb);transition:background var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split>button:hover{background:var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split.micro::before{width:20px;margin-left:-10px}
+/* Micro right-rail items: muted at rest, strong on hover (Members.dc.html). */
+[data-design="frequency"] [data-kit="members"] .fqm-rmi{color:var(--fq-text-muted);border-radius:18px;gap:5px;transition:color var(--fq-dur-fast),background var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .fqm-rmi:hover{color:var(--fq-text-strong)}
+/* The header Zap's hover glow (Members.dc.html). */
+[data-design="frequency"] [data-kit="members"] .ap-zap:hover{box-shadow:0 18px 34px -14px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent)}
 }

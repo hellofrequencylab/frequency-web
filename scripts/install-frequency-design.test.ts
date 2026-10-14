@@ -15,7 +15,7 @@ describe('install-frequency-design', () => {
     expect(scopeSelector('[data-theme="commons"]')).toBe(':root[data-design="frequency"]')
     expect(scopeSelector('[data-theme="commons"][data-time="night"]')).toBe('.dark[data-design="frequency"]')
     expect(scopeSelector('[data-theme="stage"]')).toContain('[data-design="frequency"] [data-surface="stage"]')
-    expect(scopeSelector('[data-time="night"][data-night="uv"]')).toBeNull()
+    expect(scopeSelector('[data-time="night"][data-night="uv"]')).toBe('[data-design="frequency"] [data-time="night"][data-night="uv"]')
     expect(scopeSelector('h1')).toBe('[data-design="frequency"] h1')
     expect(scopeSelector('.fq-aura')).toBe('.fq-aura')
     expect(scopeSelector('[data-theme="stage"] .ig-bars i')).toBe('[data-design="frequency"] [data-surface="stage"] .ig-bars i')

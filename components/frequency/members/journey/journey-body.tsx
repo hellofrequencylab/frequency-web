@@ -89,6 +89,7 @@ export function JourneyBody({
 
   const primary = empty ? null : inside ? (
     <Link className="btn pa lg" href={learnHref}>
+      <FqIcon name="lesson" />
       {tracked && tree.doneRequired > 0 ? 'Continue lesson' : 'Open the course'}
     </Link>
   ) : (
@@ -179,6 +180,7 @@ export function JourneyBody({
                         </span>
                         {isNext && inside && (
                           <Link className="btn sm pa" href={learnHref}>
+                            <FqIcon name="breath" />
                             Start
                           </Link>
                         )}

@@ -5,11 +5,16 @@ import { useRouter } from 'next/navigation'
 import { Loader2, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { cancelMembership } from '@/lib/spaces/memberships-actions'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // CANCEL A MEMBERSHIP (client). Calls the cancelMembership server action (the member who joined or a
 // space admin may cancel; the server is the gate). On success it refreshes so the surface flips back
 // to the join cards (or drops the member from the owner list). A confirm step guards an accidental
 // tap. No em/en dashes (CONTENT-VOICE §10).
+
+// FREQUENCY (ADR-1737): the members kit's quiet `.btn sm txt`, the confirm step its `.btn sm ink`, so the
+// console's renewals table reads in one hand. Inlined at build; DAWN's classes below are unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 export function MembershipCancelButton({
   membershipId,
@@ -44,7 +49,7 @@ export function MembershipCancelButton({
           type="button"
           onClick={cancel}
           disabled={pending}
-          className="inline-flex items-center gap-1 rounded-control border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+          className={FREQUENCY ? 'btn sm ink' : 'inline-flex items-center gap-1 rounded-control border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50'}
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
           Confirm
@@ -53,7 +58,7 @@ export function MembershipCancelButton({
           type="button"
           onClick={() => setConfirming(false)}
           disabled={pending}
-          className="text-meta font-semibold text-muted transition-colors hover:text-text"
+          className={FREQUENCY ? 'btn sm txt' : 'text-meta font-semibold text-muted transition-colors hover:text-text'}
         >
           Keep
         </button>
@@ -66,7 +71,7 @@ export function MembershipCancelButton({
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+        className={FREQUENCY ? 'btn sm txt' : 'inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger'}
       >
         <X className="h-3.5 w-3.5" aria-hidden /> {label}
       </button>

@@ -349,7 +349,7 @@ export default async function CircleDetailLayout({
         ]
           .filter(Boolean)
           .join(' · ')}
-        invite={<QrShareDropdown manager={canManage} />}
+        invite={<QrShareDropdown manager={canManage} className="btn" />}
         primary={
           <>
             {primary === 'create' && (

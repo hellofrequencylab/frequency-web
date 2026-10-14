@@ -25,6 +25,7 @@
 :root[data-design="frequency"],
 [data-design="frequency"] [data-surface="stage"],
 [data-design="frequency"][data-surface="stage"],
+[data-design="frequency"] [data-time="night"],
 [data-design="frequency"] [data-skin],
 [data-design="frequency"][data-skin] {
   /* ── Faces (lib/theme/design-fonts/frequency.ts registers them through next/font) ── */
@@ -209,8 +210,27 @@
   --fq-text-faint: #908170; /* export night faint #857767 (4.26 on the night card): 4.9 */
 }
 :root[data-design="frequency"] [data-surface="stage"],
-:root[data-design="frequency"][data-surface="stage"] {
-  --fq-text-faint: #877C9D; /* export Stage faint #7A6E93 (4.07 on the UV card): 4.9 */
+:root[data-design="frequency"][data-surface="stage"],
+:root[data-design="frequency"] [data-time="night"]:not([data-night="thermal"]) {
+  --fq-text-faint: #877C9D; /* export Stage / UV night faint #7A6E93 (4.07 on the UV card): 4.9 */
+}
+:root[data-design="frequency"] [data-time="night"][data-night="thermal"] {
+  --fq-text-faint: #908170; /* export Thermal faint #857767, lifted as the night room's is: 4.9 */
+}
+
+/* THE NIGHT ROOM IN A KIT (design-system audit, 2026-10-14). A kit root carries its energy
+   (data-energy="flow" on the members root, "still" on the admin root) on an element BELOW <html>, so
+   the day energy aura re-declared there beat the night room's aura on <html>. In the export one element
+   carries theme, time and energy, so night wins; this restores that. Stage keeps its own. */
+.dark[data-design="frequency"] [data-energy]:not([data-surface="stage"], [data-surface="stage"] *, [data-time="night"], [data-time="night"] *) {
+  --fq-aura-1: inherit;
+  --fq-aura-2: inherit;
+  --fq-aura-3: inherit;
+}
+/* Text on the --pa gradient is ink in every room (site-themes.md: "Text on --pa is ink"); the gradient
+   stays pastel at night, so the night room's light --fq-text-strong would vanish on it. */
+.dark[data-design="frequency"] :is(.ap-nav button.on, .rl-row.on, .fa-tuneout, .fa-bub.me > span, .fqm-vault-chip, .fqm-step.done .fqm-mark, .tag.mu-solid.mu-primary, .on > .mu-count, .ad-nav a.on, .fqm-tb.on, .fqm-tb-orb, .btn.pa, .ap-zap) {
+  color: var(--fq-ink);
 }
 
 /* Commons at night and Stage are dark rooms: native controls and scrollbars follow. */
@@ -295,4 +315,24 @@
   --color-warning-bg: color-mix(in srgb, var(--fq-warning) 14%, var(--fq-surface-card));
   --color-danger-bg: color-mix(in srgb, var(--fq-danger) 14%, var(--fq-surface-card));
   --color-info-bg: color-mix(in srgb, var(--fq-info) 14%, var(--fq-surface-card));
+}
+
+/* THE KITS OWN THEIR HEADINGS AND FOCUS (design-system audit, 2026-10-14). app/globals.css sets every
+   h1-h6's leading and tracking, and every control's focus ring (box-shadow, outline none), UNLAYERED; the
+   kits' `.h1` / `.h-xl` / `.h-l` and their `:focus-visible` outlines live in `@layer components`, and an
+   unlayered rule beats a layered one at any specificity. So a 44px hero ran at 1.2 leading and -.01em
+   instead of the kit's .94 / -.05em, and every kit focus ring was replaced by DAWN's. Inside a kit,
+   `revert-layer` hands both back to the layered cascade (the kit, then the core's base layer). */
+[data-design="frequency"] [data-kit] :is(h1, h2, h3, h4, h5, h6) {
+  line-height: revert-layer;
+  letter-spacing: revert-layer;
+}
+/* The weight too, for the four the core's base layer weighs (600, the alias's own value), so a kit's
+   500 display heading is 500 again; h5 and h6 have no base weight and keep the alias's. */
+[data-design="frequency"] [data-kit] :is(h1, h2, h3, h4) {
+  font-weight: revert-layer;
+}
+[data-design="frequency"] [data-kit] :is(button, a, select, summary, input, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: revert-layer;
+  box-shadow: revert-layer;
 }

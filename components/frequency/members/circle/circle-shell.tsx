@@ -59,7 +59,7 @@ async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; 
         <span className="t2">{line}</span>
       </span>
       {myProfileId ? (
-        <GoButton eventId={event.id} slug={event.slug} going={mine === 'going'} />
+        <GoButton eventId={event.id} slug={event.slug} going={mine === 'going'} size="md" />
       ) : (
         <Link className="btn" href={`/events/${event.slug}`}>
           See it

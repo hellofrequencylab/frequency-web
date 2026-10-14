@@ -160,7 +160,7 @@ function DrawerHead({ d }: { d: DockData }) {
       <DrawerStanding d={d} />
       {d.arc && (
         <Link href="/journeys" className="fqm-learn fqm-drawer-learn">
-          <span className="fqm-group-h">Keep learning</span>
+          <span className="rl-h">Keep learning</span>
           <b>{d.arc.chain}</b>
           <span className="fqm-bar">
             <i style={{ width: `${d.arc.pct}%` }} />
@@ -442,7 +442,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
               )}
             </WithStats>
           </Suspense>
-          <Link href="/crew/store" className="btn pa">
+          <Link href="/crew/store" className="btn pa lg">
             Open the Vault
           </Link>
         </>

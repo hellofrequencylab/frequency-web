@@ -46,9 +46,11 @@ export function scopeSelector(sel) {
   const s = sel.trim()
   if (s === ':root' || s === '[data-theme="commons"]') return `:root${D}`
   if (s === '[data-theme="commons"][data-time="night"]') return `.dark${D}`
-  // colors.css carries two night CANDIDATES (UV, Thermal) for review; themes.css decides them per theme,
-  // so the candidate blocks are not installed.
-  if (s.startsWith('[data-time="night"]')) return null
+  // colors.css's night palettes (UV, the default, and Thermal) are what a section marked
+  // `data-time="night"` wears: the website's night bands (templates/website/Home.html) set it on the
+  // section, so they install scoped inside the design like the energy states. Dropping them left those
+  // bands on the day charge aura.
+  if (s.startsWith('[data-time="night"]')) return `${D} ${s}`
   const energy = s.match(/^\[data-energy="(still|flow|charge)"\]$/)
   if (energy) return `${D} [data-energy="${energy[1]}"]`
   const stage = s.match(/^\[data-theme="stage"\](\[data-energy="(still|flow|charge)"\])?$/)

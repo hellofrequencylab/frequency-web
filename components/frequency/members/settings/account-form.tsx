@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { updateProfile } from '@/app/(main)/settings/profile/actions'
 import { fqToast } from '@/components/frequency/members/shell/toast'
 import { Input, Textarea } from '@/components/ui/field'
+import { FqIcon } from '@/components/frequency/icon'
 
 // The reference's Account pane (Settings.html): Name, Email, About you, Save. It saves through the
 // SAME action as the full profile editor (updateProfile). That action writes phone, city and website
@@ -75,6 +76,7 @@ export function AccountForm({ initial, email }: { initial: Initial; email: strin
       )}
       <div className="row wrap">
         <button type="submit" className="btn pa" disabled={pending}>
+          <FqIcon name="check" />
           {pending ? 'Saving' : 'Save'}
         </button>
         <Link className="btn txt" href="/settings/profile">

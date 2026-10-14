@@ -126,5 +126,14 @@
 [data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail{left:0}
 [data-design="frequency"] [data-kit="editor"] .pe[data-rf="0"] .insp{right:0}
 [data-design="frequency"] [data-kit="editor"] .scroller{padding:12px 12px 132px}
-[data-design="frequency"] [data-kit="editor"] .faces, [data-design="frequency"] [data-kit="editor"] .brand{display:none}}
+[data-design="frequency"] [data-kit="editor"] .faces, [data-design="frequency"] [data-kit="editor"] .brand{display:none}
+/* At 390px the bar ran Publish off the screen: Undo, Redo and Share step aside on a phone (the desktop
+   bar keeps them), the gutters tighten, and a long page name truncates instead of pushing. */
+[data-design="frequency"] [data-kit="editor"] .top{gap:6px;padding:0 10px}
+[data-design="frequency"] [data-kit="editor"] .top .pe-wide{display:none}
+[data-design="frequency"] [data-kit="editor"] .pick{min-width:0}
+[data-design="frequency"] [data-kit="editor"] .pick>button{max-width:120px}
+[data-design="frequency"] [data-kit="editor"] .pick>button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The zoom pill sat on top of the Vera bar; a phone canvas is already at its own width. */
+[data-design="frequency"] [data-kit="editor"] .zoom{display:none}}
 }

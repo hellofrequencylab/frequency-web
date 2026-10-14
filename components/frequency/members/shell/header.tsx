@@ -108,6 +108,7 @@ export function FqHeader({
   // The last section opened stays in the menu while it fades out.
   const [shown, setShown] = useState<FqNavSection | null>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [moving, setMoving] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
   const hdrRef = useRef<HTMLElement>(null)
@@ -124,17 +125,27 @@ export function FqHeader({
     if (open) setOpen(null)
   }
 
-  // shell.js `hdrState`: frosted once the page has scrolled past 8px.
+  // shell.js `hdrState`: frosted once the page has scrolled past 8px, and `idle` once scrolling has
+  // rested for 900ms (README §1, Scroll behaviour: the wash and the shadow settle back).
   // The document is the page's scroller, but a route may scroll its body in the main column instead, and
   // then window.scrollY stays 0 while content slides under the header. A capture-phase listener hears
   // every scroll; the header frosts when the document or the main column has moved (rail scrollers sit
   // beside the header, never under it, so they do not count).
   useEffect(() => {
     const main = () => document.getElementById('main')
-    const onScroll = () => setScrolled(window.scrollY > 8 || (main()?.scrollTop ?? 0) > 8)
+    let rest: ReturnType<typeof setTimeout> | undefined
+    const onScroll = () => {
+      setScrolled(window.scrollY > 8 || (main()?.scrollTop ?? 0) > 8)
+      setMoving(true)
+      clearTimeout(rest)
+      rest = setTimeout(() => setMoving(false), 900)
+    }
     onScroll()
     document.addEventListener('scroll', onScroll, { passive: true, capture: true })
-    return () => document.removeEventListener('scroll', onScroll, { capture: true })
+    return () => {
+      clearTimeout(rest)
+      document.removeEventListener('scroll', onScroll, { capture: true })
+    }
   }, [])
 
   // ⌘K and the app-wide 'open-search' event open the search overlay (the DAWN shell's contract).
@@ -235,7 +246,7 @@ export function FqHeader({
     router.refresh()
   }
 
-  const hdrClass = ['ap-hdr', scrolled && 'scrolled', open && 'open'].filter(Boolean).join(' ')
+  const hdrClass = ['ap-hdr', scrolled && 'scrolled', scrolled && !moving && !open && 'idle', open && 'open'].filter(Boolean).join(' ')
 
   return (
     <>

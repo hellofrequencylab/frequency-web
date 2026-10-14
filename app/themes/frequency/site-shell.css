@@ -166,6 +166,47 @@
     padding-top: 0;
   }
 
+  /* Signed in at phone width the avatar pill pushed Menu off a 390px screen. It goes; the wordmark is
+     already the member's feed link, and the sheet leads with "Your feed". */
+  @media (max-width: 760px) {
+    [data-design="frequency"] [data-kit="site"] .nav.is-auth .acct-me {
+      display: none;
+    }
+  }
+
+  /* Safe areas: the dock clears the home indicator; the sheet clears the notch and the indicator (the
+     kit's 18px sides are kept). env() is 0 off-device. */
+  [data-design="frequency"] [data-kit="site"] .dock {
+    bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+  [data-design="frequency"] [data-kit="site"] .mm-sheet {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  }
+
+  /* The signed-in sheet has one CTA, which the kit's two columns drew at half width. */
+  [data-design="frequency"] [data-kit="site"] .mm-shcta:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tap targets (44px, WCAG 2.5.8 comfort): footer, legal and crumb links get the box; the footer
+     columns drop their 12px gap since the box now carries the spacing. The dock's side switch grows
+     40 to 44px, so the pill is 56px tall. */
+  [data-design="frequency"] [data-kit="site"] :is(.ft2-cols, .ft2-legal, .crumbs) a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--fq-hit-min);
+  }
+  [data-design="frequency"] [data-kit="site"] .ft2-cols div {
+    gap: 0;
+  }
+  [data-design="frequency"] [data-kit="site"] .crumbs {
+    align-items: center;
+  }
+  [data-design="frequency"] [data-kit="site"] .dock .sw button {
+    height: var(--fq-hit-min);
+  }
+
   /* The narrow floor (320px, ADR-1035): the 38px wordmark, search and Menu summed to 352px, so Menu
      sat 32px off the screen. Below 360 the wordmark steps down and the bar's gaps close, so the three
      fit with room to spare; 360 and up are unchanged. */
