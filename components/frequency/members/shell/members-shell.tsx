@@ -202,20 +202,8 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   // ── Left rail ────────────────────────────────────────────────────────────────────────────────────
   const leftFull = (
     <div className="fqm-l-full">
-      <Link href={profileHref} className="fqm-me-row">
-        <Avatar url={profile.avatar_url} name={profile.display_name} size={44} />
-        <span className="fqm-grow">
-          <b>{profile.display_name}</b>
-          <span className="fqm-me-tags">
-            <Suspense fallback={null}>
-              <WithStats stats={stats}>
-                {(d) => (rankOf(d) ? <span className="fqm-glass-chip">{rankOf(d)}</span> : null)}
-              </WithStats>
-            </Suspense>
-            {crew && <span className="fq-iri-text on-light fqm-crew">Crew</span>}
-          </span>
-        </span>
-      </Link>
+      {/* No avatar + name block up here (owner, 2026-10-14, SCAN-882): the member is already in the
+          header's avatar and in the You card at the foot of this rail. The shortcuts open the rail. */}
       <nav className="fqm-sc" aria-label="Shortcuts">
         {shortcuts.map((s) => {
           const count = badgeFor(s.badge)
@@ -267,9 +255,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
 
   const leftMicro = (
     <>
-      <Link href={profileHref} aria-label={`Your profile, ${profile.display_name}`} data-tip={profile.display_name} data-tip-sub={crew ? 'Crew' : ''}>
-        <Avatar url={profile.avatar_url} name={profile.display_name} size={44} />
-      </Link>
+      {/* The folded face drops the avatar at its top too (SCAN-882): the You tab below carries it. */}
       <nav aria-label="Shortcuts">
         {shortcuts.map((s) => {
           const count = badgeFor(s.badge)
