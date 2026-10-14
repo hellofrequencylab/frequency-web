@@ -88,7 +88,9 @@ export function SpaceProfileMenuView({
     return (
       <>
         <div className="fqs-tabrow">
-          <nav aria-label="Space menu" className="tabs" data-space-menu-rail>
+          {/* LIVE-744 (owner, 2026-10-06): one horizontal scroll rail carrying every tab, Manage pinned outside it. */}
+          <div data-space-menu-rail className="min-w-0 flex-1 overflow-x-auto">
+          <nav aria-label="Space menu" className="tabs">
             {tabs.map((tab) => {
               if (tab.mega) return <SpaceMenuDropdown key={`mega:${tab.label}`} tab={tab} itemClassName="" />
               if (tab.external) {
@@ -111,8 +113,9 @@ export function SpaceProfileMenuView({
               )
             })}
           </nav>
+          </div>
           {(tools || (canManage && indexHref)) && (
-            <div className="row">
+            <div className="row shrink-0">
               {tools}
               {canManage && indexHref && (
                 <Link

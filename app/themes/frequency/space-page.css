@@ -262,7 +262,7 @@
 [data-design="frequency"] [data-kit="members"] .fqs-tabrow{position:sticky;top:76px;z-index:20;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:28px;border-bottom:1px solid var(--fq-border-hair);background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
 /* The share page sits under the marketing header (app/(public)/layout.tsx pads its main by 4rem). */
 [data-design="frequency"] [data-kit="members"].fqs-public .fqs-tabrow{top:calc(4rem + env(safe-area-inset-top))}
-[data-design="frequency"] [data-kit="members"] .fqs-tabrow>.tabs{border-bottom:none;min-width:0;flex:1}
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow>[data-space-menu-rail] .tabs{border-bottom:none}
 [data-design="frequency"] [data-kit="members"] .fqs-tabrow>.btn{flex:none;margin-bottom:6px}
 [data-design="frequency"] [data-kit="members"] .fqs-editing{margin-top:12px}
 [data-design="frequency"] [data-kit="members"] .fqs-pane{margin-top:36px;display:flex;flex-direction:column;gap:56px}
