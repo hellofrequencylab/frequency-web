@@ -475,3 +475,14 @@
    kit's 48px top pad: the body already starts 24px under the header, so the page heading now sits level
    with the left rail's profile card (both start 8px into their columns). */
 [data-design="frequency"] [data-kit="members"] .fqm-center .ap-main { padding-top: 8px }
+/* Owner, 2026-10-14: the Feed's own stats row repeats the right rail's Stats & streaks box. While the
+   rail shows its full panels (pinned open, or auto at 1240px+), the Feed drops its row; phones and the
+   folded rail keep it, since there the Feed's row is the only stats on screen. `.fa-standing` is a
+   box-less wrapper so the Feed's spacing is unchanged when it shows. */
+[data-design="frequency"] [data-kit="members"] .fa-standing { display: contents }
+@media (min-width: 1001px) {
+  [data-design="frequency"] [data-kit="members"] .fqm-body[data-r="full"]:has(.fqm-rail-r) .fa-standing { display: none }
+}
+@media (min-width: 1240px) {
+  [data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"]:has(.fqm-rail-r) .fa-standing { display: none }
+}

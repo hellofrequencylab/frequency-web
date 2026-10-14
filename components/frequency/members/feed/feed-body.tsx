@@ -118,25 +118,28 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
           nothing there either. */}
       {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
 
-      <Standing
-        streak={p.standing.streak}
-        loggedToday={p.standing.loggedToday}
-        atRisk={p.standing.atRisk}
-        freezeTokens={p.standing.freezeTokens}
-        nextMilestone={p.standing.nextMilestone}
-        toNext={p.standing.toNext}
-        zaps={p.standing.zaps}
-        gems={p.standing.gems}
-        rankLabel={RANK_LABELS[p.standing.rank]}
-        ranks={SEASON_RANKS.map((r) => ({ label: r.label, reached: r.order <= rankOrder }))}
-        journeysFinished={p.standing.journeysFinished}
-        nextRankLabel={p.standing.nextRankLabel}
-        journeysToNext={p.standing.journeysToNext}
-        zapRows={zapRows}
-        tuneOutHref={p.tuneOutHref}
-        todayDow={todayDow}
-        practices={p.practices}
-      />
+      {/* Hidden on desktop while the right rail shows its full Stats & streaks box (members-shell.css). */}
+      <div className="fa-standing">
+        <Standing
+          streak={p.standing.streak}
+          loggedToday={p.standing.loggedToday}
+          atRisk={p.standing.atRisk}
+          freezeTokens={p.standing.freezeTokens}
+          nextMilestone={p.standing.nextMilestone}
+          toNext={p.standing.toNext}
+          zaps={p.standing.zaps}
+          gems={p.standing.gems}
+          rankLabel={RANK_LABELS[p.standing.rank]}
+          ranks={SEASON_RANKS.map((r) => ({ label: r.label, reached: r.order <= rankOrder }))}
+          journeysFinished={p.standing.journeysFinished}
+          nextRankLabel={p.standing.nextRankLabel}
+          journeysToNext={p.standing.journeysToNext}
+          zapRows={zapRows}
+          tuneOutHref={p.tuneOutHref}
+          todayDow={todayDow}
+          practices={p.practices}
+        />
+      </div>
 
       <Suspense fallback={<section className="fa-hero" aria-busy="true"><div className="fa-hero-body"><span className="k">Up next for you</span></div></section>}>
         <PlannerSection eventsP={eventsP} hasHome={!!p.home} profileId={p.profileId} />
