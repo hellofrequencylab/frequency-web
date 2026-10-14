@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 1003,
+      "baseline": 736,
       "frozen": {
-        "at": "2026-10-13",
-        "value": 1003,
+        "at": "2026-10-14",
+        "value": 736,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Theme-bulletproofing scans (primitives, consoles, spaces-builder, pages-rest) merged: rounded-lg/2xl/full moved onto rounded-control/card/pill, pixel-identical under DAWN",
-        "from": 1270
+        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
+        "from": 1003
       },
       "history": [
         {
@@ -329,6 +329,13 @@
           "to": 1003,
           "direction": "lowered",
           "reason": "Theme-bulletproofing scans (primitives, consoles, spaces-builder, pages-rest) merged: rounded-lg/2xl/full moved onto rounded-control/card/pill, pixel-identical under DAWN"
+        },
+        {
+          "at": "2026-10-14",
+          "from": 1003,
+          "to": 736,
+          "direction": "lowered",
+          "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
         }
       ]
     },
@@ -1219,14 +1226,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 112,
+      "baseline": 86,
       "frozen": {
-        "at": "2026-09-21",
-        "value": 112,
+        "at": "2026-10-14",
+        "value": 86,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed.",
-        "from": 116
+        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
+        "from": 112
       },
       "history": [
         {
@@ -1291,6 +1298,13 @@
           "to": 112,
           "direction": "lowered",
           "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed."
+        },
+        {
+          "at": "2026-10-14",
+          "from": 112,
+          "to": 86,
+          "direction": "lowered",
+          "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
         }
       ]
     },
@@ -1309,14 +1323,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 47,
+      "baseline": 30,
       "frozen": {
-        "at": "2026-10-05",
-        "value": 47,
+        "at": "2026-10-14",
+        "value": 30,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
-        "from": 48
+        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
+        "from": 47
       },
       "history": [
         {
@@ -1381,6 +1395,13 @@
           "to": 47,
           "direction": "lowered",
           "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
+        },
+        {
+          "at": "2026-10-14",
+          "from": 47,
+          "to": 30,
+          "direction": "lowered",
+          "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
         }
       ]
     },
