@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 import { SettingsPanes, type SettingsPane } from './settings-panes'
 import { AppearanceSection } from '@/app/(main)/settings/appearance/section'
 import { NotificationsSection } from '@/app/(main)/settings/notifications/section'
@@ -180,6 +182,9 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
         </div>
       </div>
       <SettingsPanes panes={panes} initial={initial} />
+      <Suspense fallback={null}>
+        <HubLinks title="Settings" links={(v) => hubLinks('/settings', v)} />
+      </Suspense>
     </MembersBody>
   )
 }

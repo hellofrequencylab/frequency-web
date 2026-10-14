@@ -69,7 +69,9 @@ export const SITE_MAP: SiteMapColumn[] = [
     links: [
       { label: 'Circles', href: '/circles' },
       { label: 'Start a Circle', href: '/circles/new' },
+      { label: 'Starter Circles', href: '/circles/templates', gate: MEMBER },
       { label: 'Events', href: '/events' },
+      { label: "What's happening", href: '/events/calendar' },
       { label: 'New event', href: '/events/new' },
       { label: 'Channels', href: '/channels' },
       { label: 'Members', href: '/network', gate: MEMBER },
@@ -86,6 +88,7 @@ export const SITE_MAP: SiteMapColumn[] = [
     links: [
       { label: 'Marketplace', href: '/marketplace' },
       { label: 'Classifieds', href: '/classifieds' },
+      { label: 'Post a listing', href: '/classifieds/new', gate: MEMBER },
       { label: 'Market', href: '/market' },
       { label: 'Housing', href: '/housing', gate: MEMBER },
       { label: 'Frequency Store', href: '/store' },
@@ -119,6 +122,7 @@ export const SITE_MAP: SiteMapColumn[] = [
     area: 'Account',
     links: [
       { label: 'Settings', href: '/settings' },
+      { label: 'Edit profile', href: '/settings/profile', gate: MEMBER },
       { label: 'Notifications', href: '/settings#notifications' },
       { label: 'Billing & Plans', href: '/settings/billing' },
       { label: 'Receive payments', href: '/settings#payouts', gate: HOST },

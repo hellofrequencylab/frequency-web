@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import '@/app/themes/frequency/members-b.css'
 import type { CirclesIndexData } from '@/lib/circles/index-data'
 import type { CircleCardData } from '@/components/circles/circle-card'
@@ -6,6 +7,9 @@ import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone } from '@/components/circles/circles-map'
 import { FqFacetMenu, FqFindField, FqClearLink, type Params } from '@/components/frequency/members/shared/kit-tools'
 import { FqCirclesMapBanner, FqFindNearMe } from './circles-map'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
+import { templatesEnabled } from '@/lib/circles/templates-data'
 
 // CIRCLES, FREQUENCY BODY (templates/members/Circles.html). The head with Start a Circle, the
 // viewer's own Circles as photo cards, then everything else under "Near you" with the Channel chips.
@@ -53,6 +57,17 @@ function CircleTile({ c, next }: { c: CircleCardData; next?: string }) {
         {second && <span className="t2 fqm-body-ink">{second}</span>}
       </span>
     </Link>
+  )
+}
+
+/** The Circles hub row. Starter Circles drops out while its flag is off (the page would only say so). */
+async function CirclesHubLinks() {
+  const starterOpen = await templatesEnabled()
+  return (
+    <HubLinks
+      title="Circles"
+      links={(v) => hubLinks('/circles', v).filter((l) => starterOpen || l.href !== '/circles/templates')}
+    />
   )
 }
 
@@ -250,6 +265,9 @@ export function FqCirclesBody({
           </nav>
         </div>
       )}
+      <Suspense fallback={null}>
+        <CirclesHubLinks />
+      </Suspense>
     </>
   )
 
