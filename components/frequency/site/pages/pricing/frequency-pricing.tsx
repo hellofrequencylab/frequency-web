@@ -107,13 +107,13 @@ export function FrequencyPricing({
         <div className="shade" />
         <div className="fq-grain" />
         <div className="wrap">
-          <div className="crumbs">
+          <nav className="crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <span>/</span>
+            <span aria-hidden="true">/</span>
             <Link href="/spaces">For spaces</Link>
-            <span>/</span>
-            <span>Pricing</span>
-          </div>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Pricing</span>
+          </nav>
           <h1 className="h-xl">
             We only earn when we help <em className="fq-iri-text">your community grow.</em>
           </h1>
@@ -186,13 +186,14 @@ export function FrequencyPricing({
             <h2 className="h-l">Every feature, every plan.</h2>
             <p className="pb-note">{PLAN_STORY.meters}</p>
           </div>
-          <div className="mxw">
+          <div className="mxw" role="region" aria-label="Features by plan" tabIndex={0}>
             <table className="mx">
+              <caption className="sr-only">Every feature, by plan</caption>
               <thead>
                 <tr>
-                  <th>Feature</th>
+                  <th scope="col">Feature</th>
                   {grid.columns.map((c) => (
-                    <th key={c.id} className="c">
+                    <th key={c.id} scope="col" className="c">
                       {c.label}
                     </th>
                   ))}

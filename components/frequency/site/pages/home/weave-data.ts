@@ -54,7 +54,7 @@ export const WEAVE: WeaveStage[] = [
     s: 'Support', se: 'Get paid',
     p: ['Buys a ticket or joins', 'ticket'], m: ['Fair pay', 'membership'], e: ['Gets paid', 'tip'],
     cp: 'Free stays free. When a Space charges, they buy a ticket or a membership, and can tip after a good night.',
-    ce: 'Sell tickets, run memberships and take tips in one place. Tips are 0%, and payouts arrive on schedule.',
+    ce: 'Sell tickets, run memberships and take tips in one place. Tips carry no platform fee, only card processing, and payouts arrive on schedule.',
     ap: ['See pricing', SITE.pricing], ae: ['How you get paid', feature('f-tickets')],
   },
   {

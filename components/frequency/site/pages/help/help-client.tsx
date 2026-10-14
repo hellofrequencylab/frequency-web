@@ -38,11 +38,11 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
         <div className="fq-grain" />
         <span className="rings" aria-hidden="true" />
         <div className="wrap">
-          <div className="crumbs">
+          <nav className="crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <span>/</span>
-            <span>Help</span>
-          </div>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Help</span>
+          </nav>
           <h1 className="h-xl">
             How can we <em className="fq-iri-text">help?</em>
           </h1>

@@ -461,7 +461,7 @@ export async function FrequencyHome() {
             </p>
             <p className="body-l e-only">
               Your standing climbs every time your community meets. Hand a Circle to a regular and you’re running two
-              experiences. When someone we bring you buys, we take a small share. Your own regulars, you keep all of it.
+              experiences. When someone we bring you buys, we take a small share. Your own regulars, you keep all of it, after card processing.
             </p>
             <Acts
               className="p-only"
@@ -476,7 +476,7 @@ export async function FrequencyHome() {
               items={[
                 { href: feature('f-standing'), icon: 'standing', title: 'Watch your standing', sub: 'Earned, never bought' },
                 { href: feature('f-handoff'), icon: 'host', title: 'Hand a Circle to a regular', sub: 'Grow without burning out' },
-                { href: SITE.pricing, icon: 'gem', title: 'See how it pays', sub: '0% on your own regulars' },
+                { href: SITE.pricing, icon: 'gem', title: 'See how it pays', sub: '0% on your regulars, plus card processing' },
               ]}
             />
           </div>

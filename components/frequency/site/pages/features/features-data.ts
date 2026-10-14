@@ -125,7 +125,7 @@ export const SPACES: Half = {
       features: [
         { id: 'f-tickets', icon: 'ticket', name: 'Tickets + refunds', line: 'Sell, refund and run the guest list in one place.', tier: 'Free', steps: ['Set a price and a capacity.', 'Guests pay at checkout.', 'Refund in one click if plans change.'], changes: 'No spreadsheet on the night.' },
         { id: 'f-memberships', icon: 'membership', name: 'Memberships', line: 'Recurring support, straight into a Circle.', tier: 'Business', steps: ['Set a monthly price.', 'Members join and land in their Circle.', 'Payouts arrive on schedule.'], changes: 'Steady income from your regulars.' },
-        { id: 'f-tips', icon: 'gem', name: 'Tips', line: 'Thanks after a good night, at 0%.', tier: 'Free', steps: ['Guests tip after checking in.', 'It goes straight to you.', 'No share taken, ever.'], changes: 'Gratitude that pays the rent.' },
+        { id: 'f-tips', icon: 'gem', name: 'Tips', line: 'Thanks after a good night, with only card processing taken out.', tier: 'Free', steps: ['Guests tip after checking in.', 'It goes straight to you.', 'No platform fee, only card processing.'], changes: 'Gratitude that pays the rent.' },
       ],
     },
   ],

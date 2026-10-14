@@ -54,7 +54,7 @@ const GUIDES: { href: string; icon: FqIconName; title: string; body: string }[] 
 
 const QUESTIONS: [string, string][] = [
   ['Another tool?', 'It replaces the six you’re juggling: calendar, door list, contacts, email, tickets and memberships.'],
-  ['What does it cost?', 'Nothing until you charge. Your regulars are 0%. When someone we bring you buys, we take a small share.'],
+  ['What does it cost?', 'Nothing until you charge. Your regulars are 0%, plus card processing. When someone we bring you buys, we take a small share.'],
   ['Will you sell my members?', 'Never. Your contacts are yours.'],
   ['How do I rank higher?', 'Gather more often. Standing comes from how often you meet and who’s in the room, never from money.'],
 ]
@@ -169,7 +169,7 @@ export async function FrequencySpaces() {
             <Acts
               items={[
                 { href: feature('f-standing'), icon: 'standing', title: 'How standing works', sub: 'Earned, never bought' },
-                { href: SITE.pricing, icon: 'tip', title: 'See pricing', sub: '0% on your own regulars' },
+                { href: SITE.pricing, icon: 'tip', title: 'See pricing', sub: '0% on your regulars, plus card processing' },
               ]}
             />
           </div>

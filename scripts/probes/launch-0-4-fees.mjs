@@ -34,6 +34,8 @@ const isSource = (p) => /\.(ts|tsx)$/.test(p) && !/\.test\.tsx?$/.test(p)
 const FILES = [
   ...walk('app/(marketing)/pricing').filter(isSource),
   ...walk('lib/pricing').filter(isSource),
+  // The Frequency website's bodies (Home, Spaces, Features, Join, Pricing): they make the same claims.
+  ...walk('components/frequency/site').filter(isSource),
   ...walk('lib/page-editor/templates').filter(isSource).filter((p) => !OTHER_LANES.has(p.split('/').pop())),
   'app/llms-full.txt/route.ts',
 ]
@@ -45,6 +47,8 @@ const CLAIM = /(?<![\d.])(?:0|100) ?%|\bno (?:platform )?fees?\b|\bkeep (?:every
 // characters "${PLAN_STORY.plusProcessing}" renders them literally, and must not pass.
 const CAVEAT = /card processing|\u0000\{PLAN_STORY\.(?:plus|after)Processing\}/i
 const BARE_FIGURE = /^\s*(?:0|100) ?%\s*$/
+/** Style-object keys whose bare `100%` / `0%` is a length (the website bodies size panes this way). */
+const CSS_LENGTH = /^['"]?(?:(?:min|max)?(?:Height|Width|height|width)|top|left|right|bottom|inset|flexBasis)['"]?$/
 
 /** Strings that carry a percent and are not a claim to a reader. Each one names why. */
 const NOT_A_CLAIM = [
@@ -90,6 +94,8 @@ export function offenders(file, source) {
     if (text != null) {
       if (NOT_A_CLAIM.some((n) => file.endsWith(n.file) && n.text === text)) return
       if (BARE_FIGURE.test(text)) {
+        // A CSS length in a style object (`{ height: '100%' }`) is layout, not a claim to a reader.
+        if (ts.isPropertyAssignment(node.parent) && CSS_LENGTH.test(node.parent.name.getText(sf))) return
         if (!CAVEAT.test(siblingText(node, sf))) out.push({ file, line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1, text })
         return
       }
@@ -127,6 +133,7 @@ export function offenders(file, source) {
     'const b = `0% on your own people, ${PLAN_STORY.plusProcessing}, ${rate} once`',
     "const c = { value: '0%', label: 'On your own bookings, plus card processing' }",
     "const d = <p>Tips work on both, with no platform fee, only card processing.</p>",
+    "const s = <div style={{ height: '100%' }} />",
   ].join('\n')
   assert.deepEqual(offenders('fixed.tsx', fixed), [], 'the probe must pass a claim that carries its caveat')
 }

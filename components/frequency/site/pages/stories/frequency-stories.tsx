@@ -75,11 +75,11 @@ export function FrequencyStories() {
         <div className="shade" />
         <div className="fq-grain" />
         <div className="wrap">
-          <div className="crumbs">
+          <nav className="crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
-            <span>/</span>
-            <span>Stories</span>
-          </div>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Stories</span>
+          </nav>
           <h1 className="h-xl">
             Hosts and Spaces, <em className="fq-iri-text">in their own words.</em>
           </h1>
