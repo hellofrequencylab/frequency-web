@@ -1,14 +1,16 @@
 'use client'
 
-// THE RAIL GRID (Members.dc.html; README §Layout, "Rail resize and collapse", "Scroll sync").
+// THE RAIL GRID (Members.dc.html; README §Layout, "Rail resize and collapse").
 //
-//   <L> minmax(0,1fr) <R>, gap 56, padding 44/40/160. Both rails share one width W (default 260,
-//   220-320); a collapsed rail is the 76px micro rail. Each rail has a 12px handle on its inner edge:
-//   a round chevron that toggles collapse, then a hairline you drag to resize (below 150px collapses,
-//   double-click toggles). The member's choice persists as { w, lc, rc } (`fq-feed-rails`); `null`
-//   means "auto by viewport", which CSS resolves (members-shell.css) so the first paint is right
-//   before this island hydrates. Both rail scroll areas track the window scroll proportionally, and
-//   every micro item shows a fixed tooltip beside the rail.
+//   <L> minmax(0,1fr) <R>, gap 56, padding 44/40/160. The 2026-10-14 export made each rail
+//   INDEPENDENT: its own width (default 248, 220-320), its own collapse state and its own scroll (the
+//   proportional scroll sync is gone; each scroll area contains its own overscroll). A collapsed rail
+//   is the 76px micro rail. Each rail has a 12px handle on its inner edge: a round chevron that
+//   toggles collapse, then a hairline you drag to resize (below 150px collapses, double-click
+//   toggles). The member's choice persists as { l, r, lc, rc } (`fq-feed-rails-v2`, read through from
+//   the old shared-width `fq-feed-rails` { w, lc, rc }); `null` means "auto by viewport", which CSS
+//   resolves (members-shell.css) so the first paint is right before this island hydrates. Every
+//   micro item shows a fixed tooltip beside the rail, hidden on scroll.
 //
 // The rail CONTENT is server-rendered and passed in; this island owns only the geometry. Which rails a
 // route gets is the shell's existing decision (railFor / leftRailFor / chrome overrides), unchanged.
@@ -38,11 +40,12 @@ export interface RailFaces {
   tab: React.ReactNode
 }
 
-const KEY = 'fq-feed-rails'
+const KEY = 'fq-feed-rails-v2'
+const OLD_KEY = 'fq-feed-rails'
 const MICRO = 76
 const MIN_W = 220
 const MAX_W = 320
-const DEFAULT_W = 260
+const DEFAULT_W = 248
 
 type Side = 'L' | 'R'
 type Tip = { text: string; sub: string; side: Side; y: number; x: number } | null
@@ -50,19 +53,18 @@ type Tip = { text: string; sub: string; side: Side; y: number; x: number } | nul
 // The member's rail choice, one store for the page: read once from localStorage (the prototype's
 // key), `null` everywhere meaning "auto". The server snapshot is the auto state, so the first paint
 // matches the CSS defaults and a stored choice applies on hydration.
-type Rails = { w: number | null; lc: boolean | null; rc: boolean | null }
-const AUTO: Rails = { w: null, lc: null, rc: null }
+type Rails = { l: number | null; r: number | null; lc: boolean | null; rc: boolean | null }
+const AUTO: Rails = { l: null, r: null, lc: null, rc: null }
 let rails: Rails | null = null
 const railSubs = new Set<() => void>()
+const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(MIN_W, Math.min(MAX_W, v)) : null)
+const bool = (v: unknown) => (typeof v === 'boolean' ? v : null)
 function readRails(): Rails {
   try {
-    const s = JSON.parse(localStorage.getItem(KEY) || 'null') as Partial<Rails> | null
+    // The prototype's own migration: a v1 shared width `w` seeds both rails.
+    const s = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY) || 'null') as Record<string, unknown> | null
     if (!s) return AUTO
-    return {
-      w: typeof s.w === 'number' ? s.w : null,
-      lc: typeof s.lc === 'boolean' ? s.lc : null,
-      rc: typeof s.rc === 'boolean' ? s.rc : null,
-    }
+    return { l: num(s.l ?? s.w), r: num(s.r ?? s.w), lc: bool(s.lc), rc: bool(s.rc) }
   } catch {
     return AUTO
   }
@@ -111,7 +113,8 @@ export function FqRailLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname() ?? ''
-  const { w, lc, rc } = useSyncExternalStore(subscribeRails, railsSnapshot, serverRails)
+  const cur = useSyncExternalStore(subscribeRails, railsSnapshot, serverRails)
+  const { l, lc, rc } = cur
   const [drag, setDrag] = useState(false)
   const [tip, setTip] = useState<Tip>(null)
   const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
@@ -143,29 +146,27 @@ export function FqRailLayout({
 
   const toggle = (side: Side) => {
     const next = !microNow(side)
-    save({ w, lc: side === 'L' ? next : lc, rc: side === 'R' ? next : rc })
+    save({ ...cur, [side === 'L' ? 'lc' : 'rc']: next })
   }
 
   const startDrag = (side: Side) => (e: React.PointerEvent) => {
     e.preventDefault()
     const x0 = e.clientX
-    const w0 = w ?? DEFAULT_W
-    let cur: Rails = { w, lc, rc }
+    const wk = side === 'L' ? 'l' : 'r'
+    const ck = side === 'L' ? 'lc' : 'rc'
+    const w0 = cur[wk] ?? DEFAULT_W
+    let live: Rails = cur
     setDrag(true)
     const move = (ev: PointerEvent) => {
       const dx = ev.clientX - x0
       const raw = side === 'L' ? w0 + dx : w0 - dx
-      if (raw < 150) {
-        cur = { ...cur, [side === 'L' ? 'lc' : 'rc']: true }
-      } else {
-        cur = { ...cur, w: Math.max(MIN_W, Math.min(MAX_W, Math.round(raw))), [side === 'L' ? 'lc' : 'rc']: false }
-      }
-      setRails(cur)
+      live = raw < 150 ? { ...live, [ck]: true } : { ...live, [wk]: Math.max(MIN_W, Math.min(MAX_W, Math.round(raw))), [ck]: false }
+      setRails(live)
     }
     const up = () => {
       endDrag.current?.()
       setDrag(false)
-      save(cur)
+      save(live)
     }
     endDrag.current = () => {
       window.removeEventListener('pointermove', move)
@@ -185,28 +186,23 @@ export function FqRailLayout({
     if (!root) return
     const apply = () => {
       if (!showL || window.innerWidth < 680) root.style.removeProperty('--fq-rail')
-      else root.style.setProperty('--fq-rail', `${Math.max(microNow('L') ? MICRO : (w ?? DEFAULT_W), 200)}px`)
+      else root.style.setProperty('--fq-rail', `${Math.max(microNow('L') ? MICRO : (l ?? DEFAULT_W), 200)}px`)
     }
     apply()
     window.addEventListener('resize', apply)
     return () => window.removeEventListener('resize', apply)
     // microNow reads lc, which is listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showL, w, lc])
+  }, [showL, l, lc])
 
-  // Scroll sync: the rails reach their top and bottom with the page. Also hides the tooltip.
+  // A scroll hides the tooltip (README: "Hide it on mouse-leave and on scroll"). The rails no longer
+  // follow the page (the 2026-10-14 export dropped the proportional scroll sync).
   useEffect(() => {
-    const sync = () => {
-      setTip(null)
-      const max = document.documentElement.scrollHeight - window.innerHeight
-      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
-      bodyRef.current?.querySelectorAll<HTMLElement>('.fqm-rail-scroll').forEach((el) => {
-        el.scrollTop = p * (el.scrollHeight - el.clientHeight)
-      })
-    }
-    window.addEventListener('scroll', sync, { passive: true })
-    return () => window.removeEventListener('scroll', sync)
-  }, [])
+    if (!tip) return
+    const hide = () => setTip(null)
+    window.addEventListener('scroll', hide, { passive: true, capture: true })
+    return () => window.removeEventListener('scroll', hide, { capture: true })
+  }, [tip])
 
   // Micro items carry data-tip / data-tip-sub; one delegated listener per rail draws the tooltip.
   const onOver = (side: Side) => (e: React.MouseEvent) => {
@@ -228,7 +224,7 @@ export function FqRailLayout({
   // A micro item on the right rail opens the rail (README §3 Micro: "A click expands the rail").
   const onRightClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-fqm-expand]')) {
-      save({ w, lc, rc: false })
+      save({ ...cur, rc: false })
     }
   }
 
@@ -252,7 +248,10 @@ export function FqRailLayout({
     </div>
   )
 
-  const style = w !== null ? ({ '--fqm-w': `${w}px` } as React.CSSProperties) : undefined
+  const style =
+    cur.l !== null || cur.r !== null
+      ? ({ ...(cur.l !== null && { '--fqm-l': `${cur.l}px` }), ...(cur.r !== null && { '--fqm-r': `${cur.r}px` }) } as React.CSSProperties)
+      : undefined
 
   return (
     <PageAdminProvider value={{ role: admin.role, staffRole: admin.staffRole, webRole: admin.webRole, caps: new Set(admin.caps), appOverrides: admin.appOverrides }}>

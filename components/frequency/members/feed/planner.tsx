@@ -63,7 +63,8 @@ export function FeedPlanner({
       setSlot('tonight')
       setIntent('all')
       const el = nearRef.current
-      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: 'smooth' })
+      const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: still ? 'auto' : 'smooth' })
     }
     window.addEventListener(NEAR_EVENT, on)
     return () => window.removeEventListener(NEAR_EVENT, on)

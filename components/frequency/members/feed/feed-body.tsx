@@ -7,7 +7,7 @@ import { SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
-import { Standing } from './standing'
+import { Standing, type StandingPractice } from './standing'
 import { FeedPlanner } from './planner'
 import { feedWhyShown } from '@/lib/feed/why-pref'
 import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type GsStep } from './islands'
@@ -48,6 +48,8 @@ export interface FrequencyFeedProps {
   onboarding: GsStep[] | null
   journey: (JourneyRun & { nextLessonId: string | null }) | null
   tuneOutHref: string
+  /** Every adopted practice, with whether it is logged on the member's today (Standing). */
+  practices: StandingPractice[]
 }
 
 const SORTS: [FeedSort, string][] = [
@@ -126,6 +128,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         zapRows={zapRows}
         tuneOutHref={p.tuneOutHref}
         todayDow={todayDow}
+        practices={p.practices}
       />
 
       {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the

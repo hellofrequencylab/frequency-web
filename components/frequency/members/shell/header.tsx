@@ -17,15 +17,22 @@
 // (to MEMBER_HOME_HREF) and "Feed" everywhere else (homeFeedItem), not a menu section; the logo goes to
 // the Feed, and on the Feed it scrolls to the top and refreshes the stream; every menu section ends
 // with the Frequency website row (FQ_SITE_LINKS); the menu panel paints no background
-// (members-shell.css). The design's burger opens its left-rail drawer, which this shell does not have,
-// so it is not drawn and the pill stays on phones (members-shell.css).
+// (members-shell.css).
+//
+// PHONES (kit-members.css under 720px): the kit hides the section pill and the Zap button and shows
+// `.ap-burger`, which opens the left rail as a drawer (shell.js: `rl-drawer` on the kit root slides
+// `.ap-rail-l` in). This header draws that drawer: the profile card, the Feed / Home link, Capture a
+// moment (the Zap sheet the pill row no longer shows), the shortcuts, Your Circles, every section's
+// rows and the Frequency website row. It is a modal dialog: focus moves in and is trapped, Escape,
+// the scrim, a link or growing past 720px closes it, focus returns to the burger, and the page
+// behind does not scroll. Reduced motion drops the slide (members-shell.css).
 //
 // Every count here is the one the layout already reads (notifications unread, messages unread,
 // the viewer's streak); nothing is sample data.
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Suspense, use, useEffect, useState, useTransition } from 'react'
+import { Suspense, use, useEffect, useRef, useState, useTransition } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import type { NavViewer } from '@/lib/nav/registry'
@@ -34,10 +41,18 @@ import type { NotificationItem } from '@/lib/notifications-map'
 import { notificationHref } from '@/lib/notifications/href'
 import { relativeTime, getInitials } from '@/lib/utils'
 import { isFullViewportEditor } from '@/lib/layout/page-chrome'
-import { FEED_HREF, FQ_NAV, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqNavSection } from './nav'
+import { FEED_HREF, FQ_NAV, FQ_SHORTCUTS, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqNavSection } from './nav'
 import { avatarBg } from './avatar'
 
-type Open = FqNavSection['key'] | 'zap' | 'bell' | null
+type Open = FqNavSection['key'] | 'zap' | 'bell' | 'drawer' | null
+
+/** A Circle in the phone drawer (My Frequency, the same rows the left rail shows). */
+export interface FqDrawerCircle {
+  key: string
+  label: string
+  href: string
+  notices: number
+}
 
 export interface FqHeaderProps {
   profile: { display_name: string; handle: string; avatar_url: string | null }
@@ -48,9 +63,11 @@ export interface FqHeaderProps {
   /** The viewer's streak, resolved behind Suspense (The Quest menu's footer line). */
   streak: Promise<number>
   viewer: NavViewer
+  /** The viewer's Circles, for the phone drawer. */
+  circles: FqDrawerCircle[]
 }
 
-export function FqHeader({ profile, profileHref, navAccess, unreadCount, messagesUnread, streak, viewer }: FqHeaderProps) {
+export function FqHeader({ profile, profileHref, navAccess, unreadCount, messagesUnread, streak, viewer, circles }: FqHeaderProps) {
   const pathname = usePathname() ?? ''
   const router = useRouter()
   const area = areaFor(pathname, profileHref)
@@ -61,6 +78,10 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
   const [scrolled, setScrolled] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
+  const hdrRef = useRef<HTMLElement>(null)
+  const burgerRef = useRef<HTMLButtonElement>(null)
+  const drawerRef = useRef<HTMLElement>(null)
+  const drawerOn = open === 'drawer'
 
   // A navigation closes any open menu or sheet.
   if (lastPath !== pathname) {
@@ -94,6 +115,51 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
     }
   }, [])
 
+  // The phone drawer (shell.js `rl-drawer`): the kit slides `.ap-rail-l` in when the kit root carries
+  // the class. While open: focus moves in and is trapped, the page behind is locked, and growing past
+  // the kit's 720px breakpoint (where the drawer does not exist) closes it. On close, focus that was in
+  // the drawer returns to the burger.
+  useEffect(() => {
+    const root = hdrRef.current?.closest<HTMLElement>('[data-kit]')
+    const drawer = drawerRef.current
+    const burger = burgerRef.current
+    if (!root || !drawer || !drawerOn) return
+    root.classList.add('rl-drawer')
+    const html = document.documentElement
+    const prevOverflow = html.style.overflow
+    html.style.overflow = 'hidden'
+    const focusables = () =>
+      Array.from(drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled])')).filter((el) => el.offsetParent !== null)
+    focusables()[0]?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const list = focusables()
+      if (list.length === 0) return
+      const first = list[0]!
+      const last = list[list.length - 1]!
+      if (e.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    const wide = window.matchMedia('(min-width: 721px)')
+    const onWide = () => {
+      if (wide.matches) setOpen(null)
+    }
+    document.addEventListener('keydown', onKey)
+    wide.addEventListener('change', onWide)
+    return () => {
+      root.classList.remove('rl-drawer')
+      html.style.overflow = prevOverflow
+      document.removeEventListener('keydown', onKey)
+      wide.removeEventListener('change', onWide)
+      if (drawer.contains(document.activeElement)) burger?.focus()
+    }
+  }, [drawerOn])
+
   if (isFullViewportEditor(pathname)) return null
 
   const toggle = (k: Exclude<Open, null>) => {
@@ -118,8 +184,19 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
 
   return (
     <>
-      <header className={hdrClass}>
+      <header className={hdrClass} ref={hdrRef}>
         <div className="ap-hdr-l">
+          <button
+            type="button"
+            ref={burgerRef}
+            className="ap-ic ap-burger"
+            aria-label={drawerOn ? 'Close the menu' : 'Open the menu'}
+            aria-expanded={drawerOn}
+            aria-controls="fqm-drawer"
+            onClick={() => toggle('drawer')}
+          >
+            <FqIcon name={drawerOn ? 'close' : 'more'} />
+          </button>
           <Link href={FEED_HREF} className="ap-logo fq-logo-flow" aria-label="Frequency, your Feed" onClick={onLogo} />
           <Link href={FEED_HREF} className="ap-roundel" aria-label="Frequency, your Feed" onClick={onLogo} />
         </div>
@@ -214,9 +291,117 @@ export function FqHeader({ profile, profileHref, navAccess, unreadCount, message
         </div>
       </div>
       <div className={open ? 'ap-scrim on' : 'ap-scrim'} aria-hidden onClick={() => setOpen(null)} />
+      <aside
+        ref={drawerRef}
+        id="fqm-drawer"
+        className="ap-rail ap-rail-l fqm-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        aria-hidden={!drawerOn}
+        inert={!drawerOn}
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('a')) setOpen(null)
+        }}
+      >
+        <Drawer
+          profile={profile}
+          profileHref={profileHref}
+          pathname={pathname}
+          navAccess={navAccess}
+          messagesUnread={messagesUnread}
+          circles={circles}
+          onCapture={() => setOpen('zap')}
+        />
+      </aside>
 
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} viewer={viewer} />}
     </>
+  )
+}
+
+/** The phone drawer's body: shell.js's left rail (`.rl-scroll`, `.rl-g`, `.rl-h`, `.rl-row`, `.rl-n`)
+ *  filled with this shell's own rail: who you are, the Feed / Home link, Capture a moment, the
+ *  shortcuts with their live counts, Your Circles, then each section's rows (less the shortcuts it
+ *  already listed) and the Frequency website row (owner ruling). */
+function Drawer({
+  profile,
+  profileHref,
+  pathname,
+  navAccess,
+  messagesUnread,
+  circles,
+  onCapture,
+}: {
+  profile: FqHeaderProps['profile']
+  profileHref: string
+  pathname: string
+  navAccess?: Record<string, string>
+  messagesUnread: number
+  circles: FqDrawerCircle[]
+  onCapture: () => void
+}) {
+  const first = homeFeedItem(pathname)
+  const shortcuts = FQ_SHORTCUTS.filter((s) => canShow(s, navAccess))
+  const listed = new Set(shortcuts.map((s) => s.href))
+  const row = (href: string, label: string, icon: FqIconName, count = 0) => {
+    const on = href === pathname
+    return (
+      <Link key={href + label} href={href} className={on ? 'rl-row on' : 'rl-row'} aria-current={on ? 'page' : undefined}>
+        <FqIcon name={icon} />
+        <span>{label}</span>
+        {count > 0 && (
+          <b className="rl-n" aria-label={`${count} new`}>
+            {count}
+          </b>
+        )}
+      </Link>
+    )
+  }
+  return (
+    <nav className="rl-scroll" aria-label="Menu">
+      <Link href={profileHref} className="fqm-me-row fqm-drawer-me">
+        <span className="fqm-av" style={{ width: 44, height: 44, ...avatarBg(profile.avatar_url) }} aria-hidden>
+          {profile.avatar_url ? null : getInitials(profile.display_name)}
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <b>{profile.display_name}</b>
+          <small>@{profile.handle}</small>
+        </span>
+      </Link>
+      <div className="rl-g">
+        {row(first.href, first.label, first.icon)}
+        <button type="button" className="rl-row" onClick={onCapture}>
+          <FqIcon name="zap" />
+          <span>Capture a moment</span>
+        </button>
+        {shortcuts.map((s) => row(s.href, s.label, s.icon, s.badge === 'messages' ? messagesUnread : 0))}
+      </div>
+      {circles.length > 0 && (
+        <div className="rl-g">
+          <span className="rl-h">Your Circles</span>
+          {circles.map((c) => row(c.href, c.label, 'circle', c.notices))}
+        </div>
+      )}
+      {FQ_NAV.map((sec) => {
+        const items = sec.cols.flatMap((c) => c.items).filter((it) => canShow(it, navAccess) && !listed.has(it.href))
+        if (items.length === 0) return null
+        return (
+          <div key={sec.key} className="rl-g">
+            <span className="rl-h">{sec.label}</span>
+            {items.map((it) => row(resolveHref(it.href, profileHref), it.label, it.icon))}
+          </div>
+        )
+      })}
+      <div className="rl-g">
+        <span className="rl-h">Frequency</span>
+        {FQ_SITE_LINKS.map((l) => (
+          <Link key={l.href} href={l.href} className="rl-sub">
+            {l.label}
+          </Link>
+        ))}
+      </div>
+    </nav>
   )
 }
 
@@ -330,7 +515,6 @@ function ZapSheet({ onClose }: { onClose: () => void }) {
           <span className="t2">Tune out</span>
         </span>
       </Link>
-      <span className="t2">Soon: Check In · Ghost Node · Partners</span>
     </>
   )
 }

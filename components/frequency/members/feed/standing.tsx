@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import type { ZapRow } from '@/lib/feed/frequency-home'
@@ -9,6 +9,46 @@ import type { ZapRow } from '@/lib/feed/frequency-home'
 // panel that swaps by stat. The numbers count up over 1100ms (ease-out cubic) unless the member
 // asked for reduced motion. Every value is the member's own: lib/member-progress.ts and the
 // practice-streak state, the Zap ledger for the breakdown, the rank ladder in lib/season-ranks.ts.
+//
+// The 2026-10-14 export adds two things, both kept: the panel folds away under a round chevron (the
+// member's choice persists in `fq-streak-box`, '0' = folded; the folded face is a small ring, the
+// streak line and the next practice to start), and the streak panel lists the member's adopted
+// practices, each a door to its own page where the real timer runs (the prototype's in-feed countdown
+// would be a second timer beside On Air's, so it is not copied). With nothing adopted, the old line
+// and Tune out stay.
+
+export interface StandingPractice {
+  id: string
+  title: string
+  href: string
+  /** "10 min · daily", from the practice's own length and cadence; '' when it has neither. */
+  meta: string
+  done: boolean
+}
+
+const BOX_KEY = 'fq-streak-box'
+const boxSubs = new Set<() => void>()
+function readBox(): boolean {
+  try {
+    return localStorage.getItem(BOX_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+function subscribeBox(f: () => void) {
+  boxSubs.add(f)
+  return () => {
+    boxSubs.delete(f)
+  }
+}
+function setBox(open: boolean) {
+  try {
+    localStorage.setItem(BOX_KEY, open ? '1' : '0')
+  } catch {
+    /* not persisted; the fold still holds until the next render from storage */
+  }
+  boxSubs.forEach((f) => f())
+}
 
 type Stat = 'streak' | 'zaps' | 'gems' | 'rank'
 
@@ -31,6 +71,8 @@ export interface StandingProps {
   tuneOutHref: string
   /** Today's weekday (0 = Sunday) in the community's zone, so the chain's letters match the server. */
   todayDow: number
+  /** The member's adopted practices, with whether each is logged on their today. */
+  practices: StandingPractice[]
 }
 
 function useCountUp(target: number): number {
@@ -52,6 +94,7 @@ function useCountUp(target: number): number {
 
 export function Standing(props: StandingProps) {
   const [stat, setStat] = useState<Stat>('streak')
+  const boxOpen = useSyncExternalStore(subscribeBox, readBox, () => true)
   const streak = useCountUp(props.streak)
   const zaps = useCountUp(props.zaps)
   const gems = useCountUp(props.gems)
@@ -77,6 +120,15 @@ export function Standing(props: StandingProps) {
   const chainDone = chain.filter((c) => c.on).length
 
   const zapMax = Math.max(1, ...props.zapRows.map((r) => r.zaps))
+  const doneN = props.practices.filter((p) => p.done).length
+  const next = props.practices.find((p) => !p.done) ?? null
+  const hint = props.loggedToday
+    ? props.practices.length > 0
+      ? `Streak safe today. ${doneN} of ${props.practices.length} done.`
+      : 'Logged today. Come back tomorrow to keep it.'
+    : props.streak > 0
+      ? `Start one by midnight to make it ${props.streak + 1}.`
+      : 'Log one practice today to start.'
 
   return (
     <>
@@ -97,7 +149,37 @@ export function Standing(props: StandingProps) {
           </button>
         ))}
       </div>
-      <div className="fa-glass">
+      <div className="fa-glass" data-open={boxOpen ? '' : undefined}>
+        <button
+          type="button"
+          className="fa-fold"
+          aria-expanded={boxOpen}
+          aria-controls="fa-standing-body"
+          aria-label={boxOpen ? 'Fold your standing away' : 'Open your standing'}
+          title={boxOpen ? 'Collapse' : 'Expand'}
+          onClick={() => setBox(!boxOpen)}
+        >
+          <FqIcon name="chevron" />
+        </button>
+        {!boxOpen && (
+          <div className="fa-folded">
+            <span className="fa-mini-ring" style={{ '--p': `${pct}%` } as CSSProperties} aria-hidden>
+              <span>{props.streak}</span>
+            </span>
+            <span className="fa-folded-t">
+              <b>{props.streak > 0 ? 'Keep it going' : 'Start a streak'}</b>
+              <small>{hint}</small>
+            </span>
+            {next && (
+              <Link href={next.href} className="fa-tuneout">
+                <span className="fq-breathe" aria-hidden />
+                Start {next.title}
+              </Link>
+            )}
+          </div>
+        )}
+        <div className="fa-fold-body" id="fa-standing-body" inert={!boxOpen}>
+        <div>
         {stat === 'streak' && (
           <div className="fa-streak">
             <div className="fa-ring" style={{ '--p': `${pct}%` } as CSSProperties}>
@@ -126,25 +208,54 @@ export function Standing(props: StandingProps) {
                   </span>
                 ))}
               </div>
-              <div className="row wrap">
-                {props.freezeTokens > 0 && (
-                  <span className="fa-freeze">
-                    <FqIcon name="nudge" />
-                    {props.freezeTokens} {props.freezeTokens === 1 ? 'freeze' : 'freezes'}
+              {props.practices.length > 0 ? (
+                <div className="fa-practices" data-visual-mask="feed-practices">
+                  <div className="fa-between">
+                    <span className="k">Your practices</span>
+                    <span className="fa-m13">{hint}</span>
+                  </div>
+                  <div className="fa-pgrid">
+                    {props.practices.map((p) => (
+                      <Link key={p.id} href={p.href} className={p.done ? 'fa-pchip done' : 'fa-pchip'} title={p.done ? `${p.title}, done today` : `Start ${p.title}`}>
+                        <span className="fa-pchip-ic" aria-hidden>
+                          <FqIcon name={p.done ? 'check' : 'practice'} />
+                        </span>
+                        <span className="fa-pchip-t">
+                          <b>{p.title}</b>
+                          <small>{p.done ? 'Done today' : p.meta || 'Start'}</small>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="row wrap">
+                    {props.freezeTokens > 0 && (
+                      <span className="fa-freeze">
+                        <FqIcon name="nudge" />
+                        {props.freezeTokens} {props.freezeTokens === 1 ? 'freeze' : 'freezes'}
+                      </span>
+                    )}
+                    <Link href="/practices" className="fa-link">
+                      Adopt another practice
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="row wrap">
+                  {props.freezeTokens > 0 && (
+                    <span className="fa-freeze">
+                      <FqIcon name="nudge" />
+                      {props.freezeTokens} {props.freezeTokens === 1 ? 'freeze' : 'freezes'}
+                    </span>
+                  )}
+                  <span className="meta grow" style={{ minWidth: 160 }}>
+                    {hint}
                   </span>
-                )}
-                <span className="meta grow" style={{ minWidth: 160 }}>
-                  {props.loggedToday
-                    ? 'Logged today. Come back tomorrow to keep it.'
-                    : props.streak > 0
-                      ? `Log one practice by midnight to make it ${props.streak + 1}.`
-                      : 'Log one practice today to start.'}
-                </span>
-                <Link href={props.tuneOutHref} className="fa-tuneout">
-                  <span className="fq-breathe" aria-hidden />
-                  Tune out
-                </Link>
-              </div>
+                  <Link href={props.tuneOutHref} className="fa-tuneout">
+                    <span className="fq-breathe" aria-hidden />
+                    Tune out
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -193,6 +304,8 @@ export function Standing(props: StandingProps) {
             </span>
           </div>
         )}
+        </div>
+        </div>
       </div>
     </>
   )
