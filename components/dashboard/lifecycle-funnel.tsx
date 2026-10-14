@@ -47,7 +47,7 @@ export function LifecycleFunnelPanel({
   const max = Math.max(1, funnel.new, funnel.activated, funnel.engaged)
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <p className="text-body-sm text-muted">
         Where members stall on the climb from new to engaged. Tap a stage to see who is stuck there.
       </p>

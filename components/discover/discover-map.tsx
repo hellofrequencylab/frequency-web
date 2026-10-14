@@ -49,7 +49,7 @@ function escapeHtml(s: string): string {
 export default function DiscoverMap({
   cities,
   center = null,
-  className = 'h-full w-full overflow-hidden rounded-2xl border border-border',
+  className = 'h-full w-full overflow-hidden rounded-card border border-border',
 }: {
   cities: MapCity[]
   /** [lng, lat] of the viewer (IP geo) — the map eases here when it arrives. */

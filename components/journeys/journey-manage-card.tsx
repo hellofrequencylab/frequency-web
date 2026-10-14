@@ -187,7 +187,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
       if (!isError(res)) router.refresh()
     })
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
+  const btn = 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
 
   return (
     <>
@@ -196,10 +196,10 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
         anchor={
           plan.coverImage ? (
             // Unoptimized: user-controlled Supabase Storage host, not a configured next/image domain.
-            <Image src={plan.coverImage} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-2xl object-cover" />
+            <Image src={plan.coverImage} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-card object-cover" />
           ) : (
             <div
-              className="flex h-11 w-11 items-center justify-center rounded-2xl"
+              className="flex h-11 w-11 items-center justify-center rounded-card"
               // data-driven: member-chosen Journey accent colour
               style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
             >
@@ -222,7 +222,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
         footer={
           <>
             <div className="flex flex-wrap items-center gap-1.5">
-              <Link href={`/journeys/${plan.slug}/edit`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+              <Link href={`/journeys/${plan.slug}/edit`} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </Link>
               <Link href={`/journeys/${plan.slug}`} className={btn}>
@@ -249,7 +249,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
                       role="menuitem"
                       disabled={pending}
                       onClick={() => setVisibility(o.value)}
-                      className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+                      className={`flex w-full items-start gap-2 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
                     >
                       <o.Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                       <span className="min-w-0 flex-1">
@@ -287,7 +287,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
                       role="menuitem"
                       disabled={pending}
                       onClick={() => move(t.id)}
-                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+                      className={`flex w-full items-center gap-2 rounded-control px-2.5 py-2 text-left text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
                     >
                       <TIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                       <span className="min-w-0 flex-1 truncate font-medium text-text">{t.label}</span>
@@ -303,7 +303,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
               <button type="button" disabled={pending} onClick={duplicate} className={btn}>
                 <Copy className="h-3.5 w-3.5" /> Duplicate
               </button>
-              <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-1.5 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60">
+              <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} className="ml-auto inline-flex items-center gap-1.5 rounded-control border border-danger/30 px-3 py-1.5 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60">
                 <Trash2 className="h-3.5 w-3.5" /> Delete
               </button>
             </div>

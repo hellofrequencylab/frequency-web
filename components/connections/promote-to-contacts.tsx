@@ -53,7 +53,7 @@ export function PromoteToContacts({
 
   if (state === 'linked') {
     return (
-      <p className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-body-sm font-medium text-success">
+      <p className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-body-sm font-medium text-success">
         <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden /> In Frequency contacts
       </p>
     )
@@ -120,7 +120,7 @@ export function PromoteToContacts({
           type="button"
           onClick={() => { setConfirming(false); setError(null) }}
           disabled={pending}
-          className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           Not now
         </button>

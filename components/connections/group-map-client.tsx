@@ -9,7 +9,7 @@ import type { GroupMapVenue, GroupMapEvent } from './group-map'
 const GroupMap = dynamic(() => import('./group-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-[320px] w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />
+    <div className="h-80 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 

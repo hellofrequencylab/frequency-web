@@ -74,7 +74,7 @@ export function GoogleImportBanner({
   const { tone, title, body } = resolve(outcome, added, skipped)
   const { wrap, icon, Icon } = TONE[tone]
   return (
-    <div className={`mb-4 rounded-2xl border p-4 ${wrap}`}>
+    <div className={`mb-4 rounded-card border p-4 ${wrap}`}>
       <div className="flex items-start gap-3">
         <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${icon}`} aria-hidden />
         <div className="min-w-0 flex-1">

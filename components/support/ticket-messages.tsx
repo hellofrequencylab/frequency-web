@@ -37,8 +37,8 @@ export function TicketMessages({ messages }: { messages: TicketMessage[] }) {
             <div
               className={
                 mine
-                  ? 'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
-                  : 'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
+                  ? 'max-w-[85%] whitespace-pre-wrap rounded-card rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+                  : 'max-w-[85%] whitespace-pre-wrap rounded-card rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
               }
             >
               {m.body}

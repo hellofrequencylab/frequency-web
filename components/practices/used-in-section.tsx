@@ -26,7 +26,7 @@ function LinkRow({
   return (
     <Link
       href={href}
-      className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-body-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+      className="flex items-center justify-between gap-3 rounded-control px-2 py-1.5 text-body-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
     >
       <span className="truncate font-medium text-text">{label}</span>
       <span className="shrink-0 text-meta tabular-nums text-subtle">

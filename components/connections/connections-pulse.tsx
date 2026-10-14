@@ -20,7 +20,7 @@ export async function ConnectionsPulse() {
   if (empty) return null
 
   return (
-    <section className="rounded-2xl border border-border bg-surface-elevated p-5">
+    <section className="rounded-card border border-border bg-surface-elevated p-5">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary-strong" />
         <h2 className="text-body-sm font-bold tracking-tight text-text">Connect with others</h2>
@@ -47,7 +47,7 @@ export async function ConnectionsPulse() {
                 </div>
                 <Link
                   href={`/people/${m.handle}`}
-                  className="inline-flex shrink-0 items-center rounded-lg border border-border px-3 py-1.5 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-text"
+                  className="inline-flex shrink-0 items-center rounded-control border border-border px-3 py-1.5 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-text"
                 >
                   Say hi
                 </Link>

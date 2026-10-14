@@ -11,13 +11,13 @@ import type { JourneyPlan } from '@/lib/journey-plans'
 export function PlanFace({ plan }: { plan: JourneyPlan }) {
   if (plan.cover_image) {
     return (
-      <Image src={plan.cover_image} alt={plan.title} width={44} height={44} className="h-11 w-11 rounded-2xl object-cover" />
+      <Image src={plan.cover_image} alt={plan.title} width={44} height={44} className="h-11 w-11 rounded-card object-cover" />
     )
   }
   const Icon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
   return (
     <div
-      className="flex h-11 w-11 items-center justify-center rounded-2xl"
+      className="flex h-11 w-11 items-center justify-center rounded-card"
       // data-driven: member-chosen Journey accent colour
       style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
     >

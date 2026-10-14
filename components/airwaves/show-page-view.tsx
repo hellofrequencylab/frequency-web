@@ -138,7 +138,7 @@ export async function ShowPageView({
                 <img
                   src={coverUrl}
                   alt=""
-                  className="h-40 w-40 rounded-2xl border border-border object-cover lift-1 sm:h-48 sm:w-48"
+                  className="h-40 w-40 rounded-card border border-border object-cover lift-1 sm:h-48 sm:w-48"
                 />
               ) : (
                 <div

@@ -340,7 +340,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                   return (
                     <li key={`${a.label}-${i}`}>
                       {a.href ? (
-                        <Link href={a.href} className="group block rounded-lg px-1 py-0.5 transition-colors hover:bg-surface-elevated/60">
+                        <Link href={a.href} className="group block rounded-control px-1 py-0.5 transition-colors hover:bg-surface-elevated/60">
                           {row}
                         </Link>
                       ) : (

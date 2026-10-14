@@ -36,7 +36,7 @@ export function ReachOutList({ reminders }: { reminders: ReminderWithContact[] }
   if (items.length === 0) return null
 
   return (
-    <section className="mb-6 rounded-2xl border border-border/70 bg-surface/60 p-5">
+    <section className="mb-6 rounded-card border border-border/70 bg-surface/60 p-5">
       <div className="mb-3 flex items-center gap-1.5">
         <CalendarClock className="h-4 w-4 text-primary-strong" />
         <h2 className="text-body-sm font-semibold tracking-tight text-text">Reach out</h2>
@@ -97,7 +97,7 @@ function ReachOutRow({ reminder, onDone }: { reminder: ReminderWithContact; onDo
         type="button"
         onClick={done}
         disabled={pending}
-        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+        className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Done
       </button>

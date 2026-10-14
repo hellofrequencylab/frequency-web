@@ -273,7 +273,7 @@ export function JourneyLaunch({
                     type="button"
                     onClick={() => scheduleOne(d.key)}
                     disabled={pending || !canSchedule}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     Schedule this one
@@ -322,7 +322,7 @@ export function JourneyLaunch({
                   type="button"
                   onClick={buildFunnel}
                   disabled={pending || scheduledIds.length === 0}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                 >
                   {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Network className="h-4 w-4" />}
                   Build the funnel

@@ -65,7 +65,7 @@ export function JourneyEventLink({
       <span className="text-2xs font-medium text-muted">Event</span>
 
       {eventId ? (
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary-bg px-2.5 py-1.5">
+        <div className="flex items-center justify-between gap-2 rounded-control border border-primary/40 bg-primary-bg px-2.5 py-1.5">
           <span className="inline-flex min-w-0 items-center gap-1.5 text-body-sm text-primary-strong">
             <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden />
             <span className="min-w-0 truncate">
@@ -102,7 +102,7 @@ export function JourneyEventLink({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
+          className="inline-flex items-center gap-1.5 self-start rounded-control border border-border bg-canvas px-2.5 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
         >
           <CalendarPlus className="h-4 w-4" aria-hidden /> Link or create an event
         </button>
@@ -178,7 +178,7 @@ function EventPickerDialog({
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabel="Link or create an event" className="max-w-md">
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-3">
+      <div className="rounded-card border border-border bg-surface p-5 lift-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-body font-bold text-text">Link an event</h2>
@@ -216,7 +216,7 @@ function EventPickerDialog({
                   <button
                     type="button"
                     onClick={() => onPick(e.id)}
-                    className="flex w-full items-center gap-2 rounded-lg border border-border bg-canvas px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg"
+                    className="flex w-full items-center gap-2 rounded-control border border-border bg-canvas px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg"
                   >
                     <Link2 className="h-4 w-4 shrink-0 text-muted" aria-hidden />
                     <span className="min-w-0 flex-1">
@@ -237,14 +237,14 @@ function EventPickerDialog({
             href="/events/new"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-canvas px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border bg-canvas px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             <Plus className="h-4 w-4" aria-hidden /> Create an event
           </a>
           <button
             type="button"
             onClick={reload}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-body-sm text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-body-sm text-muted transition-colors hover:text-text"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Refresh
           </button>

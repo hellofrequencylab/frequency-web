@@ -36,7 +36,7 @@ export function MatchPrefsForm({
   const sign = sunSign(birthDate)
 
   return (
-    <section className="rounded-2xl border border-border bg-surface px-4 py-4 lift-1">
+    <section className="rounded-card border border-border bg-surface px-4 py-4 lift-1">
       <h3 className="mb-1 text-body-sm font-bold text-text">Matching</h3>
       <p className="mb-4 text-meta text-muted">
         Optional signals that shape who we suggest. Both are off until you turn them on.

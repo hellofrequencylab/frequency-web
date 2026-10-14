@@ -65,7 +65,7 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
   ]
   const anything = groups.some((g) => g.notes.length > 0)
   return (
-    <div className="mt-2 rounded-card border border-border bg-surface-elevated/60 p-3">
+    <div className="mt-2 rounded-2xl border border-border bg-surface-elevated/60 p-3">
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
         <span className="text-meta font-semibold text-text">Vera read</span>

@@ -32,7 +32,7 @@ export function ListingMarketingCTA({ vertical }: { vertical: ListingDetailView[
   return (
     <section className="mt-12 overflow-hidden rounded-card border border-border bg-gradient-to-br from-primary-bg via-surface to-signal-bg p-6 sm:p-10">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
-        <h2 className="text-page-title font-bold text-text sm:text-3xl">{c.heading}</h2>
+        <h2 className="text-page-title font-bold text-text sm:text-stat-sm">{c.heading}</h2>
         <p className="max-w-xl text-body-sm text-muted sm:text-body">{c.body}</p>
         <Link
           href={c.href}

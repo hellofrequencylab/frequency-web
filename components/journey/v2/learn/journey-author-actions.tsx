@@ -67,7 +67,7 @@ export function JourneyAuthorActions({
       }
     })
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors'
+  const btn = 'inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors'
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link href={`/journeys/${slug}/edit`} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>

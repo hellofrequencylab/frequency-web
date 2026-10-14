@@ -21,10 +21,10 @@ export function HelpSearch({ index }: { index: HelpSearchEntry[] }) {
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search help..."
         aria-label="Search help articles"
-        className="w-full rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
+        className="w-full rounded-control border border-border bg-surface-elevated px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
       />
       {results.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface-elevated lift-3">
+        <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-control border border-border bg-surface-elevated lift-3">
           {results.map((r) => (
             <li key={r.href}>
               <Link
@@ -40,7 +40,7 @@ export function HelpSearch({ index }: { index: HelpSearchEntry[] }) {
         </ul>
       )}
       {q.trim().length >= 2 && results.length === 0 && (
-        <p className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-muted lift-3">
+        <p className="absolute z-20 mt-1 w-full rounded-control border border-border bg-surface-elevated px-3 py-2 text-body-sm text-muted lift-3">
           No results for &ldquo;{q}&rdquo;.
         </p>
       )}

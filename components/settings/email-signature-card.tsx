@@ -30,7 +30,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <h2 className="text-body-sm font-semibold text-text">Email signature</h2>
       <p className="mt-1 text-body-sm text-muted">
         Added to the bottom of the emails you send from your inbox. Leave it blank to use the default below.

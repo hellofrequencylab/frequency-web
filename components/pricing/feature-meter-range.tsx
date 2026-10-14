@@ -100,7 +100,7 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <section className="mt-4 rounded-card border border-border bg-surface p-4 lift-1">
       <p className="eyebrow text-subtle">{ladder.dimension} allowance</p>
 
       {/* The OPTIONAL usage readout: "X of N used" on the viewer's current tier. Informational only. */}
@@ -181,7 +181,7 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
         ) : (
           <Link
             href={upgradeHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Upgrade for more
           </Link>

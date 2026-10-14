@@ -54,7 +54,7 @@ export function SupportConversationsPanel() {
       ) : threads.length === 0 ? (
         <p className="mt-2 text-meta text-muted">Nothing yet. Send us a message above and we&rsquo;ll reply here.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
+        <ul className="mt-2 divide-y divide-border overflow-hidden rounded-control border border-border">
           {threads.map((t) => (
             <li key={t.ref}>
               <button
@@ -148,7 +148,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <button type="button" onClick={onBack} aria-label="Back" className="rounded-lg p-1.5 text-muted hover:bg-surface-elevated hover:text-text">
+        <button type="button" onClick={onBack} aria-label="Back" className="rounded-control p-1.5 text-muted hover:bg-surface-elevated hover:text-text">
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
         <span className="min-w-0 truncate text-body-sm font-semibold text-text">{detail?.subject ?? 'Support request'}</span>
@@ -159,7 +159,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         ) : (
           detail.messages.map((m) => (
             <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
-              <span className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
+              <span className={`max-w-[80%] whitespace-pre-wrap rounded-card px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
                 {m.body}
               </span>
             </div>

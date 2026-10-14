@@ -72,7 +72,7 @@ export function PosterBand({
   heightClass,
   maxHeightClass,
   aspect,
-  radiusClass = 'rounded-2xl',
+  radiusClass = 'rounded-card',
   widthClass = 'w-full',
   focus,
   alt = '',

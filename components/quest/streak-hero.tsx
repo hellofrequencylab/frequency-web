@@ -101,7 +101,7 @@ export function StreakHero({
 
           {/* The number + the supporting counts. */}
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-4xl font-extrabold leading-none tabular-nums text-text">{current}</span>
+            <span className="text-stat-md font-extrabold leading-none tabular-nums text-text">{current}</span>
             <span className="text-body-sm text-subtle">{current === 1 ? 'day' : 'days'}</span>
           </div>
 
@@ -216,7 +216,7 @@ export function StreakHero({
             type="button"
             onClick={() => run(() => pauseStreak(REST_DAYS))}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
           >
             <Pause className="h-4 w-4" aria-hidden />
             Rest a week

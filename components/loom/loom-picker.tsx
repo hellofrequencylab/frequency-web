@@ -320,7 +320,7 @@ export function LoomPicker({
   }
   // Auto width + no-shrink on mobile (the rail is a horizontal scroll strip there); full-width vertical
   // buttons on sm+ (the rail is a left column).
-  const rail = 'flex w-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors sm:w-full'
+  const rail = 'flex w-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-control px-2.5 py-2 text-left text-body-sm transition-colors sm:w-full'
   const railOn = 'bg-primary-bg text-primary-strong font-semibold'
   const railOff = 'text-muted hover:bg-surface-elevated hover:text-text'
 
@@ -328,11 +328,11 @@ export function LoomPicker({
     <Dialog open={open} onClose={close} ariaLabel={title} align="sheet" className="sm:max-w-4xl">
       {/* Full screen on mobile (a boxed center card left the grid ~150px wide and cramped); a centered
           card at sm+. */}
-      <div className="flex h-full max-h-none flex-col overflow-hidden bg-surface pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[85vh] sm:rounded-2xl sm:border sm:border-border sm:pt-0 sm:pb-0 sm:shadow-xl">
+      <div className="flex h-full max-h-none flex-col overflow-hidden bg-surface pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[85vh] sm:rounded-card sm:border sm:border-border sm:pt-0 sm:pb-0 sm:shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-body font-bold text-text">{title}</h2>
-          <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text">
+          <button type="button" onClick={close} aria-label="Close" className="rounded-control p-1 text-subtle hover:bg-surface-elevated hover:text-text">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -420,7 +420,7 @@ export function LoomPicker({
                 />
               </div>
               {/* Search within the scope */}
-              <div className="mt-2 flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
+              <div className="mt-2 flex items-center gap-2 rounded-control border border-border px-2.5 py-1.5">
                 <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
                 <Input
                   variant="seamless"
@@ -508,7 +508,7 @@ export function LoomPicker({
                               disabled={t.locked}
                               title={t.locked ? `${t.label}. Protected, so it can't go on a page.` : t.label}
                               aria-pressed={multiple ? on : undefined}
-                              className={`group relative block aspect-square w-full overflow-hidden rounded-control border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : t.locked ? 'border-border' : 'border-border hover:border-primary'}`}
+                              className={`group relative block aspect-square w-full overflow-hidden rounded-lg border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : t.locked ? 'border-border' : 'border-border hover:border-primary'}`}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL or an inline SVG data URL, not a configured next/image domain */}
                               <img src={t.src} alt={t.label} loading="lazy" className={`h-full w-full ${t.contain ? 'object-contain p-3' : 'object-cover'}`} />

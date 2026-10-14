@@ -91,7 +91,7 @@ export async function ChallengesSeason() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold leading-none tabular-nums text-text">{completedPct}%</p>
+            <p className="text-stat-sm font-bold leading-none tabular-nums text-text">{completedPct}%</p>
           </div>
         </div>
         <ProgressTrack value={completedPct} label="Season completion" size="xl" animate className="mt-3" />

@@ -34,7 +34,7 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
   return (
     <Link
       href={`/classifieds/${l.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-colors hover:border-primary/60"
+      className="group flex flex-col overflow-hidden rounded-card border border-border bg-surface lift-1 transition-colors hover:border-primary/60"
     >
       {/* COVER — the type pill lives here, overlaid top-left, so it never repeats in the body (C3/C4).
           A gradient placeholder stands in when a listing has no photo, so the pill always has a home. */}

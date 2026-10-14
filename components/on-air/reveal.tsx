@@ -388,7 +388,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
             {payload.bonuses.slice(0, shown).map((b, i) => (
               <div
                 key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+                className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
                 <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
@@ -506,7 +506,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         {rows.map(([k, v]) => (
           <div
             key={k}
-            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+            className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
           >
             <span className="truncate text-muted">{k}</span>
             <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>
@@ -567,7 +567,7 @@ function DispatchPanel({
   return (
     <div className="w-full max-w-sm">
       <DispatchArt className={`${ART} mb-4`} />
-      <div className="rounded-2xl border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
+      <div className="rounded-card border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
         <p className={capsLabel('flex items-center gap-1.5 text-2xs font-bold text-primary-strong', 'widest')}>
           <Radio className="h-3.5 w-3.5" /> Incoming · Dispatch from Vera
         </p>
@@ -590,7 +590,7 @@ function DispatchPanel({
             <Link
               href={dispatch.actionHref}
               onClick={() => onAction?.()}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
             </Link>

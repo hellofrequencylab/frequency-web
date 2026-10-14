@@ -95,7 +95,7 @@ export function SpotlightShell({
                 style={avatarFocusStyle(profile.avatar_url)}
               />
             ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-3xl font-bold text-primary-strong ring-4 ring-canvas lift-1">
+              <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-stat-sm font-bold text-primary-strong ring-4 ring-canvas lift-1">
                 {getInitials(name)}
               </div>
             )}

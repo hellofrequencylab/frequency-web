@@ -99,7 +99,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         </label>
 
         {query.trim() && results.length > 0 && (
-          <div className="rounded-lg border border-border max-h-64 overflow-y-auto divide-y divide-border">
+          <div className="rounded-control border border-border max-h-64 overflow-y-auto divide-y divide-border">
             {results.map(r => {
               const isSelected = selected?.id === r.id
               const wasInvited = invited.has(r.id)

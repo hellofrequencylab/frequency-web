@@ -49,7 +49,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Find your town…"
-              className="w-full rounded-2xl border border-border bg-surface py-3 pl-11 pr-4 text-body text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+              className="w-full rounded-card border border-border bg-surface py-3 pl-11 pr-4 text-body text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           </div>
         </div>
@@ -91,7 +91,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
           ))}
         </ul>
       ) : (
-        <div className="mx-auto max-w-md rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
+        <div className="mx-auto max-w-md rounded-card border border-border bg-marketing-canvas p-8 text-center">
           <p className="mb-1 text-body font-semibold text-text">
             No towns matching &ldquo;{query.trim()}&rdquo; yet.
           </p>
@@ -100,7 +100,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
           </p>
           <Link
             href={BETA_CTA_HREF}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center justify-center gap-1.5 rounded-card bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
           >
             {BETA_CTA_LABEL} <ArrowRight className="h-4 w-4" />
           </Link>

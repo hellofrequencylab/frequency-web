@@ -31,7 +31,7 @@ export function WalkthroughCard({ walkthrough }: { walkthrough: Walkthrough }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <div className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
             <Sparkles className="h-5 w-5" aria-hidden />

@@ -158,7 +158,7 @@ export function SpotlightTour({
         ref={cardRef}
         tabIndex={-1}
         style={anchored ? { top: cardPos!.top, left: cardPos!.left } : undefined}
-        className={`absolute w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-surface p-4 lift-3 outline-none motion-safe:animate-cue-pop ${
+        className={`absolute w-80 max-w-[calc(100vw-1.5rem)] rounded-card border border-border bg-surface p-4 lift-3 outline-none motion-safe:animate-cue-pop ${
           anchored ? '' : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
         }`}
       >
@@ -175,7 +175,7 @@ export function SpotlightTour({
             type="button"
             onClick={pause}
             aria-label="Pause tour"
-            className="-mr-1 -mt-1 rounded-lg p-1 text-subtle transition-colors hover:text-text"
+            className="-mr-1 -mt-1 rounded-control p-1 text-subtle transition-colors hover:text-text"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -204,7 +204,7 @@ export function SpotlightTour({
               <button
                 type="button"
                 onClick={() => setI((n) => n - 1)}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
+                className="inline-flex items-center gap-1 rounded-control px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
               >
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
               </button>

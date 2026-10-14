@@ -300,10 +300,10 @@ export function VeraLightbox({
                 <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
                   <p className="text-meta text-muted">{proposalLabel(p)}</p>
                   <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
+                    <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
                       <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
                     </button>
-                    <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
+                    <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-control bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
                       <X className="h-3.5 w-3.5" /> Skip
                     </button>
                   </div>

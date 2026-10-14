@@ -24,7 +24,7 @@ function ActivityRow({ post }: { post: Board['activity'][number] }) {
   return (
     <Link
       href={post.spaceSlug ? `/spaces/${post.spaceSlug}` : '/spaces/directory'}
-      className="flex items-start gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+      className="flex items-start gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated"
     >
       <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-subtle">
         <Users className="h-3.5 w-3.5" aria-hidden />
@@ -47,9 +47,9 @@ function GatheringRow({ gathering }: { gathering: NonNullable<Board['gathering']
   return (
     <Link
       href={`/events/${gathering.slug}`}
-      className="group flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+      className="group flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated"
     >
-      <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-success-bg text-success">
+      <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-control bg-success-bg text-success">
         <span className="text-3xs font-bold uppercase leading-none">{month}</span>
         <span className="text-body-sm font-bold leading-tight">{day}</span>
       </span>

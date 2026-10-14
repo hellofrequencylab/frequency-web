@@ -76,7 +76,7 @@ export function InviteLauncher() {
         </div>
 
         {/* Reward banner */}
-        <div className="mt-2 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3">
+        <div className="mt-2 flex items-center gap-3 rounded-card border border-primary/30 bg-primary-bg/40 p-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop">
             <Zap className="h-5 w-5" />
           </span>
@@ -94,7 +94,7 @@ export function InviteLauncher() {
             {/* QR for in-person */}
             <div className="mt-4 flex justify-center">
               {/* KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface. */}
-              <div className="h-44 w-44 overflow-hidden rounded-2xl border border-border bg-white p-2">
+              <div className="h-44 w-44 overflow-hidden rounded-card border border-border bg-white p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`/api/qr?code=${encodeURIComponent(data.codeId)}&format=png&size=512`} alt="Your invite QR code" className="h-full w-full" />
               </div>

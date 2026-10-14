@@ -989,7 +989,7 @@ function ChatTrigger({
             !yielding && (unread > 0 || open) ? 'bg-primary text-on-primary lift-1' : 'bg-primary-bg text-primary-strong',
           )}
         >
-          <MessageSquare className="h-[18px] w-[18px]" aria-hidden />
+          <MessageSquare className="h-4.5 w-4.5" aria-hidden />
           {unread > 0 && (
             <span aria-hidden className={UNREAD_BADGE}>
               {unread > 9 ? '9+' : unread}
@@ -1005,7 +1005,7 @@ function ChatTrigger({
             side="right"
             glow="orange"
             label="Chat"
-            icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
+            icon={<MessageSquare className="h-4.5 w-4.5" aria-hidden />}
             waiting={waiting}
             badgeCount={unread}
             onOpen={onOpen}

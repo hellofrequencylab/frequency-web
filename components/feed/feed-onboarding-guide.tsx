@@ -199,7 +199,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         {status.steps.map((step) => {
           const isCurrent = step.key === current.key
           return (
-            <div key={step.key} className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5">
+            <div key={step.key} className="group flex items-center gap-2.5 rounded-control px-1.5 py-1.5">
               <span
                 className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill ${
                   step.done

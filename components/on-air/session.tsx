@@ -1372,7 +1372,7 @@ export function OnAirSession({
             no shame, a gentle "finish for the rest". FINISHED: celebrate the top-up. Plain copy,
             no em or en dashes. */}
         {payload.partial && (
-          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-2.5 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-card border border-primary/50 bg-primary-bg/30 px-4 py-2.5 text-center">
             <p className="text-body-sm font-semibold text-text">You banked the day and earned 1 Zap.</p>
             <p className="mt-1 text-meta text-muted">
               Finish the sit any time today and the rest of the Zaps are yours.
@@ -1385,7 +1385,7 @@ export function OnAirSession({
           </div>
         )}
         {payload.finished && (
-          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl border border-success/50 bg-success-bg/40 px-4 py-2.5 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-card border border-success/50 bg-success-bg/40 px-4 py-2.5 text-center">
             <p className="text-body-sm font-semibold text-text">You finished it. The rest of the Zaps are in.</p>
             <p className="mt-1 text-meta text-muted">Full sit, full reward. Nice work.</p>
           </div>
@@ -1455,7 +1455,7 @@ export function OnAirSession({
             tappable on a short screen (owner layout directive, item #5). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-5 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
           <p className="flex animate-pulse items-center gap-2.5 text-body-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
-            <LotusIcon className="h-[18px] w-[18px]" /> Mindless
+            <LotusIcon className="h-4.5 w-4.5" /> Mindless
           </p>
 
           <div className="flex flex-col items-center gap-5">
@@ -1555,7 +1555,7 @@ export function OnAirSession({
             interval, the sit auto-finalizes at the last confirmed point so an unattended run never
             inflates airtime. Voice: plain, no narrated feelings, no em dashes. */}
         {preroll === null && runOverPrompt && (
-          <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
             <p className="text-body-sm font-semibold text-text">Still practicing?</p>
             <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
             <Button type="button" onClick={confirmRunOver} className="mt-2.5">
@@ -2168,7 +2168,7 @@ function InstructionsPopup({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 outline-none lift-3"
+        className="relative w-full max-w-sm rounded-card border border-border bg-surface px-6 py-6 outline-none lift-3"
       >
         <button
           type="button"

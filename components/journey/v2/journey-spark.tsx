@@ -425,7 +425,7 @@ export function JourneySpark({
       }
       docNote={
         skipped.length > 0 ? (
-          <p className="mt-2 rounded-lg border border-border bg-canvas px-3 py-2 text-2xs text-muted">
+          <p className="mt-2 rounded-control border border-border bg-canvas px-3 py-2 text-2xs text-muted">
             Could not read: {skipped.join(', ')}. Vera reads PDF, Word, and plain text.
           </p>
         ) : null
@@ -536,7 +536,7 @@ export function JourneySpark({
                 type="button"
                 onClick={() => chooseTemplate(t.id)}
                 disabled={pending}
-                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
+                className="flex w-full items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
               >
                 <span className="text-page-title leading-none" aria-hidden>
                   {t.emoji}

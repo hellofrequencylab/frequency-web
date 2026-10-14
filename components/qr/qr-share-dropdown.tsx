@@ -99,7 +99,7 @@ export function QrShareDropdown({
         // short instead of a tall narrow column.
         className="max-w-3xl"
       >
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6">
+        <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
           {manager ? (
             <PageQrManager pathname={publicPath} url={url} imageUrl={shareImage} />
           ) : (

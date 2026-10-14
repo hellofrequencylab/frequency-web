@@ -76,7 +76,7 @@ export function ViewerListingClaim({ detailPath }: { detailPath: string }) {
   const { signedIn } = useViewer()
   if (!token) return null
   return (
-    <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
+    <section className="rounded-card border border-primary/40 bg-primary-bg/40 p-4">
       <h2 className={capsLabel('mb-3 text-2xs font-semibold text-primary-strong')}>Claim this listing</h2>
       <ListingClaimBox
         token={token}
