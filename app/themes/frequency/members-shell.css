@@ -425,3 +425,26 @@
 @media (min-width: 1001px) {
   [data-design="frequency"] [data-kit="members"] .ap-cols.l { grid-template-columns: 220px minmax(0, 1fr); gap: 40px }
 }
+
+/* Owner, 2026-10-14: "remove the background from the Notifications box (and others like it); spread the
+   main content area out and create more white space".
+   1. The working pane beside a left menu (Settings panes and any `.ap-cols.l` main panel) is open space,
+      not a card: no fill, no ring, no shadow, no blur; its content keeps the pane's rhythm.
+   2. A quiet info note (DAWN's `rounded-card border bg-surface-elevated` callout) keeps a hairline and
+      loses its fill.
+   3. The centre column widens to 1040px and the panes breathe (more gap between sections). */
+[data-design="frequency"] [data-kit="members"] :is(.mc-pane.panel, .ap-cols.l > .panel) {
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding-inline: 0;
+}
+[data-design="frequency"] [data-kit="members"] .mc-pane.panel { gap: 28px }
+[data-design="frequency"] [data-kit="members"] :is(div, section, aside).rounded-card.border.bg-surface-elevated:not(:has(button, a, input, select, textarea)) {
+  background: none;
+  border-color: var(--fq-border-hair);
+}
+@media (min-width: 1001px) {
+  [data-design="frequency"] [data-kit="members"] .fqm-center { max-width: 1040px }
+}
