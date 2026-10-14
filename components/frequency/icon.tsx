@@ -6,7 +6,15 @@
 export type FqIconName =
   | 'qr'  | 'contacts'  | 'nudge'  | 'membership'  | 'ticket'  | 'program'  | 'page'  | 'circle'  | 'event'  | 'checkin'  | 'zap'  | 'gem'  | 'host'  | 'space'  | 'standing'  | 'pin'  | 'message'  | 'search'  | 'tip'  | 'breath'  | 'arrow'  | 'home'  | 'compass'  | 'user'  | 'settings'  | 'help'  | 'map'  | 'filter'  | 'clock'  | 'share'  | 'invite'  | 'link'  | 'streak'  | 'award'  | 'trophy'  | 'goal'  | 'podium'  | 'vault'  | 'wallet'  | 'chart'  | 'shield'  | 'flag'  | 'edit'  | 'photo'  | 'camera'  | 'tag'  | 'lesson'  | 'practice'  | 'moon'  | 'sun'  | 'sound'  | 'door'  | 'crew'  | 'vera'  | 'giveback'  | 'plus'  | 'close'  | 'check'  | 'chevron'  | 'more'  | 'send'  | 'globe'  | 'download'  | 'upload'  | 'house-01'  | 'house-02'  | 'house-03'  | 'house-04'  | 'house-05'  | 'house-06'  | 'house-07'  | 'house-08'  | 'house-09'  | 'house-10'  | 'house-11'  | 'house-12'
 
+/** The page editor's own glyphs (undo, redo, devices, folds, section toolbar). The export draws them inline in
+ *  templates/admin/editor/editor.js; they live in a HAND-KEPT supplementary sprite beside the generated one,
+ *  because the installer copies frequency-icons.svg verbatim and would drop anything added to it. */
+export const FQ_EDITOR_ICONS = ['undo', 'redo', 'eye', 'eye-off', 'desktop', 'tablet', 'phone', 'arrow-up', 'arrow-down', 'copy', 'trash', 'fold-left', 'fold-right', 'back', 'caret', 'minus', 'layers', 'palette'] as const
+export type FqEditorIconName = (typeof FQ_EDITOR_ICONS)[number]
+
 const SPRITE = '/brand/frequency/frequency-icons.svg'
+const EDITOR_SPRITE = '/brand/frequency/frequency-editor-icons.svg'
+const EDITOR_SET: ReadonlySet<string> = new Set(FQ_EDITOR_ICONS)
 
 export function FqIcon({
   name,
@@ -14,7 +22,7 @@ export function FqIcon({
   label,
   size,
 }: {
-  name: FqIconName
+  name: FqIconName | FqEditorIconName
   className?: string
   /** An accessible name. Omit for a decorative icon beside text (the default). */
   label?: string
@@ -32,7 +40,7 @@ export function FqIcon({
       aria-hidden={label ? undefined : true}
       focusable="false"
     >
-      <use href={`${SPRITE}#${name}`} />
+      <use href={`${EDITOR_SET.has(name) ? EDITOR_SPRITE : SPRITE}#${name}`} />
     </svg>
   )
 }
