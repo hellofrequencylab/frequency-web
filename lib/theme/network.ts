@@ -166,7 +166,8 @@ const NETWORK_SHARED_VARS = `${NETWORK_TAGS.map((c, i) => `--nw-tag-${i + 1}:${c
 --nw-c-soot:#000;--nw-c-soot-78:rgba(18,18,18,.78);--nw-c-earth-10:rgba(60,40,20,.10);--nw-c-glow-10:rgba(255,214,170,.10);--nw-c-shade-18:rgba(15,30,40,.18);--nw-c-shade-35:rgba(15,30,40,.35);--nw-c-shade-40:rgba(15,30,40,.4);--nw-c-shade-50:rgba(15,30,40,.5);--nw-c-shade-60:rgba(15,30,40,.6);--nw-c-umber-12:rgba(48,40,30,.12);--nw-c-chalk:#fff;--nw-c-chalk-06:rgba(255,255,255,.06);--nw-c-chalk-07:rgba(255,255,255,.07);--nw-c-chalk-08:rgba(255,255,255,.08);--nw-c-chalk-10:rgba(255,255,255,.1);--nw-c-chalk-12:rgba(255,255,255,.12);--nw-c-chalk-14:rgba(255,255,255,.14);--nw-c-chalk-22:rgba(255,255,255,.22);--nw-c-chalk-82:rgba(255,255,255,.82);--nw-c-chalk-88:rgba(255,255,255,.88);
 --nw-r-sm:${NETWORK_SHAPE.sm};--nw-r-card:${NETWORK_SHAPE.card};--nw-r-cover:${NETWORK_SHAPE.cover};--nw-r-pill:${NETWORK_SHAPE.pill};--nw-r-leaf:${NETWORK_SHAPE.leaf};
 --nw-dur-fast:${NETWORK_MOTION.fast};--nw-dur-base:${NETWORK_MOTION.base};--nw-dur-slow:${NETWORK_MOTION.slow};--nw-ease:${NETWORK_MOTION.ease};
---nw-tracking-display:-.035em;--nw-measure:65ch;`
+--nw-tracking-display:-.035em;--nw-measure:65ch;
+--nw-pencil:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E");`
 
 /** The theme's tokens, scoped to a website root carrying `data-house-theme="network"`, one block per scheme
  *  under `data-scheme`. The `--nw-*` set is the theme's own vocabulary (network-css.ts reads only these and
