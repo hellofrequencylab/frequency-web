@@ -528,19 +528,21 @@ export function buildProfileLayout(): Record<string, unknown> {
   const firstVideo = ((podcast.items as { videoId: string }[]) ?? [])[0]?.videoId
   const row = (id: string, cells: string[][], extra: Record<string, unknown> = {}) => ({ id, columns: cells.length, cells, ...extra })
   return {
+    // The page reads as one story: who we are and how to join, the proof, the Friday ritual (what it is,
+    // then how a first Friday goes beside June's golden rule), what is on now beside the big moment,
+    // where we meet, the circles between Fridays, the people, the studio and its podcast, and how to
+    // reach us. Each chapter of the story opens with breathing room above it.
     rows: [
       row('r0', [['about'], ['memberships']], { ratio: 'lead' }),
       row('r1', [['features']]),
-      row('r2', [['zigzag']]),
-      row('r3', [['accentBeat']]),
-      row('r4', [['events']]),
-      row('r5', [['editorial']]),
-      row('r6', [['cardGrid']]),
-      row('r7', [['circles']]),
-      row('r8', [['quote'], ['story']], { ratio: 'trail' }),
-      row('r9', [['offerings']]),
-      row('ra', [['embed']]),
-      row('rb', [['callout'], ['contact', 'business']], { ratio: 'lead' }),
+      row('r2', [['zigzag']], { mt: 'lg' }),
+      row('r3', [['editorial'], ['callout']], { ratio: 'lead' }),
+      row('r4', [['events'], ['accentBeat']], { ratio: 'lead', mt: 'lg' }),
+      row('r5', [['cardGrid']], { mt: 'lg' }),
+      row('r6', [['circles']]),
+      row('r7', [['quote'], ['story']], { ratio: 'trail', mt: 'lg' }),
+      row('r8', [['offerings'], ['embed']], { ratio: 'trail', mt: 'lg' }),
+      row('r9', [['contact'], ['business']], { mt: 'lg' }),
     ],
     content: {
       about: { eyebrow: t(hero.eyebrow), title: t(hero.title), body: t(hero.lead) },
@@ -548,13 +550,15 @@ export function buildProfileLayout(): Record<string, unknown> {
       features: { source: 'custom', layout: 'stats', columns: '3', items: ((stats.items as { icon: string; value: string; label: string }[]) ?? []).map((i) => ({ icon: i.icon, title: i.value, text: i.label })) },
       zigzag: { eyebrow: t(fridays.eyebrow), title: t(fridays.title), body: [t(fridays.body), ...facts.map((f) => `${f.label}: ${f.value}, ${f.note}.`)].join('\n\n'), image: fridays.image, alt: t(fridays.alt), mediaSide: 'left' },
       accentBeat: { eyebrow: t(band.eyebrow), title: t(band.title), body: t(band.body), buttonLabel: t(band.primaryLabel), buttonUrl: band.primaryHref },
-      events: { eyebrow: t(events.eyebrow), title: t(events.title), view: 'cards', columns: '3' },
+      // A short list beside the big moment, not a wall of cards: the full calendar is a tab away.
+      events: { eyebrow: t(events.eyebrow), title: t(events.title), view: 'list' },
       editorial: { eyebrow: t(first.eyebrow), title: t(first.title), body: steps.map((st, i) => `${i + 1}. ${st.title}. ${st.body}`).join('\n\n') },
       cardGrid: {
         eyebrow: t(chapters.eyebrow), title: t(chapters.title), columns: '3', shape: 'top',
         cards: ((chapters.chips as { name: string; line: string; when: string; href: string }[]) ?? []).map((c) => ({ title: c.name, text: `${c.line} · ${c.when}`, link: c.href, button: { label: `Visit ${c.name}`, href: c.href } })),
       },
-      circles: { eyebrow: t(circles.eyebrow), title: t(circles.title), columns: '2' },
+      // Six circles that show the range (women, coffee, new moms, the beach, wellbeing, dance); the Circles tab has them all.
+      circles: { eyebrow: t(circles.eyebrow), title: t(circles.title), columns: '3', items: ['woman-within', 'coffee-connection', 'new-moms', 'swamis', 'vibe-check', 'dance-jam'].map(circleId) },
       quote: { text: t(june.quote).replace(/^"|"$/g, ''), by: t(june.eyebrow).replace(/^Meet /, '') },
       // The Team block lists the Space's real members; the core team is not on Frequency yet, so their words
       // ride the Story block.
