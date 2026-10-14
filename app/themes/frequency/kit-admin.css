@@ -3,21 +3,21 @@
 
 /* ── templates/admin/admin.css ── */
 @layer components {
-[data-design="frequency"] [data-kit="admin"]{background:var(--fq-bg-canvas)}
+[data-design="frequency"] [data-kit="admin"]{background:var(--fq-surface-card)}
 [data-design="frequency"] [data-kit="admin"] .ad{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh;position:relative;z-index:1}
 [data-design="frequency"] [data-kit="admin"] .ad-side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:20px;padding:24px 16px;background:var(--fq-glass-panel);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:1px 0 0 var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="admin"] .ad-side .fq-logo-flow{width:132px;margin:4px 10px 0}
-[data-design="frequency"] [data-kit="admin"] .ad-space{display:flex;align-items:center;gap:12px;padding:10px;border-radius:18px;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .ad-space{display:flex;align-items:center;gap:12px;padding:10px;border-radius:18px;background:rgba(255,252,246,.75);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="admin"] .ad-nav{display:flex;flex-direction:column;gap:2px}
 [data-design="frequency"] [data-kit="admin"] .ad-nav a{height:42px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:14px;font:500 14px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="admin"] .ad-nav a:hover{background:rgba(255,255,255,.55);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="admin"] .ad-nav a.on{background:var(--fq-pa);color:var(--fq-text-strong);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px rgba(255,255,255,.5)}
 [data-design="frequency"] [data-kit="admin"] .ad-nav a svg{width:18px;height:18px}
 [data-design="frequency"] [data-kit="admin"] .ad-nav b{margin-left:auto;font:600 11px/1 var(--fq-font-sans);padding:4px 7px;border-radius:999px;background:var(--fq-text-strong);color:#fff}
-[data-design="frequency"] [data-kit="admin"] .ad-top{position:sticky;top:0;z-index:30;height:68px;display:flex;align-items:center;gap:14px;padding:0 36px;background:color-mix(in oklab,var(--fq-bg-canvas) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 1px 0 var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .ad-top{position:sticky;top:0;z-index:30;height:68px;display:flex;align-items:center;gap:14px;padding:0 40px;background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 1px 0 var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="admin"] .ad-top .crumb{font:500 14px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="admin"] .ad-top .crumb b{color:var(--fq-text-strong);font-weight:500}
-[data-design="frequency"] [data-kit="admin"] .ad-main{padding:36px 36px 120px;max-width:1280px}
+[data-design="frequency"] [data-kit="admin"] .ad-main{padding:40px 40px 128px;max-width:1280px}
 [data-design="frequency"] [data-kit="admin"] .kpi{display:flex;flex-direction:column;gap:8px}
 [data-design="frequency"] [data-kit="admin"] .kpi .num{font-size:32px}
 [data-design="frequency"] [data-kit="admin"] .up{color:var(--fq-success);font:500 13px/1 var(--fq-font-sans)}
@@ -48,7 +48,7 @@
 [data-design="frequency"] [data-kit="admin"] .rep{transition:opacity var(--fq-dur-base)}
 [data-design="frequency"] [data-kit="admin"] .ad-nav a{transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
 [data-design="frequency"] [data-kit="admin"] .ad-nav a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:1px}
-[data-design="frequency"] [data-kit="admin"] .ad-main>.head{margin-bottom:24px}
+[data-design="frequency"] [data-kit="admin"] .ad-main>.head{margin-bottom:32px}
 @media (max-width:960px){[data-design="frequency"] [data-kit="admin"] .ad{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="admin"] .ad-side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center}
 [data-design="frequency"] [data-kit="admin"] .ad-nav{flex-direction:row;overflow-x:auto;scrollbar-width:none}

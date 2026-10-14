@@ -1,0 +1,59 @@
+/* CORE · Feature blocks. One markup per presentation (card, row, spotlight, poster), any offering type (event, circle, space, journey, membership, host, story, listing).
+   Every text node is editable content; every visual reads tokens. Slots: .fe-media .fe-tag .fe-k .fe-t .fe-m .fe-why .fe-foot .fe-act */
+.fe{--fe-r:24px;position:relative;display:flex;color:var(--text-body);font-family:var(--font-sans);text-decoration:none;min-width:0}
+.fe a{color:inherit;text-decoration:none}
+.fe-media{position:relative;flex:none;overflow:hidden;background:#EFEAE3 center/cover}
+.fe-media img{display:block;width:100%;height:100%;object-fit:cover;transition:transform var(--dur-slow) var(--ease-out)}
+.fe:hover .fe-media img{transform:scale(1.03)}
+.fe-tag{position:absolute;top:12px;left:12px;z-index:1;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font:600 11.5px/1 var(--font-sans);color:var(--text-strong);white-space:nowrap}
+.fe-tag.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pa);box-shadow:0 0 0 3px rgba(196,184,255,.3)}
+.fe-date{position:absolute;top:12px;right:12px;z-index:1;width:52px;padding:7px 0 8px;border-radius:16px;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);text-align:center;color:var(--text-strong)}
+.fe-date b{display:block;font:600 20px/1 var(--font-display);letter-spacing:-.04em}.fe-date small{display:block;margin-top:3px;font:600 10px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
+.fe-body{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fe-k{font:500 10.5px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)}
+.fe-t{margin:0;font:500 20px/1.1 var(--font-display);letter-spacing:-.035em;color:var(--text-strong);text-wrap:balance}
+.fe-m{font:400 14px/1.4 var(--font-sans);color:var(--text-muted)}
+.fe-why{font:400 italic 15px/1.4 var(--font-serif);color:var(--text-muted);text-wrap:pretty}
+.fe-p{margin:0;font:400 15px/1.55 var(--font-sans);color:var(--text-body);text-wrap:pretty}
+.fe-price{font:500 30px/1 var(--font-display);letter-spacing:-.05em;color:var(--text-strong)}.fe-price small{font:400 italic 15px/1 var(--font-serif);color:var(--text-muted);letter-spacing:0;margin-left:4px}
+.fe-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:6px}
+.fe-faces{display:flex;align-items:center}.fe-faces span{width:28px;height:28px;border-radius:50%;margin-left:-8px;background:#EFEAE3 center/cover;box-shadow:0 0 0 2px var(--surface-card)}.fe-faces span:first-child{margin-left:0}.fe-faces em{margin-left:8px;font:400 13px/1 var(--font-sans);font-style:normal;color:var(--text-muted)}
+.fe-act{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:none;background:var(--pa);box-shadow:var(--pa-glow),inset 0 0 0 1px rgba(255,255,255,.5);font:600 13.5px/1 var(--font-sans);color:#1E1B18;white-space:nowrap;cursor:pointer}
+.fe-act.out{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-strong)}
+.fe-list{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.fe-list li{display:flex;gap:10px;align-items:center;font:400 14px/1.35 var(--font-sans)}.fe-list li::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--pa)}
+.fe-av{flex:none;border-radius:50%;background:#EFEAE3 center/cover;box-shadow:0 0 0 3px var(--surface-card),0 0 0 4.5px #C4B8FF}
+.fe-stats{display:flex;gap:24px;flex-wrap:wrap}.fe-stats div{display:flex;flex-direction:column;gap:4px}.fe-stats b{font:500 24px/1 var(--font-display);letter-spacing:-.045em;color:var(--text-strong)}.fe-stats span{font:400 12.5px/1.3 var(--font-sans);color:var(--text-muted)}
+.fe-q{margin:0;font:400 italic 22px/1.3 var(--font-serif);color:var(--text-strong);text-wrap:pretty}.fe-q::before{content:"“";color:#C4B8FF}
+.fe-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--pa-soft);font:600 11.5px/1 var(--font-sans);color:var(--text-strong);align-self:flex-start}
+/* 1. card: vertical, media on top */
+.fe-card{flex-direction:column;border-radius:var(--fe-r);background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(30,27,24,.04),0 24px 50px -38px rgba(30,27,24,.35),inset 0 0 0 1px var(--border-hair);transition:transform var(--dur-base) var(--ease-out),box-shadow var(--dur-base) var(--ease-out)}
+.fe-card:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(30,27,24,.04),0 30px 60px -36px rgba(120,150,225,.55),inset 0 0 0 1px rgba(196,184,255,.6)}
+.fe-card .fe-media{aspect-ratio:4/3}
+.fe-card .fe-body{flex:1;padding:18px 20px 20px}
+.fe-card.text{background:var(--glass-panel);backdrop-filter:blur(16px);box-shadow:var(--glass-panel-shadow)}
+.fe-card.text .fe-body{padding:24px}
+/* 2. row: compact, for lists and rails */
+.fe-row{align-items:center;gap:16px;padding:12px;border-radius:20px;transition:background var(--dur-fast)}
+.fe-row:hover{background:rgba(255,255,255,.7)}
+.fe-row .fe-media{width:84px;height:84px;border-radius:16px}
+.fe-row .fe-body{flex:1;gap:5px}.fe-row .fe-t{font-size:16px}.fe-row .fe-m{font-size:13px}
+.fe-row .fe-av{width:64px;height:64px;margin:10px}
+/* 3. spotlight: the one thing a section is about */
+.fe-spot{border-radius:32px;overflow:hidden;background:#fff;box-shadow:0 40px 80px -50px rgba(30,27,24,.4),inset 0 0 0 1px var(--border-hair)}
+.fe-spot .fe-media{width:52%;min-height:400px}
+.fe-spot .fe-body{flex:1;gap:14px;padding:clamp(24px,3.4vw,44px);justify-content:center}
+.fe-spot .fe-t{font-size:clamp(28px,3vw,40px);letter-spacing:-.05em}
+.fe-spot.flip{flex-direction:row-reverse}
+.fe-spot.soft{background:var(--pa-soft)}
+@media (max-width:760px){.fe-spot,.fe-spot.flip{flex-direction:column}.fe-spot .fe-media{width:100%;min-height:240px}}
+/* 4. poster: Stage, full-bleed, for campaigns and shareables */
+.fe-poster{flex-direction:column;justify-content:flex-end;aspect-ratio:4/5;border-radius:28px;overflow:hidden;background:#0A0612;color:#D9CFEA;isolation:isolate}
+.fe-poster .fe-media{position:absolute;inset:0;z-index:-2}
+.fe-poster::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(10,6,18,.1) 0%,rgba(10,6,18,.55) 40%,rgba(10,6,18,.92) 75%)}
+.fe-poster .fe-body{padding:24px;gap:10px}
+.fe-poster .fe-k{color:#D9CFEA}.fe-poster .fe-t{font-size:30px;color:#F6F0FF;letter-spacing:-.05em}.fe-poster .fe-m{color:#D9CFEA}
+.fe-poster .fe-tag{background:rgba(30,18,50,.6);color:#F6F0FF;box-shadow:inset 0 0 0 1px rgba(246,240,255,.14)}
+.fe-poster .fe-tag.live::before{background:var(--x-magenta-neon);box-shadow:0 0 10px var(--x-magenta-neon)}
+.fe-poster .fe-act{background:var(--iridescent-sweep);box-shadow:0 0 24px rgba(184,162,255,.4)}
+.fe-poster .fe-mark{position:absolute;top:20px;right:20px;width:34px;height:34px;background:#F6F0FF;-webkit-mask:url('../assets/logo/frequency-icon-round.png') no-repeat center/contain;mask:url('../assets/logo/frequency-icon-round.png') no-repeat center/contain;opacity:.9}
+@media (prefers-reduced-motion:reduce){.fe-card,.fe-media img{transition:none}.fe-card:hover{transform:none}}

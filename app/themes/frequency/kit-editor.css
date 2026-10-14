@@ -5,7 +5,7 @@
 @layer components {
 [data-design="frequency"] [data-kit="editor"] *{box-sizing:border-box}
 [data-design="frequency"] [data-kit="editor"]{margin:0;height:100%;overflow:hidden}
-[data-design="frequency"] [data-kit="editor"]{font-family:var(--fq-font-sans);color:var(--fq-text-body);background:#F4F1EC;-webkit-font-smoothing:antialiased}
+[data-design="frequency"] [data-kit="editor"]{font-family:var(--fq-font-sans);color:var(--fq-text-body);background:var(--fq-surface-card);-webkit-font-smoothing:antialiased}
 [data-design="frequency"] [data-kit="editor"] button, [data-design="frequency"] [data-kit="editor"] input, [data-design="frequency"] [data-kit="editor"] textarea, [data-design="frequency"] [data-kit="editor"] select{font:inherit;color:inherit}
 [data-design="frequency"] [data-kit="editor"] button{cursor:pointer}
 [data-design="frequency"] [data-kit="editor"] :focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}

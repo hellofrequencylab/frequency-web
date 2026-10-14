@@ -1,0 +1,8 @@
+/* CORE · locked. Edit only in the Frequency design system; products import, never override. */
+@import url('tokens/typography.css');
+@import url('tokens/colors.css');
+@import url('tokens/themes.css');
+@import url('tokens/space-motion.css');
+@import url('tokens/base.css');
+@import url('tokens/infographics.css?v=11');
+@import url('tokens/features.css?v=2');

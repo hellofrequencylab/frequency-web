@@ -1,7 +1,7 @@
 /* Frequency Page Editor. Same layout as production (components/sites/editor/shell.tsx): top bar, left rail tabs, stage, inspector. Commons + member layer. */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden}
-body{font-family:var(--font-sans);color:var(--text-body);background:#F4F1EC;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);color:var(--text-body);background:var(--surface-card);-webkit-font-smoothing:antialiased}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}

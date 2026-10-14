@@ -71,7 +71,7 @@ Browse the product pages from the three area pages: `Frequency Front End.html`, 
 | Frequency Member Site | `templates/members/` | `app/app.css`, `app/shell.js` | 15 (Feed is `Members.dc.html`) |
 | Frequency Member Admin | `templates/admin/` | `admin.css`, `shell.js`, `editor/` (page editor), plus the member kit | 7 |
 
-`templates/preview.js` adds a "← back to area" button to every page while previewing. Drop it in production.
+Member pages share one shell: `app/nav.js` (menu data, mirrored from frequency-web), `app/shell.js` (header, rails, Vault dock) and `app/ambient.js` (depth and parallax). Events adds `app/events.js` + `app/events.css`.
 
 ## Guidelines
 `guidelines/brand-book.html` (the visual book), plus:

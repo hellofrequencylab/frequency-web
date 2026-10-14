@@ -69,9 +69,12 @@ Implementation notes:
   - A hard stop when you're caught up.
   
   The complete spec, covering layout, every component, state and ranking signals, is in `templates/members/README.md`. All data and handlers live in the logic class at the bottom of the file.
-- **Every other screen** shares `app/app.css` and `app/shell.js`.
-  - The shell builds the sticky header: animated logo, the Home / Community / The Quest / You menu, search, messages, notifications, Zap and avatar. It also builds the footer and the toast.
-  - The page tells the shell which menu item to highlight with `body[data-area]`.
+- **Every other screen** shares one shell: `app/nav.js` (all menu data), `app/shell.js` and `app/app.css`, plus `app/ambient.js` for depth and parallax.
+  - **Header:** identical to the Feed's on every page: wordmark over the left rail, Home / Community / The Quest / You mega menu (data in `nav.js` `mega`), search, messages, notifications sheet, Zap capture sheet, avatar. Transparent at the top, glass once scrolled.
+  - **Left rail:** the repo's spine from `lib/nav-areas.ts`: Feed + My Frequency disclosure, then Community, The Quest, Admin. Folds to a 76px icon strip.
+  - **Right rail:** "On this page" (title + section links that track scroll), the page's own `<aside class="side">` moved in underneath, then route panels from `nav.js` `panels` (mirrors `lib/layout/rail-panels.ts`), then the Vault dock at the foot (Zaps, Gems, streak at rest; opens to rank, adopted practices with Start, streak week, rank progress). Hidden on Quest pages.
+  - Both rails default to the logo width (`--rail: 248px`), fold independently, scroll independently, and persist their state. A page can default its right rail folded with `body[data-rail-r="fold"]` (Events does).
+  - The page sets `body[data-area]` for the header highlight; the rail highlight comes from the file name map in `nav.js` `pages`.
   - Interaction helpers:
     - `data-group` / `data-pane`: tabs and segmented choices.
     - `.sw`: switches.
@@ -160,9 +163,11 @@ Pages: Overview, Page editor, Contacts, Memberships, Standing, Moderation, Econo
 ## Open items
 - Copy rule: never push "every week" or "weekly"; frame it as connecting consistently with community (`guidelines/messaging.md`).
 - All data is sample data. The ranking signals for Up next and Near you are listed in the members README.
-- Remove `templates/preview.js` and the `support.js` / `ds-base.js` prototype runtimes in production.
+- The preview helper is gone. In production, also drop the `support.js` / `ds-base.js` prototype runtimes that the two `.dc.html` area files use.
+- Events map: set `window.FQ_GMAPS_KEY` (or localStorage `fq-gmaps-key`) to render Google Maps with a `mapId`; without a key the same pins render on Leaflet + CARTO tiles. See `templates/members/app/events.js`.
 
 ## Files
+- `HANDOFF-UPDATE-2026-10-13.md`: what changed since the previous handoff.
 - `Frequency Front End.html`, `Frequency Member Site.html`, `Frequency Member Admin.html`: browse pages.
 - `guidelines/brand-book.html`: the visual brand book.
 - `guidelines/cards/*.html`: one card per design element.

@@ -125,8 +125,8 @@ export const PALETTES: Record<DesignId, Palette> = {
   // Frequency's Commons values from the installed export (design_handoff/frequency/tokens, ADR-1740).
   // Email, share cards and the Wallet pass cannot read CSS, so these mirror the --fq- tokens by hand.
   frequency: {
-    canvas: '#FBF7F0', // token-ok: palette source, mirrors the Frequency export
-    surface: '#FFFFFF', // token-ok: palette source, mirrors the Frequency export
+    canvas: '#FAF4EA', // token-ok: palette source, mirrors the Frequency export
+    surface: '#FFFEFC', // token-ok: palette source, mirrors the Frequency export
     border: '#E6E1DA', // token-ok: palette source, mirrors the Frequency export
     text: '#38322D', // token-ok: palette source, mirrors the Frequency export
     textMuted: '#675E56', // token-ok: palette source, mirrors the Frequency export
@@ -139,8 +139,8 @@ export const PALETTES: Record<DesignId, Palette> = {
     signal: '#17788A', // token-ok: palette source, mirrors the Frequency export
     broadcast: '#B0287F', // token-ok: palette source, mirrors the Frequency export
     danger: '#C2362B', // token-ok: palette source, mirrors the Frequency export
-    emailCanvas: '#F3ECE1', // token-ok: palette source, mirrors the Frequency export
-    emailSurfaceElevated: '#F3ECE1', // token-ok: palette source, mirrors the Frequency export
+    emailCanvas: '#F2E9DC', // token-ok: palette source, mirrors the Frequency export
+    emailSurfaceElevated: '#F2E9DC', // token-ok: palette source, mirrors the Frequency export
     emailBorder: '#E6E1DA', // token-ok: palette source, mirrors the Frequency export
     emailHeading: '#1E1B18', // token-ok: palette source, mirrors the Frequency export
     emailSubtle: '#675E56', // token-ok: palette source, mirrors the Frequency export

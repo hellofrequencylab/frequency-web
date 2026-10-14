@@ -53,7 +53,7 @@ export const DESIGNS: readonly DesignDef[] = [
     id: 'frequency',
     label: 'Frequency',
     // Commons canvas (sand) and Commons-at-night canvas (Thermal), from the installed export (ADR-1740).
-    chrome: { light: '#FBF7F0', dark: '#0E0B09' }, // token-ok: browser chrome; set before CSS applies
+    chrome: { light: '#FAF4EA', dark: '#0E0B09' }, // token-ok: browser chrome; set before CSS applies
     legacyAxes: false,
   },
 ]

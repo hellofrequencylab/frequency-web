@@ -1,0 +1,59 @@
+/* Frequency infographics helper. Renders data-driven pieces from attributes:
+   <div data-ig="streak" data-count="12" data-best="19" data-state="done,done,freeze,done,done,today,"></div>   arc streak
+   <div data-ig="chain"  data-state="done,done,freeze,done,today,," data-days="M,T,W,T,F,S,S"></div>            thread streak
+   <div data-ig="stack"  data-labels="Mon,Tue" data-series='[{"name":"Regulars","type":"bar","values":[..]},{"name":"First timers","type":"stack","values":[..]},{"name":"Goal","type":"target","value":40},{"name":"Live","type":"line","values":[..]},{"name":"Events","type":"dot","values":[..]}]'></div>
+   <svg data-ig="spark" data-values="3,5,4,8"></svg>   <div data-ig="bars" data-values="" data-labels="" data-hi=""></div>
+   <div data-ig="heat" data-values="0..4"></div>        <span data-ig-count="340">0</span> */
+(function(){
+var uid=0,PAL=['#C4B8FF','#8FE9FF','#EEC1EC','#A3D4FF'];
+function grad(id,a){return '<linearGradient id="'+id+'" x1="0" x2="1"><stop offset="0" stop-color="#EEC1EC"/><stop offset=".5" stop-color="#C4B8FF"/><stop offset="1" stop-color="#8FE9FF"/></linearGradient><radialGradient id="'+id+'o" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#E6CDF4"/><stop offset=".65" stop-color="#B3C6FF"/><stop offset="1" stop-color="#8FE9FF"/></radialGradient>'+(a||'')}
+function curve(pts){return pts.map(function(p,i){if(!i)return 'M'+p[0]+' '+p[1];var q=pts[i-1],cx=(q[0]+p[0])/2;return 'C'+cx+' '+q[1]+' '+cx+' '+p[1]+' '+p[0]+' '+p[1]}).join(' ')}
+function mono(p){var n=p.length;if(n<2)return '';var d=[],m=[];for(var i=0;i<n-1;i++)d[i]=(p[i+1][1]-p[i][1])/(p[i+1][0]-p[i][0]);m[0]=d[0];m[n-1]=d[n-2];for(i=1;i<n-1;i++)m[i]=d[i-1]*d[i]<=0?0:(d[i-1]+d[i])/2;for(i=0;i<n-1;i++){if(d[i]===0){m[i]=m[i+1]=0;continue}var a=m[i]/d[i],b=m[i+1]/d[i],h=a*a+b*b;if(h>9){var t=3/Math.sqrt(h);m[i]=t*a*d[i];m[i+1]=t*b*d[i]}}var s='M'+p[0][0]+' '+p[0][1];for(i=0;i<n-1;i++){var dx=(p[i+1][0]-p[i][0])/3;s+=' C'+(p[i][0]+dx)+' '+(p[i][1]+m[i]*dx)+' '+(p[i+1][0]-dx)+' '+(p[i+1][1]-m[i+1]*dx)+' '+p[i+1][0]+' '+p[i+1][1]}return s}
+function spark(el){el.classList.add('ig-spark');var v=(el.dataset.values||'').split(',').map(Number),cs=getComputedStyle(el),w=Math.max(120,Math.round(el.clientWidth||el.getBoundingClientRect().width||300)),h=Math.round(el.clientHeight||parseFloat(cs.height)||parseFloat(cs.getPropertyValue('--h'))||64),mx=Math.max.apply(0,v),mn=Math.min.apply(0,v),r=(mx-mn)||1,id='g'+(++uid),pt=8;
+ var pts=v.map(function(n,i){return [pt+i*((w-pt*2)/(v.length-1)),pt+(h-pt*2)-(n-mn)/r*(h-pt*2)]}),d=mono(pts),L=pts[pts.length-1];
+ el.setAttribute('viewBox','0 0 '+w+' '+h);el.setAttribute('width',w);el.setAttribute('height',h);el.removeAttribute('preserveAspectRatio');el.classList.add('ig-spark');el.dataset.igDone=1;
+ el.innerHTML='<defs>'+grad(id,'<linearGradient id="'+id+'a" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#C4B8FF" stop-opacity=".32"/><stop offset="1" stop-color="#C4B8FF" stop-opacity="0"/></linearGradient>')+'</defs><line class="bl" x1="0" x2="'+w+'" y1="'+(h-.5)+'" y2="'+(h-.5)+'"/><path class="ar" fill="url(#'+id+'a)" d="'+d+' L'+L[0]+' '+h+' L'+pts[0][0]+' '+h+'Z"/><path class="ln" stroke="url(#'+id+')" d="'+d+'"/><circle class="halo" r="9" cx="'+L[0]+'" cy="'+L[1]+'"/><circle class="pt" r="4" cx="'+L[0]+'" cy="'+L[1]+'"/>'}
+function bars(el){var v=(el.dataset.values||'').split(',').map(Number),mx=Math.max.apply(0,v)||1,hi=(el.dataset.hi||'').split(',').map(Number),lb=el.dataset.labels?el.dataset.labels.split(','):null;
+ el.classList.add('ig-bars');el.innerHTML=v.map(function(n,i){return '<i style="--v:'+Math.round(n/mx*100)+'"'+(hi.indexOf(i)>-1?' class="hi"':'')+' title="'+n+'"></i>'}).join('');
+ if(lb&&!(el.nextElementSibling&&el.nextElementSibling.classList.contains('ig-axis'))){var a=document.createElement('div');a.className='ig-axis';a.innerHTML=lb.map(function(l){return '<span>'+l+'</span>'}).join('');el.after(a)}}
+function heat(el){var v=(el.dataset.values||'').split(',');el.classList.add('ig-heat');el.innerHTML=v.map(function(n){return '<i data-l="'+n+'"></i>'}).join('')}
+/* thread streak: a waveform of days. Done days rise as lit capsules, today is the orb, future days rest on the line */
+function chain(el){var d=(el.dataset.days||'M,T,W,T,F,S,S').split(','),s=(el.dataset.state||'').split(','),hs=[.55,.8,.65,1,.75,.9,.7];
+ el.classList.add('ig-chain');el.innerHTML='<div class="tr">'+d.map(function(x,i){return '<span class="'+(s[i]||'next')+'" style="--h:'+hs[i%hs.length]+'"><i></i></span>'}).join('')+'</div><div class="dy">'+d.map(function(x,i){return '<em class="'+(s[i]||'')+'">'+x+'</em>'}).join('')+'</div>'}
+/* arc streak: the week as a half orbit around the count */
+function streak(el){var s=(el.dataset.state||'').split(','),n=Math.max(7,s.length),days=(el.dataset.days||'M,T,W,T,F,S,S').split(','),id='s'+(++uid),W=320,H=190,cx=160,cy=168,R=128;
+ var P=function(i){var a=Math.PI-(i/(n-1))*Math.PI;return [cx+R*Math.cos(a),cy-R*Math.sin(a)]},last=-1;s.forEach(function(x,i){if(x==='done'||x==='today'||x==='freeze')last=i});
+ var arc=function(r,a0,a1){var p0=[cx+r*Math.cos(a0),cy-r*Math.sin(a0)],p1=[cx+r*Math.cos(a1),cy-r*Math.sin(a1)];return 'M'+p0[0]+' '+p0[1]+' A'+r+' '+r+' 0 0 1 '+p1[0]+' '+p1[1]};
+ var lit=last>0?arc(R,Math.PI,Math.PI-(last/(n-1))*Math.PI):'',g='';
+ for(var i=0;i<n;i++){var p=P(i),st=s[i]||'',lp=[cx+(R-30)*Math.cos(Math.PI-(i/(n-1))*Math.PI),cy-(R-30)*Math.sin(Math.PI-(i/(n-1))*Math.PI)];
+  if(st==='done')g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="10" fill="url(#'+id+'o)" class="nd"/>';
+  else if(st==='today')g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="20" class="hl"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="13" fill="url(#'+id+'o)" class="nt"/>';
+  else if(st==='freeze')g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="10" class="fz"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.5" fill="#8FE9FF"/>';
+  else g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="7" class="nx"/>';
+  g+='<text x="'+lp[0]+'" y="'+(lp[1]+4)+'" class="dl'+(st==='today'?' on':'')+'">'+(days[i]||'')+'</text>'}
+ el.classList.add('ig-streak');el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'"><defs>'+grad(id)+'</defs><path d="'+arc(R,Math.PI,0)+'" class="base"/><path d="'+arc(R+16,Math.PI,0)+'" class="halo"/>'+(lit?'<path d="'+lit+'" stroke="url(#'+id+')" class="lit"/>':'')+g+'</svg><div class="ct"><b>'+(el.dataset.count||'0')+'</b><em>day streak</em>'+(el.dataset.best?'<small>Best '+el.dataset.best+'</small>':'')+'</div>'}
+/* stack: tight, multi-tier. bar = solid base, stack = dotted tier on top, target = dashed goal, line = signal through the week, dot = orbs sized by count */
+function stack(el){var S,lb;if(el.dataset.sets){var sets;try{sets=JSON.parse(el.dataset.sets)}catch(e){return}var keys=Object.keys(sets),cur=el.dataset.cur||keys[0];el.dataset.cur=cur;S=sets[cur].series;lb=sets[cur].labels}else{try{S=JSON.parse(el.dataset.series||'[]')}catch(e){return}lb=(el.dataset.labels||'').split(',')}var n=lb.length,w=el.clientWidth||520,h=+(el.dataset.h||170),pad=26,id='k'+(++uid);
+ var tot=[];for(var i=0;i<n;i++){tot[i]=0;S.forEach(function(s){if(s.type==='bar'||s.type==='stack')tot[i]+=s.values[i]||0})}
+ var mx=Math.max.apply(0,tot.concat(S.filter(function(s){return s.type==='target'}).map(function(s){return s.value}),[].concat.apply([],S.filter(function(s){return s.type==='line'}).map(function(s){return s.values}))))*1.12||1;
+ var slot=w/n,bw=slot-2,y=function(v){return h-pad-(v/mx)*(h-pad-14)},out='',acc=new Array(n).fill(0),cols=[],pdefs='',dots='',lines='',tgt='';
+ S.forEach(function(s,k){var c=s.color||PAL[k%PAL.length];
+  if(s.type==='bar'||s.type==='stack'){for(var i=0;i<n;i++){var v=s.values[i]||0;if(!v)continue;var x=slot*i+1,y0=y(acc[i]),y1=y(acc[i]+v),top=(acc[i]+v)===tot[i];acc[i]+=v;
+   cols[i]=(cols[i]||'')+'<rect x="'+x+'" y="'+y1+'" width="'+bw+'" height="'+Math.max(1,y0-y1+(acc[i]-v>0?.5:0))+'" rx="0" class="seg'+(top?' top':'')+'" fill="'+(s.type==='stack'?'url(#'+id+'p'+k+')':c)+'"'+(s.type==='stack'?' stroke="'+c+'" stroke-width="1.2"':'')+'><title>'+s.name+': '+v+(s.unit?' '+s.unit:'')+'</title></rect>'}
+   if(s.type==='stack')pdefs+='<defs><pattern id="'+id+'p'+k+'" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="'+c+'" opacity=".18"/><circle cx="2.5" cy="2.5" r="1.1" fill="'+c+'"/></pattern></defs>'}
+  if(s.type==='target'){var ty=y(s.value);tgt+='<line x1="0" x2="'+w+'" y1="'+ty+'" y2="'+ty+'" class="tg" stroke="'+c+'"/><text x="'+(w-2)+'" y="'+(ty-6)+'" class="tl" text-anchor="end">'+s.name+' '+s.value+'</text>'}
+  if(s.type==='line'){var pts=s.values.map(function(v,i){return [slot*i+slot/2,y(v)]});lines+='<path d="'+curve(pts)+'" class="ln" stroke="'+c+'"/>'+pts.map(function(p,i){return i===pts.length-1?'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="8" class="halo" stroke="'+c+'"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="#fff" stroke="'+c+'" stroke-width="2"/>':'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.5" fill="'+c+'"/>'}).join('')}
+  if(s.type==='dot'){var dm=Math.max.apply(0,s.values)||1;s.values.forEach(function(v,i){if(!v)return;var r=2.5+3.5*(v/dm);dots+='<circle cx="'+(slot*i+slot/2)+'" cy="'+(y(tot[i])-r-6)+'" r="'+r+'" fill="url(#'+id+'o)" class="dt"><title>'+s.name+': '+v+'</title></circle>'})}});
+ out=pdefs+cols.map(function(cg,i){if(!cg)return '';var x=slot*i+1,yt=y(tot[i]),cid=id+'c'+i;return '<clipPath id="'+cid+'"><rect x="'+x+'" y="'+yt+'" width="'+bw+'" height="'+(h-pad-yt)+'" rx="'+Math.min(8,bw/2)+'"/></clipPath><g clip-path="url(#'+cid+')">'+cg+'</g>'}).join('');
+ var ax=lb.map(function(l,i){return '<text x="'+(slot*i+slot/2)+'" y="'+(h-6)+'" class="ax" text-anchor="middle">'+l+'</text>'}).join('');
+ var tog=el.dataset.sets?'<div class="ig-tog" role="group">'+Object.keys(JSON.parse(el.dataset.sets)).map(function(k){return '<button type="button" data-k="'+k+'" class="'+(k===el.dataset.cur?'on':'')+'">'+k+'</button>'}).join('')+'</div>':'';
+ el.classList.add('ig-stack');el.innerHTML=tog+'<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'"><defs>'+grad(id)+'</defs><line x1="0" x2="'+w+'" y1="'+(h-pad)+'" y2="'+(h-pad)+'" class="bl"/>'+out+tgt+lines+dots+ax+'</svg><div class="ig-legend">'+S.map(function(s,k){var c=s.color||PAL[k%PAL.length];return '<span class="t-'+s.type+'" style="--c:'+c+'">'+s.name+(s.unit?' <i>'+s.unit+'</i>':'')+'</span>'}).join('')+'</div>';
+ el.querySelectorAll('.ig-tog button').forEach(function(b){b.onclick=function(){el.dataset.cur=b.dataset.k;stack(el)}})}
+function count(el){var to=+el.dataset.igCount,dec=(el.dataset.igCount.split('.')[1]||'').length,t0=null;if(matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=to.toLocaleString();return}
+ function f(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-p,3);el.textContent=(to*e).toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g,',');if(p<1)requestAnimationFrame(f)}requestAnimationFrame(f)}
+function run(root){var R=root||document,q=function(s,f){R.querySelectorAll(s).forEach(f)};q('[data-ig="spark"]',spark);q('[data-ig="bars"]',bars);q('[data-ig="heat"]',heat);q('[data-ig="chain"]',chain);q('[data-ig="streak"]',streak);q('[data-ig="stack"]',stack);
+ var c=R.querySelectorAll('[data-ig-count]');if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){count(e.target);io.unobserve(e.target)}})});c.forEach(function(x){io.observe(x)})}else c.forEach(count)}
+window.fqInfographics=run;
+var rt;addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){document.querySelectorAll('[data-ig="stack"]').forEach(stack);document.querySelectorAll('[data-ig="spark"]').forEach(spark)},200)});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){run()});else run();
+})();
