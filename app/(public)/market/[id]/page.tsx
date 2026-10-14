@@ -33,6 +33,13 @@ import { listActiveVariants } from '@/lib/commerce/variants'
 import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind, describePrice } from '@/lib/commerce/types'
 import type { ServiceConfig, Price } from '@/lib/commerce/types'
 import { PriceInput } from '@/components/commerce/price-input'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// THE DESIGN SWITCH (ADR-1737, build-time). ListingDetailTemplate already draws the kit's listing page
+// under Frequency; this page's own purchase panel and its plain-text states follow it into the kit
+// (`.panel`, `.btn pa`, `.t2`). The islands inside (Buy, variants, booking, reviews) are the same
+// components on the same checkout path either way. DAWN's strings are unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Public Market listing, advertised in app/sitemap.ts. force-dynamic here would keep the
 // crawler on a full render after the (main) public chrome stops reading auth. Own review
@@ -284,7 +291,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       }
       footer={
         <>
-          <div className="mt-3 rounded-3xl border border-border bg-surface p-5 lift-1">
+          <div className={FREQUENCY ? 'panel stack' : 'mt-3 rounded-3xl border border-border bg-surface p-5 lift-1'}>
             {isService ? (
                 <div className="space-y-4">
                   {/* Pricing Options P2: a Choose-your-price service shows the buyer control (suggested
@@ -307,15 +314,15 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                   />
                 </div>
             ) : soldOut ? (
-              <p className="text-body-sm font-medium text-subtle">Sold out.</p>
+              <p className={FREQUENCY ? 't2' : 'text-body-sm font-medium text-subtle'}>Sold out.</p>
             ) : connectOnly ? (
               sellerContact ? (
-                <Link href={`/people/${sellerContact.handle}`} className={buttonClasses('primary', 'md')}>
+                <Link href={`/people/${sellerContact.handle}`} className={FREQUENCY ? 'btn pa fqm-tag-start' : buttonClasses('primary', 'md')}>
                   <MessageCircle className="h-4 w-4" aria-hidden />
                   Contact seller
                 </Link>
               ) : (
-                <p className="text-body-sm text-subtle">Message the seller to arrange this.</p>
+                <p className={FREQUENCY ? 't2' : 'text-body-sm text-subtle'}>Message the seller to arrange this.</p>
               )
             ) : hasVariants ? (
               <VariantPicker
@@ -383,7 +390,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       }
     >
       {(sellerVerified || (isService && (svc.durationMin || svc.cancellationWindowHours))) && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
+        <div className={FREQUENCY ? 'row wrap t2' : 'mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle'}>
           {sellerVerified && <VerifiedBadge verified withLabel />}
           {isService && (svc.durationMin || svc.cancellationWindowHours) && (
             <span>
