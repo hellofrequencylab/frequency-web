@@ -378,7 +378,10 @@ const eventsBlock = (id: string, extra: Record<string, unknown> = {}): Block => 
   },
 })
 
-export function buildPageDocs(): Record<string, unknown> {
+/** The website's pages, in the Network section family (the handoff's design). The published website keeps its
+ *  own copy (preferences.websiteEditor); the editor seeds a new site's pages from these. The Space tabs use
+ *  Space blocks instead (buildSpaceTabDocs), and the Space Home is the module grid (buildProfileLayout). */
+export function buildWebsiteDocs(): Record<string, unknown> {
   const home = doc([
     { type: 'NetworkHero', props: { id: 'tg-home-hero', eyebrow: 'Every Friday · 9 AM · Fox Point Farms, Encinitas', title: 'The non‑networking *networking* group.', lead: 'No pressure. No pitch. Just good energy, meaningful conversations, and a community where you can show up as yourself.', primaryLabel: 'Come this Friday', primaryHref: PAGE('fridays'), secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: PHOTO('hero-market'), alt: 'The Group in a circle at a Friday gathering', focus: '50% 52%', crop: 'leaf', featureMatch: 'Feel Good Friday', featureNote: 'June An & Carol Yeh-Garner', featureCta: 'RSVP', proof: '8,500+ members · 300+ every week', proofNote: 'Chapters from Oceanside to North Park', faces: FACES, layout: desktop } },
     { type: 'NetworkStats', props: { id: 'tg-home-stats', items: [{ icon: 'users', value: '8,500+', label: 'active members' }, { icon: 'calendar', value: '300+', label: 'weekly attendees' }, { icon: 'eye', value: '100,000+', label: 'monthly profile views' }], layout: desktop } },
@@ -462,6 +465,178 @@ export function buildPageDocs(): Record<string, unknown> {
   return { home, fridays, chapters, membership, studio, about }
 }
 
+// ── Space tabs ──────────────────────────────────────────────────────────────────────────────────
+// The Frequency Space page keeps its own block set (owner ask 2026-10-14): the custom tabs are built from the
+// Space palette (the design blocks and the profile blocks), filled from the website's sections so the two tell
+// the same story. A design heading highlights one phrase through `accentWord`; the website's *marks* name it.
+const accent = (title: string) => ({ title: title.replace(/\*/g, ''), accentWord: /\*([^*]+)\*/.exec(title)?.[1] ?? '' })
+const paras = (...lines: string[]) => lines.join('<br><br>')
+const sky = (id: string, props: Record<string, unknown>): Block => ({ type: 'PhotoHero', props: { id, variant: 'image', display: 'beside', height: 'medium', scrim: 'light', actionSecondaryLabel: '', actionSecondaryHref: '', note: '', ...props } })
+const zig = (id: string, props: Record<string, unknown>): Block => ({ type: 'Zigzag', props: { id, body: 'lead', items: [], quoteBy: '', ctaLabel: '', ctaHref: '', mediaSide: 'left', background: 'canvas', ...props } })
+const grid = (id: string, props: Record<string, unknown>): Block => ({ type: 'CardGrid', props: { id, role: 'feature', columns: 3, browseLabel: '', browseHref: '', ...props } })
+const beat = (id: string, props: Record<string, unknown>): Block => ({ type: 'AccentBeat', props: { id, background: 'accent-wash', mode: 'cta', image: '', alt: '', eyebrow: '', body: '', quoteBy: '', ctaLabel: '', ctaHref: '', ctaSecondaryLabel: '', ctaSecondaryHref: '', ...props } })
+const goldenRule = (page: string, more: Record<string, unknown> = {}): Block => beat(`tg-${page}-coffee`, {
+  eyebrow: 'Meet June for coffee', ...accent("The Group's *golden rule.*"),
+  body: "Every member, new and old, gets thirty minutes with June. Pick a time that works and he'll meet you for coffee in Encinitas or on a call.",
+  ctaLabel: 'Get coffee with June', ctaHref: CALENDLY, ...more,
+})
+const FIRST_FRIDAY = [
+  { title: 'Show up at 9', body: "Fox Point Farms, Encinitas. Park, grab a coffee, and say hi to whoever's closest." },
+  { title: 'Check in', body: 'Scan the guest check-in at the gate so we can say hello by name next week.' },
+  { title: 'Join the circle', body: 'Shared stories, a featured speaker, and time to just listen. Done by 10:10.' },
+  { title: 'Meet June for coffee', body: 'The one rule for every member, new and old. Book thirty minutes with June.' },
+]
+
+export function buildSpaceTabDocs(): Record<string, unknown> {
+  const lj = CHAPTERS[0]
+
+  // Fridays: the invitation, what the morning feels like, how a first one goes, who hosts it, the dates.
+  const fridays = doc([
+    sky('tg-fridays-hero', {
+      image: PHOTO('courtyard-group'), alt: 'A Friday morning circle at Fox Point Farms', eyebrow: 'Feel Good Fridays', ...accent('Start your Friday *with good people.*'),
+      subtitle: 'Feel Good Friday at Fox Point Farms in Encinitas is the reset button that brings you back to center: a space to slow down, reconnect, and end the week with the right people around you.',
+      actionPrimaryLabel: 'RSVP for Friday', actionPrimaryHref: '#events', actionSecondaryLabel: 'Get directions', actionSecondaryHref: DIRECTIONS, note: 'Every Friday, 9 to 10:10 AM · 1200 Fox Point Farms Lane, Encinitas',
+    }),
+    zig('tg-fridays-ritual', {
+      image: PHOTO('hero-group'), alt: 'Members together at Fox Point Farms', eyebrow: 'More than a meetup', ...accent('A weekly *ritual.*'), mediaSide: 'right',
+      lead: paras(
+        'After a full week of building, creating, and showing up for your goals, Friday morning is your chance to exhale.',
+        'Conversations flow easily, new friendships form naturally, and familiar faces remind you that you’re part of something bigger. Community isn’t forced here; it grows through shared stories, encouragement, and the simple act of showing up.',
+      ),
+    }),
+    grid('tg-fridays-first', { eyebrow: 'Your first Friday', ...accent('No agenda. No pressure. *No pitch.*'), role: 'step', columns: 2, cards: FIRST_FRIDAY }),
+    beat('tg-fridays-belonging', { mode: 'quote', background: 'plain', title: BRENE.quote, accentWord: '', quoteBy: BRENE.by }),
+    zig('tg-fridays-hosts', {
+      image: PHOTO('core-team'), alt: 'June An and Carol Yeh-Garner', eyebrow: 'Your hosts', ...accent('June An and *Carol Yeh-Garner.*'),
+      lead: paras(
+        'June An is the founder of The Group, a fast-growing San Diego community built around connection, emotional intelligence, and authentic leadership. Carol Yeh-Garner is a wellness leader, clinical hypnotherapist, and entrepreneur known for helping people transform their lives from the inside out.',
+        'Together, they create a welcoming, inspiring room where people can connect, grow, and rise.',
+      ),
+      ctaLabel: 'Speak on a Friday', ctaHref: SPEAKER_FORM,
+    }),
+    { type: 'SpaceEvents', props: { id: 'tg-fridays-events', eyebrow: 'Events', heading: 'This week and next', max: '8' } },
+    goldenRule('fridays'),
+  ])
+
+  // Chapters: the map of mornings, the newest chapter up close, its host, then every date and every circle.
+  const chapters = doc([
+    sky('tg-chapters-hero', {
+      image: PHOTO('rooftop-gathering'), alt: 'A large group of members on a rooftop', eyebrow: 'Chapters', ...accent('Pockets of community *across San Diego.*'),
+      subtitle: 'Our vision is to create spaces throughout San Diego where everyone feels they belong, where ideas become reality, and where community becomes the foundation for growth.',
+      actionPrimaryLabel: "See every chapter's calendar", actionPrimaryHref: `/spaces/${SLUG}/calendar`, actionSecondaryLabel: 'Start a circle', actionSecondaryHref: EVENT_SUBMIT,
+    }),
+    grid('tg-chapters-mornings', {
+      eyebrow: 'Find your morning', ...accent('One community, *six rooms.*'),
+      cards: CHAPTER_CHIPS.map((c) => ({ title: c.name, body: `${c.line} · ${c.when}`, href: c.href })),
+    }),
+    zig('tg-chapters-la-jolla', {
+      image: lj.image, alt: 'June An with members in La Jolla', eyebrow: 'La Jolla chapter', ...accent('The Group is growing: *Motivation Mondays.*'),
+      lead: paras(lj.about, 'Whether you cannot always make it to Feel Good Fridays in Encinitas or you are ready to double down on connection by joining both, Motivation Monday was created for you.'),
+      ctaLabel: 'Visit the La Jolla chapter', ctaHref: `/spaces/${chapterSlug(lj)}`,
+    }),
+    { type: 'EditorialSection', props: {
+      id: 'tg-chapters-amie', eyebrow: 'Motivation Monday host', title: 'Amie Barsky', accentWord: '', surface: 'soft-card', body: 'lead',
+      kicker: 'Empowering high-achievers to break free from burnout and reconnect with their authentic selves.',
+      lead: 'Amie is a trauma-informed coach specializing in Nervous System Regulation and Somatic Processing, helping professionals transform overwhelm into sustainable success. Her approach integrates neuroscience with holistic healing, drawing from her own journey of overcoming people pleasing, perfectionism and trauma.',
+    } },
+    { type: 'SpaceEvents', props: { id: 'tg-chapters-events', eyebrow: 'Every chapter, every week', heading: 'Upcoming mornings', max: '8' } },
+    { type: 'SpaceCommunity', props: { id: 'tg-chapters-circles', eyebrow: 'Circles', heading: 'Find the people who get it', layout: 'grid', seatNoun: 'members' } },
+  ])
+
+  // Membership: the welcome, why it matters, the three ways in, what Frequency adds, then the door.
+  const membership = doc([
+    sky('tg-membership-hero', {
+      image: PHOTO('rooftop-gathering'), alt: 'Members of The Group together on a rooftop', eyebrow: 'Membership', ...accent('Your journey *starts here.*'),
+      subtitle: 'Share your journey, your passions, and your dreams. Let your soul shine through and connect with those around you.',
+      actionPrimaryLabel: 'Become a member today', actionPrimaryHref: `/spaces/${SLUG}/memberships`, actionSecondaryLabel: 'Get coffee with June', actionSecondaryHref: CALENDLY, note: 'Free to start, upgrade any time.',
+    }),
+    zig('tg-membership-cares', {
+      image: PHOTO('hall-selfie'), alt: 'Members celebrating together', eyebrow: 'Join The Group', ...accent('A community *that cares.*'), mediaSide: 'right',
+      lead: paras(
+        "Success isn't just about what you do, but who you do it with. Membership joins you to a heart-centered network of entrepreneurs, professionals, and changemakers who genuinely support each other in business and in life.",
+        "This isn't just another networking group. It's a movement of people who believe in growing together and making a real impact.",
+      ),
+    }),
+    grid('tg-membership-tiers', {
+      eyebrow: 'Choose your membership', ...accent('Get more involved *in every chapter.*'),
+      cards: TIERS.map((t, i) => ({ title: `${t.name} · ${TIER_CARDS[i].price}${TIER_CARDS[i].cadence ? ` ${TIER_CARDS[i].cadence}` : ''}`, body: t.description, href: `/spaces/${SLUG}/memberships` })),
+      browseLabel: 'Compare memberships', browseHref: `/spaces/${SLUG}/memberships`,
+    }),
+    grid('tg-membership-frequency', {
+      eyebrow: 'On Frequency', ...accent('What membership *opens up.*'), role: 'list', columns: 2,
+      cards: [
+        { title: 'Every chapter', body: "One membership counts in La Jolla, North Park, Oceanside, North County and Veterans, with every chapter's mornings on one calendar." },
+        { title: 'Circles and events', body: 'Join open circles between Fridays, RSVP to every gathering, and get member tickets to members-only events.' },
+        { title: 'Frequency Crew', body: 'Any paid membership includes Crew: host your own circles, events and journeys, with a monthly Boost for a circle or Space you love.' },
+        { title: 'Journeys', body: 'Guided journeys from The Group, with Premium journeys for Premium members.' },
+      ],
+    }),
+    beat('tg-membership-join', {
+      eyebrow: 'Membership', ...accent('We’re excited to *welcome you in.*'), body: 'Any paid membership includes Frequency Crew. Change or cancel any time.',
+      ctaLabel: 'Become a member', ctaHref: `/spaces/${SLUG}/memberships`, ctaSecondaryLabel: 'Get coffee with June', ctaSecondaryHref: CALENDLY,
+    }),
+  ])
+
+  // Studio: the promise, the room, the packages, the show made in it.
+  const studio = doc([
+    sky('tg-studio-hero', {
+      image: PHOTO('patio-coffee'), alt: 'Members talking over coffee', eyebrow: 'Incubator Studios', ...accent('Your story deserves a studio *that takes it seriously.*'),
+      subtitle: "San Diego's podcast and content production space, built for creators, brands, and business owners who are ready to show up professionally.",
+      actionPrimaryLabel: 'Reserve your session', actionPrimaryHref: PAGE('contact'), actionSecondaryLabel: 'See the packages', actionSecondaryHref: '#offerings', note: 'Heart of the Matter is shot here.',
+    }),
+    zig('tg-studio-room', {
+      image: PHOTO('hero-group'), alt: 'Members of The Group together', eyebrow: 'Studio offerings', ...accent('Everything you need, *under one roof.*'), body: 'list',
+      lead: '', items: [
+        { text: 'Podcasts, content creation, photoshoots and interviews' },
+        { text: 'Space rental, full recording, or complete production with editing and delivery' },
+        { text: 'A concierge-style studio in Encinitas, with on-site support every session' },
+      ],
+    }),
+    { type: 'SpaceOfferings', props: { id: 'tg-studio-packages', eyebrow: 'Packages', heading: 'Pick the setup that fits your show', items: STUDIO.map((s) => ({ title: s.title, blurb: `$${s.price} ${s.unit}. ${s.blurb}` })) } },
+    beat('tg-studio-podcast', {
+      eyebrow: 'Heart of the Matter', ...accent('Made in *this studio.*'), body: 'June and Dr. Lisel’s podcast is recorded and produced right here.',
+      ctaLabel: 'Watch the episodes', ctaHref: PODCAST, ctaSecondaryLabel: 'Reserve your session', ctaSecondaryHref: PAGE('contact'),
+    }),
+  ])
+
+  // About: who started it and why, what it stands for, how it works, the people, then coffee.
+  const about = doc([
+    sky('tg-about-hero', {
+      image: PHOTO('founder-june-an'), alt: 'June An, founder of The Group', eyebrow: 'About The Group', ...accent('Heart-Centered. Community. *Tribe.*'),
+      subtitle: 'The Group was founded by June An with a bold vision: a "non-networking" networking community, a space where personal connections come first.',
+      actionPrimaryLabel: 'Become a member', actionPrimaryHref: PAGE('membership'), actionSecondaryLabel: 'Get coffee with June', actionSecondaryHref: CALENDLY,
+    }),
+    zig('tg-about-june', {
+      image: PHOTO('june-harvest'), alt: 'June An', eyebrow: 'Meet June An', ...accent('Live your dreams *with purpose.*'),
+      lead: paras(
+        'June founded The Group from the triumphs and trials of his own entrepreneurial journey. Moments of helplessness and hopelessness fueled his passion to create a space where others don’t have to navigate those challenges alone.',
+        'His mission is simple: empower people to overcome obstacles and pursue their dreams with renewed hope and determination.',
+      ),
+    }),
+    zig('tg-about-commitment', {
+      image: PHOTO('rooftop-gathering'), alt: 'Members of The Group on a rooftop', eyebrow: 'The commitment', ...accent('Stronger through *connection and collaboration.*'), mediaSide: 'right', background: 'accent-wash',
+      lead: paras(
+        'From the start, The Group set out to transcend traditional networking and foster genuine relationships that lead to collective growth.',
+        'We picture a thriving ecosystem where businesses flourish through collaboration, not just competition, and where each member’s growth contributes to the prosperity of all.',
+      ),
+    }),
+    grid('tg-about-pillars', { eyebrow: 'Building real connections', ...accent('Together, *we are stronger.*'), cards: PILLARS }),
+    { type: 'SpaceTeam', props: {
+      id: 'tg-about-team', eyebrow: 'The core team', heading: 'June, Carol and Dr. Lisel', memberPicks: { ids: [] },
+      members: HOSTS.map((h) => ({ name: h.name, role: h.role, avatar: h.image })),
+    } },
+    goldenRule('about'),
+  ])
+
+  return { fridays, chapters, membership, studio, about }
+}
+
+/** The Space's stored page docs: Home stays the website's (the Space Home renders the module grid), and every
+ *  custom tab is Space blocks. */
+export function buildPageDocs(): Record<string, unknown> {
+  return { home: buildWebsiteDocs().home, ...buildSpaceTabDocs() }
+}
+
 /** A chapter Space's Home: its hero and its meeting, with the way to its calendar and back to the Collective.
  *  Its events are tenanted to the Collective and HOSTED by the chapter (host_space_id), so the chapter's own
  *  Calendar page lists them; the page blocks read tenancy only, so the Home links there instead of listing. */
@@ -516,7 +691,7 @@ const PROFILE_DATA = {
  *  so a section with no block of its own left (the merch row: the Shop tab; the Instagram row: Find us online)
  *  folds into the nearest one. */
 export function buildProfileLayout(): Record<string, unknown> {
-  const home = (buildPageDocs().home as { content: { props: Record<string, unknown> }[] }).content
+  const home = (buildWebsiteDocs().home as { content: { props: Record<string, unknown> }[] }).content
   const s = (id: string) => home.find((b) => b.props.id === id)?.props ?? {}
   const t = (v: unknown) => String(v ?? '').replace(/\*/g, '').replace(/\s+/g, ' ').trim()
   const hero = s('tg-home-hero'), stats = s('tg-home-stats'), fridays = s('tg-home-fridays'), band = s('tg-home-pitchfest')
@@ -529,20 +704,24 @@ export function buildProfileLayout(): Record<string, unknown> {
   const row = (id: string, cells: string[][], extra: Record<string, unknown> = {}) => ({ id, columns: cells.length, cells, ...extra })
   return {
     // The page reads as one story: who we are and how to join, the proof, the Friday ritual (what it is,
-    // then how a first Friday goes beside June's golden rule), what is on now beside the big moment,
-    // where we meet, the circles between Fridays, the people, the studio and its podcast, and how to
-    // reach us. Each chapter of the story opens with breathing room above it.
+    // then how a first Friday goes beside June's golden rule), what is on now, then the big moment, where
+    // we meet, the circles between Fridays, the people, the studio, its podcast, and how to reach us. Each
+    // chapter of the story opens with breathing room above it. A display-type block (the beat, the studio's
+    // packages, the video) takes a row of its own: beside another block in the main column it reads as a
+    // narrow ribbon of type (owner screenshot 2026-10-14).
     rows: [
       row('r0', [['about'], ['memberships']], { ratio: 'lead' }),
       row('r1', [['features']]),
       row('r2', [['zigzag']], { mt: 'lg' }),
       row('r3', [['editorial'], ['callout']], { ratio: 'lead' }),
-      row('r4', [['events'], ['accentBeat']], { ratio: 'lead', mt: 'lg' }),
-      row('r5', [['cardGrid']], { mt: 'lg' }),
-      row('r6', [['circles']]),
-      row('r7', [['quote'], ['story']], { ratio: 'trail', mt: 'lg' }),
-      row('r8', [['offerings'], ['embed']], { ratio: 'trail', mt: 'lg' }),
-      row('r9', [['contact'], ['business']], { mt: 'lg' }),
+      row('r4', [['events']], { mt: 'lg' }),
+      row('r5', [['accentBeat']]),
+      row('r6', [['cardGrid']], { mt: 'lg' }),
+      row('r7', [['circles']]),
+      row('r8', [['quote'], ['story']], { ratio: 'trail', mt: 'lg' }),
+      row('r9', [['offerings']], { mt: 'lg' }),
+      row('r10', [['embed']]),
+      row('r11', [['contact'], ['business']], { mt: 'lg' }),
     ],
     content: {
       about: { eyebrow: t(hero.eyebrow), title: t(hero.title), body: t(hero.lead) },
