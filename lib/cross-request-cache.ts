@@ -81,6 +81,16 @@ function nextErrorCode(err: unknown): string | null {
   return typeof code === 'string' ? code : null
 }
 
+/** The two guards `invalidateCacheTag` steps around. Next 16.4 throws both as plain Errors with no
+ *  `__NEXT_ERROR_CODE`, so the message is the belt for the code, as `isCacheUnavailable` does for E469:
+ *  `updateTag` outside a Server Action (E872), and any revalidation outside a Next request (E263). */
+function isActionOnly(err: unknown): boolean {
+  return nextErrorCode(err) === 'E872' || (err instanceof Error && /can only be called from within a Server Action/.test(err.message))
+}
+function isOutsideRequest(err: unknown): boolean {
+  return nextErrorCode(err) === 'E263' || (err instanceof Error && /static generation store missing/.test(err.message))
+}
+
 /** `unstable_cache` threw before reaching the wrapped read because there is no incremental cache
  *  in this runtime (E469). The message check is the belt for a Next build that drops the code. */
 export function isCacheUnavailable(err: unknown): boolean {
@@ -152,14 +162,13 @@ export function invalidateCacheTag(tag: CacheTag): void {
     if (!update) throw Object.assign(new Error('updateTag unavailable'), { __NEXT_ERROR_CODE: 'E872' })
     update(tag)
   } catch (err) {
-    const code = nextErrorCode(err)
-    if (code === 'E263') return
-    if (code !== 'E872') throw err
+    if (isOutsideRequest(err)) return
+    if (!isActionOnly(err)) throw err
     if (!revalidate) return
     try {
       revalidate(tag, { expire: 0 })
     } catch (inner) {
-      if (nextErrorCode(inner) === 'E263') return
+      if (isOutsideRequest(inner)) return
       throw inner
     }
   }

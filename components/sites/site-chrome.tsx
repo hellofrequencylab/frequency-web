@@ -8,6 +8,8 @@ import { MENSWORK_CSS } from './menswork-css'
 import { MENSWORK_PAGE_CSS } from './menswork-page-css'
 import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
 import { WILDHEART_CSS } from './wildheart-css'
+import { NETWORK_CSS } from './network-css'
+import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
 import { sky } from '@/lib/theme/astrology-wheel'
@@ -57,17 +59,21 @@ export function siteHref(base: string, pageSlug: string): string {
 /** A header menu item: a plain link, or (with `mega`) a dropdown panel of links and a feature card. */
 export type SiteLink = HouseHeaderLink
 
-/** A full website skin: Bold (the Menswork skin) or Wildheart, each with the season now. The Wildheart skin
- *  layers over the house look AND the Frequency page sections (light grounds, DAWN tokens re-pointed), then
- *  draws its own date line under the header (components/sites/wildheart-now-line.tsx). */
+/** A full website skin: Bold (the Menswork skin), Wildheart or Network, each with the season now. The
+ *  Wildheart skin layers over the house look AND the Frequency page sections (light grounds, DAWN tokens
+ *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
+ *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart'
+  theme: 'menswork' | 'wildheart' | 'network'
   season: MensworkSeason
+  /** Network only: the scheme the owner's accent picked. */
+  scheme?: NetworkSchemeId
 }
 
 function skinCss(skin: SiteSkin | null): string {
   if (!skin) return HOUSE_CSS
   if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
+  if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -130,6 +136,8 @@ export function SiteChrome({
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
   const wild = skin?.theme === 'wildheart'
+  // Network keeps the house logo slot (the round badge beside the name); the other skins draw the name alone.
+  const net = skin?.theme === 'network'
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
@@ -140,7 +148,7 @@ export function SiteChrome({
       adminLinks={adminLinks?.menu ?? null}
       cta={cta}
       logoUrl={logoUrl}
-      logoMode={skin ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
+      logoMode={skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
@@ -154,7 +162,8 @@ export function SiteChrome({
       data-house-site=""
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
-      data-season={skin?.season}
+      data-season={net ? undefined : skin?.season}
+      data-scheme={net ? skin?.scheme : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}
       data-site-corners={look.corners}
       data-site-spacing={look.spacing}

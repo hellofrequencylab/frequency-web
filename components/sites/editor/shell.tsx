@@ -5,7 +5,7 @@
 import { slugify } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
-import { ArrowUp, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe, Layers, MessageSquare, Monitor, Palette, Plus, Radio, Redo2, Search, Settings2, Home, ExternalLink, Trash2, Smartphone, Sparkles, Tablet, Undo2, X } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronLeft, Copy, Eye, FileText, Globe, Layers, Lock, MessageSquare, Minus, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Trash2, Smartphone, Tablet, Undo2, X } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 import { addBlock, buildOutline, derivePickerGroups, duplicateBlockDeep, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
 import { inlineFieldValue, replaceInlineField } from '@/lib/sites/editor/inline-edit'
@@ -17,15 +17,18 @@ import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sit
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
 // The canvas loads on the client; until it does the stage says so instead of standing empty.
 const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.WebsiteCanvas), { ssr: false, loading: () => <div className="we-canvas-loading" role="status">Loading your page…</div> })
+import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock } from './vera-dock'
+import { SectionIcon, sectionLine } from './section-icon'
 import { FQ_EDITOR, k, on } from './skin'
 import './editor.css'
 import '@/app/themes/active/kit-editor'
@@ -48,6 +51,11 @@ export interface WebsiteEditorShellProps {
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
+  /** The Space type's default accent (defaultAccentForType): what the live site paints when no brand accent is set. */
+  defaultAccent?: string | null
+  /** The `--font-*` classes of the theme faces the canvas may wear (Network, Wildheart), set on the editor root so
+   *  the canvas frame copies them; the editor's own chrome wears the Frequency design system. */
+  fontClass?: string
   /** The Space's own domain when it has one (spaces.domain); the Frequency Site tab shows it. */
   domain?: string | null
 }
@@ -71,16 +79,19 @@ function subscribeViewport(callback: () => void) {
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
  *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart' }
-const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network' }
+const EDITOR_THEME = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
 const LOOK_LABEL: Record<SiteLookKey, string> = { corners: 'Corners', spacing: 'Spacing', header: 'Header', footer: 'Footer' }
 const DEFAULT_STYLE: SiteStyle = { theme: 'frequency', fonts: 'frequency', synced: true, spaceFonts: 'frequency', look: { corners: null, spacing: null, header: null, footer: null } }
 
+/** The design system's faces (Unbounded, Hanken Grotesk, Instrument Serif), asked for by the editor alone: the
+ *  root layout never registers them (DEPLOY-SAFETY), and the CSP allows Google Fonts. */
+const DS_FACES = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600&family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap'
 const TABS: { label: Tab; icon: typeof FileText }[] = [{ label: 'Pages', icon: FileText }, { label: 'Layers', icon: Layers }, { label: 'Add', icon: Plus }, { label: 'Theme', icon: Palette }, { label: 'Site', icon: Settings2 }]
 /** The rail tabs' icons in the design (Page Editor.html): page, layers, plus, palette, settings. */
 const TAB_ICON: Record<Tab, FqIconName | FqEditorIconName> = { Pages: 'page', Layers: 'layers', Add: 'plus', Theme: 'palette', Site: 'settings' }
@@ -108,7 +119,7 @@ function Icon({ label, hint, children, className = '', ...props }: { label: stri
   return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, onStyle, domain }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -141,9 +152,6 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const websiteBrand = resolveWebsiteBrand(draft, { logo, accent: brandAccent })
   const activeLogo = websiteBrand.logo
   const chromeDefaults = { name: brandName, tagline: (metadata?.websiteChrome as { tagline?: string | null } | undefined)?.tagline ?? null, cta: (metadata?.websiteChrome as { cta?: { label: string; href: string } | null } | undefined)?.cta ?? null }
-  const activeAccent = draft.theme === 'Menswork' || draft.theme === 'Wildheart' ? websiteBrand.accent : draft.brand?.accent
-  const accentValue = String(websiteThemeVars(draft.theme, activeAccent)['--th-accent' as keyof React.CSSProperties])
-  const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const latest = useRef(initial.draft)
   const revision = useRef(initial.revision)
   const saved = useRef(JSON.stringify(initial.draft))
@@ -163,6 +171,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const right = rightChoice ?? !isMobile
   const device = deviceChoice ?? (isMobile ? 'phone' : 'desktop')
   const [preview, setPreview] = useState(false)
+  // The DAWN Site Editor (LIVE-907): the inspector's sub-tabs and the page menu in the top bar.
+  const [inspTab, setInspTab] = useState<'content' | 'design' | 'advanced'>('content')
+  const [pageMenu, setPageMenu] = useState(false)
   const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | null>(null)
   const [filter, setFilter] = useState('')
   const [insertAt, setInsertAt] = useState<number | null>(null)
@@ -174,6 +185,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [replies, setReplies] = useState<Record<string, string>>({})
   const [request, setRequest] = useState('')
   const [textSelection, setTextSelection] = useState<{ blockId: string; field: string; path: (string | number)[]; value: string } | null>(null)
+  // The field the owner is typing in on the inspector, lit on the canvas (lib/sites/editor/field-sync.ts).
+  const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [veraStatus, setVeraStatus] = useState('')
   const [asking, setAsking] = useState(false)
@@ -210,9 +223,20 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const page = draft.pages.find((p) => p.slug === pageSlug) ?? draft.pages[0]
   // A THEME PER PAGE (LIVE-699): the page's own theme from the shared site style, else the draft's. The canvas
   // wears it, with the page theme's own defaults for any global style left to "the theme's own".
+  // THE PREVIEW IS THE PUBLISHED PAGE: the theme, the font set and the brand accent resolve through the live
+  // site's own resolver (lib/sites/site-render-style.ts) over the editor's live style, so a Theme tab pick
+  // repaints the canvas at once and a Frequency site wears the owner's fonts and accent, not DAWN's defaults.
   const pageTheme = style.pages?.[page.slug] ?? null
-  const canvasTheme = pageTheme ? EDITOR_THEME[pageTheme] : draft.theme
-  const pageLookStyle = { ...style, theme: siteThemeOf(canvasTheme) }
+  const pageSlugNow = page.slug
+  const draftTheme = draft.theme
+  const brandAccentNow = websiteBrand.accent
+  const render = useMemo(() => siteRenderStyle(sitePageStyle({ ...style, theme: siteThemeOf(draftTheme) }, pageSlugNow), brandAccentNow, defaultAccent ?? null), [style, draftTheme, pageSlugNow, brandAccentNow, defaultAccent])
+  const canvasTheme = render.editorTheme
+  const canvasVars = useMemo(() => siteCanvasVars(render), [render])
+  const pageLookStyle = render.lookStyle
+  const activeAccent = render.accent
+  const accentValue = String(canvasVars['--th-accent' as keyof React.CSSProperties])
+  const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const selected = selectedId ? findBlockDeep(page.doc, config, selectedId) : null
   const outline = useMemo(() => buildOutline(page.doc, config), [page.doc, config])
   const groups = useMemo(() => derivePickerGroups(config, page.doc, 'website'), [page.doc, config])
@@ -312,7 +336,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     window.addEventListener('beforeunload', guard)
     return () => window.removeEventListener('beforeunload', guard)
   }, [])
-  function select(id: string) { if (id !== selectedId) setTextSelection(null); setSelectedId(id); setPanel('inspect'); setRight(true) }
+  function select(id: string) { if (id !== selectedId) { setTextSelection(null); setFieldFocus(null) } setSelectedId(id); setPanel('inspect'); setRight(true) }
   // Frequency opens the rail's Add tab at that position (the design's insert points); DAWN opens its dialog.
   function insert(index: number) { setInsertAt(index); setFilter(''); if (FQ_EDITOR) { setTab('Add'); setLeft(true); setPreview(false) } else setModal('insert') }
   function pickBlock(type: string) {
@@ -324,12 +348,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     const doc = at === null ? added.data : moveBlockTo(added.data, config, added.id, { parentId: null, slotKey: null, index: at })
     updateDoc(doc, { label: `Added ${config.components[type]?.label ?? type}` }); select(added.id); setModal(null); setInsertAt(null); if (FQ_EDITOR) { setTab('Layers'); say(`${config.components[type]?.label ?? type} added`) }
   }
-  function action(id: string, kind: 'up' | 'down' | 'copy' | 'comment' | 'delete') {
+  function action(id: string, kind: 'up' | 'down' | 'copy' | 'comment' | 'delete' | 'hide') {
     if (kind === 'comment') { setSelectedId(id); setPanel('comments'); setRight(true); return }
+    if (kind === 'hide') { const display = sectionDeviceLayout(page.doc, id, device); updateDisplay(id, { ...display, hidden: !display.hidden }); return }
     if (kind === 'up' || kind === 'down') updateDoc(nudgeBlock(page.doc, config, id, kind === 'up' ? -1 : 1), { label: 'Reordered sections' })
     const name = config.components[findBlockDeep(page.doc, config, id)?.type ?? '']?.label ?? 'Section'
     if (kind === 'copy') { const next = duplicateBlockDeep(page.doc, config, id); updateDoc(next.data, { label: `Added ${name}` }); if (next.id) select(next.id); say(`${name} duplicated`) }
-    if (kind === 'delete') { updateDoc(removeBlockDeep(page.doc, config, id).data, { label: `Removed ${name}` }); setSelectedId(null); say(`${name} removed. Undo with ⌘Z.`) }
+    if (kind === 'delete') { const at = page.doc.content.findIndex((b) => b.props.id === id); updateDoc(removeBlockDeep(page.doc, config, id).data, { label: `Removed ${name}` }); setSelectedId(page.doc.content[at + 1]?.props.id ?? page.doc.content[at - 1]?.props.id ?? null); say(`${name} removed. Undo with ⌘Z.`) }
   }
   function reorderSections(ids: string[], targetId: string) {
     const content = page.doc.content
@@ -339,16 +364,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!moving.length || target < 0) return
     updateDoc({ ...page.doc, content: [...remaining.slice(0, target), ...moving, ...remaining.slice(target)] }, { label: 'Reordered sections' })
   }
-  function pickPage(slug: string) { setTextSelection(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia('(max-width:767px)').matches) setLeft(false) }
+  function pickPage(slug: string) { setTextSelection(null); setFieldFocus(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia('(max-width:767px)').matches) setLeft(false) }
   function togglePreview(next = !preview) { setPreview(next); if (FQ_EDITOR) say(next ? 'Preview. Press Esc to keep editing.' : 'Back to editing') }
   function keys(e: KeyLike) {
     const target = e.target as HTMLElement
     const mod = e.metaKey || e.ctrlKey
     if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return }
-    // The design's shortcuts (Page Editor.html): ⌘P previews, ⌘K asks Vera. Frequency only; DAWN keeps its set.
-    if (FQ_EDITOR && mod && e.key.toLowerCase() === 'p') { e.preventDefault(); togglePreview(); return }
-    if (FQ_EDITOR && mod && e.key.toLowerCase() === 'k') { e.preventDefault(); if (preview) setPreview(false); veraInput.current?.focus(); return }
-    if (e.key === 'Escape') { setModal(null); if (preview) togglePreview(false); setPickOpen(false); return }
+    // The design's shortcuts: ⌘P previews, ⌘K asks Vera (both designs; Frequency also announces the preview).
+    if (mod && e.key.toLowerCase() === 'p') { e.preventDefault(); togglePreview(); return }
+    if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); if (FQ_EDITOR) { if (preview) setPreview(false); veraInput.current?.focus() } else document.querySelector<HTMLInputElement>('.we-vera-bar input')?.focus(); return }
+    if (e.key === 'Escape') { setModal(null); if (preview) togglePreview(false); setPickOpen(false); setPageMenu(false); return }
     if (!target?.closest || target.closest('input,textarea,select,[contenteditable=true]')) return
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); travel(e.shiftKey) }
     if (e.key === '/') { e.preventDefault(); insert(page.doc.content.length) }
@@ -436,7 +461,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     return nodes.map((node, index) => <div key={node.id} draggable onDragStart={(event) => { event.stopPropagation(); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', node.id) }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); if (dropId !== node.id) setDropId(node.id) }} onDragEnd={() => setDropId(null)} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); setDropId(null); const id = event.dataTransfer.getData('text/plain'); if (id !== node.id && findBlockDeep(page.doc, config, id)) updateDoc(moveBlockTo(page.doc, config, id, { parentId, slotKey, index }), { label: 'Reordered sections' }) }}>
       {FQ_EDITOR
         ? <button type="button" className={`row${on(selectedId === node.id)}${dropId === node.id ? ' drop-before' : ''}${depth === 0 && sectionDeviceLayout(page.doc, node.id, device).hidden ? ' off' : ''}`} style={{ paddingLeft: 8 + depth * 14 }} aria-pressed={selectedId === node.id} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown" title="Drag, or press Alt and an arrow key, to move" onClick={() => select(node.id)} onKeyDown={(event) => { if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return; event.preventDefault(); updateDoc(nudgeBlock(page.doc, config, node.id, event.key === 'ArrowUp' ? -1 : 1), { label: 'Reordered sections' }) }}><span className="grip" aria-hidden>⋮⋮</span><span className="ic"><FqIcon name={editorBlockMeta(config, node.type).icon} /></span><span className="t">{node.label}{node.summary && node.summary !== node.label && <small>{node.summary}</small>}</span>{editorBlockMeta(config, node.type).live ? <span className="meta">Live</span> : depth === 0 && <span className="meta">{index + 1}</span>}</button>
-        : <button type="button" className="we-row" style={{ paddingLeft: 10 + depth * 14 }} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><Layers size={15} aria-hidden /><span>{node.summary || node.label}</span>{/^(Space|Live)/.test(node.type) && <small>Live</small>}</button>}
+        : (() => { const block = findBlockDeep(page.doc, config, node.id); const hidden = !!block && depth === 0 && !!sectionDeviceLayout(page.doc, node.id, device).hidden; return <button type="button" className="we-row we-layer" data-off={hidden || undefined} style={depth ? { paddingLeft: 8 + depth * 14 } : undefined} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><i className="we-row-ic"><SectionIcon type={node.type} /></i><b className="we-row-t"><span>{node.label}</span><small>{sectionLine((block?.props ?? {}) as Record<string, unknown>, node.summary)}</small></b><em className="we-row-meta">{/^(Space|Live)/.test(node.type) || /Events|Circles|Tiers/.test(node.type) ? 'Live' : depth === 0 ? index + 1 : ''}</em><span className="we-grip" aria-hidden>⋮⋮</span></button> })()}
       {node.slots.map((slot) => <div key={slot.key}>{slot.children.length > 0 && <span className={k('we-layer-slot')} style={{ paddingLeft: 24 + depth * 14 }}>{slot.label}</span>}{renderLayers(slot.children, node.id, slot.key, depth + 1)}</div>)}
     </div>)
   }
@@ -472,8 +497,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <button type="button" className="row" onClick={() => setModal('menu')}><span className="ic"><FqIcon name="link" /></span><span className="t">Menu and logo<small>Shared with your Space page</small></span></button>
     <a className="row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer"><span className="ic"><FqIcon name="space" /></span><span className="t">Space home</span></a>
   </>
-  const themeFonts = String(websiteThemeVars(draft.theme)['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
-  const bodyFont = String(websiteThemeVars(draft.theme)['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
+  const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
+  const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
   const fqThemeTab = <>
     <div className="cap">Theme</div>
@@ -494,31 +519,31 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
     <div className="note">The theme and styles change your live site as soon as you pick them. Words, photos and live blocks stay as they are.</div>
   </>
-  // ── The rail tabs and inspector panels, shared by both designs. Class names go through k() (skin.ts): the
-  // DAWN names under DAWN, the Frequency kit's under Frequency. The handlers are the same either way.
+  // ── The rail tabs and inspector panels, shared by both designs. Under DAWN the rail tabs are the Site Editor's
+  // (LIVE-907); under Frequency, the kit's. Class names go through k() (skin.ts). The handlers are the same either way.
   const pressedChoice = (pressed: boolean) => (FQ_EDITOR ? on(pressed).trim() || undefined : 'we-action secondary')
   const layersTab = FQ_EDITOR
     ? <><div className="cap">Page · {page.label}<button type="button" onClick={() => insert(page.doc.content.length)}>+ Add</button></div><button type="button" className={`row chrome${on(panel === 'header')}`} onClick={() => openChrome('header')}><span className="ic"><FqIcon name="layers" /></span><span className="t">Header<small>Logo, menu, button</small></span><span className="meta">Site</span></button>{outline.length ? renderLayers(outline) : <div className="note"><b>This page is empty.</b> Add a section to start, or pick one from the Add tab.</div>}<button type="button" className={`row chrome${on(panel === 'footer')}`} onClick={() => openChrome('footer')}><span className="ic"><FqIcon name="layers" /></span><span className="t">Footer<small>Tagline, address, links</small></span><span className="meta">Site</span></button></>
-    : <><div className="we-caption">{page.label}</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button>{renderLayers(outline)}<button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => insert(page.doc.content.length)}><Plus size={15} />Add section</button></>
+    : <><div className="we-caption"><span>Page · {page.label}</span><button type="button" onClick={() => insert(page.doc.content.length)}>+ Add</button></div><button type="button" className="we-row we-chrome-row" aria-pressed={panel === 'header'} onClick={() => openChrome('header')}><i className="we-row-ic"><Lock size={15} aria-hidden /></i><b className="we-row-t"><span>Header</span><small>Logo, menu, button</small></b><em className="we-row-meta">Site</em></button>{renderLayers(outline)}<button type="button" className="we-row we-chrome-row" aria-pressed={panel === 'footer'} onClick={() => openChrome('footer')}><i className="we-row-ic"><Lock size={15} aria-hidden /></i><b className="we-row-t"><span>Footer</span><small>Address, links</small></b><em className="we-row-meta">Site</em></button></>
   const pagesTab = FQ_EDITOR
     ? <><div className="cap">{draft.pages.length} {draft.pages.length === 1 ? 'page' : 'pages'}<button type="button" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}>+ New page</button></div>{draft.pages.map((p) => { const state = pageState(p.slug); return <button type="button" className={`row${on(p.slug === page.slug)}`} key={p.slug} aria-current={p.slug === page.slug} onClick={() => pickPage(p.slug)}><span className="ic"><FqIcon name="page" /></span><span className="t">{p.label}<small>/{p.slug === 'home' ? '' : p.slug} · {PAGE_STATE_LABEL[state]}</small></span><span className={`dot ${state}`} aria-hidden /></button> })}
       <button type="button" className="row" onClick={() => { setPanel('page'); setRight(true) }}><span className="ic"><FqIcon name="settings" /></span><span className="t">Page settings<small>Name, page theme, order</small></span></button>
       <div className="cap">Start from</div>{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="row" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}><span className="ic"><FqIcon name="plus" /></span><span className="t">{name}<small>{description}</small></span></button>)}</>
-    : <><div className="we-caption">Pages</div>{draft.pages.map((p) => <button type="button" className="we-row" key={p.slug} aria-current={p.slug === page.slug} onClick={() => pickPage(p.slug)}><FileText size={15} aria-hidden /><span>{p.label}</span><small>{persisted.published?.pages.some((b) => b.slug === p.slug) ? 'Live' : 'Draft'}</small></button>)}
+    : <><div className="we-caption"><span>{draft.pages.length} {draft.pages.length === 1 ? 'page' : 'pages'}</span><button type="button" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}>+ New page</button></div>{draft.pages.map((p) => { const live = persisted.published?.pages.some((b) => b.slug === p.slug); const changed = changedPages.includes(p); return <button type="button" className="we-row" key={p.slug} aria-current={p.slug === page.slug} onClick={() => pickPage(p.slug)}><i className="we-row-ic"><FileText size={16} aria-hidden /></i><b className="we-row-t"><span>{p.label}</span><small>/{p.slug === 'home' ? '' : p.slug}</small></b><em className="we-row-meta"><i className="we-dot" data-tone={!live ? 'new' : changed ? 'draft' : 'live'} aria-hidden />{!live ? 'Draft' : changed ? 'Draft changes' : 'Published'}</em></button> })}
       <button type="button" className="we-row" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}><Plus size={15} />New page</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}><Settings2 size={15} />Page settings</button>
       <div className="we-caption">Site</div><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer"><Globe size={15} />{host}</a><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}><Search size={15} />SEO and sharing</button></>
-  const siteTab = FQ_EDITOR ? fqSiteTab : <><div className={k('we-caption')}>Website settings</div><button type="button" className={k('we-row')} onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className={k('we-row')} onClick={() => openChrome('footer')}>Footer</button><button type="button" className={k('we-row')} onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className={k('we-row')} onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className={k('we-row')} onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className={k('we-row')} href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className={k('we-row')} href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>
-  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className={k('we-caption')}>Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`${k('we-theme-card')}${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
-      <span className={k('we-theme-swatch')} style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
-    </button> })}{draft.theme === 'Midnight' && <p role="note" className={k('we-note')}>Midnight is retired. Pick Frequency or Bold to keep editing in a theme your live site can wear.</p>}
-    {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
-    <div className={k('we-caption')}>Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className={k('we-field')}>{FQ_EDITOR ? <span className="l">{LOOK_LABEL[key]}</span> : LOOK_LABEL[key]}<div className={k('we-choice-row')} role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className={pressedChoice(siteLook(lookStyle)[key] === o.id)} aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
-    {styleError && <p role="alert" className={k('we-note')}>{styleError}</p>}
-    <div className={k('we-caption')}>Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
-    <div className={k('we-actions')}><button type="button" className={k('we-action secondary')} onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className={k('we-action secondary')} onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
-    <div className={k('we-caption')}>Brand accent</div><label className={k('we-field')}>Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } }, { label: 'Accent', burst: 'accent' })} /></label><button type="button" className={k('we-action secondary')} onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } }, { label: 'Accent' })}>Use theme accent</button><div className={k('we-swatch-list')}><span className={k('we-swatch')} style={{ background: 'var(--th-accent)' }} /><span className={k('we-swatch')} style={{ background: 'var(--th-season)' }} /><span className={k('we-swatch')} style={{ background: 'var(--th-text)' }} /></div>
-    <div className={k('we-caption')}>Type</div>{['display', 'body', 'mono'].map((role) => <div className={k('we-note')} key={role}>{role}<strong className="we-type-sample" data-role={role}>{String(websiteThemeVars(draft.theme)[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
-    <div className={k('we-note')}>The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>
+  const siteTab = FQ_EDITOR ? fqSiteTab : <><div className="we-caption">Website settings</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className="we-row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>
+  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
+      <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
+      </button> })}{draft.theme === 'Midnight' && <p role="note" className="we-note">Midnight is retired. Pick Frequency or Bold to keep editing in a theme your live site can wear.</p>}
+      {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
+      <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
+      {styleError && <p role="alert" className="we-note">{styleError}</p>}
+      <div className="we-caption">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
+      <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
+      <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
+      <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role} style={canvasVars}>{role}<strong className="we-type-sample" data-role={role}>{String(canvasVars[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
+      <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>
   const railBody = <>
     {tab === 'Pages' && pagesTab}
     {tab === 'Layers' && layersTab}
@@ -532,7 +557,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const shownTab: InspectorTab = panel === 'comments' ? 'notes' : inspectorTab === 'notes' ? 'content' : inspectorTab
   const inspectorBody = <>
     {!!error && <div className={k('we-error')} role="alert">{error}{status === 'error' && <button type="button" className={k('we-row')} onClick={() => void save()}>Retry save</button>}{status === 'conflict' && <button type="button" className={k('we-row')} onClick={() => window.location.reload()}>Reload newer draft</button>}</div>}
-    {panel === 'inspect' && (selected ? <WebsiteInspector key={`${page.slug}:${selectedId}`} part={FQ_EDITOR ? (shownTab === 'notes' ? 'content' : shownTab) : undefined} metadata={metadata} sourceSettingsHref={`${origin}/spaces/${links.slug}/settings/${selected.type === 'SpaceOfferings' || selected.props.source === 'offerings' ? 'offerings' : /Events/.test(selected.type) || selected.props.source === 'events' ? 'calendar' : selected.props.source === 'memberships' ? 'memberships' : selected.props.source === 'tickets' ? 'tickets' : ''}`} config={config} block={selected} doc={page.doc} device={device} onChange={(props) => editProps(selectedId!, props, true)} onDisplay={(value) => updateDisplay(selectedId!, value, true)} {...(FQ_EDITOR ? { live: editorBlockMeta(config, selected.type).live, visibility: sectionVisibility(page.doc, selectedId!), onVisibility: (target: Device, visible: boolean) => setVisible(selectedId!, target, visible), onBase: (patch: Pick<SectionDisplay, 'tone' | 'width' | 'anchor'>) => updateSection(selectedId!, (doc) => patchSectionBase(doc, selectedId!, patch), `Styled ${blockName(selectedId)}`) } : {})} /> : <div className={k('we-note')}>Click text to select it. Double-click or press Enter to edit. Drag a grip to move or resize. Press / to add a section.</div>)}
+    {panel === 'inspect' && (selected ? <WebsiteInspector key={`${page.slug}:${selectedId}`} part={FQ_EDITOR ? (shownTab === 'notes' ? 'content' : shownTab) : undefined} tab={FQ_EDITOR ? undefined : inspTab} metadata={metadata} sourceSettingsHref={`${origin}/spaces/${links.slug}/settings/${selected.type === 'SpaceOfferings' || selected.props.source === 'offerings' ? 'offerings' : /Events/.test(selected.type) || selected.props.source === 'events' ? 'calendar' : selected.props.source === 'memberships' ? 'memberships' : selected.props.source === 'tickets' ? 'tickets' : ''}`} config={config} block={selected} doc={page.doc} device={device} focus={textSelection && textSelection.blockId === selectedId ? { field: textSelection.field, path: textSelection.path } : null} onFieldFocus={(focus) => setFieldFocus(focus && selectedId ? { blockId: selectedId, ...focus } : null)} onChange={(props) => editProps(selectedId!, props, true)} onDisplay={(value) => updateDisplay(selectedId!, value, true)} {...(FQ_EDITOR ? { live: editorBlockMeta(config, selected.type).live, visibility: sectionVisibility(page.doc, selectedId!), onVisibility: (target: Device, visible: boolean) => setVisible(selectedId!, target, visible), onBase: (patch: Pick<SectionDisplay, 'tone' | 'width' | 'anchor'>) => updateSection(selectedId!, (doc) => patchSectionBase(doc, selectedId!, patch), `Styled ${blockName(selectedId)}`) } : {})} />  : <div className="we-empty"><span className="we-orb lg" aria-hidden /><strong>Nothing selected</strong><span>Click any section on the page, or pick one in Layers. Double-click text to edit it, and press / to add a section.</span></div>)}
     {(panel === 'header' || panel === 'footer') && <WebsiteChromeInspector area={panel} chrome={draft.chrome} defaults={chromeDefaults} sourceSettingsHref={`${origin}/spaces/${links.slug}/settings`} onChange={(chrome) => commit({ ...draft, chrome }, { label: panel === 'header' ? 'Edited header' : 'Edited footer' })} onTheme={() => { setTab('Theme'); setLeft(true) }} onPages={() => { setTab('Pages'); setLeft(true) }} onMenu={() => setModal('menu')} />}
     {panel === 'page' && <><label className={k('we-field')}>Page name<Input variant="seamless" key={`${page.slug}:${page.label}`} defaultValue={page.label} maxLength={80} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); if (event.key === 'Escape') { event.currentTarget.value = page.label; event.currentTarget.blur() } }} onBlur={(event) => { if (event.target.value.trim()) commit({ ...draft, pages: draft.pages.map((item) => item.slug === page.slug ? { ...item, label: event.target.value } : item) }, { label: 'Renamed page' }) }} /></label><p className={k('we-note')}>Changing the name updates navigation. The page address stays the same.</p>
       {/* A THEME PER PAGE (LIVE-699): the shared site style's per-page override, live at once like the theme. */}
@@ -548,7 +573,6 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const publishDisabled = !dirty || status === 'saving' || status === 'conflict'
   const publishLabel = status === 'saving' ? 'Saving…' : publishWhen === 'schedule' ? 'Schedule publish' : 'Publish now'
   const changeCount = changedPages.length + removedPages.length + (navigationChanged ? 1 : 0) + (chromeChanged ? 1 : 0) + (brandChanged ? 1 : 0) + (draft.theme !== persisted.published?.theme ? 1 : 0)
-  const saveLabel = status === 'saving' ? 'Saving draft…' : status === 'saved' ? `Draft · ${changedPages.length + removedPages.length} changed ${changedPages.length + removedPages.length === 1 ? 'page' : 'pages'}${navigationChanged ? ' · navigation updated' : chromeChanged ? ' · header/footer updated' : brandChanged ? ' · brand updated' : draft.theme !== persisted.published?.theme ? ' · theme updated' : ''}` : status === 'unsaved' ? 'Unsaved changes' : 'Draft needs attention'
   const versionsList = <>{persisted.versions.length ? persisted.versions.map((v) => <div className={k('we-version')} key={v.id}><div><strong>Published version {v.id}</strong><div className={k('we-note')}>{new Date(v.createdAt).toLocaleString()}</div></div><button type="button" className={k('we-action secondary')} onClick={() => { commit(structuredClone(v.snapshot), { label: 'Restored a published version' }); setModal(null) }}>Restore to draft</button></div>) : <p className={k('we-note')}>Your first publish creates a version you can restore.</p>}</>
   const scheduledNotice = persisted.scheduled && <div><button type="button" className={k('we-action secondary')} disabled={status === 'saving'} onClick={() => void save(false, null)}>Cancel scheduled publish</button><p className={k('we-note')}>Scheduled for {new Date(persisted.scheduled.at).toLocaleString()}. Later draft edits stay separate from that scheduled version.</p></div>
   const previewNote = !WEBSITE_THEMES_LIVE.has(draft.theme) && <p role="note" className={k('we-note')}>The {WEBSITE_THEME_LABEL[draft.theme]} theme is still in preview in the editor. Publishing saves this version, and your live website keeps its current look until this theme is ready.</p>
@@ -577,7 +601,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     const backHref = overview?.href ?? `${origin}/spaces/${links.slug}`
     const backLabel = overview ? `Back to ${overview.label.replace(/^Executive /, '')}` : 'Back to Space home'
     const suggestions = VERA_SUGGESTIONS[selectedMeta?.kind ?? '_']
-    return <div data-editor-root data-kit="editor" data-website-theme={draft.theme} style={{ ...websiteThemeVars(draft.theme, activeAccent), position: 'relative', zIndex: 60 }}>
+    return <div data-editor-root data-kit="editor" className={fontClass} data-website-theme={draft.theme} style={{ ...websiteThemeVars(draft.theme, activeAccent), position: 'relative', zIndex: 60 }}>
       <style>{WEBSITE_TOKEN_CSS}</style>
       <div className="pe" data-lf={left ? '0' : '1'} data-rf={right ? '0' : '1'} data-preview={preview ? '1' : '0'}>
         <header className="top">
@@ -610,7 +634,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="foot"><span className="lbl">Changes save as a draft</span><a className="btn sm txt" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
         </aside>
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
-          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={setTextSelection} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && <div className="vera">
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is preparing a proposal…' : <><b>Vera</b>{proposal ? <> · {blockName(proposal.blockId, draft.pages.find((p) => p.slug === proposal.pageSlug)?.doc)}</> : null}{veraStatus && !proposal && <p>{veraStatus}</p>}</>}{proposal && <><p>{proposal.after}</p><div className="acts"><button type="button" className="btn sm pa" onClick={applyProposal}>Apply</button><button type="button" className="btn sm txt" onClick={() => { setProposal(null); setVeraStatus('') }}>Not now</button></div></>}</div>
@@ -656,50 +680,63 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     </div>
   }
 
-  return <div data-editor-root data-website-theme={draft.theme} style={websiteThemeVars(draft.theme, activeAccent)} className="we-shell" data-left-folded={!left} data-right-folded={!right} data-preview={preview} onKeyDown={keys}>
-    <style>{WEBSITE_TOKEN_CSS}</style>
+  const sectionCount = page.doc.content.length
+  const selectedIndex = selected ? page.doc.content.findIndex((b) => b.props.id === selected.props.id) : -1
+  const pendingCount = changedPages.length + removedPages.length + (navigationChanged || chromeChanged || brandChanged || draft.theme !== persisted.published?.theme ? 1 : 0)
+  const saveText = status === 'saving' ? 'Saving…' : status === 'saved' ? (dirty ? 'Draft saved · not published yet' : 'Draft saved · published') : status === 'unsaved' ? 'Unsaved changes' : 'Draft needs attention'
+  // THE SITE EDITOR (design_handoff_site_editor, the Frequency design system): the chrome wears the system's own
+  // Commons tokens and faces whatever theme the site wears; only the canvas frame wears the site's theme.
+  return <div data-editor-root className={`we-shell ${fontClass ?? ''}`} data-left-folded={!left} data-right-folded={!right} data-preview={preview} onKeyDown={keys}>
+    <link rel="stylesheet" href={DS_FACES} precedence="default" />
     <header className="we-top">
-      <a className="we-icon" aria-label="Website home" title="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer"><Home size={18} /></a>
-      <a className="we-icon" aria-label="Back to Space home" title="Back to Space home" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer"><ExternalLink size={17} /></a>
-      <div className="we-brand">{activeLogo && <img className="we-logo" src={activeLogo} alt="" />}<div><strong>{draft.chrome?.name || brandName}</strong><small>{host}</small></div></div>
-      <button type="button" className="we-page-pick" onClick={() => { setLeft(true); setTab('Pages') }}><FileText size={14} aria-hidden />{page.label}<ChevronDown size={13} aria-hidden /></button>
-      <button type="button" className="we-save" onClick={() => void save()} title="Save draft" aria-label="Save draft" role="status">{saveLabel}</button>
+      <a className="we-icon" aria-label="Back to Space home" title="Back to Space home" href={`${origin}/spaces/${links.slug}`}><ChevronLeft size={18} aria-hidden /></a>
+      <div className="we-brand">{activeLogo ? <img className="we-logo" src={activeLogo} alt="" /> : <span className="we-logo" aria-hidden />}<div><strong>{draft.chrome?.name || brandName}</strong><small>{host}</small></div></div>
+      <div className="we-pick">
+        <button type="button" className="we-page-pick" aria-haspopup="menu" aria-expanded={pageMenu} onClick={() => setPageMenu(!pageMenu)}><span>{page.label}</span><ChevronDown size={16} aria-hidden /></button>
+        {pageMenu && <div className="we-menu" role="menu" onKeyDown={(e) => { if (e.key === 'Escape') setPageMenu(false) }}>{draft.pages.map((p) => { const live = persisted.published?.pages.some((b) => b.slug === p.slug); const changed = changedPages.includes(p); return <button type="button" role="menuitem" key={p.slug} aria-current={p.slug === page.slug} onClick={() => { pickPage(p.slug); setPageMenu(false) }}>{p.label}<span className="we-spacer" />{(changed || !live) && <i className="we-dot" data-tone={live ? 'draft' : 'new'} aria-label={live ? 'Unpublished changes' : 'Not published yet'} />}</button> })}<div className="we-sep" /><button type="button" role="menuitem" disabled={draft.pages.length >= 30} onClick={() => { setPageMenu(false); setModal('templates') }}>+ New page</button></div>}
+      </div>
+      <button type="button" className="we-save" data-dirty={status !== 'saved' || undefined} onClick={() => void save()} title="Save draft" aria-label="Save draft" role="status"><i aria-hidden /><span>{saveText}</span></button>
       <span className="we-spacer" />
       {!!error && <button type="button" className="we-save-alert" role="alert" onClick={() => setRight(true)}>{error}</button>}
-      <div className="we-device" aria-label="Preview width">{DEVICES.map(({ id, icon: DeviceIcon, label }) => <Icon key={id} label={label} aria-pressed={device === id} onClick={() => setDevice(id)}><DeviceIcon size={15} aria-hidden /></Icon>)}</div>
-      <Icon label="Undo" className="we-history" disabled={!historyCounts.past} onClick={() => travel(false)}><Undo2 size={17} aria-hidden /></Icon>
-      <Icon label="Redo" className="we-history" disabled={!historyCounts.future} onClick={() => travel(true)}><Redo2 size={17} aria-hidden /></Icon>
+      <Icon label={left ? 'Fold left rail' : 'Open left rail'} className="we-history" onClick={() => setLeft(!left)}><PanelLeft size={18} aria-hidden /></Icon>
+      <div className="we-device" role="group" aria-label="Device">{DEVICES.map(({ id, icon: DeviceIcon, label }) => <button type="button" key={id} aria-label={label} title={label} aria-pressed={device === id} onClick={() => setDevice(id)}><DeviceIcon size={17} aria-hidden /></button>)}</div>
+      <Icon label={right ? 'Fold inspector' : 'Open inspector'} className="we-history" onClick={() => setRight(!right)}><PanelRight size={18} aria-hidden /></Icon>
+      <Icon label="Undo" className="we-history" disabled={!historyCounts.past} onClick={() => travel(false)}><Undo2 size={18} aria-hidden /></Icon>
+      <Icon label="Redo" className="we-history" disabled={!historyCounts.future} onClick={() => travel(true)}><Redo2 size={18} aria-hidden /></Icon>
       <details className="we-mobile-history"><summary aria-label="Editor tools">Tools</summary><div>{DEVICES.map(({ id, label }) => <button key={id} type="button" className="we-row" aria-pressed={device === id} onClick={() => setDevice(id)}>{label} width</button>)}<button type="button" className="we-row" disabled={!historyCounts.past} onClick={() => travel(false)}>Undo</button><button type="button" className="we-row" disabled={!historyCounts.future} onClick={() => travel(true)}>Redo</button><button type="button" className="we-row" onClick={() => void save()}>Save draft</button></div></details>
+      <Icon label="Preview" aria-pressed={preview} onClick={() => setPreview(!preview)}><Eye size={18} aria-hidden /></Icon>
       <div className="we-presence" title={`${author} · editing`}><span className="we-avatar">{author.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>{people.map((person) => <span key={person.profileId} className="we-avatar" title={`${person.name} · editing`}>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</div>
-      <Icon label={`Comments (${activeComments.length})`} onClick={() => { setPanel('comments'); setRight(true) }}><MessageSquare size={17} aria-hidden /></Icon>
-      <button type="button" className="we-action secondary" aria-pressed={preview} onClick={() => setPreview(!preview)}>{preview ? 'Back to editor' : 'Preview'}</button>
-      <button type="button" className="we-action" onClick={() => setModal('publish')}>Publish</button>
+      <button type="button" className="we-action pa" onClick={() => setModal('publish')}><span>Publish</span>{pendingCount > 0 && <small>{pendingCount}</small>}</button>
     </header>
     <aside className={`we-rail we-left ${left ? '' : 'we-folded'}`} aria-label="Website navigation" style={preview ? { visibility: 'hidden' } : undefined}>
-      {left ? <><div className="we-tabs" role="tablist" aria-label="Website tools">{TABS.map((t) => <button type="button" role="tab" key={t.label} aria-selected={tab === t.label} onClick={() => setTab(t.label)}>{t.label}</button>)}</div>
+      {left ? <><div className="we-tabs" role="tablist" aria-label="Website tools">{TABS.map(({ label, icon: TabIcon }) => <button type="button" role="tab" key={label} aria-selected={tab === label} onClick={() => setTab(label)}><TabIcon size={18} aria-hidden /><span>{label}</span></button>)}</div>
         <div className="we-rail-scroll" role="tabpanel" aria-label={tab}>
           {railBody}
         </div></> : <div className="we-strip">{TABS.map(({ label, icon: TabIcon }) => <Icon key={label} label={label} onClick={() => { setTab(label); setLeft(true) }}><TabIcon size={18} /></Icon>)}</div>}
-      <div className="we-fold"><Icon label={left ? 'Fold left rail' : 'Open left rail'} onClick={() => setLeft(!left)}>{left ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}</Icon></div>
+      <div className="we-foot"><span className="we-foot-lbl">Changes save as a draft</span><a className="we-action txt sm" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={setTextSelection} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
+      {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
         {(asking || veraStatus || proposal) && <div className="we-thread">
-          <p role="status">{asking ? 'Vera is preparing a proposal…' : veraStatus}</p>{proposal && <div className="we-proposal"><div className="we-caption">Proposed text</div><p>{proposal.after}</p><div className="we-actions"><button type="button" className="we-action" onClick={applyProposal}>Apply</button><button type="button" className="we-action secondary" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Discard</button></div></div>}</div>}
-        <form className="we-vera-main" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
-          <span className="we-context"><Layers size={12} />{veraContext}</span>
-          <div className="we-vera-input"><Sparkles size={18} style={{ color: 'var(--th-accent-text)' }} /><Input variant="seamless" aria-label="Ask Vera" placeholder="Ask Vera to change something, or type / to add" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} /><Icon label="Send to Vera" disabled={asking} type="submit"><ArrowUp size={16} /></Icon></div>
-          <div className="we-suggestions"><button type="button" onClick={() => void askVera('Make this shorter while keeping every fact.')}>Make it shorter</button><button type="button" onClick={() => void askVera('Make this warmer and more welcoming. Keep every fact.')}>Make it warmer</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
+          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is preparing a proposal…' : veraStatus}</p>{proposal && <div className="we-proposal"><div className="we-caption">Proposed text</div><p>{proposal.after}</p><div className="we-actions"><button type="button" className="we-action pa sm" onClick={applyProposal}>Apply</button><button type="button" className="we-action txt sm" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Not now</button></div></div>}</div>}
+        <div className="we-suggestions"><button type="button" onClick={() => void askVera('Make this shorter while keeping every fact.')}>Make it shorter</button><button type="button" onClick={() => void askVera('Make this warmer and more welcoming. Keep every fact.')}>Make it warmer</button><button type="button" onClick={() => void askVera('Suggest a better heading for this section. Keep every fact.')}>Suggest a better heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
+        <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
+          <span className="we-orb" aria-hidden />
+          <Input variant="seamless" aria-label="Ask Vera" placeholder="Ask Vera to change this page…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+          <span className="we-context" title={textSelection ? `Selected text · ${textSelection.field}` : undefined}>{textSelection ? 'Selected text' : selected ? config.components[selected.type]?.label ?? selected.type : page.label}</span>
+          <button type="submit" className="we-action ink sm" disabled={asking}>Ask</button>
         </form>
       </VeraDock>}
     </main>
     <aside className={`we-rail we-right ${right ? '' : 'we-folded'}`} aria-label="Inspector" style={preview ? { visibility: 'hidden' } : undefined}>
-      {right ? <><div className="we-inspector-head"><Settings2 size={16} /><span className="we-spacer">{inspectorTitle}<small style={{ display: 'block' }}>{inspectorScope}</small></span><Icon label="Close inspector" onClick={() => setRight(false)}><X size={16} /></Icon></div>
+      {right ? <><div className="we-inspector-head"><span className="we-ih-ic"><SectionIcon type={selected?.type ?? ''} size={18} /></span><span className="we-spacer"><b>{panel === 'seo' ? 'SEO and sharing' : panel === 'header' ? 'Header' : panel === 'footer' ? 'Footer' : panel === 'page' ? 'Page settings' : selected ? config.components[selected.type]?.label ?? selected.type : panel === 'comments' ? 'Notes' : 'Page'}</b><small>{panel === 'header' || panel === 'footer' ? 'Every page · all devices' : panel === 'seo' || panel === 'page' ? 'This page' : selected && selectedIndex >= 0 ? `Section ${selectedIndex + 1} of ${sectionCount}${/^(Space|Live)/.test(selected.type) || /Events|Circles|Tiers/.test(selected.type) ? ' · Live data' : ''}${device !== 'desktop' ? ` · ${device === 'phone' ? 'Phone' : 'Tablet'} only` : ''}` : `${sectionCount} sections`}</small></span><Icon label="Fold inspector" onClick={() => setRight(false)}><PanelRight size={18} aria-hidden /></Icon></div>
+        {selected && (panel === 'inspect' || panel === 'comments') && <div className="we-isub"><div className="we-seg" role="tablist" aria-label="Section settings">{([['content', 'Content'], ['design', 'Design'], ['advanced', 'Advanced']] as const).map(([id, label]) => <button type="button" role="tab" key={id} aria-selected={panel === 'inspect' && inspTab === id} onClick={() => { setPanel('inspect'); setInspTab(id) }}>{label}</button>)}<button type="button" role="tab" aria-selected={panel === 'comments'} onClick={() => setPanel('comments')}>Notes{activeComments.filter((c) => c.blockId === selectedId).length > 0 && <small>{activeComments.filter((c) => c.blockId === selectedId).length}</small>}</button></div></div>}
         <div className="we-rail-scroll">
           {inspectorBody}
         </div></> : <div className="we-strip"><Icon label="Open inspector" onClick={() => { setPanel('inspect'); setRight(true) }}><Settings2 size={18} /></Icon><Icon label="Open comments" onClick={() => { setPanel('comments'); setRight(true) }}><MessageSquare size={18} /></Icon><Icon label="SEO and sharing" onClick={() => { setPanel('seo'); setRight(true) }}><Search size={18} /></Icon></div>}
-      <div className="we-fold"><Icon label={right ? 'Fold right rail' : 'Open right rail'} onClick={() => setRight(!right)}>{right ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}</Icon></div>
+      {right && panel === 'inspect' && selected && <div className="we-ifoot"><button type="button" className="we-action secondary" onClick={() => action(selected.props.id!, 'copy')}><Copy size={16} aria-hidden />Duplicate</button><button type="button" className="we-action danger" onClick={() => action(selected.props.id!, 'delete')}><Trash2 size={16} aria-hidden />Delete</button></div>}
     </aside>
     {logoPicker}
     {modal && <div className="we-overlay" onClick={() => setModal(null)}><Dialog label={modalLabel}>

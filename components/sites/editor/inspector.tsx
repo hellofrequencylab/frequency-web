@@ -2,7 +2,7 @@
 
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { FieldForm, type FieldsSchema, type PushRequest } from '@/components/page-editor/mobile/field-form'
 import type { Config, ContentItem, Data, Metadata } from '@/lib/page-editor/types'
@@ -13,6 +13,7 @@ import { FQ_EDITOR, k, on } from './skin'
 import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSectionSpacing } from '@/lib/sites/editor/layout'
 import { cleanSectionAnchor, resolveWebsiteChrome, validWebsiteChrome, type WebsiteChrome, type Device, type SectionDisplay, type SectionTone, type SectionWidth } from '@/lib/sites/editor/state'
 import { slugify } from '@/lib/utils'
+import { inspectorTarget, type FieldFocus } from '@/lib/sites/editor/field-sync'
 
 // THE FREQUENCY DESIGN AND ADVANCED TABS (design_handoff/frequency/templates/admin/editor/editor.js renderInsp):
 // background tone, content width, align, spacing in four steps, columns; then reveal on scroll, show on each
@@ -31,8 +32,14 @@ function AnchorField({ value, fallback, onCommit }: { value?: string; fallback: 
   return <div className="fld"><label htmlFor="we-anchor">Anchor link <em>#{cleanSectionAnchor(shown) ?? fallback}</em></label><Input id="we-anchor" className="in" value={shown} placeholder={fallback} maxLength={60} onChange={(e) => setBuffer(e.target.value)} onBlur={() => { if (buffer === null) return; onCommit(cleanSectionAnchor(buffer)); setBuffer(null) }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setBuffer(null) }} /></div>
 }
 
-export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, onChange, onDisplay, part, live: liveOverride, visibility, onVisibility, onBase }: {
+export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, focus, onFieldFocus, onChange, onDisplay, tab, part, live: liveOverride, visibility, onVisibility, onBase }: {
+  /** The Site Editor's inspector sub-tab. Without one, every group shows (the inspector stands alone). */
+  tab?: 'content' | 'design' | 'advanced'
   config: Config; block: ContentItem; doc: Data; device: Device; metadata?: Metadata; sourceSettingsHref?: string
+  /** The field the canvas selection came from: the inspector opens it, scrolls to it and lights it. */
+  focus?: Pick<FieldFocus, 'field' | 'path'> | null
+  /** A field focused here, so the canvas can light its words. Null when focus leaves the fields. */
+  onFieldFocus?: (focus: Pick<FieldFocus, 'field' | 'path'> | null) => void
   onChange: (props: Record<string, unknown>) => void; onDisplay: (value: SectionDisplay | null) => void
   /** Frequency only: whether the block reads Space data (lib/sites/editor/block-meta.ts), per-device
    *  visibility and its switch, and the base (all-device) tone / width / anchor. */
@@ -43,8 +50,11 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
    *  part renders in one column as it always has. The controls and their handlers are the same either way. */
   part?: 'content' | 'design' | 'advanced'
 }) {
-  const show = (p: 'content' | 'design' | 'advanced') => !part || part === p
+  // `tab` is the DAWN Site Editor's sub-tab (LIVE-907), `part` the Frequency kit's (skin.ts); either narrows the groups.
+  const show = (p: 'content' | 'design' | 'advanced') => (!part || part === p) && (!tab || tab === p)
   const [screens, setScreens] = useState<PushRequest[]>([])
+  const root = useRef<HTMLDivElement>(null)
+  const [lit, setLit] = useState<string | null>(null)
   const editableProps = normalizeWebsiteFields(block).props
   const { load, error: sourceError } = useWebsiteFeatureSource()
   const schema = config.components[block.type]?.fields ?? {}
@@ -74,7 +84,42 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
     parent[path.at(-1)!] = value
     onChange(next)
   }
+  // Canvas → inspector: open the card the words live in, then scroll to the field and light it.
+  const focusKey = focus ? JSON.stringify([focus.field, focus.path]) : null
+  const [syncedKey, setSyncedKey] = useState<string | null>(null)
+  if (focusKey !== syncedKey) {
+    // Adjusted during render (react.dev "adjusting state when a prop changes"), once per new selection.
+    setSyncedKey(focusKey)
+    if (!focus) setLit(null)
+    else {
+      const target = inspectorTarget(focus)
+      const definition = schema[target.field]
+      const items = editableProps[target.field]
+      if (target.item !== null && definition?.type === 'array' && Array.isArray(items) && items[target.item] && typeof items[target.item] === 'object') {
+        const label = definition.label ?? target.field
+        setScreens([{ title: `${label} ${target.item + 1}`, path: [target.field, target.item], fields: (definition.arrayFields ?? {}) as FieldsSchema, value: items[target.item] as Record<string, unknown>, onChange: () => {} }])
+      } else setScreens([])
+      setLit(target.key)
+    }
+  }
+  useEffect(() => {
+    if (!lit) return
+    const row = root.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(lit)}"]`)
+    row?.scrollIntoView({ block: 'center', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  }, [lit, screens.length])
+  // Inspector → canvas: the field the owner is typing in, with the path of the card screen it sits on.
+  const reportFocus = (node: EventTarget | null) => {
+    if (!onFieldFocus) return
+    const row = (node as HTMLElement | null)?.closest?.('[data-field]') as HTMLElement | null
+    const key = row?.dataset.field
+    if (!key) return
+    setLit(key)
+    onFieldFocus(path.length ? { field: String(path[0]), path: [...path.slice(1), key] } : { field: key, path: [] })
+  }
+  const litField = lit ? (sub?.fields ?? fields)[lit] : undefined
+  const litLabel = lit ? (litField && 'label' in litField && typeof litField.label === 'string' ? litField.label : lit) : null
   const display = sectionDeviceLayout(doc, block.props.id!, device)
+  const shows = show
   const live = /^(SpaceEvents|LiveEvents|SpaceCommunity|CirclesGrid|SpacePractices|SpaceFAQ)$/.test(block.type) || liveFeatures
   const fq = FQ_EDITOR && !!part
   const base = (doc.root.props?.websiteLayout?.[block.props.id!]?.desktop ?? {}) as SectionDisplay
@@ -88,13 +133,15 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
   </>
   if (fq && part === 'content' && !sub) {
     // The design's content tab: the live note in its words, then the fields with their character counts.
-    return <>
+    return <div ref={root} className="we-inspector" data-lit={lit ?? undefined} onFocusCapture={(e) => reportFocus(e.target)}>
+      {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--th-accent);background:color-mix(in srgb,var(--th-accent) 9%,transparent)}`}</style>}
+      {litLabel && <div className="we-editing" role="status">Editing <strong>{litLabel}</strong></div>}
       {block.type === 'FeatureGrid' && <label className="fld"><span className="l">Content source</span><Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}
       {liveFeatures && sourceError && <p className="note err" role="alert">{sourceError}</p>}
       {(live || liveOverride || catalogOfferings || hasExternalSource) && <div className="note"><b>Live from your Space.</b> Dates, hosts and prices update on their own. These fields set how they look here.{sourceSettingsHref && <> <a href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit in your Space</a></>}</div>}
       {catalogOfferings && shownOfferings.length > 0 && <ul className="note">{shownOfferings.map((item, index) => <li key={index}>{item.title || item.blurb}</li>)}</ul>}
       <FieldForm counts fields={fields} value={editableProps} onChange={onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />
-    </>
+    </div>
   }
   if (fq && part === 'design') {
     const pad = display.padding === undefined ? null : nearestPad(display.padding)
@@ -115,36 +162,40 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
       <details className="drw"><summary>Custom code</summary><label className="fld">Class name<Input className="in" value={display.className ?? ''} onChange={(e) => onDisplay({ ...display, className: e.target.value })} placeholder="my-section" /></label><label className="fld">Data attributes<Input className="in" value={display.attributes ?? ''} onChange={(e) => onDisplay({ ...display, attributes: e.target.value })} placeholder="data-campaign=autumn" /></label></details>
     </>
   }
-  return <>
-    {show('content') && <>
+  return <div ref={root} className="we-inspector" data-lit={lit ?? undefined} onFocusCapture={(e) => reportFocus(e.target)}>
+    {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--th-accent);background:color-mix(in srgb,var(--th-accent) 9%,transparent)}`}</style>}
+    {litLabel && <div className="we-editing" role="status">Editing <strong>{litLabel}</strong>{sub && <span>in {sub.title}</span>}</div>}
+    {shows('content') && <>
     {block.type === 'FeatureGrid' && <label className={k('we-field')}>Content source<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}
     {liveFeatures && sourceError && <p className={k('we-note')} role="alert">{sourceError}</p>}
     {catalogOfferings && <div className={k('we-proposal')}><strong>Live Space offerings</strong><p>These cards come from your Space’s services catalog. Edit titles, details and prices there; this section controls their presentation.</p><ul>{shownOfferings.map((item, index) => <li key={index}>{item.title || item.blurb}</li>)}</ul>{shownOfferings.length === 0 && <p>No listed offerings are visible.</p>}{sourceSettingsHref && <a className={k('we-row')} href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit Space offerings</a>}</div>}
     {hasExternalSource && <div className={k('we-proposal')}><strong>Connected content</strong><p>This content is managed in your Space. Website controls change its presentation.</p>{sourceSettingsHref && <a className={k('we-row')} href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit source content</a>}</div>}
     {live && <div className={k('we-proposal')}><strong>Live from your Space</strong><p>Published dates and listings update automatically. These fields control how they appear here.</p></div>}
     {sub && <button type="button" className={k('we-row')} onClick={() => setScreens((s) => s.slice(0, -1))}><ChevronLeft size={16} />{sub.title}</button>}
+    {!tab && !part && <div className={k('we-caption')}>Content</div>}
     <FieldForm fields={sub?.fields ?? fields} value={sub ? (sub.path && nestedValue && typeof nestedValue === 'object' ? nestedValue as Record<string, unknown> : sub.value) : editableProps} onChange={sub ? changeNested : onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />
-    </>}
-    {show('design') && <>
     {block.type === 'Zigzag' && <div className={k('we-field')}><span>Layout</span><div className={k('we-actions')}>{(['left', 'right', 'stacked'] as const).map((preset) => <button type="button" className={k('we-action secondary')} key={preset} aria-pressed={preset === 'stacked' ? display.columns === 1 : display.columns !== 1 && (editableProps.mediaSide ?? 'left') === preset} onClick={() => { const next = sectionLayoutPreset(editableProps, display, preset); onChange(next.props); onDisplay(next.display) }}>{preset === 'left' ? 'Photo left' : preset === 'right' ? 'Photo right' : 'Stacked'}</button>)}</div></div>}
+    </>}
+    {shows('design') && <>
+    {!tab && !part && <div className={k('we-caption')}>Section</div>}
     <details className={k('we-drawer')} open><summary>Spacing</summary>
       <label className={k('we-field')}>Column gap <span>{display.gap === undefined ? 'Theme default' : `${display.gap}px`}</span><Input variant="seamless" aria-label="Column gap" type="range" min={0} max={96} step={4} value={display.gap ?? 0} onChange={(e) => onDisplay({ ...display, gap: Number(e.target.value) })} /></label>
       <label className={k('we-field')}>Space above and below <span>{display.padding === undefined ? 'Theme default' : `${display.padding}px`}</span><Input variant="seamless" aria-label="Section spacing" type="range" min={0} max={SECTION_SPACING_STEPS.length - 1} step={1} value={Math.max(0, SECTION_SPACING_STEPS.findIndex((step) => step === snapSectionSpacing(display.padding ?? 0)))} onChange={(e) => onDisplay({ ...display, padding: SECTION_SPACING_STEPS[Number(e.target.value)] })} /></label>
       <button type="button" className={k('we-row')} onClick={() => onDisplay({ ...display, padding: undefined, gap: undefined })}>Use theme spacing</button>
     </details>
-    <details className={k('we-drawer')}><summary>Breakpoints</summary><div className={k('we-note')}>{device === 'desktop' ? 'Desktop is the base layout. Tablet and phone inherit it.' : `You are editing ${device} only. Unchanged values inherit the desktop layout.`}</div>
+    <details className={k('we-drawer')} open={tab === 'design' || undefined}><summary>Breakpoints</summary><div className={k('we-note')}>{device === 'desktop' ? 'Desktop is the base layout. Tablet and phone inherit it.' : `You are editing ${device} only. Unchanged values inherit the desktop layout.`}</div>
       <label className={k('we-field')}>Columns<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={display.columns ?? ''} onChange={(e) => onDisplay({ ...display, columns: e.target.value ? Number(e.target.value) : undefined })}><option value="">Theme default</option>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}</Select></label>
       <label className={k('we-field')}>Heading size <span>{display.textSize ?? 0}px · 0 uses theme</span><Input variant="seamless" aria-label="Heading size" type="range" min={0} max={120} step={2} value={display.textSize ?? 0} onChange={(e) => onDisplay({ ...display, textSize: Number(e.target.value) })} /></label>
       <label className={k('we-field')}>Text alignment<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={display.align ?? ''} onChange={(e) => onDisplay({ ...display, align: e.target.value ? e.target.value as 'left' | 'center' | 'right' : undefined })}><option value="">Theme default</option><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></Select></label>
       {device !== 'desktop'  && <button type="button" className={k('we-row')} onClick={() => onDisplay(null)}>Reset {device} overrides</button>}
     </details>
     </>}
-    {show('advanced') && <>
-    <details className={k('we-drawer')}><summary>Animation</summary><label className={k('we-field')}>Reveal on scroll<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={display.animation ?? 'none'} onChange={(e) => onDisplay({ ...display, animation: e.target.value as 'none' | 'fade' | 'rise' })}><option value="none">None</option><option value="fade">Fade in</option><option value="rise">Rise in</option></Select></label></details>
+    {shows('advanced') && <>
+    <details className={k('we-drawer')} open={tab === 'advanced' || undefined}><summary>Animation</summary><label className={k('we-field')}>Reveal on scroll<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={display.animation ?? 'none'} onChange={(e) => onDisplay({ ...display, animation: e.target.value as 'none' | 'fade' | 'rise' })}><option value="none">None</option><option value="fade">Fade in</option><option value="rise">Rise in</option></Select></label></details>
     <details className={k('we-drawer')}><summary>Custom code</summary><label className={k('we-field')}>Class name<Input variant="seamless" value={display.className ?? ''} onChange={(e) => onDisplay({ ...display, className: e.target.value })} placeholder="my-section" /></label><label className={k('we-field')}>Data attributes<Input variant="seamless" value={display.attributes ?? ''} onChange={(e) => onDisplay({ ...display, attributes: e.target.value })} placeholder="data-campaign=autumn" /></label><p className={k('we-note')}>Theme classes and data attributes apply to this section.</p></details>
-    <details className={k('we-drawer')}><summary>Visibility</summary><label className={k('we-field')}><span><Input variant="seamless" type="checkbox" className="we-check" checked={display.hidden ?? false} onChange={(e) => onDisplay({ ...display, hidden: e.target.checked })} /> Hide on {device === 'desktop' ? 'all devices' : device}</span></label></details>
+    <details className={k('we-drawer')} open={tab === 'advanced' || undefined}><summary>Visibility</summary><label className={k('we-field')}><span><Input variant="seamless" type="checkbox" className="we-check" checked={display.hidden ?? false} onChange={(e) => onDisplay({ ...display, hidden: e.target.checked })} /> Hide on {device === 'desktop' ? 'all devices' : device}</span></label></details>
     </>}
-  </>
+  </div>
 }
 
 

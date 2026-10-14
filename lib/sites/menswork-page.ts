@@ -140,6 +140,9 @@ export type MwPlan =
   | { kind: 'circles'; at: number }
   | { kind: 'journeys'; at: number }
   | { kind: 'other'; at: number }
+  /** A themed section family that draws its own full-bleed band (the Network blocks): the block's own render,
+   *  without the narrow wrapper `other` puts around it. */
+  | { kind: 'own'; at: number; hero: boolean }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
@@ -164,6 +167,7 @@ export function planMensworkPage(blocks: readonly MwBlock[]): MwPlan[] {
 }
 
 function planOne(type: string, p: Record<string, unknown>, at: number): MwPlan {
+  if (type.startsWith('Network')) return { kind: 'own', at, hero: type === 'NetworkHero' }
   switch (type) {
     case 'PhotoHero':
     case 'Hero':

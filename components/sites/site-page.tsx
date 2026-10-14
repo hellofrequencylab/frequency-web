@@ -12,12 +12,14 @@ import { SiteBooking } from '@/components/sites/site-booking'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
 import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
-import { resolveAccentVars } from '@/lib/spaces/accent'
+import { siteRenderStyle } from '@/lib/sites/site-render-style'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { hasPage, readPageDoc, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
-import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
-import { wildheartAccentVars } from '@/lib/theme/wildheart'
+import { mensworkSeason } from '@/lib/theme/menswork'
+import { networkScheme } from '@/lib/theme/network'
+import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
+import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -162,12 +164,19 @@ export async function SitePage({
   // A PAGE may wear its own theme (LIVE-699, preferences.siteStyle.pages); every other page keeps the site's.
   const siteStyle = readSitePageStyle(space.preferences, pageSlug)
   // ONE source (ADR-1728): the theme is the site style, edited from Identity and branding or the editor's
-  // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in.
+  // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in. The
+  // theme, the font set and the accent resolve through lib/sites/site-render-style.ts, the same resolver the
+  // website editor's canvas uses, so the preview is this page.
+  const render = siteRenderStyle(siteStyle, websiteBrand.accent, defaultAccentForType(space.type))
   const boldSite = siteStyle.theme === 'bold'
   // The Wildheart theme (lib/theme/wildheart.ts): the third skin, light where Bold is dark. Its Space page
   // wears its font set like any theme; its own faces ride the website root (WILDHEART_FONT_CLASS).
   const wildSite = siteStyle.theme === 'wildheart'
-  const theme = boldSite ? 'menswork' : website && !wildSite ? 'frequency' : siteStyle.fonts
+  // The Network theme (lib/theme/network.ts): light and coastal, one bold color in four schemes. Its faces
+  // ride the website root (NETWORK_FONT_CLASS); the scheme follows the owner's accent.
+  const netSite = siteStyle.theme === 'network'
+  // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
+  const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins. Wildheart does the same with its violet.
@@ -175,17 +184,15 @@ export async function SitePage({
     ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) }
     : wildSite
       ? { theme: 'wildheart' as const, season: seasonOf(new Date()) }
-      : null
+      : netSite
+        ? { theme: 'network' as const, season: mensworkSeason(new Date()), scheme: networkScheme(websiteBrand.accent) }
+        : null
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
-  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : wildSite ? ('wildheart' as const) : ('frequency' as const) }
-  const lookOverrides = siteLookOverrides(lookStyle)
-  const fullFooter = siteLook(lookStyle).footer === 'full'
-  const accentVars = boldSite
-    ? mensworkAccentVars(websiteBrand.accent)
-    : wildSite
-      ? wildheartAccentVars(websiteBrand.accent)
-      : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
-  const editorTheme = boldSite ? ('Menswork' as const) : wildSite ? ('Wildheart' as const) : ('DAWN' as const)
+  const lookOverrides = siteLookOverrides(render.lookStyle)
+  const fullFooter = siteLook(render.lookStyle).footer === 'full'
+  const accentVars = render.accentVars
+  const editorTheme = render.editorTheme
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`
@@ -197,8 +204,8 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-season={skin.season} className={wildSite ? WILDHEART_FONT_CLASS : undefined}>
-            <style>{wildSite ? WILDHEART_CSS : MENSWORK_CSS}</style>
+          <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -228,7 +235,9 @@ export async function SitePage({
   // same sections as every other page (the handoff's Home is a composition, not the house Home's rows).
   // Without a Home doc the site keeps the house Home over the profile rows, like any theme.
   const wildHome = home && wildSite && !websitePage && readPageDoc(space.preferences, HOME_SLUG) !== null
-  const model = home && !websitePage && !wildHome
+  // Network does the same (LIVE-906): The Group's Home is a composition of the Network section blocks.
+  const netHome = home && netSite && !websitePage && readPageDoc(space.preferences, HOME_SLUG) !== null
+  const model = home && !websitePage && !wildHome && !netHome
     ? await buildHouseHome({
         space,
         grid: profileGrid(space.preferences),
@@ -257,7 +266,7 @@ export async function SitePage({
   // LIVE-869: a site's `calendar` page (listed among its pages, so the owner places it in the menu) is the
   // public yearly calendar, not a page doc.
   const calendarPage = pageSlug === SITE_CALENDAR_SLUG
-  const customPage = (!home || wildHome) && !contactPage && !bookPage && !calendarPage
+  const customPage = (!home || wildHome || netHome) && !contactPage && !bookPage && !calendarPage
   const mwBlocks: MwBlock[] | null =
     customPage
       ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])
@@ -309,9 +318,11 @@ export async function SitePage({
     <AccentScope vars={accentVars} theme={theme}>
       <JsonLd data={entity} />
       {/* A Bold or Wildheart site wears the editor's tokens; a Frequency site keeps the house tokens its sheets read. */}
-      <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={wildSite ? WILDHEART_FONT_CLASS : undefined}>
+      <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={siteFontClass}>
       {website && skin && <style>{WEBSITE_TOKEN_CSS}</style>}
       {websitePage && !skin && <style>{FREQUENCY_PAGE_CSS}</style>}
+      {/* Network sections on a site that does not wear Network bring their own sheet, in the site's palette. */}
+      {!netSite && docHasNetworkBlocks(websitePage?.doc ?? mwBlocks) && <style>{NETWORK_BLOCK_CSS}</style>}
       <SiteChrome
         brandName={websiteChrome.name}
         homeHref={homeHref}
@@ -327,7 +338,7 @@ export async function SitePage({
         member={memberBadge}
         footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
-        admin={siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
+        admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >
         {website && websitePage && mwLive ? (
           <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
@@ -381,7 +392,7 @@ export async function SitePage({
             pageTitle={pages.find((p) => p.slug === pageSlug)?.label ?? brandName}
             renderOther={(b) => (
               <Suspense fallback={<ProfileBodySkeleton />}>
-                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous onlyIndexes={[mwBlocks.indexOf(b)]} />
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site onlyIndexes={[mwBlocks.indexOf(b)]} />
               </Suspense>
             )}
           />
@@ -391,7 +402,7 @@ export async function SitePage({
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
             <div className="mt-10">
               <Suspense fallback={<ProfileBodySkeleton />}>
-                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site />
               </Suspense>
             </div>
           </div>
@@ -516,7 +527,7 @@ export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], p
 
 /** A Menswork website's blue admin links: the admin pages on the site's own host (base ``), else through
  *  the console's handoff, and the console's Leadership page as the labelled Frequency link. */
-export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null, theme?: 'wildheart') {
+export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null, theme?: 'wildheart' | 'network') {
   const page = (view: 'overview' | 'calendar' | 'editor') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
   return siteAdminNavLinks(
     { overview: page('overview'), calendar: page('calendar'), editor: page('editor'), console: `${origin}/spaces/${slug}/manage/leadership` },

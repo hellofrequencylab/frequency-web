@@ -3,16 +3,19 @@ import contract from './theme-contract.json'
 import { MENSWORK_SEASONS, mensworkSeason, mensworkAccentVars } from '@/lib/theme/menswork'
 import { WILDHEART_SEASONS, wildheartAccentVars } from '@/lib/theme/wildheart'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
+import { networkAccentVars } from '@/lib/theme/network'
 import type { WebsiteTheme } from './state'
 
 /** The `--font-*` variables next/font registers for each theme's display, body and mono (label) faces.
  *  Bold's and Frequency's ride the root layout (app/layout.tsx); Wildheart's load on its own website
- *  (components/sites/wildheart-fonts.ts), so anywhere else they fall back to the contract's named faces. */
+ *  (components/sites/wildheart-fonts.ts) and Network's on its own (components/sites/network-fonts.ts), so
+ *  anywhere else they fall back to the contract's named faces. */
 export const WEBSITE_THEME_FONT_VARS: Record<WebsiteTheme, [display: string, body: string, mono: string]> = {
   Menswork: ['sofia-xc', 'barlow', 'plex-mono'],
   DAWN: ['anton', 'nunito', 'geist-mono'],
   Midnight: ['anton', 'nunito', 'geist-mono'],
   Wildheart: ['wh-fell', 'wh-garamond', 'wh-hanken'],
+  Network: ['nw-bricolage', 'nw-outfit', 'nw-outfit'],
 }
 
 export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | null, date = new Date()): CSSProperties {
@@ -26,7 +29,7 @@ export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | nul
   }
   const hexAccent = typeof brandAccent === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandAccent)
   // Each skinned theme measures the owner's accent with its own rules; the house themes only take a hex.
-  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
+  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Network' ? networkAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
   if (accent) {
     tokens['--th-accent'] = accent['--color-primary']!
     tokens['--th-accent-text'] = accent['--color-primary-strong']!

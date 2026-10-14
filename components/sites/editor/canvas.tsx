@@ -1,15 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type ComponentProps } from 'react'
+import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type ComponentProps, type CSSProperties } from 'react'
+import type { SpaceThemeId } from '@/lib/theme/space-themes'
 import { createPortal } from 'react-dom'
-import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
+import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, Eye, EyeOff, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
 import { safeUrl, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import type { Config, Metadata, Data, ContentItem } from '@/lib/page-editor/types'
 import type { MwLive } from '@/lib/sites/menswork-data'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { mensworkSeason } from '@/lib/theme/menswork'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
+import { networkScheme } from '@/lib/theme/network'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
+import { fieldTextTargets, type FieldFocus } from '@/lib/sites/editor/field-sync'
 import { findInlineTextMatch, inlineTextValue, inlineFieldValue, replaceInlineField, replaceInlineTextSegment, type InlineTextMatch } from '@/lib/sites/editor/inline-edit'
 import { EDITABLE_GRIDS, dragElementPlacement, placeElementWithoutOverlap, sectionDeviceLayout, snapSectionSpacing, SECTION_SPACING_STEPS } from '@/lib/sites/editor/layout'
 import type { WebsiteTheme, Device, SiteComment, SectionDisplay, WebsitePresence, WebsiteSnapshot } from '@/lib/sites/editor/state'
@@ -20,6 +23,8 @@ import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
 import { FQ_EDITOR, k } from './skin'
 import { FqIcon } from '@/components/frequency/icon'
 import { editorBlockMeta } from '@/lib/sites/editor/block-meta'
+import { NETWORK_BLOCK_CSS, docHasNetworkBlocks } from '../network-css'
+import { SectionIcon } from './section-icon'
 
 const CANVAS_CSS = `
 html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
@@ -31,7 +36,7 @@ html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
 .we-micro{position:sticky;top:8px;display:flex;align-items:center;gap:2px;z-index:5;width:max-content;margin:0 auto -42px;padding:4px;background:var(--ed-field);border:1px solid var(--th-muted);color:var(--th-text);border-radius:var(--th-r)}
 .we-micro button{display:grid;place-items:center;width:32px;height:32px;border:0;background:transparent;color:inherit;cursor:pointer}.we-micro button:hover{background:var(--ed-chrome)}.we-micro button:disabled{opacity:.3;cursor:default}
 .we-typography{position:relative}.we-typography summary{display:grid;place-items:center;width:32px;height:32px;cursor:pointer;list-style:none}.we-typography-panel{position:absolute;top:40px;right:0;min-width:190px;display:grid;gap:8px;background:var(--ed-field);border:1px solid var(--ed-line);padding:12px;color:var(--th-text)}.we-typography-panel button{width:auto!important;padding:4px;font-size:11px}.we-typography-panel label{display:grid;gap:4px;font:12px var(--th-body-render)}.we-typography-panel select{background:var(--th-raised);color:var(--th-text);border:1px solid var(--ed-line);padding:5px}.we-spacing-handle{position:absolute;left:calc(50% - 24px);width:48px;height:8px;z-index:7;border:1px solid var(--th-accent);border-radius:4px;background:var(--ed-field);opacity:.75;cursor:ns-resize;touch-action:none}.we-spacing-top{top:0}.we-spacing-bottom{bottom:0}.we-micro button:focus-visible{outline:2px solid var(--th-accent)}
-.we-section:has([data-site-text-selected=true]):not([data-manipulating=true]){outline-color:transparent}.we-section [data-site-text-selected=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}.we-section [contenteditable=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}
+.we-section:has([data-site-text-selected=true]):not([data-manipulating=true]){outline-color:transparent}.we-section [data-site-text-selected=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}.we-section [data-site-field-focus=true]{outline:2px solid var(--th-accent);outline-offset:4px;border-radius:2px;background:color-mix(in srgb,var(--th-accent) 12%,transparent)}.we-section [contenteditable=true]{outline:1px solid var(--th-accent);outline-offset:3px;cursor:text}
 .we-collaborator-cursor{position:absolute;z-index:8;pointer-events:none;display:flex;align-items:flex-start;gap:4px;color:var(--th-season);font:700 12px var(--th-body-render);transform:translate(-2px,-2px)}.we-collaborator-cursor>span:first-child{font-size:24px;line-height:1}.we-collaborator-cursor>span:last-child{background:var(--th-season);color:var(--th-on-season);padding:4px 7px;border-radius:var(--th-r);white-space:nowrap}.we-layout-handles{position:absolute;inset:0;pointer-events:none;z-index:6}.we-layout-handles{border:1px solid transparent}.we-layout-handles[data-active=true]{border-color:var(--th-accent)}[data-layout-element=true]:has([data-site-text-selected=true])>.we-layout-handles,[data-layout-element=true][data-site-text-selected=true]>.we-layout-handles{border-color:transparent}.we-layout-handles:not([data-active=true]) button{opacity:0}.we-layout-handles:hover button,.we-layout-handles:focus-within button,[data-layout-element=true]:hover>.we-layout-handles button{opacity:1}.we-layout-handles:focus-within{border-color:var(--th-accent)}.we-layout-handles button{pointer-events:auto;position:absolute;width:26px;height:26px;background:var(--ed-field);border:1px solid var(--th-accent);color:var(--th-text);cursor:grab;touch-action:none}.we-move-handle{top:-6px;left:0}.we-resize-handle{bottom:-6px;right:0;cursor:nwse-resize!important}.we-pin{position:absolute;right:12%;top:25%;z-index:6;display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--th-accent);color:var(--th-on-accent);border:1px solid var(--th-muted);font:800 12px var(--th-body-render);cursor:pointer}
 .we-insert{display:block;width:100%;height:22px;border:0;background:transparent;color:var(--th-accent-text);font:600 12px var(--th-body-render);cursor:pointer}.we-insert:hover,.we-insert:focus-visible{background:color-mix(in srgb,var(--th-accent) 12%,transparent);outline:1px solid var(--th-accent)}
 @media(pointer:coarse){.we-micro button{width:44px;height:44px}.we-section-label{opacity:1!important}.we-insert{height:44px}}
@@ -73,13 +78,20 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, look = {}, fullFooter = true }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme }: {
+  /** The stage zoom, 50 to 100 percent (Site Editor handoff). */
+  zoom?: number
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
   title: string; brandName: string; logo?: string | null; brandAccent?: string | null
+  /** The page's resolved website tokens (lib/sites/site-render-style.ts siteCanvasVars), the faces and accent the
+   *  live page wears; without them the canvas wears the theme contract with the brand accent. */
+  themeVars?: CSSProperties
+  /** The font set the live page's AccentScope carries (`data-space-theme`), for its per-set type treatment. */
+  spaceTheme?: SpaceThemeId
   nav: { slug: string; label: string }[]
   selectedId: string | null; preview: boolean; comments: SiteComment[]
   onSelect: (id: string) => void; onEdit: (id: string, field: string, value: unknown) => void
-  onAction: (id: string, action: 'up' | 'down' | 'copy' | 'comment' | 'delete') => void
+  onAction: (id: string, action: 'up' | 'down' | 'copy' | 'comment' | 'delete' | 'hide') => void
   people?: WebsitePresence[]; pageSlug?: string; onCursor?: (cursor: WebsitePresence['cursor']) => void
   onDisplay?: (id: string, value: SectionDisplay) => void
   /** Frequency: show or hide a section on the device being edited, that device only. */
@@ -90,6 +102,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   onChromeSelect?: (surface: 'header' | 'footer') => void
   onTextSelect?: (selection: { blockId: string; field: string; path: (string | number)[]; value: string } | null) => void
   onInsert: (index: number) => void
+  /** The inspector field being edited: its words are lit on the canvas and scrolled into view. */
+  focusField?: FieldFocus | null
   /** The site's global styles that differ from its theme, and whether its footer is the full one (ADR-1728). */
   look?: ComponentProps<typeof SiteChrome>['look']
   fullFooter?: boolean
@@ -295,7 +309,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
       for (const node of window.document.head.querySelectorAll('link[rel=stylesheet],style')) document.head.appendChild(node.cloneNode(true))
       document.documentElement.setAttribute('data-website-styles-loaded', 'true')
     }
-    const computed = getComputedStyle(window.document.documentElement)
+    // The theme faces (Network, Wildheart) are registered on the editor root, not on <html>: read them there.
+    const computed = getComputedStyle(frame.current?.closest<HTMLElement>('[data-editor-root]') ?? window.document.documentElement)
     // Under Frequency the section chrome (FQ_CANVAS_CSS) reads the design's --fq-* tokens, which live on the
     // editor's own <html> (scoped to data-design) and so have to be carried into the frame like the fonts.
     for (const key of Array.from(computed)) if (key.startsWith('--font-') || (FQ_EDITOR && key.startsWith('--fq-'))) document.documentElement.style.setProperty(key, computed.getPropertyValue(key))
@@ -315,6 +330,41 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     }, 50)
     return () => { iframe.removeEventListener('load', attach); window.clearInterval(retry) }
   }, [attach])
+  // The stage zoom scales the page inside the frame, so the frame keeps its width and the site its breakpoints.
+  useEffect(() => {
+    const root = mount?.ownerDocument.documentElement
+    if (root) root.style.zoom = zoom === 100 ? '' : String(zoom / 100)
+  }, [mount, zoom])
+  // Layers → canvas: a section picked in the rail (or added, or moved) scrolls into view when it is off screen.
+  useEffect(() => {
+    if (!mount || !selectedId) return
+    const section = mount.querySelector<HTMLElement>(`.we-section[data-block-id="${CSS.escape(selectedId)}"]`)
+    const view = mount.ownerDocument.defaultView
+    if (!section || !view) return
+    const box = section.getBoundingClientRect()
+    if (box.top >= 0 && box.top < view.innerHeight * 0.6) return
+    const smooth = !view.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    view.scrollTo({ top: Math.max(0, box.top + view.scrollY - 24), behavior: smooth ? 'smooth' : 'auto' })
+  }, [mount, selectedId])
+  // Inspector → canvas: light every line the focused field draws, and bring the first into view.
+  const focusKey = focusField ? JSON.stringify(focusField) : ''
+  useEffect(() => {
+    if (!mount) return
+    for (const node of mount.querySelectorAll<HTMLElement>('[data-site-field-focus=true]')) node.removeAttribute('data-site-field-focus')
+    if (!focusField) return
+    const block = doc.content.find((b) => b.props.id === focusField.blockId)
+    const section = mount.querySelector<HTMLElement>(`.we-section[data-block-id="${CSS.escape(focusField.blockId)}"]`)
+    if (!block || !section) return
+    const targets = new Set(fieldTextTargets(block.props, focusField.field, focusField.path))
+    if (!targets.size) return
+    const lit: HTMLElement[] = []
+    for (const node of section.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6,p,blockquote,figcaption,li,dt,dd,a,button,label,summary,span,small,strong,em,b')) {
+      if (node.closest('.we-micro,.we-section-label,.we-layout-handles,.we-insert') || lit.some((done) => done.contains(node))) continue
+      if (targets.has(inlineTextValue(renderedText(node)))) { node.setAttribute('data-site-field-focus', 'true'); lit.push(node) }
+    }
+    lit[0]?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-light per focused field and per edit
+  }, [focusKey, doc, mount])
   function renderedText(node: HTMLElement): string {
     const copy = node.cloneNode(true) as HTMLElement
     for (const decoration of copy.querySelectorAll('[aria-hidden=true],.we-layout-handles,.we-spacing-handle,svg,style,script')) decoration.remove()
@@ -401,10 +451,11 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     const id = block.props.id!
     const selected = id === selectedId
     const textSelectedHere = !!textTarget && textTarget.node.closest('.we-section')?.getAttribute('data-block-id') === id
-    const label = String(block.props.title || config.components[block.type]?.label || block.type).replace(/\*/g, '')
+    const label = String(config.components[block.type]?.label || block.type).replace(/\*/g, '')
+    const hiddenHere = sectionDeviceLayout(doc, id, device).hidden ?? false
     const pins = comments.filter((c) => indexes.some((i) => doc.content[i].props.id === c.blockId) && !c.resolved)
     return <div key={id}>
-      <button className="we-insert" type="button" aria-label={`Insert section before ${label}`} onClick={() => onInsert(indexes[0])}>+ Add section</button>
+      <div className="we-ins"><button className="we-insert" type="button" aria-label={`Insert section before ${label}`} onClick={() => onInsert(indexes[0])}>+ Add section</button></div>
       <section className="we-section" data-selected={selected} data-hidden={sectionDeviceLayout(doc, id, device).hidden ?? false} data-block-id={id} tabIndex={0} aria-label={label}
         onDragOver={(e) => { if (draggingSections.current.length && !draggingSections.current.includes(id)) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.dataset.dropTarget = 'true' } }}
         onDragLeave={(e) => { e.currentTarget.dataset.dropTarget = 'false' }}
@@ -418,8 +469,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
         onPointerLeave={() => onCursor?.(null)}
         onClick={(e) => { if (e.shiftKey && onCommentPin) { e.preventDefault(); const bounds = e.currentTarget.getBoundingClientRect(); onSelect(id); onCommentPin(id, { x: Math.min(1, Math.max(0, (e.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.min(1, Math.max(0, (e.clientY - bounds.top) / Math.max(1, bounds.height))) }); return } if ((e.target as HTMLElement).closest('a,button')) e.preventDefault(); onSelect(id); let picked = false; for (const index of indexes) if (editText(e, doc.content[index])) { picked = true; break } if (!picked && !editing.current) { selectedTextNode.current?.removeAttribute('data-site-text-selected'); selectedTextNode.current = null; beginSelectedEdit.current = null; setTextTarget(null); onTextSelect?.(null) } }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).isContentEditable) return; if (textTarget && (e.target === textTarget.node || textTarget.node.contains(e.target as Node)) && (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey))) { beginSelectedEdit.current?.(); if (e.key === 'Enter') e.preventDefault(); return } if (e.key === 'Enter') onSelect(id); if (e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); onAction(id, e.key === 'ArrowUp' ? 'up' : 'down') } }}>
-        <button type="button" className="we-section-label" aria-label={`Drag ${label} to reorder sections`} draggable={!!onReorder} onClick={(e) => { e.stopPropagation(); onSelect(id) }} onDragStart={(e) => { draggingSections.current = indexes.map((index) => doc.content[index].props.id!); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', label) }} onDragEnd={() => { draggingSections.current = []; for (const target of mount?.querySelectorAll<HTMLElement>('[data-drop-target=true]') ?? []) target.dataset.dropTarget = 'false' }}>{FQ_EDITOR ? <><FqIcon name={editorBlockMeta(config, block.type).icon} />{config.components[block.type]?.label ?? block.type}</> : <><GripVertical size={12} aria-hidden />{label}</>}{sectionDeviceLayout(doc, id, device).hidden && ' · Hidden on this device'}</button>
-        {FQ_EDITOR && selected && !textSelectedHere && (() => { const hiddenHere = !!sectionDeviceLayout(doc, id, device).hidden; const hideName = hiddenHere ? `Show on ${device}` : `Hide on ${device}`; return <div className="we-micro" role="toolbar" aria-label={`${label} section controls`} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="we-section-label" aria-label={`Drag ${label} to reorder sections`} draggable={!!onReorder} onClick={(e) => { e.stopPropagation(); onSelect(id) }} onDragStart={(e) => { draggingSections.current = indexes.map((index) => doc.content[index].props.id!); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', label) }} onDragEnd={() => { draggingSections.current = []; for (const target of mount?.querySelectorAll<HTMLElement>('[data-drop-target=true]') ?? []) target.dataset.dropTarget = 'false' }}>{FQ_EDITOR ? <><FqIcon name={editorBlockMeta(config, block.type).icon} />{config.components[block.type]?.label ?? block.type}</> : <><SectionIcon type={block.type} size={14} />{label}</>}{hiddenHere && ` · Hidden on ${device}`}</button>
+        {FQ_EDITOR && selected && !textSelectedHere && (() => { const hideName = hiddenHere ? `Show on ${device}` : `Hide on ${device}`; return <div className="we-micro" role="toolbar" aria-label={`${label} section controls`} onClick={(e) => e.stopPropagation()}>
           <button type="button" title="Move up" aria-label="Move up" disabled={indexes[0] === 0} onClick={() => onAction(id, 'up')}><FqIcon name="arrow-up" /></button>
           <button type="button" title="Move down" aria-label="Move down" disabled={indexes.at(-1) === doc.content.length - 1} onClick={() => onAction(id, 'down')}><FqIcon name="arrow-down" /></button>
           <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onAction(id, 'copy')}><FqIcon name="copy" /></button>
@@ -432,7 +483,9 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
           <button type="button" title="Move up" aria-label="Move up" disabled={indexes[0] === 0} onClick={() => onAction(id, 'up')}><ArrowUp size={15} /></button>
           <button type="button" title="Move down" aria-label="Move down" disabled={indexes.at(-1) === doc.content.length - 1} onClick={() => onAction(id, 'down')}><ArrowDown size={15} /></button>
           <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onAction(id, 'copy')}><Copy size={15} /></button>
+          <span className="we-micro-div" aria-hidden />
           <button type="button" title="Comment" aria-label="Comment" onClick={() => onCommentPin ? onCommentPin(id, { x: .5, y: .5 }) : onAction(id, 'comment')}><MessageSquare size={15} /></button>
+          <button type="button" title={hiddenHere ? `Show on ${device}` : `Hide on ${device}`} aria-label={hiddenHere ? `Show on ${device}` : `Hide on ${device}`} aria-pressed={hiddenHere} onClick={() => onAction(id, 'hide')}>{hiddenHere ? <EyeOff size={15} /> : <Eye size={15} />}</button>
           <button type="button" title="Delete" aria-label="Delete" onClick={() => onAction(id, 'delete')}><Trash2 size={15} /></button>
         </div>}
         {selected && textSelectedHere && !!textTarget && <div className="we-micro" role="toolbar" aria-label="Text controls" onMouseDown={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
@@ -452,12 +505,12 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     </div>
   }
   return <iframe ref={frame} className={k('we-frame')} title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
-    {mount && createPortal(<div data-website-theme={theme} style={websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
-      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' ? '' : FREQUENCY_PAGE_CSS) + (FQ_EDITOR ? FQ_CANVAS_CSS : '')}</style>
+    {mount && createPortal(<div data-website-theme={theme} data-space-theme={spaceTheme} style={themeVars ?? websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
+      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '') + (FQ_EDITOR ? FQ_CANVAS_CSS : '')}</style>
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
-      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : null}>
+      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
-        {!preview && <button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button>}
+        {!preview && <div className="we-addend"><button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button></div>}
       </SiteChrome>
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('footer') }}>Edit footer</button>}
     </div>, mount)}

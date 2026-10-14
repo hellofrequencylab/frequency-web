@@ -121,11 +121,11 @@ const TICKET_INSTANT_METHODS = ['card', 'link'] as const
  *      used whenever the env names one. The configuration is a Stripe-side object the owner edits
  *      in the Dashboard, so tickets keep dashboard control over a SCOPED set: turning on a new
  *      instant wallet next year is a Dashboard toggle and reaches tickets with no deploy.
- *   2. An explicit `payment_method_types` array — the FALLBACK. It is a hardcoded list, and its
- *      cost is exactly the thing the configuration avoids: a creator that passes one ignores the
- *      Stripe Dashboard permanently, so any method enabled there later silently skips tickets and
- *      nothing reports it. That is a real regression with a long fuse, and it is accepted here only
- *      because the alternative is worse.
+ *   2. An `allowed_payment_method_types` list — the FALLBACK. Stripe API 2026-09-30.endive (stripe 23)
+ *      removed `payment_method_types` from Checkout; its replacement is a FILTER on the set the
+ *      Dashboard enables, not a forced list. So the fallback now offers card and Link only when the
+ *      Dashboard has them on, and still never offers a delayed-notification method. What it cannot
+ *      do is pick up a NEW instant wallet enabled later: that still needs the configuration.
  *
  * 🔴 WHY THE FALLBACK EXISTS AT ALL: a configuration is addressed by an ID that must be created in
  * the Stripe Dashboard (or through the API against the live account) and cannot be invented by this
@@ -145,13 +145,13 @@ const TICKET_INSTANT_METHODS = ['card', 'link'] as const
  */
 export function ticketPaymentMethodParams():
   | { payment_method_configuration: string }
-  | { payment_method_types: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] } {
+  | { allowed_payment_method_types: Stripe.Checkout.SessionCreateParams.AllowedPaymentMethodType[] } {
   const configured = (process.env[TICKET_PMC_ENV] ?? '').trim()
   if (configured) return { payment_method_configuration: configured }
   return {
-    payment_method_types: [
+    allowed_payment_method_types: [
       ...TICKET_INSTANT_METHODS,
-    ] as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
+    ] as Stripe.Checkout.SessionCreateParams.AllowedPaymentMethodType[],
   }
 }
 

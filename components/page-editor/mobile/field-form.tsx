@@ -61,12 +61,15 @@ function labelFor(key: string, field: AnyField): string {
 
 // One labelled row wrapping a control. Generous vertical rhythm, >=44px targets.
 // `count` (the Frequency website editor's inspector, design: "Headline 12") shows the text's length beside its label.
-function Row({ label, htmlFor, count, children }: { label: string; htmlFor?: string; count?: number; children: React.ReactNode }) {
+// An optional `hint` on a field (a block's plain-words guidance: "Each new line starts a paragraph")
+// sits under the label, so the label itself stays a name.
+function Row({ label, hint, htmlFor, count, children }: { label: string; hint?: string; htmlFor?: string; count?: number; children: React.ReactNode }) {
   return (
     <div className="border-b border-border px-4 py-4">
       <label htmlFor={htmlFor} className="mb-2 block text-body-sm font-medium text-text">
         {label}
         {count !== undefined && <em>{count}</em>}
+        {hint && <span className="mt-0.5 block text-meta font-normal text-subtle">{hint}</span>}
       </label>
       {children}
     </div>
@@ -91,11 +94,12 @@ function FieldControl({
 }) {
   const id = useId()
   const label = labelFor(fieldKey, field)
+  const hint = (field as { hint?: string }).hint
 
   switch (field.type) {
     case 'text':
       return (
-        <Row label={label} htmlFor={id} count={counts ? String(value ?? '').length : undefined}>
+        <Row label={label} hint={hint} htmlFor={id} count={counts ? String(value ?? '').length : undefined}>
           <Input
             id={id}
             type="text" className="min-h-[44px]"
@@ -107,7 +111,7 @@ function FieldControl({
 
     case 'textarea':
       return (
-        <Row label={label} htmlFor={id}>
+        <Row label={label} hint={hint} htmlFor={id}>
           <Textarea
             id={id}
             rows={4}
@@ -119,7 +123,7 @@ function FieldControl({
 
     case 'number':
       return (
-        <Row label={label} htmlFor={id}>
+        <Row label={label} hint={hint} htmlFor={id}>
           <Input
             id={id}
             type="number"
@@ -132,7 +136,7 @@ function FieldControl({
 
     case 'select':
       return (
-        <Row label={label} htmlFor={id}>
+        <Row label={label} hint={hint} htmlFor={id}>
           <Select
             id={id}
             className="min-h-[44px]"
@@ -155,7 +159,7 @@ function FieldControl({
       // Rendered as a segmented set of >=44px pill buttons (thumb-friendly, no
       // hover dependency), the mobile-native equivalent of Puck's radio row.
       return (
-        <Row label={label}>
+        <Row label={label} hint={hint}>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
             {field.options?.map((o) => {
               const active = String(value ?? '') === String(o.value)
@@ -206,7 +210,7 @@ function FieldControl({
         field.getItemSummary?.(item, i) || summarizeObject(sub, item) || `Item ${i + 1}`
       return (
         <div className="border-b border-border px-4 py-4">
-          <div className="mb-2 text-body-sm font-medium text-text">{label}</div>
+          <div className="mb-2 text-body-sm font-medium text-text">{label}{hint && <span className="mt-0.5 block text-meta font-normal text-subtle">{hint}</span>}</div>
           <ul className="space-y-2">
             {arr.map((item, i) => (
               <li key={i} className="flex items-stretch gap-2">
@@ -259,7 +263,7 @@ function FieldControl({
       // render({ value, onChange }) — and does NOT depend on the Puck store, so it
       // mounts safely here. We keep a label row for rhythm.
       return (
-        <Row label={label}>
+        <Row label={label} hint={hint}>
           <div className="min-h-[44px]">
             {field.render?.({ value, onChange, name: fieldKey })}
           </div>
@@ -272,7 +276,7 @@ function FieldControl({
       // Nested drop-zones and external data sources need the desktop canvas. Rather
       // than hide the field, we say so plainly (no em dash, verb-led).
       return (
-        <Row label={label}>
+        <Row label={label} hint={hint}>
           <p className="text-body-sm text-subtle">Edit this on a larger screen.</p>
         </Row>
       )
@@ -324,15 +328,18 @@ export function FieldForm({
   return (
     <div>
       {Object.entries(fields).map(([key, field]) => (
-        <FieldControl
-          key={key}
-          fieldKey={key}
-          field={field}
-          value={value?.[key]}
-          onChange={(v) => onChange({ ...value, [key]: v })}
-          onPushScreen={onPushScreen}
-          counts={counts}
-        />
+        // data-field names the row so the website editor can scroll to and light the field a canvas
+        // click came from (lib/sites/editor/field-sync.ts).
+        <div key={key} data-field={key}>
+          <FieldControl
+            fieldKey={key}
+            field={field}
+            value={value?.[key]}
+            onChange={(v) => onChange({ ...value, [key]: v })}
+            onPushScreen={onPushScreen}
+            counts={counts}
+          />
+        </div>
       ))}
     </div>
   )

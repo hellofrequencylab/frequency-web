@@ -83,7 +83,7 @@ describe('ticketPaymentMethodParams', () => {
 
   it('never sends both parameters: Stripe rejects a request carrying the two', () => {
     process.env[TICKET_PMC_ENV] = 'pmc_instant_only'
-    expect(ticketPaymentMethodParams()).not.toHaveProperty('payment_method_types')
+    expect(ticketPaymentMethodParams()).not.toHaveProperty('allowed_payment_method_types')
     delete process.env[TICKET_PMC_ENV]
     expect(ticketPaymentMethodParams()).not.toHaveProperty('payment_method_configuration')
   })
@@ -92,12 +92,12 @@ describe('ticketPaymentMethodParams', () => {
     delete process.env[TICKET_PMC_ENV]
     // Apple Pay and Google Pay are not types: they ride on `card`. Link is its own type and
     // disappears from Checkout unless it is named, which is the one easy thing to get wrong here.
-    expect(ticketPaymentMethodParams()).toEqual({ payment_method_types: ['card', 'link'] })
+    expect(ticketPaymentMethodParams()).toEqual({ allowed_payment_method_types: ['card', 'link'] })
   })
 
   it('offers NO delayed-notification method on either branch', () => {
     delete process.env[TICKET_PMC_ENV]
-    const types = (ticketPaymentMethodParams() as { payment_method_types: string[] }).payment_method_types
+    const types = (ticketPaymentMethodParams() as { allowed_payment_method_types: string[] }).allowed_payment_method_types
     // The whole point of the row: these are the methods that complete a session unpaid.
     for (const delayed of ['us_bank_account', 'sofort', 'bancontact', 'ideal', 'cashapp', 'klarna', 'afterpay_clearpay']) {
       expect(types).not.toContain(delayed)
@@ -108,6 +108,6 @@ describe('ticketPaymentMethodParams', () => {
     // A blank var is the normal state of an optional key in a copied .env, and sending
     // `payment_method_configuration: ''` to Stripe is a request error, not a no-op.
     process.env[TICKET_PMC_ENV] = '   '
-    expect(ticketPaymentMethodParams()).toEqual({ payment_method_types: ['card', 'link'] })
+    expect(ticketPaymentMethodParams()).toEqual({ allowed_payment_method_types: ['card', 'link'] })
   })
 })

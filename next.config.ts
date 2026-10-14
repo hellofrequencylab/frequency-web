@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
 // report-only after the report-only pass confirmed the real source set.
@@ -746,6 +746,7 @@ export default withSentryConfig(nextConfig, {
   },
   // Upload a wider set of source maps for readable client stack traces.
   widenClientFileUpload: true,
-  // Tree-shake Sentry logger statements from the production client bundle.
-  disableLogger: true,
+  // Tree-shake Sentry logger statements from the production client bundle (Sentry 11 moved
+  // `disableLogger` to `webpack.treeshake.removeDebugLogging`; it has no effect under Turbopack).
+  webpack: { treeshake: { removeDebugLogging: true } },
 });

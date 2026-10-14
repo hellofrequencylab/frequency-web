@@ -102,6 +102,19 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   },
 ]
 
+/** The next/font `--font-*` variables each font set's display and body faces register under (app/layout.tsx).
+ *  The `[data-space-theme="<id>"]` blocks in app/globals.css bind the same pairs; site-render-style.test.ts
+ *  holds the two in step, so the website editor's canvas wears exactly the faces the live site does. */
+export const SPACE_THEME_FONT_VARS: Record<SpaceThemeId, [display: string, body: string]> = {
+  frequency: ['--font-playfair', '--font-grotesk'],
+  editorial: ['--font-fraunces', '--font-nunito'],
+  classic: ['--font-playfair', '--font-pt-serif'],
+  playful: ['--font-fredoka', '--font-nunito'],
+  accessible: ['--font-lexend', '--font-atkinson'],
+  modern: ['--font-lexend', '--font-nunito'],
+  menswork: ['--font-sofia-xc', '--font-barlow'],
+}
+
 /** The fallback font set. An unknown or missing `preferences.theme` value resolves to this. */
 export const DEFAULT_SPACE_THEME: SpaceThemeId = 'frequency'
 

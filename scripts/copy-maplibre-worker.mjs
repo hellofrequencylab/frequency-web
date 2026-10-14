@@ -61,6 +61,15 @@ export const EXPECTED_SIBLING_SPECIFIER = './maplibre-gl-shared.mjs'
 /** The public path the worker is served from. Mirrored in lib/maps/provider.ts. */
 export const PUBLIC_WORKER_PATH = '/maplibre/maplibre-gl-worker.mjs'
 
+const worker_ = (sources) => sources.find((s) => s.name === 'maplibre-gl-worker.mjs').body.toString('utf8')
+
+/** Every relative module specifier a (minified) ES module loads, static or dynamic. */
+export function relativeImports(code) {
+  const out = new Set()
+  for (const m of code.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*["'`](\.\.?\/[^"'`]+)["'`]/g)) out.add(m[1])
+  return [...out]
+}
+
 export function copyMaplibreWorker({ srcDir = SRC_DIR, outDir = OUT_DIR, quiet = false } = {}) {
   if (!existsSync(srcDir)) {
     throw new Error(
@@ -79,14 +88,17 @@ export function copyMaplibreWorker({ srcDir = SRC_DIR, outDir = OUT_DIR, quiet =
     return { name, from, body: readFileSync(from) }
   })
 
-  // The whole reason the copy works. Assert it rather than assume it: if the worker stopped
-  // importing its sibling by that exact relative name, placing them together fixes nothing and
-  // the basemap would go blank with every gate still green.
-  const worker = sources.find((s) => s.name === 'maplibre-gl-worker.mjs')
-  if (!worker.body.toString('utf8').includes(EXPECTED_SIBLING_SPECIFIER)) {
+  // The whole reason the copy works. Assert it rather than assume it: every RELATIVE module the worker
+  // loads must be one we co-locate, or the served worker 404s on it and the basemap goes blank with every
+  // gate still green. maplibre-gl 6.0–6.12 imported its sibling by EXPECTED_SIBLING_SPECIFIER; 6.13 inlines
+  // it (the worker imports nothing and the shared file ships empty). Both layouts are safe to serve; a
+  // worker reaching for any other relative file is not.
+  const imports = relativeImports(worker_(sources))
+  const stray = imports.filter((spec) => spec !== EXPECTED_SIBLING_SPECIFIER)
+  if (stray.length) {
     throw new Error(
-      `copy-maplibre-worker: the worker no longer imports '${EXPECTED_SIBLING_SPECIFIER}'. ` +
-        `Co-locating the files is only a fix while that specifier is relative and unhashed.`,
+      `copy-maplibre-worker: the worker imports ${stray.map((s) => `'${s}'`).join(', ')}, which is not co-located. ` +
+        `Co-locating the files is only a fix while the worker loads nothing but '${EXPECTED_SIBLING_SPECIFIER}'.`,
     )
   }
 
