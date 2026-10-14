@@ -9,13 +9,34 @@ import type { Config, ContentItem, Data, Metadata } from '@/lib/page-editor/type
 import { isServiceListed, type SpaceOffering } from '@/lib/spaces/profile-data'
 import { normalizeWebsiteFields } from '@/lib/sites/website-fields'
 import { useWebsiteFeatureSource } from './feature-source-context'
-import { k } from './skin'
+import { FQ_EDITOR, k, on } from './skin'
 import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSectionSpacing } from '@/lib/sites/editor/layout'
-import { resolveWebsiteChrome, validWebsiteChrome, type WebsiteChrome, type Device, type SectionDisplay } from '@/lib/sites/editor/state'
+import { cleanSectionAnchor, resolveWebsiteChrome, validWebsiteChrome, type WebsiteChrome, type Device, type SectionDisplay, type SectionTone, type SectionWidth } from '@/lib/sites/editor/state'
 
-export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, onChange, onDisplay, part }: {
+// THE FREQUENCY DESIGN AND ADVANCED TABS (design_handoff/frequency/templates/admin/editor/editor.js renderInsp):
+// background tone, content width, align, spacing in four steps, columns; then reveal on scroll, show on each
+// device, the anchor and custom code. The controls write the same section layout the DAWN inspector writes.
+const TONES: { id: SectionTone; label: string }[] = [{ id: 'white', label: 'White' }, { id: 'sand', label: 'Sand' }, { id: 'pastel', label: 'Pastel' }, { id: 'ink', label: 'Ink' }]
+const WIDTHS: { id: SectionWidth; label: string }[] = [{ id: 'narrow', label: 'Narrow' }, { id: 'default', label: 'Default' }, { id: 'wide', label: 'Wide' }, { id: 'full', label: 'Full' }]
+/** The design's four spacing steps (editor.js `PAD`): Tight 32, Snug 56, Default 88, Roomy 120 pixels. */
+export const DESIGN_PAD = [32, 56, 88, 120] as const
+const PAD_LABEL = ['Tight', 'Snug', 'Default', 'Roomy'] as const
+const nearestPad = (px: number) => DESIGN_PAD.reduce<number>((best, step, index) => Math.abs(step - px) < Math.abs(DESIGN_PAD[best] - px) ? index : best, 0)
+const DEVICE_LABEL: Record<Device, string> = { desktop: 'Desktop', tablet: 'Tablet', phone: 'Phone' }
+
+function AnchorField({ value, fallback, onCommit }: { value?: string; fallback: string; onCommit: (anchor: string | undefined) => void }) {
+  const [buffer, setBuffer] = useState<string | null>(null)
+  const shown = buffer ?? value ?? ''
+  return <div className="fld"><label htmlFor="we-anchor">Anchor link <em>#{cleanSectionAnchor(shown) ?? fallback}</em></label><Input id="we-anchor" className="in" value={shown} placeholder={fallback} maxLength={60} onChange={(e) => setBuffer(e.target.value)} onBlur={() => { if (buffer === null) return; onCommit(cleanSectionAnchor(buffer)); setBuffer(null) }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setBuffer(null) }} /></div>
+}
+
+export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, onChange, onDisplay, part, live: liveOverride, visibility, onVisibility, onBase }: {
   config: Config; block: ContentItem; doc: Data; device: Device; metadata?: Metadata; sourceSettingsHref?: string
   onChange: (props: Record<string, unknown>) => void; onDisplay: (value: SectionDisplay | null) => void
+  /** Frequency only: whether the block reads Space data (lib/sites/editor/block-meta.ts), per-device
+   *  visibility and its switch, and the base (all-device) tone / width / anchor. */
+  live?: boolean; visibility?: Record<Device, boolean>; onVisibility?: (device: Device, visible: boolean) => void
+  onBase?: (patch: Pick<SectionDisplay, 'tone' | 'width' | 'anchor'>) => void
   /** The Frequency inspector's tab (skin.ts): Content is the fields and their sources, Design the layout,
    *  spacing and breakpoints, Advanced the animation, custom code and visibility. Omitted (DAWN), every
    *  part renders in one column as it always has. The controls and their handlers are the same either way. */
@@ -54,6 +75,45 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
   }
   const display = sectionDeviceLayout(doc, block.props.id!, device)
   const live = /^(SpaceEvents|LiveEvents|SpaceCommunity|CirclesGrid|SpacePractices|SpaceFAQ)$/.test(block.type) || liveFeatures
+  const fq = FQ_EDITOR && !!part
+  const base = (doc.root.props?.websiteLayout?.[block.props.id!]?.desktop ?? {}) as SectionDisplay
+  const grid = liveOverride || liveFeatures || Object.values(schema).some((field) => field.type === 'array')
+  const moreLayout = <>
+    {block.type === 'Zigzag' && <div className={k('we-field')}><span className="l">Layout</span><div className={k('we-actions')}>{(['left', 'right', 'stacked'] as const).map((preset) => <button type="button" className={k('we-action secondary')} key={preset} aria-pressed={preset === 'stacked' ? display.columns === 1 : display.columns !== 1 && (editableProps.mediaSide ?? 'left') === preset} onClick={() => { const next = sectionLayoutPreset(editableProps, display, preset); onChange(next.props); onDisplay(next.display) }}>{preset === 'left' ? 'Photo left' : preset === 'right' ? 'Photo right' : 'Stacked'}</button>)}</div></div>}
+    <label className={k('we-field')}>Column gap <span>{display.gap === undefined ? 'Theme default' : `${display.gap}px`}</span><Input variant="seamless" aria-label="Column gap" type="range" min={0} max={96} step={4} value={display.gap ?? 0} onChange={(e) => onDisplay({ ...display, gap: Number(e.target.value) })} /></label>
+    <label className={k('we-field')}>Heading size <span>{display.textSize ?? 0}px · 0 uses theme</span><Input variant="seamless" aria-label="Heading size" type="range" min={0} max={120} step={2} value={display.textSize ?? 0} onChange={(e) => onDisplay({ ...display, textSize: Number(e.target.value) })} /></label>
+    {(display.padding !== undefined || display.gap !== undefined) && <button type="button" className={k('we-row')} onClick={() => onDisplay({ ...display, padding: undefined, gap: undefined })}>Use theme spacing</button>}
+    {device !== 'desktop' && <button type="button" className={k('we-row')} onClick={() => onDisplay(null)}>Reset {device} overrides</button>}
+  </>
+  if (fq && part === 'content' && !sub) {
+    // The design's content tab: the live note in its words, then the fields with their character counts.
+    return <>
+      {block.type === 'FeatureGrid' && <label className="fld"><span className="l">Content source</span><Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}
+      {liveFeatures && sourceError && <p className="note err" role="alert">{sourceError}</p>}
+      {(live || liveOverride || catalogOfferings || hasExternalSource) && <div className="note"><b>Live from your Space.</b> Dates, hosts and prices update on their own. These fields set how they look here.{sourceSettingsHref && <> <a href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit in your Space</a></>}</div>}
+      {catalogOfferings && shownOfferings.length > 0 && <ul className="note">{shownOfferings.map((item, index) => <li key={index}>{item.title || item.blurb}</li>)}</ul>}
+      <FieldForm counts fields={fields} value={editableProps} onChange={onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />
+    </>
+  }
+  if (fq && part === 'design') {
+    const pad = display.padding === undefined ? null : nearestPad(display.padding)
+    return <>
+      <div className="fld"><span className="l">Background <em>{base.tone ? TONES.find((t) => t.id === base.tone)?.label : 'Theme'}</em></span><div className="opts" role="group" aria-label="Background">{TONES.map((t) => <button type="button" key={t.id} className={on(base.tone === t.id).trim() || undefined} aria-pressed={base.tone === t.id} onClick={() => onBase?.({ tone: base.tone === t.id ? undefined : t.id })}><i data-tone={t.id} aria-hidden />{t.label}</button>)}</div></div>
+      <div className="fld"><span className="l">Content width</span><div className="opts" role="group" aria-label="Content width">{WIDTHS.map((w) => { const active = (base.width ?? 'default') === w.id; return <button type="button" key={w.id} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onBase?.({ width: w.id === 'default' ? undefined : w.id })}><i data-width={w.id} aria-hidden />{w.label}</button> })}</div></div>
+      <div className="fld"><span className="l">Align <em>{DEVICE_LABEL[device]}</em></span><div className="seg" role="group" aria-label="Align">{(['left', 'center'] as const).map((a) => { const active = (display.align ?? 'left') === a; return <button type="button" key={a} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onDisplay({ ...display, align: a })}>{a === 'left' ? 'Left' : 'Center'}</button> })}</div></div>
+      <div className="fld"><label htmlFor="we-pad">Space above and below <em>{pad === null ? 'Theme' : PAD_LABEL[pad]}</em></label><div className="range"><Input id="we-pad" type="range" min={0} max={3} step={1} value={pad ?? 2} aria-valuetext={pad === null ? 'Theme spacing' : `${PAD_LABEL[pad]}, ${DESIGN_PAD[pad]} pixels`} onChange={(e) => onDisplay({ ...display, padding: DESIGN_PAD[Number(e.target.value)] })} /><output htmlFor="we-pad">{pad === null ? 'Theme' : `${DESIGN_PAD[pad]}px`}</output></div></div>
+      {grid && <div className="fld"><label htmlFor="we-cols">Columns <em>{device}</em></label><div className="range"><Input id="we-cols" type="range" min={1} max={4} step={1} value={display.columns ?? 3} onChange={(e) => onDisplay({ ...display, columns: Number(e.target.value) })} /><output htmlFor="we-cols">{display.columns ?? 'Theme'}</output></div></div>}
+      <details className="drw"><summary>More layout</summary>{moreLayout}</details>
+    </>
+  }
+  if (fq && part === 'advanced') {
+    return <>
+      <div className="fld"><span className="l">Reveal on scroll</span><div className="seg" role="group" aria-label="Reveal on scroll">{([['none', 'None'], ['fade', 'Fade'], ['rise', 'Rise']] as const).map(([id, label]) => { const active = (display.animation ?? 'none') === id; return <button type="button" key={id} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onDisplay({ ...display, animation: id })}>{label}</button> })}</div></div>
+      {visibility && onVisibility && <div className="fld"><span className="l">Show on</span>{(['desktop', 'tablet', 'phone'] as const).map((d) => <div className="tg" key={d}><span>{DEVICE_LABEL[d]}</span><button type="button" className={`sw${on(visibility[d])}`} role="switch" aria-checked={visibility[d]} aria-label={`Show on ${d}`} onClick={() => onVisibility(d, !visibility[d])} /></div>)}</div>}
+      {onBase && <AnchorField key={block.props.id} value={base.anchor} fallback={String(config.components[block.type]?.label ?? block.type).toLowerCase().replace(/[^a-z0-9]+/g, '-')} onCommit={(anchor) => onBase({ anchor })} />}
+      <details className="drw"><summary>Custom code</summary><label className="fld">Class name<Input className="in" value={display.className ?? ''} onChange={(e) => onDisplay({ ...display, className: e.target.value })} placeholder="my-section" /></label><label className="fld">Data attributes<Input className="in" value={display.attributes ?? ''} onChange={(e) => onDisplay({ ...display, attributes: e.target.value })} placeholder="data-campaign=autumn" /></label></details>
+    </>
+  }
   return <>
     {show('content') && <>
     {block.type === 'FeatureGrid' && <label className={k('we-field')}>Content source<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}

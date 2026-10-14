@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type ComponentProps } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type, Eye, EyeOff } from 'lucide-react'
+import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
 import { safeUrl, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import type { Config, Metadata, Data, ContentItem } from '@/lib/page-editor/types'
 import type { MwLive } from '@/lib/sites/menswork-data'
@@ -18,6 +18,8 @@ import { WebsiteDocument } from '../website-document'
 import { SiteChrome, siteHref } from '../site-chrome'
 import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
 import { FQ_EDITOR, k } from './skin'
+import { FqIcon } from '@/components/frequency/icon'
+import { editorBlockMeta } from '@/lib/sites/editor/block-meta'
 
 const CANVAS_CSS = `
 html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
@@ -50,6 +52,8 @@ const FQ_CANVAS_CSS = `
 .we-typography-panel{border:0;border-radius:16px;background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 30px 60px -30px var(--fq-text-strong)}
 .we-insert{color:transparent;font:600 12px/1 var(--fq-font-sans);border-radius:999px}
 .we-insert:hover,.we-insert:focus-visible{outline:0;color:var(--fq-surface-raised);background:var(--fq-x-violet-deep);clip-path:inset(0 calc(50% - 64px) round 999px)}
+.we-section-label .fq-icon{width:14px;height:14px}.we-micro .fq-icon{width:16px;height:16px}
+.we-micro-div{width:1px;margin:6px 2px;align-self:stretch;background:color-mix(in oklab,var(--fq-surface-raised) 18%,transparent)}
 .we-chrome-edit{border:0;border-radius:999px;padding:6px 12px;background:var(--fq-surface-raised);color:var(--fq-text-strong);font:600 12px/1 var(--fq-font-sans);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 `
 
@@ -69,7 +73,7 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, look = {}, fullFooter = true }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, look = {}, fullFooter = true }: {
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
   title: string; brandName: string; logo?: string | null; brandAccent?: string | null
   nav: { slug: string; label: string }[]
@@ -78,6 +82,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   onAction: (id: string, action: 'up' | 'down' | 'copy' | 'comment' | 'delete') => void
   people?: WebsitePresence[]; pageSlug?: string; onCursor?: (cursor: WebsitePresence['cursor']) => void
   onDisplay?: (id: string, value: SectionDisplay) => void
+  /** Frequency: show or hide a section on the device being edited, that device only. */
+  onVisibility?: (id: string, visible: boolean) => void
   onCommentPin?: (id: string, point: { x: number; y: number }) => void
   onReorder?: (sourceIds: string[], targetId: string) => void
   chrome?: WebsiteSnapshot['chrome']
@@ -272,6 +278,12 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     }
     return () => cleanup.forEach((fn) => fn())
   }, [mount, selectedId, preview, textTarget, doc, device, onDisplay])
+  // Frequency: picking a section in Layers brings it into view on the canvas (editor.js select(id, scroll)).
+  useEffect(() => {
+    if (!FQ_EDITOR || !mount || !selectedId) return
+    const node = mount.querySelector<HTMLElement>(`.we-section[data-block-id=${JSON.stringify(selectedId)}]`)
+    node?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [mount, selectedId])
   // A real iframe viewport, not a div at a pretend width. One React tree through
   // a portal; events remain local and no document is passed through postMessage.
   const attach = useCallback(() => {
@@ -406,13 +418,21 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
         onPointerLeave={() => onCursor?.(null)}
         onClick={(e) => { if (e.shiftKey && onCommentPin) { e.preventDefault(); const bounds = e.currentTarget.getBoundingClientRect(); onSelect(id); onCommentPin(id, { x: Math.min(1, Math.max(0, (e.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.min(1, Math.max(0, (e.clientY - bounds.top) / Math.max(1, bounds.height))) }); return } if ((e.target as HTMLElement).closest('a,button')) e.preventDefault(); onSelect(id); let picked = false; for (const index of indexes) if (editText(e, doc.content[index])) { picked = true; break } if (!picked && !editing.current) { selectedTextNode.current?.removeAttribute('data-site-text-selected'); selectedTextNode.current = null; beginSelectedEdit.current = null; setTextTarget(null); onTextSelect?.(null) } }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).isContentEditable) return; if (textTarget && (e.target === textTarget.node || textTarget.node.contains(e.target as Node)) && (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey))) { beginSelectedEdit.current?.(); if (e.key === 'Enter') e.preventDefault(); return } if (e.key === 'Enter') onSelect(id); if (e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); onAction(id, e.key === 'ArrowUp' ? 'up' : 'down') } }}>
-        <button type="button" className="we-section-label" aria-label={`Drag ${label} to reorder sections`} draggable={!!onReorder} onClick={(e) => { e.stopPropagation(); onSelect(id) }} onDragStart={(e) => { draggingSections.current = indexes.map((index) => doc.content[index].props.id!); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', label) }} onDragEnd={() => { draggingSections.current = []; for (const target of mount?.querySelectorAll<HTMLElement>('[data-drop-target=true]') ?? []) target.dataset.dropTarget = 'false' }}><GripVertical size={12} aria-hidden />{label}{sectionDeviceLayout(doc, id, device).hidden && ' · Hidden on this device'}</button>
-        {selected && !textSelectedHere && <div className="we-micro" role="toolbar" aria-label={`${label} section controls`} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="we-section-label" aria-label={`Drag ${label} to reorder sections`} draggable={!!onReorder} onClick={(e) => { e.stopPropagation(); onSelect(id) }} onDragStart={(e) => { draggingSections.current = indexes.map((index) => doc.content[index].props.id!); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', label) }} onDragEnd={() => { draggingSections.current = []; for (const target of mount?.querySelectorAll<HTMLElement>('[data-drop-target=true]') ?? []) target.dataset.dropTarget = 'false' }}>{FQ_EDITOR ? <><FqIcon name={editorBlockMeta(config, block.type).icon} />{config.components[block.type]?.label ?? block.type}</> : <><GripVertical size={12} aria-hidden />{label}</>}{sectionDeviceLayout(doc, id, device).hidden && ' · Hidden on this device'}</button>
+        {FQ_EDITOR && selected && !textSelectedHere && (() => { const hiddenHere = !!sectionDeviceLayout(doc, id, device).hidden; const hideName = hiddenHere ? `Show on ${device}` : `Hide on ${device}`; return <div className="we-micro" role="toolbar" aria-label={`${label} section controls`} onClick={(e) => e.stopPropagation()}>
+          <button type="button" title="Move up" aria-label="Move up" disabled={indexes[0] === 0} onClick={() => onAction(id, 'up')}><FqIcon name="arrow-up" /></button>
+          <button type="button" title="Move down" aria-label="Move down" disabled={indexes.at(-1) === doc.content.length - 1} onClick={() => onAction(id, 'down')}><FqIcon name="arrow-down" /></button>
+          <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onAction(id, 'copy')}><FqIcon name="copy" /></button>
+          <span className="we-micro-div" aria-hidden />
+          <button type="button" title="Comment" aria-label="Comment" onClick={() => onCommentPin ? onCommentPin(id, { x: .5, y: .5 }) : onAction(id, 'comment')}><FqIcon name="message" /></button>
+          {(onVisibility || onDisplay) && <button type="button" title={hideName} aria-label={hideName} aria-pressed={hiddenHere} onClick={() => onVisibility ? onVisibility(id, hiddenHere) : onDisplay?.(id, { ...sectionDeviceLayout(doc, id, device), hidden: !hiddenHere })}><FqIcon name={hiddenHere ? 'eye-off' : 'eye'} /></button>}
+          <button type="button" title="Delete" aria-label="Delete" onClick={() => onAction(id, 'delete')}><FqIcon name="trash" /></button>
+        </div> })()}
+        {!FQ_EDITOR && selected && !textSelectedHere && <div className="we-micro" role="toolbar" aria-label={`${label} section controls`} onClick={(e) => e.stopPropagation()}>
           <button type="button" title="Move up" aria-label="Move up" disabled={indexes[0] === 0} onClick={() => onAction(id, 'up')}><ArrowUp size={15} /></button>
           <button type="button" title="Move down" aria-label="Move down" disabled={indexes.at(-1) === doc.content.length - 1} onClick={() => onAction(id, 'down')}><ArrowDown size={15} /></button>
           <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onAction(id, 'copy')}><Copy size={15} /></button>
           <button type="button" title="Comment" aria-label="Comment" onClick={() => onCommentPin ? onCommentPin(id, { x: .5, y: .5 }) : onAction(id, 'comment')}><MessageSquare size={15} /></button>
-          {FQ_EDITOR && onDisplay && (() => { const layout = sectionDeviceLayout(doc, id, device); const hiddenHere = !!layout.hidden; const name = hiddenHere ? `Show on ${device}` : `Hide on ${device}`; return <button type="button" title={name} aria-label={name} aria-pressed={hiddenHere} onClick={() => onDisplay(id, { ...layout, hidden: !hiddenHere })}>{hiddenHere ? <EyeOff size={15} /> : <Eye size={15} />}</button> })()}
           <button type="button" title="Delete" aria-label="Delete" onClick={() => onAction(id, 'delete')}><Trash2 size={15} /></button>
         </div>}
         {selected && textSelectedHere && !!textTarget && <div className="we-micro" role="toolbar" aria-label="Text controls" onMouseDown={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
