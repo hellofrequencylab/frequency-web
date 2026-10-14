@@ -174,6 +174,7 @@ vi.mock('@/lib/email', () => ({
     sends.guestEmail.push(p)
   },
   enqueueEmail: async () => {},
+  escapeHtml: (s: string) => s,
   listUnsubscribeHeaders: () => ({}),
 }))
 vi.mock('@/lib/unsubscribe-tokens', () => ({ buildUnsubscribeUrl: () => 'https://x/unsub' }))

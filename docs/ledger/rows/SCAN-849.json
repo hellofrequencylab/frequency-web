@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-849",
+  "title": "The event reminders (a week out, 24h, 2h) and the dispatch notice escape member-written text in their HTML part",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "lib/email.ts",
+    "ref": "Production to Frequency handoff 2026-10-14, section 9: user text in emails gets escaped (event reminders and post emails). Checked against main at eb26a01."
+  },
+  "detail": "eventReminderHtml (the 24h and 2h reminder) printed the event title, the recipient's name, the when line and the location into the HTML unescaped; dispatchHtml printed the author, the dispatch title, the excerpt and the recipient's name unescaped; and the cron's own week-ahead email (app/api/cron/event-reminders/route.ts) did the same for the title, name, when, location and proof line. An event titled with markup rendered as live HTML, a link included, in every attendee's inbox. Each value now goes through lib/email.ts's escapeHtml, exported for the cron. The plain-text parts are unchanged. lib/email.test.ts pins both senders with a markup title.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const e=r('lib/email.ts'),c=r('app/api/cron/event-reminders/route.ts');const bad=[];const rem=(e.match(/function eventReminderHtml[\\s\\S]*?\\n}\\n/)||[''])[0];if(!/[$][{]escapeHtml\\(eventTitle\\)[}]/.test(rem)||!/[$][{]escapeHtml\\(location\\)[}]/.test(rem))bad.push('the event reminder prints the title or location unescaped');const dis=(e.match(/function dispatchHtml[\\s\\S]*?\\n}\\n/)||[''])[0];if(!/[$][{]escapeHtml\\(excerpt\\)[}]/.test(dis)||!/[$][{]escapeHtml\\(dispatchTitle\\)[}]/.test(dis))bad.push('the dispatch notice prints the title or excerpt unescaped');const wk=(c.match(/async function sendWeekAheadEmail[\\s\\S]*?\\n}\\n/)||[''])[0];if(!/[$][{]escapeHtml\\(eventTitle\\)[}]/.test(wk))bad.push('the week-ahead reminder prints the title unescaped');if(bad.length){console.error('SCAN-849: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
