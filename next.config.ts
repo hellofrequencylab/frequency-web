@@ -680,6 +680,10 @@ const nextConfig: NextConfig = {
       // Space in the schema (partners has no space_id), so each partner page lands on the directory.
       { source: '/discover/partners', destination: '/discover/spaces', permanent: true },
       { source: '/discover/partners/:slug', destination: '/discover/spaces', permanent: true },
+      // Two comparisons RETIRED (owner ruling 2026-10-14): they framed Frequency as a link-in-bio and a
+      // booking tool, off both wings. /vs/[slug] reads the registry, so without these they would 404.
+      { source: '/vs/linktree', destination: '/vs', permanent: true },
+      { source: '/vs/calendly', destination: '/vs', permanent: true },
     ]
   },
   images: {

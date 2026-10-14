@@ -55,14 +55,25 @@ export interface ComparisonRow {
   us: string
 }
 
-// The competitive set (build-plan §10 open decision 4 names these five). Each is
-// a tool people reach for to gather others; Frequency is the standing community
-// underneath the one-off. Copy is honest about what each is great at.
+// The competitive set. Each is a tool people reach for to gather others; Frequency is
+// the standing community underneath the one-off. Copy is honest about what each is
+// great at.
+//
+// OWNER RULING 2026-10-14: Linktree and Calendly are OUT (they framed Frequency as a
+// link-in-bio or a booking tool, off both wings; /vs/linktree and /vs/calendly 301 to
+// /vs), and Meetup and Facebook Groups are IN. Every claim about another product is a
+// public, checkable fact about how it works (who pays, where it happens, what it takes
+// to join), never a number, a fee rate or a ranking claim we cannot cite. A row we
+// could not state with confidence was left out rather than softened.
+//
+// "Free to join, always." is gone from the Cost rows: it hid the paid tiers. Each Cost
+// row now says the whole money line (PLAN_STORY): free to join and to host, Business
+// when you start charging.
 export const COMPARISONS: Comparison[] = [
   {
     slug: 'partiful',
     published: '2026-07-28',
-    updated: '2026-08-05',
+    updated: '2026-10-14',
     name: 'Partiful',
     category: 'party and event invite app',
     theyAreGoodAt:
@@ -71,60 +82,12 @@ export const COMPARISONS: Comparison[] = [
       'Frequency is built for the part after the party. A Circle is a small group that picks a day and keeps it, so the people you liked once become the people you see on a Tuesday. Sending the invite is the easy part. Holding the standing room is the harder part, and that is the whole point.',
     contrast: [
       { dimension: 'What it is', them: 'A one-off invite for a single event.', us: 'A standing Circle that meets again and again.' },
-      { dimension: 'After the event', them: 'The thread goes quiet until the next party.', us: 'The same faces come back next week.' },
+      { dimension: 'After the event', them: 'The thread goes quiet until the next party.', us: 'The same faces come back again.' },
       { dimension: 'Finding people', them: 'You invite people you already know.', us: 'You find neighbors by what you care about.' },
-      { dimension: 'Cost', them: 'Free.', us: 'Free to join, always.' },
+      { dimension: 'Cost', them: 'Free.', us: 'Free to join and to host. Business when you start charging.' },
     ],
     forReader:
       'You throw a good party, but the friendships never quite stick after. You want the repeat, not just the night.',
-  },
-  {
-    slug: 'linktree',
-    published: '2026-07-28',
-    updated: '2026-08-05',
-    name: 'Linktree',
-    category: 'link-in-bio page builder',
-    theyAreGoodAt:
-      'Linktree gives you one clean link for all your other links. Fast to set up, tidy to share. For sending a follower to your stuff, it works.',
-    theDifference:
-      'A Spotlight page on Frequency is a personal page too, but it points inward, not out. The goal is not one more click to somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to. Tips on your page are open on any account, with no platform fee, plus card processing, and when you start charging, a Space on Business takes 0% on the people already yours. What your own work earns is yours.',
-    contrast: [
-      { dimension: 'What it is', them: 'A page of links to your other pages.', us: 'A personal page inside a real-world community.' },
-      { dimension: 'Where it leads', them: 'Out, to your other profiles.', us: 'In, to Circles and events near you.' },
-      { dimension: 'The goal', them: 'A click.', us: 'A face you see again in person.' },
-      { dimension: 'On what you sell', them: 'Fees can apply to tips and sales.', us: '0% on tips, always, and 0% on your own bookings, plus card processing.' },
-      { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join, always.' },
-    ],
-    forReader:
-      'You have the followers and the links. You are missing the part where it turns into people you actually know.',
-    moneyBeat:
-      // LIVE-253: this clause read "A paid plan does not switch selling on, it lowers what we take
-      // on the people the network introduces you to", which answers the right question and then
-      // gives the wrong reason. A plan is what the REPEAT runs on (docs/CORE-MODEL.md §2, ADR-914's
-      // "never gate the transaction, gate the repeat"); where the rate settles follows from it.
-      'People join free, businesses host free, and you pay when you start charging. Your Spotlight page is free, and so are the tips people leave you. When you start charging, selling runs through a Space on Business, and Frequency takes 0% on anyone already yours: a follower, a contact, or someone who bought from you before. One honest price, a small fee only on a customer the network introduces, once, and never a cut of the business you bring yourself.',
-  },
-  {
-    slug: 'calendly',
-    published: '2026-07-28',
-    updated: '2026-08-05',
-    name: 'Calendly',
-    category: 'scheduling and booking tool',
-    theyAreGoodAt:
-      'Calendly kills the back-and-forth of finding a time. Send a link, someone picks a slot, the meeting lands on both calendars. For one-to-one scheduling, it is clean.',
-    theDifference:
-      'Frequency schedules the opposite of a one-off meeting: a standing time a small group keeps without re-asking every week. A Circle picks one day and holds it, so the calendar fills with the same faces, not a stream of new slots. Booking is free on a free Space, taking payment for a booking starts at Business, and Frequency takes 0% on your own bookings. The tool never taxes your work.',
-    contrast: [
-      { dimension: 'What it schedules', them: 'A one-to-one meeting, time by time.', us: 'A standing group time that repeats.' },
-      { dimension: 'Who it is for', them: 'You and one other person.', us: 'A small group that meets as a Circle.' },
-      { dimension: 'The pattern', them: 'A new slot every time.', us: 'The same day, every week or every other week.' },
-      { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: 'Free bookings on a free Space. Paid bookings on Business, at 0% on your own bookings, plus card processing.' },
-      { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join, always.' },
-    ],
-    forReader:
-      'You can book a meeting in seconds. You still want a standing thing with a few people that does not need re-booking.',
-    moneyBeat:
-      'Frequency takes 0% on your own bookings, plus card processing. When a session you schedule is paid, what you charge is yours to keep. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'eventbrite',
@@ -151,7 +114,7 @@ export const COMPARISONS: Comparison[] = [
   {
     slug: 'mighty-networks',
     published: '2026-07-28',
-    updated: '2026-08-05',
+    updated: '2026-10-14',
     name: 'Mighty Networks',
     category: 'online community platform',
     theyAreGoodAt:
@@ -163,12 +126,50 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'What it rewards', them: 'Posting and engagement.', us: 'Showing up in real life.' },
       { dimension: 'Who runs it', them: 'One creator and their audience.', us: 'Neighbors who host a Circle, with the format handed to them.' },
       { dimension: 'On what you sell', them: 'Fees can apply to what you sell.', us: '0% on your own bookings, plus card processing.' },
-      { dimension: 'Cost', them: 'Paid, per creator.', us: 'Free to join, always.' },
+      { dimension: 'Cost', them: 'Paid, per creator.', us: 'Free to join and to host. Business when you start charging.' },
     ],
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
     moneyBeat:
       'Frequency takes 0% on your own bookings, plus card processing. Hosting is free, and selling a session, a class, a ticket, or a membership starts at Business, once payouts are ready. Either way, what your own work earns is yours. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
+  },
+  {
+    slug: 'meetup',
+    published: '2026-10-14',
+    updated: '2026-10-14',
+    name: 'Meetup',
+    category: 'group and event platform',
+    theyAreGoodAt:
+      "Meetup is built for groups around an interest. A group lists its events, members RSVP, and anyone can search for groups near them by topic. For finding a group that already exists, it's a familiar place to look.",
+    theDifference:
+      "Frequency is built for the few people you keep seeing, not the biggest group in town. A Circle is a small group of regulars that keeps meeting, and the Spaces that host them are on the same map. Running a group on Meetup takes a paid organizer subscription. On Frequency, hosting is free, and you pay only when you start charging.",
+    contrast: [
+      { dimension: 'What it is', them: 'Interest groups, each with a page of events.', us: 'Small Circles of regulars, and the Spaces that host them.' },
+      { dimension: 'Finding people', them: 'Search groups by topic and location.', us: 'Browse the Circles and Events happening in your town.' },
+      { dimension: 'Running a group', them: 'Organizers pay a subscription.', us: 'Hosting a Circle is free.' },
+      { dimension: 'Cost', them: 'Free to join. Organizers pay.', us: 'Free to join and to host. Business when you start charging.' },
+    ],
+    forReader:
+      "You've RSVP'd to a few groups and met good people once. You want the group where they know your name the second time.",
+  },
+  {
+    slug: 'facebook-groups',
+    published: '2026-10-14',
+    updated: '2026-10-14',
+    name: 'Facebook Groups',
+    category: 'online group and discussion tool',
+    theyAreGoodAt:
+      'Facebook Groups make it easy to gather people online. A group is free to start, most people already have an account, and the posts, photos and events live in one place.',
+    theDifference:
+      "Frequency is built for the room, not the feed. A Circle is a small group that meets in person, and everything on the page points at the next time you'll see each other, not the next post. Standing comes from how often a group gathers, and nobody can pay to rank higher.",
+    contrast: [
+      { dimension: 'Where it happens', them: 'Online: posts, comments and a group feed.', us: 'In person: Circles and Events near you.' },
+      { dimension: 'Getting in', them: 'A Facebook account, then join the group.', us: 'Find a Circle near you and show up.' },
+      { dimension: 'For the host', them: 'Posts, events and admin tools inside Facebook.', us: 'Door check-in, reminders and a contact list of who came.' },
+      { dimension: 'Cost', them: 'Free.', us: 'Free to join and to host. Business when you start charging.' },
+    ],
+    forReader:
+      "You're in a dozen groups and watch the same names scroll by. You want a few of them across a table.",
   },
 ]
 

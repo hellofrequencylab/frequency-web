@@ -28,7 +28,22 @@ describe('comparison registry', () => {
   })
 
   it('builds the canonical path from the slug', () => {
-    expect(comparisonPath('linktree')).toBe('/vs/linktree')
+    expect(comparisonPath('meetup')).toBe('/vs/meetup')
+  })
+
+  // Owner ruling 2026-10-14: Linktree and Calendly are out (next.config.ts 301s each to /vs), and
+  // Meetup and Facebook Groups are in.
+  it('carries the ruled set: no Linktree or Calendly, and Meetup and Facebook Groups', () => {
+    const slugs = comparisonSlugs()
+    expect(slugs).not.toContain('linktree')
+    expect(slugs).not.toContain('calendly')
+    expect(slugs).toEqual(expect.arrayContaining(['meetup', 'facebook-groups']))
+  })
+
+  it('never promises a weekly cadence or hides the paid plans behind "free, always"', () => {
+    const text = JSON.stringify(COMPARISONS)
+    expect(text).not.toMatch(/every week|next week|weekly/i)
+    expect(text).not.toContain('Free to join, always')
   })
 
   it('gives every competitor a non-empty contrast with both sides filled', () => {
@@ -45,11 +60,11 @@ describe('comparison registry', () => {
 
 describe('comparisonCopy', () => {
   it('builds answer-first copy that names the competitor', () => {
-    const c = getComparison('calendly')!
+    const c = getComparison('meetup')!
     const copy = comparisonCopy(c)
-    expect(copy.h1).toBe('Frequency vs Calendly')
-    expect(copy.metaTitle).toContain('Calendly')
-    expect(copy.description).toContain('Calendly')
+    expect(copy.h1).toBe('Frequency vs Meetup')
+    expect(copy.metaTitle).toContain('Meetup')
+    expect(copy.description).toContain('Meetup')
     // The lede leads with the honest "what they are good at", answer-first.
     expect(copy.lede.startsWith(c.theyAreGoodAt)).toBe(true)
   })

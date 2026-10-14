@@ -16,7 +16,7 @@ export const revalidate = 3600
 
 const TITLE = 'Frequency vs the tools you know'
 const DESCRIPTION =
-  'How Frequency compares to Partiful, Linktree, Calendly, Eventbrite, and Mighty Networks: a free local Circle that keeps meeting in person, with 0% on your own bookings. Here is every comparison.'
+  'How Frequency compares to Meetup, Facebook Groups, Partiful, Eventbrite, and Mighty Networks: a free local Circle that keeps meeting in person, with 0% on your own bookings. Here is every comparison.'
 
 export function generateMetadata(): Metadata {
   const canonical = '/vs'
