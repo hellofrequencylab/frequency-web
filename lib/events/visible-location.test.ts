@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { sourceWithoutComments } from '@/test/source-shape'
 import path from 'node:path'
-import { publicVisibleLocation, cityLine } from './visible-location'
+import { publicVisibleLocation, cityLine, publicPageWhere } from './visible-location'
 
 // SCAN-209 · the venue line a non-attending reader may see.
 //
@@ -170,5 +170,39 @@ describe('every non-attending reader goes through the rule', () => {
     // hides the address only from readers who are not attending. Redacting it would be the
     // over-correction. If someone adds it later, this row says why they should not.
     expect(mig).not.toContain('create or replace function public.event_calendar_feed')
+  })
+})
+
+describe('publicPageWhere (ADR-1744)', () => {
+  const loft = { name: 'The Loft', street: '3598 Royal Rd', postal_code: '92084' }
+
+  it('gives venue · street, city and a maps link when the host left the address visible', () => {
+    const w = publicPageWhere({ hide_address: false, venue: loft, city: 'Vista' })
+    expect(w.line).toBe('The Loft · 3598 Royal Rd, Vista')
+    expect(w.exact).toBe(true)
+    expect(w.mapsHref).toBe('https://maps.google.com/?q=The%20Loft%2C%203598%20Royal%20Rd%2C%20Vista%2C%2092084')
+  })
+
+  it('gives the city alone for a hidden, unset or unread flag, even if a venue is passed', () => {
+    for (const hide_address of [true, null, undefined]) {
+      const w = publicPageWhere({ hide_address, venue: loft, city: 'Vista' })
+      expect(w).toEqual({ line: 'Vista', mapsHref: null, exact: false })
+    }
+  })
+
+  it('omits blank parts: no stray comma or dot', () => {
+    const line = (venue: { name?: string | null; street?: string | null }, city: string | null) =>
+      publicPageWhere({ hide_address: false, venue, city }).line
+    expect(line({ name: 'The Loft', street: ' ' }, 'Vista')).toBe('The Loft · Vista')
+    expect(line({ name: null, street: '3598 Royal Rd' }, 'Vista')).toBe('3598 Royal Rd, Vista')
+    expect(line({ name: 'The Loft', street: '3598 Royal Rd' }, null)).toBe('The Loft · 3598 Royal Rd')
+    expect(line({ name: 'The Loft' }, null)).toBe('The Loft')
+    // A visible flag with nothing entered: the city line, no link.
+    expect(publicPageWhere({ hide_address: false, venue: { name: '', street: null }, city: 'Vista' })).toEqual({
+      line: 'Vista',
+      mapsHref: null,
+      exact: false,
+    })
+    expect(line({}, null)).toBeNull()
   })
 })

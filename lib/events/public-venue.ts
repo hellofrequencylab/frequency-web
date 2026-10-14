@@ -3,7 +3,8 @@
 // The venue columns (venue_name, street, postal_code, geog) are revoked from the anon key
 // (migration 20270330000000, SCAN-209), and that revoke stays: it is what keeps a hidden address
 // out of anyone's hands who holds the publishable key. This module reads them with the service role
-// for ONE purpose, the public event page's structured data, and applies the host's flag on the
+// for ONE surface, the public event page: its structured data and, since ADR-1744, its visible
+// where-line (publicPageWhere), so the two always agree. It applies the host's flag on the
 // server before anything leaves: a hidden-address event returns `{ hide_address: true }` and no
 // venue at all, so no caller can publish what it never received. lib/jsonld.ts checks the flag a
 // second time (publishableVenue).
