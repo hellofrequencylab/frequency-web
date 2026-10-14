@@ -130,8 +130,6 @@ const MARKETING_PREFIXES = [
   '/subscribe',
   '/terms',
   '/the-community',
-  '/the-lab',
-  '/the-quest',
   '/tools-for-community-builders',
   '/vs',
   '/what-is-a-third-space',

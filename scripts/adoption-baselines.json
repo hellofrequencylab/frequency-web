@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 736,
+      "baseline": 732,
       "frozen": {
         "at": "2026-10-14",
-        "value": 736,
+        "value": 732,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
-        "from": 1003
+        "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies",
+        "from": 736
       },
       "history": [
         {
@@ -336,6 +336,13 @@
           "to": 736,
           "direction": "lowered",
           "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
+        },
+        {
+          "at": "2026-10-14",
+          "from": 736,
+          "to": 732,
+          "direction": "lowered",
+          "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies"
         }
       ]
     },
@@ -1819,14 +1826,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 232,
+      "baseline": 231,
       "frozen": {
-        "at": "2026-10-13",
-        "value": 232,
+        "at": "2026-10-14",
+        "value": 231,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): handrolled-eyebrow sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 477
+        "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies",
+        "from": 232
       },
       "history": [
         {
@@ -1905,6 +1912,13 @@
           "to": 232,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): handrolled-eyebrow sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-14",
+          "from": 232,
+          "to": 231,
+          "direction": "lowered",
+          "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies"
         }
       ]
     }

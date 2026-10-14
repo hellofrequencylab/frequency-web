@@ -63,7 +63,7 @@ export const data: Data = {
         // R7 (ADR-1735, LIVE-910): the published home document carries the same headline and subhead.
         title: 'Your people are closer than you think.',
         titleAccent: 'closer than you think',
-        subtitle: 'Small groups that meet every week, near you. Join free. Businesses host free.',
+        subtitle: 'Small groups that keep meeting, near you. Join free. Businesses host free.',
         image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
         focal: 'center',
         minHeight: 'screen',
@@ -217,7 +217,6 @@ export const data: Data = {
         kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
         rungs: [
           { name: 'Member', blurb: "You show up to a Circle. That's the whole entry fee." },
-          { name: 'Crew', blurb: "You're in for the season, learning the format and lending a hand." },
           { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
           { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
           { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },
@@ -265,7 +264,7 @@ export const data: Data = {
         title: 'The people who start things.',
         titleAccent: 'start things',
         kicker: 'Hosts, teachers, practitioners, studio owners, and the people who back them. The ones who gather everyone else.',
-        body: "Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. You bring a Channel you care about, a few people near you, and a format you can run.\n\nWe hand you the rest, and a whole ladder of people who have your back. You pay 0% on your own bookings, plus card processing, and you see exactly what the network earned you, down to the dollar. Start one Circle, and you're part of a Collective of builders holding doors open in their own towns at the same time.",
+        body: "Frequency exists to support every community effort and help everyone in it succeed, together. You bring a Channel you care about, a few people near you, and a format you can run.\n\nWe hand you the rest, and a whole ladder of people who have your back. You pay 0% on your own bookings, plus card processing, and you see exactly what the network earned you, down to the dollar. Start one Circle, and you're part of a Collective of builders holding doors open in their own towns at the same time.",
         side: 'right',
         imgAspect: 'landscape',
         focal: 'center',

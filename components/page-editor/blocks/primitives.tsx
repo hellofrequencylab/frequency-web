@@ -119,7 +119,7 @@ export const primitivesComponents: Record<string, ComponentConfig> = {
       ...blockFields(),
     },
     defaultProps: {
-      body: 'Write something here. **Bold**, *italic*, and [links](/the-lab) all work.',
+      body: 'Write something here. **Bold**, *italic*, and [links](/the-community) all work.',
       size: 'base',
       ...blockLayoutDefaults,
     },

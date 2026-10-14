@@ -157,7 +157,7 @@ export async function FrequencyPeople() {
             <Acts
               items={[
                 { href: SITE.spaces, icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
-                { href: SITE.stories, icon: 'message', title: 'Host stories', sub: 'Regulars who became Hosts' },
+                { href: '/how-to-start-a-circle', icon: 'message', title: 'Host a Circle', sub: 'The playbook we hand new Hosts' },
               ]}
             />
           </div>

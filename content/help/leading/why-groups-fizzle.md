@@ -33,7 +33,7 @@ have to brace for. Three things create that:
 
 - **A standing time that never moves.** "Every Thursday at 7." When the answer to
   "is it on?" is always yes, people stop deciding and start showing up.
-- **A format they can predict.** Same shape every week: arrive, do the thing, lock
+- **A format they can predict.** Same shape every time: arrive, do the thing, lock
   the next one. A predictable hour is a safe hour, and safe is what makes a shy
   person come a second time.
 - **The same small faces.** Circles stay small so people are missed when they are
@@ -43,7 +43,7 @@ None of that requires you to be charming. It requires you to be consistent.
 
 ## How do I get the return, specifically?
 
-Treat the return as the thing you are actually building, and run these every week:
+Treat the return as the thing you are actually building, and run these every time you meet:
 
 1. **Lock the next date before anyone leaves.** End each gathering by naming the
    next one out loud. The best time to fill next week is while this week is still
@@ -72,7 +72,7 @@ harder to kill than one held by a hero.
 ### My group started strong and then faded. What went wrong?
 
 Almost always the standing time slipped, or the format got improvised, or you were
-carrying it alone. Pick one fixed night, run the same simple shape every week, and
+carrying it alone. Pick one fixed night, run the same simple shape every time, and
 recruit a co-host. The return comes from rhythm, not from a better opening week.
 
 ### Is a small turnout a sign I should quit?
@@ -84,7 +84,7 @@ Two reliable people this month can be six in three months.
 ### How do I restart a Circle that already went quiet?
 
 Set one new standing time, tell the old members the plain news ("we are back, same
-night every week, starting the 10th"), and run it whether two people come or ten.
+night as before, starting the 10th"), and run it whether two people come or ten.
 Do not apologize for the gap or wait for a perfect relaunch. A fixed night and a
 predictable format restart a group faster than any pep talk.
 

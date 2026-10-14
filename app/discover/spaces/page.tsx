@@ -19,6 +19,8 @@ import {
 import { resolveMarketHero } from '@/lib/layout/index-hero'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencySpacesDirectory } from '@/components/frequency/site/pages/discover/spaces'
+import { listActivePartners } from '@/lib/partners/read'
+import { emptyUnlessTransient } from '@/lib/discover'
 
 // PUBLIC Business Spaces directory (/discover/spaces) — the indexable, no-rail twin of the in-app directory
 // (/spaces/directory). It renders inside the shared /discover chrome (SiteHeader + footer, no left menu, no
@@ -98,6 +100,10 @@ export default async function PublicSpacesDirectoryPage({
   // THE DESIGN SWITCH (ADR-1737): the same read, filters, sort, pager and JSON-LD, drawn in the site
   // kit. Build-time constant; the DAWN branch below is untouched.
   if (SITE_DESIGN === 'frequency') {
+    // The partners section (/discover/partners merged here, owner ruling 2026-10-14). The same
+    // fail-closed reader the old page used: a database answer renders no section, a transport failure
+    // rethrows so this ISR page keeps its last good copy.
+    const partners = await listActivePartners().catch(emptyUnlessTransient('spaces page partners'))
     return (
       <>
         <JsonLd data={schema} />
@@ -106,6 +112,7 @@ export default async function PublicSpacesDirectoryPage({
           total={total}
           query={{ q, subject, category, sort, per, page }}
           image={hero.image}
+          partners={partners}
         />
       </>
     )

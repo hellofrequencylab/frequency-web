@@ -41,7 +41,7 @@
 // feelings, and no claim the config does not back. Labels come from the naming canon (docs/NAMING.md):
 // Member, Crew, Space, Business, Collective, Non Profit.
 
-import { BETA_CTA_HREF } from '@/lib/site'
+import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import {
   catalogItem,
   networkTakeRateBpsForPlan,
@@ -256,7 +256,7 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       // BETA_CTA_HREF is the one front door (now /join, the Funnels induction, ADR-1090).
       // History: this CTA once hardcoded '/join' when that was NOT a route and 404'd for
       // every visitor — the constant is the guard against a second drift.
-      cta: { label: 'Join free', href: BETA_CTA_HREF },
+      cta: { label: BETA_CTA_LABEL, href: BETA_CTA_HREF },
     },
     {
       id: 'crew',

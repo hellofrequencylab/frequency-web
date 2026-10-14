@@ -74,9 +74,9 @@ type TwinRule = DirectRule | LookupRule
  *   • `/hubs` and `/nexuses` — no public twin exists at all yet.
  */
 export const TWIN_RULES: readonly TwinRule[] = [
-  // Journeys and Partners are keyed by the SAME slug on both sides.
+  // Journeys are keyed by the SAME slug on both sides. Partners left this table on 2026-10-14: their
+  // public twin (/discover/partners/<slug>) merged into /discover/spaces, so a partner page has none.
   { kind: 'direct', re: /^\/journeys\/([^/]+)$/, to: (s) => `/discover/journeys/${s}` },
-  { kind: 'direct', re: /^\/partners\/([^/]+)$/, to: (s) => `/discover/partners/${s}` },
   // Practices: the member route is keyed by id, and the twin's `[id]` segment resolves EITHER a
   // slug or an id (getPublicPractice takes both, and the page self-canonicals to `slug ?? id`),
   // so the captured segment passes straight through and the canonical is emitted by the twin.

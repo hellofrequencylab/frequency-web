@@ -1,12 +1,16 @@
 // The /discover/cities index (GE11-2) — the cities that have crossed the density
-// threshold each get a card. Only above-threshold cities appear (the same gate
-// the per-city pages and the sitemap use), so this never lists a thin facet. Real
-// canonical, breadcrumb + ItemList JSON-LD. Voice locked: plain, no em dashes.
+// threshold each get a card (the same gate the per-city pages and the sitemap use).
+// Since 2026-10-14 it also carries the every-town finder that was /discover/places
+// (merged here with a 301): every town with a public Circle or upcoming Event, linking
+// to the one town page. Real canonical, breadcrumb + ItemList JSON-LD (the ranked
+// cities). Voice locked: plain, no em dashes.
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { listDensityCities } from './_data'
-import { PageHero, Section, BetaCTA, Button } from '@/components/marketing/marketing-ui'
+import { listDiscoverCities } from './_towns'
+import { PlacesFinder } from '@/components/discover/places-finder'
+import { PageHero, Section, SectionHeading, BetaCTA, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
@@ -42,7 +46,8 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function DiscoverCitiesIndexPage() {
-  const cities = await listDensityCities()
+  // The every-town list is a courtesy section: a failed read leaves the ranked cities standing.
+  const [cities, towns] = await Promise.all([listDensityCities(), listDiscoverCities().catch(() => [])])
 
   const schema = (
       <JsonLd
@@ -73,7 +78,7 @@ export default async function DiscoverCitiesIndexPage() {
     return (
       <>
         {schema}
-        <FrequencyCitiesIndex cities={cities} />
+        <FrequencyCitiesIndex cities={cities} towns={towns} />
       </>
     )
   }
@@ -89,7 +94,7 @@ export default async function DiscoverCitiesIndexPage() {
             Where Frequency is <span className="text-primary-strong">taking root</span>
           </>
         }
-        subtitle="These are the cities with real momentum: Circles meeting and events happening near you. Pick yours to see what is on this week, then show up in person."
+        subtitle="These are the cities with real momentum: Circles meeting and events happening near you. Pick yours to see what's happening there, then show up in person."
       />
 
       <Section tone="canvas" role="cont">
@@ -120,6 +125,19 @@ export default async function DiscoverCitiesIndexPage() {
           </div>
         )}
       </Section>
+
+      {towns.length > 0 && (
+        <Section tone="surface" className="!max-w-none">
+          <div id="towns" className="mx-auto max-w-4xl scroll-mt-24">
+            <SectionHeading
+              eyebrow="Where it's happening"
+              title="Browse by town"
+              kicker="Every place here has real Circles or events you can show up to."
+            />
+            <PlacesFinder cities={towns} />
+          </div>
+        </Section>
+      )}
 
       <BetaCTA
         heading="Your city is built one room at a time."

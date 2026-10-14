@@ -249,7 +249,7 @@ export const spec: ArticleSpec = {
     {
       question: 'Where to start',
       answer:
-        'You can browse the Circles and events already happening near you and find a room to walk into, or read how the whole thing fits together first. Either way, the move is the same: pick one standing time and go back more than once. Frequency is a Community Collective built to help every local group get going, so if the room you want does not exist near you yet, that is the cue to start it.',
+        'You can browse the Circles and events already happening near you and find a room to walk into, or read how the whole thing fits together first. Either way, the move is the same: pick one standing time and go back more than once. Frequency is built to help every local group get going, so if the room you want does not exist near you yet, that is the cue to start it.',
       links: [
         { label: 'Find a Circle near you', href: '/discover', variant: 'primary' },
         { label: 'See how the community works', href: '/the-community', variant: 'secondary' },

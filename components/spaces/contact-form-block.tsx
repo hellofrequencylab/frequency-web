@@ -72,7 +72,7 @@ export function ContactFormBlock({
   const heading = title?.trim() || 'Get in touch'
   const sendLabel = submitLabel?.trim() || 'Send'
   const thanks = successMessage?.trim() || 'Thanks. Your message is on its way.'
-  const consentWords = optInLabel?.trim() || 'Email me about what is on'
+  const consentWords = optInLabel?.trim() || 'Email me about what’s happening'
   const messageWords = messageLabel?.trim() || 'Your message'
 
   async function onSubmit(e: React.FormEvent) {

@@ -14,7 +14,8 @@ export type FinderCity = {
   eventCount: number
 }
 
-// Client-side town finder for /discover/places. The whole city list is already in
+// Client-side town finder for the every-town list on /discover/cities (/discover/places merged
+// there, 2026-10-14). The whole city list is already in
 // the DOM (server-rendered for SEO + crawlers); this just adds an instant filter
 // over it so a visitor on a high-intent local search can jump straight to their
 // town instead of scanning a long grid. No data fetching, no new server work —
@@ -59,7 +60,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <li key={c.slug}>
-              <Link href={`/discover/places/${c.slug}`} className="group block h-full">
+              <Link href={`/discover/cities/${c.slug}`} className="group block h-full">
                 <Card
                   tone="feature"
                   className="flex h-full flex-col transition-colors hover:border-border-strong"

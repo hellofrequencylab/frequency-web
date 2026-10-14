@@ -50,7 +50,7 @@ None of it is appointed from the top. Circles grow new Circles. Staff tools stil
 Both, and the online space is always there. Every Circle has an online space so
 the group stays warm between meetings. Many also meet in person on a standing
 schedule. Virtual is the default; in person is the bonus. A Circle that meets at
-someone's kitchen table every week and one that meets on a call are both real
+someone's kitchen table on a standing night and one that meets on a call are both real
 Circles.
 
 ## Questions people ask

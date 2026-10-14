@@ -1,5 +1,7 @@
-// ── Public "Discover by place" data layer ─────────────────────────────────────
-// Owned by the public city/place discovery surface (/discover/places). Every read
+// ── Public "every town" data layer ────────────────────────────────────────────
+// Was app/discover/places/_data.ts. /discover/places merged into /discover/cities (2026-10-14), so
+// this reader now backs the cities index's "every town" list, the town page for a city below the
+// density gate, and the sitemap. Every read
 // here goes through the SAME redaction-safe public readers the rest of /discover
 // uses (lib/discover): circles + events expose CITY-LEVEL location ONLY, never a
 // neighborhood, street, venue, or geo point. This module never queries a table
@@ -70,7 +72,7 @@ async function loadCityBuckets(): Promise<Map<string, CityHub>> {
 }
 
 // Every city with at least one public circle or upcoming event, ordered by total
-// activity (most going on first). Backs the /discover/places index + the sitemap.
+// activity (most going on first). Backs the /discover/cities town list + the sitemap.
 export async function listDiscoverCities(): Promise<CitySummary[]> {
   const buckets = await loadCityBuckets()
   return [...buckets.values()]

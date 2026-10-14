@@ -35,7 +35,7 @@ same small group of people. That is the whole formula. Same people, same thing,
 same time, repeated.
 
 - **Same people** beats meeting new people. A big mixer of strangers gives you
-  twenty hellos and zero friends. Seeing the same six faces every week is how a
+  twenty hellos and zero friends. Seeing the same six faces again and again is how a
   hello turns into a friendship.
 - **Same time** removes the hardest part: deciding. If it is every Thursday at 7,
   you never have to talk yourself into it.

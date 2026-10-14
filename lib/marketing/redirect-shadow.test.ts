@@ -90,7 +90,22 @@ function sourceMatcher(source: string): RegExp {
   return new RegExp(`^${body || '/'}$`)
 }
 
+// PARKED: a page the owner HID behind a temporary redirect, keeping its route file so it can come back.
+// The shadow is the point. Each entry must be temporary (never a cached 308) and say why; the test below
+// fails if a parked rule ever turns permanent, because a cached 308 would make "bring it back" impossible.
+const PARKED: Record<string, string> = {
+  '/stories': 'Owner ruling 2026-10-14: hidden until three real stories exist.',
+}
+
 describe('a redirect never shadows a live route', () => {
+  it('a parked rule stays temporary, so the page can come back', async () => {
+    for (const r of (await redirects()) as (Redirect & { statusCode?: number })[]) {
+      if (!PARKED[r.source]) continue
+      expect(r.permanent, r.source).not.toBe(true)
+      expect([302, 307, undefined]).toContain(r.statusCode)
+    }
+  })
+
   it('finds the routes and the rules at all (the detector is not silently empty)', async () => {
     expect(liveRoutes().length).toBeGreaterThan(200)
     expect((await redirects()).length).toBeGreaterThan(40)
@@ -100,6 +115,7 @@ describe('a redirect never shadows a live route', () => {
     const routes = liveRoutes()
     const offenders: string[] = []
     for (const r of await redirects()) {
+      if (PARKED[r.source]) continue
       const re = sourceMatcher(r.source)
       for (const route of routes) {
         // A rule is allowed to match its OWN destination's ancestors etc; only a live SOURCE is a bug.

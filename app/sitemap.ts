@@ -13,7 +13,6 @@ import {
 } from "@/lib/events/series-seo";
 import { getSeriesDisplayConfig } from "@/lib/events/series-config";
 import { listPublicJourneys } from "@/lib/journey-plans";
-import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
 import {
   DISCOVERY_FETCH_LIMIT,
@@ -29,7 +28,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { listPublishedSpotlightHandles } from "@/lib/spotlight/data";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
-import { listDiscoverCities } from "@/app/discover/places/_data";
+import { listDiscoverCities } from "@/app/discover/cities/_towns";
 import { meetsIndexFloor } from "@/lib/seo/index-floor";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
@@ -228,25 +227,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
-    // The /start role picker (the funnel hub). Build / Practice / Spread were FOLDED
-    // into The Community + The Quest (their routes 308-redirect), so a redirected URL
-    // is no longer advertised here as canonical.
-    { url: `${SITE_URL}/start`, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${SITE_URL}/the-lab`, changeFrequency: "monthly", priority: 0.8 },
-    // Frequency-only pages (ADR-1737): /stories and /vision exist in the Frequency design's site map
-    // and answer 404 under DAWN, so they are advertised only when the build wears Frequency.
+    // /start MERGED into /join (2026-10-14): it 301s, so it is not listed. /join is the front door.
+    // /the-lab MERGED into /vision (owner ruling 2026-10-14): it 301s, so it is not listed.
+    // Frequency-only pages (ADR-1737): /vision exists in the Frequency design's site map and answers
+    // 404 under DAWN, so it is advertised only when the build wears Frequency. /stories is HIDDEN until
+    // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
     ...(SITE_DESIGN === "frequency"
       ? ([
-          { url: `${SITE_URL}/stories`, changeFrequency: "monthly", priority: 0.6 },
           { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
-    // The Quest is a side thing we all do together, not the centre of the offer (LIVE-254).
-    // It read 0.8 here, level with The Community and The Lab, which told a crawler the game
-    // ranks with the two pillars people actually come for. It keeps a real page and a real
-    // entry; it stops being advertised as a peer.
-    { url: `${SITE_URL}/the-quest`, changeFrequency: "monthly", priority: 0.6 },
+    // /the-quest MERGED into /features#f-zaps (owner ruling 2026-10-14): it 301s, so it is not listed.
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.7 },
     // The core story page — the answer-first "What is Frequency?" explainer of the
     // movement/vision (Article + FAQ schema). Complements /about (the founding narrative).
@@ -265,17 +257,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/events`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/journeys`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/topics`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/discover/partners`, changeFrequency: "weekly", priority: 0.8 },
+    // /discover/partners MERGED into /discover/spaces (owner ruling 2026-10-14): both URLs 301, and the
+    // partners are a section of the Spaces directory, so neither the index nor a partner is listed.
     { url: `${SITE_URL}/discover/practices`, changeFrequency: "weekly", priority: 0.8 },
     // Public Business Spaces directory — the indexable, no-rail twin of the in-app /spaces/directory (the
     // per-type hubs /discover/spaces/[type] are dynamic, below).
     { url: `${SITE_URL}/discover/spaces`, changeFrequency: "daily", priority: 0.8 },
-    // Browse-by-place hub — the local-intent landing index (per-city pages are dynamic, below).
-    { url: `${SITE_URL}/discover/places`, changeFrequency: "daily", priority: 0.8 },
-    // Density-gated city landing hub (GE11-2) — only cities above the density
-    // threshold get a per-city landing page (those are dynamic, below); this index
-    // lists them.
-    { url: `${SITE_URL}/discover/cities`, changeFrequency: "daily", priority: 0.7 },
+    // The city hub (GE11-2): the density-ranked cities, then every live town. /discover/places merged
+    // in here on 2026-10-14 (301), so this is the one browse-by-town index, at the priority the places
+    // hub carried.
+    { url: `${SITE_URL}/discover/cities`, changeFrequency: "daily", priority: 0.8 },
     // Comparison ("alternative to X") hub + one page per named alternative
     // (GE11-1). The set is a static registry, so the per-page URLs are safe to
     // advertise here directly.
@@ -402,7 +393,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // self-contradicting crawl signal. Read sequentially because it sizes the fold below; it is one
     // request-cached settings row, and it never throws (a failed read returns the shipped defaults).
     const { indexedOccurrences } = await getSeriesDisplayConfig();
-    const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       getTopicalChannels(),
       // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
       getPublicCircles(CIRCLE_SITEMAP_CAP),
@@ -441,7 +432,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // City × category hubs — only pairs that actually have upcoming public
       // events (empty/low-value facets never get a URL, so they stay out of crawl).
       sectionRead("city x category event hubs", getCityCategoryHubs()),
-      sectionRead("partners", listActivePartners({ limit: 500 })),
       sectionRead("practices", listPublicPractices("top")),
       // Networked entity Spaces, via the same redaction-safe reader the directory uses. It returns
       // ONLY visibility='network', status='active' Spaces and excludes the root, so PRIVATE Spaces
@@ -472,7 +462,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // EVERY podcast Show URL, so a truncation there quietly shrinks three sections. Wrapping is
     // observability only; no behaviour changes until a cap is actually reached.
     atCap(spaces, DISCOVERY_FETCH_LIMIT, "spaces", "listNetworkedSpaces");
-    atCap(partners, 500, "partners", "listActivePartners");
     atCap(organizers, 500, "organizers", "public_organizer_handles");
     atCap(spotlights, 1000, "spotlights", "the spotlight read in getSpotlightRoutes");
 
@@ -527,31 +516,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const partnerRoutes: MetadataRoute.Sitemap = partners.map((p) => ({
-      url: `${SITE_URL}/discover/partners/${p.slug}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    }));
-
     const practiceRoutes: MetadataRoute.Sitemap = practices.map((p) => ({
       url: `${SITE_URL}/discover/practices/${p.slug ?? p.id}`,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     }));
 
-    // A city that also earns the density landing page canonicalises there
-    // (app/discover/places/[citySlug]/page.tsx), so advertising its /discover/places URL
-    // sends crawlers to a page that points elsewhere (SCAN-656). The density slug and the
-    // places slug are the same `citySlug(name)` form, so set membership is the page's rule.
+    // One town template since /discover/places merged into /discover/cities (2026-10-14): a density
+    // city is already listed above (densityCityRoutes), so a town is added here only when it is NOT a
+    // density city, and the same URL is never listed twice (SCAN-656's dedup, now by set membership
+    // over one path). The density slug and the town slug are the same `citySlug(name)` form.
     const densitySlugs = new Set(densityCities.map((c) => c.slug));
-    // THE LOCAL INDEX FLOOR (LIVE-807): a place page is advertised only when it says index, the
-    // same rule its robots meta reads. The summary carries no Space count (a Space never creates
+    // THE LOCAL INDEX FLOOR (LIVE-807): a town page is advertised only when it says index, the
+    // same rule its robots meta reads (app/discover/cities/[citySlug]/page.tsx). The summary carries no Space count (a Space never creates
     // a place URL on its own), so the sitemap asks the Event half of the floor.
     const placeRoutes: MetadataRoute.Sitemap = cities
       .filter((c) => !densitySlugs.has(c.slug))
       .filter((c) => meetsIndexFloor({ upcomingEvents: c.eventCount }))
       .map((c) => ({
-      url: `${SITE_URL}/discover/places/${c.slug}`,
+      url: `${SITE_URL}/discover/cities/${c.slug}`,
       changeFrequency: "daily" as const,
       priority: 0.6,
     }));
@@ -756,7 +739,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...eventRoutes,
       ...hubRoutes,
       ...journeyRoutes,
-      ...partnerRoutes,
       ...practiceRoutes,
       ...spaceRoutes,
       ...spaceTabRoutes,

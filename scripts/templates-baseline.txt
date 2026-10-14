@@ -78,8 +78,6 @@ app/discover/cities/page.tsx
 app/discover/events/page.tsx
 app/discover/journeys/page.tsx
 app/discover/page.tsx
-app/discover/places/[citySlug]/page.tsx
-app/discover/places/page.tsx
 app/discover/spaces/[type]/page.tsx
 app/discover/topics/page.tsx
 app/hosted/[host]/[page]/page.tsx

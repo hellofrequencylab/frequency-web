@@ -12,10 +12,11 @@ import path from 'node:path'
 // only a default constant any page could override and three more declared elsewhere. A count made
 // by reading is a lower bound; a count made by a guard is the number.
 //
-// The rule now is two verbs, each named for the reader it addresses, and this file is what makes it
-// a rule rather than an intention:
-//   SEEKER    "Find your people" -> /join      the guides, /discover, the-community, about
-//   OPERATOR  "Start free"       -> /pricing   /pricing, /spaces, the /for/<niche> doors
+// The rule now is three verbs, each named for the reader it addresses (owner ruling 2026-10-14, which
+// re-worded the 2026-09-04 pair), and this file is what makes it a rule rather than an intention:
+//   PEOPLE    "Find your Circle" -> /join   the guides, /discover, the-community, about
+//   HOSTS     "Host a Circle"    -> /join   the host guides
+//   SPACES    "Open your Space"  -> /join   /pricing, /spaces, the /for/<niche> doors
 //
 // `/join` keeps its own arrival word ("Come in") and is not a call to action: it is the door, and
 // the visitor is already through it. In-app member surfaces are out of scope entirely.
@@ -25,6 +26,7 @@ import {
   BETA_CTA_HREF,
   OPERATOR_CTA_LABEL,
   OPERATOR_CTA_HREF,
+  HOST_CTA_LABEL,
   APPROVED_CTA_LABELS,
   BETA_CTA_SECONDARY_LABEL,
   CTA_LABEL_COMPACT,
@@ -46,9 +48,10 @@ function strip(src: string): string {
 }
 
 describe('the approved CTA set', () => {
-  it('is exactly two verbs, one per reader', () => {
-    expect(APPROVED_CTA_LABELS).toEqual([BETA_CTA_LABEL, OPERATOR_CTA_LABEL])
-    expect(new Set(APPROVED_CTA_LABELS).size).toBe(2)
+  it('is exactly three verbs, one per reader, worded as the owner ruled (2026-10-14)', () => {
+    expect(APPROVED_CTA_LABELS).toEqual([BETA_CTA_LABEL, HOST_CTA_LABEL, OPERATOR_CTA_LABEL])
+    expect([...APPROVED_CTA_LABELS]).toEqual(['Find your Circle', 'Host a Circle', 'Open your Space'])
+    expect(new Set(APPROVED_CTA_LABELS).size).toBe(3)
     for (const label of APPROVED_CTA_LABELS) expect(label.trim().length).toBeGreaterThan(0)
   })
 
@@ -73,7 +76,7 @@ describe('the approved CTA set', () => {
   it('NO retired CTA label ships in any marketing template', () => {
     // The five the audit found, minus the two that survive as the approved set. `Start a Circle` is
     // retired as a CTA and stays perfectly good as prose, so this looks only at label positions.
-    const retired = ['Start a Circle', 'Join the beta']
+    const retired = ['Start a Circle', 'Join the beta', 'Join the Beta', 'Find your people', 'Join free']
     const offenders: string[] = []
     for (const file of templateFiles()) {
       const src = strip(readFileSync(file, 'utf8'))
@@ -87,7 +90,7 @@ describe('the approved CTA set', () => {
 
   // ONE named exception, and it is not an acquisition CTA at all. /the-lab sells a physical space
   // planned for 2028 and its own hero says "Nothing here is bookable"; its primary asks you to
-  // FOLLOW a build, pointing at /subscribe. Putting "Find your people" there would promise a room
+  // FOLLOW a build, pointing at /subscribe. Putting "Find your Circle" there would promise a room
   // that does not exist. Named here rather than allowed silently, and scoped to the one file, so a
   // second page cannot quietly inherit the exemption.
   const NOT_ACQUISITION = new Map([['the-lab.ts', 'Follow the build']])

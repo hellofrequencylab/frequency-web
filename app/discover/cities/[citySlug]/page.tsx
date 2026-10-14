@@ -1,6 +1,8 @@
-// Density-gated city landing pages (GE11-2). A city earns a programmatic landing
-// page only once it has crossed a real density threshold (see _data.ts) — thin or
-// empty city pages hurt SEO, so a "seed" city 404s and stays out of the sitemap.
+// City landing pages (GE11-2), and since 2026-10-14 the ONE town template: /discover/places/<slug>
+// merged in here (301). A city that has crossed the density threshold (see _data.ts) is the rich,
+// indexable landing page. Any other town with a public Circle or upcoming Event (_towns.ts, the old
+// places reader) still renders, and is indexed only above the local index floor (LIVE-807), so the
+// merge never advertises a thin page and never 404s a town the old URL used to serve.
 // City-level content only (never a neighborhood/street/venue/geo). Real canonical,
 // answer-first copy, breadcrumb + CollectionPage + ItemList JSON-LD. Voice locked:
 // plain, concrete, no narrated feelings, no health claims, no em dashes.
@@ -9,6 +11,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays, Building2 } from 'lucide-react'
 import { getDensityCity, listDensityCities, cityFromSlug } from '../_data'
+import { getCityHub } from '../_towns'
+import { meetsIndexFloor } from '@/lib/seo/index-floor'
 import { getCityCategoryHubs, cityRegion } from '@/app/discover/events/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import { SpaceCard } from '@/components/spaces/space-card'
@@ -30,8 +34,8 @@ import { FrequencyTown } from '@/components/frequency/site/pages/discover/freque
 export const revalidate = 3600
 
 // Pre-render the cities above the density threshold. New cities cross the gate
-// and join the set on revalidate; a below-threshold slug renders on demand and
-// 404s (getDensityCity returns null), so no thin page is ever served.
+// and join the set on revalidate; a below-threshold slug renders on demand from the
+// towns reader (noindex below the floor) and 404s only when the town has nothing public.
 export async function generateStaticParams() {
   // `.catch(() => [])` matches every sibling detail route (LIVE-011): a params read that fails
   // degrades to on-demand rendering instead of ending the export. These two city routes were the
@@ -40,13 +44,24 @@ export async function generateStaticParams() {
   return cities.map((c) => ({ citySlug: c.slug }))
 }
 
+/** The town behind a slug: the density-gated city when it has earned one, else any town with something
+ *  public to show (the merged /discover/places reader), else null. `indexable` is the robots rule. */
+async function resolveTown(slug: string) {
+  const dense = await getDensityCity(slug)
+  if (dense) return { hub: dense, indexable: true }
+  const town = await getCityHub(slug).catch(() => null)
+  if (!town) return null
+  return { hub: town, indexable: meetsIndexFloor({ upcomingEvents: town.events.length, activeSpaces: town.spaces.length }) }
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ citySlug: string }>
 }): Promise<Metadata> {
   const { citySlug } = await params
-  const hub = await getDensityCity(citySlug)
+  const town = await resolveTown(citySlug)
+  const hub = town?.hub ?? null
   const city = hub?.city ?? cityFromSlug(citySlug)
   const title = `Find your people in ${city}`
   const description = hub
@@ -61,9 +76,9 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical },
-    // Below-threshold cities 404, but guard the index signal too: a city without
-    // a resolved hub must never be advertised as an indexable landing page.
-    ...(hub ? {} : { robots: { index: false, follow: true } }),
+    // A town below the density gate AND the local index floor still renders for a visitor with the
+    // link; it just is not advertised as a landing page. An unknown town 404s.
+    ...(town?.indexable ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
       title: `${title} · ${SITE_NAME}`,
@@ -85,8 +100,9 @@ export default async function DiscoverCityPage({
   params: Promise<{ citySlug: string }>
 }) {
   const { citySlug } = await params
-  const hub = await getDensityCity(citySlug)
-  if (!hub) notFound()
+  const town = await resolveTown(citySlug)
+  if (!town) notFound()
+  const hub = town.hub
 
   const { city, circles, events, spaces } = hub
   const canonical = `/discover/cities/${citySlug}`

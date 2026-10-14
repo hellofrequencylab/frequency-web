@@ -19,6 +19,7 @@ import {
 import { PUBLIC_MEGA_NAV, MARKETING_NAV, PRIMARY_NAV } from '@/lib/site'
 import { NAV_AREAS } from '@/lib/nav-areas'
 import { defaultMenu } from '@/lib/menus/defaults'
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 const REGISTRY_IDS = new Set(NAV_REGISTRY.map((n) => n.id))
 
@@ -70,18 +71,22 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     // CORE-MODEL §4: "Nothing is removed. Things are grouped." The cheap way to hit a tab
     // count is to delete destinations, so the count above is paired with this.
     const headerHrefs = nodesForSurface('header').map((n) => n.href)
-    expect(headerHrefs, '/the-lab lost its path from the header').toContain('/the-lab')
-    expect(headerHrefs, '/the-quest lost its path from the header').toContain('/the-quest')
+    // /the-lab and /the-quest merged (2026-10-14): the rows stay, landing on the survivors
+    // (lib/marketing/merged-routes.ts), so a link never takes a redirect hop.
+    expect(headerHrefs, 'The Lab lost its path from the header').toContain(LAB_HREF)
+    expect(headerHrefs, 'The Quest lost its path from the header').toContain(QUEST_HREF)
+    expect(headerHrefs).not.toContain('/the-lab')
+    expect(headerHrefs).not.toContain('/the-quest')
     const about = headerTriggers().find((t) => t.node.label === 'About')
-    expect(about?.items.map((i) => i.href)).toContain('/the-lab')
+    expect(about?.items.map((i) => i.href)).toContain(LAB_HREF)
     const community = headerTriggers().find((t) => t.node.label === 'The Community')
-    expect(community?.items.map((i) => i.href)).toContain('/the-quest')
+    expect(community?.items.map((i) => i.href)).toContain(QUEST_HREF)
     // The Quest is not a trigger. That is the whole LIVE-254 point.
-    expect(headerTriggers().map((t) => t.node.href)).not.toContain('/the-quest')
+    expect(headerTriggers().map((t) => t.node.href)).not.toContain(QUEST_HREF)
     const footer = marketingFooterLinks().map((n) => n.href)
     expect(footer).toContain('/')
-    expect(footer).toContain('/the-lab')
-    expect(footer).toContain('/the-quest')
+    expect(footer).toContain(LAB_HREF)
+    expect(footer).toContain(QUEST_HREF)
   })
 
   it('every DROPDOWN trigger leads with its own landing, or that page has no path from the header', () => {

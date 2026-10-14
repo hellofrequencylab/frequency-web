@@ -6,7 +6,7 @@
 //
 // The DAWN page draws a Leaflet locator here. Under Frequency the towns render as a LIST: public Circles
 // and events carry a city only, and the design's own map stand-in (shared/parts WhatsOnList) is a list for
-// the same reason. Each town links to its /discover/places page.
+// the same reason. Each town links to its /discover/cities page (/discover/places merged there, 2026-10-14).
 
 import Link from 'next/link'
 import type { PublicCircle, PublicEvent, PublicPost, TopicalChannel } from '@/lib/discover'
@@ -121,11 +121,11 @@ export function FrequencyDiscoverHub({
           {towns.length > 0 ? (
             <>
               <DxTowns
-                base="/discover/places"
+                base="/discover/cities"
                 towns={towns.map((t) => ({ city: t.city, slug: citySlug(t.city), circles: t.circles, events: t.events }))}
               />
               <div className="dx-foot">
-                <Link className="dx-link" href="/discover/places">
+                <Link className="dx-link" href="/discover/cities#towns">
                   Browse every town →
                 </Link>
               </div>

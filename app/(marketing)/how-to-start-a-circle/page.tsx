@@ -35,7 +35,7 @@ const UPDATED = '2026-07-24'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to start a Circle · Frequency'
 const OG_DESCRIPTION =
-  'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format every week.'
+  'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each time you meet.'
 
 export function generateMetadata(): Metadata {
   return {

@@ -7,7 +7,7 @@
 // mapped to a route that exists in app/. site-nav.test.ts walks app/ and fails if one does not.
 //
 // EVERY DESIGN PAGE HAS A ROUTE. Features (/features) and Stories (/stories) shipped with the Frequency
-// rebuild, and the Help accessibility statement is the Help front page's `#accessibility` card, as in
+// rebuild (Stories is hidden until three real stories exist, owner ruling 2026-10-14), and the Help accessibility statement is the Help front page's `#accessibility` card, as in
 // Help.html; all are set in ROUTES below, so every menu, the search, the sheet and the footer link to them. A route set to null falls back (FEATURE_FALLBACK, for a build
 // where /features is not served) or is left out, so the header never links to a 404.
 //
@@ -25,10 +25,13 @@ export const ROUTES = {
   /** Features.html. Served under Frequency (app/(marketing)/features). Null falls back to FEATURE_FALLBACK. */
   features: '/features' as string | null,
   pricing: '/pricing',
-  /** Stories.html. Served under Frequency (app/(marketing)/stories). */
-  stories: '/stories' as string | null,
+  /** Stories.html. HIDDEN (owner ruling 2026-10-14): null until three real stories exist. The route
+   *  app/(marketing)/stories is kept, and next.config.ts sends /stories to /the-community with a
+   *  temporary 302 meanwhile. Set this back to '/stories' and drop that rule to bring it back. */
+  stories: null as string | null,
   /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
-   *  Frequency-only route, app/(marketing)/vision, which points on to /the-lab, the full plan. */
+   *  Frequency-only route, app/(marketing)/vision, which also carries the Lab's plan and FAQ since
+   *  /the-lab merged into it (2026-10-14). */
   vision: '/vision',
   join: '/join',
   help: '/help',
@@ -87,7 +90,7 @@ export const FEATURE_FALLBACK: Record<string, string> = {
   reminders: '/help/getting-started/notifications',
   zaps: '/help/the-quest/zaps-and-gems',
   seasons: '/help/the-quest/season-ranks',
-  meter: '/the-quest',
+  meter: '/help/the-quest',
   'membership-p': '/help/membership/your-space-memberships',
   invites: '/help/connecting/find-people',
   host: '/how-to-start-a-circle',
@@ -182,7 +185,7 @@ export const WING_MENUS: WingMenu[] = [
       {
         heading: 'Start',
         links: [
-          { href: ROUTES.people, label: 'Find your people', hint: 'How Frequency works for you', icon: 'circle' },
+          { href: ROUTES.people, label: 'Find your Circle', hint: 'How Frequency works for you', icon: 'circle' },
           { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect, start to finish', icon: 'checkin' },
           { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
         ],
@@ -253,7 +256,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.join, label: 'Get started', hint: 'Join as a person or open a Space', icon: 'host' },
   { href: ROUTES.help, label: 'Help', hint: 'Questions, policies, contact', icon: 'search' },
   { href: ROUTES.home, label: 'Home', hint: 'Gather like it matters', icon: 'circle' },
-  { href: ROUTES.people, label: 'For people', hint: 'Find your people', icon: 'circle' },
+  { href: ROUTES.people, label: 'For people', hint: 'Find your Circle', icon: 'circle' },
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
@@ -291,7 +294,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
   {
     heading: 'For people',
     links: [
-      { href: ROUTES.people, label: 'Find your people' },
+      { href: ROUTES.people, label: 'Find your Circle' },
       { href: FIRST_NIGHT, label: 'Your first night' },
       { href: ROUTES.happening, label: 'What’s happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },

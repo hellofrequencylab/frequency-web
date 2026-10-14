@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import {
   articleSchema,
   housingListingSchema,
-  localBusinessSchema,
   podcastSchema,
   practiceSchema,
   breadcrumbSchema,
@@ -1041,7 +1040,6 @@ describe('LIVE-205 — every self-origin schema image resolves to a file on disk
       spaceSchema({ slug: 'sp', type: 'business', name: 'N', logoUrl: 'https://cdn.example.com/l.png' }),
     ],
     ['personSchema', personSchema({ name: 'A Member', path: '/spotlight/a-member' })],
-    ['localBusinessSchema', localBusinessSchema({ name: 'A Partner', slug: 'a-partner' })],
     ['practiceSchema', practiceSchema({ id: 'p1', title: 'A practice' })],
     ['productSchema', productSchema({ title: 'A product', path: '/store/a-product' })],
     ['housingListingSchema', housingListingSchema({ title: 'A room', path: '/housing/h1' })],

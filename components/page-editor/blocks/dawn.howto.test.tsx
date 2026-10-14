@@ -29,7 +29,7 @@ const GUIDE = {
       image: '/images/site/breathwork-circle.jpg',
       alt: 'A Circle sitting together outdoors',
     },
-    { name: 'Pick a standing time', text: 'Same day, same hour, every week.' },
+    { name: 'Pick a standing time', text: 'Same day, same hour, on repeat.' },
   ],
 }
 
@@ -55,7 +55,7 @@ describe('howToStepsSchema emits a valid schema.org HowTo', () => {
           '@type': 'HowToStep',
           position: 2,
           name: 'Pick a standing time',
-          text: 'Same day, same hour, every week.',
+          text: 'Same day, same hour, on repeat.',
         },
       ],
     })

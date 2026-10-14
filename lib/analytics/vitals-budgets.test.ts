@@ -44,7 +44,7 @@ describe('budgetClassFor', () => {
     // '/beta' was here until ADR-1294 (LIVE-251) deleted the route: it sold a beta window closed
     // on 2026-08-17, and under the core model free is permanent. '/start' takes its place as the
     // funnel door it now redirects to, so this still covers a real marketing entry point.
-    for (const p of ['/', '/pricing', '/how-it-works', '/what-is-frequency', '/start', '/help/getting-started']) {
+    for (const p of ['/', '/pricing', '/how-it-works', '/what-is-frequency', '/start/welcome', '/help/getting-started']) {
       expect(budgetClassFor(p), p).toBe('marketing')
     }
   })

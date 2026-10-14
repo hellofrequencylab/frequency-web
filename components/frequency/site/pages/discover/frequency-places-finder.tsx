@@ -1,6 +1,7 @@
 'use client'
 
-// The town finder for /discover/places under the Frequency design: the same instant filter as the DAWN
+// The town finder for the every-town list on /discover/cities under the Frequency design (/discover/places
+// merged there, 2026-10-14): the same instant filter as the DAWN
 // PlacesFinder (components/discover/places-finder.tsx) over a list that is already server-rendered in full,
 // drawn as the kit's town cards. No fetching; the box appears once there are enough towns to scan.
 
@@ -51,7 +52,7 @@ export function FrequencyPlacesFinder({ towns }: { towns: FinderTown[] }) {
         <ul className="dx-towns">
           {shown.map((t) => (
             <li key={t.slug}>
-              <Link className="dx-town" href={`/discover/places/${t.slug}`}>
+              <Link className="dx-town" href={`/discover/cities/${t.slug}`}>
                 <span className="ic" aria-hidden="true">
                   <FqIcon name="pin" />
                 </span>

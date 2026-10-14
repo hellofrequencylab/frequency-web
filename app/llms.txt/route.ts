@@ -80,10 +80,7 @@ const abs = (path: string) => `${SITE_URL}${path}`
 // The key public pages, each with a one-line description in the locked voice.
 const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; label: string; desc: string }[] => [
   { path: '/', label: 'Home', desc: `${SITE_NAME}. ${CATEGORY_LINE} The short version of who it is for and how it works.` },
-  { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then take your first move.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
-  { path: '/the-quest', label: 'The Quest', desc: 'The light game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys. Not a third of the offer.' },
-  { path: '/the-lab', label: 'The Lab', desc: 'The plan for a physical third space, opening in 2028, and why a community needs a room. Not open yet; nothing there is bookable.' },
   { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings, after card processing. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   // /features and /vision are Frequency-design routes (they 404 under DAWN, and app/sitemap.ts lists
   // them only under Frequency), so this list names them only when the deploy serves them.
@@ -93,13 +90,13 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
         { path: '/vision', label: 'Vision', desc: 'For partners, investors, civic leaders and press: the plan for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.' },
       ]
     : []),
-  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
+  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings after card processing, pay only on the business the network sends you. A Collective Space also gets a public network page: its member Spaces and one shared calendar of their events.' },
   { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). Two themes, Default and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
   { path: '/tools-for-community-builders', label: 'Tools for community builders', desc: 'The operator toolkit: Circles, Events, a calendar, email, a CRM and a storefront, for the people who gather others.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
-  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, each with the Circles meeting and events happening there.' },
+  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, then every town with a Circle meeting or an event coming up.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
 ]
 
@@ -111,10 +108,8 @@ const DIRECTORIES: { path: string; label: string; desc: string }[] = [
   { path: '/discover/events', label: "What's happening", desc: 'The calendar of public Events near you, browsed by Channel and city.' },
   { path: '/discover/circles', label: 'Circles', desc: 'Live Circles you can visit: the small groups that meet on a standing day.' },
   { path: '/discover/spaces', label: 'Spaces directory', desc: 'The venues, studios, and organizations that host community on Frequency.' },
-  { path: '/discover/partners', label: 'Partners', desc: 'Partner venues and organizations working with Frequency.' },
   { path: '/discover/practices', label: 'Practice library', desc: 'The public practice library: small real-world practices from the community.' },
   { path: '/discover/journeys', label: 'Journeys', desc: 'Guided multi-week Journeys you can take with a group.' },
-  { path: '/discover/places', label: 'Places', desc: 'Every active city, each with the Circles meeting and the events happening there.' },
   { path: '/discover/topics', label: 'Channels', desc: 'The Channels (Movement, Spirituality, and more), each with its Circles and events.' },
 ]
 
@@ -287,7 +282,7 @@ export async function GET() {
     '',
     ...help,
     ...cities,
-    '## Pricing for Spaces (a Community Collective, not a tax on your work)',
+    '## Pricing for Spaces (not a tax on your work)',
     `The core promise: people join free, businesses host free, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
     takeRateStory(input, offerings),

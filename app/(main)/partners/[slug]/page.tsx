@@ -13,8 +13,9 @@ import { RowCard } from '@/components/cards/row-card'
 
 export const dynamic = 'force-dynamic'
 
-// This app-shell page is a twin of the canonical /discover/partners/<slug> profile, so it points
-// its canonical there to consolidate ranking signals rather than compete with the discover surface.
+// This app-shell page was the twin of /discover/partners/<slug>, which merged into /discover/spaces
+// (2026-10-14). The member page is now the only partner page, and it stays out of the index (robots.ts
+// disallows /partners), so it declares no canonical.
 export async function generateMetadata({
   params,
 }: {
@@ -30,7 +31,6 @@ export async function generateMetadata({
   return {
     title: partner.name,
     description,
-    alternates: { canonical: `/discover/partners/${slug}` },
   }
 }
 

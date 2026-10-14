@@ -15,7 +15,7 @@ export const revalidate = 3600
 
 // Not the bare word (SCAN-678): the template appends the site name, and 'About · Frequency' names
 // nothing a query contains. Shared with the AboutPage headline below so the two cannot drift.
-const TITLE = 'About the Community Collective'
+const TITLE = 'About Frequency'
 
 export function generateMetadata(): Metadata {
   return {

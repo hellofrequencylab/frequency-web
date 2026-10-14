@@ -618,7 +618,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'showPhone', label: 'Ask for a phone number', type: 'toggle', default: false },
     { key: 'showMessage', label: 'Ask for a message', type: 'toggle', default: true },
     { key: 'messageLabel', label: 'Message label', type: 'text', placeholder: 'Your message' },
-    { key: 'optInLabel', label: 'Opt-in wording', type: 'text', placeholder: 'Email me about what is on' },
+    { key: 'optInLabel', label: 'Opt-in wording', type: 'text', placeholder: 'Email me about what’s happening' },
     { key: 'submitLabel', label: 'Button label', type: 'text', placeholder: 'Send' },
     { key: 'successMessage', label: 'Thank-you message', type: 'textarea', placeholder: 'Thanks. We will be in touch.' },
   ],

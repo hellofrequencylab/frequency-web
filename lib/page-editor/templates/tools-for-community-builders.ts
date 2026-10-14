@@ -123,11 +123,8 @@ export const spec: ArticleSpec = {
     {
       question: 'Where to start',
       answer:
-        'The fastest way to get the toolkit is to claim a Space: your front door, your Circles, your feed, and your recognition in one place, free to start. If you want to see where the same idea is headed as a physical third space, read the plan for The Lab, the room the community means to open in 2028. Both are the same idea at different sizes.',
-      links: [
-        { label: 'Get the toolkit', href: '/for/community-builders', variant: 'primary' },
-        { label: 'See the plan for The Lab', href: '/the-lab', variant: 'secondary' },
-      ],
+        'The fastest way to start is to open a Space: your front door, your Circles, your feed, and your recognition in one place, free to start.',
+      links: [{ label: 'Open your Space', href: '/for/community-builders', variant: 'primary' }],
     },
   ],
 

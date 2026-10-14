@@ -54,7 +54,7 @@ export function FrequencyDiscoverEvents({
       >
         <div className="ctas">
           <a className="btn fq-iri-btn" href="#calendar">
-            See what’s on
+            See what’s happening
           </a>
           <Link className="btn btn-ghost fq-iri-rim" href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL}
@@ -138,7 +138,7 @@ export function FrequencyDiscoverEvents({
         title="See you there."
         body="Joining is free. RSVP to gatherings, meet your neighbors, and help shape what we build next."
         primary={{ href: BETA_CTA_HREF, label: `${BETA_CTA_LABEL} →` }}
-        secondary={{ href: '/discover/places', label: 'Browse by town' }}
+        secondary={{ href: '/discover/cities', label: 'Browse by town' }}
       />
     </div>
   )

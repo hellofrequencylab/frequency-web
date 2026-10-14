@@ -113,7 +113,7 @@ export const data: Data = {
         items: [
           {
             title: 'For the people who gather people.',
-            body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces find every week. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
+            body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces keep finding. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
           },
           {
             title: 'The practitioners who already do the work.',
@@ -422,7 +422,6 @@ export const data: Data = {
         kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
         rungs: [
           { name: 'Member', blurb: "Your people show up to a Circle. That's the whole entry fee." },
-          { name: 'Crew', blurb: "They're in for the season, learning the format and lending a hand." },
           { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
           { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
           { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },

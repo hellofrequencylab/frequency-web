@@ -53,7 +53,7 @@ describe('hidePartnerListing', () => {
       ['partner_offers.update', { active: false }],
       ['partner_offers.in', 'partner_id', ['p1']],
     ])
-    for (const path of ['/partners', '/partners/listing', '/discover/partners', '/partners/blue-cafe', '/discover/partners/blue-cafe']) {
+    for (const path of ['/partners', '/partners/listing', '/discover/spaces', '/partners/blue-cafe']) {
       expect(revalidatePath).toHaveBeenCalledWith(path)
     }
   })

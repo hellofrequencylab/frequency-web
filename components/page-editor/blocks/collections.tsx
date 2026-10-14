@@ -689,7 +689,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       columns: '3',
       items: [
         { icon: 'Users', image: '', title: 'Community', body: 'Real people, real connections.', href: '' },
-        { icon: 'CalendarDays', image: '', title: 'Events', body: 'Something happening every week.', href: '' },
+        { icon: 'CalendarDays', image: '', title: 'Events', body: 'Something happening near you.', href: '' },
         { icon: 'Compass', image: '', title: 'Discover', body: 'Find your next circle.', href: '' },
       ],
       emphasis: emphasisDefault,

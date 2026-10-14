@@ -22,7 +22,7 @@ export const revalidate = 3600
 const DAWN_METADATA: Metadata = {
   title: 'What is a Circle? Community with a shape',
   description:
-    'A Circle is a few people near you doing life on purpose. Frequency is a Community Collective: four Pillars and Circles that grow on their own.',
+    'A Circle is a few people near you doing life on purpose. Frequency is local groups that keep meeting, and Circles that grow on their own.',
   alternates: { canonical: '/the-community' },
   openGraph: {
     ...OG_SITE,
