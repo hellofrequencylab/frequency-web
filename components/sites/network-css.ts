@@ -1,4 +1,4 @@
-import { NETWORK_TOKENS_CSS } from '@/lib/theme/network'
+import { NETWORK_ISLAND_TOKENS_CSS, NETWORK_TOKENS_CSS } from '@/lib/theme/network'
 
 // THE NETWORK WEBSITE SKIN (lib/theme/network.ts). Layered AFTER HOUSE_CSS and FREQUENCY_PAGE_CSS on a website
 // whose Space wears the Network theme, and scoped under [data-house-theme="network"], so every house section
@@ -517,3 +517,24 @@ ${N} .nw-reach .nw-actions{margin-top:auto;padding-top:8px}
 @media (max-width:900px){${N} .nw-coffee{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){${N} .nw-upnext-k::before{animation:none}${N} .nw-circle,${N} .nw-circle::before,${N} .nw-card-im img,${N} .nw-chip>a,${N} .nw-arr{transition:none}}
 `
+
+/** The Network SECTIONS for a site on another theme (NETWORK_ISLAND_TOKENS_CSS): the section rules above,
+ *  re-scoped from the Network site root to a section's own `data-nw-island` root, with the island tokens.
+ *  The site page and the editor canvas add it only when a page carries a Network section and the site does
+ *  not wear Network, so no other page pays for it. */
+const ISLAND = '[data-nw-island]:not([data-house-theme="network"] *)'
+export const NETWORK_BLOCK_CSS = `${NETWORK_ISLAND_TOKENS_CSS}
+${NETWORK_CSS.split('\n')
+  .filter((line) => /\.nw-|data-mw-own|@keyframes nw-/.test(line))
+  .map((line) => line.replaceAll(M, ISLAND).replaceAll(N, ISLAND)
+    // The island IS the section root, which carries .nw-block, .nw-block-<name> and the band classes itself.
+    .replaceAll(`${ISLAND} .nw-block`, `${ISLAND}.nw-block`).replaceAll(`${ISLAND} .nw-band`, `${ISLAND}.nw-band`)
+    // The full-bleed wrapper the site page puts around a Network section sits outside the island; only Network
+    // sections plan as that kind (lib/sites/menswork-page.ts), so its rules need no theme scope.
+    .replaceAll(`${ISLAND} [data-mw-own]`, '[data-mw-own]'))
+  .join('\n')}`
+
+/** Does a page document carry a Network section anywhere (nested slots included)? */
+export function docHasNetworkBlocks(doc: unknown): boolean {
+  return /"type":"Network[A-Z]/.test(JSON.stringify(doc ?? null))
+}

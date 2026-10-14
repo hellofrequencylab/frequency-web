@@ -154,17 +154,9 @@ function schemeVars(s: NetworkScheme, id: NetworkSchemeId): string {
   return `--nw-pop:${pop};--nw-pop2:${pop2};--nw-pop3:${pop3};--nw-paper:${s.paper};--nw-surface:${s.surface};--nw-fill:${s.fill};--nw-line:${s.line};--nw-line-strong:${s.lineStrong};--nw-ink:${s.ink};--nw-ink-raised:${s.inkRaised};--nw-muted:${s.muted};--nw-subtle:${s.subtle}`
 }
 
-/** The theme's tokens, scoped to a website root carrying `data-house-theme="network"`, one block per scheme
- *  under `data-scheme`. The `--nw-*` set is the theme's own vocabulary (network-css.ts reads only these and
- *  DAWN tokens); the `--color-*` set re-points DAWN inside the site and reads the `--nw-*` set, so a scheme
- *  re-points only `--nw-*`. The `--color-primary*` family is NOT set here: it is the Space's (AccentScope,
- *  networkAccentVars). The faces resolve through the `--font-nw-*` variables next/font sets on the site
- *  (components/sites/network-fonts.ts), never on the root layout. */
-export const NETWORK_TOKENS_CSS = `
-[data-house-theme="network"]{color-scheme:light;${schemeVars(NETWORK_SCHEMES.marigold, 'marigold')};
-${NETWORK_TAGS.map((c, i) => `--nw-tag-${i + 1}:${c}`).join(';')};
---nw-sand:${NETWORK_SAND.sand};--nw-sand-line:${NETWORK_SAND.sandLine};
---nw-on-ink:${NETWORK_ON_INK.text};--nw-on-ink-muted:${NETWORK_ON_INK.muted};--nw-on-ink-subtle:${NETWORK_ON_INK.subtle};--nw-ink-border:${NETWORK_ON_INK.border};
+/** The theme's own vocabulary that no scheme and no host theme changes: tags, rhythm, waves, grain, depth,
+ *  literal tints, corners, motion and tracking. Shared by the site token block and the island block below. */
+const NETWORK_SHARED_VARS = `${NETWORK_TAGS.map((c, i) => `--nw-tag-${i + 1}:${c}`).join(';')};
 --nw-sec-y:clamp(96px,11vw,168px);--nw-gutter:clamp(20px,4vw,48px);--nw-wave-fill:${WAVE_FILL};
 --nw-grain:${GRAIN};--nw-mottle:${MOTTLE};--nw-wave:${NETWORK_WAVE};--nw-grain-opacity:.22;--nw-mottle-opacity:.07;
 --nw-shadow-sm:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(48,40,30,.05),0 10px 26px -18px rgba(48,40,30,.2);
@@ -174,8 +166,20 @@ ${NETWORK_TAGS.map((c, i) => `--nw-tag-${i + 1}:${c}`).join(';')};
 --nw-c-soot:#000;--nw-c-soot-78:rgba(18,18,18,.78);--nw-c-earth-10:rgba(60,40,20,.10);--nw-c-glow-10:rgba(255,214,170,.10);--nw-c-shade-18:rgba(15,30,40,.18);--nw-c-shade-35:rgba(15,30,40,.35);--nw-c-shade-40:rgba(15,30,40,.4);--nw-c-shade-50:rgba(15,30,40,.5);--nw-c-shade-60:rgba(15,30,40,.6);--nw-c-umber-12:rgba(48,40,30,.12);--nw-c-chalk:#fff;--nw-c-chalk-06:rgba(255,255,255,.06);--nw-c-chalk-07:rgba(255,255,255,.07);--nw-c-chalk-08:rgba(255,255,255,.08);--nw-c-chalk-10:rgba(255,255,255,.1);--nw-c-chalk-12:rgba(255,255,255,.12);--nw-c-chalk-14:rgba(255,255,255,.14);--nw-c-chalk-22:rgba(255,255,255,.22);--nw-c-chalk-82:rgba(255,255,255,.82);--nw-c-chalk-88:rgba(255,255,255,.88);
 --nw-r-sm:${NETWORK_SHAPE.sm};--nw-r-card:${NETWORK_SHAPE.card};--nw-r-cover:${NETWORK_SHAPE.cover};--nw-r-pill:${NETWORK_SHAPE.pill};--nw-r-leaf:${NETWORK_SHAPE.leaf};
 --nw-dur-fast:${NETWORK_MOTION.fast};--nw-dur-base:${NETWORK_MOTION.base};--nw-dur-slow:${NETWORK_MOTION.slow};--nw-ease:${NETWORK_MOTION.ease};
+--nw-tracking-display:-.035em;--nw-measure:65ch;`
+
+/** The theme's tokens, scoped to a website root carrying `data-house-theme="network"`, one block per scheme
+ *  under `data-scheme`. The `--nw-*` set is the theme's own vocabulary (network-css.ts reads only these and
+ *  DAWN tokens); the `--color-*` set re-points DAWN inside the site and reads the `--nw-*` set, so a scheme
+ *  re-points only `--nw-*`. The `--color-primary*` family is NOT set here: it is the Space's (AccentScope,
+ *  networkAccentVars). The faces resolve through the `--font-nw-*` variables next/font sets on the site
+ *  (components/sites/network-fonts.ts), never on the root layout. */
+export const NETWORK_TOKENS_CSS = `
+[data-house-theme="network"]{color-scheme:light;${schemeVars(NETWORK_SCHEMES.marigold, 'marigold')};
+${NETWORK_SHARED_VARS}
+--nw-sand:${NETWORK_SAND.sand};--nw-sand-line:${NETWORK_SAND.sandLine};
+--nw-on-ink:${NETWORK_ON_INK.text};--nw-on-ink-muted:${NETWORK_ON_INK.muted};--nw-on-ink-subtle:${NETWORK_ON_INK.subtle};--nw-ink-border:${NETWORK_ON_INK.border};
 --nw-display:var(--font-nw-bricolage),'Bricolage Grotesque','Outfit',system-ui,sans-serif;--nw-body:var(--font-nw-outfit),'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;--nw-voice:var(--font-nw-instrument),'Instrument Serif',Georgia,serif;--nw-hand:var(--font-caveat),'Caveat','Bradley Hand',cursive;
---nw-tracking-display:-.035em;--nw-measure:65ch;
 --color-canvas:var(--nw-paper);--color-marketing-canvas:var(--nw-fill);--color-surface:var(--nw-surface);--color-surface-elevated:var(--nw-fill);--color-surface-post:var(--nw-surface);
 --color-chrome:color-mix(in srgb,var(--nw-paper) 88%,transparent);--color-chrome-border:var(--nw-line);--color-chrome-hover:var(--nw-surface);
 --color-border:var(--nw-line);--color-border-strong:var(--nw-line-strong);
@@ -201,3 +205,19 @@ ${NETWORK_SCHEME_ORDER.filter((id) => id !== DEFAULT_NETWORK_SCHEME)
 [data-house-theme="network"][data-site-corners="square"]{--nw-r-sm:0px;--nw-r-card:0px;--nw-r-cover:0px;--nw-r-leaf:0px;--nw-r-pill:0px;--radius-card:0px;--radius-cover:0px;--radius-control:0px;--radius-pill:0px}
 @media (prefers-reduced-motion:reduce){[data-house-theme="network"]{--nw-dur-fast:0ms;--nw-dur-base:0ms;--nw-dur-slow:0ms}}
 `
+
+/** THE NETWORK BLOCKS ON ANOTHER THEME (an "island"). A Network section placed on a Frequency, Bold or
+ *  Wildheart site carries `data-nw-island` on its root; outside a Network site this block gives it the
+ *  theme's vocabulary with every color and face read from the HOST theme's own tokens, so the sections keep
+ *  Network's shapes, rhythm and motion and wear the site's palette, faces and accent. Inside a Network site the
+ *  selector does not match, and the site's own tokens (above) apply unchanged. */
+export const NETWORK_ISLAND_TOKENS_CSS = `
+[data-nw-island]:not([data-house-theme="network"] *){
+--nw-paper:var(--color-canvas);--nw-surface:var(--color-surface);--nw-fill:var(--color-surface-elevated);--nw-line:var(--color-border);--nw-line-strong:var(--color-border-strong);
+--nw-ink:var(--color-text);--nw-ink-raised:var(--color-ink-elevated,var(--color-text));--nw-muted:var(--color-text-muted);--nw-subtle:var(--color-text-subtle);
+--nw-pop:var(--color-primary);--nw-pop2:var(--color-signal,var(--color-primary));--nw-pop3:var(--color-broadcast,var(--color-primary));
+--nw-sand:var(--color-surface-elevated);--nw-sand-line:var(--color-border);
+--nw-on-ink:var(--color-on-ink,${NETWORK_ON_INK.text});--nw-on-ink-muted:var(--color-on-ink-muted,${NETWORK_ON_INK.muted});--nw-on-ink-subtle:var(--color-on-ink-subtle,${NETWORK_ON_INK.subtle});--nw-ink-border:var(--color-ink-border,${NETWORK_ON_INK.border});
+${NETWORK_SHARED_VARS}
+--nw-display:var(--hs-serif,var(--font-display)),Georgia,serif;--nw-body:var(--hs-sans,var(--font-body)),system-ui,sans-serif;--nw-voice:var(--hs-serif,var(--font-display)),Georgia,serif;--nw-hand:var(--font-caveat),'Caveat',cursive;
+font-family:var(--nw-body);color:var(--nw-ink)}`

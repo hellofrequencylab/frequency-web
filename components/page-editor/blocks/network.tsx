@@ -7,6 +7,7 @@ import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
 import { InlineText } from '@/components/sites/inline-text'
 import { NetworkCountdown } from '@/components/sites/network-countdown'
+import { loomImageField } from '@/lib/page-editor/loom-image-field'
 import { countdownParts, wallClockInstant } from '@/lib/time/wall-clock'
 import {
   ArrowRight, Briefcase, Building2, CalendarDays, Camera, Check, Clock, Coffee, Compass, Eye, Flag, Gift, HandHeart, Heart, Lightbulb,
@@ -103,7 +104,7 @@ function Head({ eyebrow, title, lead, action, actionHref, metadata, as }: { eyeb
 
 function Section({ name, pad, vis, band, children, id }: { name: string; pad?: string; vis?: string; band?: 'ink' | 'sand' | ''; children: ReactNode; id?: string }) {
   return (
-    <section id={id || undefined} className={cls('nw-block', `nw-block-${name}`, band && `nw-band nw-band-${band}`, pad, vis)}>
+    <section id={id || undefined} data-nw-island="" className={cls('nw-block', `nw-block-${name}`, band && `nw-band nw-band-${band}`, pad, vis)}>
       <div className="nw-wrap">{children}</div>
     </section>
   )
@@ -206,7 +207,7 @@ export function NetworkHeroBlock({ p, metadata, now = new Date(), pad, vis }: { 
   const faces = arr(p.faces).map((f) => img(f.image)).filter((s): s is string => !!s).slice(0, 4)
   const href = next ? eventHref(next, metadata) : null
   return (
-    <section className={cls('nw-block nw-block-hero', pad, vis)}>
+    <section data-nw-island="" className={cls('nw-block nw-block-hero', pad, vis)}>
       <div className="nw-wrap nw-hero" data-crop={str(p.crop) || 'leaf'}>
         <div className="nw-hero-copy">
           <Eyebrow text={str(p.eyebrow)} />
@@ -887,18 +888,24 @@ export function NetworkCoffeeBlock({ p, metadata, pad, vis }: { p: Props; metada
 
 // ── Registry ────────────────────────────────────────────────────────────────────────────────────────────
 
-const text = (label: string) => ({ type: 'text', label }) as const
-const area = (label: string) => ({ type: 'textarea', label }) as const
-const image = { type: 'text', label: 'Image URL' } as const
-const anchor = text('Anchor id (for menu links, optional)')
+// Field labels are names, in the order the words appear on the page; the how-to lives in a `hint` under the
+// label (components/page-editor/mobile/field-form.tsx). The link anchor is technical, so `block()` files it
+// last, after the section's own copy and controls.
+const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
+const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
+// The Loom picker (the one image picker an operator sees). Spread, never referenced whole: on the server a
+// client module's export is a reference, and a spread of it reads as a plain `{ label }` (profile.tsx's pattern).
+const image = { ...loomImageField, label: 'Photo' }
+const VOICE_HINT = 'Wrap words in *stars* to set them in the accent italic.'
+const anchor = text('Link anchor', 'Optional. Lets a menu item jump here, like #fridays.')
 const buttons = { primaryLabel: text('Main button'), primaryHref: text('Main button link'), secondaryLabel: text('Second button'), secondaryHref: text('Second button link') }
-const head = { eyebrow: text('Label'), title: area('Heading (*one word* in the voice face)'), lead: area('Lead') }
-const action = { actionLabel: text('Side button'), actionHref: text('Side button link') }
+const head = { eyebrow: text('Small label', 'The short line above the heading.'), title: area('Heading', VOICE_HINT), lead: area('Intro') }
+const action = { actionLabel: text('Link beside the heading'), actionHref: text('Link beside the heading: where it goes') }
 
 function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: { p: Props; metadata?: Props; pad?: string; vis?: string }) => ReactNode): ComponentConfig {
   return {
     label,
-    fields: { ...fields, layout: layoutField },
+    fields: (({ anchor: anchorField, ...rest }) => ({ ...rest, ...(anchorField ? { anchor: anchorField } : {}), layout: layoutField }))(fields),
     defaultProps: { ...defaults, layout: layoutDefault },
     render: (props: Props & { puck?: { metadata?: Props } }) => <Comp p={props} metadata={props.puck?.metadata} {...layoutOf(props.layout)} />,
   } as unknown as ComponentConfig
@@ -906,67 +913,67 @@ function block<P extends Props>(label: string, fields: Record<string, unknown>, 
 
 export const networkComponents: Record<string, ComponentConfig> = {
   NetworkHero: block('Hero with the next event', {
-    eyebrow: text('Label'), title: area('Heading (*one word* in the voice face)'), lead: area('Lead'), ...buttons,
-    image, alt: text('Alt text'), focus: text('Photo focus (CSS object-position, optional)'),
+    ...head, ...buttons,
+    image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo focus point', 'Optional. Where the photo centres when cropped, like 50% 30%.'),
     crop: { type: 'select', label: 'Photo crop', options: [{ label: 'Leaf', value: 'leaf' }, { label: 'Arch', value: 'arch' }, { label: 'Soft', value: 'soft' }] },
-    featureMatch: text('Pin the next event whose title contains'), featureNote: text('Event card note'), featureCta: text('Event card button'),
-    proof: text('Proof line'), proofNote: text('Proof note'), faces: { type: 'array', label: 'Faces', arrayFields: { image } },
+    featureMatch: text('Pinned event', 'The next event whose title contains these words, like Feel Good Friday.'), featureNote: text('Pinned event note'), featureCta: text('Pinned event button'),
+    proof: text('Social proof', 'Like 8,500+ members.'), proofNote: text('Social proof note'), faces: { type: 'array', label: 'Member faces', arrayFields: { image } },
   }, { eyebrow: 'Every week', title: 'Come find *your people.*', lead: 'No pressure. No pitch. Just good people and good conversation.', primaryLabel: 'Join a group', primaryHref: '', secondaryLabel: '', secondaryHref: '', image: '', alt: '', focus: '', crop: 'leaf', featureMatch: '', featureNote: '', featureCta: 'RSVP', proof: '', proofNote: '', faces: [] }, NetworkHeroBlock),
   NetworkStats: block('Stat tiles', { items: { type: 'array', label: 'Stats', arrayFields: { icon: iconField, value: text('Number'), label: text('Label') } } }, { items: [{ icon: 'users', value: '100+', label: 'members' }] }, NetworkStatsBlock),
   NetworkSplit: block('Photo split with facts', {
-    anchor, ...head, body: area('Words (one paragraph per line)'), image, alt: text('Alt text'),
+    anchor, ...head, body: area('Body text', 'Each new line starts a paragraph.'), image, alt: text('Photo description', 'For screen readers.'),
     mediaSide: { type: 'select', label: 'Photo side', options: [{ label: 'Left', value: 'left' }, { label: 'Right', value: 'right' }] },
     band: { type: 'select', label: 'Background', options: [{ label: 'Page', value: '' }, { label: 'Sand', value: 'sand' }, { label: 'Ink', value: 'ink' }] },
     facts: { type: 'array', label: 'Facts', arrayFields: { icon: iconField, label: text('Label'), value: text('Value'), note: text('Note') } },
     quote: area('Pull quote'), quoteBy: text('Quote by'), ...buttons,
   }, { anchor: '', eyebrow: '', title: '', lead: '', body: '', image: '', alt: '', mediaSide: 'left', band: '', facts: [], quote: '', quoteBy: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '' }, NetworkSplitBlock),
   NetworkBand: block('Accent band with countdown', {
-    anchor, eyebrow: text('Label'), title: area('Heading'), body: area('Words'), countdownTo: text('Count down to (YYYY-MM-DDTHH:MM, local time)'), timeZone: text('Time zone'),
-    countdownLabel: text('Countdown label (screen readers)'), image, alt: text('Alt text'), ...buttons,
+    anchor, eyebrow: head.eyebrow, title: head.title, body: area('Body text', 'Each new line starts a paragraph.'), countdownTo: text('Count down to', 'Local date and time, like 2026-10-21T17:30.'), timeZone: text('Time zone', 'Like America/Los_Angeles.'),
+    countdownLabel: text('Countdown description', 'Read aloud by screen readers.'), image, alt: text('Photo description', 'For screen readers.'), ...buttons,
   }, { anchor: '', eyebrow: '', title: '', body: '', countdownTo: '', timeZone: 'America/Los_Angeles', countdownLabel: '', image: '', alt: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '' }, NetworkBandBlock),
   NetworkEvents: block('Events list and calendar (live)', {
     anchor, ...head, ...action, max: { type: 'number', label: 'How many to list', min: 1, max: 24 },
-    chapters: { type: 'array', label: 'Chapter tags', arrayFields: { label: text('Chapter'), match: text('Words in the title or place (a|b|c)') } },
-    moreLabel: text('More link label'), moreHref: text('More link'), empty: text('When there is nothing on'),
+    chapters: { type: 'array', label: 'Chapter filters', hint: 'Each becomes a filter chip over the list.', arrayFields: { label: text('Chapter'), match: text('Matches events containing', 'Words in the title or place, separated by |, like north park|maya moon.') } },
+    moreLabel: text('More events link'), moreHref: text('More events link: where it goes'), empty: text('Message when nothing is scheduled'),
   }, { anchor: '', eyebrow: 'Events', title: 'Find a group. *Or fill one.*', lead: '', actionLabel: '', actionHref: '', max: 6, chapters: [], moreLabel: 'See more events', moreHref: '', empty: '' }, NetworkEventsBlock),
-  NetworkSteps: block('Numbered steps', { anchor, ...head, steps: { type: 'array', label: 'Steps', arrayFields: { title: text('Title'), body: area('Words'), ctaLabel: text('Button (optional)'), ctaHref: text('Button link') } } }, { anchor: '', eyebrow: 'Your first visit', title: '', lead: '', steps: [] }, NetworkStepsBlock),
+  NetworkSteps: block('Numbered steps', { anchor, ...head, steps: { type: 'array', label: 'Steps', arrayFields: { title: text('Title'), body: area('Body text'), ctaLabel: text('Button', 'Optional.'), ctaHref: text('Button link') } } }, { anchor: '', eyebrow: 'Your first visit', title: '', lead: '', steps: [] }, NetworkStepsBlock),
   NetworkChapters: block('Chapters band', {
     anchor, ...head,
     chips: { type: 'array', label: 'Chapters', arrayFields: { icon: iconField, name: text('Name'), line: text('What meets'), when: text('When'), href: text('Link'), on: { type: 'radio', label: 'Highlight', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } } },
-    cards: { type: 'array', label: 'Photo cards', arrayFields: { image, alt: text('Alt text'), icon: iconField, kicker: text('Kicker'), title: text('Title'), body: area('Words'), href: text('Link') } },
-    notes: { type: 'array', label: 'Icon cards', arrayFields: { icon: iconField, title: text('Title'), body: area('Words') } },
+    cards: { type: 'array', label: 'Photo cards', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), icon: iconField, kicker: text('Small label'), title: text('Title'), body: area('Body text'), href: text('Link') } },
+    notes: { type: 'array', label: 'Icon cards', arrayFields: { icon: iconField, title: text('Title'), body: area('Body text') } },
   }, { anchor: '', eyebrow: 'Chapters', title: '', lead: '', chips: [], cards: [], notes: [] }, NetworkChaptersBlock),
   NetworkCircles: block('Circles (next dates live)', {
     anchor, ...head, ...action,
-    circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Words'), when: text('When'), where: text('Where'), match: text('Event title contains (defaults to the name)') } },
+    circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Body text'), when: text('When'), where: text('Where'), match: text('Matches events titled', 'Optional. Defaults to the circle name.') } },
   }, { anchor: '', eyebrow: 'Circles', title: '', lead: '', actionLabel: '', actionHref: '', circles: [] }, NetworkCirclesBlock),
   NetworkFounder: block('Founder', {
-    anchor, eyebrow: text('Label'), quote: area('Quote (*words* in the voice face)'), body: area('Words'), image, alt: text('Alt text'),
+    anchor, eyebrow: head.eyebrow, quote: area('Quote', VOICE_HINT), body: area('Body text', 'Each new line starts a paragraph.'), image, alt: text('Photo description', 'For screen readers.'),
     hosts: { type: 'array', label: 'Hosts', arrayFields: { image, name: text('Name'), role: text('Role') } }, ctaLabel: text('Button'), ctaHref: text('Button link'),
   }, { anchor: '', eyebrow: '', quote: '', body: '', image: '', alt: '', hosts: [], ctaLabel: '', ctaHref: '' }, NetworkFounderBlock),
   NetworkTeam: block('Team, pillars and a quote', {
-    anchor, eyebrow: text('Label'), title: area('Heading'), lead: area('Lead'), note: area('Note'), image, alt: text('Alt text'),
-    pillars: { type: 'array', label: 'Pillars', arrayFields: { title: text('Title'), body: area('Words') } }, quote: area('Quote'), quoteBy: text('Quote by'),
+    anchor, ...head, note: area('Note'), image, alt: text('Photo description', 'For screen readers.'),
+    pillars: { type: 'array', label: 'Pillars', arrayFields: { title: text('Title'), body: area('Body text') } }, quote: area('Quote'), quoteBy: text('Quote by'),
   }, { anchor: '', eyebrow: '', title: '', lead: '', note: '', image: '', alt: '', pillars: [], quote: '', quoteBy: '' }, NetworkTeamBlock),
   NetworkTiers: block('Membership tiers', {
     anchor, ...head,
-    tiers: { type: 'array', label: 'Tiers', arrayFields: { icon: iconField, name: text('Name'), price: text('Price'), cadence: text('Cadence'), tagline: text('Tagline'), features: area('Features (one per line)'), ctaLabel: text('Button'), ctaHref: text('Button link'), badge: text('Badge'), featured: { type: 'radio', label: 'Featured', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } } },
+    tiers: { type: 'array', label: 'Tiers', arrayFields: { icon: iconField, name: text('Name'), price: text('Price'), cadence: text('Billing period', 'Like / mo.'), tagline: text('Tagline'), features: area('Features', 'One per line.'), ctaLabel: text('Button'), ctaHref: text('Button link'), badge: text('Badge', 'Optional, like Most members.'), featured: { type: 'radio', label: 'Featured', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } } },
     footnote: text('Footnote'),
   }, { anchor: '', eyebrow: 'Membership', title: '', lead: '', tiers: [], footnote: '' }, NetworkTiersBlock),
   NetworkOfferings: block('Priced offerings', {
     anchor, ...head,
-    items: { type: 'array', label: 'Offerings', arrayFields: { title: text('Title'), price: text('Price'), unit: text('Unit'), body: area('Words'), ctaLabel: text('Button'), ctaHref: text('Button link'), featured: { type: 'radio', label: 'Featured', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } } },
+    items: { type: 'array', label: 'Offerings', arrayFields: { title: text('Title'), price: text('Price'), unit: text('Unit', 'Like / hour.'), body: area('Body text'), ctaLabel: text('Button'), ctaHref: text('Button link'), featured: { type: 'radio', label: 'Featured', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } } },
   }, { anchor: '', eyebrow: '', title: '', lead: '', items: [] }, NetworkOfferingsBlock),
   NetworkMedia: block('Media band (episodes)', {
-    anchor, ...head, ...action, items: { type: 'array', label: 'Episodes', arrayFields: { title: text('Title'), videoId: text('YouTube video id'), href: text('Or a link'), image } },
+    anchor, ...head, ...action, items: { type: 'array', label: 'Episodes', arrayFields: { title: text('Title'), videoId: text('YouTube video', 'The id after watch?v=, like mGOSomOf9E4.'), href: text('Or a link instead'), image } },
   }, { anchor: '', eyebrow: '', title: '', lead: '', actionLabel: '', actionHref: '', items: [] }, NetworkMediaBlock),
   NetworkSocial: block('Social posts', { anchor, ...head, ...action, posts: { type: 'array', label: 'Posts', arrayFields: { image, caption: area('Caption') } } }, { anchor: '', eyebrow: '', title: '', lead: '', actionLabel: '', actionHref: '', posts: [] }, NetworkSocialBlock),
   NetworkMerch: block('Merch cards', {
-    anchor, ...head, ...action, buyLabel: text('Card button'), products: { type: 'array', label: 'Products', arrayFields: { image, title: text('Name'), note: text('Note'), price: text('Price'), href: text('Link') } },
+    anchor, ...head, ...action, buyLabel: text('Card button label'), products: { type: 'array', label: 'Products', arrayFields: { image, title: text('Name'), note: text('Note'), price: text('Price'), href: text('Link') } },
   }, { anchor: '', eyebrow: '', title: '', lead: '', actionLabel: '', actionHref: '', buyLabel: 'Buy', products: [] }, NetworkMerchBlock),
   NetworkCoffee: block('Coffee card and ways to reach you', {
-    anchor, image, alt: text('Alt text'), signature: text('Signature line'), title: area('Heading'), body: area('Words'), ctaLabel: text('Button'), ctaHref: text('Button link'),
-    reachTitle: text('Reach heading'), reachBody: area('Reach words'), email: text('Email'), phone: text('Phone'),
+    anchor, signature: text('Signature line', 'Set in the handwritten face.'), title: area('Heading', VOICE_HINT), body: area('Body text'), ctaLabel: text('Button'), ctaHref: text('Button link'), image, alt: text('Photo description', 'For screen readers.'),
+    reachTitle: text('Contact heading'), reachBody: area('Contact text'), email: text('Email'), phone: text('Phone'),
     links: { type: 'array', label: 'Other links', arrayFields: { icon: iconField, label: text('Label'), href: text('Link') } }, messageLabel: text('Message button'), messageHref: text('Message link'),
   }, { anchor: '', image: '', alt: '', signature: '', title: '', body: '', ctaLabel: '', ctaHref: '', reachTitle: 'Get in touch', reachBody: '', email: '', phone: '', links: [], messageLabel: 'Send a message', messageHref: '' }, NetworkCoffeeBlock),
 }
