@@ -7,6 +7,7 @@
 //
 // Everything here is structural. Nothing is a global declaration, so this cannot leak
 // `google` into the ambient namespace of unrelated modules.
+import type { GoogleMapStyle } from './basemap-look'
 
 type GoogleLatLngLiteral = { lat: number; lng: number }
 
@@ -56,6 +57,10 @@ type GoogleMapOptions = {
   center: GoogleLatLngLiteral
   zoom: number
   mapId?: string
+  /** JSON styling. Ignored by Google when a Map ID is set (the Cloud style wins). */
+  styles?: GoogleMapStyle[]
+  /** The colour shown before tiles paint. */
+  backgroundColor?: string
   disableDefaultUI?: boolean
   zoomControl?: boolean
   gestureHandling?: string
