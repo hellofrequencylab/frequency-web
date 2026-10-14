@@ -411,7 +411,7 @@ describe('createTicketCheckout — instant money only (LIVE-343)', () => {
     const s = created() as any
     // A delayed-notification method completes this session WITHOUT paying and settles days later,
     // which is the mechanism behind the oversell. It cannot share a product with a 30 minute hold.
-    expect(s.payment_method_types).toEqual(['card', 'link'])
+    expect(s.allowed_payment_method_types).toEqual(['card', 'link'])
     expect(s).not.toHaveProperty('payment_method_configuration')
   })
 
@@ -423,7 +423,7 @@ describe('createTicketCheckout — instant money only (LIVE-343)', () => {
     const s = created() as any
     expect(s.payment_method_configuration).toBe('pmc_instant_only')
     // Stripe rejects a request carrying both, so the hardcoded list must be gone entirely.
-    expect(s).not.toHaveProperty('payment_method_types')
+    expect(s).not.toHaveProperty('allowed_payment_method_types')
     delete process.env[TICKET_PMC_ENV]
   })
 
