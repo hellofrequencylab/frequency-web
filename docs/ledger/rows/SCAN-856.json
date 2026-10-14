@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-856",
+  "title": "The Space page and member profile flash a DAWN loading skeleton before the Frequency page",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/loading.tsx",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: app/(main)/spaces/[slug]/loading.tsx draws DAWN's cover-and-avatar skeleton, but the Frequency Space page is space-chrome ((profile)/layout.tsx:711); same for app/(main)/people/[handle]/loading.tsx against page.tsx:530. Visitors see the old layout, then a jump. Practices, crew, nearby, network, store and journeys loading/error files are also unported. Precedent: components/frequency/members/event/event-loading.tsx. THE FIX: branch both loading files on SITE_DESIGN.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['app/(main)/spaces/[slug]/loading.tsx'].map(r).join('\\n').search(/SITE_DESIGN/)>-1===true && ['app/(main)/people/[handle]/loading.tsx'].map(r).join('\\n').search(/SITE_DESIGN/)>-1===true)?0:1)\""
+  },
+  "wave": "W7"
+}

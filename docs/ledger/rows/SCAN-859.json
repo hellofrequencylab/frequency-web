@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-859",
+  "title": "The Frequency home's Up next list prints the venue line and exact distance for events with a hidden address",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/feed/frequency-home.ts",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: lib/feed/frequency-home.ts:41 selects location and geog with the service role and ignores hide_address; components/frequency/members/feed/planner.tsx:326 prints e.location and works out miles from the exact point. The DAWN events index (app/(main)/events/index-data.ts:865) repeats the pattern. THE FIX: route the line through publicVisibleLocation and skip distance when hide_address is set and the viewer is not going.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['lib/feed/frequency-home.ts'].map(r).join('\\n').search(/hide_address/)>-1===true)?0:1)\""
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-853",
+  "title": "The Thursday 'This week' email prints an exact venue the host chose to hide",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/this-week-reads.ts",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: lib/this-week-reads.ts:31 selects location and venue_name but never hide_address, and lib/this-week.ts:125 (eventWhere) mails venue_name or location to every member in the region. A public regional event with hide_address=true has its address mailed out, the leak SCAN-209 closed on the page. THE FIX: select hide_address, street, region and build the line with publicVisibleLocation(row).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['lib/this-week-reads.ts'].map(r).join('\\n').search(/hide_address/)>-1===true)?0:1)\""
+  },
+  "wave": "W7"
+}

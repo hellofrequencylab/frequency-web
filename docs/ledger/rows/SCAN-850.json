@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-850",
+  "title": "A ?design=dawn link strips all Frequency styling from production for that visitor, and it sticks until ?design=off",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/theme/mode.ts",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: the pre-paint script (lib/theme/mode.ts:229-230) saves any ?design= value into localStorage and re-stamps <html data-design>, overriding the build's SITE_DESIGN (app/layout.tsx). A Frequency build ships Frequency markup scoped to [data-design=frequency]; a visitor who opens one shared ?design=dawn link gets an unstyled site on every later visit. THE FIX: drop the preview override in production builds, or ignore any value other than SITE_DESIGN.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['lib/theme/mode.ts'].map(r).join('\\n').search(/setAttribute\\('data-design',ds\\)/)>-1===false)?0:1)\""
+  },
+  "wave": "W7"
+}

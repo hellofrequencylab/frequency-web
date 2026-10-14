@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-867",
+  "title": "An event page shows 'Location shared with members' when the host left the address visible, and its Event rich result has no address",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(public)/events/[slug]/page.tsx",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: on production 239 of 244 public upcoming events have no city, region or country; 147 of them carry a full visible street address in the free-text events.location column with hide_address=false (e.g. tg-veteran-community-conversation-2026-10-14: 'Municipal, 1722 S Coast Hwy, Oceanside, CA 92054'). publicPageWhere (lib/events/visible-location.ts:91) and the JSON-LD place builder (lib/jsonld.ts ~277-297) read only the venue row and events.city, never events.location, so the public page prints 'Location shared with members' and the Event JSON-LD emits a nameless Place with no address. Members cannot see where to go, and Google drops these events from Event rich results. THE FIX: when hide_address is false, fall back to events.location for the where-line and the JSON-LD (as publicVisibleLocation already does), and fall back to the host Space's city (146 of the 239 have one) for addressLocality.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/events/visible-location.ts','utf8');const i=s.indexOf('export function publicPageWhere');process.exit(/location\\??:/.test(s.slice(i,i+300))?0:1)\""
+  },
+  "wave": "W7"
+}
