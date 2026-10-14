@@ -9,15 +9,17 @@
 // destinations, declared ONCE). The shape + `canSeeAdminSection` signature are UNCHANGED,
 // so lib/menus/defaults.ts (the only consumer) keeps compiling and rendering identically.
 //
-// Gating mirrors the prior flat admin menu: a section shows when the viewer meets its
-// role floor OR holds its staff domain. Sub-pages inherit the section's gate (they each
-// re-gate server-side anyway), so the mega panel never needs its own per-page gate.
+// Gating: a section shows when the viewer meets its role floor OR holds its staff domain. Each
+// sub-page carries ITS OWN gate (ADR-1745) — the leaf's row gate, which check:gate-parity locks to the
+// page — rather than inheriting the section's, so sections can group by job without re-gating a link.
 
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
-import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
-import { ADMIN_NAV_SPECS, studioLeaf } from '@/lib/nav/studio'
+import { staffCan, type StaffRole, type StaffDomain, type Access } from '@/lib/core/staff-roles'
+import { ADMIN_NAV_SPECS, adminNavLeafGate, studioLeaf } from '@/lib/nav/studio'
 
-type AdminNavLink = { label: string; href: string }
+/** One sub-page link, carrying ITS OWN gate (ADR-1745): the leaf's row gate, or the page-side override
+ *  for a FROZEN_GATE_DEBT row. lib/menus/defaults.ts stamps it onto the menu item. */
+type AdminNavLink = { label: string; href: string; min: CommunityRole; staffDomain?: StaffDomain; staffLevel?: Access }
 type AdminNavGroup = { heading?: string; items: AdminNavLink[] }
 
 export type AdminNavSection = {
@@ -44,8 +46,9 @@ export const ADMIN_NAV: readonly AdminNavSection[] = ADMIN_NAV_SPECS.map((spec) 
     section.groups = spec.groups.map((g) => {
       const items: AdminNavLink[] = g.leaves.flatMap((ref) => {
         const leaf = studioLeaf(ref.leaf)
-        if (!leaf) return []
-        return [{ label: ref.label ?? leaf.label, href: leaf.href }]
+        const gate = adminNavLeafGate(ref)
+        if (!leaf || !gate) return []
+        return [{ label: ref.label ?? leaf.label, href: leaf.href, ...gate }]
       })
       return g.heading ? { heading: g.heading, items } : { items }
     })

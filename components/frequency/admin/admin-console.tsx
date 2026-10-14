@@ -5,8 +5,8 @@ import { getCachedViewerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
-import { canSeeMenuEl, canSeeMenuItem, flattenCategoryTree, viewerRoleFor, type MenuViewer } from '@/components/layout/menu-role'
-import type { ResolvedCategory } from '@/lib/menus/types'
+import { canSeeMenuItem, flattenCategoryTree, viewerRoleFor, type MenuViewer } from '@/components/layout/menu-role'
+import type { ResolvedCategory, ResolvedItem } from '@/lib/menus/types'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 import type { FqIconName } from '@/components/frequency/icon'
@@ -30,6 +30,8 @@ const WORLD_ICON: Record<string, FqIconName> = {
   community: 'contacts',
   growth: 'chart',
   content: 'lesson',
+  'resonance crm': 'standing',
+  'vera ai': 'vera',
   platform: 'settings',
 }
 
@@ -47,8 +49,17 @@ async function pendingReports(): Promise<number> {
 export function adminNavItems(categories: ResolvedCategory[], viewer: MenuViewer, reports: number): AdminNavItem[] {
   const out: AdminNavItem[] = []
   for (const category of categories) {
-    if (!canSeeMenuEl(category, viewer, 'category')) continue
-    const leaves = flattenCategoryTree(category, (item) => !!item.href && canSeeMenuItem(item, viewer))
+    // A section shows when any page in it is reachable (ADR-1745). Each item carries its own page's
+    // gate, so a section that groups tools by job (Growth holds QR Studio, Platform holds Market) must
+    // not hide a tool behind a neighbour's floor.
+    const visible = (item: ResolvedItem) => !!item.href && canSeeMenuItem(item, viewer)
+    // Each leaf remembers the sub-group it sits in, so the sidebar draws the section's job groups as
+    // small headings (ADR-1745: no run of more than seven links without one).
+    const groupOf = new Map<string, string>()
+    for (const child of category.children) {
+      for (const item of flattenCategoryTree(child, visible)) if (child.label) groupOf.set(item.id, child.label)
+    }
+    const leaves = flattenCategoryTree(category, visible)
     const landing = leaves[0]
     if (!landing) continue
     const label = category.label ?? landing.label
@@ -59,7 +70,7 @@ export function adminNavItems(categories: ResolvedCategory[], viewer: MenuViewer
       href: landing.href,
       icon: WORLD_ICON[label.toLowerCase()] ?? 'compass',
       badge: badge(landing.href),
-      children: leaves.slice(1).filter((leaf) => leaf.href !== landing.href).map((leaf) => ({ key: leaf.id, label: leaf.label, href: leaf.href, badge: badge(leaf.href) })),
+      children: leaves.slice(1).filter((leaf) => leaf.href !== landing.href).map((leaf) => ({ key: leaf.id, label: leaf.label, href: leaf.href, badge: badge(leaf.href), group: groupOf.get(leaf.id) })),
     })
   }
   return out

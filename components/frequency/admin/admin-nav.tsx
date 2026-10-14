@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { FqIcon } from '@/components/frequency/icon'
@@ -40,11 +41,14 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
             )}
             {on && !!item.children?.length && (
               <div className="ad-sub">
-                {item.children.map((leaf) => (
-                  <Link key={leaf.key} href={leaf.href} className={leaf.key === activeLeafKey ? 'on' : undefined} aria-current={leaf.key === activeLeafKey ? 'page' : undefined}>
-                    {leaf.label}
-                    {!!leaf.badge && <b aria-label={`${leaf.badge} waiting`}>{leaf.badge}</b>}
-                  </Link>
+                {item.children.map((leaf, i, all) => (
+                  <Fragment key={leaf.key}>
+                    {leaf.group && leaf.group !== all[i - 1]?.group && <span className="ad-sub-h">{leaf.group}</span>}
+                    <Link href={leaf.href} className={leaf.key === activeLeafKey ? 'on' : undefined} aria-current={leaf.key === activeLeafKey ? 'page' : undefined}>
+                      {leaf.label}
+                      {!!leaf.badge && <b aria-label={`${leaf.badge} waiting`}>{leaf.badge}</b>}
+                    </Link>
+                  </Fragment>
                 ))}
               </div>
             )}

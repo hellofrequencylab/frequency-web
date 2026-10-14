@@ -620,16 +620,44 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
   },
 ] as const
 
+
 // ── ADMIN_NAV descriptor (lib/admin/nav.ts) ──
-// The ten sub-header sections. Each = a top-level tab (root href + gate) with optional
-// `groups` of sub-page leaf-ids. The section gate (min + staffDomain) is verbatim; the
-// leaves inherit it in the mega panel (they re-gate server-side anyway). Verbatim from
-// the old ADMIN_NAV, referencing leaves by id.
-/** A sub-page in an ADMIN_NAV group: a leaf id, with an optional label OVERRIDE for the
- *  cases where the sub-header shows a shorter tab label than the leaf's canonical name
- *  (e.g. "Onboarding" for the Onboarding & referral controls page, "Market catalog" for
- *  the Market console). */
-type AdminNavLeafRef = { leaf: string; label?: string }
+// THE OPERATOR CONSOLE'S SEVEN SECTIONS (ADR-1745, consolidating the eleven ADR-390 / ADR-979 left
+// behind). Each = a top-level tab (root href + gate) with `groups` of sub-page leaf-ids. The sections
+// are the five §5b Studio worlds (Overview · Community · Content · Growth · Platform) plus the two
+// janitor engines that already had their own landing pages (Resonance CRM, Vera AI). Folded in:
+//   • Leadership (/lead) left the operator console: it is a host's own workspace, reached from the
+//     member rail (lib/nav-areas.ts `lead`), not an operator page. No StudioLeaf ever claimed it.
+//   • QR Studio → Growth · Acquisition (QR is an entry point; its leaf already said `world: 'growth'`).
+//   • Loom Studio → Content · Assets (its leaf already said `world: 'content'`).
+//   • Market → Platform · Commerce (its leaves already said `world: 'platform'`).
+//   • Operations is renamed Platform, Programs is renamed Content, Dashboard is renamed Overview, so the
+//     section labels finally match STUDIO_WORLDS, the design, and the Frequency console's world icons.
+//
+// 🔴 GATES MOVED FROM THE SECTION TO THE LEAF. adminHeaderMenu() used to stamp the SECTION's min +
+// staffDomain onto every item inside it, which is why Loom, QR and Market each needed a section of
+// their own (ADR-979): filing one under a neighbour re-gated it. Each item now carries its OWN leaf's
+// gate, the same row `check:gate-parity` locks to the page's requireAdmin, so a link shows exactly to
+// the people its page admits. The eleven FROZEN_GATE_DEBT rows (scripts/check-gate-parity.mjs) disagree
+// with their page, so the ones surfaced here carry a `gate` override set to the PAGE side: the menu
+// must never promise what the page denies. The section's own landing link keeps the section gate.
+//
+// ⚠️ DB OVERRIDES CODE — read before you expect an edit here to move the live admin tab bar.
+// The admin sub-nav renders from getMenu('admin_header') (lib/menus/read.ts). If the `admin_header`
+// menu has ANY rows in the DB (menus/menu_categories/menu_items — materialized the moment an operator
+// opens the Menu Manager for it), those rows WIN and this catalog is ignored on the live site. So a
+// change here only shows up when admin_header has NO DB rows (the code-default fallback). If the live
+// tabs don't reflect a change you made here, the DB copy is stale: reset it (delete the admin_header
+// menu rows so it falls back to this code) or edit it in the Menu Manager. (ADR-390; the 2026-07 CRM
+// tab consolidation was invisible for exactly this reason.)
+
+/** A gate, in the StudioLeaf vocabulary. */
+type StudioGate = { min: CommunityRole; staffDomain?: StaffDomain; staffLevel?: Access }
+
+/** A sub-page in an ADMIN_NAV group: a leaf id, with an optional label OVERRIDE (a shorter tab label
+ *  than the leaf's canonical name), and an optional GATE override, used only for a FROZEN_GATE_DEBT row
+ *  whose page admits a different population than its catalog row says (the override is the page side). */
+type AdminNavLeafRef = { leaf: string; label?: string; gate?: StudioGate }
 type AdminNavGroupSpec = { heading?: string; leaves: readonly AdminNavLeafRef[] }
 type AdminNavSectionSpec = {
   href: string
@@ -639,83 +667,68 @@ type AdminNavSectionSpec = {
   groups?: readonly AdminNavGroupSpec[]
 }
 
-// ⚠️ DB OVERRIDES CODE — read before you expect an edit here to move the live admin tab bar.
-// The admin sub-nav renders from getMenu('admin_header') (lib/menus/read.ts). If the `admin_header`
-// menu has ANY rows in the DB (menus/menu_categories/menu_items — materialized the moment an operator
-// opens the Menu Manager for it), those rows WIN and this catalog is ignored on the live site. So a
-// change here only shows up when admin_header has NO DB rows (the code-default fallback). If the live
-// tabs don't reflect a change you made here, the DB copy is stale: reset it (delete the admin_header
-// menu rows so it falls back to this code) or edit it in the Menu Manager. (ADR-390; the 2026-07 CRM
-// tab consolidation was invisible for exactly this reason.)
 export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
-  { href: '/admin', label: 'Dashboard', min: 'admin' },
+  { href: '/admin', label: 'Overview', min: 'admin' },
   {
     href: '/admin/community', label: 'Community', min: 'host', staffDomain: 'community',
     groups: [
       { heading: 'Spaces & groups', leaves: [{ leaf: 'circles' }, { leaf: 'circle-templates' }, { leaf: 'channels' }, { leaf: 'hubs' }, { leaf: 'nexuses' }] },
-      { heading: 'People', leaves: [{ leaf: 'members' }, { leaf: 'connections' }, { leaf: 'personas', label: 'Personas' }, { leaf: 'segments' }] },
-      { heading: 'Activity', leaves: [{ leaf: 'events' }, { leaf: 'import' }, { leaf: 'dispatches', label: 'Dispatches' }, { leaf: 'moderation' }] },
+      { heading: 'People', leaves: [{ leaf: 'members' }, { leaf: 'personas', label: 'Personas' }, { leaf: 'connections', gate: { min: 'admin' } }] },
+      { heading: 'Activity', leaves: [{ leaf: 'events' }, { leaf: 'dispatches' }, { leaf: 'import' }] },
+      { heading: 'Trust & safety', leaves: [{ leaf: 'moderation' }, { leaf: 'support' }] },
     ],
   },
-  { href: '/lead', label: 'Leadership', min: 'host' },
   {
-    href: '/admin/programs', label: 'Programs', min: 'host', staffDomain: 'community',
+    href: '/admin/programs', label: 'Content', min: 'host', staffDomain: 'community',
     groups: [
-      { heading: 'Content', leaves: [{ leaf: 'content-practices' }, { leaf: 'content-practices-health' }, { leaf: 'content-journeys' }, { leaf: 'content-challenges' }, { leaf: 'content-seasons' }, { leaf: 'content-tips', label: 'Tips' }, { leaf: 'content-training', label: 'Training' }] },
-      { heading: 'Engagement', leaves: [{ leaf: 'crew-tasks' }, { leaf: 'gamification', label: 'Gamification' }, { leaf: 'store' }] },
+      { heading: 'Library', leaves: [{ leaf: 'content-practices' }, { leaf: 'content-practices-health' }, { leaf: 'content-journeys' }, { leaf: 'content-challenges' }, { leaf: 'content-seasons' }, { leaf: 'content-tips', label: 'Tips', gate: { min: 'janitor' } }, { leaf: 'content-training', label: 'Training' }] },
+      { heading: 'Rewards', leaves: [{ leaf: 'crew-tasks' }, { leaf: 'gamification', label: 'Gamification' }, { leaf: 'store' }] },
+      { heading: 'Assets', leaves: [{ leaf: 'library' }, { leaf: 'elements' }] },
     ],
   },
   {
     href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing',
     groups: [
-      { heading: 'Acquisition', leaves: [{ leaf: 'referrals' }] },
-      { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }] },
+      { heading: 'Acquisition', leaves: [{ leaf: 'entry-points' }, { leaf: 'qr' }, { leaf: 'qr-stats' }, { leaf: 'growth-links' }, { leaf: 'referrals' }, { leaf: 'keystone-density' }] },
+      { heading: 'Onboarding', leaves: [{ leaf: 'onboarding-sequences' }, { leaf: 'onboarding-splash' }, { leaf: 'walkthroughs' }, { leaf: 'onboarding-controls', label: 'Onboarding' }] },
+      { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-control-panel', gate: { min: 'admin', staffDomain: 'marketing' } }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' }] },
     ],
   },
   {
-    // Resonance CRM — gated janitor (per-member predictions are sensitive).
+    // Resonance CRM — janitor (per-member predictions are sensitive).
     href: '/admin/crm', label: 'Resonance CRM', min: 'janitor',
     groups: [
-      // NOTE: the `crm` (Roster) leaf is deliberately NOT listed here. The admin sub-nav already
-      // renders the section's own landing link ("Resonance CRM" -> /admin/crm, the roster home), so
-      // adding the crm leaf too would paint TWO tabs on the same URL (the "Resonance CRM" + "Roster"
-      // duplicate). The section link IS the roster tab.
-      // Order (owner directive): Resonance CRM (the section landing link) | Marketing | Inbox | Tasks |
-      // Contacts | Intelligence | Pipeline. Marketing leads the Engine group so the compose-and-send door
-      // sits first, right after the roster home.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-conversations' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      // NOTE: the `crm` (Roster) leaf is deliberately NOT listed here. The section's own landing link
+      // ("Resonance CRM" -> /admin/crm) IS the roster tab; listing the leaf too painted two tabs on one URL.
+      // Order (owner directive): the landing | Marketing | Conversations | Tasks | Contacts | Intelligence |
+      // Pipeline, then the two audience tools.
+      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing', gate: { min: 'admin', staffDomain: 'marketing' } }, { leaf: 'crm-conversations' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline', gate: { min: 'janitor' } }] },
+      { heading: 'Audiences', leaves: [{ leaf: 'segments' }, { leaf: 'crm-leads' }] },
     ],
   },
   {
     href: '/admin/vera-ai', label: 'Vera AI', min: 'janitor', staffDomain: 'insights',
-    groups: [{ leaves: [{ leaf: 'insights' }, { leaf: 'marketing-market-read' }, { leaf: 'marketing-agent' }] }],
-  },
-  {
-    href: '/admin/operations', label: 'Operations', min: 'janitor', staffDomain: 'platform',
     groups: [
-      { heading: 'Platform', leaves: [{ leaf: 'audit', label: 'Audit' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'roles', label: 'Roles' }, { leaf: 'support' }, { leaf: 'spaces' }] },
-      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }, { leaf: 'listing-seeder', label: 'Listing Seeder' }, { leaf: 'event-seeder', label: 'Event Seeder' }] },
+      { heading: 'Assistant', leaves: [{ leaf: 'vera-ai' }, { leaf: 'vera-help-gaps' }, { leaf: 'vera-ai-controls' }, { leaf: 'vera-studio' }] },
+      { heading: 'Intelligence', leaves: [{ leaf: 'insights' }, { leaf: 'marketing-market-read' }, { leaf: 'marketing-agent' }] },
     ],
   },
   {
-    href: '/admin/marketplace', label: 'Market', min: 'admin', staffDomain: 'platform',
+    href: '/admin/operations', label: 'Platform', min: 'janitor', staffDomain: 'platform',
     groups: [
-      { heading: 'Catalog', leaves: [{ leaf: 'marketplace', label: 'Market catalog' }] },
-      { heading: 'Activity', leaves: [{ leaf: 'marketplace-orders', label: 'Orders' }, { leaf: 'marketplace-reports', label: 'Reports' }, { leaf: 'marketplace-disputes', label: 'Disputes' }, { leaf: 'marketplace-reviews', label: 'Reviews' }] },
+      { heading: 'Site', leaves: [{ leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'page-layout', gate: { min: 'admin' } }, { leaf: 'appearance' }] },
+      { heading: 'Commerce', leaves: [{ leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' }, { leaf: 'marketplace-reviews' }] },
+      { heading: 'Accounts', leaves: [{ leaf: 'spaces' }, { leaf: 'roles' }, { leaf: 'sms', gate: { min: 'janitor', staffDomain: 'platform' } }, { leaf: 'nonprofit-verifications', gate: { min: 'janitor' } }] },
+      { heading: 'Tools', leaves: [{ leaf: 'demo' }, { leaf: 'business-seeder', gate: { min: 'admin', staffDomain: 'structure' } }, { leaf: 'listing-seeder', gate: { min: 'admin', staffDomain: 'structure' } }, { leaf: 'event-seeder' }, { leaf: 'audit' }] },
     ],
   },
-  {
-    href: '/admin/qr', label: 'QR Studio', min: 'admin', staffDomain: 'qr',
-    groups: [{ leaves: [{ leaf: 'qr', label: 'QR codes' }, { leaf: 'qr-stats' }] }],
-  },
-  // Loom Studio owns the media + asset library. It is a SECTION rather than a leaf under another
-  // one, and that is a gate decision, not a taste one: `adminHeaderMenu()` stamps the SECTION's
-  // `min` + `staffDomain` onto every item inside it, so filing a janitor+marketing tool under
-  // host+marketing Growth would offer it to hosts, and under janitor+platform Operations would
-  // relabel it a platform tool and drop it for a marketing-domain janitor. Its own row carries its
-  // own gate, exactly like QR Studio directly above (ADR-979).
-  //
-  // No `groups`: the sub-nav then renders just the section's own landing link, which is what
-  // /admin/library needs — it previously matched NO section at all, so the band drew empty.
-  { href: '/admin/library', label: 'Loom Studio', min: 'janitor', staffDomain: 'marketing' },
 ]
+
+/** The gate an ADMIN_NAV item carries: its ref's override (a FROZEN_GATE_DEBT row, page side), else
+ *  the leaf's own row gate. PURE. Undefined for an unknown leaf id. */
+export function adminNavLeafGate(ref: AdminNavLeafRef): StudioGate | undefined {
+  if (ref.gate) return ref.gate
+  const leaf = LEAF_BY_ID.get(ref.leaf)
+  if (!leaf) return undefined
+  return { min: leaf.min, ...(leaf.staffDomain ? { staffDomain: leaf.staffDomain } : {}), ...(leaf.staffLevel ? { staffLevel: leaf.staffLevel } : {}) }
+}

@@ -14,6 +14,9 @@ export interface AdminNavLeaf {
   badge?: number
   /** A door that leaves the app router (a route handler that redirects to another host): a plain anchor. */
   external?: boolean
+  /** The job group a child link sits in (a section's sub-heading, ADR-1745); the sidebar draws a heading
+   *  wherever it changes. Omitted on top-level rows. */
+  group?: string
 }
 
 /** A top-level sidebar row. `children` render beneath it while it is active (an admin world's pages);

@@ -82,6 +82,36 @@ so a sixth lane or a repointed lane fails the build until it is registered:
   guard's shape rule correctly ignores them. Each hub's Settings tab mounts the SAME catalog module the
   rail does; it never builds a parallel form.
 
+## The consolidated IA (ADR‑1745, 2026‑10‑14)
+
+Both consoles follow one framework: **at most seven top‑level groups, at most seven links per group,
+one canonical home per function, every surface within two clicks of the console home** (group, then
+link). The member shell carries one door into each console; the console carries its own navigation.
+
+**Operator console** (`ADMIN_NAV_SPECS` in `lib/nav/studio.ts`, rendered as `admin_header`):
+
+| Section | Groups |
+| --- | --- |
+| Overview | (the `/admin` exec read) |
+| Community | Spaces & groups · People · Activity · Trust & safety |
+| Content | Library · Rewards · Assets (Loom Studio, Elements) |
+| Growth | Acquisition (incl. QR Studio) · Onboarding · Marketing |
+| Resonance CRM | Engine · Audiences |
+| Vera AI | Assistant · Intelligence |
+| Platform | Site · Commerce (incl. Market) · Accounts · Tools |
+
+**Each link carries its own leaf's gate**, not its section's (this replaces ADR‑390's section stamp and
+retires the reason ADR‑979 gave Loom Studio a section of its own). A `FROZEN_GATE_DEBT` row that
+appears carries a `gate` override set to its page's side. `lib/menus/gates.test.ts` pins the sections,
+one place per href, and that every `STUDIO_LEAVES` row is reachable.
+
+**Space console** (`SPACE_HUB_SECTIONS` in `lib/admin/modules/space-hub.ts` over `SPACE_MODULES`):
+Home · Community Resonance · Marketing · Offerings & Money · Content & Programs · Profile & Settings,
+plus the website editor door. A row declares its tab in `SpaceModule.hub`; the tab's cards are its links.
+⚠️ Content & Programs holds seven cards by default and nine once an owner switches on Airwaves and Loom
+Studio (ADR‑796 advanced tools); "Your reach" sits there by an ADR‑1313 owner ruling, so moving it is
+an owner call, not a tidy.
+
 ## What is enforced, and how
 
 **`pnpm check:menu`** (`scripts/check-menu.mjs`, CI step) enforces the invariant by **shape and
