@@ -60,12 +60,26 @@
 
   /* The fixed header clears the iPhone notch in a standalone PWA (viewport-fit=cover); env() is 0
      everywhere else, so the kit's 84 / 64px bar is unchanged off-device. */
+  /* The bar's two heights are named once, so a page that sticks something under the bar (the /pricing
+     matrix header) offsets by the bar's real height instead of retyping it. --fq-site-nav-h is the
+     height the bar has right now: the resting bar, the scrolled bar, or nothing while it is hidden. */
+  [data-design="frequency"] [data-kit="site"] {
+    --fq-site-nav-rest: calc(84px + env(safe-area-inset-top));
+    --fq-site-nav-scrolled: calc(64px + env(safe-area-inset-top));
+    --fq-site-nav-h: var(--fq-site-nav-rest);
+  }
+  [data-design="frequency"] [data-kit="site"]:has(header.nav.is-scrolled) {
+    --fq-site-nav-h: var(--fq-site-nav-scrolled);
+  }
+  [data-design="frequency"] [data-kit="site"]:has(header.nav.is-hidden) {
+    --fq-site-nav-h: 0px;
+  }
   [data-design="frequency"] [data-kit="site"] header.nav {
-    height: calc(84px + env(safe-area-inset-top)) !important;
+    height: var(--fq-site-nav-rest) !important;
     padding-top: env(safe-area-inset-top) !important;
   }
   [data-design="frequency"] [data-kit="site"] header.nav.is-scrolled {
-    height: calc(64px + env(safe-area-inset-top)) !important;
+    height: var(--fq-site-nav-scrolled) !important;
   }
 
   /* The prototype's Log in and avatar are <button>s; here they are links, so they need the box. */
