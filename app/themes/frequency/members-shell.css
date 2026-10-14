@@ -751,3 +751,22 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 /* The header Zap's hover glow (Members.dc.html). */
 [data-design="frequency"] [data-kit="members"] .ap-zap:hover{box-shadow:0 18px 34px -14px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent)}
 }
+
+/* ── Right-rail panels sit on the canvas (owner, 2026-10-14) ───────────────────────────────────────────
+   No glass card behind the rail's panels (Your week, Today's goals, Your Circles this season, People to
+   know, Get started, and the platform panels in .fqm-legacy): the content runs the full width of the rail, and a hairline
+   between panels keeps them apart. The phone's inline copy on the Feed (.fqm-rp-inline) is unchanged. */
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] :is(.fqm-r-stack > :is(.fqm-rp, .fqm-gs), .fqm-legacy section:not(section section)){padding:0 0 20px;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section:not(section section):last-of-type{border-bottom:none;padding-bottom:0}
+[data-design="frequency"] [data-kit="members"] .fqm-r-stack > .fqm-gs > .fq-aura{display:none}
+}
+
+/* ── The Feed shortcuts stand out (owner, 2026-10-14) ──────────────────────────────────────────────────
+   Your Spaces / Circles, Events, Messages and Practices read as the Feed's four doors: a glass tile with
+   the panel shadow, the icon on an iridescent chip, the label in the display face, and a lift on hover. */
+[data-design="frequency"] [data-kit="members"] .fa-quick a { gap: 14px; padding: 14px 16px 14px 14px; background: var(--fq-glass-panel); box-shadow: var(--fq-glass-panel-shadow); font: 500 var(--fq-text-body-s)/1.2 var(--fq-font-display); letter-spacing: -.01em; color: var(--fq-text-strong); transition: transform var(--fq-dur-base) var(--fq-ease-out), box-shadow var(--fq-dur-base) var(--fq-ease-out) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a svg { box-sizing: content-box; width: 18px; height: 18px; padding: 9px; border-radius: var(--fq-radius-s); background: var(--fq-iridescent-sweep-deep); background-size: 220% 100%; color: var(--fq-text-on-accent) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a:hover { background: var(--fq-glass-panel); transform: translateY(-2px); box-shadow: var(--fq-glass-panel-shadow), 0 14px 30px -18px color-mix(in oklab, var(--fq-ink) 45%, transparent) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a:hover svg { background-position: 100% 0 }
+@media (prefers-reduced-motion: reduce) { [data-design="frequency"] [data-kit="members"] .fa-quick a { transition: none } [data-design="frequency"] [data-kit="members"] .fa-quick a:hover { transform: none } }
