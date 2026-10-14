@@ -22,6 +22,9 @@ import {
   getCityCategoryHub,
   getCityCategoryHubs,
 } from '../../../_data'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { FrequencyEventHub } from '@/components/frequency/site/pages/discover/frequency-discover-events'
 
 // ── City × category event hub (EVENTS-REWORK SEO) ─────────────────────────────
 // An indexable landing page for one city + one event category, whose value is the
@@ -89,6 +92,38 @@ export default async function CityCategoryHubPage({ params }: Params) {
   const siblings = (await getCityCategoryHubs()).filter(
     (h) => h.citySlug === hub.citySlug && h.category.slug !== cat.slug,
   )
+
+  // The Frequency design (ADR-1737): the same hub, siblings and JSON-LD, in the design's body. The
+  // operator cover below is a DAWN Detail-template input, so this branch returns before reading it.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd
+          data={[
+            breadcrumbSchema([
+              { name: 'Discover', path: '/discover' },
+              { name: 'Events', path: '/discover/events' },
+              { name: `${cat.label} in ${hub.city}`, path },
+            ]),
+            cityEventListSchema(hub.events, `${cat.label} in ${hub.city}`),
+          ]}
+        />
+        <FrequencyEventHub
+          city={hub.city}
+          label={cat.label}
+          noun={cat.noun}
+          nounSingular={cat.nounSingular}
+          events={hub.events}
+          today={dayInZone(new Date(), HOME_TZ)}
+          siblings={siblings.map((s) => ({
+            href: `/discover/events/in/${s.citySlug}/${s.category.slug}`,
+            label: s.category.label,
+            count: s.events.length,
+          }))}
+        />
+      </>
+    )
+  }
 
   // The standard entity cover (PROG-P5, ADR-1136): the operator's /discover/events Settings
   // image stands behind every city-category hub; a hub has no cover of its own.

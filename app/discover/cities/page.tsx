@@ -10,6 +10,8 @@ import { PageHero, Section, BetaCTA, Button } from '@/components/marketing/marke
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCitiesIndex } from '@/components/frequency/site/pages/discover/frequency-discover-places'
 
 export const revalidate = 3600
 
@@ -42,8 +44,7 @@ export function generateMetadata(): Metadata {
 export default async function DiscoverCitiesIndexPage() {
   const cities = await listDensityCities()
 
-  return (
-    <>
+  const schema = (
       <JsonLd
         data={[
           breadcrumbSchema([
@@ -64,6 +65,22 @@ export default async function DiscoverCitiesIndexPage() {
           },
         ].filter(Boolean)}
       />
+  )
+
+  // The Frequency design (ADR-1737): the same list and the same schema, in the design's body.
+  // SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        {schema}
+        <FrequencyCitiesIndex cities={cities} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      {schema}
 
       <PageHero
         eyebrow="Discover by city"
