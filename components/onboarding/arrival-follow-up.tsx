@@ -14,18 +14,15 @@ import { followUpsFor, type ArchetypeId } from '@/lib/audience/archetypes'
 
 export const ARCHETYPE_COOKIE = 'fq_archetype'
 
-export function ArrivalFollowUp({
-  persona,
-  value,
-  onChange,
+/** The follow-up's state rules, shared by every surface that draws the question (the DAWN fieldset below
+ *  and the Frequency design's chips, components/frequency/site/pages/funnel/persona-chooser.tsx): the
+ *  options for a persona, the drop of an answer from another persona's list, and the one cookie. */
+export function useArrivalFollowUp(
+  persona: string | null | undefined,
+  value: ArchetypeId | null,
+  onChange: (next: ArchetypeId | null) => void,
   persist = true,
-}: {
-  persona: string | null | undefined
-  value: ArchetypeId | null
-  onChange: (next: ArchetypeId | null) => void
-  /** Preview never writes the cookie. */
-  persist?: boolean
-}) {
+) {
   const options = followUpsFor(persona)
 
   // A persona change makes an answer from another persona's list meaningless: drop it.
@@ -39,6 +36,23 @@ export function ArrivalFollowUp({
       ? `${ARCHETYPE_COOKIE}=${encodeURIComponent(value)}; path=/; max-age=2592000; samesite=lax`
       : `${ARCHETYPE_COOKIE}=; path=/; max-age=0; samesite=lax`
   }, [persist, value])
+
+  return options
+}
+
+export function ArrivalFollowUp({
+  persona,
+  value,
+  onChange,
+  persist = true,
+}: {
+  persona: string | null | undefined
+  value: ArchetypeId | null
+  onChange: (next: ArchetypeId | null) => void
+  /** Preview never writes the cookie. */
+  persist?: boolean
+}) {
+  const options = useArrivalFollowUp(persona, value, onChange, persist)
 
   if (options.length === 0) return null
   return (

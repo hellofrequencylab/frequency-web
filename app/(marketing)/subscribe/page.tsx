@@ -7,6 +7,8 @@ import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySubscribe } from '@/components/frequency/site/pages/funnel/frequency-subscribe'
 
 export const metadata: Metadata = {
   title: 'Get notes from Frequency',
@@ -57,14 +59,26 @@ const FAQS = [
 ]
 
 export default function SubscribePage() {
+  const schema = (
+    <JsonLd
+      data={[
+        faqSchema(FAQS.map((f) => ({ q: f.q, a: f.a }))),
+        breadcrumbSchema([{ name: 'Subscribe', path: '/subscribe' }]),
+      ]}
+    />
+  )
+  // The Frequency design (ADR-1737): the same form action, steps, questions and schema, in its body.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        {schema}
+        <FrequencySubscribe steps={HOW_IT_WORKS.map(({ t, b }) => ({ t, b }))} faq={FAQS} />
+      </>
+    )
+  }
   return (
     <>
-      <JsonLd
-        data={[
-          faqSchema(FAQS.map((f) => ({ q: f.q, a: f.a }))),
-          breadcrumbSchema([{ name: 'Subscribe', path: '/subscribe' }]),
-        ]}
-      />
+      {schema}
 
       <PageHero
         eyebrow="Stay in the loop"

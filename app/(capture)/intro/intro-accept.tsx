@@ -4,11 +4,18 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { acceptIntro } from './actions'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyIntroAccept } from '@/components/frequency/site/pages/funnel/capture'
 
 // The one-tap confirm for the warm-intro double-opt-in. Consent is an AFFIRMATIVE click, never a
 // side effect of opening the email (a link scanner must not subscribe anyone), so the flip to mailable
 // happens here on the button, not on page load.
-export function IntroAccept({ token, spaceName }: { token: string; spaceName: string }) {
+/** The design switch (ADR-1737): the Frequency door draws the same one-tap confirm, same action. */
+export function IntroAccept(props: { token: string; spaceName: string }) {
+  return SITE_DESIGN === 'frequency' ? <FrequencyIntroAccept {...props} /> : <DawnIntroAccept {...props} />
+}
+
+function DawnIntroAccept({ token, spaceName }: { token: string; spaceName: string }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
   const [error, setError] = useState<string | null>(null)
 

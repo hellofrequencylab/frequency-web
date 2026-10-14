@@ -6,6 +6,9 @@ import { verifyEventInviteToken } from '@/lib/qr/event-invite'
 import { formatEventDateTime } from '@/lib/utils'
 import { Button, Outcome, OutcomeSkeleton } from '@/components/marketing/marketing-ui'
 import { RsvpForm } from './form'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FnColumn, FnHero, FnOutcomePage, FnOutcomeSkeleton } from '@/components/frequency/site/pages/funnel/parts'
+import { FrequencyRsvpForm } from '@/components/frequency/site/pages/funnel/rsvp-form'
 
 // noindex: a per-invite capture surface reached only from a member's attributed QR. It is
 // not a crawl target, and it carries a signed token (SEO check + CONTENT-VOICE §8).
@@ -79,7 +82,7 @@ async function loadInvite(token: string): Promise<InvitePublic | null> {
 
 export default function EventRsvpPage({ params }: { params: Promise<{ token: string }> }) {
   return (
-    <Suspense fallback={<OutcomeSkeleton />}>
+    <Suspense fallback={SITE_DESIGN === 'frequency' ? <FnOutcomeSkeleton /> : <OutcomeSkeleton />}>
       <RsvpInvite params={params} />
     </Suspense>
   )
@@ -88,6 +91,39 @@ export default function EventRsvpPage({ params }: { params: Promise<{ token: str
 async function RsvpInvite({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const invite = await loadInvite(token)
+
+  // The Frequency design (ADR-1737): the same token read, the same two failure states and the same
+  // capture action, in the design's hero and form box. PUBLIC-SAFE fields only, as below.
+  if (SITE_DESIGN === 'frequency') {
+    if (!invite || invite.cancelled) {
+      return (
+        <FnOutcomePage
+          tone="danger"
+          icon="event"
+          title={invite?.cancelled ? 'This event is off.' : 'This link didn’t work.'}
+          action={{ href: '/', label: 'See what Frequency is' }}
+        >
+          {invite?.cancelled
+            ? 'The host called this one off. Ask whoever invited you for the next one.'
+            : 'It may have expired. Ask the person who invited you to share a fresh one.'}
+        </FnOutcomePage>
+      )
+    }
+    return (
+      <>
+        <FnHero
+          center
+          kicker={invite.inviterName ? `${invite.inviterName} invited you` : undefined}
+          title={invite.eventTitle}
+          lede={invite.eventWhen ?? undefined}
+          meta={invite.eventLocation ?? undefined}
+        />
+        <FnColumn label="02 RSVP">
+          <FrequencyRsvpForm token={token} />
+        </FnColumn>
+      </>
+    )
+  }
 
   if (!invite || invite.cancelled) {
     return (
