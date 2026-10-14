@@ -32,10 +32,13 @@ import { TRIGGER_CHIP } from '@/lib/walkthroughs'
 import { allRolePromotionWalkthroughs } from '@/lib/walkthroughs/role-promotion'
 import { RolePromotionPreview } from './role-promotion-preview'
 import { Button } from '@/components/ui/button'
+import { UnderlineTabs } from '@/components/ui/underline-tabs'
+import { DefaultFunnelTab } from './_default/default-funnel-tab'
 
 // Funnels (ADR-068 → ADR-162 → ADR-1090): the one library for the whole sign-up
 // front door. The FIRST entry is Funnel 1 — the current LIVE default (stored slug beta-default),
-// what /join runs with no ?seq, edited at /pages/splash. It is never cloned or
+// what /join runs with no ?seq, edited on this page's Default Funnel tab (?tab=default; it was its
+// own page at /pages/splash until ADR-1746, and that route 301s here). It is never cloned or
 // touched when you build a new funnel. Every NEW funnel is seeded from a separate prompts
 // TEMPLATE (templateSeed() — the live flow's structure with fill-in copy), runs the full
 // induction in its own voice at /join?seq=<slug>, stamps a marketing tag so the
@@ -73,8 +76,53 @@ async function loadSignupCounts(tags: string[]): Promise<Record<string, number>>
   }
 }
 
-export default async function SplashFunnelsPage() {
+// The two tabs (ADR-1746): every Funnel, and the Default Funnel's live-preview editor. A real link per
+// tab, so the Default Funnel keeps a URL of its own (/pages/sequences?tab=default).
+const TAB_ALL = '/pages/sequences'
+const TAB_DEFAULT = '/pages/sequences?tab=default'
+const TABS = [
+  { href: TAB_ALL, label: 'All Funnels' },
+  { href: TAB_DEFAULT, label: 'Default Funnel' },
+]
+
+const PAGE_TITLE = 'Funnels'
+const PAGE_DESCRIPTION =
+  'Every sign-up front door in one place. Start from the template, tune a Funnel for a specific audience, share its link at /join, and everyone who joins through it walks the full induction in that voice.'
+
+function AllPagesLink() {
+  return (
+    <Link
+      href="/pages"
+      className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" /> All pages
+    </Link>
+  )
+}
+
+export default async function SplashFunnelsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
   await requireAdmin('janitor')
+  const { tab } = await searchParams
+
+  // The Default Funnel tab renders on its own, so it never pays for the library's per-funnel reads.
+  if (tab === 'default') {
+    return (
+      <DashboardTemplate
+        eyebrow="Pages"
+        title={PAGE_TITLE}
+        description={PAGE_DESCRIPTION}
+        width="wide"
+        actions={<AllPagesLink />}
+      >
+        <UnderlineTabs activeHref={TAB_DEFAULT} tabs={TABS} />
+        <DefaultFunnelTab />
+      </DashboardTemplate>
+    )
+  }
   // Both sources: custom (DB versions built in the wizard) AND code (e.g. the breathwork feature
   // funnel, ADR-619). Code funnels are managed in the repo, so their row shows a "code" chip instead
   // of the DB lifecycle controls.
@@ -117,17 +165,12 @@ export default async function SplashFunnelsPage() {
   return (
     <DashboardTemplate
       eyebrow="Pages"
-      title="Funnels"
-      description="Every sign-up front door in one place. Start from the template, tune a Funnel for a specific audience, share its link at /join, and everyone who joins through it walks the full induction in that voice."
+      title={PAGE_TITLE}
+      description={PAGE_DESCRIPTION}
       width="wide"
       actions={
         <div className="flex items-center gap-2">
-          <Link
-            href="/pages"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> All pages
-          </Link>
+          <AllPagesLink />
           <form action={createFromTemplateAction}>
             <Button
               type="submit"
@@ -138,7 +181,9 @@ export default async function SplashFunnelsPage() {
         </div>
       }
     >
-      {/* ── Funnel 1 — the current live onboarding flow. Shown first, edited at /pages/splash.
+      <UnderlineTabs activeHref={TAB_ALL} tabs={TABS} />
+
+      {/* ── Funnel 1 — the current live onboarding flow. Shown first, edited on the Default Funnel tab.
               New funnels start from a separate prompts template, so they never disturb this one. ── */}
       <section>
         <SectionHeader title="Funnel 1 — your live onboarding" />
@@ -168,7 +213,7 @@ export default async function SplashFunnelsPage() {
             >
               <ExternalLink className="h-3.5 w-3.5" /> Preview
             </a>
-            <Link href="/pages/splash" className={EDIT_BTN}>
+            <Link href={TAB_DEFAULT} className={EDIT_BTN}>
               <Pencil className="h-3.5 w-3.5" /> Edit
             </Link>
           </div>
@@ -335,7 +380,7 @@ export default async function SplashFunnelsPage() {
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${s.accent.icon}`}>
+                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-control ${s.accent.icon}`}>
                           <s.icon className="h-3.5 w-3.5" aria-hidden />
                         </span>
                         <h3 className="text-body font-bold text-text">{seq.audience}</h3>
@@ -391,7 +436,7 @@ export default async function SplashFunnelsPage() {
                 </span>
                 <p className="mt-3 text-body-sm font-semibold text-text">Planned</p>
                 <p className="mx-auto mt-1 max-w-md text-meta leading-relaxed text-muted">{s.blurb}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-subtle">
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-subtle">
                   <Lock className="h-3.5 w-3.5" /> Not available yet
                 </span>
               </div>
@@ -467,8 +512,8 @@ export default async function SplashFunnelsPage() {
             QR Studio
           </Link>{' '}
           instead. Funnel 1&rsquo;s copy is edited in{' '}
-          <Link href="/pages/splash" className="text-primary-strong hover:underline">
-            the Splash editor
+          <Link href={TAB_DEFAULT} className="text-primary-strong hover:underline">
+            the Default Funnel tab
           </Link>
           ; a tag only stamps if it&rsquo;s registered in{' '}
           <code className="font-mono">lib/traits/registry.ts</code>.

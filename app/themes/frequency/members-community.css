@@ -1,0 +1,37 @@
+/* MEMBER SITE, COMMUNITY GROUP: what the Circles, Circle, Marketplace and Search bodies needed past
+   members-b.css (page maturity pass, 2026-10-13). Scoped exactly like the kit and written in --fq-
+   tokens; a radius or height the export has no token for is the reference's own value (token-ok).
+   DAWN never matches these selectors.
+
+   1. The kit-shaped waits (components/frequency/members/community-states.tsx): the neutral photo tile
+      (`.ph`) cut to each page's own shapes, so nothing jumps when the real body lands.
+   2. Phone fixes for the Circle page: the tab strip scrolls inside its row instead of pushing the page
+      sideways, and the cover's type gets the 720px padding the Event card already has. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-sk{display:block;border-radius:var(--fq-radius-s);animation:fqm-sk 1.6s var(--fq-ease-in-out) infinite}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-k{width:120px;height:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-h1{width:min(420px,80%);height:44px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-meta{width:min(320px,70%);height:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-find{height:44px;border-radius:var(--fq-radius-orb);margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-chip{width:88px;height:36px;border-radius:var(--fq-radius-orb)}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-card{height:250px;border-radius:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-item{aspect-ratio:4/5;border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-hero{min-height:340px;border-radius:28px;margin-top:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-row{height:72px;border-radius:var(--fq-radius-m)}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-panel{height:150px;border-radius:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-head{gap:12px;margin-bottom:32px}
+[data-design="frequency"] [data-kit="members"] .fqm-sk-list{display:flex;flex-direction:column;gap:12px}
+@keyframes fqm-sk{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-sk{animation:none}}
+
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow>.tabs{min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow>.row{flex:none}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-cl-in{padding:22px}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero,[data-design="frequency"] [data-kit="members"] .fqm-sk-hero{min-height:280px}}
+
+/* Search: the gaps the body used to carry as inline style. */
+[data-design="frequency"] [data-kit="members"] .fqm-search-head{gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-search-cols{margin-top:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-more{margin-top:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-row-center{justify-content:center}
+}

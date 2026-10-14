@@ -262,3 +262,16 @@
 .we-canvas-root [data-site-text-selected=true]{box-shadow:0 0 0 2px var(--x-violet-deep);border-radius:6px}
 @media(pointer:coarse){.we-canvas-root .we-ins .we-insert{opacity:1;transform:translateX(-50%) scale(1)}.we-canvas-root .we-micro button{width:44px;height:44px}}
 @media(prefers-reduced-motion:reduce){.we-canvas-root *{transition:none!important}}
+
+/* Chrome classes that replaced inline styles (both designs): the inspector's native selects keep the UA arrow
+   over the field primitive's chrome, the visibility checkbox sizes to itself, the Theme tab's type samples
+   wear the role they name, and the logo preview. */
+[data-editor-root] select.we-select{appearance:auto;min-height:0;box-shadow:none;transition:none}
+[data-editor-root] input.we-check{width:auto}
+[data-editor-root] .we-type-sample{display:block;color:var(--th-text)}
+[data-editor-root] .we-type-sample[data-role=display]{font-family:var(--th-display-render)}
+[data-editor-root] .we-type-sample[data-role=body]{font-family:var(--th-body-render)}
+[data-editor-root] .we-type-sample[data-role=mono]{font-family:var(--th-mono-render)}
+[data-editor-root] .we-logo-preview{width:44px;height:44px;object-fit:contain;margin:8px}
+[data-editor-root] .we-canvas-loading{display:grid;place-items:center;flex:1;min-height:240px}
+.we-shell .we-canvas-loading{color:var(--th-muted)}

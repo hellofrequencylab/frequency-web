@@ -160,19 +160,19 @@ export async function SplashLaneView({
             </span>
             <button
               type="submit"
-              className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"
+              className="rounded-card border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"
             >
               Apply
             </button>
 
-            <div className="ml-1 flex items-center rounded-2xl border border-border p-0.5">
+            <div className="ml-1 flex items-center rounded-card border border-border p-0.5">
               {SPLASH_VIEWS.map(({ value, label, Icon }) => (
                 <Link
                   key={value}
                   href={hrefWith({ view: value === 'cards' ? undefined : value })}
                   aria-label={`${label} view`}
                   aria-current={view === value ? 'true' : undefined}
-                  className={`rounded-[14px] p-1.5 ${
+                  className={`rounded-control p-1.5 ${
                     view === value ? 'bg-primary text-on-primary' : 'text-subtle hover:bg-surface-elevated'
                   }`}
                 >

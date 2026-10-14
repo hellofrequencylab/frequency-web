@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 import { relativeTime } from '@/lib/utils'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Leadership dashboard layout module (/lead): "Messages & dispatches" — the recent
 // announcements going out to the people in this leader's own Circles, so they can keep
@@ -117,7 +118,7 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
   return (
     <section>
       <SectionHeader title="Messages & dispatches" count={recent.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {recent.map((item) => (
           <li key={item.key}>
             <Link
@@ -128,7 +129,7 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
                 <Megaphone className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+                <span className={capsLabel('block text-2xs font-semibold text-primary-strong', 'widest')}>
                   {item.circleName}
                 </span>
                 <span className="mt-0.5 block truncate text-body-sm font-medium text-text">{item.label}</span>

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, Clock, XCircle } from 'lucide-react'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -63,7 +63,7 @@ export default async function NonprofitVerifyPage({
   const showForm = !current || current.status === 'rejected'
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Non Profit verification"
       description="Verified 501(c)(3) organizations get the full Business depth, discounted per licensed seat. Submit your details and we will confirm your status."
@@ -88,7 +88,7 @@ export default async function NonprofitVerifyPage({
           </div>
         )}
       </div>
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }
 
@@ -120,7 +120,7 @@ function StatusCard({
             </p>
           )}
           {status === 'rejected' && note && (
-            <p className="mt-2 rounded-lg bg-surface-elevated px-3 py-2 text-meta text-text">{note}</p>
+            <p className="mt-2 rounded-control bg-surface-elevated px-3 py-2 text-meta text-text">{note}</p>
           )}
         </div>
       </div>

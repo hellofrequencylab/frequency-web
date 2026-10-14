@@ -10,6 +10,7 @@ import {
   publishSpaceProfileLayout,
   setProfilePublished,
 } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
+import { Button } from '@/components/ui/button'
 
 // THE SPACE PAGE PUBLISH BAR. A bottom-docked overlay strip that opens whenever the owner is in live-page
 // edit mode. It is rendered by the LiveProfileGrid (the page body), NOT the admin rail: the rail slides in on
@@ -75,7 +76,7 @@ export function SpacePublishFab({
   // unpersisted work and none of the guards below knew it. `seed` deliberately does not set it, so
   // merely opening your own page never arms a prompt.
   //
-  // Same shape as the repo's other editors (admin/walkthroughs, pages/splash): preventDefault +
+  // Same shape as the repo's other editors (admin/walkthroughs, the Default Funnel tab): preventDefault +
   // returnValue is all a browser honours. The string is ignored by every modern browser, which is
   // exactly why the in-page copy below has to carry the message too — this dialog can only ask
   // "leave?", it cannot explain why.
@@ -240,7 +241,7 @@ export function SpacePublishFab({
           onClick={() => store.undo()}
           disabled={!canUndo}
           aria-label="Undo the last change"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
         >
           <Undo2 className="h-3.5 w-3.5" aria-hidden /> Undo
         </button>
@@ -252,7 +253,7 @@ export function SpacePublishFab({
           aria-checked={published}
           disabled={visibleBusy}
           onClick={() => void onToggleVisible()}
-          className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-control px-2 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <span
             aria-hidden
@@ -289,7 +290,7 @@ export function SpacePublishFab({
               onClick={() => void onDiscard()}
               disabled={discardBusy}
               title="Go back to the page visitors see"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
             >
               {discardBusy ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -303,16 +304,16 @@ export function SpacePublishFab({
             type="button"
             onClick={onSaveDraft}
             title="Come back later"
-            className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-body-sm font-bold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center rounded-control border border-border px-4 py-2 text-body-sm font-bold text-text transition-colors hover:bg-surface-elevated"
           >
             Save draft
           </button>
-          <button
+          <Button
             type="button"
             onClick={() => void onPublish()}
             disabled={publishBusy}
             title="Go live now"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-body-sm font-bold text-on-primary lift-1 transition-colors hover:bg-primary-strong disabled:opacity-60"
+            size="lg"
           >
             {publishBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -320,7 +321,7 @@ export function SpacePublishFab({
               <Globe className="h-4 w-4" aria-hidden />
             )}
             Publish
-          </button>
+          </Button>
         </div>
       </div>
     </div>

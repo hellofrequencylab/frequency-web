@@ -215,7 +215,7 @@ export function ModuleManager({
   return (
     <div className="space-y-6">
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -247,7 +247,7 @@ export function ModuleManager({
                     }`}
                   >
                     <div className="flex min-w-0 items-start gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                         {Icon ? <Icon className="h-4 w-4" aria-hidden /> : null}
                       </span>
                       <div className="min-w-0">
@@ -298,7 +298,7 @@ export function ModuleManager({
                           aria-label={`Move ${row.label} up`}
                           disabled={readOnly || !canMoveUp}
                           onClick={() => move(id, -1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-l-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
+                          className="flex h-7 w-7 items-center justify-center rounded-l-control border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
                         >
                           <ChevronUp className="h-4 w-4" aria-hidden />
                         </button>
@@ -307,7 +307,7 @@ export function ModuleManager({
                           aria-label={`Move ${row.label} down`}
                           disabled={readOnly || !canMoveDown}
                           onClick={() => move(id, 1)}
-                          className="-ml-px flex h-7 w-7 items-center justify-center rounded-r-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
+                          className="-ml-px flex h-7 w-7 items-center justify-center rounded-r-control border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
                         >
                           <ChevronDown className="h-4 w-4" aria-hidden />
                         </button>
@@ -332,7 +332,7 @@ export function ModuleManager({
                         row.locked ? (
                           <Link
                             href={`/spaces/${slug}/settings/billing`}
-                            className="flex h-7 items-center gap-1 rounded-lg bg-surface-elevated px-2 text-2xs font-semibold text-muted hover:bg-surface-elevated/70"
+                            className="flex h-7 items-center gap-1 rounded-control bg-surface-elevated px-2 text-2xs font-semibold text-muted hover:bg-surface-elevated/70"
                           >
                             <Lock className="h-3.5 w-3.5" aria-hidden /> Move up a plan
                           </Link>
@@ -364,7 +364,7 @@ export function ModuleManager({
                           </>
                         )
                       ) : (
-                        <span className="flex h-7 items-center rounded-lg px-2 text-2xs font-medium text-muted">
+                        <span className="flex h-7 items-center rounded-control px-2 text-2xs font-medium text-muted">
                           Always on
                         </span>
                       )}

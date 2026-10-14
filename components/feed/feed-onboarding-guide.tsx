@@ -8,6 +8,7 @@ import { forceOnboardingStep } from '@/app/(main)/feed/onboarding-actions'
 import { SpotlightTour } from '@/components/onboarding/spotlight-tour'
 import { SPOTLIGHT_STOPS } from '@/lib/onboarding/spotlight'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Where the spotlight tour parks its progress so "Take the tour" knows whether to
 // offer a fresh walk or a Resume, and which stop to pick back up from. Mirrors the
@@ -150,7 +151,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">
+          <p className={capsLabel('text-2xs font-semibold text-muted')}>
             {lastStepLeft
               ? 'Almost there. One step left'
               : `Step ${status.doneCount + 1} of ${status.total}`}
@@ -198,7 +199,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         {status.steps.map((step) => {
           const isCurrent = step.key === current.key
           return (
-            <div key={step.key} className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5">
+            <div key={step.key} className="group flex items-center gap-2.5 rounded-control px-1.5 py-1.5">
               <span
                 className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill ${
                   step.done

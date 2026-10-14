@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading skeleton for the Marketplace. The page awaits several reads (listings, hero,
 // facets) before first paint; this renders instantly during those awaits (hero + a listing grid) so
@@ -20,6 +22,7 @@ function ListingCardSkeleton() {
 }
 
 export default function MarketLoading() {
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading the Market" shape="items" />
   return (
     <div>
       <Skeleton className="h-48 w-full rounded-none sm:h-60" />

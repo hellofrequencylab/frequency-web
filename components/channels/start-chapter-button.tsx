@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Sparkles } from 'lucide-react'
 import { startChapterAction } from '@/app/(main)/channels/actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // The "Start a Chapter" CTA on a program Channel. A Chapter is a local Circle
 // running the channel's model; starting one is the Remix flow (blueprint →
@@ -50,7 +51,7 @@ export function StartChapterButton({
         onClick={startAChapter}
         disabled={pending}
         title="You get a private draft to shape before anyone sees it."
-        className={`${className ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover whitespace-nowrap'} disabled:opacity-60`}
+        className={className ? `${className} disabled:opacity-60` : buttonClasses('primary', 'md', 'whitespace-nowrap')}
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
         {pending ? 'Starting…' : label}

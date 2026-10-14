@@ -3,6 +3,7 @@ import { CalendarDays, MapPin, ArrowRight } from 'lucide-react'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { getNextGathering } from '@/lib/quest/next-gathering'
 import { eventDateBadge, formatEventDate } from '@/lib/utils'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // My Quest layout module (ADR-270/294): "Your next gathering" — the one upcoming event to show
 // up to in person (the point of the whole thing). Prefers an event the member RSVP'd to, else the
@@ -20,7 +21,7 @@ export async function QuestNextGathering() {
   return (
     <Link
       href={`/events/${g.slug}`}
-      className="group block rounded-2xl border border-success-bg bg-success-bg/50 px-4 py-3.5 lift-1 transition-colors hover:border-success dark:bg-success-bg/20"
+      className="group block rounded-card border border-success-bg bg-success-bg/50 px-4 py-3.5 lift-1 transition-colors hover:border-success dark:bg-success-bg/20"
     >
       <div className="flex items-center gap-3.5">
         <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-success-bg">
@@ -30,7 +31,7 @@ export async function QuestNextGathering() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <CalendarDays className="h-3 w-3 text-success" aria-hidden />
-            <span className="text-3xs font-black uppercase tracking-widest text-success">
+            <span className={capsLabel('text-3xs font-black text-success', 'widest')}>
               {g.rsvped ? 'You’re going' : 'Your next gathering'}
             </span>
           </div>

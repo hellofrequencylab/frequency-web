@@ -11,6 +11,7 @@ import {
   type TicketStatus, type TicketPriority, type TicketParty,
 } from '@/lib/support/types'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Staff triage controls for one ticket: status / priority / assignee selects, plus a
 // reply composer that can send a public reply OR file an internal note.
@@ -80,7 +81,7 @@ export function AdminTicketControls({
     })
   }
 
-  const lbl = 'mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted'
+  const lbl = capsLabel('mb-1 block text-2xs font-semibold text-muted')
 
   return (
     <div className="space-y-4">
@@ -90,7 +91,7 @@ export function AdminTicketControls({
           onClick={triage}
           disabled={triaging || pending}
           title="Let AI classify this ticket's priority"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
         >
           {triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
           AI triage
@@ -120,7 +121,7 @@ export function AdminTicketControls({
       </div>
 
       <div className="rounded-card border border-border bg-surface p-3">
-        <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-meta">
+        <div className="mb-2 flex items-center gap-1 rounded-control bg-surface-elevated p-0.5 text-meta">
           <button type="button" onClick={() => setInternal(false)} aria-pressed={!internal} className={`flex-1 rounded-md px-2 py-1 font-semibold transition-colors ${!internal ? 'bg-surface text-primary-strong lift-1' : 'text-muted'}`}>
             Reply to member
           </button>
@@ -140,7 +141,7 @@ export function AdminTicketControls({
         {aiDrafted && <p className="mt-1 text-2xs text-muted">✨ AI draft. Review and edit before sending.</p>}
         {error && <p className="mt-1 text-meta text-danger">{error}</p>}
         <div className="mt-2 flex items-center justify-between gap-2">
-          <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">
+          <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">
             {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             AI draft
           </button>

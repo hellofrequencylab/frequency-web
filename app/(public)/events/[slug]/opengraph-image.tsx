@@ -7,6 +7,7 @@ import { eventCardResponse } from '@/lib/og/event-card'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `An event on ${SITE_NAME}`
@@ -41,7 +42,7 @@ export const contentType = OG_CONTENT_TYPE
 // Satori has NO access to the CSS token system, so the few colors it needs are literals mirroring the
 // existing event cards (the shared module + the claim card): events indigo #6366f1 accent,
 // near-black ground, white display type.
-const INDIGO = '#6366f1'
+const INDIGO = palette.ogAccent
 
 // The card a NON-PUBLIC event gets: brand ground, the events accent bar, and the words "An event on
 // Frequency" — no title, no date, no venue, no host. Identity-free by construction, so a shared link

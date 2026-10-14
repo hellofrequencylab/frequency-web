@@ -25,7 +25,10 @@ import {
   getComparison,
   comparisonCopy,
   comparisonPath,
+  type Comparison,
 } from '@/lib/marketing/comparisons'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCompare } from '@/components/frequency/site/pages/funnel/frequency-compare'
 
 export const revalidate = 3600
 
@@ -103,6 +106,20 @@ export default async function ComparisonPage({
         ]}
       />
 
+      {/* The Frequency design (ADR-1737): the same registry rows, links and schema, in its body. */}
+      {SITE_DESIGN === 'frequency' ? (
+        <FrequencyCompare comparison={comparison} image={HERO_IMAGE} />
+      ) : (
+        <ComparisonDawn comparison={comparison} slug={slug} />
+      )}
+    </>
+  )
+}
+
+function ComparisonDawn({ comparison, slug }: { comparison: Comparison; slug: string }) {
+  const copy = comparisonCopy(comparison)
+  return (
+    <>
       <PhotoHero
         image={HERO_IMAGE}
         alt="Friends gathered around a long table at night, talking and laughing"

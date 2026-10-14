@@ -63,7 +63,7 @@ export function FunnelsManager({
         </div>
 
         {creating && (
-          <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
+          <div className="mb-4 rounded-card border border-border bg-surface p-4">
             <CreateForm onDone={() => setCreating(false)} onCancel={() => setCreating(false)} />
           </div>
         )}
@@ -110,7 +110,7 @@ function TemplateTile({ template }: { template: TemplateCard }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4">
       <div className="min-w-0">
         <p className="text-body-sm font-semibold text-text">{template.label}</p>
         <p className="mt-0.5 text-meta leading-snug text-muted">{template.blurb}</p>
@@ -132,7 +132,7 @@ function FunnelRow({ funnel }: { funnel: FunnelListItem }) {
   return (
     <Link
       href={`/admin/growth/funnels/${funnel.id}`}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+      className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 transition-colors hover:border-border-strong"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

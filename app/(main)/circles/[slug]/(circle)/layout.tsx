@@ -33,10 +33,12 @@ import {
 } from '@/lib/circles/hero'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { listPublicPractices } from '@/lib/practices'
-import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
+import { circleEventInsider, loadCircleContentFacts, loadCircleUpcomingEvents } from './tab-facts'
 import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { sisterCircleOffer } from '@/lib/circles/sister'
 import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqCircleShell } from '@/components/frequency/members/circle/circle-shell'
 
 // ── THE CIRCLE DETAIL SHELL (PAGE-FRAMEWORK §3, "How templates map to Next.js") ──────────────────
 //
@@ -301,6 +303,128 @@ export default async function CircleDetailLayout({
     isMember,
   })
 
+  // THE FREQUENCY SHELL (ADR-1737 switch, templates/members/Circle.html). Every gate above stands;
+  // only the placement changes. Build-time constant, so the DAWN tree below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    // Memo hit: loadCircleContentFacts asked the same question with the same key above.
+    const upcoming = await loadCircleUpcomingEvents(
+      circle.id,
+      circleEventInsider({ isMember, isHost }),
+      spaceCircleEventScope(circle),
+    )
+    const spaceName =
+      circle.is_space_primary && circle.space && circle.space.type !== 'root'
+        ? circle.space.brand_name || circle.space.name
+        : null
+    const place = circle.neighborhood ?? circle.city ?? null
+    return (
+      <FqCircleShell
+        notices={
+          <>
+            {isDraft && (
+              <div className="panel stack" role="status">
+                <span className="t1">This circle is in draft</span>
+                <span className="t2">
+                  Only you can see it. It stays off the Circles directory, map, and search until you publish
+                  it from the builder.
+                </span>
+              </div>
+            )}
+            {user && <CircleHandoffBanner circleId={circle.id} />}
+            {circle.is_demo && user && (
+              <Suspense fallback={null}>
+                <DemoClaimCard circleId={circle.id} name={circle.name} about={circle.about} />
+              </Suspense>
+            )}
+          </>
+        }
+        coverImage={hero.coverImage}
+        statusLabel={nearCap && !full ? `${statusPill.label} · Almost full` : statusPill.label}
+        live={!isDraft && !full && circle.status === 'active'}
+        name={circle.name}
+        subline={[
+          `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`,
+          typeLabel,
+          place,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        invite={<QrShareDropdown manager={canManage} />}
+        primary={
+          <>
+            {primary === 'create' && (
+              <CircleCreateMenu circleId={circle.id} circleSlug={circle.slug} canPost={isMember || isHost} canManage={canManage} />
+            )}
+            {primary === 'join' && (
+              <CrewGateButton isCrew={isCrew} label="Join" buttonClassName="btn pa">
+                <JoinCircleButton circleId={circle.id} circleSlug={circle.slug} label="Join" className="btn pa" />
+              </CrewGateButton>
+            )}
+            {!isMember && myProfileId && full && (
+              <button type="button" className="btn" disabled>
+                Full
+              </button>
+            )}
+          </>
+        }
+        admin={
+          canManage ? (
+            <>
+              <OpenAdminBarButton
+                scope={{ kind: 'circle', id: circle.id }}
+                caps={Array.from(caps)}
+                label="Edit"
+                icon={<Settings className="h-4 w-4" />}
+                className="btn"
+              />
+              <Link href={`/circles/${circle.slug}/manage`} className="btn">
+                Manage
+              </Link>
+            </>
+          ) : null
+        }
+        sister={sisterOffer ? <SisterCirclePrompt circleId={circle.id} reason={sisterOffer} /> : null}
+        nextEvent={canEnter ? (upcoming.events[0] ?? null) : null}
+        myProfileId={myProfileId}
+        tabs={canEnter ? tabs : []}
+        tabTools={
+          <>
+            {myProfileId && !isHost && <BoostButton kind="circle" targetId={circle.id} />}
+            {isMember && !isHost && <CircleMemberMenu leaveAction={leaveCircle.bind(null, circle.id)} />}
+          </>
+        }
+        about={circle.about}
+        hostLine={
+          spaceName && circle.space ? (
+            <>
+              Hosted by <Link href={`/spaces/${circle.space.slug}`}>{spaceName}</Link>
+            </>
+          ) : circle.host ? (
+            <>
+              Host <Link href={`/people/${circle.host.handle}`}>{circle.host.display_name}</Link>
+            </>
+          ) : null
+        }
+        memberCount={circle.member_count}
+        memberCap={circle.member_cap}
+      >
+        {canEnter ? (
+          <>
+            {isMember && <DeviceNudge context="circle" className="mb-4" />}
+            {children}
+          </>
+        ) : (
+          <CircleLocked
+            reason={entryReason ?? 'closed'}
+            circleSlug={circle.slug}
+            spaceSlug={circle.space && circle.space.type !== 'root' ? circle.space.slug : null}
+            spaceName={circle.space?.brand_name || circle.space?.name || null}
+          />
+        )}
+      </FqCircleShell>
+    )
+  }
+
   return (
     <div>
       {/* Draft notice: only a manager ever reaches this page while the circle is a draft (everyone
@@ -471,7 +595,7 @@ export default async function CircleDetailLayout({
                 )}
 
                 {!isMember && myProfileId && full && (
-                  <span className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-body-sm font-semibold text-subtle">
+                  <span className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-control border border-border bg-surface-elevated px-3 py-1.5 text-body-sm font-semibold text-subtle">
                     Full
                   </span>
                 )}

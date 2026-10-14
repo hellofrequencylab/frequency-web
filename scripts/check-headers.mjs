@@ -88,10 +88,6 @@ export const KNOWN_DELEGATED = new Map([
     'app/(main)/events/new/event-form.tsx',
     'the "Create an event" instructional band hand-rolls the page h1 at text-body; /events/new delegates its header to it (so did /events/[slug]/edit, until LIVE-237 retired it). Retire onto PageHeading.',
   ],
-  [
-    'app/(main)/admin/walkthroughs/[id]/editor.tsx',
-    'the Walkthrough editor hand-rolls back-link + h1 + actions, which is exactly PageHeading\u2019s back/title/actions slot set.',
-  ],
 ])
 
 function walkEntries(dir, out = []) {

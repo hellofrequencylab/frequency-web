@@ -78,7 +78,7 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface lift-1">
+    <section className="rounded-card border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
         <h2 className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <Briefcase className="h-4 w-4 text-primary-strong" />
@@ -91,7 +91,7 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
       </div>
 
       {error && (
-        <p className="mx-4 mt-3 rounded-lg border border-danger bg-danger-bg/30 px-3 py-2 text-meta text-danger">{error}</p>
+        <p className="mx-4 mt-3 rounded-control border border-danger bg-danger-bg/30 px-3 py-2 text-meta text-danger">{error}</p>
       )}
 
       {/* Add a member */}
@@ -162,7 +162,7 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
                 onClick={() => remove(m.profileId)}
                 disabled={busyId === m.profileId}
                 aria-label={`Remove ${m.displayName} from the team`}
-                className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+                className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

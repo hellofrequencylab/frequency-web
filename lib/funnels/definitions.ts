@@ -16,7 +16,7 @@
 // stored name kept) through the /pages/sequences builder. What remains in code is
 // the BASE flow — Vera's scripted copy from funnel-script — published under the
 // reserved slug `beta-default`. /join with no ?seq runs it, and the owner edits
-// its copy at /pages/splash (saved as the `beta-default` override).
+// its copy on the Default Funnel tab (/pages/sequences?tab=default) (saved as the `beta-default` override).
 //
 // Client-safe (no server imports). The DB layer + merging live in
 // lib/funnels/overrides.ts and lib/funnels/resolve.ts.
@@ -113,7 +113,7 @@ export interface Funnel {
 
 /** Reserved slug for the base VERA flow — what /join runs with no ?seq.
  *  Not a "version" (it never appears in the versions list); its DB override is the
- *  owner's edits from the /pages/splash editor.
+ *  owner's edits from the Default Funnel editor (/pages/sequences?tab=default).
  *
  *  The VALUE stays `beta-default` on purpose: it is a STORED key — the slug of the
  *  live `sequence_overrides` row, recorded in every member's `meta.beta.sequence`

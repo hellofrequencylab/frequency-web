@@ -197,7 +197,7 @@ export function ConversationTriage({
             type="button"
             onClick={() => patch({ assignedTo: tradeTo ?? null, handoffNote: handoff })}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {tradeTo ? 'Trade' : 'Unassign'}
@@ -208,12 +208,12 @@ export function ConversationTriage({
       {(summarizeAction || aiTriageAction) && (
         <div className="flex flex-wrap items-center gap-2">
           {summarizeAction && (
-            <button type="button" onClick={summarize} disabled={aiPending || pending} className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text disabled:opacity-50">
+            <button type="button" onClick={summarize} disabled={aiPending || pending} className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text disabled:opacity-50">
               {aiPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Summarize
             </button>
           )}
           {aiTriageAction && (
-            <button type="button" onClick={aiTriage} disabled={aiPending || pending} className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text disabled:opacity-50">
+            <button type="button" onClick={aiTriage} disabled={aiPending || pending} className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text disabled:opacity-50">
               {aiPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} Suggest priority
             </button>
           )}

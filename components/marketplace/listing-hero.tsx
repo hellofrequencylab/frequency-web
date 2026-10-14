@@ -8,6 +8,7 @@
 
 import Image from 'next/image'
 import { ImageIcon } from 'lucide-react'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export function ListingHero({
   title,
@@ -54,9 +55,11 @@ export function ListingHero({
       {/* TOP-RIGHT: the category pill. */}
       {categoryLabel && (
         <span
-          className={`absolute right-4 top-4 inline-flex items-center rounded-pill px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${
-            image ? 'bg-on-ink/20 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
-          }`}
+          className={capsLabel(
+            `absolute right-4 top-4 inline-flex items-center rounded-pill px-3 py-1 text-2xs font-semibold ${
+              image ? 'bg-on-ink/20 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
+            }`,
+          )}
         >
           {categoryLabel}
         </span>
@@ -64,7 +67,7 @@ export function ListingHero({
 
       {/* BOTTOM: the title (h1) + the primary action, anchored to the base of the scrim. */}
       <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-6 ${image ? 'text-on-ink' : 'text-text'}`}>
-        <h1 className="min-w-0 text-page-title font-bold leading-tight break-words sm:text-3xl">{title}</h1>
+        <h1 className="min-w-0 text-page-title font-bold leading-tight break-words sm:text-stat-sm">{title}</h1>
         {actionSlot && <div className="shrink-0">{actionSlot}</div>}
       </div>
     </div>

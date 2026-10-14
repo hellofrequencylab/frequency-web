@@ -58,7 +58,7 @@ function GalleryImagesField({
                 if (dragIndex.current !== null) reorder(dragIndex.current, i)
                 dragIndex.current = null
               }}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-border"
+              className="group relative aspect-square overflow-hidden rounded-control border border-border"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- gallery thumbnail in the editor, not a build-time asset */}
               <img src={assetRefUrl(img.src)} alt="" className="h-full w-full cursor-grab object-cover" />

@@ -162,7 +162,7 @@ export function NexusesClient({ nexuses, mentors, initialEditId = null }: { nexu
           />
         )}
         rowActions={(n) => (
-          <button onClick={() => setEditingId(n.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+          <button onClick={() => setEditingId(n.id)} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
             <Pencil className="h-3.5 w-3.5" aria-hidden />
           </button>
         )}

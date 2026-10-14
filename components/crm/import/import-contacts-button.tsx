@@ -8,7 +8,7 @@
 // It owns only the button + open state; the wizard (and its gating) lives in the modal. Client
 // component, so it is safe to drop into a Server Component surface (e.g. the platform CRM page).
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { UploadCloud } from 'lucide-react'
 import { ContactImportModal } from './contact-import-modal'
 import type { ImportTarget } from '@/lib/crm/import/types'
@@ -19,28 +19,35 @@ export function ImportContactsButton({
   label = 'Import contacts',
   variant = 'primary',
   className = '',
+  icon,
 }: {
   target: ImportTarget
   /** Display name for a space target (shown as the sealed destination in the modal). */
   spaceName?: string
   label?: string
-  /** Visual weight. `primary` is the filled brand button; `subtle` is a bordered secondary. */
-  variant?: 'primary' | 'subtle'
+  /** Visual weight. `primary` is the filled brand button; `subtle` is a bordered secondary; `bare` adds no
+   *  styling or icon at all, so a design kit can dress the button with `className` alone. */
+  variant?: 'primary' | 'subtle' | 'bare'
   className?: string
+  /** A leading icon for the `bare` variant, which otherwise draws none (a design kit brings its own). */
+  icon?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
 
-  const base =
-    'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-body-sm font-semibold transition-colors disabled:opacity-40'
-  const tone =
-    variant === 'primary'
+  const bare = variant === 'bare'
+  const base = bare
+    ? ''
+    : 'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-body-sm font-semibold transition-colors disabled:opacity-40'
+  const tone = bare
+    ? ''
+    : variant === 'primary'
       ? 'bg-primary text-on-primary hover:bg-primary-hover'
       : 'border border-border-strong text-text hover:bg-surface-elevated'
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={`${base} ${tone} ${className}`}>
-        <UploadCloud className="h-4 w-4" />
+      <button type="button" onClick={() => setOpen(true)} className={bare ? className : `${base} ${tone} ${className}`}>
+        {bare ? icon : <UploadCloud className="h-4 w-4" />}
         {label}
       </button>
       <ContactImportModal open={open} onClose={() => setOpen(false)} target={target} spaceName={spaceName} />

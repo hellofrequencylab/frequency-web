@@ -7,6 +7,7 @@ import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { AskVeraButton } from './ask-vera-button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Vera's profile (ADR-238) — the system voice gets her own page, not a member
 // layout: no streaks, no rank, no friend button. Who she is, what her account
@@ -84,17 +85,17 @@ export async function VeraProfile({
       {bio && <p className="mb-6 max-w-prose text-body-sm leading-relaxed text-text/90">{bio}</p>}
 
       <section>
-        <h2 className="mb-3 text-body-sm font-bold uppercase tracking-wider text-subtle">
+        <h2 className={capsLabel('mb-3 text-body-sm font-bold text-subtle', 'wider')}>
           What Vera does
         </h2>
         <ul className="space-y-2.5">
           {WHAT_SHE_DOES.map(({ Icon, title, line, href, linkLabel }) => (
             <li
               key={title}
-              className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 lift-1"
+              className="flex items-start gap-3 rounded-card border border-border bg-surface p-4 lift-1"
             >
               <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-                <Icon className="h-[18px] w-[18px]" aria-hidden />
+                <Icon className="h-4.5 w-4.5" aria-hidden />
               </span>
               <span className="min-w-0">
                 <p className="text-body-sm font-semibold text-text">{title}</p>

@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -55,8 +56,8 @@ export function HostSchedule({
           time from the drip schedule; refine it on the event page.
         </p>
         {phases.map((p) => (
-          <div key={p.id} className="rounded-lg border border-border bg-surface-elevated/30 p-2.5">
-            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">{p.label}</p>
+          <div key={p.id} className="rounded-control border border-border bg-surface-elevated/30 p-2.5">
+            <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>{p.label}</p>
             <div className="grid gap-1.5 sm:grid-cols-2">
               <Slot slug={slug} runId={runId} phaseId={p.id} kind="meetup" label="Circle Meetup" event={scheduled[p.id]?.meetup ?? null} />
               <Slot slug={slug} runId={runId} phaseId={p.id} kind="gathering" label="Weekend Gathering" event={scheduled[p.id]?.gathering ?? null} />
@@ -119,7 +120,7 @@ function Slot({
         type="button"
         onClick={schedule}
         disabled={pending}
-        className="flex w-full items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
+        className="flex w-full items-center gap-1.5 rounded-control border border-dashed border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />}
         Schedule {label}

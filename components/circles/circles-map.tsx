@@ -78,6 +78,12 @@ export function MapZone({
   return <MapCtx.Provider value={{ open, setOpen, circles, starters, center, setCenter }}><div>{children}</div></MapCtx.Provider>
 }
 
+/** The map zone's shared state, for a design that draws its own map frame and controls (the
+ *  Frequency Circles body). Null outside a <MapZone>. */
+export function useCirclesMapZone() {
+  return useContext(MapCtx)
+}
+
 // "Find circles near me" — uses precise browser geolocation to recentre the map
 // on the viewer, then opens it. Denied/unsupported still opens (on the IP centre).
 // Lives inside MapZone so it shares the one open/centre state.
@@ -143,7 +149,7 @@ export function MapBanner() {
         )}
         {ctx.starters.length > 0 && (
           <span className="inline-flex items-center gap-1.5 text-meta text-subtle">
-            <span className="h-2.5 w-2.5 rounded-pill" style={{ backgroundColor: '#7C5CD6' }} />
+            <span className="h-2.5 w-2.5 rounded-pill" style={{ backgroundColor: 'var(--design-map-starter)' }} />
             {ctx.starters.length} {ctx.starters.length === 1 ? 'Starter to claim' : 'Starters to claim'}
           </span>
         )}

@@ -21,6 +21,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
 import { EventHostOfferField } from '@/components/events/event-host-offer-field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -478,7 +479,7 @@ function ResultGroup({
 }) {
   return (
     <div className="py-1">
-      <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className={capsLabel('px-3 py-1 text-2xs font-semibold text-muted')}>{label}</p>
       {hits.map((h) => (
         <button
           key={h.id}

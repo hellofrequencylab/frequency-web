@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Wand2 } from 'lucide-react'
 import { remixTemplateAction } from '@/app/(main)/circles/remix-actions'
+import { Button } from '@/components/ui/button'
 
 // The "Remix" button on a Starter Circle card (NAMING.md: the verb is Remix, the
 // gloss is "Make it yours"). Remixes the template into a private draft the member
@@ -35,16 +36,16 @@ export function RemixButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
         onClick={remix}
         disabled={pending}
         title="Claim this circle, or make it your own."
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="w-full"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Wand2 className="h-4 w-4" aria-hidden />}{' '}
         {pending ? 'Starting…' : 'Remix'}
-      </button>
+      </Button>
       {error && <p className="mt-1.5 text-2xs text-danger">{error}</p>}
     </div>
   )

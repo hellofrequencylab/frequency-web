@@ -42,7 +42,7 @@ export function AssignJourneyToSeason({ questId, journeys }: { questId: string; 
   }
 
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-3">
+    <div className="rounded-card border border-dashed border-border bg-surface/50 p-3">
       <label htmlFor="assign-journey" className={labelClasses}>Assign an existing Journey</label>
       <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-center">
         <Select

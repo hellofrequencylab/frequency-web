@@ -1,17 +1,18 @@
 import { EMAIL_ACTION, EMAIL_ACTION_INK, EMAIL_INK, EMAIL_MUTED, EMAIL_P, RECEIPT_FOOTER } from '@/lib/email'
 import { EmailShell, css } from './shell'
+import { palette } from '@/lib/theme/palette'
 
 // THE RECEIPT FAMILY ON REACT EMAIL (LIVE-695). One body for all four money receipts (order,
 // tip, donation, subscription) and the earner's notice, inside the base template. PURE: it takes
 // the receipt's data and nothing else, so lib/billing/__golden__ can pin what it renders. React
 // escapes every value, which is what the string template did by hand.
 
-export interface ReceiptEmailLine {
+interface ReceiptEmailLine {
   label: string
   value: string
 }
 
-export interface ReceiptEmailProps {
+interface ReceiptEmailProps {
   greeting: string
   lead: string
   lines: ReceiptEmailLine[]
@@ -23,7 +24,7 @@ export interface ReceiptEmailProps {
 
 const P_INK = css(`${EMAIL_P}color:${EMAIL_INK};`)
 const P_MUTED = css(`${EMAIL_P}color:${EMAIL_MUTED};`)
-const RULE = '#E9E1D4' // token-ok: email HTML
+const RULE = palette.emailBorder
 const DETAIL = css(`margin:0 0 24px;border-top:1px solid ${RULE};border-bottom:1px solid ${RULE};width:100%;`)
 const LABEL = css(`padding:6px 16px 6px 0;font-size:14px;color:${EMAIL_MUTED};`)
 const VALUE = css(`padding:6px 0;font-size:14px;color:${EMAIL_INK};font-weight:600;`)

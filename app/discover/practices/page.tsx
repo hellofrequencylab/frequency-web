@@ -9,6 +9,8 @@ import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
 import { PracticeCard, PillarChips } from './practice-card'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPractices } from '@/components/frequency/site/pages/discover/practices'
 
 export const revalidate = 3600
 
@@ -34,19 +36,34 @@ export default async function PublicPracticesPage() {
   ])
 
   const hero = await resolveIndexHero('/discover/practices')
+  const schema = [
+    practiceListSchema(practices, TITLE),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Practices', path: '/discover/practices' },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same library, chips and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyPractices
+          title={TITLE}
+          description={DESCRIPTION}
+          practices={practices}
+          pillars={pillars}
+          image={hero.heroImage}
+        />
+      </>
+    )
+  }
 
   return (
     <>
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <JsonLd
-          data={[
-            practiceListSchema(practices, TITLE),
-            breadcrumbSchema([
-              { name: 'Discover', path: '/discover' },
-              { name: 'Practices', path: '/discover/practices' },
-            ]),
-          ]}
-        />
+        <JsonLd data={schema} />
 
         {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
         <IndexTemplate

@@ -19,6 +19,7 @@ import { ComposeLightbox } from './compose-lightbox'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Select } from '@/components/ui/select'
 import { DISPATCH_SCOPE_LABEL, POLL_LIMITS, type DispatchScope } from '@/lib/feed/compose-kinds'
+import { Button } from '@/components/ui/button'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
 
@@ -831,15 +832,16 @@ export function Composer({
 
         <div className="flex items-center gap-2.5">
           <span className="hidden text-2xs text-muted sm:inline">⌘ + Enter</span>
-          <button
+          <Button
+            size="sm"
             onClick={submit}
             disabled={!canPost}
-            className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+            className="shrink-0"
           >
             {isPending
               ? kind === 'note' ? 'Saving…' : 'Posting…'
               : submitLabel ?? (isAnnouncement ? 'Announce' : kind === 'note' ? 'Save note' : 'Post')}
-          </button>
+          </Button>
         </div>
       </div>
 

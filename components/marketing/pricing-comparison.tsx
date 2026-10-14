@@ -83,7 +83,7 @@ function toFooter(total: number, tools: number): ComparisonRow {
       {
         kind: 'value',
         text: (
-          <span className="whitespace-nowrap font-display font-normal text-primary-strong text-3xl leading-none">
+          <span className="whitespace-nowrap font-display font-normal text-primary-strong text-stat-sm leading-none">
             {money(FREQUENCY_BUSINESS_MONTHLY)}
             <span className="text-body-sm font-normal text-muted">/mo</span>
           </span>

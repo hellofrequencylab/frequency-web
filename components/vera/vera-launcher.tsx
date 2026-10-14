@@ -272,6 +272,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // `dock` prop while this launcher is mounted in the (main) layout, so neither owns the other.
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const [slotChecked, setSlotChecked] = useState(false)
+  const [orb, setOrb] = useState(false)
   // The BAR's own measurement, subscribed rather than retaken (items 5 + 8). DockBar reads the
   // rail once per frame it needs to; this is that read, not a second one.
   const geometry = useSyncExternalStore(subscribeDockGeometry, getDockGeometry, getServerDockGeometry)
@@ -318,6 +319,9 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     const read = () => {
       const el = document.getElementById(DOCK_CHAT_SLOT_ID)
       setSlot(el && el.getClientRects().length > 0 ? el : null)
+      // The Frequency shell's own Vera orb (its rail foot tab, or the console's corner dock) is the
+      // way in wherever it shows, so the edge pill stands down there (owner, 2026-10-13).
+      setOrb(Array.from(document.querySelectorAll('.fqm-vera-btn')).some((b) => b.getClientRects().length > 0))
       setSlotChecked(true)
     }
     read()
@@ -564,7 +568,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
       {/* The dock tab, portalled into the anchored bar's chat segment. Muted until it matters;
           full amber on an unread. NOT on /admin (the page-admin dock owns that corner); the
           panel stays mounted so the admin "Ask Vera" bar (open-vera) still works. */}
-      {!onAdmin && (
+      {!onAdmin && !orb && (
         <ChatTrigger
           ref={triggerRef}
           slot={slot}
@@ -989,7 +993,7 @@ function ChatTrigger({
             !yielding && (unread > 0 || open) ? 'bg-primary text-on-primary lift-1' : 'bg-primary-bg text-primary-strong',
           )}
         >
-          <MessageSquare className="h-[18px] w-[18px]" aria-hidden />
+          <MessageSquare className="h-4.5 w-4.5" aria-hidden />
           {unread > 0 && (
             <span aria-hidden className={UNREAD_BADGE}>
               {unread > 9 ? '9+' : unread}
@@ -1005,7 +1009,7 @@ function ChatTrigger({
             side="right"
             glow="orange"
             label="Chat"
-            icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
+            icon={<MessageSquare className="h-4.5 w-4.5" aria-hidden />}
             waiting={waiting}
             badgeCount={unread}
             onOpen={onOpen}

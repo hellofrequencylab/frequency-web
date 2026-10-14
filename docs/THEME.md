@@ -20,6 +20,116 @@ the code wins.
 
 ---
 
+## 0. The design axis, above the four (ADR-1737)
+
+The platform wears ONE design system per deploy: **DAWN** or **Frequency**. It is chosen by
+`NEXT_PUBLIC_SITE_DESIGN` (unset reads as DAWN), stamped as `data-design` on `<html>` by the root
+layout, and defined in `lib/theme/design.ts`. It is the one-button change-over: set the variable,
+redeploy (a rebuild: the value is inlined). The gate, go-live and roll back: [RUNBOOKS.md](RUNBOOKS.md) section 8.
+
+| Piece | Where |
+|---|---|
+| The switch, the browser-chrome colours, `LEGACY_THEME_AXES` | `lib/theme/design.ts` |
+| DAWN's tokens (the base every design falls back to) | `app/globals.css`, unscoped `:root` / `.dark` |
+| The design layer: radius steps, shadows, fonts, map paint | `app/globals.css`, `--design-*` |
+| Another design's tokens | `app/themes/<id>.css`, under `:root[data-design="<id>"]` and `.dark[data-design="<id>"]` |
+| The active design's sheets, one stub each (generated) | `app/themes/active/*.ts`, `scripts/lib/design-styles.mjs` |
+| The contract (scope, known names, loaded by the layout, stubs only) | `lib/theme/design.test.ts` |
+
+**Frequency overrides everything.** Under it the four axes below collapse: no Space skin, no
+generation (`balanced`), no occasion, no Space font set or accent, no Theme Studio `<style>`. A
+member's own skin applies only when it is authored for the active design (`SkinDef.designs`);
+**Midnight** is a member theme under both designs: Frequency authors its own (`[data-skin="midnight"]` under `.dark[data-design="frequency"]` in `app/themes/frequency.css`).
+
+**Load per design.** A design's CSS ships only in a build that wears it, as its faces do
+(`lib/theme/design-fonts/active.ts`). A CSS import is not tree-shaken by a runtime `SITE_DESIGN` branch,
+so nothing imports `app/themes/<id>.css` or `app/themes/<id>/*.css` directly: each sheet has one stub,
+`app/themes/active/<sheet>.ts` (the alias layer is `alias`), and code imports the stub
+(`import '@/app/themes/active/kit-site'`). `scripts/write-design-assets.mjs` (prebuild, predev, and
+`pnpm design:use <id>`) rewrites every stub from `NEXT_PUBLIC_SITE_DESIGN` (`scripts/lib/design-styles.mjs`):
+under Frequency a stub is one `import '../frequency/<sheet>.css'`, so each sheet still loads only where
+its importer renders and in the same order; under DAWN every stub is empty, so a DAWN deploy carries no
+Frequency CSS. The committed stubs are DAWN's, and `lib/theme/design.test.ts` fails on a committed
+Frequency stub, a missing or stray stub, or any direct import of a design sheet.
+
+**Preview locally.** `?design=frequency` stamps the attribute only (stored in
+`localStorage['freq-design']`; `?design=off` clears it): since the sheets load per design, it shows
+Frequency only in a build whose stubs already import them. For the real thing, `pnpm design:use frequency`
+and restart `pnpm dev`; `pnpm design:use dawn` before committing.
+
+**Adding a design** = an id in `DesignId` and `DESIGNS`, its sheets in `app/themes/<id>.css` and
+`app/themes/<id>/`, and `pnpm design:use dawn` once to write their (empty) stubs. The test fails until
+they agree.
+
+### The rules every component follows, under either design
+
+This is the one statement of them; other docs link here. The gate is `check:tokens`
+([THEME-PROTOCOL §3](THEME-PROTOCOL.md#3-style--the-token-cascade-parentchild-already-shipped), ADR-1742).
+
+- **Colour is a semantic token.** The semantic names are DAWN's (`--color-*`, the `bg-surface` /
+  `text-muted` utilities). Both designs fill them: DAWN in `app/globals.css`, Frequency through the alias
+  layer `app/themes/frequency.css`. A component never names a design's own token (`--fq-*`) and never
+  writes a literal: no hex, `rgb()`, `hsl()`/`oklch()`, named colour (`white`), and no Tailwind default
+  palette (`bg-white`, `text-black`, `bg-black/50`, `text-amber-700`). Those read the same in both designs,
+  which is the bug. `color-mix(in oklab, var(--token) …)` over tokens is fine.
+- **Type is the named scale.** Roles (`text-meta`, `text-body-sm`, `text-body`, `text-card-title`,
+  `text-page-title` …) and the two small steps `text-2xs` / `text-3xs`; never `text-[Npx]`, an inline
+  `fontSize`, or a literal `font-family` (use `font-display` / the `--design-font-*` variables). Each design
+  maps the scale to its own sizes:
+
+  | Step | DAWN (rem on its 106.25% root) | Frequency (design export typography) |
+  |---|---|---|
+  | `text-3xs` | 0.625rem, about 10.6px chrome | 11px, the **label** (uppercase, tracked) |
+  | `text-2xs` | 0.6875rem, about 11.7px chrome | 12px, the **tag** / chip |
+  | `text-meta` | 0.75rem, about 12.75px | 13px, the **floor for read text** |
+  | `text-body-sm` | 0.875rem | 15px, UI text |
+
+  The live values are `app/globals.css` (DAWN) and the type-steps block of `app/themes/frequency.css`;
+  where this table and those files disagree, the files win.
+
+  Frequency's floor is 13px: nothing a member reads is smaller, and the only smaller steps are the 11px
+  label and the 12px tag. Hand-written Frequency CSS holds the same floor.
+- **Hand-written CSS uses tokens too.** A page sheet under `app/themes/` reads `var(--fq-*)` or the
+  semantic names, never a literal; only the token files carry values (`app/globals.css` token declarations,
+  the generated `app/themes/frequency/core.css` and `kit-*.css`, and an alias in `app/themes/frequency.css`
+  whose comment names the export value it mirrors).
+- **A literal that must stay** (a QR quiet zone, a printed sheet) carries its reason on the line:
+  `// token-ok: <reason>`, or `KEEP <utility>: <reason>` for a monochrome class.
+
+### The Frequency system's own rules (design export, 2026-10-13)
+
+Frequency is its **own system**, not DAWN with new values. Its token vocabulary is the source of
+truth: `--bg-canvas`, `--bg-sunken`, `--surface-card`, `--surface-raised`, `--surface-glass`,
+`--text-strong/-body/-muted/-faint`, `--action-primary*`, `--accent`, `--accent-2`, `--live`,
+`--presence`, `--reward` (each with `-soft`), the crossover hues `--x-<hue>-neon/-deep`, the type roles
+(`--font-display` Unbounded, `--font-serif` Instrument Serif italic, `--font-sans` Hanken Grotesk), the
+space, radius, shadow and motion scales. They are installed under the `--fq-` prefix (ADR-1740: the
+export's `--text-body`, `--accent`, `--ease-out` and others collide with the app's names) into the
+generated `app/themes/frequency/core.css`; DAWN's semantic names (`--color-*`, `--design-*`) are then
+**aliases in `app/themes/frequency.css` that point at them**, so every component works under Frequency
+while Frequency keeps its own words.
+
+**Install and switch locally:** `pnpm design:install "<export>.zip"`, then `pnpm design:use frequency`
+and restart `pnpm dev`. `pnpm design:use dawn` switches back. The locked core is "edit only in the
+Frequency design system; products import, never override".
+
+Two surfaces, one family:
+
+| | **Commons** (light, default) | **Stage** (always dark) |
+|---|---|---|
+| Job | The signed-in network: find, RSVP, check in, talk, host | Sell the feeling: home, campaigns, persona doors, Labs vision |
+| Night | Dims to the Thermal room with system dark or after sunset | Always dark |
+| Hues | Crossover hues at **deep** values only (they pass AA) | Crossover hues at **neon** values |
+| Iridescent | Earned only: trophies, tickets, Crew, a check-in confirmation; one per screen | Signature: one phrase per headline, hero CTA, rims |
+| Type | Unbounded for page and card titles only; Hanken 16px body, 14px dense | Unbounded 40-104px, short lines, body 18px+ at most 62ch |
+| Motion | Breath on live things only | Drift, beat, shimmer; energy still / flow / charge |
+
+Hue meanings are the same on both: **violet** act (the next thing to do), **magenta** live (now,
+tonight), **aqua** presence (who's there, checked in), **sun** reward (Zaps, Gems). Never put long
+reading (help, Space pages, messages) on Stage; data-heavy Space tools (CRM, tickets, payouts) are always
+Commons. Sign-up is the doorway: it starts on Stage and cross-fades to Commons as a member picks their
+first Circle. Reduced motion stops durations, aura, orbs and waveforms. Minimum hit target 44px.
+
 ## 1. The four axes
 
 Each axis is a single attribute (or class) on `<html>` or the shell root. They compose by the

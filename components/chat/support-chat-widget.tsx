@@ -36,6 +36,7 @@ import {
 } from '@/app/support-chat/actions'
 import { useSupportChat } from './use-support-chat'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { ChatComposer } from '@/components/ui/chat-composer'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 
@@ -134,7 +135,7 @@ export function SupportChatPanel({ onClose }: { onClose: () => void }) {
   )
 
   return (
-    <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-border bg-surface shadow-pop">
+    <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden overscroll-contain rounded-card border border-border bg-surface shadow-pop">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="min-w-0">
           <p className="text-body-sm font-semibold text-text">Contact us</p>
@@ -144,7 +145,7 @@ export function SupportChatPanel({ onClose }: { onClose: () => void }) {
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+          className="rounded-control p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>
@@ -172,13 +173,9 @@ function SentConfirmation({
         We will reply to your email, and the conversation stays right here whenever you want to check it.
       </p>
       {sessionExists && (
-        <button
-          type="button"
-          onClick={onView}
-          className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" onClick={onView} className="mt-1">
           View conversation
-        </button>
+        </Button>
       )}
       <button type="button" onClick={onNew} className="text-meta font-medium text-muted hover:text-text">
         Send another message
@@ -195,7 +192,7 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
       {authed ? (
         <Link
           href="/feed"
-          className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary"
+          className="flex items-center gap-2.5 rounded-control border border-border px-3 py-2 transition-colors hover:border-primary"
         >
           <UserRound className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
           <span className="min-w-0">
@@ -206,7 +203,7 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
       ) : (
         <Link
           href={`/sign-in?next=${encodeURIComponent(nextPath)}`}
-          className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2 transition-colors hover:border-primary"
+          className="flex items-center gap-2.5 rounded-control border border-border px-3 py-2 transition-colors hover:border-primary"
         >
           <UserRound className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
           <span className="min-w-0">
@@ -264,14 +261,10 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-      >
+      <Button type="submit" size="lg" disabled={pending} className="mt-auto">
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Send message
-      </button>
+      </Button>
     </form>
   )
 }
@@ -302,7 +295,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
   return (
     <>
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1.5">
-        <button type="button" onClick={onBack} aria-label="Back" className="rounded-lg p-1 text-muted hover:bg-surface-elevated hover:text-text">
+        <button type="button" onClick={onBack} aria-label="Back" className="rounded-control p-1 text-muted hover:bg-surface-elevated hover:text-text">
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
         <span className="text-meta font-medium text-muted">Your conversation</span>
@@ -315,7 +308,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         {messages.map((m) => (
           <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-body-sm ${
+              className={`max-w-[85%] whitespace-pre-wrap rounded-card px-3 py-2 text-body-sm ${
                 m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'
               }`}
             >
@@ -325,7 +318,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         ))}
         {typingNames.length > 0 && (
           <div className="flex justify-start">
-            <div className="inline-flex items-center gap-1 rounded-2xl bg-surface-elevated px-3 py-2">
+            <div className="inline-flex items-center gap-1 rounded-card bg-surface-elevated px-3 py-2">
               <span className="size-1.5 animate-bounce rounded-pill bg-muted [animation-delay:-0.2s]" />
               <span className="size-1.5 animate-bounce rounded-pill bg-muted [animation-delay:-0.1s]" />
               <span className="size-1.5 animate-bounce rounded-pill bg-muted" />

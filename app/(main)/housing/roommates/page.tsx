@@ -119,7 +119,7 @@ export default async function RoommatesPage({
             action={
               <Link
                 href="/settings#connections"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Sparkles className="h-4 w-4" aria-hidden /> Turn on Resonance matching
               </Link>
@@ -134,7 +134,7 @@ export default async function RoommatesPage({
                   <Link
                     key={m.listingId}
                     href={`/housing/${m.listingId}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary/60"
+                    className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary/60"
                   >
                     <div className="min-w-0">
                       <p className="flex items-center gap-1.5 font-medium text-text">
@@ -174,7 +174,7 @@ export default async function RoommatesPage({
             action={
               <Link
                 href="/settings#connections"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Sparkles className="h-4 w-4" aria-hidden /> Turn on Resonance matching
               </Link>

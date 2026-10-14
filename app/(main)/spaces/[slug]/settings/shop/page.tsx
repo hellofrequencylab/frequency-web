@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Coins, Receipt, Wallet } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { getCallerProfile } from '@/lib/auth'
@@ -68,7 +68,7 @@ export default async function SpaceShopConsolePage({
   const readOnly = !canManage && staffViewing
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title={TAB_COPY[activeTab].title}
       description={TAB_COPY[activeTab].description}
@@ -104,7 +104,7 @@ export default async function SpaceShopConsolePage({
           <StorefrontTab slug={slug} spaceId={space.id} preferences={space.preferences} readOnly={readOnly} />
         )}
       </Suspense>
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }
 
@@ -128,12 +128,12 @@ function StatsSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/50" />
       ))}
     </>
   )
 }
 
 function TabSkeleton() {
-  return <div className="mt-4 h-40 animate-pulse rounded-2xl bg-surface-elevated/50" />
+  return <div className="mt-4 h-40 animate-pulse rounded-card bg-surface-elevated/50" />
 }

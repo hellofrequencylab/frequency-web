@@ -5,6 +5,7 @@ import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { assetRefUrl, assetValueFromPick, type AssetValue } from '@/lib/library/asset-ref'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The `<img src>` guard is NOT written here. Every src in the product whose value did not come from
 // a source literal goes through the one allowlist in lib/safe-image-src.ts: an anchored regexp
@@ -58,7 +59,7 @@ export function LoomImageField({
 
   return (
     <div className="space-y-1">
-      <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className={capsLabel('block text-2xs font-semibold text-muted')}>{label}</span>
 
       {safeValue ? (
         <div className="flex items-center gap-1.5">
@@ -66,7 +67,7 @@ export function LoomImageField({
             type="button"
             onClick={() => setOpen(true)}
             aria-label={`Change ${lower}`}
-            className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border transition-colors hover:border-primary"
+            className="h-12 w-12 shrink-0 overflow-hidden rounded-control border border-border transition-colors hover:border-primary"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
             <img src={safeValue} alt="" className="h-full w-full object-cover" />
@@ -91,7 +92,7 @@ export function LoomImageField({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-2 py-2.5 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+          className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border px-2 py-2.5 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
         >
           <ImagePlus className="h-3.5 w-3.5" aria-hidden /> Choose a photo
         </button>

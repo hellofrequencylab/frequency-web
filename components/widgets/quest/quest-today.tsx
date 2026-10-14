@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, Compass, Sparkles } from 'lucide-react'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { readSeasonMap } from '@/lib/quest/season-map-data'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // My Quest layout module (ADR-270/294): the single time-aware "next step" — the ONE nudge
 // for today. Split out of the season map so it can be reordered or hidden on its own from
@@ -51,13 +52,13 @@ export async function QuestToday() {
   return (
     <Link
       href={nextStep.href}
-      className="flex items-start gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25 motion-reduce:transition-none"
+      className="flex items-start gap-4 rounded-card border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25 motion-reduce:transition-none"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-primary text-on-primary">
         {expressionNext ? <Sparkles className="h-5 w-5" /> : <Compass className="h-5 w-5" />}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">{nextStep.eyebrow}</p>
+        <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>{nextStep.eyebrow}</p>
         <p className="text-body font-bold leading-tight text-text">{nextStep.title}</p>
         <p className="mt-0.5 text-body-sm leading-relaxed text-muted">{nextStep.detail}</p>
       </div>

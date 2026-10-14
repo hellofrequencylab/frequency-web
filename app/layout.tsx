@@ -17,8 +17,22 @@ import {
   IBM_Plex_Mono,
 } from "next/font/google";
 import "./globals.css";
+// The ACTIVE design's sheets (ADR-1737). Each is a stub in app/themes/active/ that
+// scripts/write-design-assets.mjs points at the build's design (scripts/lib/design-styles.mjs): under
+// Frequency, its generated core, then its alias layer, then the shared primitives' Frequency classes
+// (templates, ui, cards, and their fallback for a page inside no product kit); under DAWN, nothing, so a
+// DAWN deploy ships none of Frequency's CSS. Never import app/themes/<id>/*.css directly.
+import "./themes/active/core";
+import "./themes/active/alias";
+import "./themes/active/members-ui";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
+import { SITE_DESIGN } from '@/lib/theme/design'
+// The ACTIVE design's own faces (lib/theme/design-fonts/). `./active` is one static re-export written by
+// scripts/write-design-assets.mjs before the build, so only that design's next/font module is in this
+// graph: under DAWN it is lib/theme/design-fonts/dawn.ts, which registers nothing. DAWN's faces below
+// stay on <html> for every design, because they are the base a design falls back to.
+import { DESIGN_FONT_CLASS, FONTS_DESIGN } from '@/lib/theme/design-fonts/active'
 import { INSTALL_CAPTURE_SCRIPT } from '@/lib/pwa/install-capture'
 import { POPOVER_DISMISS_SCRIPT } from '@/lib/ui/popover-dismiss'
 import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
@@ -82,6 +96,12 @@ const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: [
 const sofiaCondensed = Sofia_Sans_Extra_Condensed({ variable: "--font-sofia-xc", subsets: ["latin"], display: "swap", preload: false });
 const barlow = Barlow({ variable: "--font-barlow", subsets: ["latin"], weight: ["400", "500", "600"], display: "swap", preload: false });
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"], display: "swap", preload: false });
+
+// A `next dev` / `next build` that skipped the pre-script would wear one design's tokens with another's
+// faces. Say so loudly at render time rather than ship it quietly.
+if (FONTS_DESIGN !== SITE_DESIGN) {
+  console.warn(`[design] fonts are ${FONTS_DESIGN}'s but SITE_DESIGN is ${SITE_DESIGN}: run node --experimental-strip-types scripts/write-design-assets.mjs`)
+}
 
 // The first-paint theme-color values and the pre-paint bootstrap both come from lib/theme/mode.ts,
 // which is the single statement of the light/dark law (see its header). This file used to re-declare
@@ -189,7 +209,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${ptSerif.variable} ${fredoka.variable} ${lexend.variable} ${atkinson.variable} ${sofiaCondensed.variable} ${barlow.variable} ${plexMono.variable} h-full antialiased`}
+      data-design={SITE_DESIGN}
+      // The pre-paint script may re-stamp data-design (the `?design=` preview) and .dark before React
+      // hydrates; both are deliberate, so the root element alone is exempt from the attribute diff.
+      suppressHydrationWarning
+      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${ptSerif.variable} ${fredoka.variable} ${lexend.variable} ${atkinson.variable} ${sofiaCondensed.variable} ${barlow.variable} ${plexMono.variable}${DESIGN_FONT_CLASS ? ` ${DESIGN_FONT_CLASS}` : ''} h-full antialiased`}
     >
       <head>
         {/* Theme script must run synchronously before any paint */}

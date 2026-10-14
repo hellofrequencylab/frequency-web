@@ -182,7 +182,7 @@ function routeActive(pathname: string, href: string) {
 
 function triggerClass(variant: Variant, highlighted: boolean) {
   const dark = variant === 'dark'
-  return `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-colors motion-reduce:transition-none ${
+  return `inline-flex items-center gap-1 px-3 py-1.5 rounded-control text-body-sm font-semibold transition-colors motion-reduce:transition-none ${
     dark
       ? highlighted
         ? 'text-on-ink bg-on-ink/10'
@@ -399,7 +399,7 @@ export function MegaBar({
           ghostTier={item.ghostTier}
           ghostMessage={item.ghostMessage}
           ariaLabel={item.label}
-          className="block rounded-lg px-2 py-1.5"
+          className="block rounded-control px-2 py-1.5"
         >
           {inner}
         </GhostLink>
@@ -412,7 +412,7 @@ export function MegaBar({
         key={item.id}
         href={item.href}
         onClick={beginClose}
-        className={`block rounded-lg px-2 py-1.5 transition-colors motion-reduce:transition-none ${
+        className={`block rounded-control px-2 py-1.5 transition-colors motion-reduce:transition-none ${
           itemActive ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
         }`}
       >

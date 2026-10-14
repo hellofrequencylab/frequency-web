@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // The modern icon-group control: a tight 32px icon-only affordance for row-action (44px on
 // touch, see TOUCH TARGET below)
@@ -117,11 +118,16 @@ const TINTED_TONE: Record<IconButtonTone, string> = {
   success: 'bg-success-bg text-success ring-2 ring-success hover:bg-success-bg/70',
 }
 
+// FREQUENCY (ADR-1737): the kit's icon controls are circles (`.ap-ic`, 50%), so the base takes the
+// pill radius there. Inlined at build; DAWN's string is unchanged.
+const iconBase =
+  SITE_DESIGN === 'frequency' ? iconControlBase.replace(' rounded-control ', ' rounded-pill ') : iconControlBase
+
 function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default') {
-  if (variant === 'bordered') return cn(iconControlBase, 'border border-border text-muted', BORDERED_TONE[tone])
-  if (variant === 'filled') return cn(iconControlBase, FILLED_TONE[tone])
-  if (variant === 'tinted') return cn(iconControlBase, TINTED_TONE[tone])
-  return cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
+  if (variant === 'bordered') return cn(iconBase, 'border border-border text-muted', BORDERED_TONE[tone])
+  if (variant === 'filled') return cn(iconBase, FILLED_TONE[tone])
+  if (variant === 'tinted') return cn(iconBase, TINTED_TONE[tone])
+  return cn(iconBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
 }
 
 // `ref` is a plain prop, not a forwardRef wrapper: React 19 passes it through like any other,

@@ -65,7 +65,7 @@ export function ProductReviews({
       {/* Summary */}
       <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 lift-1">
         <div className="text-center">
-          <div className="text-3xl font-bold tabular-nums text-text">
+          <div className="text-stat-sm font-bold tabular-nums text-text">
             {reviews.average != null ? reviews.average.toFixed(1) : '--'}
           </div>
           <Stars value={reviews.average ?? 0} />

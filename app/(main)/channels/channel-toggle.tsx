@@ -162,7 +162,7 @@ function LeaveChannelDialog({
           <Link
             href="/channels"
             onClick={onClose}
-            className="mt-5 flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-3 text-body-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
+            className="mt-5 flex items-center justify-center gap-2 w-full rounded-control bg-primary px-4 py-3 text-body-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
           >
             <Compass className="w-4 h-4" />
             Explore more channels

@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
@@ -7,6 +8,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { IconAccentFace } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
@@ -104,7 +107,7 @@ function JourneyActions({
     })
   }
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
+  const btn = 'inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
   return (
     <div className={`flex flex-col gap-1 ${align === 'left' ? 'items-start' : ''}`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -122,21 +125,15 @@ function JourneyActions({
           </Link>
         ) : (
           <>
-            <button type="button" onClick={publish} disabled={pending} className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}>
+            <Button type="button" onClick={publish} disabled={pending}>
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
-            </button>
-            <label
+            </Button>
+            <Checkbox
               title="Assign yourself every practice so you can run it from Mindless."
-              className="inline-flex items-center gap-1.5 text-body-sm text-muted"
-            >
-              <input
-                type="checkbox"
-                checked={adopt}
-                onChange={(e) => setAdopt(e.target.checked)}
-                className="h-4 w-4 rounded border-border accent-primary"
-              />
-              Adopt it for myself
-            </label>
+              checked={adopt}
+              onChange={(e) => setAdopt(e.target.checked)}
+              label={<span className="text-muted">Adopt it for myself</span>}
+            />
           </>
         )}
       </div>
@@ -165,9 +162,9 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
     { icon: BarChart3, label: 'Difficulty', value: details.difficulty ? details.difficulty[0].toUpperCase() + details.difficulty.slice(1) : 'Not set' },
   ]
   return (
-    <div className="w-full rounded-2xl border border-border bg-surface p-3.5 lg:w-72">
+    <div className="w-full rounded-card border border-border bg-surface p-3.5 lg:w-72">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Journey Details</span>
+        <span className={capsLabel('text-2xs font-semibold text-muted')}>Journey Details</span>
         <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted">
           <StatusPill status={status} /> · {vis}
         </span>
@@ -336,13 +333,13 @@ export function JourneyBuilder({
             onClick={() => setIconOpen((v) => !v)}
             aria-expanded={iconOpen}
             title="Set a logo image, icon, or color"
-            className="group/icn relative rounded-2xl outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
+            className="group/icn relative rounded-card outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
           >
             {cover && /^https:\/\//i.test(cover) ? (
               // The uploaded image doubles as the Journey's logo (build item 1). next/image (the
               // Supabase Storage host is allowlisted in next.config); guarded to https so the URL
               // can never carry a javascript:/data: scheme.
-              <Image src={cover} alt="" width={56} height={56} unoptimized className="h-14 w-14 rounded-2xl object-cover" />
+              <Image src={cover} alt="" width={56} height={56} unoptimized className="h-14 w-14 rounded-card object-cover" />
             ) : (
               <IconAccentFace icon={icon} accent={accent} size="md" />
             )}
@@ -352,8 +349,8 @@ export function JourneyBuilder({
             </span>
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left lift-3">
-              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Color</p>
+            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-card border border-border bg-surface p-3 text-left lift-3">
+              <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>Color</p>
               <div className="flex flex-wrap gap-2">
                 {STUDIO_ACCENTS.map((a) => {
                   const on = accent === a.key
@@ -366,6 +363,7 @@ export function JourneyBuilder({
                       title={a.label}
                       onClick={() => { setAccent(a.key); meta({ accent: a.key }) }}
                       className={`flex h-8 w-8 items-center justify-center rounded-pill border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
+                      // data-driven: swatch paints each accent option in its own colour
                       style={{ backgroundColor: accentColor(a.key) }}
                     >
                       {on && <Check className="h-4 w-4 text-on-primary" aria-hidden />}
@@ -377,7 +375,7 @@ export function JourneyBuilder({
                   cover, so the small face + the cover band stay in sync: the upload sets BOTH the cover
                   banner (coverImage) AND the header leading chip (logoImage), so it truly "replaces the
                   icon" on the live header. The rail Settings module can set the two separately. */}
-              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-muted">Logo or profile image</p>
+              <p className={capsLabel('mb-1.5 mt-3 text-2xs font-semibold text-muted')}>Logo or profile image</p>
               <ImageUpload
                 label="Logo or profile image"
                 value={cover}
@@ -428,7 +426,7 @@ export function JourneyBuilder({
             it and Replace / Remove over it, so the author frames the header right where they set it. */}
         <div className="mb-5">
           {draft ? (
-            <div className="flex h-32 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-body-sm text-subtle">
+            <div className="flex h-32 w-full items-center justify-center gap-2 rounded-card border border-dashed border-border text-body-sm text-subtle">
               <Lock className="h-4 w-4" aria-hidden /> Add a cover photo once you name it
             </div>
           ) : (
@@ -533,7 +531,7 @@ export function JourneyBuilder({
 
 function DraftGhostVera() {
   return (
-    <div className="rounded-2xl border border-dashed border-primary/30 bg-primary-bg/10 p-4 opacity-70" aria-hidden>
+    <div className="rounded-card border border-dashed border-primary/30 bg-primary-bg/10 p-4 opacity-70" aria-hidden>
       <p className="flex items-center gap-2 text-body font-bold text-text">
         <Sparkles className="h-5 w-5 text-primary-strong" /> Build your Journey with Vera
       </p>
@@ -552,7 +550,7 @@ function DraftGhostMain() {
         <p className="text-body-sm text-muted">Three phases are ready to fill the moment you name your Journey.</p>
       </header>
       {[1, 2, 3].map((n) => (
-        <div key={n} className="rounded-2xl border border-border bg-surface p-4">
+        <div key={n} className="rounded-card border border-border bg-surface p-4">
           <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <Layers className="h-4 w-4 text-subtle" /> Phase {n}
           </p>
@@ -565,7 +563,7 @@ function DraftGhostMain() {
 
 function DraftGhostSidebar() {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface p-4 opacity-70" aria-hidden>
+    <div className="rounded-card border border-dashed border-border bg-surface p-4 opacity-70" aria-hidden>
       <p className="text-body-sm font-semibold text-text">Settings</p>
       <p className="mt-1 text-meta text-muted">
         Cover, story, visibility, rewards, delivery, and the advanced options unlock once your Journey has a name.

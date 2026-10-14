@@ -23,11 +23,12 @@ const PATH = '/what-is-frequency'
 const TITLE = 'What is Frequency and how does it work?'
 // META_DESCRIPTION is trimmed to ~155 chars for the SERP snippet and carries the
 // primary keywords. The longer DESCRIPTION feeds the Article schema, where length
-// is not penalized and the fuller Community Collective framing aids AIO citation.
+// is not penalized and the fuller framing aids AIO citation. Both open on R1's category line
+// (LIVE-912); The Lab is a 2028 plan, so no description promises a room you can walk into today.
 const META_DESCRIPTION =
-  'Frequency is a Community Collective: small local Circles, nearby Events, and a real space to gather. What it is, how it works, and what it costs.'
+  'Local groups that keep meeting. Frequency is small local Circles and nearby Events. What it is, how it works, and what it costs.'
 const DESCRIPTION =
-  'Frequency is a Community Collective: small local Circles, nearby Events, and a real space to gather, plus the tools creators and businesses need to grow together. You keep 100% of your own bookings. Here is what it is, how it works, and what it costs.'
+  'Local groups that keep meeting. Frequency is small local Circles and nearby Events, plus the tools creators and businesses need to grow together. You keep 100% of your own bookings, after card processing. Here is what it is, how it works, and what it costs.'
 
 // The hero photo, fed to the Article schema for richer-result eligibility. The coded
 // page passed this ONE image (the closing media beat's photo was never in the node),
@@ -37,12 +38,12 @@ const HERO_IMAGE = '/images/site/community-1.jpg'
 // The dates the coded article published under. Kept here rather than in the document
 // because they belong to the ROUTE's Article node, not to the words an operator edits.
 const PUBLISHED = '2026-06-29'
-const UPDATED = '2026-07-24'
+const UPDATED = '2026-10-13'
 
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'What is Frequency and how does it work? · Frequency'
 const OG_DESCRIPTION =
-  'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and what it costs.'
+  'Local groups that keep meeting. Frequency is small local Circles, nearby Events, and the tools to grow together. What it is, how it works, and what it costs.'
 
 export function generateMetadata(): Metadata {
   return {

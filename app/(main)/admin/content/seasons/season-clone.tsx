@@ -43,7 +43,7 @@ export function SeasonCloneButton({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-4">
       {error && (
         <Banner tone="critical" title="That didn’t go through">
           {error}

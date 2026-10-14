@@ -56,7 +56,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
+      <div className="rounded-card border border-dashed border-border-strong px-6 py-16 text-center">
         <Blocks className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
         <p className="text-body text-muted">No Apps match.</p>
         <p className="mt-1 text-body-sm text-subtle">Try clearing the search or picking another folder.</p>
@@ -67,7 +67,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
   return (
     <>
       {view === 'list' ? (
-        <div className="overflow-hidden rounded-2xl border border-border">
+        <div className="overflow-hidden rounded-card border border-border">
           {items.map((a) => (
             <button
               key={a.id}
@@ -75,7 +75,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
               onClick={() => setOpenId(a.id)}
               className="flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-elevated"
             >
-              <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
+              <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-control bg-surface-elevated">
                 {a.preview}
               </span>
               <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={a.title}>
@@ -97,7 +97,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
             return (
               <div
                 key={a.id}
-                className={`group relative overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-shadow hover:shadow-pop ${
+                className={`group relative overflow-hidden rounded-card border border-border bg-surface lift-1 transition-shadow hover:shadow-pop ${
                   featured ? 'col-span-2 sm:col-span-1' : ''
                 }`}
               >
@@ -158,7 +158,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
 
         <div className="space-y-5 p-5">
           {/* Preview + identity. */}
-          <div className="flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated">
+          <div className="flex h-56 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated">
             {app.preview}
           </div>
 
@@ -242,7 +242,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
           )}
 
           {/* Source — Layer 1 is read-only: git is the source of truth (docs/LOOM-PLATFORM.md §10). */}
-          <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
+          <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
             <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
             </p>

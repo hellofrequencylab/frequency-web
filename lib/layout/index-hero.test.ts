@@ -42,7 +42,8 @@ const SHIPPED_2026_09_07 = [
   '/help', '/circles/templates', '/crew/leaderboard', '/drafts', '/housing/roommates',
   '/lead/training-library', '/market/manage', '/messages', '/orders', '/partners',
   '/partners/collaborators', '/partners/join', '/search', '/spaces/operating', '/support',
-  '/discover/partners', '/discover/practices',
+  '/discover/practices',
+  // '/discover/partners' left with its route (merged into /discover/spaces, ADR-1747).
 ] as const
 
 const SHIPPED_HEADER = { layout: 'overlay' as const, height: 'large' as const, scrim: true }
@@ -324,8 +325,8 @@ describe('the /events/calendar row', () => {
 })
 
 describe('the 2026-09-07 adoption rows (LIVE-117, ADR-1255)', () => {
-  it('gives the five discovery surfaces the tall directory band', () => {
-    for (const route of ['/help', '/partners', '/housing/roommates', '/discover/partners', '/discover/practices']) {
+  it('gives the four discovery surfaces the tall directory band', () => {
+    for (const route of ['/help', '/partners', '/housing/roommates', '/discover/practices']) {
       expect(indexHeroDefaultsFor(route).size).toBe('large')
     }
   })
@@ -340,7 +341,7 @@ describe('the 2026-09-07 adoption rows (LIVE-117, ADR-1255)', () => {
   })
 
   it('invents no cover: every new row resolves to the gradient band', () => {
-    for (const route of ['/help', '/partners', '/housing/roommates', '/discover/partners', '/discover/practices']) {
+    for (const route of ['/help', '/partners', '/housing/roommates', '/discover/practices']) {
       expect(indexHeroDefaultsFor(route).image).toBeNull()
     }
   })
@@ -366,7 +367,7 @@ describe('the 2026-09-07 adoption rows (LIVE-117, ADR-1255)', () => {
 
   it('a discovery row DOES take the section hero the cascade hands it', async () => {
     resolveContentCascade.mockResolvedValue(cascaded('/uploads/partners.jpg', 'section'))
-    expect((await resolveIndexHero('/discover/partners')).heroImage).toBe('/uploads/partners.jpg')
+    expect((await resolveIndexHero('/discover/practices')).heroImage).toBe('/uploads/partners.jpg')
   })
 
   it('none of the new prefixes disturbs an existing adopter beneath the same section', () => {

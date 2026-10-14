@@ -60,13 +60,15 @@ function labelFor(key: string, field: AnyField): string {
 }
 
 // One labelled row wrapping a control. Generous vertical rhythm, >=44px targets.
+// `count` (the Frequency website editor's inspector, design: "Headline 12") shows the text's length beside its label.
 // An optional `hint` on a field (a block's plain-words guidance: "Each new line starts a paragraph")
 // sits under the label, so the label itself stays a name.
-function Row({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor?: string; children: React.ReactNode }) {
+function Row({ label, hint, htmlFor, count, children }: { label: string; hint?: string; htmlFor?: string; count?: number; children: React.ReactNode }) {
   return (
     <div className="border-b border-border px-4 py-4">
       <label htmlFor={htmlFor} className="mb-2 block text-body-sm font-medium text-text">
         {label}
+        {count !== undefined && <em>{count}</em>}
         {hint && <span className="mt-0.5 block text-meta font-normal text-subtle">{hint}</span>}
       </label>
       {children}
@@ -81,12 +83,14 @@ function FieldControl({
   value,
   onChange,
   onPushScreen,
+  counts,
 }: {
   fieldKey: string
   field: AnyField
   value: unknown
   onChange: (v: unknown) => void
   onPushScreen: (req: PushRequest) => void
+  counts?: boolean
 }) {
   const id = useId()
   const label = labelFor(fieldKey, field)
@@ -95,7 +99,7 @@ function FieldControl({
   switch (field.type) {
     case 'text':
       return (
-        <Row label={label} hint={hint} htmlFor={id}>
+        <Row label={label} hint={hint} htmlFor={id} count={counts ? String(value ?? '').length : undefined}>
           <Input
             id={id}
             type="text" className="min-h-[44px]"
@@ -166,7 +170,7 @@ function FieldControl({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(o.value)}
-                  className={`min-h-[44px] rounded-lg border px-4 text-body-sm font-medium transition-colors ${
+                  className={`min-h-[44px] rounded-control border px-4 text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary text-on-primary'
                       : 'border-border bg-surface text-text hover:bg-surface-elevated'
@@ -225,7 +229,7 @@ function FieldControl({
                       },
                     })
                   }
-                  className="flex min-h-[44px] flex-1 items-center justify-between rounded-lg border border-border bg-surface px-3 text-left text-body-sm text-text hover:bg-surface-elevated"
+                  className="flex min-h-[44px] flex-1 items-center justify-between rounded-control border border-border bg-surface px-3 text-left text-body-sm text-text hover:bg-surface-elevated"
                 >
                   <span className="truncate">{summarize(item, i)}</span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -312,11 +316,14 @@ export function FieldForm({
   value,
   onChange,
   onPushScreen,
+  counts,
 }: {
   fields: FieldsSchema
   value: Record<string, unknown>
   onChange: (value: Record<string, unknown>) => void
   onPushScreen: (req: PushRequest) => void
+  /** Show each text field's character count beside its label. Off unless asked for. */
+  counts?: boolean
 }) {
   return (
     <div>
@@ -330,6 +337,7 @@ export function FieldForm({
             value={value?.[key]}
             onChange={(v) => onChange({ ...value, [key]: v })}
             onPushScreen={onPushScreen}
+            counts={counts}
           />
         </div>
       ))}

@@ -95,18 +95,21 @@ describe('evaluate', () => {
     expect(r.fresh).toEqual([])
   })
 
+  // FROZEN_GATE_DEBT is empty (ADR-1746), so these two seed a frozen row through the io seam.
+  const seeded = { id: 'seeded', catalog: 'janitor+members', page: 'admin+none', why: 'x'.repeat(30), fix: 'catalog', rec: 'x'.repeat(90) }
+
   it('reports a frozen row as HEALED once both sides agree, so the list shrinks', () => {
-    const id = FROZEN_GATE_DEBT[0].id
+    const id = seeded.id
     const files = io({ ...padFiles, [`app/(main)/admin/${id}/page.tsx`]: "requireAdmin('janitor')" })
-    const r = evaluate(padding + catalogOf(id, 'janitor'), files)
+    const r = evaluate(padding + catalogOf(id, 'janitor'), { ...files, frozenGate: [seeded] })
     expect(r.healed.map((h: { id: string }) => h.id)).toContain(id)
     expect(r.fresh).toEqual([])
   })
 
   it('flags a frozen row whose numbers MOVED without being fixed', () => {
-    const id = FROZEN_GATE_DEBT[0].id // frozen at janitor+members vs admin+none
+    const id = seeded.id // frozen at janitor+members vs admin+none
     const files = io({ ...padFiles, [`app/(main)/admin/${id}/page.tsx`]: "requireAdmin('host')" })
-    const r = evaluate(padding + catalogOf(id, 'janitor', 'members'), files)
+    const r = evaluate(padding + catalogOf(id, 'janitor', 'members'), { ...files, frozenGate: [seeded] })
     expect(r.drifted.map((d: { id: string }) => d.id)).toContain(id)
   })
 })
@@ -137,12 +140,13 @@ describe('the frozen list is a record, not a waiver', () => {
     }
   })
 
-  it('the recommendations split both ways (a list that always blames one side is not a reading)', () => {
-    // Not a style rule. If every row resolved to "fix the catalog", the honest conclusion would be
-    // that nobody read the pages and the default was applied eleven times.
-    const sides = new Set(FROZEN_GATE_DEBT.map((d) => d.fix))
-    expect(sides).toContain('catalog')
-    expect(sides).toContain('page')
+  it('is empty because the owner ruled every row (ADR-1746), and the real catalog agrees with every page', () => {
+    // An empty frozen list only means something next to a real corpus: every compared row agrees.
+    expect(FROZEN_GATE_DEBT).toEqual([])
+    const r = evaluate(CATALOG)
+    expect(r.compared).toBeGreaterThanOrEqual(MIN_ROWS)
+    expect(r.fresh).toEqual([])
+    expect(r.drifted).toEqual([])
   })
 })
 

@@ -161,7 +161,7 @@ export function EventEditClient({
   return (
     <div className="space-y-6">
       {/* Edit form */}
-      <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="rounded-card border border-border bg-surface p-5 space-y-4">
         <p className="eyebrow text-subtle">Event details</p>
 
         <Field label="Title *">
@@ -239,7 +239,7 @@ export function EventEditClient({
         </div>
 
         {error && (
-          <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
+          <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
         )}
 
         <div className="flex items-center gap-3 pt-1">
@@ -258,7 +258,7 @@ export function EventEditClient({
       </form>
 
       {/* Cancel / reinstate zone */}
-      <div className="rounded-2xl border border-border bg-surface p-5">
+      <div className="rounded-card border border-border bg-surface p-5">
         <p className="eyebrow text-subtle mb-3">Status</p>
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -275,7 +275,7 @@ export function EventEditClient({
             type="button"
             onClick={handleCancel}
             disabled={isCancelPending}
-            className={`shrink-0 rounded-lg border px-4 py-2 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
+            className={`shrink-0 rounded-control border px-4 py-2 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
               event.is_cancelled
                 ? 'border-success text-success hover:bg-success-bg'
                 : 'border-danger text-danger hover:bg-danger-bg'
@@ -307,7 +307,7 @@ export function EventEditClient({
               type="button"
               onClick={() => setConfirmSeriesOpen(true)}
               disabled={isCancelPending}
-              className="shrink-0 rounded-lg border border-danger px-4 py-2 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+              className="shrink-0 rounded-control border border-danger px-4 py-2 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
             >
               Cancel {series.cancellable} remaining dates
             </button>
@@ -393,7 +393,7 @@ function TierManager({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+    <div className="rounded-card border border-border bg-surface p-5 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="eyebrow text-subtle">Ticket tiers</p>
@@ -411,14 +411,14 @@ function TierManager({
               setAdding(true)
               setEditingId(null)
             }}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated transition-colors"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> Add tier
           </button>
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
+      {error && <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
 
       {/* Existing tiers */}
       {tiers.length > 0 && (
@@ -479,7 +479,7 @@ function TierManager({
                       setAdding(false)
                     }}
                     disabled={isPending}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
                   >
                     <Pencil className="h-3 w-3" /> Edit
                   </button>
@@ -487,7 +487,7 @@ function TierManager({
                     type="button"
                     onClick={() => run(() => setTicketTierActive(t.id, eventId, slug, !t.active))}
                     disabled={isPending}
-                    className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                    className="rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
                   >
                     {t.active ? 'Retire' : 'Reactivate'}
                   </button>
@@ -673,7 +673,7 @@ function TierForm({
             </Select>
           </div>
         ) : (
-          <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">
+          <p className="rounded-control bg-surface px-3 py-2 text-meta text-muted">
             Members-only tickets, linked to the space membership, come with {spaceAccess.wallLabel}.
           </p>
         ))}
@@ -689,7 +689,7 @@ function TierForm({
           type="button"
           onClick={onCancel}
           disabled={disabled}
-          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-muted hover:bg-surface transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-muted hover:bg-surface transition-colors disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" /> Cancel
         </button>

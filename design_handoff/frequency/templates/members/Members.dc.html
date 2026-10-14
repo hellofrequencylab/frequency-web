@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  
+  <script src="./ds-base.js"></script>
+  <script src="../../assets/icons/inline.js"></script>
+  
+  
+  <style>@keyframes fq-logo-flow{from{transform:translateX(-66.6667%)}to{transform:translateX(0)}} @media (prefers-reduced-motion:reduce){[data-logo-flow]{animation:none!important}}</style>
+  <style>body{margin:0;background:var(--surface-card)} a{color:var(--text-strong);text-decoration:none} a:hover{color:var(--accent)}</style>
+</helmet>
+<div data-screen-label="Feed" data-theme="commons" data-energy="flow" data-time="{{ time }}" style="position:relative;min-height:100vh;background:var(--surface-card);font-family:var(--font-sans);color:var(--text-body)" data-s="user-select:{{ sel }}">
+  <div aria-hidden="true" ref="{{ washRef }}" style="position:fixed;inset:-12vh 0;z-index:0;pointer-events:none;overflow:hidden;background:var(--wash);will-change:translate"><div class="fq-grain" style="opacity:.07"></div></div>
+  <div style="position:sticky;top:0;z-index:40;font-family:var(--font-sans)">
+  <header style="position:relative;z-index:2;overflow:hidden;transition:background 480ms cubic-bezier(.45,0,.55,1),box-shadow 480ms cubic-bezier(.45,0,.55,1),border-color 480ms cubic-bezier(.45,0,.55,1)" data-s="background:{{ nv.hdrBg }};backdrop-filter:blur({{ nv.hdrBlur }}) saturate(1.4);-webkit-backdrop-filter:blur({{ nv.hdrBlur }}) saturate(1.4);border-bottom:1px solid {{ nv.hdrLine }};box-shadow:{{ nv.hdrShadow }}">
+    <div aria-hidden="true" style="position:absolute;inset:0;background:var(--pa-soft);transition:opacity 480ms cubic-bezier(.45,0,.55,1)" data-s="opacity:{{ nv.hdrWash }}"></div>
+    <div style="position:relative;height:76px;box-sizing:border-box;display:flex;align-items:center;gap:20px" data-s="padding:0 {{ nv.pad }}">
+      <sc-if value="{{ nv.railLogo }}" hint-placeholder-val="{{ false }}"><div style="flex:none;display:flex;align-items:center;transition:width 260ms cubic-bezier(.16,1,.3,1)" data-s="width:{{ nv.logoW }}"><a href="Members.dc.html" aria-label="Frequency home" style="display:block;width:100%;text-decoration:none"><span style="position:relative;display:block;width:100%;aspect-ratio:1920/389;overflow:hidden;background:rgba(52,49,46,.88);-webkit-mask:url('../../assets/logo/frequency-wordmark.png') no-repeat left center/contain;mask:url('../../assets/logo/frequency-wordmark.png') no-repeat left center/contain"><span data-logo-flow="1" style="position:absolute;top:0;bottom:0;left:0;width:300%;background:linear-gradient(100deg,rgba(196,184,255,0) 0%,rgba(196,184,255,0) 30%,rgba(238,193,236,.85) 40%,rgba(196,184,255,.9) 48%,rgba(143,233,255,.85) 56%,rgba(143,233,255,0) 68%,rgba(143,233,255,0) 100%) 0 0/33.3333% 100% repeat-x;animation:fq-logo-flow 14s linear infinite;will-change:transform"></span></span></a></div></sc-if><sc-if value="{{ nv.classicLogo }}" hint-placeholder-val="{{ true }}"><div style="flex:1 1 0;min-width:max-content;display:flex;align-items:center"><a href="Members.dc.html" aria-label="Frequency home" style="flex:none;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text-strong)">
+        <span style="width:42px;height:42px;flex:none;background:currentColor;-webkit-mask:url('../../assets/logo/frequency-icon-round.png') no-repeat center/contain;mask:url('../../assets/logo/frequency-icon-round.png') no-repeat center/contain"></span>
+        <sc-if value="{{ nv.wide }}" hint-placeholder-val="{{ true }}"><span style="display:block;height:38px;aspect-ratio:1920/389;background:currentColor;-webkit-mask:url('../../assets/logo/frequency-wordmark.png') no-repeat left center/contain;mask:url('../../assets/logo/frequency-wordmark.png') no-repeat left center/contain"></span></sc-if>
+      </a></div></sc-if>
+      <div style="flex:0 1 1216px;min-width:0;display:flex;align-items:center;gap:8px">
+      <nav style="flex:0 1 auto;min-width:0;display:flex;gap:2px;align-items:center;padding:4px;border-radius:999px;background:transparent;overflow-x:auto;scrollbar-width:none">
+        <sc-for list="{{ nv.trigs }}" as="t" hint-placeholder-count="4">
+          <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ t.click }}" style="flex:none;height:40px;display:flex;align-items:center;gap:8px;border-radius:999px;border:none;background:var(--pa);box-shadow:var(--pa-glow),inset 0 0 0 1px rgba(255,255,255,.5);color:var(--text-strong);font:500 14px/1 var(--font-sans);letter-spacing:-.01em;cursor:pointer;white-space:nowrap" data-s="padding:0 {{ nv.tp }} 0 12px"><svg class="fq-icon" style="width:17px;height:17px;color:var(--text-strong)"><use href="{{ t.icon }}"></use></svg><sc-if value="{{ nv.labels }}" hint-placeholder-val="{{ true }}">{{ t.label }}</sc-if></button>
+          </sc-if>
+          <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ t.click }}" style="flex:none;height:40px;display:flex;align-items:center;gap:8px;border-radius:999px;border:none;background:transparent;color:var(--text-muted);font:500 14px/1 var(--font-sans);letter-spacing:-.01em;cursor:pointer;white-space:nowrap" data-s="padding:0 {{ nv.tp }} 0 12px" style-hover="color:var(--text-strong);background:rgba(255,255,255,.6)"><svg class="fq-icon" style="width:17px;height:17px;opacity:.75"><use href="{{ t.icon }}"></use></svg><sc-if value="{{ nv.labels }}" hint-placeholder-val="{{ true }}">{{ t.label }}</sc-if></button>
+          </sc-if>
+        </sc-for>
+      </nav>
+      <div style="flex:1"></div>
+      <a href="Search.html" title="Search ⌘K" style="min-width:40px;height:40px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 12px;border-radius:999px;background:rgba(30,27,24,.04);color:var(--text-faint);text-decoration:none;font:500 14px/1 var(--font-sans);white-space:nowrap;overflow:hidden" data-s="flex:{{ nv.searchFlex }}"><svg class="fq-icon" style="width:17px;height:17px;flex:none;color:var(--text-muted)"><use href="#search"></use></svg><sc-if value="{{ nv.labels }}" hint-placeholder-val="{{ true }}"><span style="flex:1">Search</span><span style="font:500 11px/1 var(--font-sans);color:var(--text-faint)">⌘K</span></sc-if></a>
+      
+      <a href="Messages.html" title="Messages" style="flex:none;position:relative;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-strong)" style-hover="background:rgba(30,27,24,.05)"><svg class="fq-icon" style="width:20px;height:20px"><use href="#message"></use></svg><span style="position:absolute;top:8px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--pa);box-shadow:0 0 0 2px var(--surface-card)"></span></a>
+      <button onClick="{{ nv.openBell }}" title="Notifications" style="flex:none;position:relative;width:40px;height:40px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text-strong);cursor:pointer" style-hover="background:rgba(30,27,24,.05)"><svg class="fq-icon" style="width:20px;height:20px"><use href="#nudge"></use></svg><span style="position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--pa);box-shadow:0 0 0 2px var(--surface-card)"></span></button>
+      <button onClick="{{ nv.openZap }}" style="transition:transform 160ms cubic-bezier(.16,1,.3,1),box-shadow 260ms cubic-bezier(.16,1,.3,1);flex:none;height:44px;display:flex;align-items:center;gap:8px;padding:0 18px 0 14px;margin-left:6px;border-radius:999px;border:none;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);font:600 14px/1 var(--font-sans);white-space:nowrap;cursor:pointer" style-hover="transform:translateY(-1px);box-shadow:0 18px 34px -14px rgba(120,150,225,.7)" style-active="transform:scale(.97)"><svg class="fq-icon" style="width:16px;height:16px"><use href="#zap"></use></svg>Zap</button>
+      </div>
+      <div style="flex:1 1 0;min-width:max-content;display:flex;align-items:center;justify-content:flex-end"><a href="Profile.html" title="Daniel Tyack" style="flex:none;width:40px;height:40px;border-radius:50%;background-color:rgba(30,27,24,.06);background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></a></div>
+    </div>
+  </header>
+
+  <sc-if value="{{ nv.hasPanel }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:76px;z-index:1;max-height:calc(100vh - 76px);overflow-y:auto;background:color-mix(in oklab,var(--surface-card) 92%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 40px 80px -40px rgba(30,27,24,.25)">
+      <div style="max-width:1280px;margin:0 auto;box-sizing:border-box;padding:36px 32px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:40px">
+        <sc-for list="{{ nv.cols }}" as="c" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font:var(--type-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--text-faint);padding:0 0 14px">{{ c.h }}</span>
+            <sc-for list="{{ c.items }}" as="p" hint-placeholder-count="3">
+              <a href="{{ p.href }}" style="display:flex;gap:14px;align-items:flex-start;padding:10px 0;text-decoration:none;color:var(--text-strong)" style-hover="opacity:.65">
+                <svg class="fq-icon" style="width:20px;height:20px;color:var(--text-muted);margin-top:1px"><use href="{{ p.icon }}"></use></svg>
+                <span style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font:600 15px/1.15 var(--font-sans)">{{ p.label }}</span><span style="font:400 14px/1.35 var(--font-sans);color:var(--text-muted)">{{ p.sub }}</span></span>
+              </a>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div style="grid-column:span 2;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+          <sc-for list="{{ nv.cards }}" as="k" hint-placeholder-count="2">
+            <a href="{{ k.href }}" style="display:flex;flex-direction:column;gap:12px;text-decoration:none;color:var(--text-strong)">
+              <span style="height:170px;border-radius:24px;background-color:rgba(30,27,24,.05);background-size:cover;background-position:center" data-s="background-image:{{ k.bg }}"></span>
+              <span style="display:flex;flex-direction:column;gap:6px"><span style="font:var(--type-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--text-faint)">{{ k.kicker }}</span><span style="font:500 17px/1.2 var(--font-display);letter-spacing:-.03em">{{ k.title }}</span></span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+      <div style="max-width:1280px;margin:32px auto 0;box-sizing:border-box;padding:22px 32px 26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid rgba(30,27,24,.06)">
+        <span style="flex:1;font:400 italic 21px/1.2 var(--font-serif);color:var(--text-strong)">{{ nv.foot }}</span>
+        <a href="{{ nv.footHref }}" style="transition:transform 160ms cubic-bezier(.16,1,.3,1),box-shadow 260ms cubic-bezier(.16,1,.3,1);height:48px;display:flex;align-items:center;padding:0 20px;border-radius:999px;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);text-decoration:none;font:600 14px/1 var(--font-sans)" style-hover="transform:translateY(-1px);box-shadow:0 18px 34px -14px rgba(120,150,225,.7)">{{ nv.footCta }}</a>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ nv.sheetZap }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:76px;z-index:1;pointer-events:none"><div style="max-width:1280px;margin:0 auto;padding:10px 32px;box-sizing:border-box;display:flex;justify-content:flex-end">
+      <div style="pointer-events:auto;width:340px;box-sizing:border-box;padding:22px;border-radius:28px;background:color-mix(in oklab,var(--surface-card) 92%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 70px -30px rgba(30,27,24,.35);display:flex;flex-direction:column;gap:18px">
+        <span style="font:400 italic 20px/1 var(--font-serif);color:var(--text-strong)">Capture a moment.</span>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          <sc-for list="{{ nv.zapLive }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:9px;font:500 12px/1 var(--font-sans);color:var(--text-body)"><span style="width:54px;height:54px;border-radius:50%;background:rgba(30,27,24,.045);display:flex;align-items:center;justify-content:center;color:var(--text-strong)"><svg class="fq-icon" style="width:21px;height:21px"><use href="{{ t.icon }}"></use></svg></span>{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <a href="Mindless.html" data-energy="still" style="position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:rgba(30,27,24,.03);text-decoration:none;color:var(--text-strong)"><span class="fq-aura" style="opacity:.35"></span><span class="fq-breathe" style="position:relative;width:40px;height:40px;border-radius:50%;background:var(--pa-orb)"></span><span style="position:relative;display:flex;flex-direction:column;gap:5px"><span style="font:600 15px/1 var(--font-sans)">Mindless</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">Tune out</span></span></a>
+      </div>
+    </div></div>
+  </sc-if>
+
+  <sc-if value="{{ nv.sheetBell }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:76px;z-index:1;pointer-events:none"><div style="max-width:1280px;margin:0 auto;padding:10px 32px;box-sizing:border-box;display:flex;justify-content:flex-end">
+      <div style="pointer-events:auto;width:360px;box-sizing:border-box;padding:20px 22px;border-radius:28px;background:color-mix(in oklab,var(--surface-card) 92%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 70px -30px rgba(30,27,24,.35);display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px"><span style="font:500 16px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Notifications</span><a href="Settings.html" style="font:500 13px/1 var(--font-sans);color:var(--text-muted)">Manage</a></div>
+        <sc-for list="{{ nv.notes }}" as="n" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;font:400 14px/1.45 var(--font-sans);color:var(--text-body)"><svg class="fq-icon" style="width:18px;height:18px;color:var(--text-muted);margin-top:2px"><use href="{{ n.icon }}"></use></svg><span style="display:flex;flex-direction:column;gap:4px"><span>{{ n.t }}</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-faint)">{{ n.w }}</span></span></div>
+        </sc-for>
+      </div>
+    </div></div>
+  </sc-if>
+
+  <sc-if value="{{ nv.anyOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ nv.closeAll }}" style="position:fixed;inset:0;top:76px;z-index:0;background:rgba(30,27,24,.06)"></div>
+  </sc-if>
+</div>
+
+  <div style="position:relative;z-index:1;box-sizing:border-box;padding:44px 40px 160px;display:grid;gap:56px;align-items:start" data-s="grid-template-columns:{{ cols }};transition:{{ colsT }}">
+
+    <sc-if value="{{ showL }}" hint-placeholder-val="{{ true }}">
+    <aside style="position:sticky;top:108px;height:calc(100vh - 132px);min-height:420px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <div ref="{{ leftRail }}" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;overscroll-behavior:contain;padding:8px 2px 12px">
+        <sc-if value="{{ lFull }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:40px">
+            <a href="Profile.html" style="display:flex;gap:12px;align-items:center">
+              <span style="width:44px;height:44px;border-radius:50%;flex:none;background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></span>
+              <span style="display:flex;flex-direction:column;gap:6px;min-width:0"><span style="font:500 15px/1 var(--font-sans);color:var(--text-strong);white-space:nowrap">Daniel Tyack</span><span style="display:flex;gap:6px;align-items:center"><span style="height:24px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;background:linear-gradient(150deg,rgba(255,255,255,.75),rgba(255,255,255,.35));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 24px -16px rgba(80,90,140,.35),inset 0 0 0 1px rgba(255,255,255,.9);font:500 12px/1 var(--font-sans);color:var(--text-body)">Initiate</span><span class="fq-iri-text on-light" style="font:500 12px/1 var(--font-sans)">Crew</span></span></span>
+            </a>
+            <nav style="display:flex;flex-direction:column;gap:2px;margin:-10px 0">
+              <sc-for list="{{ shortcuts }}" as="s" hint-placeholder-count="7">
+                <a href="{{ s.href }}" style="display:flex;align-items:center;gap:14px;height:44px;padding:0 12px;margin:0 -12px;border-radius:16px;font:500 15px/1 var(--font-sans);color:var(--text-body);white-space:nowrap;transition:transform 160ms cubic-bezier(.16,1,.3,1)" style-hover="color:var(--text-strong);background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85);transform:translateX(3px)">
+                  <svg class="fq-icon" style="width:20px;height:20px;flex:none;color:var(--text-muted)"><use href="{{ s.icon }}"></use></svg>
+                  <span style="flex:1">{{ s.label }}</span>
+                  <span style="font:500 13px/1 var(--font-sans);color:var(--text-faint)">{{ s.badge }}</span>
+                </a>
+              </sc-for>
+            </nav>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Your Circles</span>
+              <sc-for list="{{ circles }}" as="c" hint-placeholder-count="3">
+                <a href="Circle.html" style="display:flex;align-items:center;gap:12px">
+                  <span style="position:relative;width:36px;height:36px;border-radius:50%;flex:none;background-color:rgba(30,27,24,.05);background-size:cover;background-position:center" data-s="background-image:{{ c.bg }}"><span style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:var(--pa);box-shadow:0 0 0 2px var(--surface-card)"></span></span>
+                  <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font:500 14px/1.15 var(--font-sans);color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">{{ c.meta }}</span></span>
+                </a>
+              </sc-for>
+            </div>
+            <a href="Journey.html" style="display:flex;flex-direction:column;gap:10px">
+              <span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Keep learning</span>
+              <span style="font:500 15px/1.2 var(--font-sans);color:var(--text-strong)">Mind Journey</span>
+              <span style="height:3px;border-radius:3px;background:rgba(30,27,24,.07)"><span style="display:block;width:42%;height:100%;border-radius:3px;background:var(--pa)"></span></span>
+              <span style="font:400 13px/1.35 var(--font-sans);color:var(--text-muted)">Week 2 of 4 · Lesson 6 next</span>
+            </a>
+          </div>
+        </sc-if>
+        <sc-if value="{{ lMicro }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:28px">
+            <a href="Profile.html" onMouseEnter="{{ tipMe }}" onMouseLeave="{{ tipOff }}" style="width:44px;height:44px;border-radius:50%;background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></a>
+            <nav style="display:flex;flex-direction:column;gap:4px">
+              <sc-for list="{{ shortcuts }}" as="s" hint-placeholder-count="7">
+                <a href="{{ s.href }}" onMouseEnter="{{ s.tip }}" onMouseLeave="{{ tipOff }}" style="position:relative;width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)" style-hover="color:var(--text-strong);background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85)">
+                  <svg class="fq-icon" style="width:24px;height:24px"><use href="{{ s.icon }}"></use></svg>
+                  <sc-if value="{{ s.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--pa);box-shadow:0 0 0 2px var(--surface-card)"></span></sc-if>
+                </a>
+              </sc-for>
+            </nav>
+            <span style="width:24px;height:1px;background:rgba(30,27,24,.08)"></span>
+            <sc-for list="{{ circles }}" as="c" hint-placeholder-count="3">
+              <a href="Circle.html" onMouseEnter="{{ c.tip }}" onMouseLeave="{{ tipOff }}" style="position:relative;width:40px;height:40px;border-radius:50%;background-size:cover;background-position:center" data-s="background-image:{{ c.bg }}"><span style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:var(--pa);box-shadow:0 0 0 2px var(--surface-card)"></span></a>
+            </sc-for>
+            <a href="Journey.html" onMouseEnter="{{ tipJourney }}" onMouseLeave="{{ tipOff }}" style="position:relative;width:40px;height:40px;border-radius:50%;background:conic-gradient(#EEC1EC 0%,#B3C6FF 21%,#8FE9FF 42%,rgba(30,27,24,.08) 42% 100%)"><span style="position:absolute;inset:3px;border-radius:50%;background:var(--surface-card);display:flex;align-items:center;justify-content:center;color:var(--text-strong)"><svg class="fq-icon" style="width:18px;height:18px"><use href="#program"></use></svg></span></a>
+          </div>
+        </sc-if>
+      </div>
+      <div ref="{{ dk.refL }}" style="flex:none"><div style="position:relative;width:100%">
+    <div style="position:absolute;left:0;bottom:calc(100% + 8px);z-index:50;transform-origin:bottom left;transition:opacity 200ms cubic-bezier(.16,1,.3,1),transform 340ms cubic-bezier(.16,1,.3,1)" data-s="opacity:{{ dk.youOp }};transform:{{ dk.youTf }};pointer-events:{{ dk.youPe }}">
+      <div style="max-height:calc(100vh - 220px);overflow-y:auto;width:300px;box-sizing:border-box;padding:20px;border-radius:24px;background:color-mix(in oklab,var(--surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px rgba(30,27,24,.4),inset 0 0 0 1px rgba(255,255,255,.8);display:flex;flex-direction:column;gap:18px">
+        <a href="Profile.html" style="display:flex;gap:12px;align-items:center;text-decoration:none">
+          <span style="width:46px;height:46px;border-radius:50%;flex:none;background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></span>
+          <span style="display:flex;flex-direction:column;gap:5px"><span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Daniel Tyack</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">Initiate · <span class="fq-iri-text on-light" style="font-weight:600">Crew</span> · @daniel</span></span>
+        </a>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ dk.youLinks }}" as="l" hint-placeholder-count="5">
+            <a href="{{ l.href }}" style="display:flex;align-items:center;gap:14px;height:40px;text-decoration:none;color:var(--text-body);font:500 14px/1 var(--font-sans)" style-hover="color:var(--text-strong)"><svg class="fq-icon" style="width:18px;height:18px;color:var(--text-muted)"><use href="{{ l.icon }}"></use></svg>{{ l.label }}</a>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:20px;background:var(--pa-soft)">
+          <span style="font:500 14px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">What you run</span>
+          <span style="font:400 13px/1.45 var(--font-sans);color:var(--text-body)">Nothing yet. Three people near you log Morning sit too.</span>
+          <a href="Circles.html" style="align-self:flex-start;font:600 13px/1 var(--font-sans);color:var(--text-strong);text-decoration:none">Start a Circle →</a>
+        </div>
+        <div style="display:flex;justify-content:space-between;font:400 13px/1 var(--font-sans)"><a href="Settings.html" style="color:var(--text-muted);text-decoration:none">Settings</a><a href="Help.html" style="color:var(--text-muted);text-decoration:none">Help</a><a href="Site Map.html" style="color:var(--text-muted);text-decoration:none">Site map</a></div>
+      </div>
+    </div>
+    <sc-if value="{{ lMicro }}" hint-placeholder-val="{{ false }}"><button onClick="{{ dk.toggleYou }}" title="You" style="position:relative;border:none;cursor:pointer;background:linear-gradient(160deg,color-mix(in oklab,var(--surface-card) 86%,transparent),color-mix(in oklab,var(--surface-card) 62%,transparent));backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px rgba(30,27,24,.45),inset 0 0 0 1px rgba(255,255,255,.9);width:100%;height:60px;display:flex;align-items:center;justify-content:center;padding:8px 0 0;border-radius:24px 24px 18px 18px" style-active="transform:scale(.97)"><span style="position:absolute;left:50%;top:6px;width:20px;height:4px;margin-left:-10px;border-radius:4px;background:rgba(30,27,24,.14)"></span><span style="width:34px;height:34px;border-radius:50%;background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></span></button></sc-if><sc-if value="{{ lFull }}" hint-placeholder-val="{{ true }}"><button onClick="{{ dk.toggleYou }}" style="position:relative;border:none;cursor:pointer;background:linear-gradient(160deg,color-mix(in oklab,var(--surface-card) 86%,transparent),color-mix(in oklab,var(--surface-card) 62%,transparent));backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px rgba(30,27,24,.45),inset 0 0 0 1px rgba(255,255,255,.9);transition:transform 160ms cubic-bezier(.16,1,.3,1),box-shadow 260ms cubic-bezier(.16,1,.3,1);width:100%;height:60px;display:flex;align-items:center;gap:12px;padding:10px 16px 4px 10px;border-radius:24px 24px 18px 18px;color:var(--text-strong);font:500 14px/1 var(--font-sans)" style-hover="transform:translateY(-2px)" style-active="transform:scale(.98)"><span style="position:absolute;left:50%;top:6px;width:28px;height:4px;margin-left:-14px;border-radius:4px;background:rgba(30,27,24,.14)"></span>
+      <span style="width:34px;height:34px;border-radius:50%;flex:none;background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></span>
+      <span style="flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span>You</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">Initiate · Crew</span></span>
+      <svg viewBox="0 0 12 12" width="10" height="10" style="opacity:.45;transition:transform 340ms cubic-bezier(.16,1,.3,1)" data-s="transform:rotate({{ dk.youRot }})"><path d="M3 7.5 6 4.5 9 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+    </button></sc-if>
+  </div></div>
+      <div style="position:absolute;top:0;bottom:0;right:-34px;width:12px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3">
+        <button onClick="{{ toggleL }}" title="{{ lTitle }}" style="flex:none;width:28px;height:28px;margin:0 -8px;border:none;border-radius:50%;background:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1px rgba(30,27,24,.08),0 6px 16px -10px rgba(30,27,24,.4);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="color:var(--text-strong);background:#fff"><svg viewBox="0 0 12 12" width="10" height="10" style="transition:transform 260ms cubic-bezier(.16,1,.3,1)" data-s="transform:rotate({{ lRot }})"><path d="M7.5 3 4.5 6 7.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div onPointerDown="{{ dragL }}" onDoubleClick="{{ toggleL }}" title="Drag to resize · double-click to collapse" style="flex:1;width:12px;border-radius:6px;cursor:col-resize;touch-action:none;display:flex;justify-content:center" style-hover="background:rgba(196,184,255,.22)"><span style="width:1px;height:100%;background:rgba(30,27,24,.06)"></span></div>
+      </div>
+    </aside>
+    </sc-if>
+
+    <main style="min-width:0;width:100%;max-width:860px;justify-self:center;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+        <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:12px">
+          <span style="font:400 14px/1 var(--font-sans);color:var(--text-muted)">Monday, October 12 · 4:20pm · Bird Rock</span>
+          <h1 style="margin:0;font:500 clamp(32px,4vw,46px)/1 var(--font-display);letter-spacing:-.05em;color:var(--text-strong)">Good afternoon, <em style="font:400 italic 1.08em/1 var(--font-serif);letter-spacing:-.015em">Daniel.</em></h1>
+          <span style="font:400 15px/1.4 var(--font-sans);color:var(--text-body)">Clear and 66°. Sunset at 6:21. Two things are on near you right now.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+                    <div style="position:relative">
+            <button onClick="{{ toggleCreate }}" class="fq-iri-rim" style="height:48px;display:flex;align-items:center;gap:8px;padding:0 18px 0 14px;border-radius:999px;border:none;background:rgba(255,255,255,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 14px/1 var(--font-sans);cursor:pointer" style-hover="background:rgba(255,255,255,.7)" style-active="transform:scale(.97)"><span style="font:400 20px/1 var(--font-sans);margin-top:-2px">+</span>Create</button>
+            <sc-if value="{{ createOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;right:0;top:54px;z-index:5;width:280px;padding:10px 18px;border-radius:24px;background:color-mix(in oklab,var(--surface-card) 92%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 70px -30px rgba(30,27,24,.35);display:flex;flex-direction:column">
+                <sc-for list="{{ createItems }}" as="c" hint-placeholder-count="6">
+                  <a href="{{ c.href }}" style="display:flex;gap:14px;align-items:flex-start;padding:10px 0"><svg class="fq-icon" style="width:19px;height:19px;color:var(--text-muted);margin-top:1px"><use href="{{ c.icon }}"></use></svg><span style="display:flex;flex-direction:column;gap:4px"><span style="font:500 14px/1 var(--font-sans);color:var(--text-strong)">{{ c.label }}</span><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ c.sub }}</span></span></a>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:36px;flex-wrap:wrap;margin-top:40px">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <button onClick="{{ s.pick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:0;border:none;background:none;cursor:pointer;text-align:left" style-active="transform:scale(.97)">
+            <sc-if value="{{ s.num }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:baseline;gap:6px;height:40px"><span style="font:500 40px/1 var(--font-display);letter-spacing:-.06em;color:var(--text-strong)">{{ s.val }}</span><span style="font:500 15px/1 var(--font-sans)">{{ s.glyph }}</span></span></sc-if><sc-if value="{{ s.isRank }}" hint-placeholder-val="{{ false }}"><span style="height:40px;display:inline-flex;align-items:center;padding:0 18px;border-radius:999px;background:linear-gradient(150deg,rgba(255,255,255,.75),rgba(255,255,255,.35));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 24px -16px rgba(80,90,140,.35),inset 0 0 0 1px rgba(255,255,255,.9)"><span class="fq-iri-text on-light" style="font:500 20px/1 var(--font-display);letter-spacing:-.04em">{{ s.val }}</span></span></sc-if>
+            <sc-if value="{{ s.on }}" hint-placeholder-val="{{ false }}"><span style="font:500 13px/1 var(--font-sans);color:var(--text-strong);padding-bottom:4px;border-bottom:1.5px solid var(--text-strong)">{{ s.label }}</span></sc-if>
+            <sc-if value="{{ s.off }}" hint-placeholder-val="{{ true }}"><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted);padding-bottom:4px;border-bottom:1.5px solid transparent">{{ s.label }}</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+      <div style="position:relative;margin-top:22px;padding:22px 24px;border-radius:24px;background:linear-gradient(140deg,rgba(255,255,255,.78),rgba(255,255,255,.42));backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);box-shadow:0 24px 60px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.9)">
+        <button onClick="{{ sb.toggle }}" aria-expanded="{{ sb.open }}" title="{{ sb.title }}" style="position:absolute;top:14px;right:14px;z-index:2;width:36px;height:36px;border:none;border-radius:50%;cursor:pointer;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),0 8px 18px -12px rgba(80,90,140,.4);color:var(--text-muted);display:flex;align-items:center;justify-content:center" style-hover="color:var(--text-strong);background:#fff"><svg class="fq-icon" style="width:15px;height:15px;transition:transform 300ms cubic-bezier(.16,1,.3,1)" data-s="transform:rotate({{ sb.rot }})"><use href="#chevron"></use></svg></button>
+        <sc-if value="{{ sb.closed }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:16px;padding-right:44px;flex-wrap:wrap">
+            <span style="flex:none;width:44px;height:44px;border-radius:50%;background:conic-gradient(from -90deg,#EEC1EC 0%,#C4B8FF 30%,#A3D4FF 60%,#8FE9FF 86%,rgba(30,27,24,.07) 86% 100%);display:flex;align-items:center;justify-content:center"><span style="width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:500 16px/1 var(--font-display);letter-spacing:-.04em;color:var(--text-strong)">{{ streakN }}</span></span>
+            <span style="flex:1 1 180px;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font:500 16px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">{{ sb.label }}</span><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ vp.streakHint }}</span></span>
+            <sc-if value="{{ sb.hasNext }}" hint-placeholder-val="{{ true }}"><button onClick="{{ sb.next.start }}" style="flex:none;height:44px;display:flex;align-items:center;gap:10px;padding:0 16px 0 6px;border:none;border-radius:999px;cursor:pointer;background:var(--pa);box-shadow:var(--pa-glow),inset 0 0 0 1px rgba(255,255,255,.55);font:600 13px/1 var(--font-sans);color:var(--text-strong)" style-hover="transform:translateY(-1px)" style-active="transform:scale(.97)"><span style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:13px;height:13px;margin-left:2px" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"></path></svg></span>{{ sb.nextLabel }}</button></sc-if>
+            <sc-if value="{{ sb.isRunning }}" hint-placeholder-val="{{ false }}"><span style="flex:none;height:44px;display:flex;align-items:center;gap:8px;padding:0 16px;border-radius:999px;background:var(--pa);box-shadow:var(--pa-glow);font:600 13px/1 var(--font-sans);color:var(--text-strong)"><span class="fq-breathe" style="width:8px;height:8px;border-radius:50%;background:var(--text-strong)"></span>{{ sb.runLabel }}</span></sc-if>
+          </div>
+        </sc-if>
+        <div style="display:grid;transition:grid-template-rows 340ms cubic-bezier(.16,1,.3,1)" data-s="grid-template-rows:{{ sb.rows }}"><div style="min-height:0;overflow:hidden">
+        <sc-if value="{{ showStreak }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:32px;align-items:center;flex-wrap:wrap">
+            <div style="position:relative;width:120px;height:120px;flex:none;margin:4px">
+              <span class="fq-breathe" style="position:absolute;inset:-16px;border-radius:50%;background:var(--pa-orb);filter:blur(24px);opacity:.5"></span>
+              <span style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -90deg,#EEC1EC 0%,#C4B8FF 30%,#A3D4FF 60%,#8FE9FF 86%,rgba(30,27,24,.07) 86% 100%)"></span>
+              <span style="position:absolute;inset:7px;border-radius:50%;background:linear-gradient(150deg,rgba(255,255,255,.96),rgba(255,255,255,.78));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:inset 0 0 0 1px #fff"><span style="font:500 42px/.85 var(--font-display);letter-spacing:-.06em;color:var(--text-strong)">{{ streakN }}</span><span style="font:400 italic 15px/1 var(--font-serif);color:var(--text-muted)">days</span></span>
+            </div>
+            <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding-right:44px"><span style="font:500 18px/1 var(--font-display);letter-spacing:-.035em;color:var(--text-strong)">Keep it going</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">2 days to your 14-day mark</span></div>
+              <div style="position:relative;display:flex;justify-content:space-between">
+                <span style="position:absolute;left:16px;right:16px;top:15px;height:3px;border-radius:3px;background:rgba(30,27,24,.07)"></span>
+                <span style="position:absolute;left:16px;width:calc((100% - 32px) * 4 / 6);top:15px;height:3px;border-radius:3px;background:var(--pa)"></span>
+                <sc-for list="{{ streakWeek }}" as="d" hint-placeholder-count="7">
+                  <span style="position:relative;display:flex;flex-direction:column;align-items:center;gap:9px">
+                    <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}"><span style="width:32px;height:32px;border-radius:50%;background:var(--pa);box-shadow:var(--pa-glow);color:var(--text-strong);display:flex;align-items:center;justify-content:center"><svg class="fq-icon" style="width:15px;height:15px"><use href="#checkin"></use></svg></span></sc-if>
+                    <sc-if value="{{ d.today }}" hint-placeholder-val="{{ false }}"><span class="fq-breathe" style="width:32px;height:32px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #C4B8FF,0 0 22px rgba(163,212,255,.9);display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:50%;background:var(--pa)"></span></span></sc-if>
+                    <sc-if value="{{ d.off }}" hint-placeholder-val="{{ false }}"><span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(150deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:0 10px 24px -16px rgba(80,90,140,.35),inset 0 0 0 1px rgba(255,255,255,.9)"></span></sc-if>
+                    <span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">{{ d.l }}</span>
+                  </span>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Your practices</span><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ vp.streakHint }}</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
+                  <sc-for list="{{ vp.practices }}" as="p" hint-placeholder-count="4">
+                    <sc-if value="{{ p.idle }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.start }}" title="Start {{ p.name }}" style="position:relative;height:60px;display:flex;align-items:center;gap:12px;padding:0 14px 0 8px;border:none;border-radius:999px;cursor:pointer;text-align:left;background:linear-gradient(150deg,rgba(255,255,255,.9),rgba(255,255,255,.55));box-shadow:0 12px 26px -18px rgba(80,90,140,.45),inset 0 0 0 1px rgba(255,255,255,.95);transition:transform 160ms cubic-bezier(.16,1,.3,1),box-shadow 260ms cubic-bezier(.16,1,.3,1)" style-hover="transform:translateY(-2px);box-shadow:0 18px 34px -16px rgba(120,150,225,.6),inset 0 0 0 1px rgba(196,184,255,.7)" style-active="transform:scale(.97)"><span style="flex:none;width:44px;height:44px;border-radius:50%;background:var(--pa-orb);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;color:var(--text-strong)"><svg viewBox="0 0 24 24" style="width:16px;height:16px;margin-left:2px" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1.15 var(--font-sans);color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">{{ p.mins }}</span></span></button></sc-if>
+                    <sc-if value="{{ p.running }}" hint-placeholder-val="{{ false }}"><div style="position:relative;height:60px;display:flex;align-items:center;gap:12px;padding:0 8px;border-radius:999px;background:var(--pa);box-shadow:var(--pa-glow),inset 0 0 0 1px rgba(255,255,255,.55)"><span class="fq-breathe" style="flex:none;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center" data-s="background:conic-gradient(var(--text-strong) {{ p.pct }},rgba(255,255,255,.55) 0)"><span style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font:600 11px/1 var(--font-sans);color:var(--text-strong)">{{ p.left }}</span></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1.15 var(--font-sans);color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-body)">In practice</span></span><button onClick="{{ p.finish }}" style="flex:none;height:36px;padding:0 14px;border:none;border-radius:999px;cursor:pointer;background:var(--text-strong);color:var(--surface-card);font:600 12px/1 var(--font-sans)" style-active="transform:scale(.96)">Finish</button></div></sc-if>
+                    <sc-if value="{{ p.done }}" hint-placeholder-val="{{ false }}"><div style="height:60px;display:flex;align-items:center;gap:12px;padding:0 14px 0 8px;border-radius:999px;background:rgba(30,27,24,.035)"><span style="flex:none;width:44px;height:44px;border-radius:50%;background:var(--presence-soft);color:var(--presence);display:flex;align-items:center;justify-content:center"><svg class="fq-icon" style="width:18px;height:18px"><use href="#check"></use></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1.15 var(--font-sans);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-faint)">Done today</span></span></div></sc-if>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="height:32px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 10px 24px -16px rgba(80,90,140,.35);font:500 13px/1 var(--font-sans);color:var(--text-body)"><svg class="fq-icon" style="width:14px;height:14px;color:#A3D4FF"><use href="#nudge"></use></svg>2 freezes</span><a href="Mindless.html" style="font:500 13px/1 var(--font-sans);color:var(--text-link)">Adopt another practice</a></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showZaps }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ zapRows }}" as="z" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:16px"><span style="width:96px;font:400 14px/1 var(--font-sans);color:var(--text-body)">{{ z.t }}</span><span style="flex:1;height:4px;border-radius:4px;background:rgba(30,27,24,.06)"><span style="display:block;height:100%;border-radius:4px;background:var(--pa)" data-s="width:{{ z.w }}"></span></span><span style="width:40px;text-align:right;font:500 14px/1 var(--font-display);color:var(--text-strong)">{{ z.n }}</span></div>
+            </sc-for>
+            <span style="font:400 14px/1.45 var(--font-sans);color:var(--text-muted)">Rolls into 68 💎 when Shed ends. Only showing up earns Zaps.</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showGems }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+            <span style="flex:1;min-width:220px;font:400 15px/1.45 var(--font-sans);color:var(--text-body)">Spend Gems in the Vault on a streak freeze (40 💎), or gift some to a friend.</span>
+            <a href="The Vault.html" style="height:44px;display:flex;align-items:center;padding:0 20px;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 14px/1 var(--font-sans)">Open the Vault</a>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showRank }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center">
+              <sc-for list="{{ ranks }}" as="r" hint-placeholder-count="4">
+                <span style="flex:1;display:flex;flex-direction:column;gap:10px">
+                  <sc-if value="{{ r.reached }}" hint-placeholder-val="{{ false }}"><span style="height:4px;border-radius:4px;margin-right:6px;background:var(--iridescent-sweep-deep);background-size:220% 100%"></span><span style="font:500 13px/1 var(--font-sans);color:var(--text-strong)">{{ r.l }}</span></sc-if>
+                  <sc-if value="{{ r.next }}" hint-placeholder-val="{{ true }}"><span style="height:4px;border-radius:4px;margin-right:6px;background:rgba(30,27,24,.07)"></span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">{{ r.l }}</span></sc-if>
+                </span>
+              </sc-for>
+            </div>
+            <span style="font:400 14px/1.45 var(--font-sans);color:var(--text-muted)">1 of 3 Journeys done. Finish the Body Journey to reach Adept. Amplitude 4,200.</span>
+          </div>
+        </sc-if>
+        </div></div>
+      </div>
+
+      
+        <section style="margin-top:44px;position:relative;border-radius:28px;overflow:hidden;background:linear-gradient(140deg,rgba(255,255,255,.82),rgba(255,255,255,.46));backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);box-shadow:0 30px 70px -40px rgba(30,27,24,.35),inset 0 0 0 1px rgba(255,255,255,.9);display:flex;flex-wrap:wrap">
+          <a href="Event.html" style="flex:1 1 260px;min-height:260px;position:relative;display:block;background-color:rgba(30,27,24,.05);background-size:cover;background-position:center" data-s="background-image:{{ hero.bg }}">
+            <span style="position:absolute;left:14px;top:14px;height:28px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font:500 12px/1 var(--font-sans);color:var(--text-strong)"><span style="width:6px;height:6px;border-radius:50%;background:var(--pa)"></span>{{ hero.badge }}</span>
+          </a>
+          <div style="flex:1 1 320px;min-width:0;padding:26px 28px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Up next for you</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">{{ heroPos }}</span></div>
+            <span style="font:500 32px/1 var(--font-display);letter-spacing:-.05em;color:var(--text-strong)">{{ hero.name }}</span>
+            <span style="font:400 14px/1.35 var(--font-sans);color:var(--text-body)">{{ hero.when }} · {{ hero.place }} · {{ hero.dist }} mi</span>
+            <span style="display:flex;align-items:center;gap:10px"><sc-if value="{{ hero.hasFaces }}" hint-placeholder-val="{{ true }}"><span style="display:flex;padding-left:8px"><sc-for list="{{ hero.faces }}" as="f" hint-placeholder-count="2"><span style="width:26px;height:26px;margin-left:-8px;border-radius:50%;background-size:cover;background-position:center;box-shadow:0 0 0 2px #fff" data-s="background-image:{{ f.bg }}"></span></sc-for></span></sc-if><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ hero.friendsLine }} · {{ ezDoor }} at the door</span></span>
+            <sc-if value="{{ showWhy }}" hint-placeholder-val="{{ true }}"><span style="font:400 italic 16px/1.35 var(--font-serif);color:var(--text-muted)">{{ hero.why }}</span></sc-if>
+            <sc-if value="{{ heroOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                <button onClick="{{ heroGo }}" style="height:48px;padding:0 22px;border:none;border-radius:999px;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);font:500 14px/1 var(--font-sans);cursor:pointer;transition:transform 160ms cubic-bezier(.16,1,.3,1)" style-hover="transform:translateY(-1px)" style-active="transform:scale(.97)">Going</button>
+                <button onClick="{{ heroSave }}" style="height:48px;padding:0 20px;border:none;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 14px/1 var(--font-sans);cursor:pointer" style-active="transform:scale(.97)">Maybe</button>
+                <button onClick="{{ heroSkip }}" style="height:48px;padding:0 14px;border:none;border-radius:999px;background:none;color:var(--text-muted);font:500 14px/1 var(--font-sans);cursor:pointer" style-hover="color:var(--text-strong)">Can’t go</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ heroDone }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+                <span style="display:flex;align-items:center;gap:8px;font:500 14px/1.3 var(--font-sans);color:var(--text-strong)"><svg class="fq-icon" style="width:18px;height:18px;color:#B8A2FF"><use href="#checkin"></use></svg>You’re going. Reminder at {{ hero.remind }}.</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap"><a href="Messages.html" style="height:40px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);font:500 13px/1 var(--font-sans)">Bring Marcus</a><button onClick="{{ heroSkip }}" style="height:40px;padding:0 14px;border:none;background:none;color:var(--text-muted);font:500 13px/1 var(--font-sans);cursor:pointer">Next idea →</button></div>
+              </div>
+            </sc-if>
+          </div>
+        </section>
+
+        <div ref="{{ nearRef }}" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:56px"><span style="display:flex;align-items:center;gap:8px;font:500 18px/1 var(--font-display);letter-spacing:-.035em;color:var(--text-strong)"><span class="fq-breathe" style="width:8px;height:8px;border-radius:50%;background:var(--pa);box-shadow:0 0 12px rgba(163,212,255,.9)"></span>Near you</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">{{ resultLine }}</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">
+          <sc-for list="{{ intents }}" as="c" hint-placeholder-count="6">
+            <sc-if value="{{ c.on }}" hint-placeholder-val="{{ false }}"><button onClick="{{ c.pick }}" style="height:44px;padding:0 18px;border:none;border-radius:999px;background:var(--text-strong);color:#fff;font:500 14px/1 var(--font-sans);cursor:pointer">{{ c.label }}</button></sc-if>
+            <sc-if value="{{ c.off }}" hint-placeholder-val="{{ true }}"><button onClick="{{ c.pick }}" style="height:44px;padding:0 18px;border:none;border-radius:999px;background:rgba(255,255,255,.5);box-shadow:inset 0 0 0 1px rgba(30,27,24,.12);color:var(--text-body);font:400 14px/1 var(--font-sans);cursor:pointer" style-hover="color:var(--text-strong);background:rgba(255,255,255,.85)">{{ c.label }}</button></sc-if>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:24px;border-bottom:1px solid rgba(30,27,24,.07)">
+          <div style="display:flex;gap:24px">
+            <sc-for list="{{ slots }}" as="t" hint-placeholder-count="4">
+              <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}"><button onClick="{{ t.pick }}" style="padding:0 0 14px;border:none;border-bottom:2px solid var(--text-strong);margin-bottom:-1px;background:none;font:500 14px/1 var(--font-sans);color:var(--text-strong);cursor:pointer">{{ t.label }}</button></sc-if>
+              <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}"><button onClick="{{ t.pick }}" style="padding:0 0 14px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;font:400 14px/1 var(--font-sans);color:var(--text-muted);cursor:pointer">{{ t.label }}</button></sc-if>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;padding-bottom:10px">
+            <svg class="fq-icon" style="width:16px;height:16px;color:var(--text-muted);margin-right:4px"><use href="#pin"></use></svg>
+            <sc-for list="{{ radii }}" as="r" hint-placeholder-count="3">
+              <sc-if value="{{ r.on }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.pick }}" style="height:30px;padding:0 10px;border:none;border-radius:999px;background:rgba(30,27,24,.07);font:500 12px/1 var(--font-sans);color:var(--text-strong);cursor:pointer">{{ r.label }}</button></sc-if>
+              <sc-if value="{{ r.off }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.pick }}" style="height:30px;padding:0 10px;border:none;border-radius:999px;background:none;font:400 12px/1 var(--font-sans);color:var(--text-muted);cursor:pointer">{{ r.label }}</button></sc-if>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;margin-top:8px">
+          <sc-for list="{{ near }}" as="e" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid rgba(30,27,24,.07)">
+              <a href="Event.html" style="width:60px;height:60px;border-radius:16px;flex:none;background-color:rgba(30,27,24,.05);background-size:cover;background-position:center" data-s="background-image:{{ e.bg }}"></a>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                <span style="display:flex;align-items:center;gap:8px;font:500 15px/1.15 var(--font-sans);color:var(--text-strong)"><sc-if value="{{ e.isLive }}" hint-placeholder-val="{{ false }}"><span class="fq-breathe" style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--pa);box-shadow:0 0 10px rgba(163,212,255,.9)"></span></sc-if>{{ e.name }}</span>
+                <span style="font:400 13px/1.2 var(--font-sans);color:var(--text-muted)">{{ e.when }} · {{ e.place }} · {{ e.dist }} mi</span>
+                <span style="display:flex;align-items:center;gap:8px"><sc-if value="{{ e.hasFaces }}" hint-placeholder-val="{{ true }}"><span style="display:flex;padding-left:6px"><sc-for list="{{ e.faces }}" as="f" hint-placeholder-count="2"><span style="width:20px;height:20px;margin-left:-6px;border-radius:50%;background-size:cover;background-position:center;box-shadow:0 0 0 2px var(--surface-card)" data-s="background-image:{{ f.bg }}"></span></sc-for></span></sc-if><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">{{ e.friendsLine }}</span></span>
+              </span>
+              <sc-if value="{{ e.going }}" hint-placeholder-val="{{ false }}"><button onClick="{{ e.toggle }}" style="height:44px;display:flex;align-items:center;gap:6px;padding:0 16px;border:none;border-radius:999px;background:var(--pa);color:var(--text-strong);font:500 13px/1 var(--font-sans);cursor:pointer"><svg class="fq-icon" style="width:14px;height:14px"><use href="#checkin"></use></svg>Going</button></sc-if>
+              <sc-if value="{{ e.notGoing }}" hint-placeholder-val="{{ true }}"><button onClick="{{ e.toggle }}" style="height:44px;padding:0 18px;border:none;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 13px/1 var(--font-sans);cursor:pointer" style-active="transform:scale(.97)">Go</button></sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:28px 0;display:flex;flex-direction:column;gap:12px;align-items:flex-start"><span style="font:400 italic 18px/1.3 var(--font-serif);color:var(--text-muted)">Nothing that fits within {{ radius }} mi.</span><button onClick="{{ widen }}" style="height:44px;padding:0 18px;border:none;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 13px/1 var(--font-sans);cursor:pointer">Widen to 15 mi</button></div>
+          </sc-if>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:48px"><span style="font:500 18px/1 var(--font-display);letter-spacing:-.035em;color:var(--text-strong)">Your people’s plans</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">This week</span></div>
+        <div style="display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;margin-top:16px;padding-bottom:4px">
+          <sc-for list="{{ plans }}" as="p" hint-placeholder-count="4">
+            <div style="flex:none;width:168px;padding:16px;border-radius:22px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(150deg,rgba(255,255,255,.62),rgba(255,255,255,.28));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 20px 50px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.75)">
+              <span style="width:44px;height:44px;border-radius:50%;background-size:cover;background-position:center" data-s="background-image:{{ p.bg }}"></span>
+              <span style="display:flex;flex-direction:column;gap:5px"><span style="font:500 14px/1.2 var(--font-sans);color:var(--text-strong)">{{ p.who }}</span><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ p.what }}</span></span>
+              <span style="flex:1"></span>
+              <sc-if value="{{ p.going }}" hint-placeholder-val="{{ false }}"><span style="height:36px;display:flex;align-items:center;font:500 13px/1 var(--font-sans);color:var(--text-muted)">You’re in</span></sc-if>
+              <sc-if value="{{ p.notGoing }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.toggle }}" style="height:36px;padding:0 14px;align-self:flex-start;border:none;border-radius:999px;background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 13px/1 var(--font-sans);cursor:pointer">Join</button></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:48px"><span style="font:500 18px/1 var(--font-display);letter-spacing:-.035em;color:var(--text-strong)">Needs you</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">{{ needsCount }}</span></div>
+        <div style="display:flex;flex-direction:column;margin-top:8px">
+          <sc-for list="{{ needs }}" as="n" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid rgba(30,27,24,.07);flex-wrap:wrap">
+              <span style="width:40px;height:40px;border-radius:50%;flex:none;background-color:rgba(30,27,24,.05);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--text-strong)" data-s="background-image:{{ n.bg }}"><svg class="fq-icon" style="width:18px;height:18px"><use href="{{ n.icon }}"></use></svg></span>
+              <span style="flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font:500 15px/1.3 var(--font-sans);color:var(--text-strong)">{{ n.t }}</span><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ n.sub }}</span></span>
+              <span style="display:flex;gap:6px">
+                <button onClick="{{ n.do1 }}" style="height:44px;padding:0 16px;border:none;border-radius:999px;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);font:500 13px/1 var(--font-sans);cursor:pointer" style-active="transform:scale(.97)">{{ n.a1 }}</button>
+                <button onClick="{{ n.do2 }}" style="height:44px;padding:0 14px;border:none;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 13px/1 var(--font-sans);cursor:pointer" style-active="transform:scale(.97)">{{ n.a2 }}</button>
+              </span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ needsEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:22px 0;border-bottom:1px solid rgba(30,27,24,.07);font:400 italic 18px/1.3 var(--font-serif);color:var(--text-muted)">All clear. Nobody’s waiting on you.</div></sc-if>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;margin-top:48px;padding:8px;border-radius:999px;background:linear-gradient(140deg,rgba(255,255,255,.8),rgba(255,255,255,.5));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 18px 44px -30px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.9)">
+          <span style="width:40px;height:40px;border-radius:50%;flex:none;background-image:url('../../assets/photos/gathering-08.jpg');background-size:cover;background-position:center"></span>
+          <span style="flex:1;min-width:0;font:400 16px/1 var(--font-sans);color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Share a moment with your people</span>
+          <sc-for list="{{ composer }}" as="a" hint-placeholder-count="4">
+            <span title="{{ a.label }}" style="width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-muted)"><svg class="fq-icon" style="width:19px;height:19px"><use href="{{ a.icon }}"></use></svg></span>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;gap:28px;margin-top:44px;border-bottom:1px solid rgba(30,27,24,.07);overflow-x:auto;scrollbar-width:none">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+            <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}"><button onClick="{{ t.pick }}" style="flex:none;padding:0 0 14px;border:none;border-bottom:2px solid var(--text-strong);margin-bottom:-1px;background:none;font:500 14px/1 var(--font-sans);color:var(--text-strong);cursor:pointer">{{ t.label }}</button></sc-if>
+            <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}"><button onClick="{{ t.pick }}" style="flex:none;padding:0 0 14px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;font:400 14px/1 var(--font-sans);color:var(--text-muted);cursor:pointer">{{ t.label }}</button></sc-if>
+          </sc-for>
+        </div>
+        <sc-if value="{{ isStory }}" hint-placeholder-val="{{ false }}"><p style="margin:20px 0 0;font:400 italic 19px/1.4 var(--font-serif);color:var(--text-muted)">A record of what the community lived, not a scroll to consume.</p></sc-if>
+
+        <article style="padding:32px 0;border-bottom:1px solid rgba(30,27,24,.07);display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <img src="../../assets/photos/gathering-02.jpg" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+            <span style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font:500 15px/1 var(--font-sans);color:var(--text-strong)">Jonah Reyes</span><span style="display:flex;align-items:center;gap:6px;font:400 13px/1 var(--font-sans);color:var(--text-muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--pa)"></span>Bird Rock Sunrise Circle · 5h</span></span>
+            <sc-if value="{{ showWhy }}" hint-placeholder-val="{{ true }}"><span style="font:400 12px/1 var(--font-sans);color:var(--text-faint)">You were tagged</span></sc-if>
+          </div>
+          <p style="margin:0;font:400 17px/1.55 var(--font-sans);color:var(--text-body)">Day 3. Showed up again. Eight of us on the sand at 6am. <a href="Profile.html" style="font-weight:500">@daniel</a> brought the coffee.</p>
+          <div style="display:grid;grid-template-columns:2fr 1fr;grid-template-rows:minmax(0,1fr);gap:6px;height:340px">
+            <span style="border-radius:24px 8px 8px 24px;background-image:url('../../assets/photos/day-beach-hoop.jpg');background-size:cover;background-position:center"></span>
+            <span style="display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:6px;min-height:0">
+              <span style="border-radius:8px 24px 8px 8px;background-image:url('../../assets/photos/day-parachute-play.jpg');background-size:cover;background-position:center"></span>
+              <span style="position:relative;border-radius:8px 8px 24px 8px;overflow:hidden;background-image:url('../../assets/photos/gathering-05.jpg');background-size:cover;background-position:center"><span style="position:absolute;inset:0;background:rgba(30,27,24,.38);display:flex;align-items:center;justify-content:center;color:#fff;font:500 22px/1 var(--font-display);letter-spacing:-.03em">+4</span></span>
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:24px;font:500 14px/1 var(--font-sans);color:var(--text-muted)"><span style="display:flex;align-items:center;gap:7px"><svg class="fq-icon" style="width:19px;height:19px"><use href="#checkin"></use></svg>22</span><span style="display:flex;align-items:center;gap:7px"><svg class="fq-icon" style="width:19px;height:19px"><use href="#message"></use></svg>6</span><span style="display:flex;align-items:center;gap:7px"><svg class="fq-icon" style="width:19px;height:19px"><use href="#arrow"></use></svg>Share</span><span style="flex:1"></span><span style="font-weight:400">8 checked in</span></div>
+        </article>
+
+        <article style="padding:24px 0;border-bottom:1px solid rgba(30,27,24,.07);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <img src="../../assets/photos/gathering-06.jpg" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+          <span style="flex:1 1 240px;display:flex;flex-direction:column;gap:5px"><span style="font:500 15px/1.3 var(--font-sans);color:var(--text-strong)">Priya hit 30 days in a row</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">Morning sit · Royal Temple · 1h</span></span>
+          <sc-if value="{{ hfOff }}" hint-placeholder-val="{{ true }}"><button onClick="{{ highFive }}" style="height:44px;padding:0 18px;border:none;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 13px/1 var(--font-sans);cursor:pointer" style-active="transform:scale(.97)">High five</button></sc-if>
+          <sc-if value="{{ hfOn }}" hint-placeholder-val="{{ false }}"><span style="font:500 13px/1 var(--font-sans);color:var(--text-muted)">Sent. You and 11 others.</span></sc-if>
+        </article>
+
+        <article style="padding:32px 0;border-bottom:1px solid rgba(30,27,24,.07);display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:40px;height:40px;border-radius:50%;background:rgba(30,27,24,.05);color:var(--text-strong);display:flex;align-items:center;justify-content:center"><svg class="fq-icon" style="width:19px;height:19px"><use href="#program"></use></svg></span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font:500 15px/1 var(--font-sans);color:var(--text-strong)">Your Run · Mind Journey</span><span style="display:flex;align-items:center;gap:6px;font:400 13px/1 var(--font-sans);color:var(--text-muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--pa)"></span>Bird Rock Sunrise Circle · 9 of you</span></span>
+          </div>
+          <div data-energy="still" style="position:relative;overflow:hidden;border-radius:24px;padding:24px;display:flex;gap:24px;align-items:center;background:linear-gradient(140deg,rgba(255,255,255,.78),rgba(255,255,255,.42));box-shadow:0 24px 60px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.9)">
+            <div class="fq-aura" style="opacity:.5"></div>
+            <span style="position:relative;width:76px;height:76px;flex:none;border-radius:50%;background:conic-gradient(#EEC1EC 0%,#B3C6FF 21%,#8FE9FF 42%,rgba(30,27,24,.08) 42% 100%)"><span style="position:absolute;inset:3px;border-radius:50%;background:color-mix(in oklab,var(--surface-card) 88%,transparent);display:flex;align-items:center;justify-content:center;font:500 16px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">42%</span></span>
+            <span style="position:relative;flex:1;display:flex;flex-direction:column;gap:10px"><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">Week 2 · Lesson 6 · 6 min</span><span style="font:500 24px/1.05 var(--font-display);letter-spacing:-.04em;color:var(--text-strong)">The open question</span><span style="font:400 italic 18px/1.3 var(--font-serif);color:var(--text-body)">One question to carry into Thursday.</span></span>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ lessons }}" as="l" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 0;font:400 15px/1.2 var(--font-sans)">
+                <sc-if value="{{ l.done }}" hint-placeholder-val="{{ true }}"><svg class="fq-icon" style="width:20px;height:20px;color:var(--text-faint)"><use href="#checkin"></use></svg><span style="flex:1;color:var(--text-muted)">{{ l.t }}</span></sc-if>
+                <sc-if value="{{ l.todo }}" hint-placeholder-val="{{ false }}"><span class="fq-breathe" style="width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--text-strong);flex:none"></span><span style="flex:1;color:var(--text-strong);font-weight:500">{{ l.t }}</span></sc-if>
+                <span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">{{ l.m }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><a href="Journey.html" style="height:48px;display:inline-flex;align-items:center;padding:0 20px;border-radius:999px;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);font:500 14px/1 var(--font-sans)" style-hover="transform:translateY(-1px)">Continue lesson</a><span style="font:400 14px/1.3 var(--font-sans);color:var(--text-muted)">Jonah and 4 others finished it</span></div>
+        </article>
+
+        <article style="padding:32px 0;border-bottom:1px solid rgba(30,27,24,.07);display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <img src="../../assets/photos/gathering-06.jpg" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+            <span style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font:500 15px/1 var(--font-sans);color:var(--text-strong)">Priya Nair</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">Classifieds · Leucadia, 2 mi · 3h</span></span>
+            <sc-if value="{{ showWhy }}" hint-placeholder-val="{{ true }}"><span style="font:400 12px/1 var(--font-sans);color:var(--text-faint)">You saved blocks last week</span></sc-if>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+            <sc-for list="{{ listings }}" as="m" hint-placeholder-count="3">
+              <a href="Marketplace.html" style="display:flex;flex-direction:column;gap:12px">
+                <span style="aspect-ratio:4/5;border-radius:20px;background-color:rgba(30,27,24,.05);background-size:cover;background-position:center" data-s="background-image:{{ m.bg }}"></span>
+                <span style="display:flex;flex-direction:column;gap:5px"><span style="font:500 16px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">{{ m.price }}</span><span style="font:400 14px/1.25 var(--font-sans);color:var(--text-body)">{{ m.name }}</span></span>
+              </a>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><a href="Messages.html" style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border-radius:999px;background:rgba(255,255,255,.42);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 14px/1 var(--font-sans)"><svg class="fq-icon" style="width:17px;height:17px"><use href="#message"></use></svg>Message Priya</a><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-faint)">Meet up to swap. No in-app payment.</span></div>
+        </article>
+
+        <div style="padding:22px 0;border-bottom:1px solid rgba(30,27,24,.07);text-align:center;font:400 14px/1.4 var(--font-sans);color:var(--text-muted)">Sam Okafor joined Bird Rock Sunrise Circle</div>
+
+        <article style="padding:32px 0;border-bottom:1px solid rgba(30,27,24,.07);display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:40px;height:40px;border-radius:50%;background:rgba(30,27,24,.05);color:var(--text-strong);display:flex;align-items:center;justify-content:center"><svg class="fq-icon" style="width:19px;height:19px"><use href="#space"></use></svg></span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font:500 15px/1 var(--font-sans);color:var(--text-strong)">Low Tide Café</span><span style="display:flex;align-items:center;gap:6px;font:400 13px/1 var(--font-sans);color:var(--text-muted)"><span style="width:6px;height:6px;border-radius:50%;background:var(--pa)"></span>Dispatch · Business Space, 4 mi · 1d</span></span>
+            <sc-if value="{{ showWhy }}" hint-placeholder-val="{{ true }}"><span style="font:400 12px/1 var(--font-sans);color:var(--text-faint)">You went twice</span></sc-if>
+          </div>
+          <p style="margin:0;font:400 17px/1.55 var(--font-sans);color:var(--text-body)">Saturday string lights are back. First pour is on us for anyone who checks in before 8:30.</p>
+        </article>
+
+        <div style="margin-top:40px;padding:32px 28px;border-radius:28px;background:var(--pa-soft);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+          <span class="fq-breathe" style="width:44px;height:44px;border-radius:50%;background:var(--pa-orb);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8)"></span>
+          <span style="font:500 22px/1.1 var(--font-display);letter-spacing:-.04em;color:var(--text-strong)">You’re caught up.</span>
+          <span style="max-width:40ch;font:400 15px/1.45 var(--font-sans);color:var(--text-body)">That’s everything from your people since yesterday. Sunset park flow is still on, 1.2 mi away.</span>
+          <button onClick="{{ toPlanner }}" style="height:44px;padding:0 20px;border:none;border-radius:999px;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1.5px var(--border-strong);color:var(--text-strong);font:500 14px/1 var(--font-sans);cursor:pointer">Find something for tonight</button>
+        </div>
+      
+    </main>
+
+    <sc-if value="{{ showR }}" hint-placeholder-val="{{ true }}">
+    <aside style="position:sticky;top:108px;height:calc(100vh - 132px);min-height:420px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <div style="position:absolute;top:0;bottom:0;left:-34px;width:12px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3">
+        <button onClick="{{ toggleR }}" title="{{ rTitle }}" style="flex:none;width:28px;height:28px;margin:0 -8px;border:none;border-radius:50%;background:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1px rgba(30,27,24,.08),0 6px 16px -10px rgba(30,27,24,.4);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="color:var(--text-strong);background:#fff"><svg viewBox="0 0 12 12" width="10" height="10" style="transition:transform 260ms cubic-bezier(.16,1,.3,1)" data-s="transform:rotate({{ rRot }})"><path d="M7.5 3 4.5 6 7.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div onPointerDown="{{ dragR }}" onDoubleClick="{{ toggleR }}" title="Drag to resize · double-click to collapse" style="flex:1;width:12px;border-radius:6px;cursor:col-resize;touch-action:none;display:flex;justify-content:center" style-hover="background:rgba(196,184,255,.22)"><span style="width:1px;height:100%;background:rgba(30,27,24,.06)"></span></div>
+      </div>
+      <div ref="{{ rightRail }}" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;overscroll-behavior:contain;padding:8px 2px 12px">
+        <sc-if value="{{ rFull }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <sc-if value="{{ gs.show }}" hint-placeholder-val="{{ true }}">
+            <section data-energy="flow" style="position:relative;overflow:hidden;padding:22px;border-radius:24px;background:linear-gradient(150deg,rgba(255,255,255,.86),rgba(255,255,255,.5));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 24px 60px -36px rgba(30,27,24,.35),inset 0 0 0 1px rgba(255,255,255,.9);display:flex;flex-direction:column;gap:16px">
+              <div class="fq-aura" style="opacity:.28"></div>
+              <div style="position:relative;display:flex;align-items:center;gap:14px">
+                <span style="position:relative;width:46px;height:46px;flex:none;border-radius:50%;transition:background 480ms" data-s="background:conic-gradient(#EEC1EC 0%,#B3C6FF {{ gs.half }},#8FE9FF {{ gs.pct }},rgba(30,27,24,.08) {{ gs.pct }} 100%)"><span style="position:absolute;inset:4px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:500 13px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">{{ gs.count }}</span></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font:500 16px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Get started</span><span style="font:400 13px/1.2 var(--font-sans);color:var(--text-muted)">{{ gs.sub }}</span></span>
+                <button onClick="{{ gs.hide }}" title="Hide" style="width:32px;height:32px;flex:none;border:none;border-radius:50%;background:transparent;color:var(--text-faint);font:400 18px/1 var(--font-sans);cursor:pointer" style-hover="background:rgba(30,27,24,.05);color:var(--text-strong)">×</button>
+              </div>
+              <sc-if value="{{ gs.complete }}" hint-placeholder-val="{{ false }}">
+                <div style="position:relative;display:flex;flex-direction:column;gap:8px;padding:4px 0 2px"><span style="font:400 italic 19px/1.25 var(--font-serif);color:var(--text-strong)">Your network is set up.</span><span style="font:400 13px/1.4 var(--font-sans);color:var(--text-muted)">{{ ezSetup }} added. Near you and Up next now use everything you told us.</span></div>
+              </sc-if>
+              <div style="position:relative;display:flex;flex-direction:column">
+                <sc-for list="{{ gs.steps }}" as="s" hint-placeholder-count="7">
+                  <div style="display:flex;flex-direction:column;border-top:1px solid rgba(30,27,24,.06)">
+                    <button onClick="{{ s.open }}" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0;border:none;background:none;cursor:pointer;text-align:left">
+                      <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;flex:none;border-radius:50%;background:var(--pa);display:flex;align-items:center;justify-content:center;color:var(--text-strong)"><svg class="fq-icon" style="width:13px;height:13px"><use href="#checkin"></use></svg></span><span style="flex:1;font:400 14px/1.25 var(--font-sans);color:var(--text-faint)">{{ s.t }}</span></sc-if>
+                      <sc-if value="{{ s.todo }}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(30,27,24,.22)"></span><span style="flex:1;font:500 14px/1.25 var(--font-sans);color:var(--text-strong)">{{ s.t }}</span></sc-if>
+                      <sc-if value="{{ s.now }}" hint-placeholder-val="{{ false }}"><span class="fq-breathe" style="width:22px;height:22px;flex:none;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #C4B8FF,0 0 14px rgba(163,212,255,.8);display:flex;align-items:center;justify-content:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--pa)"></span></span><span style="flex:1;font:500 14px/1.25 var(--font-sans);color:var(--text-strong)">{{ s.t }}</span></sc-if>
+                      <span style="font:400 12px/1 var(--font-sans);color:var(--text-faint);white-space:nowrap">{{ s.meta }}</span>
+                    </button>
+                    <sc-if value="{{ s.expanded }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;flex-direction:column;gap:12px;padding:0 0 16px 34px">
+                        <span style="font:400 13px/1.45 var(--font-sans);color:var(--text-body)">{{ s.sub }}</span>
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button onClick="{{ s.go }}" style="height:40px;padding:0 16px;border:none;border-radius:999px;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);font:500 13px/1 var(--font-sans);cursor:pointer" style-active="transform:scale(.97)">{{ s.cta }}</button><button onClick="{{ s.skip }}" style="height:40px;padding:0 8px;border:none;background:none;color:var(--text-muted);font:500 13px/1 var(--font-sans);cursor:pointer" style-hover="color:var(--text-strong)">Later</button></div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+            </sc-if>
+            <section style="padding:22px;border-radius:24px;background:linear-gradient(150deg,rgba(255,255,255,.62),rgba(255,255,255,.28));backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 20px 50px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.75);display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Your week</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">{{ goingLine }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+                  <div style="display:flex;gap:14px;align-items:flex-start;padding:6px 0">
+                    <span style="width:30px;flex:none;display:flex;flex-direction:column;gap:3px"><span style="font:500 11px/1 var(--font-sans);color:var(--text-faint)">{{ d.dow }}</span><span style="font:500 16px/1 var(--font-display);letter-spacing:-.04em;color:var(--text-strong)">{{ d.d }}</span></span>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding-top:2px">
+                      <sc-for list="{{ d.items }}" as="i" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:8px;font:500 13px/1.2 var(--font-sans);color:var(--text-strong)"><span style="width:6px;height:6px;border-radius:50%;flex:none;background:var(--pa)"></span>{{ i.name }}<span style="font-weight:400;color:var(--text-muted)">{{ i.time }}</span></span></sc-for>
+                      <sc-if value="{{ d.empty }}" hint-placeholder-val="{{ true }}"><span style="height:1px;margin-top:8px;background:rgba(30,27,24,.07)"></span></sc-if>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:9px;padding-top:6px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 14px/1.2 var(--font-sans);color:var(--text-strong)">Show up 3 times</span><span style="font:500 13px/1 var(--font-sans);color:var(--text-muted)">{{ goalLine }}</span></div>
+                <span style="height:4px;border-radius:4px;background:rgba(30,27,24,.06);overflow:hidden"><span style="display:block;height:100%;border-radius:4px;background:var(--pa);transition:width 480ms cubic-bezier(.16,1,.3,1)" data-s="width:{{ goalW }}"></span></span>
+              </div>
+            </section>
+            <section style="padding:22px;border-radius:24px;background:linear-gradient(150deg,rgba(255,255,255,.62),rgba(255,255,255,.28));backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 20px 50px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.75);display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Today’s goals</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">4h 12m left</span></div>
+              <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:9px">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+                    <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}"><span style="font:500 15px/1.2 var(--font-sans);color:var(--text-strong)">{{ g.t }}</span><span style="font:500 13px/1 var(--font-sans);color:var(--text-muted);white-space:nowrap">{{ g.p }} · {{ g.r }}</span></sc-if>
+                    <sc-if value="{{ g.done }}" hint-placeholder-val="{{ false }}"><span style="font:400 15px/1.2 var(--font-sans);color:var(--text-faint);text-decoration:line-through">{{ g.t }}</span><svg class="fq-icon" style="width:18px;height:18px;color:#B8A2FF"><use href="#checkin"></use></svg></sc-if>
+                  </div>
+                  <span style="height:4px;border-radius:4px;background:rgba(30,27,24,.06);overflow:hidden"><span style="display:block;height:100%;border-radius:4px;background:var(--pa)" data-s="width:{{ g.w }}"></span></span>
+                </div>
+              </sc-for>
+            </section>
+            <section style="padding:22px;border-radius:24px;background:linear-gradient(150deg,rgba(255,255,255,.62),rgba(255,255,255,.28));backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 20px 50px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.75);display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">Bird Rock this week</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-faint)">11 of 14</span></div>
+              <svg viewBox="0 0 240 36" preserveAspectRatio="none" style="width:100%;height:36px;color:#B8A2FF"><path d="M0 24 C14 24 18 12 30 12 S44 28 58 28 S74 8 88 8 S102 22 116 22 S130 5 146 5 S160 26 174 26 S190 14 204 14 S226 20 240 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+              <span style="height:4px;border-radius:4px;background:rgba(30,27,24,.06);overflow:hidden"><span style="display:block;width:79%;height:100%;border-radius:4px;background:var(--iridescent-sweep-deep);background-size:220% 100%"></span></span>
+              <div style="display:flex;flex-direction:column;margin-top:6px">
+                <sc-for list="{{ board }}" as="b" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;padding:9px 0">
+                    <span style="width:14px;font:500 13px/1 var(--font-sans);color:var(--text-faint)">{{ b.n }}</span>
+                    <span style="width:30px;height:30px;border-radius:50%;flex:none;background-size:cover;background-position:center" data-s="background-image:{{ b.bg }}"></span>
+                    <sc-if value="{{ b.me }}" hint-placeholder-val="{{ false }}"><span style="flex:1;font:500 14px/1 var(--font-sans);color:var(--text-strong)">You</span></sc-if>
+                    <sc-if value="{{ b.other }}" hint-placeholder-val="{{ true }}"><span style="flex:1;min-width:0;font:400 14px/1 var(--font-sans);color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span></sc-if>
+                    <span style="font:500 13px/1 var(--font-sans);color:var(--text-muted);white-space:nowrap">⚡ {{ b.z }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="font:400 12px/1.4 var(--font-sans);color:var(--text-faint)">Local and cooperative. Opt out in Settings.</span>
+            </section>
+            <section style="padding:22px;border-radius:24px;background:linear-gradient(150deg,rgba(255,255,255,.62),rgba(255,255,255,.28));backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 20px 50px -36px rgba(30,27,24,.3),inset 0 0 0 1px rgba(255,255,255,.75);display:flex;flex-direction:column;gap:16px">
+              <span style="font:500 15px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">People to know</span>
+              <sc-for list="{{ people }}" as="p" hint-placeholder-count="3">
+                <div style="display:flex;gap:12px;align-items:center">
+                  <span style="width:40px;height:40px;border-radius:50%;flex:none;background-size:cover;background-position:center" data-s="background-image:{{ p.bg }}"></span>
+                  <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font:500 14px/1.1 var(--font-sans);color:var(--text-strong)">{{ p.name }}</span><span style="font:400 13px/1.3 var(--font-sans);color:var(--text-muted)">{{ p.why }}</span></span>
+                  <span style="font:500 13px/1 var(--font-sans);color:var(--text-strong)">Add</span>
+                </div>
+              </sc-for>
+            </section>
+          </div>
+        </sc-if>
+        <sc-if value="{{ rMicro }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <sc-for list="{{ rMicroItems }}" as="m" hint-placeholder-count="4">
+              <button onClick="{{ expandR }}" onMouseEnter="{{ m.tip }}" onMouseLeave="{{ tipOff }}" style="position:relative;width:56px;height:62px;border:none;border-radius:18px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--text-muted)" style-hover="color:var(--text-strong);background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85)">
+                <svg class="fq-icon" style="width:24px;height:24px"><use href="{{ m.icon }}"></use></svg>
+                <span style="font:500 12px/1 var(--font-sans);color:var(--text-strong)">{{ m.val }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <div ref="{{ dk.refR }}" style="flex:none"><div style="position:relative;width:100%">
+    <div style="position:absolute;right:0;bottom:calc(100% + 8px);z-index:50;transform-origin:bottom right;transition:opacity 200ms cubic-bezier(.16,1,.3,1),transform 340ms cubic-bezier(.16,1,.3,1)" data-s="opacity:{{ dk.vaultOp }};transform:{{ dk.vaultTf }};pointer-events:{{ dk.vaultPe }}">
+      <div style="position:relative;overflow:hidden;max-height:calc(100vh - 220px);overflow-y:auto;width:320px;box-sizing:border-box;padding:22px;border-radius:24px;background:color-mix(in oklab,var(--surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px rgba(30,27,24,.4),inset 0 0 0 1px rgba(255,255,255,.8);display:flex;flex-direction:column;gap:18px" data-energy="flow">
+        <div class="fq-aura" style="opacity:.35"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 16px/1 var(--font-display);letter-spacing:-.03em;color:var(--text-strong)">The Vault</span><span style="font:400 13px/1 var(--font-sans);color:var(--text-muted)">Shed · week 6 of 13</span></div>
+        <div style="position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--border-hair)"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Season standing</span><span style="height:26px;display:inline-flex;align-items:center;gap:6px;padding:0 11px;border-radius:999px;background:var(--pa);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);font:600 12px/1 var(--font-sans);color:var(--text-strong)"><svg class="fq-icon" style="width:13px;height:13px"><use href="#standing"></use></svg>Initiate</span></div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Your practices</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">{{ vp.doneLine }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ vp.practices }}" as="p" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:16px;background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(255,255,255,.9)">
+                <span style="flex:none;width:32px;height:32px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(30,27,24,.045);color:var(--text-strong)"><svg class="fq-icon" style="width:16px;height:16px"><use href="{{ p.icon }}"></use></svg></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1.15 var(--font-sans);color:var(--text-strong)">{{ p.name }}</span><span style="font:400 12px/1.2 var(--font-sans);color:var(--text-muted)">{{ p.meta }}</span></span>
+                <sc-if value="{{ p.done }}" hint-placeholder-val="{{ false }}"><span style="flex:none;height:30px;display:inline-flex;align-items:center;gap:5px;padding:0 10px;border-radius:999px;background:var(--presence-soft);color:var(--presence);font:600 12px/1 var(--font-sans)"><svg class="fq-icon" style="width:13px;height:13px"><use href="#check"></use></svg>Done</span></sc-if>
+                <sc-if value="{{ p.todo }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.log }}" style="flex:none;height:30px;display:inline-flex;align-items:center;gap:5px;padding:0 12px;border:none;border-radius:999px;cursor:pointer;background:var(--text-strong);color:var(--surface-card);font:600 12px/1 var(--font-sans)" style-hover="transform:translateY(-1px)" style-active="transform:scale(.96)">Start</button></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <a href="Mindless.html" style="align-self:flex-start;font:500 13px/1 var(--font-sans);color:var(--text-link)">Adopt another practice</a>
+        </div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Streak</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">{{ vp.streakLine }}</span></div>
+          <div style="display:flex;justify-content:space-between">
+            <sc-for list="{{ streakWeek }}" as="d" hint-placeholder-count="7">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;border-radius:50%;background:var(--pa);box-shadow:var(--pa-glow)"></span></sc-if>
+                <sc-if value="{{ d.today }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #C4B8FF"></span></sc-if>
+                <sc-if value="{{ d.off }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(30,27,24,.14)"></span></sc-if>
+                <span style="font:400 11px/1 var(--font-sans);color:var(--text-muted)">{{ d.l }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Rank</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">160 Zaps to Adept</span></div>
+          <span style="height:4px;border-radius:999px;background:var(--track);overflow:hidden"><span style="display:block;width:68%;height:100%;border-radius:inherit;background:var(--pa)"></span></span>
+        </div>
+        <div style="position:relative;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;background:rgba(255,255,255,.6)">
+          <span style="flex:1;display:flex;flex-direction:column;gap:5px"><span style="font:600 14px/1 var(--font-sans);color:var(--text-strong)">Streak freeze</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">You have 2 saved</span></span>
+          <span style="font:600 13px/1 var(--font-sans);color:var(--text-strong)">40 💎</span>
+        </div>
+        <a href="The Vault.html" style="transition:transform 160ms cubic-bezier(.16,1,.3,1),box-shadow 260ms cubic-bezier(.16,1,.3,1);position:relative;height:48px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:var(--pa);color:var(--text-strong);box-shadow:var(--pa-glow);text-decoration:none;font:600 14px/1 var(--font-sans)" style-hover="transform:translateY(-1px);box-shadow:0 18px 34px -14px rgba(120,150,225,.7)">Open the Vault</a>
+      </div>
+    </div>
+    <div style="position:absolute;right:0;bottom:calc(100% + 8px);z-index:50;transform-origin:bottom right;transition:opacity 200ms cubic-bezier(.16,1,.3,1),transform 340ms cubic-bezier(.16,1,.3,1)" data-s="opacity:{{ dk.veraOp }};transform:{{ dk.veraTf }};pointer-events:{{ dk.veraPe }}">
+      <div style="max-height:calc(100vh - 220px);overflow-y:auto;width:320px;box-sizing:border-box;padding:20px;border-radius:24px;background:color-mix(in oklab,var(--surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px rgba(30,27,24,.4),inset 0 0 0 1px rgba(255,255,255,.8);display:flex;flex-direction:column;gap:14px" data-energy="still">
+        <div style="display:flex;align-items:center;gap:10px"><span class="fq-breathe" style="width:30px;height:30px;border-radius:50%;background:var(--pa-orb)"></span><span style="display:flex;flex-direction:column;gap:4px"><span style="font:600 14px/1 var(--font-sans);color:var(--text-strong)">Vera</span><span style="font:400 12px/1 var(--font-sans);color:var(--text-muted)">Help, events, practices</span></span></div>
+        <div style="align-self:flex-start;max-width:88%;padding:12px 14px;border-radius:18px 18px 18px 6px;background:rgba(30,27,24,.045);font:400 14px/1.45 var(--font-sans);color:var(--text-body)">Hi Daniel. Saturday is open. Want me to find a morning sit near Bird Rock?</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(30,27,24,.05);font:500 13px/1 var(--font-sans);color:var(--text-strong)">Yes, find one</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(30,27,24,.05);font:500 13px/1 var(--font-sans);color:var(--text-strong)">How do Gems work?</span></div>
+        <div style="height:44px;display:flex;align-items:center;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(30,27,24,.08);font:400 14px/1 var(--font-sans);color:var(--text-faint)">Ask Vera anything</div>
+      </div>
+    </div>
+    <sc-if value="{{ rMicro }}" hint-placeholder-val="{{ false }}"><div style="position:relative;background:linear-gradient(160deg,color-mix(in oklab,var(--surface-card) 86%,transparent),color-mix(in oklab,var(--surface-card) 62%,transparent));backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px rgba(30,27,24,.45),inset 0 0 0 1px rgba(255,255,255,.9);width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 0 6px;border-radius:24px 24px 18px 18px"><span style="position:absolute;left:50%;top:6px;width:20px;height:4px;margin-left:-10px;border-radius:4px;background:rgba(30,27,24,.14)"></span><button onClick="{{ dk.toggleVera }}" title="Ask Vera" data-energy="still" style="width:44px;height:44px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;background:transparent" style-hover="background:rgba(255,255,255,.6)"><span class="fq-breathe" style="width:28px;height:28px;border-radius:50%;background:var(--pa-orb)"></span></button><button onClick="{{ dk.toggleVault }}" title="The Vault" style="width:44px;height:44px;border:none;border-radius:50%;cursor:pointer;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text-strong);font:500 12px/1 var(--font-display)" style-hover="background:rgba(255,255,255,.6)"><span style="font-size:13px">⚡</span>340</button></div></sc-if><sc-if value="{{ rFull }}" hint-placeholder-val="{{ true }}"><div style="position:relative;border:none;cursor:pointer;background:linear-gradient(160deg,color-mix(in oklab,var(--surface-card) 86%,transparent),color-mix(in oklab,var(--surface-card) 62%,transparent));backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px rgba(30,27,24,.45),inset 0 0 0 1px rgba(255,255,255,.9);transition:transform 160ms cubic-bezier(.16,1,.3,1),box-shadow 260ms cubic-bezier(.16,1,.3,1);width:100%;height:60px;box-sizing:border-box;display:flex;align-items:center;padding:10px 6px 4px;border-radius:24px 24px 18px 18px"><span style="position:absolute;left:50%;top:6px;width:28px;height:4px;margin-left:-14px;border-radius:4px;background:rgba(30,27,24,.14)"></span>
+      <button onClick="{{ dk.toggleVera }}" title="Ask Vera" data-energy="still" style="flex:none;width:44px;height:44px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;background:transparent" style-hover="background:rgba(255,255,255,.6)"><span class="fq-breathe" style="width:28px;height:28px;border-radius:50%;background:var(--pa-orb)"></span></button>
+      <span style="width:1px;height:24px;background:rgba(30,27,24,.08);margin:0 4px"></span>
+      <button onClick="{{ dk.toggleVault }}" style="flex:1;height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;border:none;border-radius:999px;cursor:pointer;background:transparent;color:var(--text-strong);font:500 14px/1 var(--font-display);letter-spacing:-.02em;white-space:nowrap" style-hover="background:rgba(255,255,255,.6)">
+        <span style="display:flex;align-items:center;gap:7px"><span class="fq-breathe" style="width:8px;height:8px;border-radius:50%;background:var(--pa)"></span>12</span><span>⚡ 340</span><span>💎 85</span>
+      </button>
+    </div></sc-if>
+  </div></div>
+    </aside>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ hasTip }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;transform:translateY(-50%);z-index:60;pointer-events:none;display:flex;flex-direction:column;gap:4px;padding:9px 13px;border-radius:14px;background:rgba(52,49,46,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 30px -16px rgba(30,27,24,.5);white-space:nowrap" data-s="left:{{ tipL }};right:{{ tipR }};top:{{ tipY }}"><span style="font:500 13px/1 var(--font-sans);color:#fff">{{ tipText }}</span><sc-if value="{{ hasTipSub }}" hint-placeholder-val="{{ false }}"><span style="font:400 12px/1 var(--font-sans);color:rgba(255,255,255,.7)">{{ tipSub }}</span></sc-if></div>
+  </sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:46;max-width:360px;padding:14px 18px;border-radius:20px;background:rgba(52,49,46,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:#fff;font:400 14px/1.4 var(--font-sans);box-shadow:0 24px 50px -24px rgba(30,27,24,.5)">{{ toast }}</div>
+  </sc-if>
+  <sc-if value="{{ nt.show }}" hint-placeholder-val="{{ false }}"><div style="--text-strong:#34312E;--text-body:#4D4945;--text-muted:#7C766F;--text-faint:#A59F98;font-family:var(--font-sans)">
+  <button onClick="{{ nt.toggle }}" class="fq-glass" style="position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:44;height:44px;display:flex;align-items:center;gap:10px;padding:0 16px 0 8px;border-radius:999px;box-shadow:var(--shadow-1);cursor:pointer;color:var(--text-strong);font:600 13px/1 var(--font-sans)">
+    <span style="width:28px;height:28px;border-radius:50%;background:var(--reward-soft);color:var(--reward);font:600 11px/28px var(--font-display);text-align:center">{{ nt.count }}</span>Repo notes
+  </button>
+  <sc-if value="{{ nt.open }}" hint-placeholder-val="{{ false }}">
+    <aside class="fq-glass" style="position:fixed;right:16px;top:84px;bottom:16px;z-index:45;width:min(380px,calc(100vw - 32px));box-sizing:border-box;padding:22px;border-radius:24px;box-shadow:var(--shadow-float);overflow-y:auto;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">From the repo</span><button onClick="{{ nt.toggle }}" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-card);cursor:pointer;color:var(--text-strong);font:500 16px/1 var(--font-sans)">×</button></div>
+      <code style="font:500 12px/1.5 ui-monospace,Menlo,monospace;color:var(--text-strong);padding:10px 12px;border-radius:12px;background:var(--surface-card)">/feed · app/(main)/feed/page.tsx</code>
+      <p style="margin:0;font:400 14px/1.55 var(--font-sans);color:var(--text-body)">Home decides for you. Top to bottom: your standing, one ranked pick, what’s near you (filter by what you’re up for, when and how far), your people’s plans, the short queue only you can answer, then your people’s posts, ending in a hard stop. Rails share one width, resize from either inner edge, and collapse to a micro rail.</p>
+      <sc-for list="{{ nt.items }}" as="n" hint-placeholder-count="4">
+        <div style="display:flex;gap:12px;font:400 14px/1.5 var(--font-sans);color:var(--text-body)"><span style="width:22px;height:22px;border-radius:50%;background:var(--reward-soft);color:var(--reward);font:600 10px/22px var(--font-display);text-align:center;flex:none">{{ n.n }}</span><span>{{ n.t }}</span></div>
+      </sc-for>
+      <sc-if value="{{ nt.hasExtra }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--border-hair)">
+          <span style="font:500 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)">Ranking signals</span>
+          <sc-for list="{{ nt.extra }}" as="x" hint-placeholder-count="3">
+            <span style="font:400 13px/1.5 var(--font-sans);color:var(--text-body)">· {{ x }}</span>
+          </sc-for>
+        </div>
+      </sc-if>
+    </aside>
+  </sc-if>
+</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showWhy&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;railWidth&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:220,&quot;max&quot;:320,&quot;step&quot;:10,&quot;unit&quot;:&quot;px&quot;,&quot;default&quot;:248,&quot;tsType&quot;:&quot;number&quot;},&quot;time&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;day&quot;,&quot;night&quot;],&quot;default&quot;:&quot;day&quot;,&quot;tsType&quot;:&quot;'day'|'night'&quot;},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  ez(k,id){var E=(this.state&&this.state.econ)||{zaps:{checkin:{amount:25},practice_daily:{amount:10}},bonus:{setup_complete:{amount:50},goal_show_up_3:{amount:35}}};var r=E[k]&&E[k][id];return (k==='gems'?'💎 ':'⚡ ')+(r?r.amount:'')}
+  __econ(){var self=this;fetch('../../assets/economy/economy.json').then(function(r){return r.json()}).then(function(E){self.setState({econ:E})}).catch(function(){})}
+  __applyS(){document.querySelectorAll('[data-s]').forEach(function(el){el.getAttribute('data-s').split(';').forEach(function(d){var i=d.indexOf(':');if(i<0)return;var k=d.slice(0,i).trim(),v=d.slice(i+1).trim();if(el.__s&&el.__s[k]===v)return;(el.__s=el.__s||{})[k]=v;el.style.setProperty(k,v)})})}
+  componentDidUpdate(){this.__applyS()}
+  state = { gsDone: { photo: true, home: true, circle: true }, gsOpen: null, gsHidden: false, tip: null, navOpen: null, navY: 0, navMoving: false, dockOpen: null, notesOpen: false, going: { sunrise: true }, logged: { sit: true }, run: null, now: Date.now(), sbOpen: true, pick: 0, heroDone: false, needs: ['speaker', 'poll', 'lesson', 'marcus'], intent: 'all', slot: 'now', radius: 5, toast: null, hf: false, create: false, stat: 'streak', sort: 'relevant', t: 0, railL: null, railR: null, lc: null, rc: null, vw: typeof window !== 'undefined' ? window.innerWidth : 1440, drag: false };
+  componentDidMount() { this.__econ(); this.__applyS(); requestAnimationFrame(()=>this.__applyS());
+    this._key = (e) => { if (e.key === 'Escape') this.setState({ navOpen: null, dockOpen: null }); };
+    this._doc = (e) => { if (this.state.dockOpen && !(this._dkL && this._dkL.contains(e.target)) && !(this._dkR && this._dkR.contains(e.target))) this.setState({ dockOpen: null }); };
+    document.addEventListener('keydown', this._key); document.addEventListener('click', this._doc);
+    this.setState({ navY: window.scrollY });
+    try { if (localStorage.getItem('fq-streak-box') === '0') this.setState({ sbOpen: false }); } catch (e) {}
+    try { const s = JSON.parse(localStorage.getItem('fq-feed-rails-v2') || 'null'); if (s) this.setState({ railL: s.l ?? s.w ?? null, railR: s.r ?? s.w ?? null, lc: s.lc ?? null, rc: s.rc ?? null }); } catch (e) {}
+    this._rs = () => { this.setState({ vw: window.innerWidth }); this._sync(); };
+    this._sync = () => {
+      if (this._wash && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) this._wash.style.translate = '0 ' + Math.max(-90, -window.scrollY * 0.06).toFixed(1) + 'px';
+      clearTimeout(this._st); if (!this.state.navMoving || Math.abs(window.scrollY - this.state.navY) > 4) this.setState({ navY: window.scrollY, navMoving: true }); this._st = setTimeout(() => this.setState({ navMoving: false }), 900);
+      if (this.state.tip) this.setState({ tip: null });
+      if (this.state.dockOpen && this._dockY != null && Math.abs(window.scrollY - this._dockY) > 120) this.setState({ dockOpen: null });
+    };
+    window.addEventListener('resize', this._rs);
+    window.addEventListener('scroll', this._sync, { passive: true });
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { this.setState({ t: 1 }); return; }
+    const t0 = performance.now();
+    const step = (now) => { const t = Math.min(1, (now - t0) / 1100); this.setState({ t }); if (t < 1) this._raf = requestAnimationFrame(step); };
+    this._raf = requestAnimationFrame(step);
+  }
+  componentWillUnmount() { clearInterval(this._pt); document.removeEventListener('keydown', this._key); document.removeEventListener('click', this._doc); clearTimeout(this._st); clearTimeout(this._nt); clearTimeout(this._t); cancelAnimationFrame(this._raf); window.removeEventListener('resize', this._rs); window.removeEventListener('scroll', this._sync); this._end && this._end(); }
+  navVals(logoW) {
+    const I = (n) => '#' + n;
+    const B = (p) => "url('../../assets/photos/" + p + "')";
+    const world = 'home';
+    const open = this.state.navOpen;
+    const set = (k) => { clearTimeout(this._nt); this.setState({ navOpen: k }); };
+    const M = {
+      home: { label: 'Home',
+        cols: [
+          { h: 'Today', items: [
+            { label: 'Feed', sub: 'What your people are up to', href: 'Members.dc.html', icon: I('page') },
+            { label: 'Around You', sub: 'Dispatches from nearby hosts', href: 'Search.html', icon: I('pin') },
+            { label: 'Journal', sub: 'Your private captured moments', href: 'Profile.html', icon: I('tip') },
+          ]},
+          { h: 'Find', items: [
+            { label: 'Search', sub: 'People, Circles, events, Spaces', href: 'Search.html', icon: I('search') },
+            { label: 'Messages', sub: 'Friends, groups, rooms', href: 'Messages.html', icon: I('message') },
+            { label: 'My Code', sub: 'Your QR. Connect in person', href: 'Profile.html', icon: I('qr') },
+          ]},
+        ],
+        cards: [
+          { bg: B('night-string-lights-web.jpg'), kicker: 'This week', title: 'Gatherings near you', href: 'Events.html' },
+          { bg: B('day-beach-hoop.jpg'), kicker: 'Fri · 6am', title: 'Bird Rock Sunrise Circle', href: 'Circle.html' },
+        ],
+        foot: 'Day 12. You showed up again.', footCta: 'Tune out', footHref: 'Mindless.html' },
+      community: { label: 'Community',
+        cols: [
+          { h: 'Gather', items: [
+            { label: 'Circles', sub: 'Small groups that meet', href: 'Circles.html', icon: I('circle') },
+            { label: 'Events', sub: 'RSVP, tickets, check in', href: 'Events.html', icon: I('event') },
+            { label: 'Channels', sub: 'Seven topics under four Pillars', href: 'Messages.html', icon: I('program') },
+          ]},
+          { h: 'People and places', items: [
+            { label: 'Members', sub: 'Friends, people, contacts', href: 'Members.dc.html', icon: I('contacts') },
+            { label: 'Business Spaces', sub: 'Studios, cafés, non profits', href: 'Circles.html', icon: I('space') },
+            { label: 'Marketplace', sub: 'Market, Classifieds, Housing, Store', href: 'Marketplace.html', icon: I('ticket') },
+          ]},
+        ],
+        cards: [
+          { bg: B('day-meditation-circle.jpg'), kicker: 'Forming now', title: 'Leucadia Thursday Circle, 12 people', href: 'Circle.html' },
+          { bg: B('gathering-03.jpg'), kicker: 'Sat · 10am', title: 'Garden pack-out at Low Tide Café', href: 'Event.html' },
+        ],
+        foot: 'Build circles, not walls.', footCta: 'Find your Circle', footHref: 'Circles.html' },
+      quest: { label: 'The Quest',
+        cols: [
+          { h: 'Play', items: [
+            { label: 'My Quest', sub: 'Shed season · Week 6 of 13', href: 'Journey.html', icon: I('standing') },
+            { label: 'Practices', sub: 'The daily act. Adopt and log', href: 'Journey.html', icon: I('checkin') },
+            { label: 'Journeys', sub: 'Mind, Body, Spirit. Run together', href: 'Journey.html', icon: I('program') },
+          ]},
+          { h: 'Earn and spend', items: [
+            { label: 'Mindless', sub: 'Be Still or Get Moving', href: 'Mindless.html', icon: I('breath') },
+            { label: 'The Vault', sub: 'Gems, Zaps, Awards', href: 'The Vault.html', icon: I('gem') },
+            { label: 'Leaderboard', sub: 'Local and cooperative', href: 'The Vault.html', icon: I('zap') },
+          ]},
+        ],
+        cards: [
+          { bg: B('day-park-yoga.jpg'), kicker: 'Body Journey', title: 'Starts in 9 days', href: 'Journey.html' },
+          { bg: B('day-parachute-play.jpg'), kicker: 'Expression Challenge', title: 'Teach your Circle one thing', href: 'Journey.html' },
+        ],
+        foot: 'Only showing up earns Zaps.', footCta: 'Open My Quest', footHref: 'Journey.html' },
+      you: { label: 'You',
+        cols: [
+          { h: 'You', items: [
+            { label: 'My profile', sub: 'Daniel Tyack · Initiate', href: 'Profile.html', icon: I('standing') },
+            { label: 'Orders', sub: 'Tickets, purchases, refunds', href: 'The Vault.html', icon: I('ticket') },
+            { label: 'Partners', sub: 'Local offers and plaques', href: 'Marketplace.html', icon: I('host') },
+          ]},
+          { h: 'Account', items: [
+            { label: 'Join Crew', sub: 'Pay what you want', href: 'Settings.html', icon: I('membership') },
+            { label: 'Help and support', sub: 'Ask Vera, open a ticket', href: 'Help.html', icon: I('tip') },
+            { label: 'Settings', sub: 'Notifications, privacy, plan', href: 'Settings.html', icon: I('nudge') },
+          ]},
+        ],
+        cards: [
+          { bg: B('gathering-07.jpg'), kicker: '⚡ 340 · 💎 85', title: '12-day streak. 2 freezes saved', href: 'The Vault.html' },
+          { bg: B('gathering-08.jpg'), kicker: 'Analysis', title: 'Site map of every member surface', href: 'Site Map.html' },
+        ],
+        foot: 'Your people stay yours.', footCta: 'View profile', footHref: 'Profile.html' },
+    };
+    const keys = ['home', 'community', 'quest', 'you'];
+    const TH = { home: ['#page','var(--accent)'], community: ['#circle','var(--presence)'], quest: ['#standing','var(--reward)'], you: ['#contacts','var(--live)'] };
+    const trigs = keys.map(k => ({
+      icon: TH[k][0], hue: TH[k][1],
+      label: M[k].label, on: open === k || (open == null && world === k), off: !(open === k || (open == null && world === k)), here: false,
+      hover: () => { clearTimeout(this._nt); this._nt = setTimeout(() => this.setState({ navOpen: k }), this.state.navOpen ? 40 : 180); },
+      click: () => set(open === k ? null : k),
+    }));
+    const p = keys.includes(open) ? M[open] : null;
+    const w = this.state.vw;
+    const top = this.state.navY < 8, active = this.state.navMoving || this.state.navOpen != null;
+    const hdr = top ? { bg: 'transparent', blur: '0px', line: 'transparent', shadow: 'none', wash: 0 } : active ? { bg: 'color-mix(in oklab,var(--surface-card) 86%,transparent)', blur: '22px', line: 'rgba(30,27,24,.07)', shadow: '0 18px 40px -30px rgba(30,27,24,.35)', wash: .9 } : { bg: 'color-mix(in oklab,var(--surface-card) 52%,transparent)', blur: '14px', line: 'rgba(30,27,24,.03)', shadow: 'none', wash: .35 };
+    return {
+      railLogo: !!logoW, classicLogo: !logoW, logoW: logoW ?? 'auto', pad: '40px',
+      hdrBg: hdr.bg, hdrBlur: hdr.blur, hdrLine: hdr.line, hdrShadow: hdr.shadow, hdrWash: hdr.wash,
+      labels: w >= 1180, wide: w >= 1040,
+      searchFlex: w >= 1180 ? '0 1 240px' : 'none', tp: w >= 1180 ? '16px' : '12px', chev: w >= 1180 ? 'block' : 'none', logoGap: w >= 1180 ? '28px' : '12px',
+      trigs,
+      hasPanel: !!p,
+      cols: p ? p.cols : [], cards: p ? p.cards : [],
+      foot: p ? p.foot : '', footCta: p ? p.footCta : '', footHref: p ? p.footHref : '#',
+      sheetZap: open === 'zap', sheetBell: open === 'bell', anyOpen: open != null,
+      openZap: () => set(open === 'zap' ? null : 'zap'),
+      openBell: () => set(open === 'bell' ? null : 'bell'),
+      closeAll: () => set(null),
+      leave: () => { if (keys.includes(this.state.navOpen)) { clearTimeout(this._nt); this._nt = setTimeout(() => this.setState({ navOpen: null }), 260); } },
+      stay: () => clearTimeout(this._nt),
+      zapLive: [{ label: 'Share', icon: I('page') }, { label: 'Event', icon: I('event') }, { label: 'Contact', icon: I('contacts') }, { label: 'Connect', icon: I('qr') }],
+      notes: [
+        { t: 'Jonah accepted your friend request.', w: '12 min ago', icon: I('contacts') },
+        { t: 'Garden sit starts in 2 hours. 9 going.', w: '1 hr ago', icon: I('event') },
+        { t: 'You earned the 7-day streak badge.', w: 'Yesterday', icon: I('standing') },
+      ],
+    };
+  }
+  dockVals() {
+    const A = (on) => ({ Op: on ? 1 : 0, Tf: on ? 'translateY(0) scale(1)' : 'translateY(14px) scale(.96)', Pe: on ? 'auto' : 'none' });
+    const o = this.state.dockOpen;
+    const tog = (k) => () => { this._dockY = window.scrollY; this.setState(s => ({ dockOpen: s.dockOpen === k ? null : k })); };
+    return {
+      refL: (el) => { this._dkL = el; }, refR: (el) => { this._dkR = el; },
+      ...(() => { const r = {}; for (const k of ['you','vault','vera']) { const a = A(o === k); r[k+'Op'] = a.Op; r[k+'Tf'] = a.Tf; r[k+'Pe'] = a.Pe; } return r; })(),
+      youRot: o === 'you' ? '180deg' : '0deg',
+      toggleYou: tog('you'), toggleVault: tog('vault'), toggleVera: tog('vera'),
+      youLinks: [
+        { label: 'My profile', href: 'Profile.html', icon: '#standing' },
+        { label: 'Journal', href: 'Profile.html', icon: '#tip' },
+        { label: 'My Code', href: 'Profile.html', icon: '#qr' },
+        { label: 'Orders', href: 'The Vault.html', icon: '#ticket' },
+        { label: 'Join Crew', href: 'Settings.html', icon: '#membership' },
+      ],
+    };
+  }
+  startPractice(p) {
+    clearInterval(this._pt);
+    this.setState({ run: { id: p.id, end: Date.now() + p.min * 60000 }, now: Date.now() });
+    this.say('Started ' + p.name + '. ' + p.min + ' minutes.');
+    this._pt = setInterval(() => { const r = this.state.run; if (!r) { clearInterval(this._pt); return; } if (Date.now() >= r.end) this.finishPractice(p); else this.setState({ now: Date.now() }); }, 1000);
+  }
+  finishPractice(p) {
+    clearInterval(this._pt);
+    this.setState(s => ({ run: null, logged: { ...(s.logged || {}), [p.id]: true } }));
+    this.say(p.name + ' logged. ' + this.ez('zaps','practice_daily').trim() + ' added. Streak safe.');
+  }
+  save(patch) { this.setState(patch, () => { try { localStorage.setItem('fq-feed-rails-v2', JSON.stringify({ l: this.state.railL, r: this.state.railR, lc: this.state.lc, rc: this.state.rc })); } catch (e) {} }); }
+  W(side) { const v = side === 'R' ? this.state.railR : this.state.railL; return Math.round(v ?? this.props.railWidth ?? 248); }
+  startDrag(side, e) {
+    e.preventDefault();
+    const x0 = e.clientX, w0 = this.W(side), key = side === 'L' ? 'lc' : 'rc', wk = side === 'L' ? 'railL' : 'railR';
+    this.setState({ drag: true });
+    const move = (ev) => {
+      const dx = ev.clientX - x0, raw = side === 'L' ? w0 + dx : w0 - dx;
+      if (raw < 150) { if (this.state[key] !== true) this.setState({ [key]: true }); return; }
+      this.setState({ [wk]: Math.max(220, Math.min(320, raw)), [key]: false });
+    };
+    const up = () => { this._end(); this.setState({ drag: false }); this.save({}); };
+    this._end = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); this._end = null; };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  tipFor(text, sub, side) { return (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ tip: { text, sub, side, y: r.top + r.height / 2, x: side === 'L' ? r.right + 12 : window.innerWidth - r.left + 12 } }); }; }
+  say(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2800); }
+  data() {
+    return [
+      { id: 'flow', name: 'Sunset park flow', place: 'Moonlight Park', dist: 1.2, slot: 'now', day: 0, when: 'ends 6:15', time: 'now', intent: 'move', f: ['Ana'], n: 12, img: 'day-park-yoga.jpg', why: 'Ana is there now. You move most Mondays.', remind: 'now' },
+      { id: 'opensit', name: 'Open sit', place: 'Royal Temple', dist: 0.8, slot: 'now', day: 0, when: 'until 7pm', time: 'now', intent: 'sit', f: [], n: 5, img: 'day-meditation-circle.jpg', why: 'Quiet, close, and drop-in.', remind: 'now' },
+      { id: 'social', name: 'String-light social', place: 'Low Tide Café', dist: 4, slot: 'tonight', day: 0, when: 'Tonight 8pm', time: '8pm', intent: 'social', f: ['Jonah', 'Priya'], n: 41, img: 'night-string-lights-web.jpg', why: 'Jonah and Priya are going, and you’ve been twice.', remind: '7:15pm', badge: '2 friends going' },
+      { id: 'breath', name: 'Breathwork basics', place: 'Cardiff Rec Center', dist: 2.6, slot: 'tonight', day: 0, when: 'Tonight 7:30pm', time: '7:30pm', intent: 'learn', f: [], n: 14, img: 'gathering-04.jpg', why: 'Pairs with Week 2 of your Mind Journey.', remind: '6:45pm' },
+      { id: 'sunrise', name: 'Sunrise sit', place: 'Bird Rock beach', dist: 0.4, slot: 'tomorrow', day: 1, when: 'Tue 6am', time: '6am', intent: 'sit', f: ['Jonah', 'Marcus'], n: 8, img: 'day-beach-hoop.jpg', why: 'Your Circle, five minutes from home.', remind: '5:30am' },
+      { id: 'hoop', name: 'Hoop jam', place: 'Moonlight Park', dist: 1.2, slot: 'tomorrow', day: 1, when: 'Tue 5:30pm', time: '5:30pm', intent: 'move', f: [], n: 9, img: 'gathering-05.jpg', why: 'New this week. Beginners welcome.', remind: '4:45pm' },
+      { id: 'garden', name: 'Garden sit', place: 'Royal Temple garden', dist: 0.8, slot: 'week', day: 3, when: 'Thu 6:30pm', time: '6:30pm', intent: 'sit', f: ['Jonah', 'Priya', 'Theo'], n: 9, img: 'day-meditation-circle.jpg', why: 'You sit on Thursdays, and Audrey asked for you.', remind: '5:45pm', badge: 'Audrey invited you' },
+      { id: 'packout', name: 'Beach pack-out', place: 'Swami’s', dist: 3, slot: 'week', day: 5, when: 'Sat 8am', time: '8am', intent: 'give', f: ['Priya', 'Theo', 'Ana', 'Marcus'], n: 26, img: 'gathering-03.jpg', why: 'Four of your people. Your Circle is co-hosting.', remind: '7:15am', badge: 'Your Circle is hosting' },
+      { id: 'play', name: 'Parachute play day', place: 'Cottonwood Creek', dist: 9, slot: 'week', day: 6, when: 'Sun 10am', time: '10am', intent: 'social', f: [], n: 18, img: 'day-parachute-play.jpg', why: 'Popular with Circles near you.', remind: '9am' },
+    ];
+  }
+  toggle(id) {
+    const on = !this.state.going[id];
+    this.setState(s => ({ going: { ...s.going, [id]: on } }));
+    const e = this.data().find(x => x.id === id);
+    this.say(on ? `You’re going to ${e.name}. Reminder at ${e.remind}.` : `Removed ${e.name} from your week.`);
+  }
+  renderVals() {
+    const NOTES = [
+        { n: 1, t: 'Each rail is independent: its own width, collapse state and scroll. Drag a rail’s inner edge to resize it (220 to 320px), drag past the edge or tap its chevron to collapse it to a 76px micro rail. Settings persist per rail. Below 1240px the right rail auto-collapses, below 960px the left, below 680px both hide.' },
+        { n: 2, t: 'The wordmark sits over the left rail at the same width, with a slow drifting light inside it. No roundel.' },
+        { n: 3, t: 'Standing (streak, Zaps, Gems, rank) stays at the top because it holds the Mindless start.' },
+        { n: 4, t: 'One ranked pick, not a grid. Going, Maybe and Can’t go each teach the ranker. Door check-in pays 25 Zaps.' },
+        { n: 5, t: 'Near you replaces a static events list: what you’re up for, when (Now, Tonight, Tomorrow, This week) and how far. Live items breathe. Friends are attached to every option. Seeing who is going is the strongest decision signal on Luma, Facebook Events and Partiful.' },
+        { n: 6, t: 'Needs you is a short queue that empties. Personal asks tied to real activity pull people back; each resolves in one tap.' },
+        { n: 7, t: 'Feed keeps the sort lens (Nearby, Resonance, Recent, Popular, Story), recap posts, Journey Run, Classifieds, join notices and Dispatches. Each can say why it’s there.' },
+        { n: 8, t: 'Hard stop. “You’re caught up” ends the scroll and points at a real gathering.' },
+        { n: 9, t: 'Bottom tabs live in each rail: You on the left, Vera and the Vault on the right. Micro rails keep them as compact tabs.' },
+    ];
+    const EXTRA = [
+        'Distance and travel time from home or current location',
+        'Friends and Circle-mates going',
+        'Past attendance at the Space or host',
+        'Day and time you usually show up',
+        'Current Journey or practice',
+        'Saves, skips and Can’t go',
+        'Freshness: decays as the start time passes',
+    ];
+    const U = (p) => "url('../../assets/photos/" + p + "')";
+    const face = { Jonah: 'gathering-02.jpg', Priya: 'gathering-06.jpg', Marcus: 'gathering-07.jpg', Ana: 'gathering-05.jpg', Theo: 'gathering-03.jpg', Audrey: 'gathering-04.jpg' };
+    const st = this.state, g = st.going;
+    const ease = 1 - Math.pow(1 - st.t, 3), C = (n) => Math.round(n * ease);
+    const line = (e) => {
+      const f = e.f, k = e.slot === 'now' ? 'here now' : 'going';
+      if (!f.length) return `${e.n} ${k}`;
+      if (f.length === 1) return `${f[0]} and ${e.n - 1} more ${k}`;
+      if (f.length === 2) return `${f[0]}, ${f[1]} and ${e.n - 2} more ${k}`;
+      return `${f[0]}, ${f[1]} and ${f.length - 2} more ${f.length - 2 === 1 ? 'friend' : 'friends'} ${k}`;
+    };
+    const evs = this.data().map(e => ({ ...e, isLive: e.slot === 'now', bg: U(e.img), going: !!g[e.id], notGoing: !g[e.id], toggle: () => this.toggle(e.id), faces: e.f.map(n => ({ bg: U(face[n]) })), hasFaces: e.f.length > 0, friendsLine: line(e) }));
+    const byId = (id) => evs.find(e => e.id === id);
+        const picks = ['garden', 'social', 'packout'];
+    const pi = st.pick % picks.length, hero = byId(picks[pi]);
+    const nextPick = () => this.setState(s => ({ pick: s.pick + 1, heroDone: false }));
+    const rm = (id, msg) => () => { this.setState(s => ({ needs: s.needs.filter(x => x !== id) })); if (msg) this.say(msg); };
+    const needDefs = {
+      speaker: { t: 'Audrey asked: can you bring a speaker Thursday?', sub: 'Garden sit · Royal Temple', a1: 'I’ve got it', a2: 'Can’t', bg: U(face.Audrey), icon: '#user', m1: 'Audrey will see you’re bringing it.' },
+      poll: { t: 'Beach cleanup: which slot works?', sub: 'Low Tide Café poll · 38 votes · closes Friday', a1: 'Sat 8am', a2: 'Sun 4pm', bg: 'none', icon: '#space', m1: 'Voted. Saturday is leading, 64%.', m2: 'Voted for Sunday. Saturday leads, 64%.' },
+      lesson: { t: 'Lesson 6 · The open question', sub: 'Mind Journey · 6 min · Jonah and 4 others finished', a1: 'Start', a2: 'Tonight', bg: 'none', icon: '#program', m2: 'We’ll bring it back at 9pm.' },
+      marcus: { t: 'You said you’d check in with Marcus', sub: 'Last seen at a gathering 9 days ago', a1: 'Say hi', a2: 'Skip', bg: U(face.Marcus), icon: '#user', m1: 'Message sent to Marcus.' },
+    };
+    const needs = st.needs.map(id => { const d = needDefs[id]; return { ...d, do1: rm(id, d.m1), do2: rm(id, d.m2) }; });
+    const filtered = evs.filter(e => e.slot === st.slot && (st.intent === 'all' || e.intent === st.intent) && e.dist <= st.radius);
+    const withF = filtered.filter(e => e.f.length).length;
+    const goingList = evs.filter(e => e.going), goingN = goingList.length;
+    const days = [['Mon', 12], ['Tue', 13], ['Wed', 14], ['Thu', 15], ['Fri', 16], ['Sat', 17], ['Sun', 18]];
+    const GS = [
+      ['photo', 'Add a profile photo', 'Faces help people say hi at the door.', 'Add photo', ''],
+      ['home', 'Set your home base', 'Bird Rock. We use it to rank what’s near you.', 'Set location', 'Bird Rock'],
+      ['interests', 'Pick what you’re into', 'Choose three. Near you and Up next get sharper right away.', 'Pick three', '1 min'],
+      ['circle', 'Join your first Circle', 'Small groups that meet. Your Circle-mates show up first.', 'Find a Circle', '3 joined'],
+      ['friends', 'Connect with 3 people', 'Scan a code in person or import contacts. Your people stay yours.', 'Open My Code', '1 of 3'],
+      ['rsvp', 'Say you’re going to something', 'Any gathering this week. Door check-in pays ' + this.ez('zaps','checkin') + '.', 'See what’s near', ''],
+      ['remind', 'Turn on reminders', 'Only for things you’re going to. Nothing else.', 'Turn on', ''],
+    ];
+    const gsIsDone = (k) => k === 'rsvp' ? goingN > 0 : !!st.gsDone[k];
+    const gsNext = GS.find(([k]) => !gsIsDone(k));
+    const gsActive = st.gsOpen ?? (gsNext ? gsNext[0] : null);
+    const gsN = GS.filter(([k]) => gsIsDone(k)).length;
+    const gsFinish = (k, t) => { const d = { ...st.gsDone, [k]: true }; const left = GS.filter(([x]) => !(x === 'rsvp' ? goingN > 0 : d[x])).length; this.setState({ gsDone: d, gsOpen: null }); this.say(left ? `Done: ${t}. ${left} to go.` : 'You’re set up. ' + this.ez('bonus','setup_complete') + ' added.'); };
+    const gs = {
+      show: !st.gsHidden, complete: gsN === GS.length, count: `${gsN}/${GS.length}`,
+      pct: `${Math.round(gsN / GS.length * 100)}%`, half: `${Math.round(gsN / GS.length * 50)}%`,
+      sub: gsN === GS.length ? 'All done' : `Set up your network · ${GS.length - gsN} left`,
+      hide: () => this.setState({ gsHidden: true }),
+      steps: GS.map(([k, t, sub, cta, meta]) => { const done = gsIsDone(k), exp = !done && gsActive === k; return { t, sub, cta, meta, done, now: exp, todo: !done && !exp, expanded: exp,
+        open: () => this.setState({ gsOpen: done ? st.gsOpen : k }),
+        skip: () => { const i = GS.findIndex(([x]) => x === k); const nx = GS.slice(i + 1).concat(GS.slice(0, i)).find(([x]) => !gsIsDone(x)); this.setState({ gsOpen: nx ? nx[0] : null }); },
+        go: k === 'rsvp' ? () => { this.setState({ slot: 'tonight', intent: 'all' }); if (this._near) window.scrollTo({ top: this._near.getBoundingClientRect().top + window.scrollY - 110, behavior: 'smooth' }); } : () => gsFinish(k, t) }; }),
+    };
+    const opt = (list, cur, key) => list.map(([k, label]) => ({ label, on: cur === k, off: cur !== k, pick: () => this.setState({ [key]: k }) }));
+    // rails
+    const vw = st.vw, WL = this.W('L'), WR = this.W('R'), MICRO = 76;
+    const hideRails = vw < 680;
+    const lMicro = st.lc ?? (vw < 960), rMicro = st.rc ?? (vw < 1240);
+    const lw = lMicro ? MICRO : WL, rw = rMicro ? MICRO : WR;
+    const cols = hideRails ? 'minmax(0,1fr)' : `${lw}px minmax(0,1fr) ${rw}px`;
+    const sk = st.stat;
+    const stats = [['streak', 'Day streak', C(12), ''], ['zaps', 'Zaps this season', C(340), '⚡'], ['gems', 'Gems to spend', C(85), '💎'], ['rank', 'Season rank', 'Initiate', '']]
+      .map(([k, label, val, glyph]) => ({ label, val, glyph, num: k !== 'rank', isRank: k === 'rank', on: sk === k, off: sk !== k, pick: () => this.setState({ stat: k }) }));
+    const shortcuts = [
+      ['Around You', 'Search.html', '#pin', ''], ['Messages', 'Messages.html', '#message', '3'], ['Events', 'Events.html', '#event', ''],
+      ['Marketplace', 'Marketplace.html', '#ticket', ''], ['Members', 'Members.dc.html', '#contacts', '2'], ['Journal', 'Profile.html', '#tip', ''], ['My Code', 'Profile.html', '#qr', ''],
+    ].map(([label, href, icon, badge]) => ({ label, href, icon, badge, hasBadge: !!badge, tip: this.tipFor(label, badge ? `${badge} new` : '', 'L') }));
+    const PR = [
+      { id: 'sit', name: 'Morning sit', meta: '10 min · daily', icon: '#breath', min: 10 },
+      { id: 'walk', name: 'Evening walk', meta: '20 min · daily', icon: '#practice', min: 20 },
+      { id: 'grat', name: 'Three good things', meta: '2 min · before bed', icon: '#edit', min: 2 },
+      { id: 'lesson', name: 'The open question', meta: 'Mind Journey · lesson 6', icon: '#lesson', min: 6 },
+    ];
+    const lg = st.logged || {}, nDone = PR.filter(p => lg[p.id]).length, run = st.run;
+    const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    const vp = {
+      doneLine: nDone + ' of ' + PR.length + ' today',
+      streakLine: nDone ? 'Safe today · 12 days' : 'Log one to make it 13',
+      streakHint: nDone ? 'Streak safe today. ' + nDone + ' of ' + PR.length + ' done.' : 'Start one by midnight to make it 13.',
+      practices: PR.map(p => { const isRun = !!run && run.id === p.id, total = p.min * 60000, left = isRun ? run.end - st.now : total; return { ...p, mins: p.min + ' min', done: !!lg[p.id], running: isRun && !lg[p.id], idle: !lg[p.id] && !isRun, todo: !lg[p.id] && !isRun, left: fmt(left), pct: Math.round((1 - left / total) * 100) + '%',
+        start: () => this.startPractice(p), finish: () => this.finishPractice(p), log: () => this.startPractice(p) }; }),
+    };
+    const nextP = vp.practices.find(p => p.idle), runP = vp.practices.find(p => p.running);
+    const sb = { open: st.sbOpen, closed: !st.sbOpen, rows: st.sbOpen ? '1fr' : '0fr', rot: st.sbOpen ? '180deg' : '0deg', title: st.sbOpen ? 'Collapse' : 'Expand',
+      toggle: () => { const o = !this.state.sbOpen; this.setState({ sbOpen: o }); try { localStorage.setItem('fq-streak-box', o ? '1' : '0'); } catch (e) {} },
+      label: streakNLabel(), hasNext: !!nextP && !runP, next: nextP || {}, nextLabel: nextP ? 'Start ' + nextP.name : '', isRunning: !!runP, runLabel: runP ? runP.name + ' · ' + runP.left : '' };
+    function streakNLabel() { return 'Keep it going'; }
+    return { vp, sb, washRef: (el) => { this._wash = el; }, ezDoor: this.ez('zaps','checkin'), ezSetup: this.ez('bonus','setup_complete'),
+      time: this.props.time ?? 'day',
+      showWhy: this.props.showWhy ?? true,
+      cols, colsT: st.drag ? 'none' : 'grid-template-columns 300ms cubic-bezier(.16,1,.3,1)', sel: st.drag ? 'none' : 'auto',
+      nv: this.navVals(`${hideRails ? 200 : Math.max(lw, 200)}px`), dk: this.dockVals(),
+      nt: { show: !!this.props.showNotes, open: st.notesOpen, toggle: () => this.setState(s => ({ notesOpen: !s.notesOpen })), count: NOTES.length, items: NOTES, extra: EXTRA, hasExtra: true },
+      showL: !hideRails, showR: !hideRails,
+      lFull: !lMicro, lMicro, rFull: !rMicro, rMicro,
+      lRot: lMicro ? '180deg' : '0deg', rRot: rMicro ? '0deg' : '180deg',
+      lTitle: lMicro ? 'Expand rail' : 'Collapse rail', rTitle: rMicro ? 'Expand rail' : 'Collapse rail',
+      toggleL: () => this.save({ lc: !lMicro }), toggleR: () => this.save({ rc: !rMicro }), expandR: () => this.save({ rc: false }),
+      dragL: (e) => this.startDrag('L', e), dragR: (e) => this.startDrag('R', e),
+      leftRail: (el) => { this._lr = el; }, rightRail: (el) => { if (el && el !== this._rr) { el.addEventListener('scroll', () => { const end = el.scrollTop + el.clientHeight >= el.scrollHeight - 4; if (end && !this._rrEnd && el.scrollHeight > el.clientHeight + 8) { this._dockY = window.scrollY; this.setState({ dockOpen: 'vault' }); } this._rrEnd = end; }, { passive: true }); } this._rr = el; },
+      gs,
+      rMicroItems: [
+        ...(gs.show ? [{ label: 'Get started', icon: '#standing', val: gs.count, tip: this.tipFor('Get started', gs.sub, 'R') }] : []),
+        { label: 'Your week', icon: '#event', val: String(goingN), tip: this.tipFor('Your week', `${goingN} ${goingN === 1 ? 'plan' : 'plans'} · ${Math.min(goingN, 3)} of 3 to goal`, 'R') },
+        { label: 'Today’s goals', icon: '#checkin', val: '1/3', tip: this.tipFor('Today’s goals', '1 of 3 done · 4h 12m left', 'R') },
+        { label: 'Bird Rock this week', icon: '#zap', val: '#3', tip: this.tipFor('Bird Rock this week', 'You’re 3rd · ⚡ 340', 'R') },
+        { label: 'People to know', icon: '#contacts', val: '3', tip: this.tipFor('People to know', '3 suggestions', 'R') },
+      ],
+      nearRef: (el) => { this._near = el; },
+      toPlanner: () => { this.setState({ slot: 'tonight', intent: 'all' }); if (this._near) window.scrollTo({ top: this._near.getBoundingClientRect().top + window.scrollY - 110, behavior: 'smooth' }); },
+      createOpen: st.create, toggleCreate: () => this.setState(s => ({ create: !s.create })),
+      stats, streakN: C(12),
+      showStreak: sk === 'streak', showZaps: sk === 'zaps', showGems: sk === 'gems', showRank: sk === 'rank',
+      streakWeek: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => ({ l, on: i < 4, today: i === 4, off: i > 4 })),
+      zapRows: [{ t: 'Check-ins', n: 175, w: '51%' }, { t: 'Practices', n: 120, w: '35%' }, { t: 'Challenges', n: 45, w: '14%' }],
+      ranks: [{ l: 'Ghost', reached: true, next: false }, { l: 'Initiate', reached: true, next: false }, { l: 'Adept', reached: false, next: true }, { l: 'Master', reached: false, next: true }],
+      hero, heroPos: `${pi + 1} of ${picks.length}`, heroOpen: !st.heroDone, heroDone: st.heroDone,
+      heroGo: () => this.setState(s => ({ going: { ...s.going, [hero.id]: true }, heroDone: true })),
+      heroSave: () => { this.say(`Marked maybe for ${hero.name}. Next idea.`); nextPick(); },
+      heroSkip: nextPick,
+            needs, needsCount: needs.length ? `${needs.length} waiting` : '', needsEmpty: !needs.length,
+      composer: [{ label: 'Photo', icon: '#page' }, { label: 'Event', icon: '#event' }, { label: 'Log practice', icon: '#checkin' }, { label: 'Listing', icon: '#ticket' }],
+      tabs: [['nearby', 'Nearby'], ['relevant', 'Resonance'], ['recent', 'Recent'], ['popular', 'Popular'], ['story', 'Story']].map(([k, label]) => ({ label, on: st.sort === k, off: st.sort !== k, pick: () => this.setState({ sort: k }) })),
+      isStory: st.sort === 'story',
+      hfOn: st.hf, hfOff: !st.hf, highFive: () => this.setState({ hf: true }),
+      lessons: [{ t: 'Noticing the noise', m: 'Done', done: true, todo: false }, { t: 'One thing at a time', m: 'Done', done: true, todo: false }, { t: 'The open question', m: '6 min', done: false, todo: true }],
+      listings: [{ price: '$40', name: 'Cork yoga blocks', bg: U('day-park-yoga.jpg') }, { price: '$15', name: 'Beach hoop', bg: U('day-beach-hoop.jpg') }, { price: 'Free', name: 'Floor cushions', bg: U('gathering-03.jpg') }],
+      intents: opt([['all', 'Anything'], ['move', 'Move'], ['sit', 'Sit'], ['social', 'Social'], ['learn', 'Learn'], ['give', 'Give back']], st.intent, 'intent'),
+      slots: opt([['now', 'Now'], ['tonight', 'Tonight'], ['tomorrow', 'Tomorrow'], ['week', 'This week']], st.slot, 'slot'),
+      radii: opt([[1, '1 mi'], [5, '5 mi'], [15, '15 mi']], st.radius, 'radius'),
+      radius: st.radius, widen: () => this.setState({ radius: 15 }),
+      resultLine: filtered.length ? `${filtered.length} ${filtered.length === 1 ? 'thing' : 'things'}${withF ? ` · ${withF} with friends` : ''}` : 'Nothing yet',
+      near: filtered, noResults: !filtered.length,
+      plans: [['Jonah', 'social'], ['Priya', 'garden'], ['Theo', 'packout'], ['Ana', 'flow'], ['Marcus', 'sunrise']].map(([who, id]) => { const e = byId(id); return { who, what: `${e.name} · ${e.when}`, bg: U(face[who]), going: e.going, notGoing: e.notGoing, toggle: e.toggle }; }),
+      week: days.map(([dow, d], i) => { const items = goingList.filter(e => e.day === i).map(e => ({ name: e.name, time: e.time })); return { dow, d, items, empty: !items.length }; }),
+      goingLine: `${goingN} ${goingN === 1 ? 'plan' : 'plans'}`, goalLine: `${Math.min(goingN, 3)} of 3`, goalW: `${Math.min(goingN, 3) / 3 * 100}%`,
+      goals: [
+        { t: 'Log 3 practices', p: '1 of 3', w: '33%', r: this.ez('bonus','goal_show_up_3'), done: false, open: true },
+        { t: 'Check in at a gathering', p: '0 of 1', w: '0%', r: this.ez('zaps','checkin'), done: false, open: true },
+        { t: 'Reply in your Circle', p: '1 of 1', w: '100%', r: '', done: true, open: false },
+      ],
+      board: [
+        { n: 1, name: 'Jonah Reyes', z: 420, bg: U(face.Jonah), me: false, other: true },
+        { n: 2, name: 'Priya Nair', z: 380, bg: U(face.Priya), me: false, other: true },
+        { n: 3, name: 'You', z: 340, bg: U('gathering-08.jpg'), me: true, other: false },
+        { n: 4, name: 'Marcus Lee', z: 290, bg: U(face.Marcus), me: false, other: true },
+      ],
+      hasToast: !!st.toast, toast: st.toast,
+      hasTip: !!st.tip, tipText: st.tip ? st.tip.text : '', tipSub: st.tip ? st.tip.sub : '', hasTipSub: !!(st.tip && st.tip.sub),
+      tipY: st.tip ? st.tip.y + 'px' : '0px', tipL: st.tip && st.tip.side === 'L' ? st.tip.x + 'px' : 'auto', tipR: st.tip && st.tip.side === 'R' ? st.tip.x + 'px' : 'auto',
+      tipOff: () => this.setState({ tip: null }),
+      tipMe: this.tipFor('Daniel Tyack', 'Initiate · Crew', 'L'), tipJourney: this.tipFor('Mind Journey', 'Week 2 of 4 · Lesson 6 next', 'L'),
+      shortcuts,
+      circles: [
+        { name: 'Bird Rock Sunrise Circle', meta: '6 here this week', bg: U('day-beach-hoop.jpg') },
+        { name: 'Royal Temple', meta: 'Garden sit Thursday', bg: U('day-meditation-circle.jpg') },
+        { name: 'Cardiff Movers', meta: '4 new posts', bg: U('day-park-yoga.jpg') },
+      ].map(c => ({ ...c, tip: this.tipFor(c.name, c.meta, 'L') })),
+      people: [
+        { name: 'Marcus Lee', why: 'Going to Sunrise sit with you', bg: U(face.Marcus) },
+        { name: 'Ana Ruiz', why: 'Also on the Mind Journey', bg: U(face.Ana) },
+        { name: 'Theo Park', why: '3 Circles in common', bg: U(face.Theo) },
+      ],
+      createItems: [
+        { label: 'Post', sub: 'To your wall and the feed', href: 'Members.dc.html', icon: '#page' },
+        { label: 'Event', sub: 'Vera can draft from a poster', href: 'Event.html', icon: '#event' },
+        { label: 'Circle', sub: 'Start from a template', href: 'Circle.html', icon: '#circle' },
+        { label: 'Practice', sub: 'Write one or fork one', href: 'Mindless.html', icon: '#checkin' },
+        { label: 'Journey', sub: 'Phases, modules, lessons', href: 'Journey.html', icon: '#program' },
+        { label: 'Listing', sub: 'Market, Classifieds, Housing', href: 'Marketplace.html', icon: '#ticket' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

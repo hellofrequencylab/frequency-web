@@ -29,6 +29,7 @@
 import { ImageIcon, ShieldQuestion, Sparkles, X } from 'lucide-react'
 import { safeImageSrc } from '@/lib/safe-image-src'
 import { FieldError } from './field/field-control'
+import { capsLabel } from '@/components/ui/caps-label'
 
 /** The "Vera can draw one" offer, when the entity declares a cover field and the draft has none.
  *  Omit it and no offer renders. It is an OFFER: publishing with no image stays a real outcome. */
@@ -163,7 +164,7 @@ function QualityCard({ quality, disabled }: { quality: SparkQualityCheck; disabl
 
       {v && (
         <div className="mt-2 border-t border-border pt-2">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">
+          <p className={capsLabel('text-2xs font-semibold text-muted')}>
             {v.status}
             {/* A score of 0 is the fail-closed placeholder, not a mark out of 100, so it is not
                 shown as one. */}

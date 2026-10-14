@@ -2,6 +2,7 @@
 // /join. Formerly app/onboarding/beta/page.tsx ("beta induction"); old URLs 308
 // here. Mirrors the legacy onboarding page's auth + completed guards.
 
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveFunnel } from '@/lib/funnels/resolve'
@@ -13,6 +14,29 @@ import type { FunnelDestination } from '@/lib/funnels/definitions'
 import { readPendingInduction } from './pending-induction'
 import FunnelInduction from './induction'
 import FeatureFunnel from './feature-funnel'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+
+// Under Frequency /join is the website's Get started page (Join.html's title and description), so it
+// names itself; DAWN's /join keeps the root defaults it always had. /join stays out of the index
+// (app/robots.ts), so no canonical is declared.
+const JOIN_TITLE = 'Get started'
+const JOIN_DESCRIPTION = 'Free for people, free to host. Tell us where you are and we’ll show you what’s happening.'
+
+export async function generateMetadata(): Promise<Metadata> {
+  if (SITE_DESIGN !== 'frequency') return {}
+  // The share card is this page's own: /join is the link every CTA and every invite sends, and the
+  // root card it inherited said url "/" with the home title. Metadata merges per top-level key, so
+  // the image is restated (ROOT_OG_IMAGES) or the card ships without one.
+  return {
+    title: JOIN_TITLE,
+    description: JOIN_DESCRIPTION,
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: `${JOIN_TITLE} · Frequency`, description: JOIN_DESCRIPTION, url: '/join', type: 'website' },
+    twitter: { card: 'summary_large_image', title: `${JOIN_TITLE} · Frequency`, description: JOIN_DESCRIPTION },
+  }
+}
 
 export default async function FunnelInductionPage({
   searchParams,
@@ -25,7 +49,7 @@ export default async function FunnelInductionPage({
   // The sequence drives the copy. No ?seq (or ?seq=beta-default) = the base VERA
   // flow, fully merged with the owner's edits: resolveFunnel layers the coded
   // copy, the legacy /admin/vera induction tweaks, and the `beta-default` override
-  // saved by the /pages/splash editor. DB-built versions resolve the same way.
+  // saved by the Default Funnel editor (/pages/sequences?tab=default). DB-built versions resolve the same way.
   const { seq: seqSlug, persona: personaSlug, next: nextParam } = await searchParams
   const seq = await resolveFunnel(seqSlug)
   // A `?next=` in-app path (e.g. an event-claim landing) overrides the sequence destination so
@@ -81,6 +105,22 @@ export default async function FunnelInductionPage({
         parkedHandle: parked.handle,
       }
     : undefined
+
+  // THE FREQUENCY FRONT (ADR-1737). Under the Frequency design a signed-out visitor on the bare /join,
+  // with nothing parked, sees the design's Get started screen first. Its two short forms run the
+  // induction's own actions (stash + lead capture) and come straight back here with a persona, which
+  // renders the induction below, resumed past its intro. Anything else (a funnel, a persona, a
+  // `next`, a parked run, a signed-in member) is the induction exactly as before, and DAWN never
+  // reaches this branch (SITE_DESIGN is build-time).
+  // It wears the public site's chrome (header, footer, FX) as Join.html does: /join sits outside the
+  // (marketing) layout, so the shell is rendered here, around this one branch only.
+  if (SITE_DESIGN === 'frequency' && !user && !parked && !seqSlug && !personaSlug && !nextParam) {
+    return (
+      <SiteShell>
+        <FrequencyJoin />
+      </SiteShell>
+    )
+  }
 
   if (!user) {
     return <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...resume} {...funnel} />

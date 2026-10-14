@@ -24,7 +24,7 @@ function ActivityRow({ post }: { post: Board['activity'][number] }) {
   return (
     <Link
       href={post.spaceSlug ? `/spaces/${post.spaceSlug}` : '/spaces/directory'}
-      className="flex items-start gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+      className="flex items-start gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated"
     >
       <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-subtle">
         <Users className="h-3.5 w-3.5" aria-hidden />
@@ -47,9 +47,9 @@ function GatheringRow({ gathering }: { gathering: NonNullable<Board['gathering']
   return (
     <Link
       href={`/events/${gathering.slug}`}
-      className="group flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+      className="group flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated"
     >
-      <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-success-bg text-success">
+      <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-control bg-success-bg text-success">
         <span className="text-3xs font-bold uppercase leading-none">{month}</span>
         <span className="text-body-sm font-bold leading-tight">{day}</span>
       </span>
@@ -106,7 +106,7 @@ export function CommunityBoardBody({ board }: { board: Board }) {
               href={belongs ? '/events' : '/circles'}
               className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-strong"
             >
-              {belongs ? 'See what’s on' : 'Find a Circle'}
+              {belongs ? 'See what’s happening' : 'Find a Circle'}
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           }
@@ -136,7 +136,7 @@ export function CommunityBoardBody({ board }: { board: Board }) {
         // one the board still says so, in a line rather than a second panel.
         <p className="px-1 text-meta text-subtle">
           <CalendarDays className="mr-1 inline h-3 w-3" aria-hidden />
-          Nothing on in your Circles yet. <Link href="/events" className="underline hover:text-text">See what’s on</Link>.
+          Nothing on in your Circles yet. <Link href="/events" className="underline hover:text-text">See what’s happening</Link>.
         </p>
       )}
     </div>

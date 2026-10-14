@@ -72,7 +72,7 @@ export function CancelToggle({
       <button
         onClick={handleClick}
         disabled={isPending}
-        className={`shrink-0 rounded-lg border px-3 py-1.5 text-meta font-medium transition-colors disabled:opacity-50 ${
+        className={`shrink-0 rounded-control border px-3 py-1.5 text-meta font-medium transition-colors disabled:opacity-50 ${
           isCancelled
             ? 'border-success text-success hover:bg-success-bg dark:hover:bg-success-bg/30'
             : 'border-danger text-danger hover:bg-danger-bg'
@@ -85,7 +85,7 @@ export function CancelToggle({
           type="button"
           onClick={() => setSeriesOpen(true)}
           disabled={isPending}
-          className="shrink-0 rounded-lg border border-danger px-3 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+          className="shrink-0 rounded-control border border-danger px-3 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
           title="Cancel every remaining date of this repeating event"
         >
           Cancel series

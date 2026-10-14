@@ -32,6 +32,10 @@ import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
 import { journeyBuySignInPath } from '@/lib/journeys/sales-path'
 import { getProductReviews } from '@/lib/commerce/reviews'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
+import { readJourneyFaq } from '@/lib/journeys/faq'
+import { genericJourneyFaq } from '@/components/journey/discovery-widgets'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyJourney } from '@/components/frequency/site/pages/discover/journeys'
 
 // Public, indexable detail page for one library Journey. Mirrors the in-app Journey
 // page's header (badge + Pillar + stat chips) + two-column body + sticky "At a glance"
@@ -140,6 +144,53 @@ export default async function DiscoverJourneyPage({
     : null
   const soldOut = offer ? isSoldOut(offer) : false
 
+  const schema = [
+    journeySchema(plan, items),
+    // A priced Journey also emits a Product node carrying its Offer, so the canonical page
+    // states the price in structured data and not only in the markup. Absent when free.
+    ...(offer && priceLabel ? [journeyOfferSchema(plan, offer, soldOut, rating)] : []),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Journeys', path: '/discover/journeys' },
+      { name: plan.title, path: `/discover/journeys/${plan.slug}` },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same reads, the same price rule and the same buy door
+  // (JourneyGuestBuy, hosted checkout), drawn in the site kit. Build-time constant, so ISR holds.
+  if (SITE_DESIGN === 'frequency') {
+    const authoredFaq = readJourneyFaq(plan.page_config)
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyJourney
+          plan={plan}
+          facts={facts}
+          pillarName={topPillar?.name ?? null}
+          author={author}
+          sale={offer && priceLabel ? { productId: offer.productId, priceLabel, soldOut } : null}
+          image={hero.coverImage}
+          outcomes={readJourneyOutcomes(plan.page_config)}
+          guarantee={readJourneyGuarantee(plan.page_config)}
+          faqs={authoredFaq.length > 0 ? authoredFaq : genericJourneyFaq(plan)}
+          reviews={
+            reviews && offer ? (
+              <ProductReviews
+                productId={offer.productId}
+                productTitle={plan.title}
+                reviews={reviews}
+                myReview={null}
+                signedIn={false}
+                canReview={false}
+                canModerate={false}
+              />
+            ) : null
+          }
+        />
+      </>
+    )
+  }
+
   // The marketing-register CTA. A FREE Journey reads exactly as it always did; a paid one names its
   // price and sends the buyer to the storefront that can take it, which is public, crawlable and
   // (since ADR-1399) opens the card fields in place.
@@ -180,19 +231,7 @@ export default async function DiscoverJourneyPage({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
-      <JsonLd
-        data={[
-          journeySchema(plan, items),
-          // A priced Journey also emits a Product node carrying its Offer, so the canonical page
-          // states the price in structured data and not only in the markup. Absent when free.
-          ...(offer && priceLabel ? [journeyOfferSchema(plan, offer, soldOut, rating)] : []),
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Journeys', path: '/discover/journeys' },
-            { name: plan.title, path: `/discover/journeys/${plan.slug}` },
-          ]),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <JourneyDetailTemplate
         {...hero}

@@ -159,6 +159,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
               <div
                 className="mt-4 rounded-card border p-3.5"
                 style={{
+                  // data-driven: --rank / --rank-deep are scoped per element by seasonRankStyle (rank from data)
                   ...expressionPillarStyle(),
                   borderColor: 'var(--rank-bright)',
                   background: 'color-mix(in srgb, var(--rank) 8%, var(--color-surface))',
@@ -166,6 +167,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
               >
                 <p
                   className="flex items-center gap-1.5 text-body-sm font-semibold text-text"
+                  // data-driven: --rank / --rank-deep are scoped per element by seasonRankStyle (rank from data)
                   style={{ color: 'var(--rank-deep)' }}
                 >
                   <ExpressionIcon className="h-4 w-4" aria-hidden />

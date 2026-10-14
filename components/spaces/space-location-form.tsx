@@ -175,7 +175,7 @@ export function SpaceLocationForm({
         Space stays off the map.
       </p>
 
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-4 sm:p-5">
         {/* ── Find it ─────────────────────────────────────────────────────── */}
         <div className="relative">
           <Label htmlFor="space-location-search">Search for your address or venue</Label>

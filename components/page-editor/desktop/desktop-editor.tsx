@@ -53,6 +53,7 @@ import {
 } from '../mobile/data-ops'
 import { FieldForm, type FieldsSchema, type PushRequest } from '../mobile/field-form'
 import { IconButton } from '@/components/ui/icon-button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // ── Live-document context (the usePuck().appState.data replacement) ────────────
 const EditorDocContext = createContext<Data | null>(null)
@@ -187,13 +188,13 @@ export function DesktopEditor({
               <span className="flex items-center gap-1.5 eyebrow text-subtle">
                 <Layers className="h-4 w-4" aria-hidden /> Blocks
               </span>
-              <button
+              <Button
                 type="button"
                 onClick={() => setPalette(null)}
-                className="inline-flex min-h-[32px] items-center gap-1 rounded-lg bg-primary px-2.5 text-meta font-semibold text-on-primary hover:bg-primary-hover"
+                size="sm" className="min-h-[32px]"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add block
-              </button>
+              </Button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {outline.length === 0 ? (
@@ -326,7 +327,7 @@ function OutlineTree({
               if (id && id !== node.id) onDropMove(id, parentId, slotKey, index)
               onDragEndId()
             }}
-            className={`group flex items-center gap-1 rounded-lg border px-2 py-1.5 ${
+            className={`group flex items-center gap-1 rounded-control border px-2 py-1.5 ${
               selectedId === node.id ? 'border-primary bg-primary-bg/40' : 'border-transparent hover:bg-surface-elevated'
             }`}
           >
@@ -360,7 +361,7 @@ function OutlineTree({
               {node.slots.map((slot) => (
                 <div key={slot.key}>
                   <div className="flex items-center justify-between px-1 py-0.5">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">
+                    <span className={capsLabel('text-2xs font-semibold text-muted')}>
                       {slot.label}
                     </span>
                     <IconBtn label={`Add to ${slot.label}`} onClick={() => onAddToSlot(node.id, slot.key)}>
@@ -381,7 +382,7 @@ function OutlineTree({
                         if (id) onDropMove(id, node.id, slot.key, 0)
                         onDragEndId()
                       }}
-                      className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-meta text-subtle"
+                      className="rounded-control border border-dashed border-border px-2 py-2 text-center text-meta text-subtle"
                     >
                       Empty. Drop or add a block.
                     </div>
@@ -557,7 +558,7 @@ function PalettePopover({
                       key={b.type}
                       title={b.reason}
                       aria-disabled="true"
-                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-lg border border-border bg-surface-elevated px-3 py-2 text-left text-body-sm font-medium text-subtle opacity-60"
+                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-control border border-border bg-surface-elevated px-3 py-2 text-left text-body-sm font-medium text-subtle opacity-60"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </div>
@@ -566,7 +567,7 @@ function PalettePopover({
                       key={b.type}
                       type="button"
                       onClick={() => onPick(b.type)}
-                      className="flex min-h-[48px] items-center rounded-lg border border-border bg-canvas px-3 py-2 text-left text-body-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
+                      className="flex min-h-[48px] items-center rounded-control border border-border bg-canvas px-3 py-2 text-left text-body-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </button>

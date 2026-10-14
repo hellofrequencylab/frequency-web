@@ -415,6 +415,18 @@ const LIVE_DATA_PATHS: readonly string[] = []
  * is not among the eight changed PNGs — `railFor('/feed')` plans different panels), so it still
  * photographs the rail head for real. Per-surface and measured, the way `/discover` was not:
  * when a fourth surface starts drifting, it joins this list with its own reading attached.
+ *
+ * ── UNDER FREQUENCY (2026-10-14, PR #3434 go-live). The shell is
+ * components/frequency/members/shell/rail-layout.tsx and it has TWO rails, both live lists: the
+ * left (`.fqm-rail-l`, Your Circles) and the right (`.fqm-rail-r`, stats, goals, the week, people).
+ * Each is a sticky box of fixed size (220-320 px wide, default 248; `calc(100vh - 132px)` tall,
+ * so 248x668 at the desktop viewport, rows 108..775 even in a full-page shot), and BOTH carry
+ * `data-rail-column`, so this one selector masks both rails, on the same three surfaces. The
+ * first Frequency capture had neither hook; f539caaec then stamped the left one, and the compare
+ * failed /settings and /nearby on exactly that band (rows 108-775 x 40-287): a mask the baseline
+ * never had. The Space console has NO rails under Frequency (it is an edge route), so the
+ * selector matches nothing there and the row keeps it only for DAWN. `/feed` still keeps its rails
+ * in the picture, for the same per-surface reason as above.
  */
 const RAIL_COLUMN_MASK: readonly string[] = ['[data-rail-column]']
 
@@ -1026,7 +1038,7 @@ export const GLOBAL_MASK_SELECTORS: readonly string[] = [
  *
  * A mask PAINTS A BOX AND CHANGES NO LAYOUT. It answers "this box holds different pixels on
  * two honest captures of the same commit"; it cannot answer "this box is a different SIZE on
- * two captures", which is `Surface.viewportOnly`'s job (see its note). Three kinds of box
+ * two captures", which is `Surface.viewportOnly`'s job (see its note). Four kinds of box
  * earn one:
  *   ENV      the element mounts in one Vercel environment and not another. The support-chat
  *            widget was the one such element: SUPPORT_CHAT was set for Production alone until
@@ -1037,6 +1049,12 @@ export const GLOBAL_MASK_SELECTORS: readonly string[] = [
  *            three numbers, the chat trigger's unread badge.
  *   ROUTE    the element renders on some routes and not others for a reason the picture cannot
  *            show. The edge pill renders only where no dock slot exists.
+ *   LOAD     the element is a STATIC picture that a full-page capture can photograph before it
+ *            has decoded: a `loading="lazy"` image thousands of pixels below the fold. The pixels
+ *            are not data; their ARRIVAL is a race. The /discover chapter photo was the case
+ *            (run 38546014243: one band at its exact box, red on the first attempt and green on
+ *            the retry). The settle() note on frozen lazy images says why the shutter does not
+ *            force-load images instead; until that owner call, a LOAD mask is the honest remedy.
  *
  * ⚠️ The Vercel preview toolbar is NOT here, because it is not ours to mark: Vercel injects it
  * into every preview response, and `playwright.config.ts` sends `x-vercel-skip-toolbar` so it
@@ -1046,7 +1064,7 @@ export const GLOBAL_MASK_SELECTORS: readonly string[] = [
 export const VISUAL_MASK_SITES: readonly {
   readonly value: string
   readonly file: string
-  readonly kind: 'env' | 'live' | 'route'
+  readonly kind: 'env' | 'live' | 'route' | 'load'
   readonly why: string
 }[] = [
   {
@@ -1140,6 +1158,18 @@ export const VISUAL_MASK_SITES: readonly {
   },
   {
     value: 'rail-panel',
+    file: 'components/frequency/members/shell/right-rail.tsx',
+    kind: 'live',
+    why: 'The Frequency right rail (ADR-1740): Get started, Today’s goals, Your week (only with plans), Your Circles this season and People to know, every one a reading of the member’s own rows.',
+  },
+  {
+    value: 'rail-panel',
+    file: 'components/frequency/members/shell/rail-stats.tsx',
+    kind: 'live',
+    why: 'Stats and streaks at the top of the Frequency right rail: the streak and today’s state, the seven-day strip, Zaps, Gems, rank, practices today and an eight-week activity sparkline, all the member’s own readings.',
+  },
+  {
+    value: 'rail-panel',
     file: 'components/sidebar/community-panel.tsx',
     kind: 'live',
     why: 'The community board, which took the rail slot when the practice board went back to the top of /feed (ADR-1362): the next gathering in the member’s Circles with its date chip and location, and the newest posts in their Spaces with authors and relative times, are every one of them a reading.',
@@ -1220,6 +1250,15 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The locator city list: a per-city circle tally, re-ranked by the viewer’s IP-approximate location.',
   },
+  {
+    // Frequency's /discover (PR #3434). Not data: a static brand photo, `loading="lazy"` ~2700 px
+    // down a 6206 px full-page capture. Run 38546014243 failed /discover [midnight-light · desktop]
+    // on one band, rows 2681-3092 x 677-1191, which is this box exactly, and passed on the retry.
+    value: 'discover-chapter-photo',
+    file: 'components/frequency/site/pages/discover/parts.tsx',
+    kind: 'load',
+    why: 'The DxChapter photo: a lazy image far below the fold whose decode races the full-page shutter.',
+  },
   // ── /feed, the home stream (LIVE-308) ───────────────────────────────────────────────────
   // Two boxes, chosen from the committed first-screen PNGs rather than from the row's premise:
   // the heading is the clock that actually moved, and the stream is what moves once the first
@@ -1230,6 +1269,24 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'app/(main)/feed/page.tsx',
     kind: 'live',
     why: 'The heading row: the eyebrow is today’s date and the title the time-of-day greeting, both read in America/Los_Angeles at render. The row rather than the h1, because the title block is content-sized and its width follows the words (PageHeading.visualMask).',
+  },
+  {
+    value: 'feed-greeting',
+    file: 'components/frequency/members/feed/feed-body.tsx',
+    kind: 'live',
+    why: 'The Frequency Feed greeting row (ADR-1740): today’s date and the time-of-day greeting, read at render, the same live content as the DAWN heading row.',
+  },
+  {
+    value: 'feed-stream',
+    file: 'components/frequency/members/feed/posts.tsx',
+    kind: 'live',
+    why: 'The Frequency Feed post stream (ADR-1740): the same live posts, authors, avatars, counts and relative times as the DAWN stream. The empty pane is not masked.',
+  },
+  {
+    value: 'feed-practices',
+    file: 'components/frequency/members/feed/standing.tsx',
+    kind: 'live',
+    why: 'The Frequency Feed standing panel’s Your practices block (2026-10-14 export): the member’s adopted practices, each marked done or not on their own today, so it turns over at their midnight.',
   },
   {
     value: 'feed-stream',

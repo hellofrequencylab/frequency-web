@@ -29,7 +29,7 @@ const META: Record<MemberCodePurpose, { blurb: string; Icon: typeof Users }> = {
     Icon: UserPlus,
   },
   referral: {
-    blurb: 'Your outreach code. People who scan and join are credited to you, and you both earn Zaps.',
+    blurb: 'Your outreach code. People who scan and join are credited to you. They get a few Zaps to start, and you earn Zaps once they join a Circle or pick up a Practice.',
     Icon: Users,
   },
   gift_zap: { blurb: 'Friends scan to send you a Zap toward The Quest.', Icon: Zap },

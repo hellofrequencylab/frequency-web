@@ -1,6 +1,8 @@
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Sitemap-advertised share URLs that used to live under (main) (SCAN-643 / ADR-1452).
 // The member layout reads the session cookie and the request path before its public
@@ -12,6 +14,13 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 // too (SCAN-644). Signed-in members rewrite to /full.
 
 export default async function PublicShareLayout({ children }: { children: React.ReactNode }) {
+  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency these share pages wear the public
+  // Frequency chrome, exactly as app/(marketing)/layout.tsx does, so a listing or a product opened
+  // from the member Marketplace never lands in DAWN's header. SiteShell reads no request data, so
+  // the ISR pages under this group stay static. Public detail pages are COMMONS (a Space, a listing, an
+  // event: things to read and act on, guidelines/site-themes.md), so the members kit bodies here (the
+  // Space chrome) wear the light theme they were drawn for.
+  if (SITE_DESIGN === 'frequency') return <SiteShell surface="commons">{children}</SiteShell>
   const [headerMenu, footerMenu, menuTimings] = await Promise.all([
     getMenu('header'),
     getMenu('footer'),

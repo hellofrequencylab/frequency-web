@@ -14,16 +14,17 @@
 // launch-sized limits. Selling starts at Business (ADR-1709, the five-tier ladder).
 //
 // 🔴 THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255). Every door says the same sentence in its
-// own words: PEOPLE JOIN FREE, BUSINESSES HOST FREE, YOU PAY WHEN YOU START CHARGING. The three
-// capabilities that genuinely need a plan are still named plainly, because naming them is what makes
-// the promise checkable, but they are the CONSEQUENCE of that sentence rather than the pitch:
+// own words: PEOPLE JOIN FREE, BUSINESSES HOST FREE, YOU PAY WHEN YOU START CHARGING. The one thing
+// that genuinely needs a plan is named plainly, because naming it is what makes the promise checkable:
 // taking payments (paid tickets, memberships, donations, shop checkout, booking deposits) opens at
-// Business, and tips stay open on every plan (ADR-1709). Do not
-// reintroduce a "paid does more / lifts the caps / unlocks" beat here, and that includes a SECTION
-// TITLE: the five step-up cards each read "When you start charging, it does more." until LIVE-255,
-// which is this rule broken by the heading above the copy that obeys it. A card that names a plan
-// capability says WHICH REPEAT it serves (the second session, the second month, the second gift),
-// because the repeat is what a plan carries (PLAN_STORY.paid, ADR-1350). Everything else is a meter, and
+// Business, and tips stay open on every plan (ADR-1709). Do not reintroduce a "paid does more / lifts
+// the caps / unlocks" beat here, and that includes a SECTION TITLE (LIVE-255). Do not reintroduce the
+// retired ADR-914 framing either (LIVE-911): six spark cards titled a plan as the reason for the
+// repeat, selling email, reminders and nudges as plan features, and a free Space runs them
+// (PLAN_STORY.paid). The spark cards now name
+// the repeat they serve with no plan attached, and every line that SELLS says Business beside it.
+// Every 0% or "nothing taken" promise carries "plus card processing": Frequency takes no network fee
+// on your own people, and the card processor still takes its own. Everything else is a meter, and
 // the caps are never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy
 // stays qualitative.
 
@@ -72,9 +73,10 @@ export interface FunnelFeature {
  *  take-rate / value wording. `kind` selects which catalog figure the component reads. */
 export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
-  /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
+  /** The plan name shown, e.g. "Free", "Business", "+ Vera AI" (the add-on's public name; `kind`
+   *  stays `resonance`, the machinery's id, ADR-590). */
   name: string
-  /** The right-hand descriptor, e.g. "Host free, with tips at 0%", "AI that works
+  /** The right-hand descriptor, e.g. "Host free, and tips carry no platform fee, plus card processing", "AI that works
    *  for you". Rates come from the shared RATE map, never typed here. */
   detail: string
   /** Featured row (the one the niche is steered toward). */
@@ -193,26 +195,26 @@ const rates = networkTakeRateFromStored(input.values.take_rate)
 const RATE = {
   business: formatBps(networkTakeRateBpsForPlan('business', rates)),
 }
-/** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no fee. */
-const FREE_ROW_DETAIL = 'Host free, with tips at 0%'
+/** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no platform fee, plus card processing. */
+const FREE_ROW_DETAIL = 'Host free, and tips carry no platform fee, plus card processing'
 /** The business row's descriptor: selling opens here, with the introduction fee beside it. */
 const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
 /** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */
 function breakEvenCaption(keep: string): string {
-  return `You keep 100% of ${keep}, always. Frequency earns only when the network introduces someone new, once, and after that it is 0% for good.`
+  return `No network fee on ${keep}, ever, only card processing. Frequency earns only when the network introduces someone new, once, and after that it's 0% for good.`
 }
 
 /** The shared pricing-beat intro. It leads with the promise, not the plan: hosting is free, and that
  *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
  *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no fee, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
+  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
 }
 
-/** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
+/** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to be here, and nothing to host. A free Space runs your page, contacts, bookings and events, and takes tips with no fee. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop, with ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. You keep 100% of ${keep}.${extra} You always see the full number, nothing hidden.`
+  return `Nothing to be here, and nothing to host. A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop, with ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} You always see the full number, nothing hidden.`
 }
 
 
@@ -226,12 +228,12 @@ const COACHES_FUNNEL: FunnelConfig = {
   archetypes: ['second_act'],
   hero: {
     eyebrow: 'For coaches, healers, and guides',
-    h1: 'Your practice, made perfect.',
+    h1: 'Your practice, without the six tabs.',
     seoTitle: 'Booking + contacts software for coaches and healers',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. You pay when you start charging.',
-    trustLine: 'You keep 100% of what you bring in.',
+    trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
     'Frequency gives coaches and healers bookings, payments, and one contact list in one place, so clients rebook and refer. Free to start, no card.',
@@ -248,7 +250,7 @@ const COACHES_FUNNEL: FunnelConfig = {
         title: 'Bring your people in.',
         body: 'Scan a card, import a list, or share your Frequency card. Everyone lands in Contacts.',
       },
-      { title: 'Open your calendar.', body: 'Take bookings and payments the same day, right from the page clients already see.' },
+      { title: 'Open your calendar.', body: "Take bookings the same day, right from the page clients already see. Paid sessions open when you go Business." },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
@@ -258,7 +260,7 @@ const COACHES_FUNNEL: FunnelConfig = {
     {
       icon: 'calendar',
       title: 'Booked and paid, without the chase.',
-      body: 'Clients pick a time and pay up front. No back and forth, no chasing invoices. Your calendar fills, and your evenings come back.',
+      body: "Clients pick a time, and on Business they pay up front. No back and forth, no chasing invoices. Your calendar fills, and your evenings come back.",
     },
     {
       icon: 'contact',
@@ -273,7 +275,7 @@ const COACHES_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'A plan is for the second session.',
+      title: 'Bring them back for the second session.',
       body: "Email to bring quiet clients back. Reminders that send themselves, so no one slips. And a nudge when someone's drifting, while there's still time to reach them.",
     },
   ],
@@ -288,7 +290,7 @@ const COACHES_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the bookings you bring in yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
@@ -327,7 +329,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     subhead:
       "Recurring classes, memberships, and check-in at the door, together in one place. Frequency keeps your members close, so the regulars come back and bring the next ones. Start free.",
     microcopy: 'No card. You pay when you start charging.',
-    trustLine: 'You keep 100% of what you bring in.',
+    trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
     'Frequency gives studios recurring classes, memberships, and door check-in in one place, so members rebook and refer. Free to start, no card.',
@@ -341,7 +343,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your studio page, your schedule, and your classes, ready in a few minutes. Free to start, always.' },
       { title: 'Bring your members in.', body: 'Import your roster or share your Frequency card. Everyone lands in Contacts.' },
-      { title: 'Open your schedule.', body: 'Sell memberships and class packs, and check people in at the door the same day.' },
+      { title: 'Open your schedule.', body: 'Check people in at the door the same day, and sell memberships and class packs on Business.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
@@ -349,7 +351,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     {
       icon: 'calendar',
       title: 'Classes and memberships, billed on time.',
-      body: 'Sell memberships and class packs with recurring billing. Members book their own spots, and payments run themselves.',
+      body: 'On Business, sell memberships and class packs with recurring billing. Members book their own spots, and payments run themselves.',
     },
     {
       icon: 'contact',
@@ -364,7 +366,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'A plan is for the second month.',
+      title: 'Bring them back for the second month.',
       body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
     },
   ],
@@ -379,7 +381,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
@@ -418,7 +420,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     subhead:
       'Tickets, check-in, and everyone who has one, together in one place. Frequency keeps the people who showed up, so your next event fills from the last. Start free.',
     microcopy: 'No card. You pay when you start charging.',
-    trustLine: 'You keep 100% of what you bring in.',
+    trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
     'Frequency gives event hosts ticketing, door check-in, and one contact list in one place, so guests come back and bring friends. Free to start, no card.',
@@ -430,8 +432,8 @@ const EVENTS_FUNNEL: FunnelConfig = {
   howItWorks: {
     header: 'One place. Ready before doors open.',
     steps: [
-      { title: 'Make your Space.', body: 'Your event page, your dates, and your tickets, ready in a few minutes. Free to start, always.' },
-      { title: 'Sell your tickets.', body: 'Take payments from the page guests already see. Every buyer lands in Contacts.' },
+      { title: 'Make your Space.', body: 'Your event page and your dates, ready in a few minutes. Free to host, always.' },
+      { title: 'Open your tickets.', body: "Free RSVPs on any Space, and paid tickets when you go Business, from the page guests already see. Everyone lands in Contacts." },
       { title: 'Open the door.', body: 'Check people in with a QR code, and keep everyone who came for the next one.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
@@ -440,7 +442,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     {
       icon: 'calendar',
       title: 'Tickets sold, straight from your page.',
-      body: 'Sell tickets and passes from your Space. Guests pick a ticket and pay up front, and the money is yours.',
+      body: "Sell tickets and passes from your Space on Business. Guests pick a ticket and pay up front, and a guest who's already yours carries no network fee, only card processing.",
     },
     {
       icon: 'contact',
@@ -455,7 +457,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'A plan is for the second night.',
+      title: 'Fill the second night from the first.',
       body: 'Email everyone who holds a ticket, send reminders that run themselves, and reach quiet guests before the next date.',
     },
   ],
@@ -470,7 +472,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
@@ -510,7 +512,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     subhead:
       'Circles, memberships, and the right introductions, together in one place. Frequency holds your community, so members stay and bring the people who belong here next. Start free.',
     microcopy: 'No card. You pay when you start charging.',
-    trustLine: 'You keep 100% of what you bring in.',
+    trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
     'Frequency gives community builders Circles, memberships, and a member CRM in one place, and connects the right people to each other. Free to start, no card.',
@@ -524,7 +526,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your community page, your Circles, and your memberships, ready in a few minutes. Free to start, always.' },
       { title: 'Bring your people in.', body: 'Import your list or share your Frequency card. Everyone lands in Contacts.' },
-      { title: 'Open your Circles.', body: 'Offer memberships and Runs, and let the right members find each other.' },
+      { title: 'Open your Circles.', body: 'Run Circles and Runs, and let the right members find each other. Paid memberships open on Business.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
@@ -532,7 +534,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     {
       icon: 'contact',
       title: 'Circles, Runs, and memberships, in one place.',
-      body: 'Host standing Circles and Runs with memberships and recurring billing, and keep a member list that knows who is who.',
+      body: "Host standing Circles and Runs, add paid memberships with recurring billing on Business, and keep a member list that knows who's who.",
     },
     {
       icon: 'spark',
@@ -547,7 +549,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     {
       icon: 'envelope',
       soft: true,
-      title: 'A plan is for the second time they show up.',
+      title: 'Bring them back the second time they show up.',
       body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
     },
   ],
@@ -562,7 +564,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
@@ -600,12 +602,12 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   nonprofit: true,
   hero: {
     eyebrow: 'For nonprofits and 501(c)(3) organizations',
-    h1: 'Raise more. Keep all of it.',
+    h1: 'Raise more. We take no cut.',
     seoTitle: 'Donations + supporter software for nonprofits',
     subhead:
       'Donations, supporters, and your programs, together in one place. Frequency holds your supporters, so giving repeats and the word travels to the next donor. Start free.',
     microcopy: 'No card. You pay when you start charging.',
-    trustLine: 'No take-rate on what you raise, ever.',
+    trustLine: 'No network fee on what you raise, plus card processing.',
   },
   metaDescription:
     'Frequency gives nonprofits donations, a supporter CRM, and program enrollment in one place, with no take-rate on what you raise. Free to start, no card.',
@@ -619,7 +621,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your organization page, your programs, and your donation form, ready in a few minutes. Free to start, always.' },
       { title: 'Bring your supporters in.', body: 'Import your list or share your Frequency card. Everyone lands in Contacts.' },
-      { title: 'Open donations.', body: 'Take one-time and recurring gifts, and enroll people in your programs the same day.' },
+      { title: 'Open donations.', body: 'Enroll people in your programs the same day, and take one-time and recurring gifts on the Non Profit plan.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
@@ -627,7 +629,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     {
       icon: 'contact',
       title: 'Donations and a supporter list, together.',
-      body: 'Take one-time and recurring gifts, and keep a supporter list that tracks every donor and flags who has lapsed.',
+      body: "On the Non Profit plan, take one-time and recurring gifts, and keep a supporter list that tracks every donor and flags who's lapsed.",
     },
     {
       icon: 'calendar',
@@ -642,7 +644,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'A plan is for the second gift.',
+      title: 'Ask for the second gift on time.',
       body: 'Email to bring lapsed donors back, receipts and reminders that send themselves, and a nudge when a recurring gift is about to end.',
     },
   ],
@@ -657,10 +659,10 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption:
-      'You keep 100% of what you raise. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
+      'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
     note: 'We never take a share of your donations. Your supporters export any time, so you are never locked in.',
   },
   faq: [
@@ -669,7 +671,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: `Free to start and free to host. Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.`,
     },
-    { q: 'Do you take a cut of donations?', a: 'No. You keep 100% of what you raise. We never take a share of a donation.' },
+    { q: 'Do you take a cut of donations?', a: "No. We never take a share of a donation. Card processing is the only fee on a gift, and it goes to the card processor, not to us." },
     { q: 'Can I take my supporters with me?', a: 'Yes, any time. Export your whole supporter list whenever you want.' },
     {
       q: 'How do we get the Non Profit plan?',
@@ -700,7 +702,7 @@ const TEACHERS_FUNNEL: FunnelConfig = {
     subhead:
       'You teach at three rooms and run a workshop on the side. Frequency keeps every student in one list that is yours, so wherever you teach next, they can find you. Start free.',
     microcopy: 'No card. You pay when you start charging.',
-    trustLine: 'You keep 100% of what you bring in.',
+    trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
     'Frequency gives teachers who work across studios one student list, workshops, and paid programs in one place, wherever they teach. Free to start, no card.',
@@ -714,7 +716,7 @@ const TEACHERS_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your page, your schedule across every studio, and your workshops, ready in a few minutes. Free to start, always.' },
       { title: 'Bring your students in.', body: 'Share your Frequency card at the end of class. Everyone who scans lands in your Contacts.' },
-      { title: 'Open a workshop.', body: 'Sell a workshop or a short program from your own page, the same day.' },
+      { title: 'Open a workshop.', body: 'Put a workshop or a short program on your own page the same day, and sell seats when you go Business.' },
     ],
     caption: 'Set up between classes.',
   },
@@ -727,7 +729,7 @@ const TEACHERS_FUNNEL: FunnelConfig = {
     {
       icon: 'calendar',
       title: 'Workshops and programs, booked and paid.',
-      body: 'Sell a Sunday workshop or a four-week program from your own page. Students pay up front, and you keep what you bring in.',
+      body: "Sell a Sunday workshop or a four-week program from your own page on Business. Students pay up front, and a student who's already yours carries no network fee, only card processing.",
     },
     {
       icon: 'qr',
@@ -737,7 +739,7 @@ const TEACHERS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'A plan is for the student who drifts.',
+      title: 'Reach the student who drifts.',
       body: 'Email to bring quiet students back, reminders that send themselves, and a nudge when a regular stops showing up.',
     },
   ],
@@ -748,11 +750,11 @@ const TEACHERS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your teaching starts running campaigns, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro("When your teaching starts selling workshops and programs, that's Business."),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the workshops you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",

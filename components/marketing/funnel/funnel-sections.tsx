@@ -150,7 +150,7 @@ export function HowItWorks({ config }: { config: FunnelConfig }) {
       <ol className="mx-auto mt-12 grid max-w-5xl gap-10 sm:grid-cols-3 sm:gap-8">
         {howItWorks.steps.map((s, i) => (
           <li key={i} className="flex flex-col items-center text-center">
-            <div className="w-full max-w-[220px] rounded-2xl border border-border bg-surface p-5 lift-1">
+            <div className="w-full max-w-[220px] rounded-card border border-border bg-surface p-5 lift-1">
               <SetupStepGraphic step={i as 0 | 1 | 2} />
             </div>
             <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-pill bg-primary text-body-sm font-bold text-on-primary">
@@ -179,7 +179,7 @@ export function FeatureBlocks({ config }: { config: FunnelConfig }) {
           return (
             <div
               key={f.title}
-              className={`flex flex-col gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-8 ${
+              className={`flex flex-col gap-4 rounded-card border p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-8 ${
                 f.soft
                   ? 'border-dashed border-border bg-canvas'
                   : spine
@@ -233,7 +233,7 @@ export function LoopSection({ config, prominent = false, echo = false }: { confi
 
 // ── Pricing (3-row beat; dollar amounts read from the catalog so they never drift) ────────────────
 
-function priceForRow(row: FunnelPriceRow): { price: string; anchor: string | null } {
+export function priceForRow(row: FunnelPriceRow): { price: string; anchor: string | null } {
   // Free is a real price of zero, formatted by the same helper every other row uses, so the free row
   // cannot be the one hardcoded dollar figure on the page.
   if (row.kind === 'free') return { price: formatLoadoutCents(0), anchor: null }
@@ -259,7 +259,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
         <p className="mt-4 text-body-lg leading-relaxed text-muted">{pricing.intro}</p>
       </div>
 
-      <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-2xl border border-border">
+      <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-card border border-border">
         {pricing.rows.map((row) => {
           const { price, anchor } = priceForRow(row)
           return (
@@ -288,7 +288,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
       </div>
 
       {/* The break-even PROOF, promoted to a visible callout beside the chart (not fine print). */}
-      <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-primary/40 bg-primary-bg/40 p-6 sm:p-7">
+      <div className="mx-auto mt-6 max-w-2xl rounded-card border border-primary/40 bg-primary-bg/40 p-6 sm:p-7">
         <div className="grid items-center gap-5 sm:grid-cols-[1.05fr_1fr]">
           <BreakEvenGraphic className="w-full" />
           <p className="text-body font-semibold leading-relaxed text-text">{pricing.breakEvenCaption}</p>
@@ -322,7 +322,7 @@ export function ProofSection({ testimonials }: { testimonials?: FunnelTestimonia
     <Section tone="surface">
       <div className="grid gap-4 sm:grid-cols-3">
         {testimonials.map((t) => (
-          <figure key={t.name} className="m-0 rounded-2xl border border-border bg-surface-elevated p-6">
+          <figure key={t.name} className="m-0 rounded-card border border-border bg-surface-elevated p-6">
             <blockquote className="text-body leading-relaxed text-text">“{t.quote}”</blockquote>
             <figcaption className="mt-4 text-body-sm text-muted">
               <span className="font-semibold text-text">{t.name}</span>, {t.modality}, {t.city}
@@ -354,7 +354,7 @@ export function FaqSection({ config }: { config: FunnelConfig }) {
     <Section tone="surface">
       <div className="mx-auto max-w-2xl">
         <h2 className="text-center font-display text-display-h3 uppercase text-text">Questions, answered plainly.</h2>
-        <div className="mt-8 divide-y divide-border rounded-2xl border border-border">
+        <div className="mt-8 divide-y divide-border rounded-card border border-border">
           {config.faq.map((f) => (
             <details key={f.q} className="group px-5 py-4 sm:px-6">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-body font-semibold text-text marker:hidden">

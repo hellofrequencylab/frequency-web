@@ -13,6 +13,12 @@
 //
 //   <Meter used={241} cap={300} label="Sends" unit="this month" />
 
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's 4px `.meter` with its `<i>` fill; the 80%/cap law keeps its
+// colours through `mu-warning` / `mu-danger` (app/themes/frequency/members-ui.css). Inlined at build.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
 const TONE = {
   ok: 'bg-success',
   near: 'bg-warning',
@@ -35,6 +41,28 @@ export function Meter({
   const pct = cap > 0 ? (clamped / cap) * 100 : 0
   const tone = pct >= 100 ? TONE.cap : pct >= 80 ? TONE.near : TONE.ok
   const reading = `${used.toLocaleString()} of ${cap.toLocaleString()}${unit ? ` ${unit}` : ''}`
+  if (FREQUENCY) {
+    const fqTone = pct >= 100 ? ' mu-danger' : pct >= 80 ? ' mu-warning' : ''
+    return (
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={cap}
+        aria-valuenow={clamped}
+        aria-label={`${label}: ${reading}`}
+        className="stack"
+        style={{ gap: 8 }}
+      >
+        <span className="row" style={{ justifyContent: 'space-between' }}>
+          <span className="t2">{label}</span>
+          <span className="mu-reading">{reading}</span>
+        </span>
+        <span className={`meter block${fqTone}`}>
+          <i style={{ width: `${pct}%` }} />
+        </span>
+      </div>
+    )
+  }
   return (
     <div
       role="progressbar"

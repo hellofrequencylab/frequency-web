@@ -1,0 +1,157 @@
+/* MEMBER SITE, LANE B: the page BODIES for Events, Event, Circles, Circle and Marketplace under the
+   Frequency design (ADR-1740). The kit (kit-members.css) carries every component class; this sheet
+   only lifts the reference templates' inline layout values (templates/members/{Events,Event,Circles,
+   Circle,Marketplace}.html) into named classes, so the TSX carries no raw values. Scoped exactly like
+   the kit and written in --fq- tokens only. DAWN never matches these selectors.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
+@layer components {
+/* Shared: a title row with its live dot, a muted line in body ink. */
+[data-design="frequency"] [data-kit="members"] .fqm-t1-row{display:flex;align-items:center;gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-row-stack{gap:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-body-ink{color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-tabs{margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-chips{margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-chips.lg{margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-back{display:inline-block}
+[data-design="frequency"] [data-kit="members"] .fqm-notices{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-notices:empty{display:none}
+
+/* Events: a day's list, the "Your week" day column. */
+
+/* Circles: the photo card. */
+[data-design="frequency"] [data-kit="members"] .fqm-card{display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .fqm-card>.ph{height:170px;position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-card-b{display:flex;flex-direction:column;gap:6px;padding:18px 20px 20px}
+[data-design="frequency"] [data-kit="members"] .fqm-corner{position:absolute;top:14px;left:14px}
+
+/* Event: the split hero card, the section stack, the time column, the venue photo. */
+[data-design="frequency"] [data-kit="members"] .fqm-ev{margin-top:20px;display:flex;flex-wrap:wrap;border-radius:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-ph{flex:1 1 420px;min-height:380px;position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-ph>.tag{position:absolute;top:18px;left:18px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-in{flex:1 1 360px;padding:32px;display:flex;flex-direction:column;gap:16px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-in>.h1{font-size:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-act{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-tag-start{align-self:flex-start}
+[data-design="frequency"] [data-kit="members"] .fqm-secs{gap:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-time{width:72px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-where{height:240px;border-radius:var(--fq-radius-l)}
+[data-design="frequency"] [data-kit="members"] .fqm-gap-sm{gap:8px}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-ev-in{padding:22px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-ph{min-height:240px}}
+
+/* Circle: the cover with its ink scrim and the on-photo type. */
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero{position:relative;margin-top:20px;border-radius:28px;overflow:hidden;min-height:340px;display:flex;align-items:flex-end}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,color-mix(in oklab,var(--fq-ink) 65%,transparent))}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in{position:relative;padding:32px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;width:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in .h1{color:var(--fq-text-on-accent)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-sub{font:400 15px/1.4 var(--fq-font-sans);color:color-mix(in oklab,var(--fq-text-on-accent) 85%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in .stack{gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-meet{gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-meet>.ph{width:88px;height:88px;border-radius:20px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-tabs{margin-top:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-pane{margin-top:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-pane.g4{margin-top:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-roster{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-about{font-size:15px}
+[data-design="frequency"] [data-kit="members"] .fqm-cstats{gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-cstats .num{font-size:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow>.tabs{border-bottom:none}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow>.row{padding-bottom:6px}
+
+/* Marketplace: the portrait photo and the card stack. */
+[data-design="frequency"] [data-kit="members"] .fqm-item{gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-item>.ph{aspect-ratio:4/5;border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-item>.btn{align-self:flex-start}
+
+/* The find-and-filter row (components/frequency/members/shared/kit-tools.tsx): a white find pill, then
+   each facet as a chip that opens a frosted menu. Native <details>, so it works without a script. */
+[data-design="frequency"] [data-kit="members"] .fqm-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-find{height:44px;flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:10px;padding:0 18px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-find .fq-icon{width:18px;height:18px;color:var(--fq-text-muted);flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-find input{flex:1;min-width:0;border:none;outline:none;background:none;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-find:focus-within{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu{position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary{list-style:none}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary .fq-icon{width:15px;height:15px}
+[data-design="frequency"] [data-kit="members"] .fqm-menu>summary .fqm-menu-chev{width:12px;height:12px;opacity:.6;transform:rotate(90deg);transition:transform var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu[open]>summary .fqm-menu-chev{transform:rotate(-90deg)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p{position:absolute;z-index:30;top:46px;left:0;min-width:220px;max-height:340px;overflow-y:auto;padding:8px;border-radius:20px;display:flex;flex-direction:column;background:color-mix(in oklab,var(--fq-surface-card) 94%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a{display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-body);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a:hover{background:var(--fqm-ink-5);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a.on{color:var(--fq-text-strong);font-weight:600}
+[data-design="frequency"] [data-kit="members"] .fqm-menu-p a.on::after{content:"";margin-left:auto;padding-left:16px;width:7px;height:7px;border-radius:50%;background:var(--fq-pa);flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-tools .fqm-end{margin-left:auto}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-find{flex-basis:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-tools .fqm-end{margin-left:0}}
+
+/* A segmented List / Map switch, the kit's chip track. */
+[data-design="frequency"] [data-kit="members"] .fqm-sort{display:inline-flex;gap:2px;padding:4px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-3)}
+[data-design="frequency"] [data-kit="members"] .fqm-sort button{height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:none;color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .fqm-sort button .fq-icon{width:16px;height:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-sort button.on{background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 1px 2px color-mix(in oklab,var(--fq-ink) 8%,transparent),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-map{height:460px;border-radius:var(--fq-radius-l);overflow:hidden;box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-map>*{height:100%!important;width:100%;border:none!important;border-radius:0!important}
+[data-design="frequency"] [data-kit="members"] .fqm-map.wide{height:auto;aspect-ratio:16/9}
+[data-design="frequency"] [data-kit="members"] .fqm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--fq-pa);margin-right:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-legend i.starter{background:var(--design-map-starter)}
+[data-design="frequency"] [data-kit="members"] .fqm-block{display:block}
+[data-design="frequency"] [data-kit="members"] .fqm-lane{margin-bottom:44px}
+[data-design="frequency"] [data-kit="members"] .fqm-lane .why{font-size:15px}
+[data-design="frequency"] [data-kit="members"] .fqm-intro{margin:-8px 0 28px}
+[data-design="frequency"] [data-kit="members"] .av.fqm-sq{border-radius:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-map-frame{overflow:hidden;box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-map-frame>*,[data-design="frequency"] [data-kit="members"] .fqm-map-frame .fqm-map-in{height:100%!important;width:100%!important;border:none!important;border-radius:0!important}
+[data-design="frequency"] [data-kit="members"] .fqm-map .fqm-map-in{height:100%;width:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-cap{margin:-6px 0 18px}
+[data-design="frequency"] [data-kit="members"] .chip .t2{color:inherit;opacity:.6}
+[data-design="frequency"] [data-kit="members"] .fqm-sec-h0{margin-bottom:0}
+[data-design="frequency"] [data-kit="members"] .fqm-cgoal{align-items:baseline;gap:10px;margin-top:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-goal-foot{gap:8px 16px}
+[data-design="frequency"] [data-kit="members"] .fa-capture.fqm-cl-compose,[data-design="frequency"] [data-kit="members"] .why.fqm-cl-compose{margin:0 0 8px}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-empty{padding:32px 0}
+@media (max-width:900px){[data-design="frequency"] [data-kit="members"] .fqm-cstats.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+[data-design="frequency"] [data-kit="members"] .fqm-note{margin-bottom:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-item-ph{position:relative;display:block}
+[data-design="frequency"] [data-kit="members"] .fqm-pre{white-space:pre-wrap}
+/* Messages: the inbox find field and sort switch, presence on a DM photo, the day line, rooms to join. */
+[data-design="frequency"] [data-kit="members"] .fqm-inbox-tools{margin-top:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-inbox-tools .fqm-find{height:40px;flex-basis:auto}
+[data-design="frequency"] [data-kit="members"] .fqm-ic-round{width:48px;height:48px;border-radius:50%}
+[data-design="frequency"] [data-kit="members"] .fqm-presence{position:relative;flex:none;display:inline-flex}
+[data-design="frequency"] [data-kit="members"] .fqm-presence i{position:absolute;right:1px;bottom:1px;width:11px;height:11px;border-radius:50%;background:var(--fq-presence);box-shadow:0 0 0 2px var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .fqm-pad{padding:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-daysep{align-self:center;text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-pane-more{padding:0 28px 28px;overflow-y:auto}
+/* The transcript's log region, the offline and failed-send lines, and the composer that grows. */
+[data-design="frequency"] [data-kit="members"] .fqm-log{display:flex;flex-direction:column;gap:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-text-center{text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-pane-note{padding:10px 22px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-danger{color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .fa-pane-f.row{align-items:flex-end}
+[data-design="frequency"] [data-kit="members"] .fa-pane-f textarea.fqm-composer{height:auto;min-height:44px;max-height:160px;padding:11px 18px;border-radius:22px;resize:none;line-height:1.45;overflow-y:auto}
+[data-design="frequency"] [data-kit="members"] .btn.fqm-msg-back{display:none}
+@media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .btn.fqm-msg-back{display:inline-flex}}
+[data-design="frequency"] [data-kit="members"] .fqm-phone-only{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-phone-only>.fqm-pane-more{padding:16px 0 0}
+@media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .fqm-phone-only{display:block}}
+/* The loading frame's quiet rows (messages-states.tsx). */
+[data-design="frequency"] [data-kit="members"] .fqm-skel-row{display:flex;gap:12px;align-items:center;padding:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-skel{display:block;border-radius:var(--fq-radius-orb);background:var(--fq-border-hair);animation:fqm-skel 1.4s ease-in-out infinite}
+[data-design="frequency"] [data-kit="members"] .fqm-skel-av{width:48px;height:48px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-skel-line{height:12px;width:70%}
+[data-design="frequency"] [data-kit="members"] .fqm-skel-line.short{width:45%}
+@keyframes fqm-skel{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-skel{animation:none}}
+}
+
+/* The find band's field is the Input primitive's SEAMLESS variant (components/ui/field.tsx), which
+   carries `placeholder:text-subtle`. A utility beats the components layer whatever the specificity, so
+   the kit's fainter placeholder sits in the UTILITIES layer, where this scoped selector outranks it. */
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] .fqm-find input::placeholder{color:var(--fq-text-faint)}
+}

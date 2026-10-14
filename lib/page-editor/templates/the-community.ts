@@ -188,7 +188,6 @@ export const data: Data = {
         kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
         rungs: [
           { name: 'Member', blurb: "You show up to a Circle. That's the whole entry fee." },
-          { name: 'Crew', blurb: "You're in for the season, learning the format and lending a hand." },
           { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
           { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
           { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },

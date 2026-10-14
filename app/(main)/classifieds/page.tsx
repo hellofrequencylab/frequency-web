@@ -14,6 +14,8 @@ import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqClassifiedsBody } from '@/components/frequency/members/marketplace/marketplace-body'
 
 // Classifieds (ADR-596) — the peer trade board (offer / free / lend / request), connect-only, no fees.
 // Hero-led (the site PhotoHero grammar) + a stats band. Operator-editable header content (ADR-180).
@@ -74,6 +76,33 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
   // this page's coded cover, plus the operator-tunable header element (ADR-793) for
   // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
   // header image for this route got nothing.
+  // THE DESIGN SWITCH (ADR-1737, templates/members/Marketplace.html): the same listings, the same
+  // kind filter, the same Post a listing door, in the member kit. DAWN below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqClassifiedsBody
+        listings={listings.map((l) => ({
+          id: l.id,
+          title: l.title,
+          kind: l.kind,
+          priceNote: l.price_note,
+          image: l.images?.[0] ?? null,
+          seller: l.author?.display_name ?? null,
+          place: l.neighborhood ?? l.city ?? null,
+          description: l.description,
+          lat: l.latitude,
+          lng: l.longitude,
+          unclaimed: !!l.seededUnclaimed,
+        }))}
+        activeKind={activeKind}
+        signedIn={!!profileId}
+        subtitle="Meet up to swap. No in-app payment."
+        stats={{ total: allListings.length, free: kindCount('free'), lend: kindCount('lend'), request: kindCount('request') }}
+        intro={{ body: body ?? null, ctaLabel: ctaLabel ?? null, ctaHref: ctaHref ?? null }}
+      />
+    )
+  }
+
   const hero = await resolveMarketHero('/classifieds', { cover: HERO_IMAGE })
 
   return (
@@ -92,7 +121,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
               {ctaLabel && ctaHref && (
                 <a
                   href={ctaHref}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                  className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
                 >
                   {ctaLabel}
                 </a>

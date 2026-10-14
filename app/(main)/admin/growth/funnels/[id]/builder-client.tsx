@@ -78,7 +78,7 @@ function IdentityCard({ funnel }: { funnel: FunnelView }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-body-sm font-bold text-text">Funnel basics</h3>
         <StatusChip tone={STATUS_TONE[status] ?? 'neutral'} size="sm">
@@ -136,7 +136,7 @@ function StageCard({ stage }: { stage: FunnelStage }) {
   const [adding, setAdding] = useState(false)
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-body-sm font-bold text-text">
@@ -182,7 +182,7 @@ function LinkRow({ linkId, refType, target }: { linkId: string; refType: StageRe
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-1.5">
+    <li className="flex flex-wrap items-center gap-2 rounded-control border border-border bg-surface-elevated/50 px-3 py-1.5">
       <Link2 className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
       <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{REF_TYPE_META[refType]?.label ?? refType}</span>
       <span className="min-w-0 flex-1 truncate text-meta text-text">{target}</span>
@@ -228,7 +228,7 @@ function AddLinkForm({ stageId, onDone }: { stageId: string; onDone: () => void 
   }
 
   return (
-    <div className="mt-3 space-y-2 rounded-lg border border-dashed border-border p-3">
+    <div className="mt-3 space-y-2 rounded-control border border-dashed border-border p-3">
       <div className="grid gap-2 sm:grid-cols-2">
         <div>
           <Label htmlFor={`rt-${stageId}`}>Component</Label>

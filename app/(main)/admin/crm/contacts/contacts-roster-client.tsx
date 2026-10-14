@@ -225,7 +225,7 @@ export function ContactsRosterClient({
                     aria-pressed={active}
                     onClick={() => chooseSort(o.key)}
                     className={cn(
-                      'rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors',
+                      'rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors',
                       active
                         ? 'bg-primary text-on-primary'
                         : 'text-muted hover:bg-surface-elevated hover:text-text',
@@ -270,7 +270,7 @@ export function ContactsRosterClient({
                   setFacetSel({})
                   setPage(1)
                 }}
-                className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="rounded-control px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 Clear filters
               </button>
@@ -342,7 +342,7 @@ export function ContactsRosterClient({
             <span className="text-meta text-muted">Select every contact shown</span>
           </label>
 
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+          <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
             {visible.map((row) => (
               <ContactRow
                 key={row.contactId}
@@ -358,7 +358,7 @@ export function ContactsRosterClient({
               <button
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 Load more contacts
               </button>
@@ -492,7 +492,7 @@ function ContactRow({
       {row.handle && (
         <Link
           href={`/people/${row.handle}`}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <UserRound className="h-3.5 w-3.5" aria-hidden />
           Profile

@@ -89,7 +89,7 @@ export default async function AdminContentTipsPage() {
           title={`Reviewed flags (${reviewedFlags.length})`}
           description="Internal notes you marked reviewed. The member never sees these."
         >
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="overflow-hidden rounded-card border border-border bg-surface">
             <div className="divide-y divide-border/50">
               {reviewedFlags.map((t) => (
                 <div key={t.id} className="px-4 py-3">
@@ -115,7 +115,7 @@ export default async function AdminContentTipsPage() {
             description="Tips you approve and send will appear here."
           />
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="overflow-hidden rounded-card border border-border bg-surface">
             <div className="divide-y divide-border/50">
               {sent.map((t) => (
                 <div key={t.id} className="px-4 py-3">

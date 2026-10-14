@@ -8,11 +8,12 @@
 // on, in `SpaceModule.hub` (ADR-1313); this list describes the shape, it does not decide it:
 //   • Resonance — the space's people + communication: CRM (pipeline/contacts/cockpit), Conversations,
 //     lead capture, connections, and the automation/drip that runs over those contacts.
-//   • Marketing — outbound reach + growth: Email (compose/design/style), QR codes + scans.
+//   • Marketing — outbound reach + growth: Email (compose/design/style), QR codes + scans, and Your reach
+//     (the ranking receipt, beside Reach since ADR-1746).
 //   • Offerings & Money — everything the space sells: booking, memberships, donations, Get paid, and the
 //     Shop.
 //   • Content & Programs — what the space teaches + hosts: Practices, Journeys, Circles, the Program,
-//     Airwaves, Loom Studio, the Calendar, and Your reach.
+//     Airwaves, Loom Studio, and the Calendar.
 //
 // Profile & Settings trails them as a real tab (ADR-788 reversed ADR-785's header placement), and since
 // ADR-1336 it is the ONE door to a Space's settings: Team + Reviews + Plan & usage cards, the identity
@@ -34,11 +35,15 @@ export type { SpaceHubSection }
  *  a real tab now (ADR-788), NOT a header button, so Plan & Billing + Team + Reviews are one tap away. */
 export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string; blurb: string }[] = [
   { key: 'dashboard', label: 'Home', blurb: 'Your command center: revenue, members, what needs attention, and the latest activity.' },
-  { key: 'resonance', label: 'Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, and connections.' },
-  { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, QR codes, lead capture, and automation.' },
-  { key: 'offerings', label: 'Offerings & Money', blurb: 'Everything your space sells: bookings, memberships, donations, tickets, and the shop.' },
-  { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: practices, journeys, and recordings.' },
-  { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and roles, reviews, plan and billing, and the danger zone.' },
+  // The CRM tab's name is NAMING.md's "Community Resonance" (ADR-827: a Space's CRM tab), never the bare
+  // "Resonance", which is also the feed sort and the match header inside the tab (ADR-1745).
+  // Each blurb names what the tab's catalog rows actually hold (ADR-1745 audit): lead capture and
+  // automation sit on this tab, not Marketing, and no Space tool sells tickets (events do).
+  { key: 'resonance', label: 'Community Resonance', blurb: 'Your people and every conversation: pipeline, contacts, the inbox, lead capture, and automation.' },
+  { key: 'marketing', label: 'Marketing', blurb: 'Reach and grow: email, its design and style, QR codes, and your reach across the network.' },
+  { key: 'offerings', label: 'Offerings & Money', blurb: 'Getting paid, and everything your space sells: bookings, memberships, donations, and the shop.' },
+  { key: 'programs', label: 'Content & Programs', blurb: 'What your space teaches and hosts: the calendar, practices, journeys, circles, recordings, and images.' },
+  { key: 'settings', label: 'Profile & Settings', blurb: 'Your identity and brand, team and collaborators, reviews, plan and billing, and the danger zone.' },
 ]
 
 /** The default landing tab: the command-center Home (ADR-796). */
@@ -78,7 +83,7 @@ export function isSettingsModule(module: SpaceModule): boolean {
 /** The display name for each section (including the header-level Profile & Settings surface). */
 export const SPACE_HUB_SECTION_LABEL: Record<SpaceHubSection, string> = {
   dashboard: 'Home',
-  resonance: 'Resonance',
+  resonance: 'Community Resonance',
   marketing: 'Marketing',
   offerings: 'Offerings & Money',
   programs: 'Content & Programs',

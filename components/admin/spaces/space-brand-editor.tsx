@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { isError } from '@/lib/action-result'
 import type { Space } from '@/lib/spaces/types'
 import { SPACE_THEMES, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
@@ -32,17 +32,15 @@ export interface SkinOption {
 
 const labelClass = 'block eyebrow text-muted mb-1'
 
+/** The branding form as ONE <AdminSection>. The page composes the AdminTemplate shell around it
+ *  (PAGE-FRAMEWORK §3) and renders its server-side sections as siblings, so this client island owns
+ *  the form and nothing else. */
 export function SpaceBrandEditor({
   space,
   skins,
-  children,
 }: {
   space: Space
   skins: SkinOption[]
-  /** Optional extra content rendered as a sibling section below the branding form (server-rendered
-   *  from the page, e.g. the "Preview owner back-end" links). Kept as a slot so this client editor
-   *  never has to own those server-side links. */
-  children?: React.ReactNode
 }) {
   const router = useRouter()
   const [skin, setSkin] = useState(space.skin)
@@ -81,159 +79,150 @@ export function SpaceBrandEditor({
   const accentValid = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(brandAccent.trim())
 
   return (
-    <AdminTemplate
-      title={space.brandName || space.name}
-      eyebrow="Operations · Tenancy"
-      description={`Set the theme and brand for the “${space.name}” Space (/${space.slug}).`}
-      width="narrow"
-      back={{ href: '/admin/spaces', label: 'Spaces' }}
-    >
-      <AdminSection>
-        <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 lift-1">
-          {/* Theme (the per-Space skin assignment — spaces.skin) */}
-          <div>
-            <label htmlFor="space-skin" className={labelClass}>
-              Theme
-            </label>
-            <Select id="space-skin" value={skin} onChange={(e) => setSkin(e.target.value)}>
-              {options.map((o) => (
-                <option key={o.slug} value={o.slug}>
-                  {o.name}
-                </option>
-              ))}
-            </Select>
-            <p className="mt-1 text-meta text-subtle">
-              The token set applied to this Space. Takes effect through the shell&rsquo;s{' '}
-              <code>data-skin</code> resolution.
-            </p>
-          </div>
-
-          {/* Page theme (ADR-578): the TYPOGRAPHY identity of the public profile. Keeps the palette, brand
-              accent and corners; changes the fonts. */}
-          <div>
-            <span className={labelClass}>Page theme</span>
-            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {SPACE_THEMES.map((t) => {
-                const selected = pageTheme === t.id
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setPageTheme(t.id)}
-                    // Each card PREVIEWS its own theme (ADR-578): `data-space-theme` scopes the theme's
-                    // font vars + treatment rules to this card (they live on <html>, so this works
-                    // outside AccentScope), and `font-display` renders the label in that theme's face.
-                    data-space-theme={t.id}
-                    className={`rounded-xl border p-3 text-left transition-colors ${
-                      selected
-                        ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
-                        : 'border-border bg-surface hover:border-border-strong'
-                    }`}
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="font-display text-body-sm font-semibold text-text">{t.label}</span>
-                      {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
-                    </span>
-                    <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-muted">
-                      {t.displayFont} · {t.bodyFont}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-            <p className="mt-1 text-meta text-subtle">
-              Fonts for the public profile. Keeps the Space&rsquo;s colors, accent and corners. Bold is the
-              standard look.
-            </p>
-          </div>
-
-          {/* Brand name */}
-          <div>
-            <label htmlFor="space-brand-name" className={labelClass}>
-              Brand name
-            </label>
-            <Input
-              id="space-brand-name"
-              type="text"
-              value={brandName}
-              onChange={(e) => setBrandName(e.target.value)}
-              placeholder={space.name}
-              maxLength={200}
-            />
-            <p className="mt-1 text-meta text-subtle">Shown in the Space header and in the website header. Defaults to the Space name.</p>
-          </div>
-
-          {/* Brand accent */}
-          <div>
-            <label htmlFor="space-brand-accent" className={labelClass}>
-              Brand accent
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="space-brand-accent"
-                type="text"
-                value={brandAccent}
-                onChange={(e) => setBrandAccent(e.target.value)}
-                placeholder="#3D352A"
-              />
-              {/* The ONE raw color: a live preview of the operator's chosen accent. */}
-              <span
-                className="h-9 w-9 shrink-0 rounded-lg border border-border"
-                style={accentValid ? { backgroundColor: brandAccent.trim() } : undefined}
-                aria-hidden
-              />
-            </div>
-            <p className="mt-1 text-meta text-subtle">
-              A reference swatch (hex, rgb, or hsl). The active palette still comes from the theme above.
-            </p>
-          </div>
-
-          {/* Brand logo URL */}
-          <div>
-            <label htmlFor="space-brand-logo" className={labelClass}>
-              Logo URL
-            </label>
-            <Input
-              id="space-brand-logo"
-              type="text"
-              value={brandLogoUrl}
-              onChange={(e) => setBrandLogoUrl(e.target.value)}
-              placeholder="https://… or /path/to/logo.svg"
-            />
-            <p className="mt-1 text-meta text-subtle">An https URL or a same-origin path (starting with &ldquo;/&rdquo;).</p>
-          </div>
-
-          {error && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
-              {error}
-            </p>
-          )}
-
-          <div className="flex items-center gap-2 pt-1">
-            <Button type="button" onClick={save} disabled={pending}>
-              {pending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" aria-hidden /> Save branding
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => router.push('/admin/spaces')}
-              disabled={pending}
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden /> Cancel
-            </Button>
-          </div>
+    <AdminSection>
+      <div className="space-y-5 rounded-card border border-border bg-surface p-5 lift-1">
+        {/* Theme (the per-Space skin assignment — spaces.skin) */}
+        <div>
+          <label htmlFor="space-skin" className={labelClass}>
+            Theme
+          </label>
+          <Select id="space-skin" value={skin} onChange={(e) => setSkin(e.target.value)}>
+            {options.map((o) => (
+              <option key={o.slug} value={o.slug}>
+                {o.name}
+              </option>
+            ))}
+          </Select>
+          <p className="mt-1 text-meta text-subtle">
+            The token set applied to this Space. Takes effect through the shell&rsquo;s{' '}
+            <code>data-skin</code> resolution.
+          </p>
         </div>
-      </AdminSection>
-      {children}
-    </AdminTemplate>
+
+        {/* Page theme (ADR-578): the TYPOGRAPHY identity of the public profile. Keeps the palette, brand
+            accent and corners; changes the fonts. */}
+        <div>
+          <span className={labelClass}>Page theme</span>
+          <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {SPACE_THEMES.map((t) => {
+              const selected = pageTheme === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setPageTheme(t.id)}
+                  // Each card PREVIEWS its own theme (ADR-578): `data-space-theme` scopes the theme's
+                  // font vars + treatment rules to this card (they live on <html>, so this works
+                  // outside AccentScope), and `font-display` renders the label in that theme's face.
+                  data-space-theme={t.id}
+                  className={`rounded-xl border p-3 text-left transition-colors ${
+                    selected
+                      ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
+                      : 'border-border bg-surface hover:border-border-strong'
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="font-display text-body-sm font-semibold text-text">{t.label}</span>
+                    {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
+                  </span>
+                  <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-muted">
+                    {t.displayFont} · {t.bodyFont}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-1 text-meta text-subtle">
+            Fonts for the public profile. Keeps the Space&rsquo;s colors, accent and corners. Bold is the
+            standard look.
+          </p>
+        </div>
+
+        {/* Brand name */}
+        <div>
+          <label htmlFor="space-brand-name" className={labelClass}>
+            Brand name
+          </label>
+          <Input
+            id="space-brand-name"
+            type="text"
+            value={brandName}
+            onChange={(e) => setBrandName(e.target.value)}
+            placeholder={space.name}
+            maxLength={200}
+          />
+          <p className="mt-1 text-meta text-subtle">Shown in the Space header and in the website header. Defaults to the Space name.</p>
+        </div>
+
+        {/* Brand accent */}
+        <div>
+          <label htmlFor="space-brand-accent" className={labelClass}>
+            Brand accent
+          </label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="space-brand-accent"
+              type="text"
+              value={brandAccent}
+              onChange={(e) => setBrandAccent(e.target.value)}
+              placeholder="#3D352A"
+            />
+            {/* The ONE raw color: a live preview of the operator's chosen accent. */}
+            <span
+              className="h-9 w-9 shrink-0 rounded-control border border-border"
+              style={accentValid ? { backgroundColor: brandAccent.trim() } : undefined}
+              aria-hidden
+            />
+          </div>
+          <p className="mt-1 text-meta text-subtle">
+            A reference swatch (hex, rgb, or hsl). The active palette still comes from the theme above.
+          </p>
+        </div>
+
+        {/* Brand logo URL */}
+        <div>
+          <label htmlFor="space-brand-logo" className={labelClass}>
+            Logo URL
+          </label>
+          <Input
+            id="space-brand-logo"
+            type="text"
+            value={brandLogoUrl}
+            onChange={(e) => setBrandLogoUrl(e.target.value)}
+            placeholder="https://… or /path/to/logo.svg"
+          />
+          <p className="mt-1 text-meta text-subtle">An https URL or a same-origin path (starting with &ldquo;/&rdquo;).</p>
+        </div>
+
+        {error && (
+          <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+            {error}
+          </p>
+        )}
+
+        <div className="flex items-center gap-2 pt-1">
+          <Button type="button" onClick={save} disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" aria-hidden /> Save branding
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push('/admin/spaces')}
+            disabled={pending}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Cancel
+          </Button>
+        </div>
+      </div>
+    </AdminSection>
   )
 }

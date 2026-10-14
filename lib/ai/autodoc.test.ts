@@ -248,7 +248,8 @@ describe('parseAutodocResponse', () => {
   })
 
   it('recovers a row the model labelled with the article TITLE, not the filename', () => {
-    // The exact live failure on PR #2025: content/help/spaces/space-crm.md has
+    // The exact live failure on PR #2025: content/help/spaces/space-crm.md (since renamed
+    // community-resonance.md, LIVE-915) had
     // `title: Your Space Contacts`, and the model answered `your-space-contacts`. No path or
     // tail rule can bridge that — the two strings share nothing — so every row dropped and the
     // advisory claimed a total outage while the model had actually done the review.

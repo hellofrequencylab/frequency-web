@@ -137,7 +137,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
       return (
         <section className="rounded-3xl border border-primary-bg bg-gradient-to-br from-primary-bg/40 via-surface to-signal-bg/30 p-5 sm:p-6 dark:from-primary-bg/15 dark:via-surface dark:to-signal-bg/10">
           <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
               <Sparkles className="h-4 w-4" />
             </span>
             <h2 className="text-body-sm font-bold text-text">{(heading as string) || 'Featured circles'}</h2>
@@ -182,7 +182,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                 interests={d.interests}
                 buttonLabel="Start the next circle"
                 canCreate={d.canCreate}
-                buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               />
             </div>
           )}
@@ -237,7 +237,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                     <Link
                       key={i.id}
                       href={`/circles?interest=${active ? '' : i.id}`}
-                      className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-body-sm transition-colors ${
+                      className={`flex items-center justify-between gap-2 rounded-control px-2 py-1.5 text-body-sm transition-colors ${
                         active
                           ? 'bg-primary-bg font-semibold text-primary-strong'
                           : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -260,9 +260,9 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                   <Link
                     key={nx.slug}
                     href={`/nexuses/${nx.slug}`}
-                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+                    className="flex items-center gap-2.5 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-elevated"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-primary-strong">
                       <Compass className="h-3.5 w-3.5" />
                     </span>
                     <span className="flex-1 truncate text-body-sm font-medium text-text">{nx.name}</span>

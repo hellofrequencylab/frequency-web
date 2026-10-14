@@ -236,6 +236,21 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   revalidatePath('/messages')
 }
 
+// ── markConversationRead ──────────────────────────────────────────────
+// Move the open thread's read mark while the member is looking at it. The page marks the thread read
+// once on open (after() in [id]/page.tsx), so a message that arrived over realtime while the thread
+// was open used to count as unread in the inbox the moment they left. The sibling of markRoomRead
+// (rooms/actions.ts), on the same shape: the caller's own row only, so it can never mark anyone else.
+export async function markConversationRead(conversationId: string) {
+  const myProfileId = await getMyProfileId()
+  const admin = createAdminClient()
+  await admin
+    .from('conversation_participants')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('profile_id', myProfileId)
+}
+
 // ── Group DMs ─────────────────────────────────────────────────────────
 
 const GROUP_DM_CAP = 25 // max participants including yourself

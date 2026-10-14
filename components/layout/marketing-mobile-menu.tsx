@@ -160,7 +160,7 @@ export function MarketingMobileMenu({
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className={`rounded-lg p-2 transition-colors ${
+        className={`rounded-control p-2 transition-colors ${
           light ? 'text-text hover:bg-surface-elevated' : 'text-on-ink hover:bg-on-ink/10'
         }`}
       >
@@ -187,7 +187,7 @@ export function MarketingMobileMenu({
             // which is 0px in portrait, so the sheet rendered with its label, every nav row and
             // both buttons flush against the left edge of the screen. One utility, one gutter,
             // and the notch still clears in landscape.
-            className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto rounded-b-2xl bg-surface pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-pop px-safe [--px-safe-gutter:1rem]"
+            className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto rounded-b-card bg-surface pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-pop px-safe [--px-safe-gutter:1rem]"
             style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -202,7 +202,7 @@ export function MarketingMobileMenu({
                 type="button"
                 aria-label="Close menu"
                 onClick={close}
-                className="-mr-1 rounded-lg p-2 text-muted transition-colors hover:bg-surface-elevated"
+                className="-mr-1 rounded-control p-2 text-muted transition-colors hover:bg-surface-elevated"
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>

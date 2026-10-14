@@ -122,7 +122,7 @@ export default async function VaultLedgerPage() {
             const current = s?.current ?? 0
             const longest = s?.longest ?? 0
             return (
-              <div key={type} className="rounded-2xl bg-surface-elevated/60 p-4">
+              <div key={type} className="rounded-card bg-surface-elevated/60 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-meta font-medium text-subtle">{label}</p>
                   <Icon className="h-4 w-4 shrink-0 text-subtle" />
@@ -152,7 +152,7 @@ export default async function VaultLedgerPage() {
             {groups.map((g) => (
               <div key={g.label}>
                 <p className="mb-2 text-2xs font-semibold uppercase tracking-widest text-muted">{g.label}</p>
-                <ul className="overflow-hidden rounded-2xl border border-border">
+                <ul className="overflow-hidden rounded-card border border-border">
                   {g.items.map((e, i) => {
                     const isZap = e.currency === 'zaps'
                     const Icon = isZap ? Zap : Gem

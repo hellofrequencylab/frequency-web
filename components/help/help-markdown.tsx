@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Link from 'next/link'
 import { isValidElement, type ReactNode } from 'react'
+import { helpHeadingSlug } from '@/lib/help/toc'
 
 // Renders help-article Markdown with DAWN-token styling. Server component (no
 // client JS) so help pages stay static and fast. Each handler takes only the
@@ -18,37 +19,38 @@ function headingText(node: ReactNode): string {
 }
 
 /** A URL-safe id for a heading, so a support reply, a sitelink or an answer engine can point at
- *  one section instead of the whole page (SCAN-805). "What if I miss a week?" -> what-if-i-miss-a-week. */
+ *  one section instead of the whole page (SCAN-805). The slug lives in lib/help/toc.ts, which the
+ *  Frequency help center's "On this page" list reads too, so its links land on these ids. */
 function headingId(children: ReactNode): string | undefined {
-  const slug = headingText(children)
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-  return slug || undefined
+  return helpHeadingSlug(headingText(children))
 }
 
-export function HelpMarkdown({ children }: { children: string }) {
+/**
+ * `bare` drops every DAWN utility class and leaves plain semantic elements, for a surface whose own
+ * stylesheet dresses the prose (the Frequency help article, `.hp-prose` in site-pages-b.css). Ids,
+ * links and the GFM table wrapper are the same either way.
+ */
+export function HelpMarkdown({ children, bare = false }: { children: string; bare?: boolean }) {
+  const cx = (c: string) => (bare ? undefined : c)
   return (
-    <div className="max-w-none">
+    <div className={bare ? 'hp-prose' : 'max-w-none'}>
       <ReactMarkdown
         // GitHub-flavoured Markdown: without it a pipe table is paragraph text, and four published
         // articles (run-a-program, circle-roles, get-paid, plans-and-pricing) carry one (SCAN-658).
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }: Kids) => (
-            <h2 id={headingId(children)} className="scroll-mt-24 font-display text-page-title text-text mt-10 mb-3">
+            <h2 id={headingId(children)} className={cx('scroll-mt-24 font-display text-page-title text-text mt-10 mb-3')}>
               {children}
             </h2>
           ),
           h2: ({ children }: Kids) => (
-            <h2 id={headingId(children)} className="scroll-mt-24 font-display text-lead text-text mt-10 mb-3">
+            <h2 id={headingId(children)} className={cx('scroll-mt-24 font-display text-lead text-text mt-10 mb-3')}>
               {children}
             </h2>
           ),
           h3: ({ children }: Kids) => (
-            <h3 id={headingId(children)} className="scroll-mt-24 text-body-lg font-semibold text-text mt-6 mb-2">
+            <h3 id={headingId(children)} className={cx('scroll-mt-24 text-body-lg font-semibold text-text mt-6 mb-2')}>
               {children}
             </h3>
           ),
@@ -57,19 +59,19 @@ export function HelpMarkdown({ children }: { children: string }) {
           // overflow-x-auto, so this was considered once and stopped one element short. /help
           // renders outside the app shell, the only place with overflow-x-clip.
           p: ({ children }: Kids) => (
-            <p className="break-words text-text/80 leading-relaxed mb-4">{children}</p>
+            <p className={cx('break-words text-text/80 leading-relaxed mb-4')}>{children}</p>
           ),
           ul: ({ children }: Kids) => (
-            <ul className="list-disc pl-6 mb-4 space-y-1.5 text-text/80">{children}</ul>
+            <ul className={cx('list-disc pl-6 mb-4 space-y-1.5 text-text/80')}>{children}</ul>
           ),
           ol: ({ children }: Kids) => (
-            <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-text/80">{children}</ol>
+            <ol className={cx('list-decimal pl-6 mb-4 space-y-1.5 text-text/80')}>{children}</ol>
           ),
-          li: ({ children }: Kids) => <li className="leading-relaxed">{children}</li>,
+          li: ({ children }: Kids) => <li className={cx('leading-relaxed')}>{children}</li>,
           a: ({ href, children }: Kids & { href?: string }) => {
             const target = href ?? '#'
             return target.startsWith('/') ? (
-              <Link href={target} className="break-words text-primary-strong underline underline-offset-2">
+              <Link href={target} className={cx('break-words text-primary-strong underline underline-offset-2')}>
                 {children}
               </Link>
             ) : (
@@ -77,38 +79,38 @@ export function HelpMarkdown({ children }: { children: string }) {
                 href={target}
                 target="_blank"
                 rel="noreferrer"
-                className="break-words text-primary-strong underline underline-offset-2"
+                className={cx('break-words text-primary-strong underline underline-offset-2')}
               >
                 {children}
               </a>
             )
           },
           blockquote: ({ children }: Kids) => (
-            <blockquote className="border-l-2 border-primary pl-4 italic text-muted my-4">
+            <blockquote className={cx('border-l-2 border-primary pl-4 italic text-muted my-4')}>
               {children}
             </blockquote>
           ),
           code: ({ children }: Kids) => (
-            <code className="break-words rounded bg-surface px-1.5 py-0.5 text-body-sm text-text">{children}</code>
+            <code className={cx('break-words rounded bg-surface px-1.5 py-0.5 text-body-sm text-text')}>{children}</code>
           ),
           pre: ({ children }: Kids) => (
-            <pre className="rounded-lg bg-surface border border-border p-4 overflow-x-auto text-body-sm mb-4">
+            <pre className={cx('rounded-lg bg-surface border border-border p-4 overflow-x-auto text-body-sm mb-4')}>
               {children}
             </pre>
           ),
           strong: ({ children }: Kids) => (
-            <strong className="text-text font-semibold">{children}</strong>
+            <strong className={cx('text-text font-semibold')}>{children}</strong>
           ),
-          hr: () => <hr className="my-8 border-border" />,
+          hr: () => <hr className={cx('my-8 border-border')} />,
           table: ({ children }: Kids) => (
-            <div className="overflow-x-auto mb-4">
-              <table className="w-full text-body-sm text-text/80 border-collapse">{children}</table>
+            <div className={cx('overflow-x-auto mb-4')}>
+              <table className={cx('w-full text-body-sm text-text/80 border-collapse')}>{children}</table>
             </div>
           ),
           th: ({ children }: Kids) => (
-            <th className="border-b border-border px-3 py-2 text-left font-semibold text-text">{children}</th>
+            <th className={cx('border-b border-border px-3 py-2 text-left font-semibold text-text')}>{children}</th>
           ),
-          td: ({ children }: Kids) => <td className="border-b border-border px-3 py-2 align-top">{children}</td>,
+          td: ({ children }: Kids) => <td className={cx('border-b border-border px-3 py-2 align-top')}>{children}</td>,
         }}
       >
         {children}

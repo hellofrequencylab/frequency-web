@@ -71,7 +71,7 @@ export async function AiDepthUpsell({
   return (
     <section
       aria-labelledby="ai-depth-upsell-heading"
-      className="rounded-2xl border border-primary/30 bg-primary/5 p-5"
+      className="rounded-card border border-primary/30 bg-primary/5 p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex-1 min-w-[16rem]">

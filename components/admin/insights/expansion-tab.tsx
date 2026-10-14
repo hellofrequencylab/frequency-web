@@ -77,7 +77,7 @@ export async function ExpansionTab() {
         {ready.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {ready.map((p) => (
-              <div key={p.city} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+              <div key={p.city} className="rounded-card border border-border bg-surface p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-body font-bold text-text">{p.city}</h3>
                   <StatusChip tone="success" size="sm">

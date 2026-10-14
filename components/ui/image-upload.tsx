@@ -4,6 +4,8 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Input } from '@/components/ui/field'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
@@ -204,7 +206,7 @@ export function ImageUpload({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+      <span className={capsLabel('inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
         <ImageIcon className="h-3.5 w-3.5" /> {label}
       </span>
 
@@ -264,14 +266,15 @@ export function ImageUpload({
       )}
 
       {mode === 'url' && !noUrlPaste && (
-        <input
+        <Input
           type="url"
+          surface="inset"
           aria-label={`${label} URL`}
           value={value ?? ''}
           onChange={(e) => emit(e.target.value.trim() || null, null)}
           disabled={disabled || busy}
           placeholder="or paste an image URL"
-          className="w-full rounded-control border border-border bg-canvas px-3 py-1.5 text-meta text-text outline-none focus:border-border-strong placeholder:text-subtle disabled:opacity-60"
+          className="text-meta"
         />
       )}
 

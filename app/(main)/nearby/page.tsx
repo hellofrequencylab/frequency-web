@@ -270,7 +270,7 @@ export default async function NearbyPage({
         {ctaLabel && ctaHref && (
           <a
             href={ctaHref}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             {ctaLabel}
           </a>
@@ -350,9 +350,9 @@ export default async function NearbyPage({
           href={`/nearby/${latest.id}`}
           // The newest Dispatch in the community, by definition the fastest-moving box on the page.
           data-visual-mask="nearby-latest-dispatch"
-          className="mb-6 flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25"
+          className="mb-6 flex items-center gap-4 rounded-card border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25"
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-primary text-on-primary">
             {latest.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
           </span>
           <div className="min-w-0 flex-1">
@@ -411,7 +411,7 @@ export default async function NearbyPage({
                     href={`/events/${e.slug}`}
                     className="group flex min-h-0 items-center gap-2.5 overflow-hidden rounded-xl border border-border bg-surface px-2.5 py-2 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
                   >
-                    <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                    <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                       <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
                       <span className="text-body-sm font-bold leading-none">{eventDay(e.starts_at)}</span>
                     </span>
@@ -429,7 +429,7 @@ export default async function NearbyPage({
 
           {/* Quick links across community surfaces */}
           <div className="grid grid-cols-2 gap-2">
-            <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s on" color="bg-primary-bg text-primary-strong" />
+            <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s happening" color="bg-primary-bg text-primary-strong" />
             <QuickLink href="/circles" Icon={CircleDot} label="Circles" sub="Find your people" color="bg-signal-bg text-signal-strong" />
             <QuickLink href="/channels" Icon={Radio} label="Channels" sub="By topic" color="bg-broadcast-bg text-broadcast-strong" />
             <QuickLink href="/network" Icon={Users} label="Directory" sub="The community" color="bg-warning-bg text-warning" />
@@ -447,8 +447,8 @@ export default async function NearbyPage({
             <ModuleCard title="New circles" visualMask="nearby-new-circles">
               <div className="space-y-0.5">
                 {newCircles.map((c) => (
-                  <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-signal-bg text-signal-strong">
+                  <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-signal-bg text-signal-strong">
                       <CircleDot className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -474,7 +474,7 @@ function QuickLink({ href, Icon, label, sub, color }: {
   return (
     <Link
       href={href}
-      className="group rounded-2xl border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+      className="group rounded-card border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
     >
       <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-control ${color}`}>
         <Icon className="h-4 w-4" />
@@ -496,7 +496,7 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
     <EntityCard
       href={`/nearby/${d.id}`}
       anchor={
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+        <div className="flex h-10 w-10 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
           {d.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
         </div>
       }

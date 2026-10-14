@@ -24,6 +24,7 @@ import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 import { Counter } from '@/components/ui/counter'
 import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory } from '@/lib/connections/directory-visibility'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
 // by route (lib/layout/rail-panels.ts). Each is an independent async server component
@@ -36,7 +37,7 @@ function DateChip({ iso }: { iso: string }) {
   const month = d.toLocaleDateString('en-US', { month: 'short' })
   const day = d.getDate()
   return (
-    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-success-bg text-success shrink-0">
+    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-control bg-success-bg text-success shrink-0">
       <span className="text-3xs font-semibold uppercase leading-none">{month}</span>
       <span className="text-body-sm font-bold leading-tight">{day}</span>
     </div>
@@ -117,7 +118,7 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
           <Link
             key={event.id}
             href={`/events/${event.slug}`}
-            className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+            className="flex items-center gap-3 px-1 py-2 rounded-control hover:bg-surface-elevated transition-colors"
           >
             <DateChip iso={event.starts_at} />
             <div className="flex-1 min-w-0">
@@ -202,7 +203,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
             <Link
               key={m.profile_id}
               href={`/people/${m.profile.handle}`}
-              className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-3 px-1 py-2 rounded-control hover:bg-surface-elevated transition-colors"
             >
               <Avatar src={m.profile.avatar_url} name={m.profile.display_name ?? ''} size="sm" online={online} />
               <span className="text-body-sm font-medium text-text truncate flex-1">{m.profile.display_name}</span>
@@ -231,9 +232,9 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
           <Link
             key={d.id}
             href={`/nearby/${d.id}`}
-            className="flex items-start gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+            className="flex items-start gap-3 px-1 py-2 rounded-control hover:bg-surface-elevated transition-colors"
           >
-            <div className="shrink-0 w-7 h-7 rounded-lg bg-signal-bg flex items-center justify-center mt-0.5">
+            <div className="shrink-0 w-7 h-7 rounded-control bg-signal-bg flex items-center justify-center mt-0.5">
               {d.linkedTaskId ? <Zap className="w-3.5 h-3.5 text-primary" /> : <Megaphone className="w-3.5 h-3.5 text-signal-strong" />}
             </div>
             <div className="flex-1 min-w-0">
@@ -278,7 +279,7 @@ export async function LeaderboardPanel() {
           <Link
             key={member.id}
             href={`/people/${member.handle}`}
-            className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+            className="flex items-center gap-2.5 px-1 py-2 rounded-control hover:bg-surface-elevated transition-colors"
           >
             <span className={`text-body-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
             <Avatar src={member.avatar_url} name={member.display_name ?? ''} size="sm" />
@@ -344,7 +345,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
         href={nextStep.href}
         className="group block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
       >
-        <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-muted">
+        <p className={capsLabel('flex items-center justify-between text-2xs font-semibold text-muted')}>
           <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3 text-broadcast-strong" /> Next step</span>
           {status && <span className="tabular-nums">{status.pct}%</span>}
         </p>
@@ -367,7 +368,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
             <Link
               key={s.key}
               href={s.href}
-              className="group flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 transition-colors hover:border-broadcast/50 hover:bg-broadcast-bg/20"
+              className="group flex items-center gap-2 rounded-control border border-border bg-surface px-2.5 py-1.5 transition-colors hover:border-broadcast/50 hover:bg-broadcast-bg/20"
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-broadcast-bg ring-1 ring-broadcast/40" />
               <span className="min-w-0 flex-1 truncate text-meta font-medium text-text">{s.label}</span>
@@ -445,9 +446,9 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
           <Link
             key={c.id}
             href={`/circles/${c.slug}`}
-            className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+            className="flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
               <Users className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -511,9 +512,9 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
           <Link
             key={c.id}
             href={`/circles/${c.slug}`}
-            className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+            className="flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-signal-bg text-signal-strong">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-signal-bg text-signal-strong">
               <Sparkles className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -586,7 +587,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
             <Link
               key={p.id}
               href={`/people/${p.handle}`}
-              className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-3 px-1 py-2 rounded-control hover:bg-surface-elevated transition-colors"
             >
               <Avatar src={p.avatar_url} name={p.display_name ?? ''} size="sm" online={online} />
               <div className="min-w-0 flex-1">
@@ -649,7 +650,7 @@ export async function PulsePanel() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition-colors hover:bg-surface-elevated"
+            className="flex flex-col items-center gap-0.5 rounded-control px-1 py-2 text-center transition-colors hover:bg-surface-elevated"
           >
             <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
             {/* The count goes through Counter (stacked): these were tabular but not MONO, so three

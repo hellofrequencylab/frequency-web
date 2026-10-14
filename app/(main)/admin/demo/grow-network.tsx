@@ -50,7 +50,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
 
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Add members to an existing circle */}
-        <div className="rounded-2xl border border-border bg-surface p-5">
+        <div className="rounded-card border border-border bg-surface p-5">
           <p className="text-body-sm font-semibold text-text">Top up a circle</p>
           <p className="mt-0.5 text-body-sm text-muted">Add members to an existing demo circle. Each brings a post, reactions, a streak, and a practice.</p>
           <div className="mt-4 flex flex-wrap items-end gap-2">
@@ -97,7 +97,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
         </div>
 
         {/* Spin up a new circle */}
-        <div className="rounded-2xl border border-border bg-surface p-5">
+        <div className="rounded-card border border-border bg-surface p-5">
           <p className="text-body-sm font-semibold text-text">Spin up a circle</p>
           <p className="mt-0.5 text-body-sm text-muted">A new circle arrives with a host, a roster, a practice, and an upcoming event.</p>
           <div className="mt-4 flex flex-wrap items-end gap-2">

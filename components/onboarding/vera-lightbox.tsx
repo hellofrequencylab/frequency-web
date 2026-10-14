@@ -12,6 +12,9 @@ import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
 import { WelcomeArt } from '@/components/onboarding/welcome-art'
 import { Input } from '@/components/ui/field'
 import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Vera's onboarding lightbox (ADR-066 Phase D). It opens OVER the feed the moment
 // a Founder lands from induction (?welcome=vera). Two beats: a short, personalized
@@ -203,10 +206,10 @@ export function VeraLightbox({
           /* ── Beat 1: the personalized deck ───────────────────────────────── */
           <div key={slide} className="relative flex flex-1 flex-col overflow-y-auto px-7 pb-7 pt-8 text-center motion-safe:animate-[slideUp_0.3s_ease-out]">
             <WelcomeArt art={current.art} className="mx-auto mb-5 h-28 sm:h-32" />
-            <span className="mx-auto inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-meta font-semibold uppercase tracking-wide text-primary-strong">
+            <span className={capsLabel('mx-auto inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-meta font-semibold text-primary-strong')}>
               <Sparkles className="h-3.5 w-3.5" /> {current.eyebrow}
             </span>
-            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-page-title font-bold leading-tight text-text sm:text-3xl">
+            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-page-title font-bold leading-tight text-text sm:text-stat-sm">
               {current.title}
             </h2>
             <p className="mx-auto mt-3 max-w-md text-pretty text-body-sm leading-relaxed text-muted sm:text-body">{current.body}</p>
@@ -231,13 +234,13 @@ export function VeraLightbox({
                   <ArrowLeft className="h-4 w-4" /> Back
                 </button>
               )}
-              <button
+              <Button
+                size="lg"
                 type="button"
                 onClick={() => (lastSlide ? setPhase('chat') : setSlide((s) => s + 1))}
-                className="inline-flex items-center gap-2 rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {lastSlide ? 'Meet Vera' : 'Next'} <ArrowRight className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             <button type="button" onClick={close} className="mx-auto mt-4 text-meta font-medium text-subtle transition-colors hover:text-muted">
@@ -297,10 +300,10 @@ export function VeraLightbox({
                 <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
                   <p className="text-meta text-muted">{proposalLabel(p)}</p>
                   <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
+                    <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
                       <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
                     </button>
-                    <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
+                    <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-control bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
                       <X className="h-3.5 w-3.5" /> Skip
                     </button>
                   </div>
@@ -329,9 +332,9 @@ export function VeraLightbox({
                     onKeyDown={(e) => { if (e.key === 'Enter') send() }}
                     placeholder="Say something to Vera…"
                   />
-                  <button type="button" onClick={send} disabled={pending || !input.trim()} aria-label="Send message" className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
+                  <IconButton type="button" variant="filled" onClick={send} disabled={pending || !input.trim()} label="Send message">
                     <Send className="h-4 w-4" aria-hidden />
-                  </button>
+                  </IconButton>
                 </div>
               ) : null}
 

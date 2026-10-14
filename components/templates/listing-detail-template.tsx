@@ -29,6 +29,8 @@ import { listingJsonLd } from '@/lib/listings-shared/listing-seo'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import type { OfferTargetKind } from '@/lib/marketplace/listing-offers'
 import { relativeTime } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqListingDetail } from '@/components/frequency/members/marketplace/listing-detail'
 
 /** The larger info line directly under the hero: price/terms . location . relative time. */
 function ListingInfoLine({ view }: { view: ListingDetailView }) {
@@ -113,6 +115,27 @@ export function ListingDetailTemplate({
    */
   asideExtras?: React.ReactNode
 }) {
+  // THE DESIGN SWITCH (ADR-1737): under Frequency every listing (Classifieds, the Market, Housing)
+  // is the member kit's listing page, on the same view and islands. Build-time, so DAWN is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqListingDetail
+        view={view}
+        comments={comments}
+        canComment={canComment}
+        canModerate={canModerate}
+        myProfileId={myProfileId}
+        footer={footer}
+        contactNote={contactNote}
+        ownerControls={ownerControls}
+        claimToken={claimToken}
+        soloGalleryRow={soloGalleryRow}
+        asideExtras={asideExtras}
+      >
+        {children}
+      </FqListingDetail>
+    )
+  }
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
   const sellerFirst = view.seller?.displayName.split(/\s+/)[0] || 'the seller'
@@ -199,7 +222,7 @@ export function ListingDetailTemplate({
           />
 
           {view.pickup && (
-            <section className="rounded-2xl border border-border bg-surface p-4">
+            <section className="rounded-card border border-border bg-surface p-4">
               <h2 className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <MapPin className="h-3.5 w-3.5" aria-hidden /> {view.pickup.precise ? 'Pickup location' : 'Pickup area'}
               </h2>
@@ -218,7 +241,7 @@ export function ListingDetailTemplate({
           {asideExtras}
           {claimToken ? (
             /* Arrived via a claim link: the Claim box REPLACES Contact the seller. */
-            <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
+            <section className="rounded-card border border-primary/40 bg-primary-bg/40 p-4">
               <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-primary-strong">Claim this listing</h2>
               <ListingClaimBox
                 token={claimToken}
@@ -227,7 +250,7 @@ export function ListingDetailTemplate({
               />
             </section>
           ) : showContact ? (
-            <section className="rounded-2xl border border-border bg-surface p-4">
+            <section className="rounded-card border border-border bg-surface p-4">
               <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Contact the seller</h2>
               <ListingContactDialog
                 // A ListingDetailView is always a marketplace listing (never a Recording), so its
@@ -254,7 +277,7 @@ export function ListingDetailTemplate({
               reassurance nor any way to report the listing. The note belongs to the listing, not
               to the contact dialog. */}
           {!showContact && !claimToken && contactNote && (
-            <section className="rounded-2xl border border-border bg-surface p-4">{contactNote}</section>
+            <section className="rounded-card border border-border bg-surface p-4">{contactNote}</section>
           )}
 
           <ListingDetailsCard details={view.details} />

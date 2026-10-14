@@ -146,17 +146,21 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // (platformManage: admin/janitor full), so a member/paid never sees them. EXCEPTIONS
   // that admit host+ on the community ladder: Leadership (the leader home, surface
   // 'lead') and Programs/Community/Growth via their community/marketing staff domain.
-  { key: 'admin-home',       href: '/admin',            label: 'Dashboard',  section: 'Admin', defaultAccess: 'admin',   surface: 'platformManage' },
+  // ADR-1746 (owner ruling 2026-10-14): the Admin rows carry the operator console's seven section names
+  // (Overview · Community · Content · Growth · Resonance CRM · Vera AI · Platform, ADR-1745), so the rail,
+  // the console, and the /admin dashboard name one place one way. KEYS are unchanged on purpose:
+  // `area_permissions` rows are keyed by them (lib/nav/admin-rail.test.ts pins the list).
+  { key: 'admin-home',       href: '/admin',            label: 'Overview',   section: 'Admin', defaultAccess: 'admin',   surface: 'platformManage' },
   { key: 'admin-community',  href: '/admin/community',  label: 'Community',  section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
   { key: 'lead',             href: '/lead',             label: 'Leadership', section: 'Admin', defaultAccess: 'host',    surface: 'lead' },
-  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',   section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
+  { key: 'admin-programs',   href: '/admin/programs',   label: 'Content',    section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
   { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',     section: 'Admin', defaultAccess: 'host',    staffDomain: 'marketing', surface: 'growthStudio' },
   // Resonance CRM (ADR-382 to 387): the Vera-driven CRM domain. THIS is the entry that puts it in the
   // left rail (the rail reads NAV_AREAS only; sections.ts + nav.ts feed the dashboard switcher + the
   // sub-header, not the rail). Gated 'janitor' to match the cockpit's per-member-prediction sensitivity.
   { key: 'admin-crm',        href: '/admin/crm',        label: 'Resonance CRM', section: 'Admin', defaultAccess: 'janitor', surface: 'platformManage' },
   { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
-  { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
+  { key: 'admin-operations', href: '/admin/operations', label: 'Platform',   section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
   { key: 'admin-library',    href: '/admin/library',    label: 'Loom Studio', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'marketing', surface: 'platformManage' },
   // NOTE: the operator "My Spaces" rail entry (→ /spaces/operating) was RETIRED here — the Spaces a
@@ -172,11 +176,11 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // (defaultAccess 'admin' = the top of the ladder) OR platform-capable staff (staffDomain
   // 'platform'), so only Admin + Janitor see it. Telescopes like the rest of the Admin section.
   { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Manage Spaces', section: 'Admin', defaultAccess: 'janitor', surface: 'platformSpaces' },
-  // Labeled "Market admin", not "Market": the member commerce row (the `market` vertical,
-  // /marketplace) already owns that word, and the two sat in one rail reading identically —
-  // the section header was the only thing telling them apart, and a folded rail has no
-  // section headers at all. Same concept, operator side; the label now says so.
-  { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Market admin', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
+  // Labeled "Commerce" (ADR-1746), the console group it sits in (Platform · Commerce, ADR-1745), and it
+  // nests under the Platform row on the rail (lib/nav/admin-rail.ts). It was "Market admin" because the
+  // member commerce row (the `market` vertical, /marketplace) owns the word Market and the two read
+  // identically in a folded rail; the section-and-group name keeps them apart without a suffix.
+  { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Commerce', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const

@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-918",
+  "title": "Every member-facing \"What's On\" reads \"What's happening\", and the Circle tab reads \"What's Happening\"",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1738. Owner 2026-10-13: change all the naming now in the docs, from the Frequency design system handoff of the same day (What's on → What's happening in all nav, menus, labels and copy)."
+  },
+  "detail": "The canon moved in ADR-1738 (docs/NAMING.md, the core belief section); the code did not. Nine member-facing strings still say the old label: the Circle tab (lib/circles/tabs.ts) and its page title (app/(main)/circles/[slug]/(circle)/whats-on/page.tsx), the Nearby quick link, the public Space sign-in prompt, the events error state, two lines on the feed's community board, and two lines of the welcome email (lib/email.ts). Sentence case in copy and menus, title case for the Circle tab. The /whats-on route stays (route ≠ label, ADR-1023). \"What's on your mind?\" is the composer prompt and stays (NAMING.md collision guard). Re-measure with the probe before porting: other sessions land copy on main.\n\nShipped 2026-10-13: the Circle tab and its page title read What's Happening; the Nearby link, the public Space prompt, the events error state, the feed's community board and the welcome email read what's happening. /whats-on stays.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/whats-happening-label.mjs"
+  },
+  "closed": "2026-10-13"
+}

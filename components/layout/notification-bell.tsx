@@ -110,7 +110,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
         // `p-1.5` below sm makes this a 34px square — the same size as the Friends link beside it,
         // instead of 4px wider for no reason. On the mobile header every pinned pixel comes out of
         // the wordmark (see brand-mark.tsx), and matching a neighbour is free.
-        className="relative p-1.5 sm:p-2 rounded-lg text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+        className="relative p-1.5 sm:p-2 rounded-control text-muted hover:text-text hover:bg-surface-elevated transition-colors"
       >
         <Bell className="w-5 h-5" />
         {unread > 0 && (

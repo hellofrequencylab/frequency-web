@@ -91,7 +91,7 @@ export function Label({
 }) {
   return (
     <g className={tone} opacity={opacity}>
-      <text x={x} y={y} fontSize={size} fontWeight={weight} fill="currentColor" textAnchor={anchor} style={{ fontFamily: 'var(--font-sans, system-ui, sans-serif)' }}>
+      <text x={x} y={y} fontSize={size} fontWeight={weight} fill="currentColor" textAnchor={anchor} className="font-sans">
         {children}
       </text>
     </g>

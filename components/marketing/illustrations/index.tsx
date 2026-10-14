@@ -635,7 +635,7 @@ const ART: Record<IllustrationName, ReactNode> = {
   // We only earn when you do: a tall stack that is all yours, and a small slice we take from
   // the network-sourced part only.
   'earn-together': (
-    <Svg label="You keep everything you bring in; we earn only a small share of network-sourced business">
+    <Svg label="You keep what you bring in, after card processing; we earn only a small share of network-sourced business">
       <rect x="36" y="34" width="70" height="94" rx="10" className="fill-primary-bg" />
       <path d="M36 44h70M36 58h70M36 72h70M36 86h70M36 100h70M36 114h70" className="stroke-primary/40" strokeWidth="2" />
       <rect x="150" y="96" width="54" height="32" rx="10" className="fill-signal-bg" />

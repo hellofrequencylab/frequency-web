@@ -69,7 +69,7 @@ type Props = {
    *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
    *  stamp meta.persona + the persona tag, and branches the tour reel. */
   persona?: PersonaId
-  /** Open the flow at a specific beat (0–3). Two callers: the /pages/splash editor, which
+  /** Open the flow at a specific beat (0–3). Two callers: the Default Funnel editor (/pages/sequences?tab=default), which
    *  previews the REAL component one beat at a time, and the RESUME path, which reopens an
    *  induction this browser left unfinished. The flow logic is untouched by either. */
   initialBeat?: number
@@ -663,7 +663,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
     }
     const initials = getInitials(displayName || userEmail)
     return (
-      <div className="h-24 w-24 rounded-pill bg-primary-bg text-3xl text-primary-strong font-semibold flex items-center justify-center shrink-0">
+      <div className="h-24 w-24 rounded-pill bg-primary-bg text-stat-sm text-primary-strong font-semibold flex items-center justify-center shrink-0">
         {initials || '?'}
       </div>
     )
@@ -677,7 +677,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
   const eyebrow = 'eyebrow text-primary-strong'
-  const heading = 'font-display uppercase leading-[1.0] text-text'
+  const heading = 'font-display uppercase leading-none text-text'
 
   const slide = reel[reelIndex]
   const isLastSlide = reelIndex >= reel.length - 1
@@ -734,7 +734,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
+          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-glow-primary-sm">
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">

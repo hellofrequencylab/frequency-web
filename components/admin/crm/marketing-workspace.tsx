@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Search, Send, Sparkles } from 'lucide-react'
 import { MessagingConsole } from '@/components/admin/messaging/messaging-console'
-import { buttonClasses } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
 import { CampaignAnalyticsExpansion } from '@/components/admin/crm/campaign-analytics-expansion'
 import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
@@ -138,17 +138,13 @@ export function MarketingWorkspace({
         >
           <Sparkles className="h-4 w-4" aria-hidden /> Draft with Vera
         </Link>
-        <button
-          type="button"
-          onClick={openNew}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" onClick={openNew} className="shrink-0">
           <Send className="h-4 w-4" aria-hidden /> New email
-        </button>
+        </Button>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">
+        <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}

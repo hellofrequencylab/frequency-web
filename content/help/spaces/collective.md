@@ -116,7 +116,7 @@ A few rules keep the money honest:
 - A Space has to have payouts set up before it can take a share. A share for a Space that is still
   setting up is refused until it is ready.
 - The network fee comes out of every share in proportion, including yours. Your own people and your
-  tips stay at 0%, as always.
+  tips stay at 0% plus card processing, as always.
 - Shares apply to tickets sold after you save them. A refund takes each share back in the same
   proportion.
 

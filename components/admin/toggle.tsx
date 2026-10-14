@@ -1,6 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 
 // Settings switch with a built-in save affordance (ADR-233 §5: imperative/toggle
 // controls autosave with inline "Saved"). One accessible `role="switch"` so the AI /
@@ -25,23 +26,7 @@ export function Toggle({
 }) {
   return (
     <div className="inline-flex items-center gap-2.5">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 ${
-          checked ? 'bg-primary' : 'bg-border-strong'
-        }`}
-      >
-        <span
-          className={`inline-block h-5 w-5 transform rounded-pill bg-surface shadow-sm transition-transform motion-reduce:transition-none ${
-            checked ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={ariaLabel} disabled={disabled} />
       {saveState !== 'idle' && (
         <span className="text-meta text-subtle" aria-live="polite">
           {saveState === 'saving' ? (

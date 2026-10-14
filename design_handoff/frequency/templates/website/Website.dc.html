@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script><style>body{margin:0;background:#0A0612}a{color:#F6F0FF}a:hover{color:#3DF2FF}</style></helmet>
+<div data-theme="stage" style="min-height:100vh;background:#0A0612;color:#D9CFEA;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:64px clamp(20px,5vw,72px) 80px">
+<div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:14px">
+<span style="font:600 11px/1 Unbounded,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#3DF2FF">Template · Website</span>
+<h1 style="margin:0;font:600 clamp(40px,5vw,72px)/.98 Unbounded,sans-serif;letter-spacing:-0.05em;color:#F6F0FF">Frequency website</h1>
+<p style="margin:0;max-width:60ch;font-size:17px;line-height:1.6">Every page of the marketing front end. Open any page to browse the live site. The web kit lives in <b style="color:#F6F0FF">web/</b>; core tokens, icons and photos are copied alongside.</p>
+</div>
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+<div style="display:flex;flex-direction:column;gap:14px">
+<span style="font:600 11px/1 Unbounded,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8E82A8">{{ g.name }}</span>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+<sc-for list="{{ g.pages }}" as="p" hint-placeholder-count="3">
+<a href="{{ p.href }}" style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:200px;padding:22px;border-radius:22px;overflow:hidden;text-decoration:none;background:#140B22;box-shadow:inset 0 0 0 1px rgba(246,240,255,.12)" style-hover="box-shadow:inset 0 0 0 1.5px #3DF2FF,0 0 50px -20px #3DF2FF">
+<img src="{{ p.img }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4"></img>
+<span style="position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,18,.95) 25%,rgba(10,6,18,.2))"></span>
+<b style="position:relative;font:600 22px/1.05 Unbounded,sans-serif;letter-spacing:-0.03em;color:#F6F0FF">{{ p.name }}</b>
+<span style="position:relative;font-size:14px;line-height:1.45;color:#D9CFEA">{{ p.desc }}</span>
+</a>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<div style="border-radius:22px;padding:24px;background:#140B22;box-shadow:inset 0 0 0 1px rgba(246,240,255,.12);display:flex;flex-direction:column;gap:10px">
+<b style="font:600 18px/1.1 Unbounded,sans-serif;color:#F6F0FF">Using this in a project</b>
+<p style="margin:0;font-size:15px;line-height:1.6">Copy this folder. Pages load the core from <code>styles.css</code>, <code>tokens/</code> and <code>assets/</code> in this folder. Never edit core tokens here; add overrides in <code>web/site.css</code>.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const P = 'assets/photos/';
+    return { groups: [
+      { name: 'Home', pages: [{ name: 'Home', href: 'Home.html', img: P + 'day-meditation-circle.jpg', desc: 'Vision fold, choose your path, story, live map, weave.' }] },
+      { name: 'For people', pages: [{ name: 'People', href: 'People.html', img: P + 'day-park-yoga.jpg', desc: 'Path, first night, what’s happening near you, FAQ.' }] },
+      { name: 'For spaces', pages: [
+        { name: 'Spaces', href: 'Spaces.html', img: P + 'gathering-09.jpg', desc: 'Path, on the map, Space types, FAQ.' },
+        { name: 'Pricing', href: 'Pricing.html', img: P + 'gathering-07.jpg', desc: 'Free, Business, Non-profit and the feature matrix.' }] },
+      { name: 'Shared', pages: [
+        { name: 'Features', href: 'Features.html', img: P + 'day-parachute-play.jpg', desc: 'Every feature, both sides, with how it works.' },
+        { name: 'Get started', href: 'Join.html', img: P + 'gathering-04.jpg', desc: 'Split sign-up for people and Spaces.' },
+        { name: 'Stories', href: 'Stories.html', img: P + 'day-beach-hoop.jpg', desc: 'Host and Space stories.' },
+        { name: 'Help', href: 'Help.html', img: P + 'gathering-03.jpg', desc: 'Questions, policies, contact.' },
+        { name: 'Vision', href: 'Vision.html', img: P + 'gathering-06.jpg', desc: 'Third spaces, 2027.' }] }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

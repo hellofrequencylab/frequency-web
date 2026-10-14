@@ -9,6 +9,11 @@ import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { WizardShell } from '@/components/templates'
 import { EmailOptInCard } from '@/components/onboarding/email-opt-in'
 import { Select } from '@/components/ui/select'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737, build-time): the fields wear the members kit's `.input` (WizardShell stamps and
+// loads the kit); every DAWN class string below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 type Region = { id: string; name: string }
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -211,8 +216,9 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
     )
   }
 
-  const inputBase =
-    'w-full rounded-card border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
+  const inputBase = FREQUENCY
+    ? 'input'
+    : 'w-full rounded-card border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
   // ── Steps ─────────────────────────────────────────────────────────────────
 

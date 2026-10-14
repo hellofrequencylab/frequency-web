@@ -6,6 +6,7 @@
 // the season "active" widgets it used to configure were retired in the J5 cutover, so only the
 // live discovery widgets are surfaced here. Reuses the owner-checked plan actions.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronUp, ChevronDown, Eye, EyeOff, Sparkles, Layout, CalendarRange } from 'lucide-react'
@@ -132,14 +133,14 @@ export function JourneyAdvanced({
       <div className="space-y-5">
         {/* Discovery-page layout */}
         <div>
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Discovery page</p>
+          <p className={capsLabel('text-2xs font-semibold text-muted')}>Discovery page</p>
           <p className="mt-0.5 text-meta text-muted">What visitors see before they start. Toggle and reorder the blocks.</p>
           <ul className="mt-2 space-y-1">
             {disc.map((d, i) => {
               const meta = WIDGET_META[d.id as keyof typeof WIDGET_META]
               const required = DISCOVERY_REQUIRED.has(d.id)
               return (
-                <li key={d.id} className="flex items-center gap-2 rounded-lg border border-border bg-canvas px-2.5 py-1.5">
+                <li key={d.id} className="flex items-center gap-2 rounded-control border border-border bg-canvas px-2.5 py-1.5">
                   <span className="min-w-0 flex-1">
                     <span className="block text-body-sm font-medium text-text">{meta?.label ?? d.id}</span>
                     {meta?.hint && <span className="block truncate text-meta text-muted">{meta.hint}</span>}
@@ -165,7 +166,7 @@ export function JourneyAdvanced({
         {/* Official program (role-gated) */}
         {canOfficial && (
           <div className="border-t border-border pt-4">
-            <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+            <p className={capsLabel('inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
               <Sparkles className="h-3.5 w-3.5" /> Official program
             </p>
             <p className="mt-0.5 text-meta text-muted">Flag this as an official Journey and link it to a Season.</p>
@@ -173,7 +174,7 @@ export function JourneyAdvanced({
               <button
                 type="button"
                 onClick={() => saveOfficial({ official: !official })}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                   official ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:bg-surface-elevated'
                 }`}
                 aria-pressed={official}
@@ -197,13 +198,13 @@ export function JourneyAdvanced({
 
             {/* Play window — the ~4-week span that sequences a Season's Journeys */}
             <div className="mt-5 border-t border-border pt-4">
-              <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <CalendarRange className="h-3.5 w-3.5" /> Play window
               </p>
               <p className="mt-0.5 text-meta text-muted">When this Journey is in play. Leave a date empty to keep it open.</p>
               <div className="mt-2 flex flex-wrap items-end gap-3">
                 <label className="flex flex-col gap-1">
-                  <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
+                  <span className={capsLabel('text-2xs font-semibold text-muted')}>Opens</span>
                   <Input
                     type="date"
                     value={windowStart}
@@ -213,7 +214,7 @@ export function JourneyAdvanced({
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Closes</span>
+                  <span className={capsLabel('text-2xs font-semibold text-muted')}>Closes</span>
                   <Input
                     type="date"
                     value={windowEnd}

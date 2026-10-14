@@ -11,6 +11,7 @@ import { isError } from '@/lib/action-result'
 import { startJourneyRunAction } from '@/app/(main)/journeys/run-actions'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export interface JourneyOption {
   id: string
@@ -75,14 +76,14 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
           className="px-2.5"
         />
       </label>
-      <button
+      <Button
         type="button"
         onClick={go}
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="w-full"
       >
         <Rocket className="h-4 w-4" /> {pending ? 'Starting…' : 'Start the run'}
-      </button>
+      </Button>
       {msg && (
         <p className={`mt-2 text-meta ${msg.ok ? 'text-success' : 'text-danger'}`}>
           {msg.text}

@@ -12,6 +12,11 @@ import { leaveConversation } from '../actions'
 import { ConversationRenameButton } from '@/components/messages/conversation-rename-button'
 import { chatDmRoutesRetiredFlag } from '@/lib/platform-flags'
 import { DOCK_DEFAULT_PATH, dockThreadPath } from '@/lib/messages/dock-open'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIcon } from '@/components/frequency/icon'
+import { FqAvatar } from '@/components/frequency/members/shared/avatar'
+import { FrequencyMessages } from '@/components/frequency/members/messages/messages-body'
+import { FqDmThread } from '@/components/frequency/members/messages/dm-thread'
 
 export default async function ConversationPage({
   params,
@@ -150,8 +155,56 @@ export default async function ConversationPage({
 
   // Identity glyph for the compact takeover bar: the group icon, the peer's avatar,
   // or initials. Kept as a leading element beside the shared PageHeading title.
+  // THE DESIGN SWITCH (ADR-1737): fixed at build time; a DAWN deploy renders the takeover below.
+  if (SITE_DESIGN === 'frequency') {
+    const peer = !isGroup ? others[0] ?? null : null
+    return (
+      <FrequencyMessages
+        supabase={supabase}
+        myProfileId={myProfileId}
+        activeKey={`dm:${conversationId}`}
+        pane={
+          <section className="panel fa-pane" aria-label={displayName}>
+            <div className="row fa-pane-h">
+              <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
+              {peer ? (
+                <FqAvatar url={peer.avatar_url} name={peer.display_name} size="m" />
+              ) : (
+                <span className="ic" aria-hidden><FqIcon name="contacts" /></span>
+              )}
+              <span className="grow">
+                <span className="t1" style={{ display: 'block' }}>{displayName}</span>
+                <span className="t2">{isGroup ? `${participants.length} people` : peer ? `@${peer.handle}` : ''}</span>
+              </span>
+              {peer ? (
+                <Link className="btn sm" href={`/people/${peer.handle}`}>
+                  <FqIcon name="user" />
+                  Profile
+                </Link>
+              ) : isGroup ? (
+                <>
+                  <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
+                  <form action={leaveConversation.bind(null, conversationId)}>
+                    <button type="submit" className="btn sm">Leave</button>
+                  </form>
+                </>
+              ) : null}
+            </div>
+            <FqDmThread
+              conversationId={conversationId}
+              initialMessages={messages}
+              myProfileId={myProfileId}
+              participants={participants.map((p) => ({ id: p.id, display_name: p.display_name }))}
+              peerFirstName={peer ? peer.display_name.split(' ')[0] ?? null : null}
+            />
+          </section>
+        }
+      />
+    )
+  }
+
   const avatar = isGroup ? (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg">
       <UsersRound className="h-4 w-4 text-primary-strong" />
     </span>
   ) : others[0] ? (
@@ -197,7 +250,7 @@ export default async function ConversationPage({
       <header className="shrink-0 flex items-center gap-3 border-b border-border bg-surface px-5 py-3">
         <Link
           href="/messages"
-          className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
+          className="md:hidden -ml-1 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
           aria-label="Back"
         >
           <ChevronLeft className="h-5 w-5" />

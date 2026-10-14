@@ -358,7 +358,7 @@ export function ImageCropper({
                 role="group"
                 aria-label="Crop selection. Drag to move, drag a corner to resize."
                 onPointerDown={(e) => beginDrag(e, { kind: 'move' })}
-                className="absolute cursor-move border-2 border-on-ink shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+                className="absolute cursor-move border-2 border-on-ink ring-1 ring-ink/40"
                 style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
               >
                 {HANDLES.map((handle) => {

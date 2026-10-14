@@ -2,6 +2,15 @@
 
 import { useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { AuthFrame } from '@/components/frequency/auth/auth-frame'
+// global-error renders its own document WITHOUT the root layout's stylesheets (Next's error.md, "Good
+// to know"). The Frequency token sheets and the outside-the-kit primitives are brought here so the
+// frame below has its tokens. Each is an app/themes/active/ stub (scripts/lib/design-styles.mjs), so a
+// DAWN build imports nothing here.
+import './themes/active/core'
+import './themes/active/alias'
+import './themes/active/members-ui'
 
 export default function GlobalError({
   error,
@@ -15,6 +24,34 @@ export default function GlobalError({
     Sentry.captureException(error)
     console.error(error)
   }, [error])
+
+  // FREQUENCY (ADR-1737, build-time). This replaces the ROOT LAYOUT, so the `data-design` the layout
+  // stamps on <html> is gone with it: it is stamped here, or none of the design's scoped rules would
+  // match. The doorway frame, a retry and a plain link home (a full load, since the app around it broke).
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <html lang="en" data-design="frequency">
+        <body>
+          <AuthFrame
+            kicker="Something broke"
+            title="Frequency hit a snag"
+            lead="Something broke on our end before the page could load. Try again, or head back home."
+          >
+            <div className="fqa-actions">
+              <button type="button" className="btn pa" onClick={reset}>
+                Try again
+              </button>
+              {/* A plain <a>: a client navigation would reuse the app state that just failed. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a className="btn" href="/">
+                Back home
+              </a>
+            </div>
+          </AuthFrame>
+        </body>
+      </html>
+    )
+  }
 
   return (
     <html lang="en">

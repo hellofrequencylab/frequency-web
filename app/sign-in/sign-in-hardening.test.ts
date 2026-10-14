@@ -118,3 +118,34 @@ describe('a second press cannot invalidate the first magic link', () => {
     expect(submit).toMatch(/loading=\{pending\}/)
   })
 })
+
+describe('a failed or redirected sign-in keeps where the person was going', () => {
+  const actions = sourceWithoutComments(ACTIONS)
+  const callback = sourceWithoutComments(CALLBACK)
+
+  it('every bounce back to the form carries the validated next', () => {
+    expect(actions).toMatch(/function fail\(code: SignInErrorCode, next = ''\)/)
+    // No bare fail('<code>') left: each call passes the next it validated.
+    expect(actions).not.toMatch(/fail\('\w+'\)/)
+    expect(actions).toMatch(/step=new-account\$\{next \?/)
+  })
+
+  it("Supabase's own email throttle reads as the throttle, not as a bad address", () => {
+    expect(actions).toMatch(/isProviderThrottle\(error\) \? 'rate' : 'send'/)
+  })
+
+  it('the confirm step clears its cookie on the path it was set on', () => {
+    expect(actions).toMatch(/delete\(\{ name: NEW_ACCOUNT_EMAIL_COOKIE, path: '\/sign-in' \}\)/)
+  })
+
+  it('the callback failure names the cause, returns next and clears the stashed destination', () => {
+    expect(callback).toMatch(/callbackErrorCode\(/)
+    expect(callback).not.toContain('/sign-in?error=callback`')
+    const failBranch = callback.slice(callback.lastIndexOf('callbackErrorCode('))
+    expect(failBranch).toMatch(/res\.cookies\.delete\(POST_LOGIN_COOKIE\)/)
+  })
+
+  it('page, actions and callback share one next rule', () => {
+    for (const src of [sourceWithoutComments(PAGE), actions, callback]) expect(src).toContain('safeNextPath(')
+  })
+})

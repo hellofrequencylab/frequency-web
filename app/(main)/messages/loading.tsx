@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqMessagesLoading } from '@/components/frequency/members/messages/messages-states'
 
 // Route-level loading UI for Messages (PAGE-FRAMEWORK §5). See the note in
 // app/(main)/search/loading.tsx: the retired `px-4 py-8 max-w-2xl mx-auto` shell double-padded
@@ -19,6 +21,8 @@ function ConversationRowSkeleton() {
 }
 
 export default function MessagesLoading() {
+  // FREQUENCY (ADR-1737): the kit's two-pane frame holds its place instead of the DAWN skeleton.
+  if (SITE_DESIGN === 'frequency') return <FqMessagesLoading />
   return (
     <div>
       <div className="mb-4 space-y-2 sm:mb-5">

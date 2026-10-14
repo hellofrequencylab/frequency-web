@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Star, Trash2 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { ReviewAggregate } from '@/lib/spaces/reviews-aggregate'
 import type { RecordingReview } from '@/lib/airwaves/reviews'
@@ -139,7 +140,7 @@ export function RecordingReviews({
       </div>
 
       {canRate ? (
-        <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
+        <div className="mb-4 rounded-card border border-border bg-surface p-3">
           <div className="flex items-center gap-2">
             <span className="text-meta font-semibold text-muted">
               {myReview ? 'Your rating' : 'Rate this recording'}
@@ -158,14 +159,9 @@ export function RecordingReviews({
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           <div className="mt-2 flex justify-end border-t border-border pt-2">
-            <button
-              type="button"
-              onClick={submit}
-              disabled={pending || rating < 1}
-              className="rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <Button type="button" size="sm" onClick={submit} disabled={pending || rating < 1}>
               {pending ? 'Saving...' : myReview ? 'Update rating' : 'Post rating'}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -196,7 +192,7 @@ export function RecordingReviews({
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}
-                <div className="min-w-0 flex-1 rounded-2xl border border-border bg-surface px-3 py-2">
+                <div className="min-w-0 flex-1 rounded-card border border-border bg-surface px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
@@ -215,7 +211,7 @@ export function RecordingReviews({
                         onClick={() => remove(r.id)}
                         disabled={pending}
                         aria-label="Remove rating"
-                        className="shrink-0 rounded-lg p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                        className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

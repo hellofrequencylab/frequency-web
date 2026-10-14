@@ -34,7 +34,7 @@ function BankGrid({ bank }: { bank: readonly BankLink[] }) {
             <a
               key={link.href}
               href={link.href}
-              className="flex min-h-[44px] items-center gap-2 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
+              className="flex min-h-[44px] items-center gap-2 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
             >
               <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
               <span className="min-w-0 truncate">{link.label}</span>
@@ -83,7 +83,7 @@ function MemberHub({ bank }: { bank: readonly BankLink[] }) {
   return (
     <div className="space-y-4">
       {loading ? (
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/50" />
       ) : data ? (
         <>
           <StatGrid>
@@ -99,7 +99,7 @@ function MemberHub({ bank }: { bank: readonly BankLink[] }) {
             <StatCard label="Plan" value={data.planLabel} icon={CreditCard} size="sm" href="/settings/billing" />
           </StatGrid>
           {data.nudge && (
-            <div className="rounded-2xl border border-border bg-surface-elevated/40 p-3">
+            <div className="rounded-card border border-border bg-surface-elevated/40 p-3">
               <p className="text-body-sm text-text">
                 Your profile is {data.completeness}% there. {data.nudge}
               </p>
@@ -159,7 +159,7 @@ function SpaceHub({ slug, bank }: { slug: string; bank: readonly BankLink[] }) {
   return (
     <div className="space-y-4">
       {loading ? (
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/50" />
       ) : tiles.length > 0 ? (
         <StatGrid>{tiles}</StatGrid>
       ) : null}

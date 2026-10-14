@@ -60,6 +60,14 @@ describe('the rule is wired into the request path', () => {
     expect(PROXY).toContain('frontDoorRedirect({')
   })
 
+  // The member menu's Home link (components/frequency/members/shell/nav.ts) is `/?home`. If the proxy
+  // stops reading it, a signed-in member has no way back to Home and nothing else would notice.
+  it('lets a member through on ?home, the member menu Home link', async () => {
+    expect(PROXY).toContain("searchParams.has('home')")
+    const { MEMBER_HOME_HREF } = await import('@/components/frequency/members/shell/nav')
+    expect(MEMBER_HOME_HREF).toBe('/?home')
+  })
+
   it('carries refreshed session cookies onto the redirect', () => {
     // Dropping them signs the member out on the very request that was meant to let them in —
     // the failure mode the protected-path redirect below it already documents at length.

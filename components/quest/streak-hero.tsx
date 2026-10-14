@@ -27,6 +27,7 @@ import { STREAK_MILESTONES } from '@/lib/streak'
 import type { PracticeStreakState } from '@/lib/practice-streak'
 import { pauseStreak, resumeStreak } from '@/app/(main)/crew/leaderboard/streak-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Button } from '@/components/ui/button'
 import { Counter, CounterRow } from '@/components/ui/counter'
 
 interface Progress {
@@ -100,7 +101,7 @@ export function StreakHero({
 
           {/* The number + the supporting counts. */}
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-4xl font-extrabold leading-none tabular-nums text-text">{current}</span>
+            <span className="text-stat-md font-extrabold leading-none tabular-nums text-text">{current}</span>
             <span className="text-body-sm text-subtle">{current === 1 ? 'day' : 'days'}</span>
           </div>
 
@@ -201,21 +202,21 @@ export function StreakHero({
             : 'Planning time off? Set a rest so the break doesn’t count against you.'}
         </p>
         {resting ? (
-          <button
+          <Button
             type="button"
             onClick={() => run(() => resumeStreak())}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+            className="min-h-11"
           >
             <Play className="h-4 w-4" aria-hidden />
             End rest
-          </button>
+          </Button>
         ) : (
           <button
             type="button"
             onClick={() => run(() => pauseStreak(REST_DAYS))}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
           >
             <Pause className="h-4 w-4" aria-hidden />
             Rest a week

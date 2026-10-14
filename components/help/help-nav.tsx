@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export interface HelpNavCategory {
   slug: string
@@ -19,7 +20,7 @@ export function HelpNav({ categories }: { categories: HelpNavCategory[] }) {
         <div key={cat.slug}>
           <Link
             href={`/help/${cat.slug}`}
-            className="block text-meta font-semibold uppercase tracking-wide text-subtle hover:text-text"
+            className={capsLabel('block text-meta font-semibold text-subtle hover:text-text')}
           >
             {cat.title}
           </Link>

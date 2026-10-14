@@ -46,7 +46,7 @@ export async function ConnectionPanel({
     const drifted = tie.orbit === 'outer'
 
     return (
-      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
+      <section className="mb-6 rounded-card border border-border bg-surface p-4 lift-1">
         <div className="mb-3 flex items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
@@ -99,7 +99,7 @@ export async function ConnectionPanel({
               profileId={profileId}
               threadTitle={firstName}
               wrapperClassName="w-full"
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
+              className="flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
             >
               <MessageSquare className="h-3.5 w-3.5" />
               Reconnect with {firstName}
@@ -116,7 +116,7 @@ export async function ConnectionPanel({
     const context = resonanceContext(tie)
     if (!context) return null
     return (
-      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
+      <section className="mb-6 rounded-card border border-border bg-surface p-4 lift-1">
         <p className="mb-2 flex items-center gap-1.5 text-body-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
         </p>
@@ -133,7 +133,7 @@ export async function ConnectionPanel({
   if (!friendAction) return null
 
   return (
-    <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <section className="mb-6 rounded-card border border-border bg-surface p-4 lift-1">
       <p className="mb-1 flex items-center gap-1.5 text-body-sm font-bold text-text">
         <Sparkles className="h-4 w-4 text-primary" /> Connect with {firstName}
       </p>

@@ -7,6 +7,7 @@ import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/s
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export type RecapPhoto = {
   id: string
@@ -154,14 +155,15 @@ export function RecapAlbum({
                 disabled={pending}
                 className="min-w-0 flex-1 py-1.5"
               />
-              <button
+              <Button
                 type="button"
                 onClick={submit}
                 disabled={pending}
-                className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+                size="sm"
+                className="shrink-0"
               >
                 {pending ? 'Adding…' : 'Add photo'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

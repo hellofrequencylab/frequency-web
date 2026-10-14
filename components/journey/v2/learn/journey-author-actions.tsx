@@ -5,6 +5,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, Send, Check, EyeOff, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { setJourneyVisibility, adoptJourney } from '@/app/(main)/journeys/actions'
 import { DangerModal } from '@/components/admin/danger-modal'
 import type { PlanVisibility } from '@/lib/journey-plans'
@@ -65,7 +67,7 @@ export function JourneyAuthorActions({
       }
     })
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors'
+  const btn = 'inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors'
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link href={`/journeys/${slug}/edit`} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
@@ -88,27 +90,20 @@ export function JourneyAuthorActions({
         </>
       ) : (
         <>
-          <button
+          <Button
             type="button"
             onClick={publish}
             disabled={pending}
-            className={`${btn} bg-primary font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60`}
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             {pending ? 'Publishing…' : 'Publish'}
-          </button>
-          <label
+          </Button>
+          <Checkbox
             title="Assign yourself every practice so you can run it from Mindless."
-            className="inline-flex items-center gap-1.5 text-body-sm text-muted"
-          >
-            <input
-              type="checkbox"
-              checked={adopt}
-              onChange={(e) => setAdopt(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-border accent-primary"
-            />
-            Adopt it for myself
-          </label>
+            checked={adopt}
+            onChange={(e) => setAdopt(e.target.checked)}
+            label={<span className="text-muted">Adopt it for myself</span>}
+          />
         </>
       )}
 

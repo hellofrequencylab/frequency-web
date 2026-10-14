@@ -17,6 +17,10 @@ import {
   DIRECTORY_GRID_WIDE,
 } from '@/components/spaces/directory-view'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySpacesDirectory } from '@/components/frequency/site/pages/discover/spaces'
+import { listActivePartners } from '@/lib/partners/read'
+import { emptyUnlessTransient } from '@/lib/discover'
 
 // PUBLIC Business Spaces directory (/discover/spaces) — the indexable, no-rail twin of the in-app directory
 // (/spaces/directory). It renders inside the shared /discover chrome (SiteHeader + footer, no left menu, no
@@ -85,6 +89,34 @@ export default async function PublicSpacesDirectoryPage({
   // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
   // header image for this route got nothing.
   const hero = await resolveMarketHero('/discover/spaces', { cover: '/images/site/business-directory-hero.jpg' })
+  const schema = [
+    spaceListSchema(spaces, TITLE),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Business Spaces', path: '/discover/spaces' },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same read, filters, sort, pager and JSON-LD, drawn in the site
+  // kit. Build-time constant; the DAWN branch below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    // The partners section (/discover/partners merged here, owner ruling 2026-10-14). The same
+    // fail-closed reader the old page used: a database answer renders no section, a transport failure
+    // rethrows so this ISR page keeps its last good copy.
+    const partners = await listActivePartners().catch(emptyUnlessTransient('spaces page partners'))
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencySpacesDirectory
+          spaces={spaces}
+          total={total}
+          query={{ q, subject, category, sort, per, page }}
+          image={hero.image}
+          partners={partners}
+        />
+      </>
+    )
+  }
 
   return (
     // Ride in the SAME centered content column as the public Space profiles: the member three-column grid
@@ -94,15 +126,7 @@ export default async function PublicSpacesDirectoryPage({
     <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
       <div className="hidden w-48 shrink-0 md:block" aria-hidden />
       <div className="min-w-0 flex-1 pb-16 pt-4 sm:pb-20 sm:pt-6">
-      <JsonLd
-        data={[
-          spaceListSchema(spaces, TITLE),
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Business Spaces', path: '/discover/spaces' },
-          ]),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       {/* A Market-style marketing hero (components/marketplace/market-hero): full-bleed photo + scrim + amber
           glow, a bold display headline, an in-hero SEARCH (writes ?q=, so the grid below filters live), and

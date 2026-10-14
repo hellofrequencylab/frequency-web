@@ -29,7 +29,7 @@ export type SpaceThemeId = 'frequency' | 'editorial' | 'classic' | 'playful' | '
 
 /** The full declaration of a space theme — its id, human copy, and the two font faces it pairs (named so
  *  the picker reads like a real font menu, not an abstract token). */
-export interface SpaceThemeDef {
+interface SpaceThemeDef {
   /** Stable id, the `[data-space-theme]` value and the `preferences.theme` value. */
   id: SpaceThemeId
   /** Short, brand-appropriate label (docs/NAMING.md, docs/CONTENT-VOICE.md). */
@@ -51,7 +51,7 @@ export interface SpaceThemeDef {
 export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   {
     id: 'frequency',
-    label: 'Frequency',
+    label: 'Default', // ADR-1748: the id stays, the label follows the site theme it belongs to
     description: 'The house look: an elegant serif headline over clean, modern body text.',
     displayFont: 'Playfair Display',
     bodyFont: 'Space Grotesk',

@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment } from '@/app/discover/events/_data'
+import { getPublicEventVenue } from '@/lib/events/public-venue'
+import { publicPageWhere } from '@/lib/events/visible-location'
 import { SignInCta } from '@/components/discover/cards'
 import { EventDetailTemplate } from '@/components/templates'
 import { PosterBand } from '@/components/media/poster-band'
@@ -71,15 +73,21 @@ export default async function PublicEventPage({
   const event = await getPublicEventBySlug(slug)
   if (!event) notFound()
 
-  const enrichment = await getEventEnrichment(slug)
+  // The exact venue for the JSON-LD (ADR-1743): published only when the host left the address
+  // visible. getPublicEventVenue applies the flag server-side and returns no venue otherwise.
+  const [enrichment, venue] = await Promise.all([getEventEnrichment(slug), getPublicEventVenue(slug)])
   const hasEnded = hasEventEnded(event)
+  // The where-line (ADR-1744, owner-ruled 2026-10-14): the venue and street plus the city when the
+  // host left the address visible, the city alone otherwise. Same server-side read as the JSON-LD,
+  // so the visible page and the structured data agree, and a hidden venue never reaches the HTML.
+  const where = publicPageWhere({ hide_address: venue.hide_address, venue: venue.venue, city: event.city })
 
   return (
     <EventDetailTemplate
       structuredData={
         <JsonLd
           data={[
-            eventSchema({ ...event, ...(enrichment ?? {}) }),
+            eventSchema({ ...event, ...(enrichment ?? {}), hide_address: venue.hide_address, venue: venue.venue }),
             breadcrumbSchema([
               { name: 'Events', path: '/events' },
               { name: event.title, path: `/events/${event.slug}` },
@@ -115,9 +123,19 @@ export default async function PublicEventPage({
           </div>
         ),
         where: (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <MapPin className="w-4 h-4 text-subtle shrink-0" />
-            <span>{event.city ?? 'Location shared with members'}</span>
+            <span>{where.line ?? 'Location shared with members'}</span>
+            {where.mapsHref ? (
+              <a
+                href={where.mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-strong hover:underline font-medium whitespace-nowrap"
+              >
+                Get directions
+              </a>
+            ) : null}
           </div>
         ),
         hostedBy:
@@ -150,13 +168,15 @@ export default async function PublicEventPage({
               </p>
             </section>
           )}
-          <div className="flex items-start gap-3 rounded-card border border-border bg-marketing-canvas p-4">
-            <Lock className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-            <p className="text-body-sm text-muted leading-relaxed">
-              The exact venue is shared with members who RSVP. Sign up free to see the full
-              details and let the host know you&apos;re coming.
-            </p>
-          </div>
+          {where.exact ? null : (
+            <div className="flex items-start gap-3 rounded-card border border-border bg-marketing-canvas p-4">
+              <Lock className="w-4 h-4 text-muted shrink-0 mt-0.5" />
+              <p className="text-body-sm text-muted leading-relaxed">
+                The exact venue is shared with members who RSVP. Sign up free to see the full
+                details and let the host know you&apos;re coming.
+              </p>
+            </div>
+          )}
         </>
       }
       interiorSide={
@@ -165,7 +185,9 @@ export default async function PublicEventPage({
           body={
             hasEnded
               ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Find it, and be one of the faces the next person walks in and recognizes.'
-              : "RSVP and you're expected: see who else is coming, get the exact venue, and let the host know to save you a seat."
+              : where.exact
+                ? "RSVP and you're expected: see who else is coming and let the host know to save you a seat."
+                : "RSVP and you're expected: see who else is coming, get the exact venue, and let the host know to save you a seat."
           }
           action={BETA_CTA_LABEL}
           href={BETA_CTA_HREF}

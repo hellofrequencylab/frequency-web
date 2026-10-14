@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import type { EntityBlockDef } from '@/lib/entity-blocks/registry'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE SEARCHABLE BLOCK PICKER (ADR-516 Phase C). A command-list that fills an empty column slot: it lists
 // the member blocks from the registry that are NOT already placed (or hidden), grouped "Suggested" (the
@@ -56,7 +57,7 @@ export function BlockPicker({
       key={b.id}
       type="button"
       onClick={() => onPick(b.id)}
-      className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary-bg focus:bg-primary-bg focus:outline-none"
+      className="flex w-full items-start gap-2 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-primary-bg focus:bg-primary-bg focus:outline-none"
     >
       <span className="min-w-0 flex-1">
         <span className="block text-body-sm font-semibold text-text">{b.label}</span>
@@ -68,14 +69,14 @@ export function BlockPicker({
   const group = (label: string, blocks: EntityBlockDef[]) =>
     blocks.length > 0 ? (
       <div className="space-y-0.5">
-        <p className="px-2.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+        <p className={capsLabel('px-2.5 pt-1 text-2xs font-semibold text-muted')}>{label}</p>
         {blocks.map(option)}
       </div>
     ) : null
 
   return (
     <div className="rounded-card border border-border bg-surface p-2 lift-1" role="dialog" aria-label="Add a block">
-      <div className="mb-1 flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2">
+      <div className="mb-1 flex items-center gap-1.5 rounded-control border border-border bg-surface-elevated px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <Input
           variant="seamless"

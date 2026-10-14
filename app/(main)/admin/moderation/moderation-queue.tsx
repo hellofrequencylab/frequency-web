@@ -110,7 +110,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-meta font-medium text-danger"
+          className="rounded-control border border-danger/40 bg-danger-bg/40 px-3 py-2 text-meta font-medium text-danger"
         >
           {error}
         </p>
@@ -122,7 +122,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
         return (
           <div
             key={report.id}
-            className="rounded-2xl border border-border bg-surface lift-1 p-4"
+            className="rounded-card border border-border bg-surface lift-1 p-4"
           >
             {/* Header: reporter + timestamp */}
             <div className="flex items-start gap-3 mb-3">
@@ -175,7 +175,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             </div>
 
             {/* Content preview */}
-            <div className="rounded-lg bg-surface-elevated border border-border p-3 mb-3">
+            <div className="rounded-control bg-surface-elevated border border-border p-3 mb-3">
               <p className="text-body-sm text-text leading-relaxed">
                 {report.preview}
               </p>
@@ -288,7 +288,7 @@ function SuspendDurationPicker({
     { label: 'Indefinite', days: null },
   ]
   return (
-    <div className="mt-3 rounded-lg border border-danger/40 bg-danger-bg p-3">
+    <div className="mt-3 rounded-control border border-danger/40 bg-danger-bg p-3">
       <p className="text-meta font-semibold text-danger mb-2">
         Suspend posting for how long?
       </p>

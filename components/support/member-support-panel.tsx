@@ -14,7 +14,7 @@ export async function MemberSupportPanel({ profileId }: { profileId: string }) {
   const open = tickets.filter((t) => isOpenStatus(t.status)).length
 
   return (
-    <div className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="mb-6 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <LifeBuoy className="h-4 w-4 text-primary-strong" /> Support history
@@ -26,7 +26,7 @@ export async function MemberSupportPanel({ profileId }: { profileId: string }) {
           <li key={t.id}>
             <Link
               href={`/admin/support/${t.id}`}
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 transition-colors hover:bg-surface-elevated"
+              className="flex items-center gap-2 rounded-control border border-border px-3 py-2 transition-colors hover:bg-surface-elevated"
             >
               <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${statusChipClass(t.status)}`}>
                 {STATUS_LABELS[t.status]}

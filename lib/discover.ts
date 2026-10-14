@@ -3,7 +3,8 @@
 // DEFINER RPCs added in 20240211000000_public_discover_reads.sql, OR the
 // public-read `topical_channels` table (anon SELECT allowed since
 // 20240201000000). Nothing in this module ever returns a precise location:
-// events expose only the owning circle's city, circles expose only city
+// events expose only a city (the owning circle's, else the event's own for a
+// standalone event, 20270346008700), circles expose only city
 // (never neighborhood/latitude/longitude), posts expose only a safe author
 // shape. This is the ONLY data source the anon /discover pages use.
 //

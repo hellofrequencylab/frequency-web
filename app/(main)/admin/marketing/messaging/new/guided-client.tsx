@@ -116,7 +116,7 @@ function GoalStep({ onPick, selected }: { onPick: (key: string) => void; selecte
               type="button"
               onClick={() => onPick(g.key)}
               className={cn(
-                'flex flex-col gap-2 rounded-2xl border p-4 text-left transition-colors',
+                'flex flex-col gap-2 rounded-card border p-4 text-left transition-colors',
                 active ? 'border-primary-strong ring-1 ring-primary-strong' : 'border-border bg-surface hover:border-border-strong',
               )}
             >
@@ -254,7 +254,7 @@ function QuestionsStep({
             <p className="text-meta font-semibold text-text">The series we will set up</p>
             <ol className="mt-1.5 space-y-1.5">
               {goal.outline.map((s, i) => (
-                <li key={i} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+                <li key={i} className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-2">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong">
                     {i + 1}
                   </span>
@@ -325,7 +325,7 @@ function BuildStep({
           type="button"
           onClick={() => onBuild('vera')}
           disabled={pending}
-          className="flex flex-col gap-2 rounded-2xl border border-primary-strong bg-surface p-4 text-left ring-1 ring-primary-strong transition-colors disabled:opacity-60"
+          className="flex flex-col gap-2 rounded-card border border-primary-strong bg-surface p-4 text-left ring-1 ring-primary-strong transition-colors disabled:opacity-60"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
             {veraBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
@@ -350,7 +350,7 @@ function BuildStep({
           type="button"
           onClick={() => onBuild('manual')}
           disabled={pending}
-          className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4 text-left transition-colors hover:border-border-strong disabled:opacity-60"
+          className="flex flex-col gap-2 rounded-card border border-border bg-surface p-4 text-left transition-colors hover:border-border-strong disabled:opacity-60"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             {manualBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <PencilRuler className="h-5 w-5" aria-hidden />}

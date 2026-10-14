@@ -3,13 +3,15 @@ import { DashboardTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { CrewBody } from '@/components/frequency/members/crew/crew-body'
 
 // My Quest (/crew) — the member's season home. Module-driven (ADR-270/294): the page composes the
 // shared header grammar, then renders <PageModules>, which lays out the /crew blocks (the Season
 // Map hero, Your Journeys, Tasks, Explore, the circle Leaderboard, the finish celebration) in the
 // operator-chosen template + order. Staff arrange it from the on-page Settings → Layout panel
 // (the route is registered in lib/widgets/module-routes.ts so the panel appears here); each block
-// is a self-fetching RSC in components/widgets/quest/*. The header still needs the viewer's
+// is a self-fetching RSC in components/widgets/quest/. The header still needs the viewer's
 // crew-lead badge + circle name, so the page reads the shared getCrewContext (request-cached, so
 // the modules reuse it). notFound() when there is no signed-in member.
 
@@ -19,6 +21,10 @@ export default async function CrewPage() {
 
   // Operator-set wide header image — set from Settings → SEO & meta → Header image.
   const headerImage = await getPageHeaderImage('/crew')
+
+  // FREQUENCY (ADR-1737): the same context and the same modules, in the members kit and in the
+  // operator's Layout order. DAWN keeps the Dashboard composition below.
+  if (SITE_DESIGN === 'frequency') return <CrewBody ctx={ctx} headerImage={headerImage} />
 
   // 🔴 NO UPGRADE NUDGE ON THIS PAGE. A season-reset "convert before your standing resets" prompt
   // and a Crew preview banner both stood here, and both are gone with the `gamification_full` gate
@@ -36,7 +42,7 @@ export default async function CrewPage() {
           <img
             src={headerImage}
             alt=""
-            className="mb-6 h-auto w-full rounded-2xl border border-border"
+            className="mb-6 h-auto w-full rounded-card border border-border"
           />
         )
       }

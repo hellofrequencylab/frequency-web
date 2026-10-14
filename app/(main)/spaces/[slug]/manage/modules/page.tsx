@@ -7,7 +7,7 @@ import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { spaceFunctionDef, spaceFunctionEnabled, spaceFunctionMinRole } from '@/lib/spaces/functions'
 import { spaceModuleManifest, isModuleHideable, isModuleAdvanced } from '@/lib/admin/modules/space-modules'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { ModuleManager, type ModuleManagerRow } from './module-manager'
 
@@ -88,13 +88,13 @@ export default async function SpaceModulesPage({
   })
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Menu and features"
       description="Turn the tools this space uses on or off, set who on your team can use each one, reorder your menu, and hide what you do not need."
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
       <ModuleManager slug={space.slug} rows={rows} readOnly={readOnly} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

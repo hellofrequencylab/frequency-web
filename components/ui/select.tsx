@@ -1,6 +1,11 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import { fieldChromeShape, fieldToneNeutral } from './field'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the kit's `.input` well with the chevron in a `mu-select` wrapper; `active` is
+// the soft iridescent fill (app/themes/frequency/members-ui.css). Inlined at build; DAWN unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // The Select primitive (DAWN dawn/components/forms/Select.jsx) — a styled NATIVE dropdown for
 // toolbar filters, settings and forms. The audit counted ~267 raw `<select>` elements and no
@@ -47,7 +52,7 @@ const SELECT_TONE: Record<SelectTone, string> = {
   active: 'border-primary bg-primary-bg text-primary-strong',
 }
 
-export const selectClasses = cn(
+export const selectClasses = FREQUENCY ? 'input' : cn(
   fieldChromeShape,
   SELECT_TONE.default,
   // `cursor-pointer` is unconditional: the `disabled:cursor-not-allowed` already in the chrome
@@ -56,6 +61,7 @@ export const selectClasses = cn(
 )
 
 function selectWithTone(tone: SelectTone): string {
+  if (FREQUENCY) return tone === 'active' ? 'input mu-active' : 'input'
   if (tone === 'default') return selectClasses
   return cn(
     fieldChromeShape,
@@ -106,7 +112,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   ref,
 ) {
   return (
-    <span className={cn('relative block w-full', wrapperClassName)}>
+    <span className={cn(FREQUENCY ? 'mu-select' : 'relative block w-full', wrapperClassName)}>
       <select ref={ref} className={cn(selectWithTone(tone), className)} {...props}>
         {emptyLabel !== undefined ? <option value="">{emptyLabel}</option> : null}
         {options?.map((option) => {
@@ -135,10 +141,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={cn(
-          'pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2',
-          tone === 'active' ? 'text-primary-strong' : 'text-subtle',
-        )}
+        className={
+          FREQUENCY
+            ? undefined
+            : cn(
+                'pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2',
+                tone === 'active' ? 'text-primary-strong' : 'text-subtle',
+              )
+        }
       >
         <polyline points="6 9 12 15 18 9" />
       </svg>

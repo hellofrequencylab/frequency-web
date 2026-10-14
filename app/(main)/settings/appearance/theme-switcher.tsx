@@ -5,6 +5,7 @@ import { Check } from 'lucide-react'
 import { SELECTABLE_SKINS, type SkinId, DEFAULT_SKIN } from '@/lib/theme/skins'
 import { GENERATIONS, type GenerationId, DEFAULT_GENERATION } from '@/lib/theme/generations'
 import { OCCASIONS, type OccasionId } from '@/lib/theme/occasions'
+import { LEGACY_THEME_AXES } from '@/lib/theme/design'
 import { setThemeSkin, setThemeGeneration, setThemeOccasion } from './actions'
 
 // The member-facing theme switcher: the UI half of the previously-disconnected `fxtheme` cookie
@@ -173,35 +174,41 @@ export function ThemeSwitcher({
         </div>
       )}
 
-      <AxisCard label="Feel">
-        {GENERATIONS.map((g) => (
-          <OptionButton
-            key={g.id}
-            active={generation === g.id}
-            pending={isPending}
-            label={g.id === DEFAULT_GENERATION ? `${g.label} (default)` : g.label}
-            description={g.vibe}
-            onSelect={() => chooseGeneration(g.id)}
-          />
-        ))}
-      </AxisCard>
+      {/* Feel and the seasonal accent are DAWN-era axes; a design that overrides everything (Frequency,
+          ADR-1737) does not apply them, so it does not offer them. */}
+      {LEGACY_THEME_AXES && (
+        <>
+          <AxisCard label="Feel">
+            {GENERATIONS.map((g) => (
+              <OptionButton
+                key={g.id}
+                active={generation === g.id}
+                pending={isPending}
+                label={g.id === DEFAULT_GENERATION ? `${g.label} (default)` : g.label}
+                description={g.vibe}
+                onSelect={() => chooseGeneration(g.id)}
+              />
+            ))}
+          </AxisCard>
 
-      <AxisCard label="Seasonal accent">
-        {OCCASIONS.map((o) => (
-          <OptionButton
-            key={o.id}
-            active={occasion === o.id}
-            pending={isPending}
-            label={o.id === 'none' ? 'Off' : o.label}
-            description={
-              o.id === 'none'
-                ? 'No seasonal touch, whatever the date.'
-                : 'A light seasonal accent, pinned on regardless of the calendar.'
-            }
-            onSelect={() => chooseOccasion(o.id)}
-          />
-        ))}
-      </AxisCard>
+          <AxisCard label="Seasonal accent">
+            {OCCASIONS.map((o) => (
+              <OptionButton
+                key={o.id}
+                active={occasion === o.id}
+                pending={isPending}
+                label={o.id === 'none' ? 'Off' : o.label}
+                description={
+                  o.id === 'none'
+                    ? 'No seasonal touch, whatever the date.'
+                    : 'A light seasonal accent, pinned on regardless of the calendar.'
+                }
+                onSelect={() => chooseOccasion(o.id)}
+              />
+            ))}
+          </AxisCard>
+        </>
+      )}
 
       <p className="text-meta text-muted px-1">
         {isPending ? 'Saving your theme…' : 'Your theme follows you across Frequency on this browser.'}

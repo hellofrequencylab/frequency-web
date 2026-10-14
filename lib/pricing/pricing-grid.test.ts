@@ -399,10 +399,10 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     for (const plan of SHOWN_SPACE_PLANS) {
       const sells = offerings.find((o) => o.id === plan)!.sells
       expect(cells[plan], `take_rate @ ${plan}`).toBe(
-        sells ? `${networkTakeRateBpsForPlan(plan, ladder) / 100}%` : 'Tips only, at 0%',
+        sells ? `${networkTakeRateBpsForPlan(plan, ladder) / 100}%` : 'Tips only, no platform fee (0%), plus card processing',
       )
     }
-    expect(cells.free).toBe('Tips only, at 0%')
+    expect(cells.free).toBe('Tips only, no platform fee (0%), plus card processing')
   })
 
   it('holds the model invariants: 5%, 3%, 0%, and the rate only falls as the plan rises', () => {
@@ -527,7 +527,7 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     // personal tier. The personal rungs stay in the vector as default-deny values, so neither column
     // may quote them: what a member gets is tips, at 0%.
     expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('take_rate')
-    expect(cellsByColumn(grid, 'tips')).toEqual({ member: 'Included, 0%', crew: 'Included, 0%' })
+    expect(cellsByColumn(grid, 'tips')).toEqual({ member: 'Included, no platform fee, plus card processing', crew: 'Included, no platform fee, plus card processing' })
   })
 
   it('takes no payments on a member column: selling runs through a Space on Business', () => {
@@ -546,7 +546,7 @@ describe('member grid: Member and Crew on the personal ladder', () => {
 
   it('states tips only on both offering lines, with no personal rung quoted', () => {
     for (const o of memberOfferings(input)) {
-      expect(o.takeRate).toBe('Tips only, at 0%')
+      expect(o.takeRate).toBe('Tips only, no platform fee (0%), plus card processing')
       expect(o.sells).toBe(false)
       expect(o.networkRateBps).toBe(0)
       expect(o.takeRate).not.toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)

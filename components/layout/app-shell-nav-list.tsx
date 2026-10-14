@@ -206,7 +206,7 @@ export function NavLinkList({
                     ghostTier={item.ghostTier}
                     ghostMessage={item.ghostMessage}
                     ariaLabel={label}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
+                    className={`flex items-center gap-2.5 rounded-control px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
                     <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} aria-hidden />
                     {label}
@@ -293,7 +293,7 @@ export function NavLinkList({
                   href={href}
                   onClick={onNavigate}
                   title="Preview. Sign in or upgrade to engage"
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 rounded-control px-3 py-2 text-body-sm font-medium transition-colors ${
                     // The ACTIVE ghost row is a background on chrome, so it has the same problem
                     // its hover did: `surface-elevated` is 3/255 off the rail's own ground.
                     active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
@@ -311,7 +311,7 @@ export function NavLinkList({
                   key={href}
                   aria-disabled="true"
                   title="You don't have access to this yet"
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-control text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
                   <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}

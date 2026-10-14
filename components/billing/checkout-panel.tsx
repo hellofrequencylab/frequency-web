@@ -141,7 +141,7 @@ export default function CheckoutPanel({
         role="status"
       >
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
+          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
             <Check className="h-4 w-4 text-on-primary" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">

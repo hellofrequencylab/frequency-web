@@ -11,6 +11,7 @@ import { startGroupConversation } from '@/app/(main)/messages/actions'
 import { sendFriendRequest } from '@/app/(main)/people/friend-actions'
 import { CreateModal, cmLabel } from '@/components/create-modal'
 import { Field, Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type FriendStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted'
 
@@ -26,7 +27,7 @@ const GROUP_DM_CAP = 25
 
 export function NewGroupDMCompose({
   buttonLabel = 'New Group DM',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
   defaultRecipients = [],
   defaultName = '',
 }: {
@@ -158,7 +159,7 @@ export function NewGroupDMCompose({
         </div>
 
         {query.trim() && results.length > 0 && (
-          <div className="rounded-lg border border-border max-h-56 overflow-y-auto divide-y divide-border">
+          <div className="rounded-control border border-border max-h-56 overflow-y-auto divide-y divide-border">
             {results.map(r => (
               <ResultRow key={r.id} result={r} onAdd={() => addRecipient(r)} />
             ))}
@@ -197,13 +198,9 @@ function ResultRow({
       </div>
 
       {isFriend && (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="shrink-0 rounded-md bg-primary px-2 py-1 text-2xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-        >
+        <Button type="button" size="xs" onClick={onAdd} className="shrink-0">
           Add
-        </button>
+        </Button>
       )}
       {status === 'none' && !requested && (
         <button

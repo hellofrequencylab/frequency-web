@@ -18,6 +18,11 @@ import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { accentColor } from '@/lib/studio/accents'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { JourneyCourseBody } from '@/components/frequency/members/journey/journey-course-body'
+import { OnThisJourneyPanel, MoreJourneysPanel, GuidePanel } from '@/components/frequency/members/journey/journey-side'
+import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
+import { listPublicJourneys } from '@/lib/journey-plans'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 
 // THE COURSE HOME — where an enrolled member lands (ADR-252 J1b, split from the player). One of the
@@ -68,6 +73,113 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const phaseFocusById = Object.fromEntries(extras.phaseFocus)
   const locks = phaseLockStates(tree.phases.length, anchorStart, dripIntervalDays)
   const next = upNext(tree, locks, cycle)
+
+  // The Run's dates, one sentence (the same wording the DAWN course home prints under the meter).
+  const runLine =
+    cohort && anchorStart
+      ? cycle
+        ? `Your Run started ${new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} and repeats each year.`
+        : `Your Run runs ${new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} through ${phaseUnlockAt(
+            new Date(anchorStart),
+            tree.phases.length,
+            dripIntervalDays,
+          ).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}.`
+      : null
+
+  // ── FREQUENCY (ADR-1737). The reference's Journey page IS the enrolled view, so it lands here: the
+  //    same loader, locks and controls on design_handoff/frequency/templates/members/Journey.html.
+  //    The DAWN course home below is untouched; SITE_DESIGN is build-time, so one branch ships.
+  if (SITE_DESIGN === 'frequency') {
+    const [friends, publicJourneys] = await Promise.all([listFriendsOnJourney(r.profileId, plan.id), listPublicJourneys()])
+    const more = publicJourneys
+      .filter((j) => j.id !== plan.id)
+      .slice(0, 3)
+      .map((j) => ({ slug: j.slug, title: j.title, coverImage: j.cover_image, adoptCount: j.adopt_count }))
+    const adoptCount = (plan as { adopt_count?: number }).adopt_count ?? 0
+    return (
+      <ShareImageProvider imageUrl={plan.cover_image ?? null}>
+        <JourneyCourseBody
+          slug={slug}
+          title={plan.title}
+          summary={plan.summary ?? null}
+          adoptCount={adoptCount}
+          tree={tree}
+          locks={locks}
+          unit={unit}
+          cycle={cycle}
+          anchorLessonId={extras.anchorItemId}
+          phaseFocusById={phaseFocusById}
+          pillarByLesson={pillarByLesson}
+          phaseEvents={phaseEventsById}
+          kickoff={kickoff}
+          runLine={runLine}
+          actions={
+            <>
+              {canManageJourney && (
+                <OpenAdminBarButton
+                  scope={{ kind: 'journey', id: plan.id }}
+                  caps={Array.from(journeyCaps)}
+                  label="Manage"
+                  icon={<SlidersHorizontal className="h-4 w-4" />}
+                  className="btn sm"
+                />
+              )}
+              {canManageJourney && (
+                <OpenAdminBarButton
+                  scope={{ kind: 'journey', id: plan.id }}
+                  caps={Array.from(journeyCaps)}
+                  label={sellLabel}
+                  icon={<Tag className="h-4 w-4" />}
+                  className="btn sm"
+                />
+              )}
+              {canManageJourney && (
+                <Link href={`/journeys/${slug}`} className="btn sm">
+                  <Eye className="h-4 w-4" aria-hidden /> Sales page
+                </Link>
+              )}
+              {isAuthor && (
+                <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} adopterCount={adopterCount} />
+              )}
+              <QrShareDropdown manager={canManageJourney} className="btn sm" />
+            </>
+          }
+          side={
+            <>
+              <OnThisJourneyPanel friends={friends} adoptCount={adoptCount}>
+                {cohort && <CohortMeter progress={cohort} />}
+              </OnThisJourneyPanel>
+              <GuidePanel author={author} />
+              <MoreJourneysPanel more={more} />
+            </>
+          }
+          details={
+            <>
+              <MeetingBlock meeting={extras.meeting} meetupEvent={meetupEvent} gatheringEvent={gatheringEvent} />
+              {isRunHost && runId && (
+                <HostSchedule
+                  slug={slug}
+                  runId={runId}
+                  phases={tree.phases
+                    .map((p, i) => ({ id: p.id, label: p.title?.trim() || `${unit === 'month' ? 'Month' : 'Week'} ${i + 1}` }))
+                    .filter((p) => p.id !== 'implicit-phase')}
+                  scheduled={phaseEventsById}
+                />
+              )}
+            </>
+          }
+          leave={entry.enrolled ? <LeaveJourneyButton planId={plan.id} journeyTitle={plan.title} /> : null}
+        />
+        <JourneyDock
+          slug={slug}
+          active="course"
+          percent={tree.percent}
+          aboutHref={isAuthor ? `/journeys/${slug}` : undefined}
+          focusHref={playHref(slug, next?.lesson.id)}
+        />
+      </ShareImageProvider>
+    )
+  }
 
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
   const oStyle = plan.header_overlay_style

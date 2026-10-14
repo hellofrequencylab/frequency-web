@@ -76,7 +76,7 @@ export function CampaignDetail({
   return (
     <div className="space-y-6">
       {/* Campaign controls. */}
-      <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-4 lift-1">
+      <section className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface p-4 lift-1">
         {renaming ? (
           <>
             <Input
@@ -106,12 +106,9 @@ export function CampaignDetail({
                 <Archive className="h-3 w-3" /> Archive
               </button>
             )}
-            <button
-              onClick={() => setAdding(true)}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
+            <Button size="sm" onClick={() => setAdding(true)} className="ml-auto">
               <Plus className="h-3.5 w-3.5" /> Add entry point
-            </button>
+            </Button>
           </>
         )}
         {error && (
@@ -123,7 +120,7 @@ export function CampaignDetail({
 
       {/* Add an entry point under this campaign. */}
       {adding && (
-        <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
+        <section className="rounded-card border border-border bg-surface p-4 lift-1">
           {!template ? (
             <div>
               <div className="mb-3 flex items-center justify-between">
@@ -135,7 +132,7 @@ export function CampaignDetail({
                   <button
                     key={t.id}
                     onClick={() => setTemplate(t)}
-                    className="flex items-start gap-3 rounded-2xl border border-border bg-canvas/40 px-4 py-3 text-left transition-colors hover:border-primary/40"
+                    className="flex items-start gap-3 rounded-card border border-border bg-canvas/40 px-4 py-3 text-left transition-colors hover:border-primary/40"
                   >
                     <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
                     <span>
@@ -165,7 +162,7 @@ export function CampaignDetail({
       {/* Entry points in this campaign. */}
       <section className="space-y-3">
         {cards.length === 0 && !adding && (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
             No entry points in this campaign yet. Add one above.
           </p>
         )}

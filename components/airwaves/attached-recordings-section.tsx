@@ -9,6 +9,7 @@ import { Radio } from 'lucide-react'
 import { listAttachmentsFor, getRecordingById } from '@/lib/airwaves/recordings'
 import { RecordingBlockEmbed } from './recording-block-embed'
 import type { RecordingHostKind } from '@/lib/airwaves/types'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export async function AttachedRecordingsSection({
   hostKind,
@@ -35,7 +36,7 @@ export async function AttachedRecordingsSection({
 
   return (
     <section className="mt-6 border-t border-border pt-5">
-      <h2 className="mb-4 flex items-center gap-2 text-body-sm font-bold uppercase tracking-wide text-subtle">
+      <h2 className={capsLabel('mb-4 flex items-center gap-2 text-body-sm font-bold text-subtle')}>
         <Radio className="h-4 w-4 text-primary-strong" aria-hidden /> {title}
       </h2>
       <div className="space-y-4">

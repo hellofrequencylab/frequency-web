@@ -10,6 +10,9 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySpaces } from '@/components/frequency/site/pages/spaces/frequency-spaces'
+import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 
 export const revalidate = 3600
 
@@ -17,7 +20,9 @@ export const revalidate = 3600
 // the Article headline below so the two cannot drift (SCAN-802).
 const TITLE = 'Spaces for businesses, studios and organizations'
 
-export const metadata: Metadata = {
+// The DAWN page's metadata. Under Frequency the body is the design's page, so the metadata is that
+// page's (lib/seo/frequency-pages.ts): the same choice the body makes, from the same build-time switch.
+const DAWN_METADATA: Metadata = {
   title: TITLE,
   description:
     'Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.',
@@ -39,6 +44,9 @@ export const metadata: Metadata = {
       'Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours.',
   },
 }
+
+export const metadata: Metadata =
+  SITE_DESIGN === 'frequency' ? frequencyPageMetadata(FREQUENCY_PAGE_SEO.spaces) : DAWN_METADATA
 
 // A last-resort empty document. It is NOT a design decision: it exists only so the render path is
 // total (see the gate note below), and nothing should ever reach it.
@@ -78,6 +86,20 @@ const PUBLISHED = '2026-06-24'
 const UPDATED = '2026-09-21'
 
 export default async function SpacesPage() {
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the design's page (built under
+  // components/frequency/site/pages), and so is everything Google reads about it. The DAWN document's
+  // Article (headlined by the DAWN title) described a page this build does not render, so the
+  // Frequency branch publishes the visible breadcrumb ("For spaces") and a WebPage read from the
+  // visible h1 and lede; the body emits its own FAQPage beside its questions. Build-time constant, so
+  // the route stays ISR and a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.spaces)} />
+        <FrequencySpaces />
+      </>
+    )
+  }
   const page = await getPublishedPage('spaces')
   const published = page?.doc ?? null
   const template = getTemplate('spaces')

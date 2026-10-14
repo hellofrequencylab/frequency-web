@@ -73,7 +73,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
     })
   }
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'rounded-control border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
   const activePreset = PRESETS.find((p) => p.circles === circles && p.members === membersPerCircle && p.conn === connectednessPct)
 
   return (
@@ -81,7 +81,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       {error && <Banner tone="critical" title="Something went wrong">{error}</Banner>}
 
       {/* 1. Where */}
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-card border border-border bg-surface p-5">
         <div className="mb-2 flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><h3 className="text-body-sm font-bold text-text">1 · Where</h3></div>
         <LocationAutocomplete value={areaName} placeholder="Search a city or town…"
           onPick={(p) => { setAreaName(p.label.split(',')[0]); setLat(+p.lat.toFixed(5)); setLng(+p.lng.toFixed(5)) }} />
@@ -96,7 +96,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       </section>
 
       {/* 2. How big */}
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-card border border-border bg-surface p-5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-body-sm font-bold text-text">2 · How big</h3>
           <span className="text-meta text-subtle">≈ <b className="text-text">{estPeople}</b> people · <b className="text-text">{circles}</b> circles · <b className="text-text">{estConnections}</b> connections</span>
@@ -117,7 +117,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       </section>
 
       {/* 3. What */}
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-card border border-border bg-surface p-5">
         <h3 className="mb-2 text-body-sm font-bold text-text">3 · What it covers</h3>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {channels.map((c) => (
@@ -132,7 +132,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       </section>
 
       {/* 4. Voice */}
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-card border border-border bg-surface p-5">
         <h3 className="mb-1 text-body-sm font-bold text-text">4 · Voice</h3>
         <Checkbox
           checked={aiPolish}
@@ -149,11 +149,11 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       </section>
 
       {/* 5. Preview */}
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-card border border-border bg-surface p-5">
         <div className="flex items-center justify-between">
           <h3 className="text-body-sm font-bold text-text">5 · Preview</h3>
           <button type="button" disabled={pending || sel.size === 0} onClick={() => run(async () => setPreview(await previewArea(spec())))}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50">
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} Preview
           </button>
         </div>
@@ -192,7 +192,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       </section>
 
       {/* 6. Seed */}
-      <section className="rounded-2xl border border-primary-bg bg-primary-bg/20 p-5">
+      <section className="rounded-card border border-primary-bg bg-primary-bg/20 p-5">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-body-sm font-bold text-text">6 · Seed it</h3>
@@ -202,7 +202,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Seed this area
           </Button>
         </div>
-        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-body-sm text-success">Seeded {result.guides} guide + {result.hubs} hub · {result.circles} circles · {result.members} members · {result.posts} circle posts · {result.walls} wall/feed posts · {result.friendships} friendships · {result.dispatches} dispatches · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} cross-circle links. The ⚡ demo notice now reflects the new totals.</p>}
+        {result && <p className="mt-3 rounded-control border border-success-bg bg-success-bg/40 px-3 py-2 text-body-sm text-success">Seeded {result.guides} guide + {result.hubs} hub · {result.circles} circles · {result.members} members · {result.posts} circle posts · {result.walls} wall/feed posts · {result.friendships} friendships · {result.dispatches} dispatches · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} cross-circle links. The ⚡ demo notice now reflects the new totals.</p>}
       </section>
     </div>
   )

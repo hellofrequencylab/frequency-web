@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqEventLoading } from '@/components/frequency/members/event/event-loading'
 import { EventDetailTemplate } from '@/components/templates/event-detail-template'
 
 // Instant full-bleed loading for an Event page. Opening an event card (or the Zap menu's Event tile)
@@ -12,6 +14,8 @@ import { EventDetailTemplate } from '@/components/templates/event-detail-templat
 // phone. Composing the template means the skeleton and the destination cannot disagree about the
 // shape again.
 export default function EventDetailLoading() {
+  // Under Frequency (build-time) the wait is the Event body's own split card (event-loading.tsx).
+  if (SITE_DESIGN === 'frequency') return <FqEventLoading />
   return (
     <EventDetailTemplate
       // Mirrors the live band exactly — full bleed and square-cornered on a phone, inset and

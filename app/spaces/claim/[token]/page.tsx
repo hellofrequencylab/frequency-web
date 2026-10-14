@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Suspense, cache } from 'react'
 import { spacePageFonts } from '@/lib/theme/site-style'
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
 import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
@@ -23,6 +22,8 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
+import { DetailTemplate, PageHero } from '@/components/templates'
+import { heroOverlayForScrim } from '@/lib/layout/cover-scrim'
 import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
@@ -241,12 +242,6 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   // would show a bare logo on its profile and a plated one on its claim page.
   const logoBackdrop = readLogoBackdrop(space.preferences)
   const heroOnInk = coverScrim !== 'blend'
-  const heroScrimGradient =
-    coverScrim === 'none'
-      ? null
-      : heroOnInk
-        ? 'from-ink/80 via-ink/30 to-transparent'
-        : 'from-canvas via-canvas/40 to-transparent'
 
   // The public grid: read the operator's saved arrangement (preferences.profileLayout) and resolve it the
   // SAME way the live visitor page does (parseEntityLayout -> resolveRows), fail-safe to the kind starter.
@@ -311,18 +306,23 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               Original note follows: the operator's Hero-size cover
               with the identity (logo + eyebrow + name + tagline) overlaid on a bottom scrim. Visitor view:
               no Follow / owner actions. Mirrors layout.tsx `heroCoverNode`. */}
-          <header className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH)}>
-            <Image
-              src={coverSrc}
-              alt=""
-              fill
-              sizes="(max-width: 1024px) 100vw, 1344px"
-              preload
-              className="object-cover"
-              style={{ objectPosition: coverFocus }}
-            />
-            {heroScrimGradient && <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />}
-            <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
+          {/* THE SHELL (design-switch program): the claim page composes DetailTemplate, the same shell the
+              live Space profile renders, with the cover lockup in its `band` slot (the band owns the single
+              <h1>). DetailTemplate's divider is the Space-profile spacer on /spaces/* (PageAdminBar), so
+              the gap above the body is the live page's rhythm and the body drops its own top pad. */}
+          <DetailTemplate
+            title={hero.heading}
+            band={
+              // The canonical PageHero (PROG-P5, ADR-1579), the same composition the live Space profile's
+              // heroCoverNode uses: PageHero owns the cover image, the scrim through the one cover-scrim
+              // mapping and the band chrome; `frame` carries the tier height and `lockup` the identity row.
+              <PageHero
+                title={hero.heading}
+                coverImage={coverSrc}
+                coverFocus={coverFocus}
+                overlayStyle={heroOverlayForScrim(coverScrim)}
+                frame={{ className: cn('rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH) }}
+                lockup={
               <div className="flex min-w-0 items-end gap-4">
                 <div className="shrink-0">
                   <BrandAnchor name={name} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
@@ -341,7 +341,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   <h1
                     className={cn(
                       'font-section min-w-0 break-words text-display-h3 font-bold leading-tight',
-                      heroOnInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
+                      heroOnInk ? 'text-on-ink text-shadow-on-photo' : 'text-text',
                     )}
                   >
                     {hero.heading}
@@ -353,8 +353,10 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   )}
                 </div>
               </div>
-            </div>
-          </header>
+                }
+              />
+            }
+          >
 
           {/* The REAL public profile body — byte-for-byte the visitor render, minus the shell chrome. */}
           {/* PAGE-FRAMEWORK section 5: never block the shell on a slow await. SpaceProfileModules
@@ -367,11 +369,12 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               (`@container/profile`) is inside the Suspense CHILD, so it does not exist while the
               fallback is showing. Without this the skeleton was always a tall single column and the
               page visibly snapped to two when the body streamed in. */}
-          <div className="@container py-8">
+          <div className="@container pb-8">
             <Suspense fallback={<ProfileBodySkeleton />}>
               <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
             </Suspense>
           </div>
+          </DetailTemplate>
           </main>
         </div>
 

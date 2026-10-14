@@ -36,7 +36,7 @@ export function DefaultGenerationPicker({ current }: { current: GenerationId }) 
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-body-sm font-semibold text-text">
           Feel

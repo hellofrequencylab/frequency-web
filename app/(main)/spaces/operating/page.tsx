@@ -149,7 +149,7 @@ function NoSpacesSplash() {
       <ul className="mt-8 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
         {SPACE_BENEFITS.map(({ Icon, title, body }) => (
           <li key={title} className="flex gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
               <Icon className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">

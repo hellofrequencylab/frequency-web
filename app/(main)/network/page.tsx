@@ -48,6 +48,9 @@ import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 import { NetworkTabs } from '@/components/people/network-tabs'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -409,7 +412,7 @@ export default async function CommunityPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -491,7 +494,7 @@ export default async function CommunityPage({
                 <EmptyState
                   icon={MapPin}
                   title={`No circles near ${placeParam ?? 'you'} yet`}
-                  description="We’re just getting started here. Be the first to start a circle for this area. Others are looking too."
+                  description="We’re just getting started here. You could start the first Circle for this area."
                 />
               ) : (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
@@ -514,7 +517,7 @@ export default async function CommunityPage({
                   <Link
                     key={l.id}
                     href={l.href ?? '#'}
-                    className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
+                    className="flex items-center gap-3 rounded-card border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none">
                       {getInitials(l.displayName)}
@@ -581,6 +584,12 @@ export default async function CommunityPage({
         </aside>
       </div>
       </IndexTemplate>
+      {/* Frequency: the Members hub's "More in" row. DAWN keeps its tab strip and Invite as they were. */}
+      {SITE_DESIGN === 'frequency' && (
+        <Suspense fallback={null}>
+          <HubLinks title="Members" links={(v) => hubLinks('/network', v)} />
+        </Suspense>
+      )}
     </div>
   )
 }

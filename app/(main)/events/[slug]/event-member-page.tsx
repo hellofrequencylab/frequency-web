@@ -94,6 +94,11 @@ import { nextOccurrence, recurrenceLineFor } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqEventBody } from '@/components/frequency/members/event/event-body'
+
+/** The Event.html kit anatomy for the event page under Frequency. Off by owner ruling (2026-10-14). */
+const FQ_EVENT_KIT_LAYOUT = false
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -2001,9 +2006,10 @@ export default async function EventDetailPage({
   })
 
   // Event structured data (schema.org) for SEO + AI answer engines, built from the shared
-  // eventSchema helper so the canonical /events/<slug> page emits the same richer, city-level
-  // schema as /discover (offers/validFrom/availability included; the exact venue is NEVER
-  // leaked — city-level only, matching this page's own city-only meta description per ADR-186).
+  // eventSchema helper so the canonical /events/<slug> page emits the same schema as the public
+  // page. The exact venue rides along ONLY when the HOST left the address visible (ADR-1743): the
+  // event's own `hide_address` flag decides, never this viewer's registration, so a registered
+  // member's copy of the page publishes exactly what an anonymous one does.
   const eventJsonLd = eventSchema({
     id: event.id,
     slug: event.slug,
@@ -2046,10 +2052,241 @@ export default async function EventDetailPage({
     // at the door (LIVE-314), so the price is a fact about the event rather than an offer we make,
     // and `undefined` there leaves the Offer exactly as it was.
     ...(ticketsMode ? { payouts_ready: hostPayoutReady } : {}),
+    hide_address: extra?.hide_address ?? null,
+    venue:
+      extra && extra.hide_address === false && attendanceMode !== 'online'
+        ? (() => {
+            const point = pointFromGeog(extra.geog)
+            return {
+              name: extra.venue_name,
+              street: extra.street,
+              postal_code: extra.postal_code,
+              lat: point?.lat ?? null,
+              lng: point?.lng ?? null,
+            }
+          })()
+        : null,
   })
 
   // (`hostAskSpaces` — the ADR-911 host handshake's Space side — is resolved in the social wave
   // above, under the same `myProfileId && !canManage` gate. See the comment there.)
+
+  // THE FREQUENCY BODY (ADR-1737 switch, templates/members/Event.html). Same reads, same gates, same
+  // join box: only the placement changes. Build-time constant, so the DAWN return below is untouched.
+  //
+  // OFF (owner, 2026-10-14): "very similar layout to the original in the repo". Under Frequency the
+  // event page keeps the original EventDetailTemplate layout below, styled by the Frequency primitives
+  // and app/themes/frequency/event-detail.css, instead of the Event.html kit anatomy. The kit body is
+  // kept, switched off, so the decision can be reversed in one line.
+  if (SITE_DESIGN === 'frequency' && FQ_EVENT_KIT_LAYOUT) {
+    const cadenceLine =
+      event.recurrence_type !== 'none' || event.parent_event_id
+        ? [
+            recurrenceLineFor(event) ?? 'Part of a recurring series',
+            nextRecurrence
+              ? `Next: ${nextRecurrence.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : null
+    return (
+      <FqEventBody
+        structuredData={
+          <JsonLd
+            data={[
+              eventJsonLd,
+              breadcrumbSchema([
+                { name: 'Events', path: '/events' },
+                { name: event.title, path: `/events/${event.slug}` },
+              ]),
+            ]}
+          />
+        }
+        notices={
+          <>
+            {event.is_cancelled && (
+              <div className="panel" role="status">
+                <span className="t1">This event has been cancelled.</span>
+              </div>
+            )}
+            {claimed === '1' && isHost && (
+              <div className="panel" role="status">
+                <span className="t1">It is yours. You are the host now, so you can edit anything on this page.</span>
+              </div>
+            )}
+            {ticketedCents !== null && (
+              <div className="panel" role="status">
+                <span className="t1">
+                  You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
+                </span>
+              </div>
+            )}
+            {myCohostInvite && !isHost && (
+              <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
+            )}
+          </>
+        }
+        bodyLead={
+          claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token ? (
+            <div className="soft row wrap">
+              <span className="grow stack">
+                <span className="h3">Is this your event?</span>
+                <span className="t2">
+                  Frequency built this page so people nearby could find it. Claim it to manage RSVPs, edit the
+                  details, and run it from your own account. It takes one tap.
+                </span>
+              </span>
+              {myProfileId ? (
+                <ClaimButton token={extra.claim_token} size="lg" />
+              ) : (
+                <Link
+                  className="btn pa lg"
+                  href={`/join?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
+                >
+                  Claim This Event
+                </Link>
+              )}
+            </div>
+          ) : isClaimable && !canManage ? (
+            <ClaimRequestCta eventId={event.id} organizerName={extra?.organizer_name ?? null} />
+          ) : hostAskSpaces.length > 0 ? (
+            <HostRequestCta eventId={event.id} spaces={hostAskSpaces} />
+          ) : null
+        }
+        heroUrl={heroUrl}
+        modeLabel={mode.label}
+        kicker={
+          [spaceHost?.name ?? event.host?.display_name ?? extra?.organizer_name, scopeName].filter(Boolean).join(' · ') ||
+          'Event'
+        }
+        title={
+          canManage ? (
+            <InlineText
+              value={event.title}
+              save={updateEventField.bind(null, event.id, slug, 'title')}
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title-lg font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            />
+          ) : (
+            event.title
+          )
+        }
+        whenLine={whenLine}
+        where={
+          isOnline ? (
+            'Online'
+          ) : headerLocation ? (
+            <>
+              {mapsHref ? (
+                <a href={mapsHref} target="_blank" rel="noopener noreferrer">
+                  {headerLocation}
+                </a>
+              ) : (
+                headerLocation
+              )}
+              {addressHidden && ' · Exact address shared after you RSVP'}
+            </>
+          ) : null
+        }
+        cadence={cadenceLine}
+        hostedBy={
+          spaceHost ? (
+            <>
+              Hosted by <Link href={`/spaces/${spaceHost.slug}`}>{spaceHost.name}</Link>
+              {collaboratorNames ? ` with ${collaboratorNames}` : null}
+              <VenueCredit venue={venueSpace} />
+              {showsOrganizerCredit(event.host) ? ` · organized by ${event.host!.display_name}` : null}
+            </>
+          ) : event.host ? (
+            <>
+              Hosted by <HostHovercard host={event.host} />
+              {collaboratorNames ? ` with ${collaboratorNames}` : null}
+              <VenueCredit venue={venueSpace} />
+            </>
+          ) : isPostedEvent ? (
+            `${extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}Organizer not on Frequency yet`
+          ) : null
+        }
+        postedBy={
+          postedBy ? (
+            <>
+              Posted by <Link href={`/people/${postedBy.handle}`}>{postedBy.display_name}</Link>
+            </>
+          ) : null
+        }
+        going={goingRsvps.length}
+        goingPeople={goingMembers.map(({ profile }) => ({
+          id: profile.id,
+          name: profile.display_name,
+          handle: profile.handle,
+          avatarUrl: profile.avatar_url,
+        }))}
+        namesVisible={isCrew}
+        fromYourCircles={fromYourCircles}
+        checkInZaps={checkInEnabled && !event.is_cancelled ? ZAP_AMOUNTS.event_attend : null}
+        joinBox={event.is_cancelled ? null : joinActions}
+        checkIn={
+          <EventCheckInSurface
+            eventId={event.id}
+            cancelled={!!event.is_cancelled}
+            checkInEnabled={checkInEnabled}
+            startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
+            windowOpen={checkInWindow}
+            signedIn={!!myProfileId}
+            isGoing={isGoing || ownsTicket}
+            alreadyCheckedIn={alreadyCheckedIn}
+            zaps={ZAP_AMOUNTS.event_attend}
+            doorNote={readEventSpecialInstructions(extra?.details)}
+          />
+        }
+        controls={
+          <>
+            <EventShareButton
+              slug={event.slug}
+              title={event.title}
+              sharerProfileId={myProfileId}
+              hostClaimUrl={
+                isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
+                  ? `${SITE_URL}/events/claim/${extra.claim_token}`
+                  : null
+              }
+            />
+            {canManage && (
+              <>
+                <Link className="btn sm" href={`/events/${event.slug}/manage`}>
+                  Manage
+                </Link>
+                <OpenAdminBarButton
+                  scope={{ kind: 'event', id: event.id }}
+                  caps={Array.from(eventCaps)}
+                  label="Edit"
+                  icon={<Settings className="h-4 w-4" />}
+                  className="btn sm"
+                />
+              </>
+            )}
+          </>
+        }
+        description={event.description}
+        canManage={canManage}
+        seriesRail={
+          <>
+            <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} />
+            <EventGallery images={galleryUrls.slice(1)} />
+          </>
+        }
+        belonging={
+          <Suspense fallback={<EventBelongingSkeleton />}>
+            <EventBelonging
+              eventId={event.id}
+              circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
+              canManage={canManage}
+            />
+          </Suspense>
+        }
+      />
+    )
+  }
 
   return (
     <EventDetailTemplate
@@ -2160,7 +2397,7 @@ export default async function EventDetailPage({
           // No cover: a designed placeholder, not a blank box. Mirrors the
           // circle-card no-cover fill (soft DAWN gradient + centered icon) and
           // leads with the event's date so the slot still says something.
-          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-auto sm:w-full items-center justify-center overflow-hidden rounded-none sm:rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
+          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-auto sm:w-full items-center justify-center overflow-hidden rounded-none sm:rounded-card bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
             <div className="flex flex-col items-center gap-1 text-center">
               <CalendarDays className="h-7 w-7 opacity-80" />
               <span className="text-display-h3 font-bold leading-none">
@@ -2465,7 +2702,7 @@ export default async function EventDetailPage({
       // one-tap claim; signed-out → the host setup funnel, which returns here to finish.
       bodyLead={
         claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token ? (
-          <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-5 flex flex-col gap-4 rounded-card border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-body-lg font-bold text-text">
                 <Zap className="h-5 w-5 shrink-0 text-primary" aria-hidden /> Is this your event?

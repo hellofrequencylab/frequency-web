@@ -17,6 +17,10 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 // would break hydration site-wide. The full inline-script XSS mile is the tracked
 // follow-up; everything around it is enforced today.
 const isDev = process.env.NODE_ENV === 'development'
+// The deploy's design (ADR-1737), read the way lib/theme/design.ts reads it: only the exact id
+// 'frequency' is Frequency. Two merged pages land on Frequency-only routes (/features, /vision), so
+// their redirects split on it (lib/marketing/merged-routes.ts keeps the in-app links on the same split).
+const FREQUENCY_DESIGN = process.env.NEXT_PUBLIC_SITE_DESIGN === 'frequency'
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -378,6 +382,15 @@ const nextConfig: NextConfig = {
         destination: '/help/sharing/dispatches',
         permanent: true,
       },
+      // A Space's CRM is Community Resonance (docs/NAMING.md, CRM / messaging surfaces), so its
+      // help article left the `space-crm` slug (LIVE-915). Permanent (308) on the Dispatches
+      // pattern above: the old URL was linked from two articles and may sit in support replies
+      // and `help_chunks` text. Shadows nothing: the source file is renamed.
+      {
+        source: '/help/spaces/space-crm',
+        destination: '/help/spaces/community-resonance',
+        permanent: true,
+      },
       // A public practice was submitted to Search Console (2026-09-05) under the slug
       // `untitled-practice-2` while its title had said "Daily Hypnosis" since July (LIVE-188).
       // The slug was renamed in the database on 2026-09-06; this rule keeps the submitted URL
@@ -467,6 +480,11 @@ const nextConfig: NextConfig = {
       // keeps its own route (the ruling says so); a wildcard would take it out
       // (lib/marketing/redirect-shadow.test.ts fails if one is added).
       { source: '/library', destination: '/practices', permanent: true },
+      // Default Funnel merged into Funnels (owner ruling 2026-10-14, ADR-1746): the default flow's
+      // live-preview editor is now the Default Funnel TAB of /pages/sequences, and its old page is
+      // deleted, so this shadows nothing. A 301 because the ruling names one; an operator bookmark
+      // and any stored `admin_header` row still naming /pages/splash land on the same editor.
+      { source: '/pages/splash', destination: '/pages/sequences?tab=default', statusCode: 301 },
       // Funnels rename (ADR-1090): the sign-up feature is Funnels and its routes moved to /join.
       // Old links are IN THE WILD and cannot be rewritten — QR codes on posters, shared splash
       // links, and CTAs in sent emails all point at /beta/<slug> and /onboarding/beta — so all
@@ -478,7 +496,8 @@ const nextConfig: NextConfig = {
       // beta" for a window the owner closed on 2026-08-17, and under the core model free is
       // PERMANENT, so its premise was gone rather than just its dates. It was also the
       // second-highest priority URL in the sitemap, so an inbound link would 404 without this.
-      { source: '/beta', destination: '/start', permanent: true },
+      // Re-pointed straight at /join when /start merged into it (2026-10-14): one hop, not two.
+      { source: '/beta', destination: '/join', permanent: true },
       { source: '/beta/:slug', destination: '/join/:slug', permanent: true },
       { source: '/onboarding/beta', destination: '/join', permanent: true },
       // The retired operator-calendar beta door was a product route, not a Funnel slug.
@@ -572,7 +591,8 @@ const nextConfig: NextConfig = {
       { source: '/lead-funnel-kit', destination: '/tools-for-community-builders', permanent: true },
       { source: '/life-after-the-feed', destination: '/loneliness', permanent: true },
       { source: '/meet-people-new-city', destination: '/friendship-as-an-adult', permanent: true },
-      { source: '/practice', destination: '/the-quest', permanent: true },
+      // Re-pointed past /the-quest (merged 2026-10-14), so the old slug takes one hop, not two.
+      { source: '/practice', destination: FREQUENCY_DESIGN ? '/features#f-zaps' : '/help/the-quest', permanent: FREQUENCY_DESIGN },
       { source: '/social-life-without-drinking', destination: '/how-to-be-more-social', permanent: true },
       { source: '/spread', destination: '/the-community', permanent: true },
       { source: '/what-is-a-third-space', destination: '/loneliness', permanent: true },
@@ -632,6 +652,43 @@ const nextConfig: NextConfig = {
       { source: '/spaces/:slug/settings/enroll', destination: '/spaces/:slug/settings/offerings#enroll', permanent: false },
       // 🔴 EXACT, never :path* — services/new/page.tsx is a live sibling.
       { source: '/spaces/:slug/settings/services', destination: '/spaces/:slug/settings/shop', permanent: false },
+
+      // ── Public page cuts (owner rulings 2026-10-14) ───────────────────────────────────────────
+      // /stories is HIDDEN, not retired: the page is a stub until three real stories exist. A 302
+      // (statusCode, not `permanent: false`'s 307, because the ruling names a 302) keeps it out of
+      // every cache, and the route file stays so it can come back by deleting this one rule.
+      // lib/marketing/redirect-shadow.test.ts lists it as PARKED, the one shadow it allows.
+      { source: '/stories', destination: '/the-community', statusCode: 302 },
+      // /the-quest MERGED into the Features page's Zaps card (owner ruling 2026-10-14). The route file
+      // is deleted; printed QR codes (lib/qr/destinations.ts) keep working through this rule. /features
+      // is Frequency-only, so a DAWN build sends it to the Quest help category with a temporary 307.
+      FREQUENCY_DESIGN
+        ? { source: '/the-quest', destination: '/features#f-zaps', permanent: true }
+        : { source: '/the-quest', destination: '/help/the-quest', permanent: false },
+      // /the-lab MERGED into /vision (owner ruling 2026-10-14): its dated plan and FAQ moved there first.
+      // The printed QR destination keeps working through this rule. /vision is Frequency-only, so a DAWN
+      // build sends it to /about with a temporary 307.
+      FREQUENCY_DESIGN
+        ? { source: '/the-lab', destination: '/vision', permanent: true }
+        : { source: '/the-lab', destination: '/about', permanent: false },
+      // /start (the Build / Practice / Spread picker) MERGED into /join, the one front door, whose own
+      // picker replaced it. EXACT source: /start/[flow] stays live, because printed QR codes and the
+      // lead flows (lib/entry-points/templates.ts) point at /start/welcome, /start/event, /start/partner.
+      { source: '/start', destination: '/join', permanent: true },
+      // /discover/places MERGED into /discover/cities: one town template, which now renders any town
+      // with something public (noindex below the local index floor) as well as the density cities, and
+      // one index carrying both lists. The slug is the same citySlug() form on both sides.
+      { source: '/discover/places', destination: '/discover/cities', permanent: true },
+      { source: '/discover/places/:citySlug', destination: '/discover/cities/:citySlug', permanent: true },
+      // /discover/partners MERGED into /discover/spaces (owner ruling 2026-10-14): the partners are a
+      // section of the Spaces directory now (#partners, Frequency body). A partner carries no link to a
+      // Space in the schema (partners has no space_id), so each partner page lands on the directory.
+      { source: '/discover/partners', destination: '/discover/spaces', permanent: true },
+      { source: '/discover/partners/:slug', destination: '/discover/spaces', permanent: true },
+      // Two comparisons RETIRED (owner ruling 2026-10-14): they framed Frequency as a link-in-bio and a
+      // booking tool, off both wings. /vs/[slug] reads the registry, so without these they would 404.
+      { source: '/vs/linktree', destination: '/vs', permanent: true },
+      { source: '/vs/calendly', destination: '/vs', permanent: true },
     ]
   },
   images: {

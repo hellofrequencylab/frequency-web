@@ -4,17 +4,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { PageHero, Section, BetaCTA, Button } from '@/components/marketing/marketing-ui'
+import { PageHero, Section, BetaCTA, Button, cardClasses } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
 import { COMPARISONS, comparisonPath } from '@/lib/marketing/comparisons'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCompareIndex } from '@/components/frequency/site/pages/funnel/frequency-compare'
 
 export const revalidate = 3600
 
 const TITLE = 'Frequency vs the tools you know'
 const DESCRIPTION =
-  'How Frequency compares to Partiful, Linktree, Calendly, Eventbrite, and Mighty Networks: a free local Circle that keeps meeting in person, with 0% on your own bookings. Here is every comparison.'
+  'How Frequency compares to Meetup, Facebook Groups, Partiful, Eventbrite, and Mighty Networks: a free local Circle that keeps meeting in person, with 0% on your own bookings. Here is every comparison.'
 
 export function generateMetadata(): Metadata {
   const canonical = '/vs'
@@ -39,6 +41,8 @@ export function generateMetadata(): Metadata {
 }
 
 export default function ComparisonsIndexPage() {
+  // The Frequency design (ADR-1737): the same registry, links and schema, in the design's body.
+  const frequency = SITE_DESIGN === 'frequency'
   return (
     <>
       <JsonLd
@@ -59,6 +63,14 @@ export default function ComparisonsIndexPage() {
         ]}
       />
 
+      {frequency ? <FrequencyCompareIndex /> : <ComparisonsIndexDawn />}
+    </>
+  )
+}
+
+function ComparisonsIndexDawn() {
+  return (
+    <>
       <PageHero
         eyebrow="Compare"
         title={
@@ -75,7 +87,7 @@ export default function ComparisonsIndexPage() {
             <Link
               key={c.slug}
               href={comparisonPath(c.slug)}
-              className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 lift-1 transition-colors hover:border-primary"
+              className={cardClasses({ tone: 'feature', pad: 'px-6 py-5', className: 'group flex items-center justify-between gap-4 transition-colors hover:border-primary' })}
             >
               <span>
                 <span className="block text-body-lg font-semibold text-text">

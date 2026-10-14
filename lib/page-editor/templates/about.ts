@@ -44,10 +44,10 @@ export const data: Data = {
         facts: [
           { value: '2020', label: 'A cliff at dawn' },
           { value: '1,000', label: 'Strangers at sunrise' },
-          { value: '0%', label: 'On your own bookings' },
+          { value: '0%', label: 'On your own bookings, plus card processing' },
         ],
         ctaPrimaryLabel: BETA_CTA_LABEL,
-        ctaPrimaryHref: '/start',
+        ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: '',
         ctaSecondaryHref: '',
         note: '',
@@ -130,7 +130,7 @@ export const data: Data = {
           {
             icon: 'HandHeart',
             title: 'One honest price',
-            body: 'Zero percent on your own bookings, always, and taking money is never behind a plan. We earn a share only of the business the network sends you. One price, no surprise invoices, and your data leaves with you any month you want.',
+            body: "Hosting is free, and selling starts at Business. Zero percent on your own people, always, plus card processing. We earn a small fee only on a customer the network introduces, once. One price, no surprise invoices, and your data leaves with you any month you want.",
           },
           {
             icon: 'Home',

@@ -125,3 +125,27 @@ describe('every theme draws the same sections (ADR-1727, ADR-1728)', () => {
   })
 })
 
+describe('section tone, width and anchor (Frequency page editor, HANDOFF-PAGE-EDITOR.md §6)', () => {
+  const doc = (desktop?: Record<string, unknown>): Data => ({ root: desktop ? { props: { websiteLayout: { faq: { desktop } } } } : {}, content: [{ type: 'SpaceFAQ', props: { id: 'faq', heading: 'Real questions' } }] })
+  it('renders exactly as before when none is set', () => {
+    const html = render(doc())
+    expect(html).not.toContain('data-site-tone')
+    expect(html).not.toMatch(/<div id="/)
+    expect(html).not.toContain('max-width:760px')
+    expect(render(doc({}))).toBe(html)
+  })
+  it('gives the section its tone in the theme colours, its width and its anchor', () => {
+    const html = render(doc({ tone: 'ink', width: 'narrow', anchor: 'Before you come' }))
+    expect(html).toContain('data-site-tone="ink"')
+    expect(html).toContain('--color-text:var(--color-on-ink, var(--color-canvas))')
+    expect(html).toContain('.mw-wrap{max-width:760px!important}')
+    expect(html).toContain('id="before-you-come"')
+  })
+  it('ignores values outside the design set', () => {
+    const html = render(doc({ tone: 'neon', width: 'huge', anchor: '!!!' }))
+    expect(html).not.toContain('data-site-tone')
+    expect(html).not.toMatch(/<div id="/)
+    expect(html).not.toContain('.mw-wrap{max-width')
+  })
+})
+

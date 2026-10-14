@@ -26,7 +26,8 @@ export function frontDoorRedirect({
 }: {
   pathname: string
   signedIn: boolean
-  /** True when the URL carries `?preview` — the page editor's "View home" door. */
+  /** True when the URL carries `?preview` (the page editor's "View home" door) or `?home` (the member
+   *  menu's Home link, components/frequency/members/shell/nav.ts MEMBER_HOME_HREF). */
   preview: boolean
 }): string | null {
   // ONLY the root. `/about` and every other marketing page stays readable signed in: a member
@@ -34,8 +35,9 @@ export function frontDoorRedirect({
   if (pathname !== '/') return null
   // A visitor (and every crawler, which is never signed in) gets the splash, unchanged.
   if (!signedIn) return null
-  // The operator's way through. `?preview` is not invented here — it is the href
-  // app/(main)/pages/home/page.tsx already uses for "View home".
+  // The ways through, both chosen on purpose: `?preview` is the href app/(main)/pages/home/page.tsx
+  // uses for "View home", and `?home` is the member menu's Home link (owner, 2026-10-13: a signed-in
+  // member can always get back to Home). Opening the site bare still lands on the Feed.
   if (preview) return null
   return '/feed'
 }

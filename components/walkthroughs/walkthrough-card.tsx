@@ -6,6 +6,7 @@ import type { Walkthrough } from '@/lib/walkthroughs'
 import { WalkthroughLightbox } from '@/components/walkthroughs/walkthrough-lightbox'
 import { dismissWalkthroughAction } from '@/app/(main)/walkthrough-actions'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Walkthroughs Phase B — the gentle, dismissible in-feed card. NOT an auto-popup: it
 // sits quietly in the feed with the walkthrough's name + description, a "Start" that
@@ -30,13 +31,13 @@ export function WalkthroughCard({ walkthrough }: { walkthrough: Walkthrough }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <div className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Walkthrough</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>Walkthrough</p>
             <h3 className="mt-0.5 text-body font-bold text-text">{walkthrough.name}</h3>
             {walkthrough.description && (
               <p className="mt-1 text-body-sm leading-relaxed text-muted">{walkthrough.description}</p>

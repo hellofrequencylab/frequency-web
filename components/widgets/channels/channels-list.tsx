@@ -211,7 +211,7 @@ export async function ChannelsList() {
                 <a
                   key={domain.id}
                   href={`#channel-${domain.slug}`}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-surface-elevated transition-colors"
+                  className="flex items-center gap-2.5 rounded-control px-2 py-1.5 hover:bg-surface-elevated transition-colors"
                 >
                   <span className="flex-1 truncate text-body-sm font-medium text-text">{domain.name}</span>
                   <span className="text-meta tabular-nums text-subtle">{topics.length}</span>
@@ -332,7 +332,7 @@ function ChannelCard({
             alt={channel.name}
             width={48}
             height={48}
-            className="h-12 w-12 rounded-2xl object-cover"
+            className="h-12 w-12 rounded-card object-cover"
             style={channelCoverFocusStyle(readChannelCoverFocus(channel.theme))}
           />
         ) : (

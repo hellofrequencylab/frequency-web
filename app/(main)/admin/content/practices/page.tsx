@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/admin/guard'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 
@@ -24,7 +24,7 @@ export default async function AdminContentPracticesPage() {
   await requireAdmin('host', { staff: 'community' })
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow="Content"
       title="Practices"
       description="The practice library, ranked by real usage. Filter by any signal, then tune what is public, what is a starter template, and what gets featured."
@@ -32,6 +32,6 @@ export default async function AdminContentPracticesPage() {
       actions={<NewPracticeButton label="Add practice" />}
     >
       <PageModules route="/admin/content/practices" />
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }

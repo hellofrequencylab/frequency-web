@@ -217,7 +217,7 @@ export function BlockList({
                   {blockSummary(item) && (
                     <span className="mt-0.5 block truncate text-meta text-muted">{blockSummary(item)}</span>
                   )}
-                  <span className="mt-2 block rounded-lg border border-border bg-surface">
+                  <span className="mt-2 block rounded-control border border-border bg-surface">
                     <BlockPreview config={config} item={item} metadata={metadata} />
                   </span>
                 </span>

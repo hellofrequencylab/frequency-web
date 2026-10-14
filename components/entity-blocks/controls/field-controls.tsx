@@ -27,6 +27,7 @@ import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/field'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -47,7 +48,7 @@ import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 export function ControlRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className={capsLabel('shrink-0 text-2xs font-semibold text-muted')}>{label}</span>
       <div className="flex min-w-0 items-center justify-end">{children}</div>
     </div>
   )
@@ -69,7 +70,7 @@ export function ControlGroup({
       open={defaultOpen}
       className="border-t border-border pt-2 [&_summary::-webkit-details-marker]:hidden"
     >
-      <summary className="cursor-pointer select-none text-2xs font-semibold uppercase tracking-wide text-muted">
+      <summary className={capsLabel('cursor-pointer select-none text-2xs font-semibold text-muted')}>
         {label}
       </summary>
       <div className="mt-2 space-y-2">{children}</div>
@@ -84,7 +85,7 @@ export function ControlGroup({
 export function ControlStack({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className={capsLabel('block text-2xs font-semibold text-muted')}>{label}</span>
       <div>{children}</div>
     </div>
   )
@@ -433,11 +434,11 @@ export function PickerControl({
   if (items.length === 0) {
     return (
       <div className="space-y-1.5">
-        <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+        <span className={capsLabel('block text-2xs font-semibold text-muted')}>{label}</span>
         {createHref ? (
           <Link
             href={createHref}
-            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-meta font-semibold text-primary-strong transition-colors hover:border-primary"
+            className="inline-flex items-center gap-1 rounded-control border border-dashed border-border px-2.5 py-2 text-meta font-semibold text-primary-strong transition-colors hover:border-primary"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> {createLabel ?? 'Create the first one'}
           </Link>
@@ -462,7 +463,7 @@ export function PickerControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+        <span className={capsLabel('text-2xs font-semibold text-muted')}>{label}</span>
         <span className="text-3xs text-muted">{showingAll ? 'Showing all' : `${chosen.size} chosen`}</span>
       </div>
       <ul className="space-y-1" role="group" aria-label={label}>
@@ -474,7 +475,7 @@ export function PickerControl({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(it.id)}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
+                className={`flex min-w-0 flex-1 items-center gap-2 rounded-control border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
                   on
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
@@ -562,7 +563,7 @@ export function IconPicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:border-border-strong"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-border bg-surface text-text transition-colors hover:border-border-strong"
       >
         {value ? <BlockIcon name={value} size={20} /> : <Plus className="h-4 w-4 text-subtle" aria-hidden />}
       </button>

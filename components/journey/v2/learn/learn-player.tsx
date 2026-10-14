@@ -9,6 +9,7 @@
 // server and handed in as a node map, the RSC interleaving pattern, so this client bundle stays
 // lean). Minimal client state: selected lesson + open phases; progress + lock come from the server.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition, useMemo, useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor, CalendarClock, Layers, X } from 'lucide-react'
@@ -118,7 +119,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
               type="button"
               onClick={() => setPicked(i)}
               disabled={correct}
-              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-body-sm transition-colors ${state}`}
+              className={`flex w-full items-center gap-2.5 rounded-control border px-3 py-2 text-left text-body-sm transition-colors ${state}`}
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-current text-2xs font-bold">
                 {String.fromCharCode(65 + i)}
@@ -365,7 +366,7 @@ export function LearnPlayer({
                         {/* The "Week N" eyebrow only when the phase is a real, titled phase (a flat/
                             legacy journey has one untitled implicit phase — no week label there). */}
                         {p.title && p.title.trim().toLowerCase() !== `${unit} ${pi + 1}` && (
-                          <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                          <span className={capsLabel('block text-2xs font-semibold text-muted')}>
                             {Unit} {pi + 1}
                           </span>
                         )}
@@ -406,14 +407,14 @@ export function LearnPlayer({
                         {p.modules.map((m) => (
                           <div key={m.id}>
                             {m.title && (
-                              <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-muted">{m.title}</p>
+                              <p className={capsLabel('px-2 pb-0.5 pt-1 text-2xs font-semibold text-muted')}>{m.title}</p>
                             )}
                             <ul className="space-y-0.5">
                               {m.lessons.map((l) => {
                                 if (locked) {
                                   return (
                                     <li key={l.id}>
-                                      <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm text-subtle opacity-70">
+                                      <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-body-sm text-subtle opacity-70">
                                         <Lock className="h-3.5 w-3.5 shrink-0" />
                                         <span className="min-w-0 truncate">{l.title}</span>
                                       </div>
@@ -428,7 +429,7 @@ export function LearnPlayer({
                                       type="button"
                                       onClick={() => goTo(l.id)}
                                       aria-current={active ? 'true' : undefined}
-                                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm transition-colors ${
+                                      className={`flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-body-sm transition-colors ${
                                         active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                       }`}
                                     >
@@ -458,7 +459,7 @@ export function LearnPlayer({
                                 <button
                                   type="button"
                                   onClick={() => mindless.open({ queue: q })}
-                                  className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
+                                  className="mt-1 inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
                                 >
                                   <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden /> Start all {q.length} as one session
                                 </button>
@@ -501,7 +502,7 @@ export function LearnPlayer({
                   </div>
                 )}
 
-                <p className="text-2xs font-semibold uppercase tracking-wide text-muted">
+                <p className={capsLabel('text-2xs font-semibold text-muted')}>
                   Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -598,7 +599,7 @@ export function LearnPlayer({
                 {/* One clear next action */}
                 <div className="mt-6 flex items-center gap-2 border-t border-border pt-4">
                   {prevId && (
-                    <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-body-sm text-muted hover:text-text">
+                    <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-control px-2.5 py-2 text-body-sm text-muted hover:text-text">
                       <ChevronLeft className="h-4 w-4" /> Back
                     </button>
                   )}
@@ -626,7 +627,7 @@ export function LearnPlayer({
                       <button
                         type="button"
                         onClick={() => setForceContinue(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text"
+                        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface-elevated px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text"
                       >
                         <Check className="h-4 w-4" /> Mark complete & continue
                       </button>

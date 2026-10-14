@@ -30,13 +30,12 @@ import {
 } from './kit'
 import {
   imgField,
-  headerFontField,
-  headerFontDefault,
-  headerFontStyle,
 } from '@/lib/page-editor/fields'
 import { richParagraphs, safeHref } from '@/lib/page-editor/richtext'
 import { decodeLegacyEntities, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import { SiteImage } from '@/components/marketing/site-image'
+import { arrowLinkClasses } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 
 // A body / lead / subtitle string, rendered as sanitized inline HTML (Bold / Italic / Link + <br>) via the
 // SAME allowlist the Space canvas editor writes and ContentBlockView renders — so formatting typed in the
@@ -59,17 +58,14 @@ function InlineRich({
   return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-// ── Shared header-font select ───────────────────────────────────────────────
-// Every design block's heading offers the same per-header font choice, defaulting to the Anton
-// display face. `headerFontStyle` turns the chosen id into an inline fontFamily off the validated
-// CSS-variable stacks (lib/page-editor/fields), so no raw font string reaches the DOM.
+// ── Design-block headings take the theme's display face (`font-display`); there is no per-heading
+// font pick (lib/page-editor/fields). A stored `headerFont` / `font` prop is ignored.
 
 // A design-block heading: the accent word reads from the member accent token (text-primary), the rest
-// stays warm text (text-text). The chosen face applies via inline style so the picker is per-header.
+// stays warm text (text-text).
 function DesignHeading({
   title,
   accentWord,
-  headerFont,
   size = 'default',
   as: Tag = 'h2',
   className,
@@ -77,7 +73,6 @@ function DesignHeading({
 }: {
   title?: string
   accentWord?: string
-  headerFont?: string
   size?: 'default' | 'lg'
   as?: 'h1' | 'h2' | 'h3'
   /** True when this heading sits on a DARK band, so the accent word keeps the brand amber
@@ -92,32 +87,26 @@ function DesignHeading({
   // Heal a legacy entity double-escape before it hits the page.
   const clean = decodeLegacyEntities(title)
   // Fluid scale mirrors the kit DisplayHeading so a design block sits in the same type rhythm.
-  const scale =
-    size === 'lg'
-      ? 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]'
-      : 'text-[clamp(1.875rem,5.5vw,3rem)]'
+  const scale = size === 'lg' ? DISPLAY_TYPE.feature : DISPLAY_TYPE.section
   // The color token defaults to warm text; a caller can swap it (on-ink over a photo) via `className`.
   const color = className ?? 'text-text'
   const cls = `font-display uppercase text-balance ${color} ${scale}`
-  const style = headerFontStyle(headerFont)
   // An accent word (the marketing / Puck path) highlights one word as a React node, which escapes <br>; the
   // entity-block (Space) path never sets one, so the headline renders through the shared inline-rich allowlist
   // and a title authored with a <br> line break (or a Bold / Italic / Link mark) shows EXACTLY as the editor
   // canvas does, instead of a literal `<BR>`. Re-sanitised on read (a stored blob is never trusted).
   if (accentWord && clean.includes(accentWord)) {
     return (
-      <Tag className={cls} style={style}>
+      <Tag className={cls}>
         {accentize(clean, accentWord, ink)}
       </Tag>
     )
   }
   const html = sanitizeInlineHtml(clean)
   if (!html) return null
-  return <Tag className={cls} style={style} dangerouslySetInnerHTML={{ __html: html }} />
+  return <Tag className={cls} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-// ── The header-font field group, shared by every design block. ──
-const designHeaderFontField = headerFontField
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 01 · Banner (stored id `photoHero`) — the bold IN-PAGE opener (2026 → ADR-571).
@@ -167,7 +156,6 @@ export function PhotoHeroBlock({
   scrim = 'light',
   height = 'tall',
   display = 'overlay',
-  headerFont,
   layout,
 }: {
   variant?: PhotoHeroVariant
@@ -184,7 +172,6 @@ export function PhotoHeroBlock({
   scrim?: ScrimStep
   height?: BannerHeight
   display?: BannerDisplay
-  headerFont?: string
   layout?: LayoutValue
 }) {
   const hasImage = variant === 'image' && !!image
@@ -210,7 +197,7 @@ export function PhotoHeroBlock({
     </div>
   ) : null
 
-  const headingCls = onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : undefined
+  const headingCls = onInk ? 'text-on-ink text-shadow-on-photo' : undefined
   const subtitleCls = onInk ? 'text-on-ink-muted' : 'text-muted'
 
   const copy = (centered: boolean) => (
@@ -219,7 +206,7 @@ export function PhotoHeroBlock({
       <DesignHeading
         title={title}
         accentWord={accentWord}
-        headerFont={headerFont}
+       
         ink={onInk}
         size="lg"
         // A Banner is a SECTION hero inside a page whose h1 is the entity name (the profile shell / page
@@ -312,7 +299,6 @@ export function EditorialSectionBlock({
   lead,
   stats,
   faqs,
-  headerFont,
 }: {
   eyebrow?: string
   title?: string
@@ -323,12 +309,11 @@ export function EditorialSectionBlock({
   lead?: string
   stats?: StatItem[]
   faqs?: FaqItem[]
-  headerFont?: string
 }) {
   const heading = (
     <div className="mb-8">
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
+      <DesignHeading title={title} accentWord={accentWord} />
       {kicker && <p className="mt-4 text-lead italic text-muted">{kicker}</p>}
     </div>
   )
@@ -340,10 +325,10 @@ export function EditorialSectionBlock({
       <dl className="grid grid-cols-1 gap-8 sm:grid-cols-3">
         {shown.map((s, i) => (
           <div key={i}>
-            <dt className="font-display text-[clamp(2.5rem,6vw,4rem)] leading-none text-primary-strong">
+            <dt className={`font-display ${DISPLAY_TYPE.figure} leading-none text-primary-strong`}>
               {s.value}
             </dt>
-            <dd className="mt-2 text-body-sm font-semibold uppercase tracking-[0.18em] text-muted">{s.label}</dd>
+            <dd className="mt-2 eyebrow text-muted">{s.label}</dd>
           </div>
         ))}
       </dl>
@@ -430,7 +415,6 @@ export function CardGridBlock({
   cards,
   browseLabel,
   browseHref,
-  headerFont,
 }: {
   eyebrow?: string
   title?: string
@@ -440,7 +424,6 @@ export function CardGridBlock({
   cards?: GridCard[]
   browseLabel?: string
   browseHref?: string
-  headerFont?: string
 }) {
   const shown = (cards ?? []).filter(
     (c) => c?.title || c?.body || c?.image || c?.by || c?.stat?.value || c?.stat?.label,
@@ -453,7 +436,7 @@ export function CardGridBlock({
     <div className="text-center">
       <div className="mb-10">
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-        <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
+        <DesignHeading title={title} accentWord={accentWord} />
       </div>
       {shown.length > 0 && (
         <div className={`grid grid-cols-1 gap-6 text-left ${cols}`}>
@@ -540,7 +523,7 @@ export function CardGridBlock({
         <div className="mt-10">
           <Link
             href={browseSafe}
-            className="inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
+            className={arrowLinkClasses({ register: 'band' })}
           >
             {browseLabel}
             <ArrowRight className="h-4 w-4" aria-hidden />
@@ -574,7 +557,6 @@ export function ZigzagBlock({
   ctaHref,
   mediaSide = 'left',
   background = 'canvas',
-  headerFont,
   aspect = '4/3',
 }: {
   image?: string
@@ -590,7 +572,6 @@ export function ZigzagBlock({
   ctaHref?: string
   mediaSide?: 'left' | 'right'
   background?: ZigzagBg
-  headerFont?: string
   /** The photo crop ratio (item 2 Shape control), e.g. "4/3" | "16/9" | "4/5" | "1/1". Defaults to the
    *  classic 4/3 so an unset value looks exactly as before. */
   aspect?: string
@@ -609,7 +590,7 @@ export function ZigzagBlock({
   const text = (
     <div>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
+      <DesignHeading title={title} accentWord={accentWord} />
       <div className="mt-5">
         {body === 'quote' ? (
           <figure>
@@ -638,7 +619,7 @@ export function ZigzagBlock({
       {ctaLabel && ctaSafe && (
         <Link
           href={ctaSafe}
-          className="mt-6 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
+          className={arrowLinkClasses({ register: 'band', className: 'mt-6' })}
         >
           {ctaLabel}
           <ArrowRight className="h-4 w-4" aria-hidden />
@@ -687,7 +668,6 @@ export function AccentBeatBlock({
   quoteBy,
   ctaLabel,
   ctaHref,
-  headerFont,
 }: {
   background?: AccentBg
   mode?: AccentMode
@@ -700,7 +680,6 @@ export function AccentBeatBlock({
   quoteBy?: string
   ctaLabel?: string
   ctaHref?: string
-  headerFont?: string
 }) {
   const onImage = background === 'image-scrim' && !!image
   const ctaSafe = safeHref(ctaHref)
@@ -710,7 +689,7 @@ export function AccentBeatBlock({
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {mode === 'quote' ? (
         <figure>
-          <blockquote className="font-display text-[clamp(1.5rem,4vw,2.5rem)] uppercase leading-tight text-text" style={headerFontStyle(headerFont)}>
+          <blockquote className={`font-display ${DISPLAY_TYPE.bandQuote} uppercase leading-tight text-text`}>
             {/* Light on purpose: the image variant veils the photo with CREAM
                 (bg-canvas/85 below), not ink, so this never sits on a dark band. */}
             {accentWord ? accentize(title ?? '', accentWord) : title}
@@ -718,7 +697,7 @@ export function AccentBeatBlock({
           {quoteBy && <figcaption className="mt-4 text-body-sm font-semibold text-muted">{quoteBy}</figcaption>}
         </figure>
       ) : (
-        <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
+        <DesignHeading title={title} accentWord={accentWord} />
       )}
       <InlineRich as="p" value={body} className="mx-auto mt-5 max-w-xl text-body-lg text-muted" />
       {/* Both, or neither (LIVE-115). A CTA band with a label and no destination used to draw the
@@ -757,24 +736,20 @@ export function AccentBeatBlock({
 export function DisplayHeadingBlock({
   text,
   accentWord,
-  font,
 }: {
   text?: string
   accentWord?: string
-  /** A validated header-font id (headerFontStyle falls any unknown value back to the Anton display stack). */
-  font?: string
 }) {
   if (!text) return null
   // Heal a legacy entity double-escape before render.
   const clean = decodeLegacyEntities(text)
-  const cls = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
-  const style = headerFontStyle(font)
+  const cls = `font-display ${DISPLAY_TYPE.poster} uppercase text-balance text-text`
   // Same split as DesignHeading: the accent-word path stays a React node (marketing); with no accent word (the
   // Space entity-block path) the title renders through the inline-rich allowlist so a <br> / mark shows as the
   // editor canvas does, not a literal `<BR>`.
   if (accentWord && clean.includes(accentWord)) {
     return (
-      <h2 className={cls} style={style}>
+      <h2 className={cls}>
         {/* Light on purpose: this heading hardcodes text-text, it has no ink variant. */}
         {accentize(clean, accentWord)}
       </h2>
@@ -782,7 +757,7 @@ export function DisplayHeadingBlock({
   }
   const html = sanitizeInlineHtml(clean)
   if (!html) return null
-  return <h2 className={cls} style={style} dangerouslySetInnerHTML={{ __html: html }} />
+  return <h2 className={cls} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -820,7 +795,6 @@ export const designComponents: Record<string, ComponentConfig> = {
       },
       image: imgField,
       alt: { type: 'text', label: 'Alt text (required on the image)' },
-      headerFont: designHeaderFontField,
       eyebrow: { type: 'text', label: 'Eyebrow' },
       title: { type: 'textarea', label: 'Headline' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
@@ -864,7 +838,6 @@ export const designComponents: Record<string, ComponentConfig> = {
       variant: 'image',
       image: '',
       alt: '',
-      headerFont: headerFontDefault,
       eyebrow: 'Section label',
       title: 'Your headline goes here',
       accentWord: 'headline',
@@ -883,7 +856,6 @@ export const designComponents: Record<string, ComponentConfig> = {
       variant,
       image,
       alt,
-      headerFont,
       eyebrow,
       title,
       accentWord,
@@ -901,7 +873,6 @@ export const designComponents: Record<string, ComponentConfig> = {
         variant={variant as PhotoHeroVariant}
         image={image as string}
         alt={alt as string}
-        headerFont={headerFont as string}
         eyebrow={eyebrow as string}
         title={title as string}
         accentWord={accentWord as string}
@@ -921,7 +892,6 @@ export const designComponents: Record<string, ComponentConfig> = {
   EditorialSection: {
     label: 'Editorial section',
     fields: {
-      headerFont: designHeaderFontField,
       eyebrow: { type: 'text', label: 'Eyebrow' },
       title: { type: 'textarea', label: 'Heading' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
@@ -965,7 +935,6 @@ export const designComponents: Record<string, ComponentConfig> = {
     },
     // Demo defaults that EXPLAIN each slot (Fix 7): prompt copy, not real marketing.
     defaultProps: {
-      headerFont: headerFontDefault,
       eyebrow: 'Section label',
       title: 'Your heading goes here',
       accentWord: 'heading',
@@ -981,10 +950,9 @@ export const designComponents: Record<string, ComponentConfig> = {
       faqs: [{ q: 'A question people ask you?', a: 'A plain, honest answer.' }],
       ...blockLayoutDefaults,
     },
-    render: ({ headerFont, eyebrow, title, accentWord, kicker, body, surface, lead, stats, faqs, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, accentWord, kicker, body, surface, lead, stats, faqs, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <EditorialSectionBlock
-          headerFont={headerFont as string}
           eyebrow={eyebrow as string}
           title={title as string}
           accentWord={accentWord as string}
@@ -1002,7 +970,6 @@ export const designComponents: Record<string, ComponentConfig> = {
   CardGrid: {
     label: 'Card grid',
     fields: {
-      headerFont: designHeaderFontField,
       eyebrow: { type: 'text', label: 'Eyebrow' },
       title: { type: 'textarea', label: 'Heading' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
@@ -1044,7 +1011,6 @@ export const designComponents: Record<string, ComponentConfig> = {
     },
     // Demo defaults that EXPLAIN each slot (Fix 7): each card prompts what to write in it.
     defaultProps: {
-      headerFont: headerFontDefault,
       eyebrow: 'Section label',
       title: 'What you offer',
       accentWord: 'offer',
@@ -1059,10 +1025,9 @@ export const designComponents: Record<string, ComponentConfig> = {
       browseHref: '',
       ...blockLayoutDefaults,
     },
-    render: ({ headerFont, eyebrow, title, accentWord, role, columns, cards, browseLabel, browseHref, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, accentWord, role, columns, cards, browseLabel, browseHref, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <CardGridBlock
-          headerFont={headerFont as string}
           eyebrow={eyebrow as string}
           title={title as string}
           accentWord={accentWord as string}
@@ -1081,7 +1046,6 @@ export const designComponents: Record<string, ComponentConfig> = {
     fields: {
       image: imgField,
       alt: { type: 'text', label: 'Alt text (required on the media)' },
-      headerFont: designHeaderFontField,
       eyebrow: { type: 'text', label: 'Eyebrow' },
       title: { type: 'textarea', label: 'Heading' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
@@ -1125,7 +1089,6 @@ export const designComponents: Record<string, ComponentConfig> = {
     defaultProps: {
       image: '',
       alt: '',
-      headerFont: headerFontDefault,
       eyebrow: 'Section label',
       title: 'The story beat',
       accentWord: 'story',
@@ -1139,12 +1102,11 @@ export const designComponents: Record<string, ComponentConfig> = {
       background: 'canvas',
       layout: blockLayoutDefaults.layout,
     },
-    render: ({ image, alt, headerFont, eyebrow, title, accentWord, body, lead, items, quoteBy, ctaLabel, ctaHref, mediaSide, background, layout }) => (
+    render: ({ image, alt, eyebrow, title, accentWord, body, lead, items, quoteBy, ctaLabel, ctaHref, mediaSide, background, layout }) => (
       <Band tone="none" width="wide" align="left" layout={layout as LayoutValue}>
         <ZigzagBlock
           image={image as string}
           alt={alt as string}
-          headerFont={headerFont as string}
           eyebrow={eyebrow as string}
           title={title as string}
           accentWord={accentWord as string}
@@ -1184,7 +1146,6 @@ export const designComponents: Record<string, ComponentConfig> = {
       },
       image: imgField,
       alt: { type: 'text', label: 'Alt text (image scrim)' },
-      headerFont: designHeaderFontField,
       eyebrow: { type: 'text', label: 'Eyebrow' },
       title: { type: 'textarea', label: 'Headline' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
@@ -1202,7 +1163,6 @@ export const designComponents: Record<string, ComponentConfig> = {
       mode: 'cta',
       image: '',
       alt: '',
-      headerFont: headerFontDefault,
       eyebrow: 'Section label',
       title: 'Your call to action',
       accentWord: 'action',
@@ -1214,7 +1174,7 @@ export const designComponents: Record<string, ComponentConfig> = {
       ctaSecondaryHref: '',
       layout: blockLayoutDefaults.layout,
     },
-    render: ({ background, mode, image, alt, headerFont, eyebrow, title, accentWord, body, quoteBy, ctaLabel, ctaHref, layout }) => (
+    render: ({ background, mode, image, alt, eyebrow, title, accentWord, body, quoteBy, ctaLabel, ctaHref, layout }) => (
       <section className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-12 sm:py-16'} ${visClass(layout as LayoutValue)}`}>
         <div className="mx-auto max-w-5xl">
           <AccentBeatBlock
@@ -1222,7 +1182,6 @@ export const designComponents: Record<string, ComponentConfig> = {
             mode={mode as AccentMode}
             image={image as string}
             alt={alt as string}
-            headerFont={headerFont as string}
             eyebrow={eyebrow as string}
             title={title as string}
             accentWord={accentWord as string}
@@ -1240,27 +1199,17 @@ export const designComponents: Record<string, ComponentConfig> = {
   DisplayHeading: {
     label: 'Display heading',
     fields: {
-      font: {
-        type: 'select',
-        label: 'Font',
-        options: [
-          { label: 'Display', value: 'display' },
-          { label: 'Serif', value: 'serif' },
-          { label: 'Grotesk', value: 'grotesk' },
-        ],
-      },
       text: { type: 'textarea', label: 'Heading' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
     },
     // Demo defaults that EXPLAIN the slot (Fix 7): prompt copy, not real marketing.
     defaultProps: {
-      font: 'display',
       text: 'Your big heading',
       accentWord: 'big',
     },
-    render: ({ font, text, accentWord }) => (
+    render: ({ text, accentWord }) => (
       <Band tone="none" width="wide" align="left">
-        <DisplayHeadingBlock text={text as string} accentWord={accentWord as string} font={font as string} />
+        <DisplayHeadingBlock text={text as string} accentWord={accentWord as string} />
       </Band>
     ),
   },

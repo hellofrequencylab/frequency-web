@@ -224,7 +224,7 @@ export function ListSkeleton() {
   return (
     <div className="space-y-px rounded-card border border-border bg-surface p-2 lift-1">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
+        <div key={i} className="h-14 animate-pulse rounded-control bg-surface-elevated/50" />
       ))}
     </div>
   )
@@ -235,10 +235,10 @@ function CockpitSkeleton() {
     <section className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+          <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/50" />
         ))}
       </div>
-      <div className="h-40 animate-pulse rounded-2xl bg-surface-elevated/50" />
+      <div className="h-40 animate-pulse rounded-card bg-surface-elevated/50" />
     </section>
   )
 }
@@ -249,7 +249,7 @@ function BoardSkeleton() {
       <SectionHeader title="Pipeline" />
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-40 w-64 shrink-0 animate-pulse rounded-2xl bg-surface-elevated/50" />
+          <div key={i} className="h-40 w-64 shrink-0 animate-pulse rounded-card bg-surface-elevated/50" />
         ))}
       </div>
     </section>
@@ -262,10 +262,10 @@ function FunnelSkeleton() {
       <SectionHeader title="Funnel" />
       <div className="mb-4 grid grid-cols-2 gap-3 @2xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+          <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/50" />
         ))}
       </div>
-      <div className="h-44 animate-pulse rounded-2xl bg-surface-elevated/50" />
+      <div className="h-44 animate-pulse rounded-card bg-surface-elevated/50" />
     </section>
   )
 }

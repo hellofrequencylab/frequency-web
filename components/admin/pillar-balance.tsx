@@ -45,7 +45,7 @@ export function PillarBalance({
   const light = balance.balanced ? [] : lightPillars(totals)
 
   return (
-    <div className={`rounded-2xl border border-border bg-surface p-3 ${className ?? ''}`}>
+    <div className={`rounded-card border border-border bg-surface p-3 ${className ?? ''}`}>
       <div className="flex items-center gap-1.5">
         <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <span className="eyebrow text-subtle">

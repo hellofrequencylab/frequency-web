@@ -7,6 +7,7 @@ import { SpaceCreditRow } from '@/components/widgets/events/space-credit-row'
 import { HostPersonCredit } from '@/components/widgets/events/host-person-credit'
 import type { CohostView } from '@/components/events/cohost-manager'
 import type { HostLite, SpaceHostLite } from '@/lib/events/active-event'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE ONE "Host & Co Hosts" section on an event page (owner ruling, July 2026). It replaces the two
 // stacked boxes that used to sit in the event rail — HOST and COLLABORATORS — with a single card:
@@ -61,7 +62,7 @@ export function HostCohostSection({
   const eyebrow = hasHost ? (hasCohosts ? 'Host & Co Hosts' : 'Host') : 'Co Hosts'
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
+    <section className="rounded-card border border-border bg-surface p-4">
       <p className="eyebrow mb-3 text-subtle">{eyebrow}</p>
 
       {/* 1. THE HOST. A hosting Space is the attribution and the person in host_id drops to the
@@ -110,7 +111,7 @@ export function HostCohostSection({
                 hasSpaceCohosts ? 'mt-3' : ''
               }`}
             >
-              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">People</p>
+              <p className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>People</p>
               <ul className="space-y-0.5">
                 {cohosts.map((c) => (
                   <li key={c.id}>
@@ -132,7 +133,7 @@ function PersonCohostRow({ cohost }: { cohost: CohostView }) {
   return (
     <Link
       href={`/people/${cohost.handle}`}
-      className="flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-surface"
+      className="flex items-center gap-3 rounded-control p-1 transition-colors hover:bg-surface"
     >
       {cohost.avatarUrl ? (
         <Image

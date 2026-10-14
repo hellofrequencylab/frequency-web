@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Admin status + feedback vocabulary (ADR-233, docs/ADMIN-DESIGN-SYSTEM.md §4). ONE
 // tokenized set so every admin surface speaks the same language and the per-page
@@ -16,6 +17,22 @@ import { X } from 'lucide-react'
 // table of their own beside lib/calendar/registry.ts. Each is the token family's declared chip
 // pair, measured by scripts/check-contrast.mjs in both skins and both modes.
 export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'brand' | 'broadcast' | 'move'
+
+// FREQUENCY (ADR-1740): a status pill and a count badge are the members kit's `.tag`, toned by meaning with
+// the same `mu-*` modifiers the shared Badge uses (app/themes/frequency/members-ui.css), so a status reads the
+// same in a console table, a member list and a calendar. The kit has no info or move hue of its own: both
+// take the aqua presence tone. DAWN's strings are unchanged; SITE_DESIGN is inlined at build.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+const FQ_TONE: Record<StatusTone, string> = {
+  success: 'mu-success',
+  warning: 'mu-warning',
+  danger: 'mu-danger',
+  info: 'mu-signal',
+  neutral: '',
+  brand: 'mu-primary',
+  broadcast: 'mu-broadcast',
+  move: 'mu-signal',
+}
 
 const TONE: Record<StatusTone, string> = {
   success: 'bg-success-bg text-success',
@@ -38,6 +55,9 @@ export function StatusChip({
   size?: 'sm' | 'md'
   children: React.ReactNode
 }) {
+  if (FREQUENCY) {
+    return <span className={['tag', FQ_TONE[tone], size === 'sm' && 'mu-sm'].filter(Boolean).join(' ')}>{children}</span>
+  }
   const pad = size === 'sm' ? 'px-2 py-0.5 text-2xs' : 'px-2.5 py-0.5 text-meta'
   return (
     <span className={`inline-flex shrink-0 items-center gap-1 rounded-pill font-semibold ${pad} ${TONE[tone]}`}>
@@ -48,6 +68,7 @@ export function StatusChip({
 
 /** A count badge (neutral, tabular). */
 export function Badge({ children }: { children: React.ReactNode }) {
+  if (FREQUENCY) return <span className="tag mu-sm adp-count">{children}</span>
   return (
     <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
       {children}
@@ -85,7 +106,7 @@ export function Banner({
   return (
     <div
       role={tone === 'critical' ? 'alert' : 'status'}
-      className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${BANNER[tone]}`}
+      className={`flex items-start gap-3 rounded-card border px-4 py-3 ${BANNER[tone]}`}
     >
       <div className="min-w-0 flex-1">
         <p className="text-body-sm font-semibold">{title}</p>

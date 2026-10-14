@@ -129,7 +129,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
             label="URL"
             hint="The Channel's web address. Changing it changes the URL, so any link people already shared to the old one stops working."
           >
-            <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle focus-within:border-border-strong focus-within:ring-2 focus-within:ring-border-strong/30">
+            <span className="flex items-center rounded-control border border-border bg-surface px-3 text-body-sm text-subtle focus-within:border-border-strong focus-within:ring-2 focus-within:ring-border-strong/30">
               <span className="shrink-0">/channels/</span>
               <Input
                 variant="seamless"
@@ -260,7 +260,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
       </section>
 
       {/* Danger zone — last, and honest about what survives: the Circles do. */}
-      <section className="rounded-2xl border border-danger/30 bg-danger-bg/20 p-5">
+      <section className="rounded-card border border-danger/30 bg-danger-bg/20 p-5">
         <DangerDelete
           entity="Channel"
           warning="Permanently removes the Channel, everyone tuned in, and its forum room. Circles that practiced here are kept, they just stop belonging to a Channel. To take it out of the directory without losing it, set Visibility to Archived instead."

@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ArrowUpRight, Send } from 'lucide-react'
 import { PageHeading } from '@/components/templates'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { AdminPageFrame } from '@/components/frequency/admin/admin-page-frame'
 import { SectionHeader } from '@/components/ui/section-header'
 import { MarketingQuickStats } from '@/components/admin/crm/marketing-quick-stats'
 import { spaceEmailColors } from '@/lib/spaces/email-colors'
@@ -34,6 +36,8 @@ const TOOL_LABEL: Record<string, string> = {
   'space.marketing': 'Email design',
   'space.emailstyle': 'Email style',
   'space.reach': 'QR codes and insights',
+  // Your reach (the ranking receipt) files here beside Reach (ADR-1746, amending ADR-1313).
+  'space.reachreceipt': 'Your reach',
   'space.automation': 'Automation',
 }
 
@@ -142,6 +146,21 @@ export async function SpaceMarketing({
     })
     .filter((t): t is { id: string; href: string } => t !== null)
 
+  const description = 'Send branded email to your own contacts: everyone, a saved segment, or a tag. The composer always saves as a draft until you send.'
+  const quickStats = <MarketingQuickStats counts={counts} overview={overview} />
+  // Under the Frequency design (SITE_DESIGN, build-time) the tab wears the admin shell's page frame: the
+  // same eyebrow, title, description and quick stats as the design's head, around the same body.
+  const frame = (body: React.ReactNode) =>
+    SITE_DESIGN === 'frequency' ? (
+      <AdminPageFrame kicker="Community Resonance" title="Marketing" meta={description} actions={quickStats}>
+        {body}
+      </AdminPageFrame>
+    ) : (
+      <div>
+        {header}
+        {body}
+      </div>
+    )
   const header = (
     <PageHeading
       eyebrow="Community Resonance"
@@ -151,8 +170,8 @@ export async function SpaceMarketing({
           Marketing
         </span>
       }
-      description="Send branded email to your own contacts: everyone, a saved segment, or a tag. The composer always saves as a draft until you send."
-      actions={<MarketingQuickStats counts={counts} overview={overview} />}
+      description={description}
+      actions={quickStats}
       actionsAlign="center"
       adminBar={false}
     />
@@ -161,17 +180,10 @@ export async function SpaceMarketing({
   // Fail-safe: if the Marketing (Email) dashboard is not gated through, fall back to the plain Email surface
   // so the tab is never empty.
   if (!marketingModuleIds.includes('space.comms')) {
-    return (
-      <div>
-        {header}
-        <EmailBody slug={slug} />
-      </div>
-    )
+    return frame(<EmailBody slug={slug} />)
   }
 
-  return (
-    <div>
-      {header}
+  return frame(
       <div className="space-y-8">
         <SpaceMarketingDashboard
           spaceId={spaceId}
@@ -194,7 +206,6 @@ export async function SpaceMarketing({
             </ul>
           </div>
         )}
-      </div>
-    </div>
+      </div>,
   )
 }

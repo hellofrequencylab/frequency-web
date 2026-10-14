@@ -19,6 +19,9 @@ import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
 import { MemberRowActions } from '@/components/rooms/member-row-actions'
 import { RoomSettings } from '@/components/rooms/room-settings'
 import { Button } from '@/components/ui/button'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIcon } from '@/components/frequency/icon'
+import { FrequencyMessages } from '@/components/frequency/members/messages/messages-body'
 
 export default async function RoomPage({
   params,
@@ -186,8 +189,63 @@ export default async function RoomPage({
   // The room glyph leads the compact takeover bar beside the shared PageHeading title.
   // Always the hash — a room never wears a padlock (GateNotice canon); the visibility
   // badge beside the title already says "private" in words.
+  // THE DESIGN SWITCH (ADR-1737): fixed at build time; a DAWN deploy renders the takeover below.
+  // The room keeps its own live thread (RoomThread: replies, reactions, search); the Frequency body
+  // frames it in the design's two-pane layout.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FrequencyMessages
+        supabase={supabase}
+        myProfileId={myProfileId}
+        activeKey={`room:${roomId}`}
+        pane={
+          <section className="panel fa-pane" aria-label={r.name}>
+            <div className="row fa-pane-h">
+              <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
+              <span className="ic" aria-hidden><FqIcon name="circle" /></span>
+              <span className="grow">
+                <span className="t1" style={{ display: 'block' }}>{r.name}</span>
+                <span className="t2">
+                  {[
+                    `${r.member_count} ${r.member_count === 1 ? 'member' : 'members'}`,
+                    canRead ? `${weekCount} this week` : null,
+                    hereNowCount > 0 ? `${hereNowCount} active now` : null,
+                  ].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+              {canRead && <RoomSearch roomId={roomId} />}
+              {isAdmin && <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />}
+              {!isChannel && (isMember ? (
+                <form action={leaveRoom.bind(null, roomId)}>
+                  <button type="submit" className="btn sm">Leave</button>
+                </form>
+              ) : (
+                <form action={joinRoom.bind(null, roomId)}>
+                  <button type="submit" className="btn sm pa">Join</button>
+                </form>
+              ))}
+            </div>
+            {canRead ? (
+              <div className="fa-room">
+                <RoomThread roomId={roomId} initialMessages={messages} myProfileId={myProfileId} canPost={canPost} visibility={r.visibility} />
+              </div>
+            ) : (
+              <div className="fa-pane-empty">
+                <span className="h3">Join to read the room</span>
+                <span className="t2">What gets said in {r.name} stays between its members. Join and the whole conversation opens.</span>
+                <form action={joinRoom.bind(null, roomId)}>
+                  <button type="submit" className="btn pa">Join room</button>
+                </form>
+              </div>
+            )}
+          </section>
+        }
+      />
+    )
+  }
+
   const roomGlyph = (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg">
       <Hash className="h-4 w-4 text-primary-strong" />
     </span>
   )
@@ -222,7 +280,7 @@ export default async function RoomPage({
       <header className="flex shrink-0 items-center gap-3 bg-surface px-5 py-3">
         <Link
           href="/messages"
-          className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
+          className="md:hidden -ml-1 rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
           aria-label="Back"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -304,12 +362,9 @@ export default async function RoomPage({
                 conversation opens, along with the composer.
               </GateNotice>
               <form action={joinRoom.bind(null, roomId)} className="mt-4 flex justify-center">
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-                >
+                <Button type="submit" size="sm">
                   <LogIn className="w-3.5 h-3.5" /> Join room
-                </button>
+                </Button>
               </form>
             </div>
           </div>

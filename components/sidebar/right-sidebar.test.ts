@@ -31,6 +31,9 @@ vi.mock('@/lib/quest/completion-read', () => ({ journeysFinishedThisSeason: asyn
 vi.mock('@/lib/journeys/progress', () => ({ getMemberJourneyProgress: async () => [] }))
 vi.mock('@/lib/store/balance', () => ({ getSpendableBalance: async () => 0 }))
 vi.mock('@/lib/member-day', () => ({ resolveMemberDay: async () => TODAY }))
+vi.mock('@/lib/seasons', () => ({
+  getCurrentSeason: async () => ({ name: 'Shed', starts_at: '2026-05-01T00:00:00Z', ends_at: '2026-07-31T00:00:00Z' }),
+}))
 
 const load = async () => {
   const { loadGameStats } = await import('./right-sidebar')
@@ -71,5 +74,26 @@ describe('loadGameStats assembles a TRI-state day run', () => {
     const { last7 } = await load()
     expect(last7[6]).toBe('done')
     expect(last7).toHaveLength(7)
+  })
+})
+
+describe('loadGameStats carries what the Frequency rail reads', () => {
+  it('adds the practice counts, the member day, the banked freezes and the season week', async () => {
+    profileRow = { current_season_zaps: 10, lifetime_gems: 5, current_streak: 7, meta: { practiceStreak: { freezeTokens: 2 } } }
+    const d = await load()
+    expect(d.practices).toEqual({ adopted: 0, toLog: 0 })
+    expect(d.today).toBe(TODAY)
+    expect(d.freezeTokens).toBe(2)
+    expect(d.season?.name).toBe('Shed')
+    expect(d.season?.weeks).toBe(13)
+  })
+
+  it('counts season weeks from one and caps at the last', async () => {
+    const { seasonWeek } = await import('./right-sidebar')
+    const s = { name: 'Shed', starts_at: '2026-05-01T00:00:00Z', ends_at: '2026-07-31T00:00:00Z' }
+    expect(seasonWeek(s, new Date('2026-05-01T12:00:00Z'))).toEqual({ name: 'Shed', week: 1, weeks: 13 })
+    expect(seasonWeek(s, new Date('2026-06-05T00:00:00Z')).week).toBe(6)
+    expect(seasonWeek(s, new Date('2026-09-01T00:00:00Z')).week).toBe(13)
+    expect(seasonWeek({ ...s, ends_at: null }, new Date('2026-06-05T00:00:00Z')).weeks).toBeNull()
   })
 })

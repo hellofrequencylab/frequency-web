@@ -3,11 +3,13 @@ import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { EmptyState } from '@/components/ui/empty-state'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { FrequencyHelp } from '@/components/frequency/site/pages/help/frequency-help'
 
 export const metadata: Metadata = {
   title: 'Help Center',
@@ -29,6 +31,28 @@ export const metadata: Metadata = {
 
 export default async function HelpHomePage() {
   const categories = await getAllCategories()
+
+  // The Frequency design (ADR-1737): the same categories and article routes, in the design's front
+  // page. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={breadcrumbSchema([{ name: 'Help', path: '/help' }])} />
+        <FrequencyHelp
+          topics={categories.map((c) => ({
+            slug: c.slug,
+            title: c.title,
+            description: c.description,
+            articles: c.articles.map((a) => ({
+              title: a.title,
+              description: a.description,
+              href: helpHref(c.slug, a.slug),
+            })),
+          }))}
+        />
+      </>
+    )
+  }
 
   const hero = await resolveIndexHero('/help')
 

@@ -17,8 +17,8 @@
 //     returns false when `staffDomain` is unset, so "no domain" reads as "nobody".
 //
 // WHAT THIS GATE DOES NOT DO. It does not decide which side is right — that is a product call
-// about who should have access, and the eleven below are frozen with their numbers until an owner
-// makes it. What it refuses is a TWELFTH: a new row that disagrees with its page fails CI.
+// about who should have access. The eleven it was born with were frozen until an owner made that
+// call; the owner did (ADR-1746) and the list is empty. What it refuses is any new disagreement.
 //
 // ROWS WITH A QUERY STRING (`/admin/vera-ai?tab=studio`) are deliberately out of scope. Those are
 // tabs on one shared page whose gating happens per-tab inside the page body, not in a second
@@ -31,81 +31,18 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 const CATALOG = 'lib/nav/studio.ts'
 
 /**
- * The 11 known disagreements, frozen 2026-08-10 with the values measured that day.
- * A row leaves this list by being FIXED (either side), not by being edited here.
- * `catalog` / `page` are recorded so a drift in either direction is visible in the diff.
+ * EMPTY, and that is the finished state rather than an unstarted one.
  *
- * `fix` + `rec` are a RECOMMENDATION, added 2026-08-10 after reading each page against its row.
- * They are not authority: which side is right is a product call about who should have access, and
- * an owner may take the other side on any row. What they remove is the re-derivation — the ladder
- * is `member < crew < host < guide < mentor < admin < janitor`, so `min: 'janitor'` is the
- * NARROWEST setting and `min: 'host'` the widest, which is the opposite of how these rows read at
- * a glance and the reason several of them were mischaracterised when first frozen.
+ * Frozen 2026-08-10 with 11 rows, each a menu row that disagreed with its page. One
+ * (`beta-command`) lost its catalog row when the Beta Command Center retired on 2026-08-19. The
+ * owner ruled the other ten on 2026-10-14 (ADR-1746): fix the CATALOG side of every row, so each
+ * StudioLeaf now states the gate its page's requireAdmin runs. That took the list from 11 to 0,
+ * and with it the per-item `gate` override ADR-1745 used in ADMIN_NAV_SPECS. A row that disagrees
+ * from here on is a NEW disagreement and fails the build; it never earns a place on this list.
  *
- * The shape of the answer, once each row is read against its page:
- *   · 8 are CATALOG fixes — the page's gate matches the job the page does, and the menu row is
- *     describing a different population than the one the page was built for.
- *   · 3 are PAGE fixes — the page is stricter than the work it holds, so the people whose job it
- *     is cannot reach it. These are the ones worth doing first: each is a tool that currently has
- *     no reachable owner.
+ * Shape kept for the test seam (`io.frozenGate`): { id, catalog, page, why, fix, rec }.
  */
-export const FROZEN_GATE_DEBT = [
-  {
-    id: 'connections', catalog: 'janitor+members', page: 'admin+none',
-    why: 'menu promises members-domain staff a page that admits the staff web axis only',
-    fix: 'catalog', rec: "min: 'admin', drop staffDomain. This row fails BOTH ways at once: members-domain staff see the link and are denied, while a plain admin the page admits never sees it. Connection and friend-request settings is platform configuration, which is what 'admin' with no staff grant already says. Aligning the row removes a dead link without widening access. If members-domain staff genuinely own this, the other side is to add { staff: 'members' } to the page instead.",
-  },
-  {
-    id: 'sms', catalog: 'janitor+members', page: 'janitor+platform',
-    why: 'catalog unions members, the page unions platform — two unrelated domains',
-    fix: 'catalog', rec: "staffDomain: 'platform'. The ranks already agree; only the domain differs. SMS provisioning status and the operator on/off switch is infrastructure, so the page's domain is the one that matches the subject. The cheapest row on the list.",
-  },
-  {
-    id: 'nonprofit-verifications', catalog: 'janitor+profiles', page: 'janitor+none',
-    why: 'profiles-domain staff see the link and are denied',
-    fix: 'page', rec: "requireAdmin('janitor', { staff: 'profiles' }). Reviewing 501(c)(3) verification requests is profiles-domain work and the menu already offers it to exactly those people. The page simply never got the staff grant, so today only a janitor can do a job the nav says belongs to the profiles team.",
-  },
-  {
-    id: 'content-tips', catalog: 'host+community', page: 'janitor+none',
-    why: 'the widest: offered to every host+ leader and community staffer, admits janitor only',
-    fix: 'page', rec: "requireAdmin('host', { staff: 'community' }). The largest population gap on the list, and the most visible: every host, guide, mentor and community staffer is shown a link that lands them on /feed. Tips and prompts for content creators is content work, and janitor-only reads as a copy-pasted default rather than an intent. Highest priority of the eleven.",
-  },
-  {
-    id: 'beta-command', catalog: 'host+marketing', page: 'admin+marketing',
-    why: 'catalog uses the community ladder, the page uses the staff axis',
-    fix: 'catalog', rec: "min: 'admin'. The domains agree; the catalog is two rungs wider on the ladder. This is the launch phase plan and the approval queue where nothing sends without a sign-off, so the page's stricter rank is the defensible one. Tighten the menu; do not lower the page.",
-  },
-  {
-    id: 'marketing-control-panel', catalog: 'host+marketing', page: 'admin+marketing',
-    why: 'same axis mismatch as beta-command',
-    fix: 'catalog', rec: "min: 'admin'. Same shape as beta-command and same call: the page shows every campaign email and broadcast per recipient, including where it landed, which is per-person delivery data rather than a leader-level view. Match the page.",
-  },
-  {
-    id: 'crm-pipeline', catalog: 'host+marketing', page: 'janitor+none',
-    why: 'promised to hosts and marketing staff, admits janitor only',
-    fix: 'page', rec: "requireAdmin('host', { staff: 'marketing' }). The pipeline is marketing's daily surface and the catalog already says so. As it stands the marketing team cannot open their own pipeline unless they happen to be a janitor.",
-  },
-  {
-    id: 'crm-marketing', catalog: 'janitor+marketing', page: 'admin+marketing',
-    why: 'page is MORE permissive than the catalog states',
-    fix: 'catalog', rec: "min: 'admin'. The one row where the URL is wider than the menu: the page admits any admin, the row shows it to janitors only. It sits in the same console as crm-pipeline and serves the same marketing team, so match the page rather than tightening it and stranding the tool again.",
-  },
-  {
-    id: 'page-layout', catalog: 'janitor+none', page: 'admin+none',
-    why: 'menu hides it from a plain admin the URL admits',
-    fix: 'catalog', rec: "min: 'admin'. A pure hidden-tool row, no domain involved: the page admits admins, the menu shows janitors only. Nothing about a layout editor argues for the top rung, and the page has already made that call.",
-  },
-  {
-    id: 'business-seeder', catalog: 'janitor+none', page: 'admin+structure',
-    why: 'no staffDomain, so nav-areas grants nothing: structure-write staff can use it but never see it',
-    fix: 'catalog', rec: "min: 'admin', staffDomain: 'structure'. The row omits the domain entirely, and lib/nav-areas.ts reads an unset staffDomain as 'nobody' rather than 'everybody' — so the structure team, who hold write on exactly this, are the one group that cannot find it. This is the row that motivated the whole gate.",
-  },
-  {
-    id: 'listing-seeder', catalog: 'janitor+none', page: 'admin+structure',
-    why: 'same as business-seeder',
-    fix: 'catalog', rec: 'Same as business-seeder, and worth doing in the same commit: identical rows, identical pages, identical fix.',
-  },
-]
+export const FROZEN_GATE_DEBT = []
 
 /* ── Rule 2: a `?tab=` row must point at a page that READS the tab ──────────────────────────────
  *
@@ -218,7 +155,10 @@ export function evaluate(src, io = {}) {
         'everything, so this is a failure rather than a clean run.',
     )
   }
-  const frozen = new Map(FROZEN_GATE_DEBT.map((d) => [d.id, d]))
+  // `io.frozenGate` is a TEST SEAM, the twin of `io.frozenTabs` below: FROZEN_GATE_DEBT is empty, so
+  // the healed and drifted branches are unreachable against the real catalog, and the override lets a
+  // test seed a frozen row and prove both branches still fire.
+  const frozen = new Map((io.frozenGate ?? FROZEN_GATE_DEBT).map((d) => [d.id, d]))
   const fresh = []
   const drifted = []
   const healed = []

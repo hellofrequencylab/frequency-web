@@ -584,15 +584,17 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
 ## Site themes and fonts (ADR-1726, October 2026, owner-ruled)
 
 - **Theme** (a Space's site theme) = the whole look a Space page and its website wear. Two exist:
-  **Frequency** (the default; the house look, danieltyack.com) and **Bold** (charcoal, a bright accent
-  and angled cuts; Heart on Fire). Member-facing copy: "Theme", "Frequency theme", "Bold theme".
+  **Default** (the house look, danieltyack.com) and **Bold** (charcoal, a bright accent and angled cuts;
+  Heart on Fire), plus the stock **Wildheart**. Member-facing copy: "Theme", "Default theme", "Bold theme".
+  **Renamed from "Frequency"** ([ADR-1748](DECISIONS.md), 2026-10-13): "Frequency" now names the platform's
+  own design system, beside DAWN, so a Space theme no longer carries it. The stored id stays `frequency`.
   **Not "Menswork"** in copy (the old name; it survives only as the stored font-set id `menswork`, the
   Menswork skin's code names and the editor's stored `Menswork` snapshot value), **not "house theme"**
   in copy. Internal: `preferences.siteStyle.theme` = `frequency` | `bold` (lib/theme/site-style.ts).
-- **Fonts** = the font set a theme wears: Frequency, Editorial, Classic, Playful, Accessible, Modern,
+- **Fonts** = the font set a theme wears: Default, Editorial, Classic, Playful, Accessible, Modern,
   Bold. Member-facing copy: "Fonts" (and "Website fonts", "Space page fonts" when the two are split).
-  **Not "Page style"** (retired label). The old Anton set, once labelled "Bold", folded into Frequency;
-  a stored `bold` reads as Frequency. Internal: `preferences.theme` holds the website's font set
+  **Not "Page style"** (retired label). The old Anton set, once labelled "Bold", folded into Default (id `frequency`);
+  a stored `bold` reads as Default. Internal: `preferences.theme` holds the website's font set
   (lib/theme/space-themes.ts).
 - **Use the same style on my Space page** = the sync toggle: on (the default), the Space page follows the
   website; off, the Space page keeps its own fonts. The website always leads.
@@ -685,6 +687,28 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   affordable; disconnected = **Independent** = standard SaaS. Leaving the collective is priced (loss-framed).
 - **Retired:** the ADR-552 "no third vocabulary / no tier names" lock (this ADR reintroduces named tiers);
   the flat single-Business $49 model (ADR-590, grandfathered).
+
+## The core belief, "What's happening", and the two sides (ADR-1738, October 2026, owner-ruled)
+
+- **The core belief is "Build circles, not walls."** Imperative, with the full stop, lowercase
+  "circles" (the common noun: the line is about how people gather, not the Circle container). It
+  replaces "Circles, not walls." and "A community that builds Circles, not walls." It is a
+  BELIEF LINE: footer sign-off, hero close, about copy. It does **not** replace the tagline:
+  `SITE_TAGLINE` stays **"Community Collective"** (ADR-944), the words under the mark.
+- **"What's happening" replaces "What's on"** as the name for what is coming up: every nav item,
+  menu, label and line of copy that points at the calendar or a program. Sentence case in copy and
+  menus ("See what's happening"); title case where it is a tab label, beside **Circle Stats**:
+  the Circle tab is **What's Happening**. The route stays `/whats-on` (route ≠ label, ADR-1023), so
+  no saved link breaks.
+  - **Collision guard:** "What's on your mind?" is a composer prompt, not this term, and stays.
+    So does "on" in plain prose ("what's on screen").
+- **The two sides of the public site are "Browse Community" and "Host Community".** They label
+  the side toggle on marketing pages and replace "Reading as: People / Experiences". The sides
+  themselves are still **People** and **Spaces** (the page names); only the toggle's words
+  changed.
+- **Retired with this section:** "What's on" / "What's On" as a label · "Circles, not walls." as
+  the belief line · "Reading as:" and "Experiences" as toggle labels. `LIVE-918` holds the rename in
+  code and the probe that keeps the old label out.
 
 ## Marketplace & Commerce (ADR-596, July 2026; umbrella revived by ADR-868)
 

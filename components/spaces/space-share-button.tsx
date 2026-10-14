@@ -12,6 +12,7 @@ import {
   downloadQrSvgStringAsPng,
 } from '@/lib/qr/client-download'
 import { cn } from '@/lib/utils'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE SPACE "Connect" AFFORDANCE (root-cause fix for the reported bug). The Space header used to point
 // its QR/Connect button at `/codes` — the VIEWER's personal code hub, which renders the VIEWER's own
@@ -112,7 +113,7 @@ export function SpaceShareButton({
         <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             <div className="shrink-0">
-              <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('mb-2 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <QrCode className="h-3.5 w-3.5" /> Scan to open
               </p>
               <div
@@ -140,7 +141,7 @@ export function SpaceShareButton({
                 </button>
               </div>            </div>
             <div className="w-full min-w-0 space-y-3">
-              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                 <Link2 className="h-3.5 w-3.5" /> Share link
               </p>
               <code
@@ -186,7 +187,7 @@ export function SpaceShareButton({
                   once claimed (the parent only passes claimUrl when eligible). */}
               {claimUrl && (
                 <div className="mt-1 border-t border-border pt-3">
-                  <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <p className={capsLabel('mb-1.5 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
                     <Send className="h-3.5 w-3.5" /> Claim link (staff)
                   </p>
                   <p className="mb-2 text-2xs text-muted">

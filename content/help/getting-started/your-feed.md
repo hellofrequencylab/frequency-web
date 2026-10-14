@@ -41,7 +41,7 @@ If nobody's around you yet, the feed shows a warm **be a founder in your neighbo
 
 On a wide screen, the column to the right of the feed carries your **community board**: the next
 gathering in one of your Circles, and the most recent posts in your Spaces. If your Circles have
-nothing on yet, it says so and points at [what's on](/events) rather than filling the space with
+nothing on yet, it says so and points at [what's happening](/events) rather than filling the space with
 strangers. The column is hidden on a phone, where the same gatherings are one tap away under
 [Events](/events).
 

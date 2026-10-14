@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<meta name="theme-color" content="#0A0612"><link rel="icon" href="../../assets/logo/frequency-icon-round.png">
+
+<title>Frequency · Get started</title>
+<meta name="description" content="Join Frequency as a person or open your Space. Free to start.">
+<link rel="stylesheet" href="../../styles.css"><link rel="stylesheet" href="web/site.css">
+<link rel="stylesheet" href="web/fx.css"><link rel="stylesheet" href="web/side.css">
+<style>
+.jx{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);min-height:100vh;background:#0A0612}
+.jx-art{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:flex-end;padding:clamp(28px,4vw,56px);padding-top:120px}
+.jx-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transform:scale(1.04);transition:opacity .8s var(--ease-out)}
+.jx-art::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(10,6,18,.15) 30%,rgba(10,6,18,.92)),linear-gradient(90deg,transparent 60%,#0A0612)}
+.jx-art .rings{z-index:-1;left:-20%;right:auto;top:auto;bottom:-30%;margin:0;opacity:.8}
+.jx-q{display:flex;flex-direction:column;gap:18px;max-width:30ch}
+.jx-q .k{font:600 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--side)}
+.jx-q blockquote{margin:0;font:600 clamp(30px,3.2vw,48px)/1.02 var(--font-display);letter-spacing:-0.045em;color:#F6F0FF;text-wrap:balance}
+.jx-q blockquote em{font-family:var(--font-serif,serif);font-style:italic;font-weight:400;letter-spacing:-0.02em}
+.jx-proof{display:flex;align-items:center;gap:10px;font:500 14px/1.3 var(--font-sans);color:#D9CFEA}
+.jx-proof i{width:8px;height:8px;border-radius:50%;background:var(--side);box-shadow:0 0 12px var(--side)}
+.jx-panel{display:flex;align-items:center;justify-content:center;padding:120px clamp(20px,4vw,64px) 64px}
+.jx-box{width:100%;max-width:440px;display:flex;flex-direction:column;gap:22px}
+.jx-box h1{margin:0;font:600 clamp(34px,3vw,44px)/1 var(--font-display);letter-spacing:-0.045em;color:#F6F0FF}
+.jx-box .sub{margin:-10px 0 0;font-size:16px;line-height:1.5;color:#B9AED0}
+.jx-seg{display:grid;grid-template-columns:1fr 1fr;position:relative;padding:4px;border-radius:16px;background:rgba(246,240,255,.05);box-shadow:inset 0 0 0 1px rgba(246,240,255,.1)}
+.jx-seg button{position:relative;z-index:1;border:0;background:transparent;cursor:pointer;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:600 15px/1 var(--font-sans);color:#B9AED0;transition:color var(--dur-base)}
+.jx-seg button small{font:500 11.5px/1 var(--font-sans);opacity:.8}
+.jx-seg button[aria-pressed="true"]{color:#140B22}
+.jx-seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--side);box-shadow:0 0 24px -6px var(--side);transition:transform var(--dur-slow) var(--ease-out),background var(--dur-slow)}
+[data-side="e"] .jx-seg .thumb{transform:translateX(100%)}
+.jx-f{display:flex;flex-direction:column;gap:16px}.jx-f[hidden],.jx-ok[hidden]{display:none}
+.jx-f label{display:flex;flex-direction:column;gap:8px;font:600 13px/1 var(--font-sans);color:#D9CFEA}
+.jx-f input,.jx-f select{height:50px;padding:0 14px;border-radius:12px;border:0;background:#140B22;box-shadow:inset 0 0 0 1px rgba(246,240,255,.14);color:#F6F0FF;font:500 16px/1 var(--font-sans);outline:0;transition:box-shadow var(--dur-fast)}
+.jx-f input::placeholder{color:#7A6E93}
+.jx-f input:focus,.jx-f select:focus{box-shadow:inset 0 0 0 1.5px var(--side),0 0 0 4px var(--side-soft)}
+.jx-f select option{background:#140B22}
+.jx-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.jx-chips{display:flex;flex-wrap:wrap;gap:6px}
+.jx-chips button{height:36px;padding:0 13px;border-radius:999px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px rgba(246,240,255,.16);color:#D9CFEA;font:600 13px/1 var(--font-sans);transition:all var(--dur-fast)}
+.jx-chips button:hover{box-shadow:inset 0 0 0 1px var(--side)}
+.jx-chips button[aria-pressed="true"]{background:var(--side);color:#140B22;box-shadow:none}
+.jx-f .btn{width:100%;height:54px;margin-top:4px}
+.jx-fine{margin:0;font-size:13px;line-height:1.5;color:#8E82A8;text-align:center}
+.jx-alt{display:flex;justify-content:center;gap:6px;font-size:14px;color:#B9AED0}.jx-alt button{border:0;background:none;padding:0;color:#F6F0FF;font:600 14px var(--font-sans);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.jx-ok{display:flex;flex-direction:column;gap:16px;animation:sideIn .5s var(--ease-out)}
+.jx-ok .k{font:600 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--side);display:flex;gap:10px;align-items:center}
+.jx-ok .k::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--side);box-shadow:0 0 12px var(--side)}
+.jx-ok h2{margin:0;font:600 clamp(28px,2.6vw,36px)/1.05 var(--font-display);letter-spacing:-0.04em;color:#F6F0FF}
+.jx-ok .acts{margin:0;max-width:none}
+@media (max-width:900px){.jx{grid-template-columns:1fr}.jx-art{min-height:46vh;padding-top:110px}.jx-art::after{background:linear-gradient(180deg,rgba(10,6,18,.2),#0A0612)}.jx-panel{padding-top:24px}}
+@media (max-width:480px){.jx-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-theme="stage" data-side="p">
+<header class="nav dark" id="nav"><a href="Home.html"><img class="logo" src="../../assets/logo/frequency-wordmark.png" alt="Frequency Community Collective"></a><ul><li><a href="People.html">For people</a></li><li><a href="Spaces.html">For spaces</a></li></ul></header>
+<main class="jx" data-screen-label="01 Get started">
+<div class="jx-art"><img loading="lazy" decoding="async" class="p-only" src="../../assets/photos/day-meditation-circle.jpg" alt="A circle of people sitting together outdoors"><img loading="lazy" decoding="async" class="e-only" src="../../assets/photos/gathering-09.jpg" alt="A regular group mid-session at a studio"><span class="rings" aria-hidden="true"></span>
+<div class="jx-q"><span class="k p-only">For people</span><span class="k e-only">For spaces</span><blockquote class="p-only">A hundred contacts. <em>No one to call on a Tuesday.</em></blockquote><blockquote class="e-only">You’ve built a community. <em>Let them find it.</em></blockquote><span class="jx-proof"><i class="fq-breathe"></i><span class="p-only">212 people checked in at a Circle near you last week.</span><span class="e-only">Spaces rank by how often they gather, never by who paid.</span></span></div></div>
+<div class="jx-panel"><div class="jx-box">
+<div><h1>Get started</h1></div><p class="sub"><span class="p-only">Free, forever. Tell us where you are and we’ll show you what’s happening.</span><span class="e-only">Free until you charge. Your contacts stay yours.</span></p>
+<div class="jx-seg" role="group" aria-label="I am"><span class="thumb"></span><button type="button" data-set="p" aria-pressed="true">Looking<small>for an experience</small></button><button type="button" data-set="e" aria-pressed="false">Hosting<small>an experience</small></button></div>
+<form class="jx-f p-only" data-ok="okp"><label>Your town<input name="town" required placeholder="San Diego" autocomplete="address-level2"></label><label>What do you like doing?<span class="jx-chips"><button type="button" aria-pressed="false">Moving</button><button type="button" aria-pressed="false">Making</button><button type="button" aria-pressed="false">Eating</button><button type="button" aria-pressed="false">Sitting still</button><button type="button" aria-pressed="false">Going out</button></span></label><label>Email<input name="email" type="email" required placeholder="you@example.com" autocomplete="email"></label><button class="btn fq-iri-btn" type="submit">Show me what’s happening</button><p class="jx-fine">One email when something you’d like is near you. No feed, no spam.</p></form>
+<div class="jx-ok p-only" id="okp" hidden><span class="k">You’re in</span><h2>This week near <span data-town>you</span>.</h2><div data-fqmap="people" data-list="off" style="height:260px;border-radius:20px"></div><div class="acts"><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Breathwork Circle</b><small>Thu 7:00pm · 4 spots left</small></span><span class="ar">→</span></a><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#ticket"/></svg></span><span><b>Supper club</b><small>Fri 6:30pm · Event</small></span><span class="ar">→</span></a><a href="People.html#near"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Run Club</b><small>Sat 8:00am · Recurring</small></span><span class="ar">→</span></a></div><a class="btn btn-ghost fq-iri-rim" href="People.html#first-night">What to expect on your first night</a></div>
+<form class="jx-f e-only" data-ok="oke"><label>Space name<input name="name" required placeholder="Saltwater Studio"></label><div class="jx-row"><label>Type<select name="type"><option>Studio</option><option>Coach or practitioner</option><option>Event host</option><option>Café or venue</option><option>Non-profit</option></select></label><label>Town<input name="town" required placeholder="San Diego"></label></div><label>Email<input name="email" type="email" required placeholder="you@example.com" autocomplete="email"></label><button class="btn fq-iri-btn" type="submit">Open my Space</button><p class="jx-fine">Free to host. 0% on your own regulars.</p></form>
+<div class="jx-ok e-only" id="oke" hidden><span class="k">Your Space is open</span><h2><span data-name>Your Space</span> is on the map.</h2><div class="acts"><a href="Features.html#f-page"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#page"/></svg></span><span><b>Set up your page</b><small>Story, photos and hours</small></span><span class="ar">→</span></a><a href="Features.html#f-doorqr"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#qr"/></svg></span><span><b>Print your door QR</b><small>One code for everything you run</small></span><span class="ar">→</span></a><a href="Features.html#f-circles-s"><span class="ic"><svg><use href="../../assets/icons/frequency-icons.svg#circle"/></svg></span><span><b>Post your first experience</b><small>A Circle, an event or a program</small></span><span class="ar">→</span></a></div><a class="btn btn-ghost fq-iri-rim" href="Pricing.html">See pricing</a></div>
+<div class="jx-alt">Already have an account? <button type="button" id="jxlogin">Log in</button></div>
+</div></div></main>
+<script>(function(){document.querySelectorAll('.jx-chips button').forEach(function(b){b.onclick=function(){b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'))}});
+document.querySelectorAll('form.jx-f').forEach(function(f){f.addEventListener('submit',function(e){e.preventDefault();var d=new FormData(f),ok=document.getElementById(f.dataset.ok);ok.querySelectorAll('[data-town]').forEach(function(x){x.textContent=d.get('town')||'you'});ok.querySelectorAll('[data-name]').forEach(function(x){x.textContent=d.get('name')||'Your Space'});f.hidden=true;ok.hidden=false})});
+document.getElementById('jxlogin').onclick=function(){var b=document.querySelector('[data-a="login"]');if(b)b.click();else location.href='Home.html'};})();</script>
+<footer class="ft2"><div class="wrap"><div class="ft2-top"><div class="ft2-brand"><a href="Home.html" aria-label="Frequency home"><img loading="lazy" decoding="async" class="w" src="../../assets/logo/frequency-wordmark.png" alt="Frequency Community Collective"></a><p>Build circles, not walls. A community network where people find groups near them and keep coming back, and Spaces host experiences people come back to.</p><div class="ctas"><a class="btn fq-iri-btn" href="People.html">Find your Circle</a><a class="btn btn-ghost fq-iri-rim" href="Spaces.html">Open your Space</a></div></div><nav class="ft2-cols" aria-label="Footer"><div><b>For people</b><a href="People.html">Find your people</a><a href="People.html#first-night">Your first night</a><a href="People.html#near">What’s happening near you</a><a href="Features.html#people">Features for people</a></div><div><b>For spaces</b><a href="Spaces.html">Open your Space</a><a href="Spaces.html#types">For your type</a><a href="Features.html#spaces">Features for Spaces</a><a href="Pricing.html">Pricing</a></div><div><b>Frequency</b><a href="Stories.html">Stories</a><a href="Vision.html">Vision</a><a href="Join.html">Get started</a><a href="Home.html">What we believe</a><a href="Help.html">Help</a></div></nav></div><div class="ft2-bot"><span>© 2026 Frequency Community Collective</span><span class="ft2-legal"><a href="Help.html#privacy">Privacy</a><a href="Help.html#terms">Terms</a><a href="Help.html#accessibility">Accessibility</a></span><em>Your people stay yours.</em></div></div></footer>
+<script src="web/side.js"></script>
+<script src="../../assets/icons/icons.js"></script>
+<script src="web/eventmap.js"></script>
+<script src="web/megamenu.js"></script>
+<script src="web/fx.js"></script>
+</body></html>

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { rowShowsHeader, type RowDef } from '@/lib/entity-blocks/layout'
 import { marginBottomClass, marginTopClass } from '@/lib/entity-blocks/block-content'
 
@@ -92,7 +92,8 @@ export function EntityGrid({
     // above the stack.
     if (row.columns === 1) {
       const stack = row.cells[0] ?? []
-      if (!wrap) return stack.map((id) => renderBlock(id))
+      // Keyed Fragment, not a bare array: the outer rows.map needs a key on every row, and a Fragment adds no DOM.
+      if (!wrap) return <Fragment key={row.id}>{stack.map((id) => renderBlock(id))}</Fragment>
       return (
         <section key={row.id} className={`space-y-8 ${mCls}`.trim()}>
           {showHeader && <RowHeader title={row.title!} />}

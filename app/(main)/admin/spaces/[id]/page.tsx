@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, Eye, GraduationCap, HeartHandshake, Mail, QrCode, Settings, Ticket, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminSection } from '@/components/templates'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { getSpaceById } from '@/lib/spaces/store'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { listThemes } from '@/lib/theme/server/admin-themes'
@@ -52,7 +52,7 @@ function PreviewLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong hover:bg-surface-elevated"
+      className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong hover:bg-surface-elevated"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
         <Icon className="h-5 w-5" aria-hidden />
@@ -170,7 +170,14 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
   }))
 
   return (
-    <SpaceBrandEditor space={space} skins={skins}>
+    <AdminTemplate
+      title={space.brandName || space.name}
+      eyebrow="Operations · Tenancy"
+      description={`Set the theme and brand for the “${space.name}” Space (/${space.slug}).`}
+      width="narrow"
+      back={{ href: '/admin/spaces', label: 'Spaces' }}
+    >
+      <SpaceBrandEditor space={space} skins={skins} />
       {hasOwnerBackEnd && (
         <AdminSection
           title="Lifecycle and ownership"
@@ -318,6 +325,6 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
           </div>
         </AdminSection>
       )}
-    </SpaceBrandEditor>
+    </AdminTemplate>
   )
 }

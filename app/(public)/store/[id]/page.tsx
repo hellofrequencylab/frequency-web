@@ -8,6 +8,8 @@ import { JsonLd } from '@/components/json-ld'
 import { productSchema } from '@/lib/jsonld'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { BuyButton } from '@/app/(main)/marketplace/buy-button'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqStoreProduct } from '@/components/frequency/members/marketplace/store-product'
 
 // Public Product JSON-LD page, advertised in app/sitemap.ts. force-dynamic here would keep the
 // crawler on a full render after the (main) public chrome stops reading auth (SCAN-641). Viewer
@@ -80,30 +82,53 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
     resolveDetailHero(`/store/${id}`),
   ])
 
+  const structuredData = (
+    <JsonLd
+      data={productSchema({
+        title: product.title,
+        description: product.description,
+        image: product.images[0] ?? null,
+        priceCents: product.priceCents,
+        currency: product.currency,
+        inStock: !soldOut,
+        sellerName: SITE_NAME,
+        path: `/store/${product.id}`,
+        aggregateRating:
+          reviews.average != null && reviews.count > 0
+            ? { ratingValue: reviews.average, reviewCount: reviews.count }
+            : null,
+        reviews: reviews.latest.map((r) => ({
+          author: r.author?.displayName ?? null,
+          rating: r.rating,
+          body: r.body,
+          datePublished: r.createdAt,
+        })),
+      })}
+    />
+  )
+
+  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency the product is the kit's page, fed the
+  // same reads and the same JSON-LD; the Buy button is the very same island (never stamped, below).
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqStoreProduct
+        structuredData={structuredData}
+        title={product.title}
+        priceLabel={usd(product.priceCents, product.currency)}
+        category={product.category ?? null}
+        description={product.description ?? null}
+        images={product.images}
+        coverUrl={product.images[0] ?? (typeof hero.coverImage === 'string' ? hero.coverImage : null)}
+        soldOut={soldOut}
+        // 🔴 NEVER STAMPED, exactly as the DAWN panel below: /store/<id> is the seller's own storefront.
+        buy={soldOut ? null : <BuyButton productId={product.id} />}
+      />
+    )
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <JsonLd
-        data={productSchema({
-          title: product.title,
-          description: product.description,
-          image: product.images[0] ?? null,
-          priceCents: product.priceCents,
-          currency: product.currency,
-          inStock: !soldOut,
-          sellerName: SITE_NAME,
-          path: `/store/${product.id}`,
-          aggregateRating:
-            reviews.average != null && reviews.count > 0
-              ? { ratingValue: reviews.average, reviewCount: reviews.count }
-              : null,
-          reviews: reviews.latest.map((r) => ({
-            author: r.author?.displayName ?? null,
-            rating: r.rating,
-            body: r.body,
-            datePublished: r.createdAt,
-          })),
-        })}
-      />
+      {structuredData}
       {/* The /store index is members-only (lib/nav/public-detail-routes.ts) and 307s a signed-out
           visitor to /, and this ISR page has no viewer to gate on, so the back link goes to the
           public /discover hub instead of the index (SCAN-786). */}

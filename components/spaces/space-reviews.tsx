@@ -415,15 +415,15 @@ function ResponseBlock({
             >
               Cancel
             </button>
-            <button
+            <Button
               type="button"
               onClick={save}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              size="xs"
             >
               {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
               {response ? 'Save reply' : 'Post reply'}
-            </button>
+            </Button>
           </div>
         </div>
       )}

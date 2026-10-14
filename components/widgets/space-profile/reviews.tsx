@@ -39,7 +39,7 @@ export function ReviewsBlock({
             </div>
           )}
           <div className="flex items-baseline gap-3">
-            <span className="text-4xl font-bold text-text">{ratingStr}</span>
+            <span className="text-stat-md font-bold text-text">{ratingStr}</span>
             <span className="flex" aria-hidden>
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star

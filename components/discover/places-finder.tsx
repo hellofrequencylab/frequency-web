@@ -14,7 +14,8 @@ export type FinderCity = {
   eventCount: number
 }
 
-// Client-side town finder for /discover/places. The whole city list is already in
+// Client-side town finder for the every-town list on /discover/cities (/discover/places merged
+// there, 2026-10-14). The whole city list is already in
 // the DOM (server-rendered for SEO + crawlers); this just adds an instant filter
 // over it so a visitor on a high-intent local search can jump straight to their
 // town instead of scanning a long grid. No data fetching, no new server work —
@@ -49,7 +50,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Find your town…"
-              className="w-full rounded-2xl border border-border bg-surface py-3 pl-11 pr-4 text-body text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+              className="w-full rounded-card border border-border bg-surface py-3 pl-11 pr-4 text-body text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           </div>
         </div>
@@ -59,7 +60,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <li key={c.slug}>
-              <Link href={`/discover/places/${c.slug}`} className="group block h-full">
+              <Link href={`/discover/cities/${c.slug}`} className="group block h-full">
                 <Card
                   tone="feature"
                   className="flex h-full flex-col transition-colors hover:border-border-strong"
@@ -91,7 +92,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
           ))}
         </ul>
       ) : (
-        <div className="mx-auto max-w-md rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
+        <div className="mx-auto max-w-md rounded-card border border-border bg-marketing-canvas p-8 text-center">
           <p className="mb-1 text-body font-semibold text-text">
             No towns matching &ldquo;{query.trim()}&rdquo; yet.
           </p>
@@ -100,7 +101,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
           </p>
           <Link
             href={BETA_CTA_HREF}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center justify-center gap-1.5 rounded-card bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
           >
             {BETA_CTA_LABEL} <ArrowRight className="h-4 w-4" />
           </Link>

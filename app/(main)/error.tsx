@@ -5,8 +5,16 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { MemberError } from '@/components/frequency/members/member-status'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // FREQUENCY (ADR-1737, build-time): the members kit's status room. MemberError reports to Sentry itself.
+  if (SITE_DESIGN === 'frequency') return <MemberError error={error} reset={reset} />
+  return <DawnError error={error} reset={reset} />
+}
+
+function DawnError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error(error)
     // Report, don't just log: server renders are covered by instrumentation.ts

@@ -37,7 +37,8 @@ import {
 } from '@/lib/page-editor/fields'
 import { richParagraphs, richPlainText } from '@/lib/page-editor/richtext'
 import { SiteImage } from '@/components/marketing/site-image'
-import { FaqList, Marquee } from '@/components/marketing/marketing-ui'
+import { FaqList, Marquee, arrowLinkClasses } from '@/components/marketing/marketing-ui'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
@@ -151,7 +152,7 @@ export function FeatureGridBlock({
                   {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                   {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                   {item.href && (
-                    <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                    <Link href={safeHref(item.href) ?? '#'} className={arrowLinkClasses({ ink, className: 'mt-4' })}>
                       Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                     </Link>
                   )}
@@ -173,7 +174,7 @@ export function FeatureGridBlock({
                 {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                 {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (
-                  <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                  <Link href={safeHref(item.href) ?? '#'} className={arrowLinkClasses({ ink, className: 'mt-4' })}>
                     Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 )}
@@ -192,7 +193,7 @@ export function FeatureGridBlock({
               {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
               {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
               {item.href && (
-                <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                <Link href={safeHref(item.href) ?? '#'} className={arrowLinkClasses({ ink, className: 'mt-4' })}>
                   Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                 </Link>
               )}
@@ -341,7 +342,7 @@ export function ChecklistBlock({
       <ul className={`grid grid-cols-1 ${cols} ${gap}`}>
         {(items || []).map((item, i) => (
           <li key={i} className="flex items-start gap-3">
-            <span className="mt-0.5 shrink-0 w-6 h-6 rounded-lg bg-primary-bg text-primary-strong flex items-center justify-center">
+            <span className="mt-0.5 shrink-0 w-6 h-6 rounded-control bg-primary-bg text-primary-strong flex items-center justify-center">
               <Check className="w-3.5 h-3.5" aria-hidden />
             </span>
             <span className={`text-body leading-relaxed ${textColor}`}>{item.text}</span>
@@ -397,13 +398,13 @@ export function ShowcaseBlock({
                 />
               </div>
               <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
-                <h3 className="font-display uppercase text-on-ink text-[clamp(1.875rem,5.5vw,3rem)] mb-5 px-2 text-center sm:text-left">
+                <h3 className={`font-display uppercase text-on-ink ${DISPLAY_TYPE.section} mb-5 px-2 text-center sm:text-left`}>
                   {p.title}
                 </h3>
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
                   <div className="text-body text-muted leading-relaxed space-y-3">{richParagraphs(p.body)}</div>
                   {p.href && (
-                    <Link href={safeHref(p.href) ?? '#'} className="mt-5 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
+                    <Link href={safeHref(p.href) ?? '#'} className={arrowLinkClasses({ className: 'mt-5' })}>
                       Learn more <ArrowRight className="w-4 h-4" aria-hidden />
                     </Link>
                   )}
@@ -567,7 +568,7 @@ export function TiersBlock({
               <ul className="space-y-3 mb-8 flex-1">
                 {(tier.features || []).map((f, fi) => (
                   <li key={fi} className="flex items-start gap-3">
-                    <span className={`shrink-0 w-6 h-6 mt-0.5 rounded-lg flex items-center justify-center ${featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'}`}>
+                    <span className={`shrink-0 w-6 h-6 mt-0.5 rounded-control flex items-center justify-center ${featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'}`}>
                       <Check className={`w-3.5 h-3.5 ${featured ? 'text-primary-strong' : 'text-success'}`} aria-hidden />
                     </span>
                     <span className="text-body-sm text-text leading-snug">{f.text}</span>
@@ -688,7 +689,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       columns: '3',
       items: [
         { icon: 'Users', image: '', title: 'Community', body: 'Real people, real connections.', href: '' },
-        { icon: 'CalendarDays', image: '', title: 'Events', body: 'Something happening every week.', href: '' },
+        { icon: 'CalendarDays', image: '', title: 'Events', body: 'Something happening near you.', href: '' },
         { icon: 'Compass', image: '', title: 'Discover', body: 'Find your next circle.', href: '' },
       ],
       emphasis: emphasisDefault,
@@ -1048,7 +1049,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           name: 'Space', price: 'Free', strikePrice: '', cadence: 'forever',
           priceNote: 'Selling starts at Business, when you are ready to charge.',
           tagline: 'Host free. The whole thing.', highlight: 'normal', badge: 'none',
-          features: [{ text: 'Your page, Circles, Events and contacts' }, { text: 'Tips, with no fee' }],
+          features: [{ text: 'Your page, Circles, Events and contacts' }, { text: 'Tips, with no platform fee, plus card processing' }],
           ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
         },
       ],

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Info } from 'lucide-react'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Field grammar (kit): the one labeled-control row + section label every Studio
 // builder uses, so fields read identically everywhere. docs/STUDIO.md §2.
@@ -26,7 +27,7 @@ export function StudioField({
   className?: string
 }) {
   return (
-    <label className={`flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted ${className ?? ''}`}>
+    <label className={capsLabel(`flex flex-col gap-1 text-2xs font-semibold text-muted ${className ?? ''}`)}>
       {label}
       {children}
     </label>

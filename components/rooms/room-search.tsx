@@ -8,6 +8,7 @@ import { relativeTime } from '@/lib/utils'
 import type { RoomSearchHit } from '@/lib/ai/room-search'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Phase C: in-room search. A header button opens a panel; typing runs a semantic
 // search over the room's history (substring fallback when AI is off). Results are
@@ -52,15 +53,15 @@ export function RoomSearch({ roomId }: { roomId: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Search this room"
-        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
+        className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
       >
         <Search className="h-3.5 w-3.5" /> Search
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[85vw] rounded-2xl border border-border bg-surface p-3 lift-3">
+        <div className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[85vw] rounded-card border border-border bg-surface p-3 lift-3">
           <form onSubmit={run} className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-surface-elevated/60 px-2.5 py-1.5">
+            <div className="flex flex-1 items-center gap-2 rounded-control border border-border bg-surface-elevated/60 px-2.5 py-1.5">
               <Search className="h-4 w-4 shrink-0 text-subtle" />
               <Input
                 variant="seamless"
@@ -92,13 +93,13 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                 <p className="px-1 py-2 text-meta text-subtle">No matching messages.</p>
               ) : (
                 <>
-                  <p className="mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium uppercase tracking-wide text-muted">
+                  <p className={capsLabel('mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium text-muted')}>
                     {mode === 'semantic' ? <><Sparkles className="h-3 w-3 text-primary-strong" /> Closest in meaning</> : 'Matches'}
                     <span className="ml-auto normal-case tracking-normal">{hits.length}</span>
                   </p>
                   <ul className="max-h-72 space-y-1 overflow-y-auto">
                     {hits.map((h) => (
-                      <li key={h.id} className="rounded-lg px-2 py-1.5 hover:bg-surface-elevated">
+                      <li key={h.id} className="rounded-control px-2 py-1.5 hover:bg-surface-elevated">
                         <p className="line-clamp-3 text-body-sm leading-snug text-text">{h.body}</p>
                         <p className="mt-0.5 text-2xs text-muted">{relativeTime(h.created_at)}</p>
                       </li>

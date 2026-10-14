@@ -75,7 +75,7 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+    <div className="rounded-card border border-border bg-surface p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Timer className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
@@ -138,7 +138,7 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
           type="button"
           onClick={save}
           disabled={isPending || !dirty}
-          className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {isPending ? 'Saving…' : 'Save speed settings'}
         </button>

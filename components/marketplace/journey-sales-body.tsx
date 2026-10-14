@@ -119,7 +119,7 @@ export async function JourneySalesBody({
       {hasMeeting && (
         <section>
           <SectionHeader title="How it meets" />
-          <div className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="space-y-2 rounded-card border border-border bg-surface p-5 lift-1">
             {t.location && (
               <p className="flex items-center gap-2 text-body-sm text-text">
                 <MapPin className="h-4 w-4 shrink-0 text-muted" aria-hidden />

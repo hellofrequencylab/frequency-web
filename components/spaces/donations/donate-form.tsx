@@ -7,6 +7,8 @@ import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { isError } from '@/lib/action-result'
 import { formatPriceCents } from '@/lib/commerce/types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 
 // THE DONATE CHECKOUT CONTROL (LIVE-235). The member half of the fund: quick-pick chips from the
 // owner's ask, a custom amount, and a button that opens the card form RIGHT HERE (LIVE-359) or,
@@ -126,7 +128,7 @@ export function DonateForm({
           <span aria-hidden className="text-body font-semibold text-muted">
             $
           </span>
-          <input
+          <Input
             id={`${idPrefix}-custom`}
             type="number"
             inputMode="decimal"
@@ -139,24 +141,24 @@ export function DonateForm({
             }}
             placeholder="0.00"
             aria-label="Gift amount in dollars"
-            className="w-32 rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text"
+            className="w-32"
           />
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={give}
         onPointerEnter={warmStripeBrowser}
         onFocus={warmStripeBrowser}
         onTouchStart={warmStripeBrowser}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        size="lg"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
         {cents && cents >= MIN_CENTS ? `Give ${formatPriceCents(cents)}` : 'Give'}
         {!pending && <ArrowRight className="h-4 w-4" aria-hidden />}
-      </button>
+      </Button>
 
       {error && (
         <p role="alert" className="text-body-sm text-danger">

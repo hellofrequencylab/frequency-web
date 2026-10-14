@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Star, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Radio } from '@/components/ui/radio'
 import { Select } from '@/components/ui/select'
 import {
   MAX_PACKAGE_OPTIONS,
@@ -443,7 +444,7 @@ export function PriceModeEditor({
                   onClick={() => removeOption(idx)}
                   disabled={disabled}
                   aria-label={`Remove option ${idx + 1}`}
-                  className="shrink-0 rounded-lg border border-border p-2 text-muted transition-colors hover:bg-surface disabled:opacity-50"
+                  className="shrink-0 rounded-control border border-border p-2 text-muted transition-colors hover:bg-surface disabled:opacity-50"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -458,17 +459,17 @@ export function PriceModeEditor({
               onChange={(price) => updateOption(idx, { price })}
             />
 
-            <label className="flex items-center gap-2 text-body-sm text-text">
-              <input
-                type="radio"
-                name={`${idPrefix}-recommended`}
-                checked={opt.recommended === true}
-                disabled={disabled}
-                className="h-4 w-4 border-border text-primary focus:ring-border-strong/30"
-                onChange={() => setRecommended(idx)}
-              />
-              <Star className="h-3.5 w-3.5" aria-hidden /> Most popular
-            </label>
+            <Radio
+              name={`${idPrefix}-recommended`}
+              checked={opt.recommended === true}
+              disabled={disabled}
+              onChange={() => setRecommended(idx)}
+              label={
+                <span className="inline-flex items-center gap-2">
+                  <Star className="h-3.5 w-3.5" aria-hidden /> Most popular
+                </span>
+              }
+            />
           </div>
         ))}
 
@@ -477,7 +478,7 @@ export function PriceModeEditor({
             type="button"
             onClick={addOption}
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" /> Add option
           </button>
@@ -503,7 +504,7 @@ export function PriceModeEditor({
           type="button"
           onClick={promoteToPackages}
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" /> Add option
         </button>

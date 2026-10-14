@@ -13,7 +13,7 @@ import type { VeraCopy } from '@/lib/onboarding/funnel-script'
 // now just the reserved `beta-default` VERA flow plus the breathwork feature
 // Funnel) and the DB layer (the `sequence_overrides` table, stored name kept —
 // owner edits + Funnels built in the wizard).
-// Server-only (reads the admin client). The induction page, the /pages/splash
+// Server-only (reads the admin client). The induction page, the Default Funnel tab
 // editor, and the builder all go through here so what they render is what's live.
 
 /** A blank Funnel cloned from the default flow — the wizard's starting point. */
@@ -58,7 +58,7 @@ function apply(base: Funnel, o: FunnelOverride): Funnel {
 
 /** The DEFAULT flow, fully merged, exactly as /join renders it with no
  *  ?seq: coded VERA copy → legacy /admin/vera induction tweaks (vera_config) → the
- *  `beta-default` override (the /pages/splash editor). The editor's saved copy wins;
+ *  `beta-default` override (the Default Funnel editor (/pages/sequences?tab=default)). The editor's saved copy wins;
  *  the vera_config layer stays underneath so older operator edits keep applying
  *  until the new editor writes over them. */
 export async function resolveDefaultFunnel(): Promise<Funnel> {
@@ -117,7 +117,7 @@ interface FunnelSummary {
 
 /** Every Funnel to list in the builder: code Funnels plus
  *  DB-created versions, each with its publish state. The reserved `beta-default` row
- *  is the default flow's override, not a version — it's managed at /pages/splash and
+ *  is the default flow's override, not a version — it's managed on the Default Funnel tab (/pages/sequences?tab=default) and
  *  excluded here. */
 export async function listAllFunnels(): Promise<FunnelSummary[]> {
   const code: FunnelSummary[] = listCodeFunnels().map((s) => ({

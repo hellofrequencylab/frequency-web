@@ -1,5 +1,5 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
@@ -15,6 +15,8 @@ import { spec as toolsForCommunityBuilders } from '@/lib/page-editor/templates/t
 import { spec as whatIsFrequency } from '@/lib/page-editor/templates/what-is-frequency'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
+import { quickAnswers } from '@/lib/marketing/quick-answers'
+import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
@@ -103,7 +105,17 @@ export async function GET() {
     '',
     '## About Frequency',
     '',
-    'Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, and grow a Space (your own community, business, or nonprofit). The Quest is the light game everyone plays alongside that.',
+    `${CATEGORY_LINE} Frequency exists to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, and grow a Space (your own community, business, or nonprofit). The Quest is the light game everyone plays alongside that.`,
+    '',
+    // The same quick answers /llms.txt leads with (lib/marketing/quick-answers.ts), so the two corpora
+    // cannot answer "what is it, who is it for, what does it cost, how does it work, where" differently.
+    '### Quick answers',
+    '',
+    ...quickAnswers({
+      ladder: offerings.map((o) => `${offeringLadderLabel(o)} ${o.monthly}`).join(', '),
+      abs: (path) => `${SITE_URL}${path}`,
+      memberThemes: SELECTABLE_SKINS.map((s) => s.label),
+    }).flatMap((x) => [`Q: ${x.q}`, `A: ${x.a}`]),
     '',
     `### ${WHO_FREQUENCY_IS_FOR_HEADING}`,
     '',
@@ -114,7 +126,7 @@ export async function GET() {
     // LIVE-253: "a paid plan buys a lower rate, not permission" got the second half right and the
     // first half backwards, and the paragraph then closed on "that rate drops as your plan rises",
     // so the corpus argued the fee ladder twice. Both halves are PLAN_STORY now.
-    `People join free. Businesses host free. You pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
+    `People join free. Businesses host free. You pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always, and tips carry no platform fee on any rung, only card processing. We earn only a small fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
     ...takeRateLines(offerings),
     '',
     // The walls and the plan each opens at are READ off the gate map (paidWallsPhrase), the same
@@ -122,7 +134,7 @@ export async function GET() {
     // not enforce. It used to type "revenue splits (Collective)" for a gate HYG-079 had deleted.
     `${paidWallsPhrase(input.gateOverrides) === 'nothing' ? PLAN_STORY.selling : `What needs a paid plan: ${paidWallsPhrase(input.gateOverrides)}.`} ${PLAN_STORY.meters}`,
     '',
-    'Physical Spaces (Outposts and Frequency Labs) are funded by a separate community-owned vehicle, never out of platform margin.',
+    'Physical spaces (Outposts and The Lab, the first planned for 2028) will be funded by a separate community-owned vehicle, never out of platform margin.',
     '',
     '### The four promises',
     '',

@@ -100,7 +100,7 @@ export function EmailBestPractices({ overview }: { overview: MarketingEmailOverv
           const s = GRADE_STYLE[c.grade]
           const Icon = s.icon
           return (
-            <div key={c.label} className={`rounded-2xl border bg-surface p-3.5 ${s.ring}`}>
+            <div key={c.label} className={`rounded-card border bg-surface p-3.5 ${s.ring}`}>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-meta font-semibold text-text">{c.label}</p>
                 <Icon className={`h-4 w-4 shrink-0 ${s.tone}`} aria-hidden />
@@ -122,7 +122,7 @@ export function EmailBestPractices({ overview }: { overview: MarketingEmailOverv
           {PLAYBOOK.map((p) => {
             const Icon = p.icon
             return (
-              <div key={p.title} className="flex gap-3 rounded-2xl border border-border bg-surface p-3.5">
+              <div key={p.title} className="flex gap-3 rounded-card border border-border bg-surface p-3.5">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>

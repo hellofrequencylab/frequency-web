@@ -32,7 +32,7 @@ export type EventMapPin = {
 // run on the server.
 export default function EventsMap({
   pins,
-  className = 'h-[420px] w-full overflow-hidden rounded-card border border-border',
+  className = 'h-105 w-full overflow-hidden rounded-card border border-border',
 }: {
   pins: EventMapPin[]
   className?: string
@@ -40,7 +40,7 @@ export default function EventsMap({
   // Graceful empty case: a tasteful panel instead of a blank map.
   if (pins.length === 0) {
     return (
-      <div className="flex h-[420px] w-full items-center justify-center rounded-card border border-dashed border-border bg-surface/60 px-6 text-center">
+      <div className="flex h-105 w-full items-center justify-center rounded-card border border-dashed border-border bg-surface/60 px-6 text-center">
         <p className="text-body-sm text-muted">
           No in-person events with a location to map yet. Online events and ones without a place
           set don&rsquo;t show here.

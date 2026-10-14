@@ -38,6 +38,7 @@ import { FieldForm, type FieldsSchema, type PushRequest } from './field-form'
 import { BlockList } from './block-list'
 import { BottomSheet } from './bottom-sheet'
 import { Snackbar, type SnackbarState } from './snackbar'
+import { capsLabel } from '@/components/ui/caps-label'
 
 /** An extra control surface injected into the dock (e.g. Spotlight's Theme). Each panel
  *  becomes its own dock tab that opens `render()` inside the expandable bottom sheet —
@@ -295,7 +296,7 @@ export function MobileEditor({
           type="button"
           onClick={handlePublish}
           disabled={!dirty && publishState !== 'error'}
-          className={`min-h-[44px] rounded-lg px-4 text-body-sm font-semibold transition-colors ${
+          className={`min-h-[44px] rounded-control px-4 text-body-sm font-semibold transition-colors ${
             dirty || publishState === 'error'
               ? 'bg-primary text-on-primary hover:bg-primary-hover'
               : 'cursor-default bg-surface-elevated text-subtle'
@@ -334,7 +335,7 @@ export function MobileEditor({
         ) : (
           <>
             <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border/60 bg-canvas/80 py-1 backdrop-blur">
-              <span className="text-meta font-medium uppercase tracking-wide text-subtle">Preview</span>
+              <span className={capsLabel('text-meta font-medium text-subtle')}>Preview</span>
             </div>
             <div className="pointer-events-none">
               {/* `isEditing`: the authoring canvas, so an unfilled section shows its
@@ -352,7 +353,7 @@ export function MobileEditor({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[60] flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
           <nav
             aria-label="Editor controls"
-            className="pointer-events-auto flex w-full max-w-lg items-center gap-1 rounded-2xl border border-border bg-surface-elevated p-1.5 shadow-xl"
+            className="pointer-events-auto flex w-full max-w-lg items-center gap-1 rounded-card border border-border bg-surface-elevated p-1.5 shadow-xl"
           >
             <DockTab
               label="Blocks"
@@ -405,7 +406,7 @@ export function MobileEditor({
             <button
               type="button"
               onClick={() => setReordering((v) => !v)}
-              className="min-h-[36px] rounded-lg px-3 text-body-sm font-medium text-text hover:bg-surface"
+              className="min-h-[36px] rounded-control px-3 text-body-sm font-medium text-text hover:bg-surface"
             >
               {reordering ? 'Done' : 'Reorder'}
             </button>
@@ -713,7 +714,7 @@ function BlockEditSheet({
           <button
             type="button"
             onClick={() => setSubs((s) => s.slice(0, -1))}
-            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-body-sm font-medium text-text hover:bg-surface-elevated"
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-control px-2 text-body-sm font-medium text-text hover:bg-surface-elevated"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden /> Back
           </button>

@@ -9,6 +9,7 @@ import type { AdminSlot } from '@/lib/admin/modules/registry'
 import { SPACE_HUB_SECTIONS, SPACE_HUB_GROUPS, groupForCard, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { hrefForSurface, panelHrefForModule } from '@/lib/spaces/surface-hrefs'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // hrefForSurface was LIFTED to the pure lib module (lib/spaces/surface-hrefs.ts) so the client-side
 // admin rail's Space link-rows (components/layout/settings-panel.tsx) can reuse the SAME map without
@@ -204,7 +205,7 @@ function SectionRow({
         href={href}
         title={module.desc}
         data-console-row
-        className={`group flex tap-target items-center gap-2.5 rounded-lg border border-border lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
+        className={`group flex tap-target items-center gap-2.5 rounded-control border border-border lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
       >
         <span className={`flex shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong ${nested ? 'h-6 w-6' : 'h-7 w-7'}`}>
           <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
@@ -249,7 +250,7 @@ function DangerRow({
   spaceId: string
 }) {
   return (
-    <li className="rounded-lg border border-danger/30 bg-surface px-2.5 py-2 lift-1">
+    <li className="rounded-control border border-danger/30 bg-surface px-2.5 py-2 lift-1">
       <div className="flex items-center gap-2.5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-danger-bg text-danger">
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -439,15 +440,20 @@ export function SpaceManageConsole({
    *  the gates are biting (or may be), and the board says nothing rather than promising open access. */
   graceEndsLabel?: string | null
 }) {
-  const blurb = SPACE_HUB_SECTIONS.find((s) => s.key === section)?.blurb
+  // THE FREQUENCY CONSOLE (SITE_DESIGN, build-time): the standalone page sits in the design's admin shell,
+  // whose sidebar IS these tabs and whose page frame carries the blurb (manage/page.tsx). So the pill tabs
+  // and the blurb step aside there. The in-place Manage panel (a sectionHref override, under a Space's
+  // profile header, outside the shell) keeps both, as DAWN does everywhere.
+  const inShell = SITE_DESIGN === 'frequency' && !sectionHref
+  const blurb = inShell ? undefined : SPACE_HUB_SECTIONS.find((s) => s.key === section)?.blurb
   // The Profile & Settings tab renders the settings surface (identity · Team · Reviews · Plan & Billing ·
   // Danger); every other tab renders its flat feature cards, with the Resonance CRM roster atop Resonance.
   const inSection = modules.filter((m) => sectionForModule(m) === section)
 
   return (
     <div>
-      <HubNav slug={slug} section={section} sectionHref={sectionHref} />
-      <div className="mt-5">
+      {!inShell && <HubNav slug={slug} section={section} sectionHref={sectionHref} />}
+      <div className={inShell ? undefined : 'mt-5'}>
         {/* Resonance + Marketing render their own full surfaces (with their own headers / sub-nav); no hub
             blurb there. Every other tab keeps its short blurb above the feature cards. */}
         {blurb && section !== 'dashboard' && section !== 'resonance' && section !== 'marketing' && (
@@ -542,7 +548,7 @@ export function SpaceSettingsSurface({
         href={`/spaces/${slug}/manage/modules`}
         className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <SlidersHorizontal className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
@@ -562,7 +568,7 @@ export function SpaceSettingsSurface({
         href={`/spaces/${slug}/manage/mode`}
         className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Compass className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">

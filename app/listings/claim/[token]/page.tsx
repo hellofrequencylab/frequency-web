@@ -9,6 +9,8 @@ import { getListing as getMarketListing, LISTING_KINDS } from '@/lib/marketplace
 import { getListing as getBaseListing } from '@/lib/listings'
 import { getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
 import { ClaimButton } from './claim-button'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyListingClaim } from '@/components/frequency/site/pages/funnel/listing-claim'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,6 +78,17 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ t
     loadPreview(claim.kind, claim.listingId),
     getMyProfileId(),
   ])
+
+  // The Frequency design (ADR-1737): the same resolved preview, sign-in return and claim action.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FrequencyListingClaim
+        token={token}
+        preview={{ ...preview, title: claim.title || 'Untitled listing' }}
+        signedIn={!!myProfileId}
+      />
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-16">

@@ -51,7 +51,7 @@ function FormSection({
   children: React.ReactNode
 }) {
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+    <section className="space-y-4 rounded-card border border-border bg-surface p-4 sm:p-5">
       <div>
         <h2 className="text-body font-bold text-text">{title}</h2>
         {description && <p className="mt-0.5 text-body-sm text-muted">{description}</p>}

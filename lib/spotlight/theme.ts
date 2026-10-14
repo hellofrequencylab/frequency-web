@@ -14,15 +14,17 @@ import type { CSSProperties } from 'react'
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
 // stack references its variable with a system fallback. No member @font-face — the set is
 // a closed allowlist. ──
-export type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk'
+type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk'
 export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: string }[] = [
   { id: 'sans', label: 'Clean sans', stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
   { id: 'serif', label: 'Elegant serif', stack: 'var(--font-playfair), Georgia, Cambria, "Times New Roman", serif' },
   { id: 'rounded', label: 'Friendly rounded', stack: 'var(--font-nunito), ui-rounded, "SF Pro Rounded", system-ui, sans-serif' },
   { id: 'mono', label: 'Mono', stack: 'var(--font-geist-mono), ui-monospace, "SF Mono", monospace' },
   // `--font-display` lets a Space page theme (ADR-578) re-point the default display face; unset elsewhere
-  // it falls back to Anton, so member Spotlight + marketing headers are unchanged.
-  { id: 'display', label: 'Bold display', stack: 'var(--font-display, var(--font-anton)), "Arial Black", Impact, system-ui, sans-serif' },
+  // it falls back to the DESIGN's display face (`--design-font-display`): Anton under DAWN, byte for byte
+  // what this stack named before, and Unbounded under Frequency. It used to name `--font-anton` directly,
+  // which is how every per-header "display" pick painted Anton on a Frequency Space page (ADR-1737).
+  { id: 'display', label: 'Bold display', stack: 'var(--font-display, var(--design-font-display, var(--font-anton))), "Arial Black", Impact, system-ui, sans-serif' },
   { id: 'script', label: 'Handwritten', stack: 'var(--font-caveat), "Bradley Hand", "Comic Sans MS", cursive' },
   { id: 'grotesk', label: 'Modern grotesk', stack: 'var(--font-grotesk), "Helvetica Neue", system-ui, sans-serif' },
 ]

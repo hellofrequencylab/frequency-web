@@ -19,6 +19,8 @@ import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqMarketBody } from '@/components/frequency/members/marketplace/marketplace-body'
 
 // Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
 // band, then Products / Services / Tickets rails aggregating market-published listings across makers and
@@ -86,6 +88,22 @@ export default async function MarketPage({
   // this page's coded cover, plus the operator-tunable header element (ADR-793) for
   // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
   // header image for this route got nothing.
+  // THE DESIGN SWITCH (ADR-1737, templates/members/Marketplace.html): the same catalog and group
+  // filter in the member kit; every card opens the product page, where the buy flow lives.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqMarketBody
+        items={items}
+        group={group ?? null}
+        counts={counts}
+        signedIn={!!viewerProfileId}
+        ratings={ratings}
+        verified={verified}
+        founding={founding}
+      />
+    )
+  }
+
   const hero = await resolveMarketHero('/market', { cover: HERO_IMAGE })
 
   return (

@@ -135,7 +135,7 @@ export function AssetVersions({ assetId }: { assetId: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => restore(v.id)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta text-text hover:bg-surface-elevated disabled:opacity-70"
+                className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border px-2 py-1 text-meta text-text hover:bg-surface-elevated disabled:opacity-70"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Restore
               </button>

@@ -20,13 +20,15 @@ import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { track } from '@/lib/analytics/track'
-import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
+import { getPracticesToLogToday, getPartialPracticesToday, getMemberPractices } from '@/lib/practices'
 import { getCachedMemberProgress } from '@/lib/member-progress'
 import { stageUnlocked } from '@/lib/unlocks'
 import { getMemberPillarBalance } from '@/lib/pillars'
 import { StageCelebration } from '@/components/progress/stage-celebration'
 import { AmplitudeCelebration } from '@/components/progress/amplitude-celebration'
 import { getAmplitudeCelebration } from '@/lib/amplitude-celebration'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyFeed } from '@/components/frequency/members/feed/feed-body'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -156,12 +158,15 @@ export default async function FeedPage({
   // feed is back at the top of it. LIVE-248 moved them behind the rail's <Suspense>, which did
   // buy the page a little latency — and cost every phone the board entirely, since the rail is
   // `hidden lg:flex`. The board is what the member opens the app for; the two reads are the price.
-  const [practicesToLog, partialPractices, progress, amplitudeMoment, localActivity] = await Promise.all([
+  // Under Frequency the standing panel lists every adopted practice (logged or not), so the adoptions
+  // ride in the same batch; DAWN never makes the read.
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, localActivity, adoptedPractices] = await Promise.all([
     myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getCachedMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
+    myProfileId && SITE_DESIGN === 'frequency' ? getMemberPractices(myProfileId) : Promise.resolve([]),
   ])
   const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
 
@@ -186,6 +191,90 @@ export default async function FeedPage({
         nextStepTitle: journeyProgress[0].nextLesson?.title ?? null,
       }
     : undefined
+
+  // THE DESIGN SWITCH (ADR-1737). SITE_DESIGN is fixed at build time, so a DAWN deploy never
+  // reaches this branch and renders exactly what it always has below. Under Frequency the member's
+  // home is the design handoff's Feed (components/frequency/members/feed); a signed-out visitor
+  // still gets the public stream below.
+  if (SITE_DESIGN === 'frequency' && profile && myProfileId) {
+    const top = journeyProgress[0]
+    const metaRec = (profile.meta as Record<string, unknown> | null) ?? {}
+    const beta = (metaRec.beta ?? {}) as { location?: { label?: string | null } | null }
+    const firstPractice = practicesToLog[0] as { id: string; slug?: string | null } | undefined
+    const unlogged = new Set(practicesToLog.map((pr) => pr.id))
+    const practices = adoptedPractices.map((pr) => ({
+      id: pr.id,
+      title: pr.title,
+      href: `/practices/${pr.slug ?? pr.id}`,
+      meta: [pr.duration_min ? `${pr.duration_min} min` : null, pr.cadence ? pr.cadence.toLowerCase() : null].filter(Boolean).join(' · '),
+      done: !unlogged.has(pr.id),
+    }))
+    return (
+      <>
+        {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
+        {progress?.justAdvanced && progress.newlyUnlocked && (
+          <StageCelebration
+            stageIndex={progress.newlyUnlocked.index}
+            stageLabel={progress.newlyUnlocked.label}
+            tagline={progress.newlyUnlocked.tagline}
+          />
+        )}
+        {amplitudeMoment && (
+          <AmplitudeCelebration
+            level={amplitudeMoment.level}
+            amplitude={amplitudeMoment.amplitude}
+            milestoneLabel={amplitudeMoment.milestoneLabel}
+          />
+        )}
+        <FrequencyFeed
+          profileId={myProfileId}
+          firstName={firstName}
+          displayName={profile.display_name ?? 'You'}
+          avatarUrl={profile.avatar_url ?? null}
+          role={myRole}
+          sort={sort}
+          home={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng } : null}
+          radiusM={effectiveRadiusM}
+          locationLabel={beta.location?.label ?? null}
+          standing={{
+            streak: practiceStreak?.current ?? streak,
+            loggedToday: practiceStreak?.loggedToday ?? false,
+            atRisk: practiceStreak?.atRisk ?? false,
+            freezeTokens: practiceStreak?.freezeTokens ?? 0,
+            nextMilestone: practiceStreak?.nextMilestone ?? null,
+            toNext: practiceStreak?.toNext ?? 0,
+            zaps: progress?.standing.seasonZaps ?? 0,
+            gems: progress?.standing.lifetimeGems ?? 0,
+            rank: progress?.rank.rank ?? 'ghost',
+            journeysFinished: progress?.signals.journeysFinished ?? 0,
+            journeysToNext: progress?.rank.toNextZaps ?? null,
+            nextRankLabel: progress?.rank.nextLabel ?? null,
+          }}
+          onboarding={
+            onboarding && !onboarding.complete
+              ? onboarding.steps.map((s) => ({ key: s.key, label: s.label, blurb: s.blurb, cta: s.cta, href: s.href, done: s.done }))
+              : null
+          }
+          journey={
+            top
+              ? {
+                  title: top.title,
+                  href: `/journeys/${top.slug}`,
+                  percent: top.percent,
+                  phasesComplete: top.phasesComplete,
+                  phasesTotal: top.phasesTotal,
+                  nextLesson: top.nextLesson ? { title: top.nextLesson.title, href: top.nextLesson.href } : null,
+                  nextLessonId: top.nextLesson?.id ?? null,
+                  inCohort: top.inCohort,
+                }
+              : null
+          }
+          tuneOutHref={firstPractice ? `/practices/${firstPractice.slug ?? firstPractice.id}` : '/practices'}
+          practices={practices}
+        />
+      </>
+    )
+  }
 
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
   // Greet in the community's timezone (the beta is North County San Diego) so the

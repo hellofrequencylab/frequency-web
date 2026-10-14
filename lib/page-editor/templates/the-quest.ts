@@ -234,9 +234,10 @@ export const data: Data = {
         focal: 'center',
         // The door to the thing this block describes (HYG-034). It shipped with both fields
         // empty, so the page that introduces the timer was the one page you could not open it
-        // from — the same defect class as LIVE-134, one surface over.
+        // from — the same defect class as LIVE-134, one surface over. It targets /mindless, the
+        // public timer a signed-out reader can run (LIVE-805), not /on-air (LIVE-915).
         ctaLabel: 'Open Mindless',
-        ctaHref: '/on-air',
+        ctaHref: '/mindless',
         tone: 'canvas',
         width: 'default',
         align: 'left',

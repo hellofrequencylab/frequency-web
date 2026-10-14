@@ -87,7 +87,7 @@ export function AwardDialog({
 
   return (
     <Dialog open={open} onClose={close} ariaLabel="Award Achievement" className="max-w-md">
-      <div className="w-full rounded-2xl border border-border bg-surface lift-3">
+      <div className="w-full rounded-card border border-border bg-surface lift-3">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-body-sm font-semibold text-text">Award Achievement</h2>
           <button onClick={close} aria-label="Close" className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">
@@ -115,7 +115,7 @@ export function AwardDialog({
                     names its own input. */}
                 <p className="eyebrow text-muted">Member</p>
                 {selectedMember ? (
-                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+                  <div className="mt-1 flex items-center gap-2 rounded-control border border-border px-3 py-2">
                     <span className="text-body-sm text-text flex-1">{selectedMember.display_name}</span>
                     <span className="text-meta text-subtle">@{selectedMember.handle}</span>
                     <button
@@ -141,7 +141,7 @@ export function AwardDialog({
                       />
                     </div>
                     {memberSearch && (
-                      <div className="mt-1 rounded-lg border border-border bg-surface max-h-40 overflow-y-auto">
+                      <div className="mt-1 rounded-control border border-border bg-surface max-h-40 overflow-y-auto">
                         {filteredMembers.map(m => (
                           <button
                             key={m.id}
@@ -196,7 +196,7 @@ export function AwardDialog({
                 <button
                   onClick={handleRevoke}
                   disabled={!selectedMember || !selectedAchievement || isPending}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-danger px-3 py-2 text-meta font-semibold text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
+                  className="flex items-center justify-center gap-1.5 rounded-control border border-danger px-3 py-2 text-meta font-semibold text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
                 >
                   Revoke
                 </button>

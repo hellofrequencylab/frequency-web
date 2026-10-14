@@ -181,7 +181,7 @@ export function ProfileCard({
             <ContextSwitcher context={context} available={availableContexts} />
             <Link
               href={profileHref}
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-chrome-hover transition-colors"
+              className="flex items-center gap-2.5 rounded-control px-2 py-1.5 text-body-sm font-medium text-text hover:bg-chrome-hover transition-colors"
             >
               <User className="w-4 h-4 text-muted shrink-0" />
               View profile

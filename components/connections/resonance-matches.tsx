@@ -20,7 +20,7 @@ export async function ResonanceMatches() {
 
   if (!consent.optedIn) {
     return (
-      <section className="rounded-2xl border border-primary/30 bg-primary-bg/40 p-5">
+      <section className="rounded-card border border-primary/30 bg-primary-bg/40 p-5">
         <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> People you would click with
         </h2>
@@ -30,7 +30,7 @@ export async function ResonanceMatches() {
         </p>
         <Link
           href="/settings#connections"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Turn on matching <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
@@ -41,7 +41,7 @@ export async function ResonanceMatches() {
   const matches = await getResonanceMatchesForPerson(profileId)
   if (matches.length === 0) {
     return (
-      <section className="rounded-2xl border border-border bg-surface p-5">
+      <section className="rounded-card border border-border bg-surface p-5">
         <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> People you would click with
         </h2>
@@ -54,7 +54,7 @@ export async function ResonanceMatches() {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
+    <section className="rounded-card border border-border bg-surface p-5">
       <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
         <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> People you would click with
       </h2>

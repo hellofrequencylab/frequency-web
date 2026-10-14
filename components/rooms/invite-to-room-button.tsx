@@ -8,6 +8,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { inviteToRoom } from '@/app/(main)/messages/rooms/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { Button } from '@/components/ui/button'
 
 interface HandleResult {
   id: string
@@ -68,13 +69,15 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
 
   return (
     <>
-      <button
+      <Button
+        variant="primarySoft"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-meta font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors"
+        className="w-full"
       >
         <UserPlus className="w-3.5 h-3.5" />
         Invite member
-      </button>
+      </Button>
 
       <CreateModal
         open={open} onClose={closeModal} onSubmit={submit}
@@ -96,7 +99,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         </label>
 
         {query.trim() && results.length > 0 && (
-          <div className="rounded-lg border border-border max-h-64 overflow-y-auto divide-y divide-border">
+          <div className="rounded-control border border-border max-h-64 overflow-y-auto divide-y divide-border">
             {results.map(r => {
               const isSelected = selected?.id === r.id
               const wasInvited = invited.has(r.id)

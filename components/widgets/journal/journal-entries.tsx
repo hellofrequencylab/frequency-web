@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime } from '@/lib/utils'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Your Journal — the daily-log face of Capture (§6 Phase 3, ADR-155/156). The feed is the
 // community's record of lived experience; this is *your* slice of it, your captured moments
@@ -59,7 +60,7 @@ export async function JournalEntries() {
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+      <div className="rounded-card border border-dashed border-border bg-surface p-8 text-center">
         <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
           <Camera className="h-6 w-6" aria-hidden />
         </span>
@@ -84,18 +85,18 @@ export async function JournalEntries() {
     <div className="space-y-6">
       {days.map((day) => (
         <section key={day.label}>
-          <h2 className="mb-2 px-1 text-meta font-bold uppercase tracking-wide text-subtle">{day.label}</h2>
+          <h2 className={capsLabel('mb-2 px-1 text-meta font-bold text-subtle')}>{day.label}</h2>
           <ul className="space-y-2">
             {day.items.map((e) => {
               const hasPhoto = (e.media_urls?.length ?? 0) > 0
               const Icon = e.post_type === 'note' ? NotebookPen : hasPhoto ? Camera : PenLine
               return (
-                <li key={e.id} className="flex gap-3 rounded-2xl border border-border bg-surface p-3">
+                <li key={e.id} className="flex gap-3 rounded-card border border-border bg-surface p-3">
                   <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
                     <Icon className="h-3.5 w-3.5" aria-hidden />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-2xs font-medium uppercase tracking-wide text-muted">
+                    <p className={capsLabel('text-2xs font-medium text-muted')}>
                       {relativeTime(e.created_at)}
                     </p>
                     {e.body && <p className="mt-0.5 whitespace-pre-wrap text-body-sm text-text">{e.body}</p>}

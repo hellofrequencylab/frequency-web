@@ -24,8 +24,9 @@ import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
 // Admin home (owner brief — comprehensive exec dashboard): the page is a BIRDS-EYE
-// view of the whole platform, organized by the four primary areas (Programs,
-// Community, Growth, Operations — the same IA as the nav). Vera's read leads as the
+// view of the whole platform, organized by the operator console's sections in the
+// console's order and under its labels (ADR-1746): Overview (Vera's read), Community,
+// Content, Growth, Platform. Resonance CRM and Vera AI keep their own dashboards. Vera's read leads as the
 // exec summary; then ONE rich section per area. In every section the HEADER, subtext,
 // and instructional copy are printed ON THE CANVAS; the body is a grid of WHITE TILES
 // holding the stats (MiniStat clusters), graphs (trend / bars / rings), and lists.
@@ -129,7 +130,7 @@ export default async function AdminPageView() {
       </Suspense>
     ),
     programs: (
-      <Suspense fallback={<DashSkeleton title="Programs" />}>
+      <Suspense fallback={<DashSkeleton title="Content" />}>
         <ProgramsArea practiceSeries={practiceSeries} />
       </Suspense>
     ),
@@ -152,7 +153,7 @@ export default async function AdminPageView() {
       </Suspense>
     ),
     operations: (
-      <Suspense fallback={<DashSkeleton title="Operations" />}>
+      <Suspense fallback={<DashSkeleton title="Platform" />}>
         <OperationsArea />
       </Suspense>
     ),
@@ -251,7 +252,7 @@ async function HeaderKpisLive({ members, events }: { members: number; events: nu
 // is the graph; the tile is the only white surface in the area grammar.
 function RingTile({ pct, label, sub }: { pct: number; label: string; sub?: string }) {
   return (
-    <div className="flex items-center rounded-2xl border border-border bg-surface p-4">
+    <div className="flex items-center rounded-card border border-border bg-surface p-4">
       <RingGauge pct={pct} label={label} sub={sub} />
     </div>
   )
@@ -294,7 +295,7 @@ async function ProgramsArea({ practiceSeries }: { practiceSeries: number[] }) {
   )
   const inWindow = createdWeekly.reduce((a, b) => a + b, 0)
   const libraryGrowth = cumulative(totalPractices - inWindow, createdWeekly)
-  const g = area('programs')
+  const g = area('content')
   return (
     <DashArea
       icon={g.Icon}
@@ -545,7 +546,7 @@ async function OperationsArea() {
     ((qSeriesRes.data ?? []) as { created_at: string }[]).map((r) => new Date(r.created_at)),
     VOLUME_WEEKS,
   )
-  const g = area('operations')
+  const g = area('platform')
   return (
     <DashArea
       icon={g.Icon}
@@ -594,9 +595,9 @@ function DashSkeleton({ title }: { title: string }) {
       <h2 className="text-body-lg font-bold text-text">{title}</h2>
       <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
       <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/70" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/70" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/70" />
       </div>
     </section>
   )
@@ -655,7 +656,7 @@ function CircleRow({
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-2xl bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
+      className="flex items-center justify-between rounded-card bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -675,7 +676,7 @@ function EmptyCta({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
     >
       <Plus className="h-3.5 w-3.5" />
       {label}

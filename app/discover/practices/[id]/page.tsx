@@ -10,6 +10,8 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPractice } from '@/components/frequency/site/pages/discover/practices'
 
 export const revalidate = 3600
 
@@ -61,19 +63,28 @@ export default async function PublicPracticePage({
   const hero = await resolveDetailHero(`/discover/practices/${practice.slug ?? practice.id}`, {
     entityImage: practice.header_image,
   })
+  const schema = [
+    practiceSchema(practice),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Practices', path: '/discover/practices' },
+      { name: practice.title, path: `/discover/practices/${practice.slug ?? practice.id}` },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same practice and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyPractice practice={practice} image={hero.coverImage} />
+      </>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-      <JsonLd
-        data={[
-          practiceSchema(practice),
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Practices', path: '/discover/practices' },
-            { name: practice.title, path: `/discover/practices/${practice.slug ?? practice.id}` },
-          ]),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <Link
         href="/discover/practices"

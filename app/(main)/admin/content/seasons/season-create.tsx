@@ -45,7 +45,7 @@ export function SeasonCreateForm({ nextNumber, onCreated }: { nextNumber: number
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="season-name">Name</Label>

@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { Loader2, Mail, Plus, Search, Send, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 import { Banner } from '@/components/admin/status'
 import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
 import {
@@ -36,6 +37,7 @@ import {
   spaceMemberComposerColorsAction,
   type SpaceRecipientOption,
 } from './space-member-composer-actions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 /** One recipient in the composed audience. `key` is the normalized email the server resolves. */
 interface Chip {
@@ -63,9 +65,6 @@ export interface SpaceMemberComposerProps {
   /** Fired after a successful send, so the parent drops the remembered draft id and reopening starts fresh. */
   onSent?: () => void
 }
-
-const inputClass =
-  'w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 /** Normalize an email for the chip key + de-dupe (trim + lowercase). */
 function normalize(email: string): string {
@@ -283,13 +282,14 @@ export function SpaceMemberComposer({
         {/* SEARCH to add more of this space's contacts. */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
-          <input
+          <Input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Add someone by name or email"
             aria-label="Search this space's contacts to add"
-            className={`${inputClass} pl-8`}
+            surface="inset"
+            className="pl-8"
           />
           {(searching || results.length > 0) && query.trim().length >= 2 && (
             <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-card border border-border bg-surface lift-1">
@@ -320,7 +320,7 @@ export function SpaceMemberComposer({
                           <span className="block truncate text-subtle">{r.email}</span>
                         </span>
                         {already ? (
-                          <span className="shrink-0 text-3xs uppercase tracking-wide text-muted">Added</span>
+                          <span className={capsLabel('shrink-0 text-3xs text-muted')}>Added</span>
                         ) : (
                           <Plus className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                         )}

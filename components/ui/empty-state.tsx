@@ -1,5 +1,12 @@
 import { AlertTriangle, CheckCircle2, Inbox, Lock, SearchX } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.empty` state in a soft room of its own: the glyph in the
+// kit's `.ic` chip on the pastel wash, the title in `.h3`, the line in `.t2`
+// (app/themes/frequency/members-ui.css `mu-empty`; `data-tone` keys the error and cleared chips).
+// Inlined at build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Shared empty state — one calm pattern for every "nothing here" moment, with a named
 // VARIANT taxonomy (ADR-233 §6, GitHub/Vercel): never a blank pane, always the reason +
@@ -39,6 +46,18 @@ export function EmptyState({
 }) {
   const v = VARIANT[variant]
   const Glyph = Icon ?? v.Icon
+  if (FREQUENCY) {
+    return (
+      <div className="empty mu-empty" data-tone={variant}>
+        <span className="ic" aria-hidden>
+          <Glyph />
+        </span>
+        <p className="h3">{title}</p>
+        {description && <p className="t2">{description}</p>}
+        {action && <div className="mu-act">{action}</div>}
+      </div>
+    )
+  }
   return (
     <div className={`rounded-card border bg-surface/50 px-6 py-12 text-center ${v.frame}`}>
       <span

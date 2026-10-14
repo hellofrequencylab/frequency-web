@@ -1,0 +1,298 @@
+/* ══ FREQUENCY · the alias layer (ADR-1737, ADR-1740) ══════════════════════════════════════════════
+   Applies when <html data-design="frequency"> (NEXT_PUBLIC_SITE_DESIGN=frequency, or the
+   `?design=frequency` preview). Two files make the Frequency design:
+
+     app/themes/frequency/core.css   GENERATED from the Claude Design export by
+                                     `pnpm design:install <export>`. Frequency's own vocabulary, renamed
+                                     into --fq-* (its names collide with the app's: `--text-body` is a
+                                     colour there and a font size here). Never edit it; re-install.
+     app/themes/frequency.css        THIS FILE, kept by hand. It points every name the app reads
+                                     (DAWN's --color-*, --design-*, roles) at a --fq- token, so every
+                                     component wears Frequency without learning a new word.
+
+   Frequency is its own system (docs/THEME.md §0): when the export changes, this file changes only if a
+   ROLE moves, never because a value did. Every value below is a var(--fq-*) unless the export has no
+   token for it, and each of those few literals says which export value it mirrors.
+
+   ONE RULE, TWO SURFACES. A custom property that reads var() resolves where it is declared, so an alias
+   set on <html> would freeze Commons values into Stage sections. The aliases are therefore declared on
+   every element that redefines --fq-*: the root (Commons, and Commons-at-night under .dark) and each
+   Stage surface (`data-surface="stage"`, the marketing site).
+
+   lib/theme/design.test.ts holds the contract: every rule here is scoped to [data-design="frequency"],
+   and every name declared is either a DAWN name or an --fq- name the core declares. */
+
+:root[data-design="frequency"],
+[data-design="frequency"] [data-surface="stage"],
+[data-design="frequency"][data-surface="stage"],
+[data-design="frequency"] [data-skin],
+[data-design="frequency"][data-skin] {
+  /* ── Faces (lib/theme/design-fonts/frequency.ts registers them through next/font) ── */
+  --fq-font-display: var(--font-unbounded, 'Unbounded'), var(--font-hanken, 'Hanken Grotesk'), system-ui, sans-serif;
+  --fq-font-serif: var(--font-instrument-serif, 'Instrument Serif'), Georgia, serif;
+  --fq-font-sans: var(--font-hanken, 'Hanken Grotesk'), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* ── Surfaces ── */
+  --color-canvas: var(--fq-bg-canvas);
+  --color-marketing-canvas: var(--fq-bg-canvas);
+  --color-surface: var(--fq-surface-card);
+  --color-surface-elevated: var(--fq-bg-sunken);
+  --color-surface-post: var(--fq-surface-card);
+  --color-chrome: var(--fq-bg-sunken);
+  --color-chrome-border: var(--fq-border-hair);
+  --color-chrome-hover: var(--fq-surface-raised);
+  --color-border: var(--fq-border-hair);
+  --color-border-strong: var(--fq-border-strong);
+
+  /* ── Text ── */
+  --color-text: var(--fq-text-body);
+  --color-text-muted: var(--fq-text-muted);
+  /* `faint` misses AA on Commons sand; subtle text is read, so it takes muted. */
+  --color-text-subtle: var(--fq-text-muted);
+  /* DAWN's burnt-brown wordmark ink (the nav's active row, the studio's swatch ring): Frequency's strongest ink. */
+  --brand-mark: var(--fq-text-strong);
+
+  /* ── The dark band: Stage's UV void, the same in both modes ── */
+  --color-ink: var(--fq-uv-void);
+  --color-ink-elevated: var(--fq-uv-900);
+  --color-ink-border: var(--fq-uv-700);
+  --color-on-ink: #F6F0FF;        /* Stage --text-strong */
+  --color-on-ink-muted: #D9CFEA;  /* Stage --text-body */
+  --color-on-ink-subtle: #A89BC2; /* Stage --text-muted */
+
+  /* ── Crossover hues by meaning: violet act, magenta live, aqua presence, sun reward ── */
+  --color-primary: var(--fq-action-primary);
+  --color-primary-hover: var(--fq-action-primary-hover);
+  --color-primary-strong: var(--fq-accent);
+  --color-primary-bg: var(--fq-accent-soft);
+  --color-text-on-primary: var(--fq-action-primary-text);
+  --color-signal: var(--fq-presence);
+  --color-signal-strong: var(--fq-presence);
+  --color-signal-bg: var(--fq-presence-soft);
+  --color-text-on-signal: var(--fq-text-on-accent);
+  --color-broadcast: var(--fq-live);
+  --color-broadcast-strong: var(--fq-live);
+  --color-broadcast-bg: var(--fq-live-soft);
+  --color-text-on-broadcast: var(--fq-text-on-accent);
+  --color-move: var(--fq-accent-2);
+  --color-move-hover: var(--fq-accent-2);
+  --color-move-strong: var(--fq-accent-2);
+  --color-move-bg: var(--fq-presence-soft);
+  --color-text-on-move: var(--fq-text-on-accent);
+
+  /* ── Status (the export defines the hue; the chip fill is a 14% wash on the canvas) ── */
+  --color-success: var(--fq-success);
+  --color-success-bg: color-mix(in srgb, var(--fq-success) 14%, var(--fq-bg-canvas));
+  --color-warning: var(--fq-warning);
+  --color-warning-bg: color-mix(in srgb, var(--fq-warning) 14%, var(--fq-bg-canvas));
+  --color-danger: var(--fq-danger);
+  --color-danger-bg: color-mix(in srgb, var(--fq-danger) 14%, var(--fq-bg-canvas));
+  --color-info: var(--fq-info);
+  --color-info-bg: color-mix(in srgb, var(--fq-info) 14%, var(--fq-bg-canvas));
+  /* Commons --text-on-accent (#FFFFFF). Not var(--fq-text-on-accent): that flips dark at night and on
+     Stage, and the status fills (danger, warning, success) do not. */
+  --color-text-on-danger: #FFFFFF;
+  --color-text-on-warning: #FFFFFF;
+  --color-text-on-success: #FFFFFF;
+  --color-focus-ring: var(--fq-focus-ring);
+
+  /* ── Shape ── */
+  --radius-card: var(--fq-radius-l);
+  --radius-control: var(--fq-radius-m);
+  --radius-control-nested: var(--fq-radius-s);
+  --radius-pill: var(--fq-radius-orb);
+  --radius-cover: var(--fq-radius-l);
+
+  /* ── Type steps: DAWN's text roles on Frequency's scale (typography.css) ──
+     DAWN's steps are rem on a 106.25% root, so they land between Frequency's: 12.75px meta, 11.7px and
+     10.6px chrome. Frequency's floor for read text is its 13px meta; its 11px label is the only smaller
+     step, and its 12px tag the chip size. Content roles keep DAWN's --type-scale multiplier. */
+  --text-3xs: var(--fq-text-label);                                /* 11px, the label */
+  --text-2xs: 12px;                                                /* the kit's .tag */
+  --text-meta: calc(var(--fq-text-meta) * var(--type-scale, 1));   /* 13px */
+  --text-body-sm: calc(15px * var(--type-scale, 1));               /* UI text, 14 to 15 */
+  --text-body-lg: calc(var(--fq-text-body-l) * var(--type-scale, 1)); /* 19px */
+  --text-card-title: calc(var(--fq-text-h4) * var(--type-scale, 1));  /* 18px */
+
+  /* ── The design layer: what rounded-*, shadow-*, font-* and the type steps mean ── */
+  --design-font-body: var(--fq-font-sans);
+  --design-font-display: var(--fq-font-display);
+  --design-font-display-fallback: var(--fq-font-sans);
+  --design-heading-weight: 600;
+  /* The kit sets Unbounded at 500 everywhere it draws a title or a numeral (.h1, .h2, .h3, .num). */
+  --design-display-weight: 500;
+  --design-display-tracking: var(--fq-track-h1);
+  --design-display-leading: var(--fq-lh-h1);
+  --design-radius-sm: var(--fq-radius-s);
+  --design-radius-md: var(--fq-radius-s);
+  --design-radius-lg: var(--fq-radius-m);
+  --design-radius-xl: var(--fq-radius-m);
+  --design-radius-2xl: var(--fq-radius-l);
+  --design-radius-3xl: var(--fq-radius-xl);
+  --design-shadow-2xs: var(--fq-shadow-1);
+  --design-shadow-xs: var(--fq-shadow-1);
+  --design-shadow-sm: var(--fq-shadow-1);
+  --design-shadow-md: var(--fq-shadow-1);
+  --design-shadow-lg: var(--fq-shadow-2);
+  --design-shadow-xl: var(--fq-shadow-float);
+  --design-shadow-pop: var(--fq-shadow-2);
+  --design-shadow-pop-lg: var(--fq-shadow-float);
+  --design-shadow-menu: var(--fq-shadow-2);
+  --ease-out: var(--fq-ease-out);
+  --motion-fast: var(--fq-dur-fast);
+  --motion-base: var(--fq-dur-base);
+  --motion-slow: var(--fq-dur-slow);
+  --tap-min: var(--fq-hit-min);
+
+  /* ── DAWN's signature effects are DAWN's: off under Frequency, one lever each ── */
+  --design-fx-slat-opacity: 0;
+  --design-fx-strip-opacity: 0;
+  --design-fx-amber-glow-opacity: 0;
+  --design-fx-sheen-opacity: 0;
+  --design-fx-dot-grid-opacity: 0;
+  --design-fx-rule-opacity: 0;
+  --design-fx-brand-shine-iterations: 0;
+  --design-fx-brand-wiggle-iterations: 0;
+  --design-fx-glow-iterations: 0;
+
+  /* ── Map paint (the three MapLibre maps) ── */
+  --design-map-pin: var(--fq-action-primary);
+  --design-map-pin-ring: var(--fq-surface-card);
+  --design-map-count: var(--fq-action-primary-text);
+  --design-map-link: var(--fq-text-link);
+  --design-map-meta: var(--fq-text-muted);
+  --design-map-starter: var(--fq-live);
+  --design-map-starter-link: var(--fq-live);
+
+  color-scheme: light;
+}
+
+/* STANDARDIZED (owner, 2026-10-13): the export's Commons muted ink #7C766F reads 4.20:1 on the sand
+   canvas and 4.49:1 on white, under AA's 4.5 for the reading text it carries. #6E6862 is the same hue a
+   step deeper: 5.15 on sand, 4.69 on sunken sand, 5.50 on white. Day Commons only; Stage and Commons
+   at night keep the export's values, which pass. */
+:root[data-design="frequency"]:not(.dark) {
+  --fq-text-muted: #6E6862; /* Commons muted, AA on every Commons surface */
+  /* AA PASS (go-live a11y gate, 2026-10-14). Every value below is the export's own hue, moved along
+     lightness only until it clears 4.5:1 on every surface it lands on: the card, the sand canvas, the
+     sunken sand, the app kits' 4% ink wash and its own 14% status wash. The export's values read 2.4
+     to 4.45. Faint #A59F98 read 2.4 on the console's search pill. */
+  --fq-text-faint: #6F6961; /* export faint #A59F98, deepened: 4.5 on sunken sand, 5.4 on card */
+  --fq-success: #296E4E;    /* export #2F7F5A (4.03 on its wash): 4.6 on its sand wash, 4.9 on the card's */
+  --fq-warning: #895700;    /* export #A86A00 (3.69 on its wash): 4.6 on its sand wash, 4.9 on the card's */
+  --fq-danger: #B23227;     /* export #C2362B (4.05 on its sand wash): 4.6 */
+  --fq-info: #2C6886;       /* export #2F6F8F (4.2 on its sand wash): 4.6 */
+  --fq-presence: #156D7E;   /* export aqua-deep #17788A (4.45 on presence-soft): 5.17 */
+}
+
+/* Commons at night and Stage: the export keeps the day status hues on the dark rooms (2F7F5A read
+   3.36 on its own night wash, A86A00 3.64), and its faint ink misses AA on the night card. Each is the
+   export hue lifted until it clears 4.6:1 on the night card, the raised card, the UV card and its own
+   14% wash. The fills turn light, so the ink on them turns dark: DAWN's own night idiom. */
+:root.dark[data-design="frequency"],
+:root[data-design="frequency"] [data-surface="stage"],
+:root[data-design="frequency"][data-surface="stage"] {
+  --fq-success: #3FA374; /* export #2F7F5A lifted for night (5.0:1 on its own dark wash) */
+  --fq-warning: #C98200; /* export #A86A00 lifted for night (5.0:1 on its own dark wash) */
+  --fq-danger: #DC685F;  /* export #C2362B lifted for night (4.6:1 on its own dark wash) */
+  --fq-info: #3E94BE;    /* export #2F6F8F lifted for night (4.6:1 on its own dark wash) */
+}
+:root.dark[data-design="frequency"],
+:root.dark[data-design="frequency"] [data-skin],
+:root[data-design="frequency"] [data-surface="stage"],
+:root[data-design="frequency"][data-surface="stage"] {
+  --color-text-on-danger: var(--fq-text-on-accent);
+  --color-text-on-warning: var(--fq-text-on-accent);
+  --color-text-on-success: var(--fq-text-on-accent);
+}
+:root.dark[data-design="frequency"] {
+  --fq-text-faint: #908170; /* export night faint #857767 (4.26 on the night card): 4.9 */
+}
+:root[data-design="frequency"] [data-surface="stage"],
+:root[data-design="frequency"][data-surface="stage"] {
+  --fq-text-faint: #877C9D; /* export Stage faint #7A6E93 (4.07 on the UV card): 4.9 */
+}
+
+/* Commons at night and Stage are dark rooms: native controls and scrollbars follow. */
+.dark[data-design="frequency"],
+[data-design="frequency"] [data-surface="stage"],
+[data-design="frequency"][data-surface="stage"] {
+  color-scheme: dark;
+}
+
+/* The wordmark is an image: the export's --logo-filter turns it light on Stage and at night. */
+[data-design="frequency"] [data-brand-wordmark] {
+  filter: var(--fq-logo-filter, none);
+}
+
+/* ══ MIDNIGHT, the member theme (owner, 2026-10-13, ADR-1737) ═══════════════════════════════════════
+   A member picks Midnight in Settings, Appearance; the members layout stamps [data-skin] on a wrapper
+   around the shell. The export has no Midnight, so this is Frequency's own palette moved cooler, built
+   only from export tokens: blue hour by day (sky haze over linen, UV ink), the UV temple (Night A) at
+   night, keeping Commons-at-night's violet action and aqua focus. The alias rule above lists these
+   selectors too (any [data-skin]), so every DAWN name re-resolves here and DAWN's own [data-skin="midnight"] block,
+   which retunes DAWN's palette, never shows through. */
+[data-design="frequency"] [data-skin="midnight"],
+[data-design="frequency"][data-skin="midnight"] {
+  --fq-bg-canvas: color-mix(in oklab, var(--fq-sky-haze) 30%, var(--fq-linen));
+  --fq-bg-sunken: color-mix(in oklab, var(--fq-sky-haze) 50%, var(--fq-linen));
+  --fq-surface-card: color-mix(in oklab, var(--fq-sky-haze) 10%, var(--fq-linen));
+  --fq-surface-glass: color-mix(in oklab, var(--fq-surface-card) 74%, transparent);
+  --fq-glass-panel: linear-gradient(150deg, color-mix(in oklab, var(--fq-linen) 70%, transparent), color-mix(in oklab, var(--fq-sky-haze) 34%, transparent));
+  --fq-text-strong: var(--fq-uv-900);
+  --fq-text-body: color-mix(in oklab, var(--fq-uv-800) 45%, var(--fq-ink-2));
+  --fq-border-hair: color-mix(in oklab, var(--fq-uv-900) 9%, transparent);
+  --fq-border-strong: color-mix(in oklab, var(--fq-uv-900) 20%, transparent);
+  --fq-track: color-mix(in oklab, var(--fq-uv-900) 7%, transparent);
+}
+.dark[data-design="frequency"] [data-skin="midnight"],
+.dark[data-design="frequency"][data-skin="midnight"] {
+  --fq-bg-canvas: var(--fq-uv-void);
+  --fq-bg-sunken: color-mix(in oklab, var(--fq-uv-void) 70%, var(--fq-th-void));
+  --fq-surface-card: var(--fq-uv-900);
+  --fq-surface-raised: var(--fq-uv-800);
+  --fq-surface-glass: color-mix(in oklab, var(--fq-uv-800) 60%, transparent);
+  --fq-glass-panel: linear-gradient(150deg, color-mix(in oklab, var(--fq-uv-800) 70%, transparent), color-mix(in oklab, var(--fq-uv-800) 45%, transparent));
+  --fq-text-strong: var(--color-on-ink);
+  --fq-text-body: var(--color-on-ink-muted);
+  --fq-text-muted: var(--color-on-ink-subtle);
+  /* 85%, not 70%: the 70% mix read 3.9 on the UV raised card. */
+  --fq-text-faint: color-mix(in oklab, var(--color-on-ink-subtle) 85%, var(--fq-uv-900));
+  --fq-border-hair: color-mix(in oklab, var(--color-on-ink) 9%, transparent);
+  --fq-border-strong: color-mix(in oklab, var(--color-on-ink) 20%, transparent);
+  --fq-track: color-mix(in oklab, var(--color-on-ink) 8%, transparent);
+}
+
+/* The Frequency swatch inside a Midnight room (the Appearance picker's preview strip): back to the
+   export's own Commons day and Thermal night, so each card shows its own palette. */
+[data-design="frequency"] [data-skin="midnight"] [data-skin="default"] {
+  --fq-bg-canvas: var(--fq-sand-50);
+  --fq-bg-sunken: var(--fq-sand-100);
+  --fq-surface-card: var(--fq-linen);
+}
+.dark[data-design="frequency"] [data-skin="midnight"] [data-skin="default"] {
+  --fq-bg-canvas: var(--fq-th-void);
+  --fq-bg-sunken: var(--fq-th-900);
+  --fq-surface-card: var(--fq-th-900);
+}
+
+/* THE APP SURFACES (owner, 2026-10-14: "a lot of rogue styles"). The member and admin kits paint their
+   pages on the card surface (kit-members/kit-admin `[data-kit]{background:var(--fq-surface-card)}`) under
+   the ambient glows, not on Commons sand. DAWN components inside them still asked for the canvas, the
+   raised surface and the chrome, which resolve to sand here, so callouts, table heads, comments and
+   skeletons landed as tan blocks. Inside the two app kits those roles take the kits' own sunken idiom:
+   a faint ink wash over the card surface (the members kit's `.input` fill), so every DAWN panel reads as
+   the kit's. The website kit keeps Commons sand, which is its design. */
+[data-design="frequency"] [data-kit="members"],
+[data-design="frequency"] [data-kit="admin"] {
+  --color-canvas: var(--fq-surface-card);
+  --color-surface-elevated: color-mix(in oklab, var(--fq-text-strong) 4%, var(--fq-surface-card));
+  --color-chrome: color-mix(in oklab, var(--fq-text-strong) 4%, var(--fq-surface-card));
+  --color-chrome-hover: color-mix(in oklab, var(--fq-text-strong) 7%, var(--fq-surface-card));
+  /* The status chip fills were a 14% wash on Commons sand (above); in the app kits they wash the card
+     surface, so a success or warning callout stops carrying a tan cast. */
+  --color-success-bg: color-mix(in srgb, var(--fq-success) 14%, var(--fq-surface-card));
+  --color-warning-bg: color-mix(in srgb, var(--fq-warning) 14%, var(--fq-surface-card));
+  --color-danger-bg: color-mix(in srgb, var(--fq-danger) 14%, var(--fq-surface-card));
+  --color-info-bg: color-mix(in srgb, var(--fq-info) 14%, var(--fq-surface-card));
+}

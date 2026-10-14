@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { applyRegistryGates, registryGateFor, normalizeGateHref, REGISTRY_GATES } from './gates'
 import { defaultMenu } from './defaults'
+import { readFileSync } from 'node:fs'
+import { STUDIO_LEAVES, ADMIN_GROUP_SPECS } from '@/lib/nav/studio'
+import { NAV_AREAS } from '@/lib/nav-areas'
 import type { ResolvedItem, ResolvedMenu } from './types'
 
 // The gate contract (owner decision 2026-08-06, docs/MENU-AUDIT-2026-08-06.md §4.2-§4.4).
@@ -112,9 +115,11 @@ describe('applyRegistryGates — the unknown-href floor', () => {
 
   it('Business Seeder is NOT one of these — the registry declares it', () => {
     // The audit (§4.4) called this row DB-only because it is not a NAV_AREA. It is a Studio
-    // leaf, so the registry does gate it, at janitor. Worth pinning: it is the difference
-    // between "the escape hatch is in use on the live rail" and "it is not."
-    expect(registryGateFor('/admin/business-seeder')?.minAccess).toBe('janitor')
+    // leaf, so the registry does gate it, at its page's own gate (admin + structure since the
+    // catalog-side gate fix, ADR-1746). Worth pinning: it is the difference between "the escape
+    // hatch is in use on the live rail" and "it is not."
+    expect(registryGateFor('/admin/business-seeder')?.minAccess).toBe('admin')
+    expect(registryGateFor('/admin/business-seeder')?.staffDomain).toBe('structure')
   })
 
   it('does not LOWER a stricter floor on an undeclared operator page', () => {
@@ -169,34 +174,88 @@ describe('applyRegistryGates — idempotence on the code defaults', () => {
   })
 })
 
-// ── Loom Studio is its own admin_header section, and the gate is the reason (ADR-979) ────────────
-// /admin/library matched NO section, so its sub-nav band drew empty. The fix could not be "file it
-// under an existing section", because adminHeaderMenu() stamps the SECTION's min + staffDomain onto
-// every item in it: Growth (host + marketing) would have offered a janitor-only tool to hosts, and
-// Operations (janitor + platform) would have dropped it for a marketing-domain janitor.
-describe('Loom Studio section (ADR-979)', () => {
+// ── Loom Studio keeps its own gate inside Content (ADR-979, amended by ADR-1745) ─────────────────
+// /admin/library once matched NO section, so its sub-nav band drew empty, and it could not be filed
+// under a neighbour because adminHeaderMenu() stamped the SECTION's gate onto every item: Growth
+// (host + marketing) would have offered a janitor-only tool to hosts, and Operations (janitor +
+// platform) would have dropped it for a marketing-domain janitor. ADR-1745 moved the gate onto the
+// leaf, so it now files under Content (its leaf's own `world`) and STILL carries janitor + marketing.
+type Cat = ReturnType<typeof defaultMenu>['categories'][number]
+const allItems = (c: Cat): ResolvedItem[] => [...c.items, ...c.children.flatMap(allItems)]
+
+describe('Loom Studio under Content (ADR-979, ADR-1745)', () => {
   const menu = defaultMenu('admin_header')
-  const section = menu.categories.find((c) => c.items.some((i) => i.href === '/admin/library'))
+  const section = menu.categories.find((c) => allItems(c).some((i) => i.href === '/admin/library'))
 
   it('resolves to a section at all, so the sub-nav band is not empty', () => {
     expect(section, '/admin/library must match an admin_header section').toBeDefined()
+    expect(section!.label).toBe('Content')
   })
 
-  it('carries its OWN gate rather than inheriting a neighbour\'s', () => {
-    // BOTH halves, and the second one is here because the first version of this test only checked
-    // staffDomain: flipping `min: janitor` to `admin` in the spec left all 23 tests green. A gate
-    // assertion that only covers one axis is a gate assertion that misses half the ways it breaks.
-    //
-    //   staffDomain 'platform' -> someone filed it under Operations, and a marketing-domain
-    //                             janitor silently lost the tab.
-    //   minAccess  'host'      -> someone filed it under Growth, and it is now offered to hosts.
-    const item = section!.items.find((i) => i.href === '/admin/library')!
+  it('carries its OWN gate rather than inheriting its section\'s', () => {
+    // BOTH halves: a gate assertion that only covers one axis misses half the ways it breaks.
+    //   staffDomain 'community' -> it inherited Content's domain; a marketing-domain janitor lost it.
+    //   minAccess  'host'       -> it inherited Content's floor, and it is now offered to hosts.
+    const item = allItems(section!).find((i) => i.href === '/admin/library')!
     expect(item.staffDomain).toBe('marketing')
     expect(item.minAccess).toBe('janitor')
   })
+})
 
-  it('does not drag another section\'s leaves in with it', () => {
-    // No `groups` on the spec, so the band shows only its own landing link.
-    expect(section!.children).toHaveLength(0)
+// ── The consolidated operator console (ADR-1745) ─────────────────────────────────────────────────
+describe('admin_header is seven job sections, each item gated by its own page (ADR-1745)', () => {
+  const menu = defaultMenu('admin_header')
+  const items = menu.categories.flatMap(allItems)
+  const find = (href: string) => items.find((i) => i.href === href)!
+
+  it('has seven sections, in the consolidated order', () => {
+    expect(menu.categories.map((c) => c.label)).toEqual(['Overview', 'Community', 'Content', 'Growth', 'Resonance CRM', 'Vera AI', 'Platform'])
+  })
+
+  it('lists every destination once (one canonical place per function)', () => {
+    const hrefs = items.map((i) => i.href)
+    expect(hrefs.length).toBe(new Set(hrefs).size)
+  })
+
+  it('reaches every operator leaf (the CRM roster is the CRM landing itself)', () => {
+    const hrefs = new Set(items.map((i) => i.href))
+    expect(STUDIO_LEAVES.filter((l) => !hrefs.has(l.href)).map((l) => l.id)).toEqual([])
+  })
+
+  it('gates a merged-in tool by its own page, never its new section', () => {
+    expect([find('/admin/qr').minAccess, find('/admin/qr').staffDomain]).toEqual(['admin', 'qr'])
+    expect([find('/admin/marketplace').minAccess, find('/admin/marketplace').staffDomain]).toEqual(['admin', 'platform'])
+    // A former FROZEN_GATE_DEBT row now states its PAGE's gate on the leaf itself (ADR-1746).
+    expect([find('/admin/crm/pipeline').minAccess, find('/admin/crm/pipeline').staffDomain]).toEqual(['janitor', undefined])
+    // Member Roster was stamped host + community by its section, a dead link for every host.
+    expect([find('/admin/members').minAccess, find('/admin/members').staffDomain]).toEqual(['janitor', 'members'])
+  })
+})
+
+// ── The owner rulings of 2026-10-14 (ADR-1746) ──────────────────────────────────────────────────────
+describe('one IA across the console, the /admin dashboard and the member rail (ADR-1746)', () => {
+  const console7 = defaultMenu('admin_header').categories.map((c) => c.label)
+
+  it("the /admin dashboard draws the console's seven sections, same order, same labels", () => {
+    expect(ADMIN_GROUP_SPECS.map((g) => g.label)).toEqual(console7)
+  })
+
+  it('every operator leaf is still a dashboard card (the CRM roster included)', () => {
+    const cards = new Set(ADMIN_GROUP_SPECS.flatMap((g) => g.links.map((l) => l.leaf)))
+    expect(STUDIO_LEAVES.filter((l) => !cards.has(l.id)).map((l) => l.id)).toEqual([])
+  })
+
+  it('the member rail Admin rows carry no retired section label', () => {
+    const labels = NAV_AREAS.filter((a) => a.section === 'Admin').map((a) => a.label)
+    for (const retired of ['Dashboard', 'Programs', 'Operations', 'Market admin']) expect(labels).not.toContain(retired)
+    expect(labels).toEqual(
+      expect.arrayContaining(['Overview', 'Community', 'Content', 'Growth', 'Resonance CRM', 'Vera AI', 'Platform']),
+    )
+  })
+
+  it('Default Funnel is a tab of Funnels: no catalog row of its own, and its old route 301s to the tab', () => {
+    expect(STUDIO_LEAVES.some((l) => l.href === '/pages/splash')).toBe(false)
+    const cfg = readFileSync('next.config.ts', 'utf8')
+    expect(cfg).toContain("{ source: '/pages/splash', destination: '/pages/sequences?tab=default', statusCode: 301 }")
   })
 })

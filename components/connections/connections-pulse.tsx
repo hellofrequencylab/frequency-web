@@ -5,6 +5,7 @@ import type { NearMiss } from '@/lib/connections/resonance'
 import { relativeTime } from '@/lib/utils'
 import { PulseAvatar } from '@/components/connections/pulse-avatar'
 import { PulseConnectButton, PulseWelcomeRow } from '@/components/connections/pulse-actions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // "Connections this week" pulse (ADR-186, P5 + P3b) — the proactive nudge that
 // turns the Community directory into an agenda. A tasteful, compact card with up
@@ -19,7 +20,7 @@ export async function ConnectionsPulse() {
   if (empty) return null
 
   return (
-    <section className="rounded-2xl border border-border bg-surface-elevated p-5">
+    <section className="rounded-card border border-border bg-surface-elevated p-5">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary-strong" />
         <h2 className="text-body-sm font-bold tracking-tight text-text">Connect with others</h2>
@@ -46,7 +47,7 @@ export async function ConnectionsPulse() {
                 </div>
                 <Link
                   href={`/people/${m.handle}`}
-                  className="inline-flex shrink-0 items-center rounded-lg border border-border px-3 py-1.5 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-text"
+                  className="inline-flex shrink-0 items-center rounded-control border border-border px-3 py-1.5 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-text"
                 >
                   Say hi
                 </Link>
@@ -101,7 +102,7 @@ export async function ConnectionsPulse() {
 function PulseGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">{title}</h3>
+      <h3 className={capsLabel('mb-3 text-2xs font-semibold text-muted')}>{title}</h3>
       <div className="flex flex-col gap-3">{children}</div>
     </div>
   )

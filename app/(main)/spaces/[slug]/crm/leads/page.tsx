@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { Gauge, Lock, UserPlus, CircleCheck, Mail } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCallerProfile } from '@/lib/auth'
@@ -47,7 +47,7 @@ export default async function SpaceLeadsPage({ params }: { params: Promise<{ slu
 
   if (!canUseCrm) {
     return (
-      <DashboardTemplate
+      <ConsoleDashboardTemplate
         eyebrow={brandName}
         title="Lead capture"
         description="Turn scans and sign-ups into people in your CRM, with the door each came through."
@@ -71,12 +71,12 @@ export default async function SpaceLeadsPage({ params }: { params: Promise<{ slu
             </Link>
           }
         />
-      </DashboardTemplate>
+      </ConsoleDashboardTemplate>
     )
   }
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title="Lead capture"
       description="Everyone you have captured, and the door each came through. The door is set once and never changes, so you always know where a relationship started."
@@ -88,10 +88,10 @@ export default async function SpaceLeadsPage({ params }: { params: Promise<{ slu
       }
       width="wide"
     >
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-surface-elevated/50" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-card bg-surface-elevated/50" />}>
         <LeadsSection spaceId={space.id} boardHref={boardHref} codesHref={codesHref} />
       </Suspense>
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }
 
@@ -123,7 +123,7 @@ function StatsSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/50" />
       ))}
     </>
   )

@@ -190,10 +190,10 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
         {scanning && (
           <div aria-hidden className="relative h-60 w-60">
             {/* Four corner brackets — the universal "QR goes here". */}
-            {(['top-0 left-0 border-t-2 border-l-2 rounded-tl-2xl',
-              'top-0 right-0 border-t-2 border-r-2 rounded-tr-2xl',
-              'bottom-0 left-0 border-b-2 border-l-2 rounded-bl-2xl',
-              'bottom-0 right-0 border-b-2 border-r-2 rounded-br-2xl'] as const).map((pos) => (
+            {(['top-0 left-0 border-t-2 border-l-2 rounded-tl-card',
+              'top-0 right-0 border-t-2 border-r-2 rounded-tr-card',
+              'bottom-0 left-0 border-b-2 border-l-2 rounded-bl-card',
+              'bottom-0 right-0 border-b-2 border-r-2 rounded-br-card'] as const).map((pos) => (
               <span key={pos} className={`absolute h-10 w-10 border-on-ink/80 ${pos}`} />
             ))}
           </div>

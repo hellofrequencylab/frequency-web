@@ -414,7 +414,7 @@ export function MenuGroupsEditor({
             type="button"
             onClick={() => addItem(null)}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Menu-level link
@@ -423,7 +423,7 @@ export function MenuGroupsEditor({
             type="button"
             onClick={() => addCategory(null)}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             <FolderPlus className="h-4 w-4" aria-hidden />
             Add group
@@ -437,13 +437,13 @@ export function MenuGroupsEditor({
       </p>
 
       {error && (
-        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
+        <p className="mb-3 rounded-control border border-danger/30 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}
 
       {menu.isDefault && (
-        <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-body-sm text-muted">
+        <div className="mb-4 rounded-card border border-dashed border-border bg-surface/50 p-4 text-body-sm text-muted">
           This surface has no saved menu yet, so it is showing the site defaults. Editing
           anything, or seeding, creates an editable copy in the database.
         </div>
@@ -508,7 +508,7 @@ export function MenuGroupsEditor({
             <button
               type="button"
               onClick={() => addCategory(null)}
-              className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               Add a group
             </button>
@@ -520,7 +520,7 @@ export function MenuGroupsEditor({
             <li
               key={cat.id}
               style={{ marginLeft: depth * 16 }}
-              className="rounded-2xl border border-border bg-surface p-4 sm:p-5"
+              className="rounded-card border border-border bg-surface p-4 sm:p-5"
             >
               <CategoryHeader
                 cat={cat}
@@ -740,7 +740,7 @@ function CategoryHeader({
             type="button"
             onClick={onAddItem}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             Link
@@ -749,7 +749,7 @@ function CategoryHeader({
             type="button"
             onClick={onAddSub}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <FolderPlus className="h-3.5 w-3.5" aria-hidden />
             Sub-group
@@ -759,7 +759,7 @@ function CategoryHeader({
             onClick={onDelete}
             disabled={isPending}
             aria-label="Delete group"
-            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+            className="rounded-control p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>

@@ -46,6 +46,9 @@ export const OG_SITE = { siteName: SITE_NAME, locale: "en_US" } as const;
 // NOT to be confused with "The Community Collective" the TIER LADDER (also ADR-811) — that is a
 // billing surface heading, a different name that keeps its article.
 export const SITE_TAGLINE = "Community Collective";
+// The category line, one everywhere (owner ruling R1, LIVE-912). What Frequency IS in one breath,
+// where SITE_TAGLINE is only the words under the mark. SITE_DESCRIPTION and llms.txt read it.
+export const CATEGORY_LINE = "Local groups that keep meeting.";
 // The root share card, for a public page that has no segment card of its own (SCAN-798). The file
 // convention app/opengraph-image.jpg attaches ONLY to the root layout: Next replaces a child
 // segment's `openGraph` wholesale, so a page that declares openGraph without `images` ships no
@@ -64,8 +67,11 @@ export const ROOT_OG_IMAGES = [
 // ADR-1499). Kept under the ~160 characters a search result shows (scripts/check-seo.mjs Scan E).
 // The tagline is unchanged and the two OG `.alt.txt` files carry it; lib/og/root-card.test.ts pins
 // that pairing, which is what CORE-MODEL §5 item 6.2 means by "move together".
+// LIVE-912: it opens on the category line, "Local groups that keep meeting." (owner ruling R1,
+// docs/LAUNCH-MARKETING-PLAN.md §3.2, amends ADR-944). "Community Collective" stays the logo lockup
+// (SITE_TAGLINE above) and is no longer the category claim here.
 export const SITE_DESCRIPTION =
-  `Frequency is a Community Collective. Start a Circle, host Events, grow a Space. ${PLAN_STORY.lines}`;
+  `${CATEGORY_LINE} Start a Circle, host Events, grow a Space. ${PLAN_STORY.lines}`;
 
 // ── Unified site navigation ───────────────────────────────────────────────────
 // One nav, used by every header (the in-app AppShell top bar, the marketing
@@ -195,26 +201,35 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
 // NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
 // hero, mid-page, close); page templates that bake the literal into a published DB
 // doc need a re-publish to pick it up (see docs/DOCS-PROTOCOL.md + page-editor).
-export const BETA_CTA_LABEL = "Find your people";
+// OWNER RULING 2026-10-14 (amends ADR-1735/ADR-1197): the people CTA is "Find your Circle"
+// everywhere, with "Host a Circle" for hosts and "Open your Space" for Spaces. It replaced
+// "Find your people" (and "Join free" as a people CTA). The design site (lib/frequency/site-nav.ts)
+// already said it; this makes the shared constant agree.
+export const BETA_CTA_LABEL = "Find your Circle";
 export const BETA_CTA_HREF = "/join";
 
 // ── THE OPERATOR CALL TO ACTION ──────────────────────────────────────────────
-// The second half of the approved set (ADR-1197, owner ruling 2026-09-04). A site can carry more
-// than one verb; what it cannot carry is five for one entrance, invented per page. So the set is
-// exactly two, each named for the reader it addresses, and lib/site.cta.test.ts fails a marketing
-// surface that ships a third.
+// The rest of the approved set (ADR-1197, owner ruling 2026-09-04, re-worded by the owner ruling of
+// 2026-10-14). A site can carry more than one verb; what it cannot carry is five for one entrance,
+// invented per page. So the set is exactly three, each named for the reader it addresses, and
+// lib/site.cta.test.ts fails a marketing surface that ships a fourth.
 //
-//   SEEKER   (above)  "Find your people" -> /join     · the guides, /discover, the-community, about
-//   OPERATOR (here)   "Start free"       -> /pricing  · /pricing, /spaces, the /for/<niche> doors
+//   PEOPLE   (above)  "Find your Circle" -> /join  · the guides, /discover, the-community, about
+//   HOSTS    (here)   "Host a Circle"    -> /join  · the host guides (how-to-start-a-circle)
+//   SPACES   (here)   "Open your Space"  -> /join  · /pricing, /spaces, the /for/<niche> doors
+//
+// "Start free" was the Spaces verb until 2026-10-14; it survives only on plan cards, as a fact.
 //
 // ⚪ WHY THE SEEKER VERB MOVED OFF "Start a Circle". It was the hardest ask on the site and it was
 // the DEFAULT under six SEO guides whose readers had just searched "how to make friends as an adult".
 // Circles remain the mechanic every group runs on; they are simply not what a first-time reader is
 // being asked to do. Owner directive, 2026-09-04: "start a circle does not have to be the primary
 // thing. circles are what all the groups run on, but there doesn't have to be specific rules."
-// "Find your people" is not new copy — it already ships as the eyebrow on /discover/circles and
-// /discover/places and in the Nearby quick links, so this makes the CTA agree with the site.
-export const OPERATOR_CTA_LABEL = "Start free";
+// (2026-10-14: the people verb is now "Find your Circle". "Find your people" stays as an eyebrow and a
+// headline on the discover pages, where it is a description, not a button.)
+export const OPERATOR_CTA_LABEL = "Open your Space";
+/** The host verb (owner ruling 2026-10-14): for a reader who already gathers people. Same door. */
+export const HOST_CTA_LABEL = "Host a Circle";
 // 🔴 THE SAME DOOR AS THE SEEKER'S, DELIBERATELY. The first version of this pointed at /pricing,
 // which made the primary CTA on /pricing link to /pricing — a self-link on the hero AND the close
 // of the page it sits on. Signup is signup: an operator needs an account before they can stand up
@@ -240,13 +255,17 @@ export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
  *  So the header shows this below `sm` and the full verb above it. The page heroes, where there is
  *  room, always show the full verb. This is a RENDERING accommodation, not a third approved label:
  *  it is deliberately audience-neutral, because the header is global chrome that rides seeker and
- *  operator pages alike. */
-export const CTA_LABEL_COMPACT = "Join free";
+ *  operator pages alike.
+ *
+ *  2026-10-14: it read "Join free" until the owner retired that as a people CTA. "Get started" is the
+ *  design site's own name for /join (lib/frequency/site-nav.ts), audience-neutral, and at 11 chars it is
+ *  shorter than all three verbs and inside the 14-char phone budget (components/layout/header-fit.test.ts). */
+export const CTA_LABEL_COMPACT = "Get started";
 
 /** The approved set, for the guard and for anything that needs to iterate it. A marketing surface
- *  ships one of these two or it fails lib/site.cta.test.ts. `/join` keeps its own arrival word ("Come in"): it
+ *  ships one of these three or it fails lib/site.cta.test.ts. `/join` keeps its own arrival word ("Come in"): it
  *  is the door itself, not a call to walk through it. */
-export const APPROVED_CTA_LABELS = [BETA_CTA_LABEL, OPERATOR_CTA_LABEL] as const;
+export const APPROVED_CTA_LABELS = [BETA_CTA_LABEL, HOST_CTA_LABEL, OPERATOR_CTA_LABEL] as const;
 
 // The lighter secondary path, paired beside the primary as a quiet text link (never
 // a second button). For the Seeker who is not ready to host; routes into the same

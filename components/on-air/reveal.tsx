@@ -18,7 +18,9 @@ import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/pra
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { IconButton } from '@/components/ui/icon-button'
+import { Button } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
+import { capsLabel } from '@/components/ui/caps-label'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -386,7 +388,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
             {payload.bonuses.slice(0, shown).map((b, i) => (
               <div
                 key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+                className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
                 <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
@@ -504,7 +506,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         {rows.map(([k, v]) => (
           <div
             key={k}
-            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+            className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
           >
             <span className="truncate text-muted">{k}</span>
             <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>
@@ -565,8 +567,8 @@ function DispatchPanel({
   return (
     <div className="w-full max-w-sm">
       <DispatchArt className={`${ART} mb-4`} />
-      <div className="rounded-2xl border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
-        <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
+      <div className="rounded-card border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
+        <p className={capsLabel('flex items-center gap-1.5 text-2xs font-bold text-primary-strong', 'widest')}>
           <Radio className="h-3.5 w-3.5" /> Incoming · Dispatch from Vera
         </p>
         <p className="mt-3 min-h-[3.5rem] text-body font-medium leading-relaxed text-text">
@@ -577,13 +579,9 @@ function DispatchPanel({
           (actionIsFeed && onClose ? (
             // "Back to feed" through the close path: in overlay mode this drops the
             // takeover over the feed; on the /on-air route it pushes the feed.
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
+            <Button type="button" onClick={onClose} className="mt-4">
               {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           ) : (
             // A contextual deep-link (Practices, an event). Navigate there AND, in
             // overlay mode, drop the takeover so it doesn't sit over the new page.
@@ -592,7 +590,7 @@ function DispatchPanel({
             <Link
               href={dispatch.actionHref}
               onClick={() => onAction?.()}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
             </Link>

@@ -5,8 +5,41 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import '@/app/themes/active/kit-site'
+import '@/app/themes/active/site-shell'
+import { SiteBody, SiteRoot } from '@/components/frequency/site/shell/site-root'
+import { SiteHeader } from '@/components/frequency/site/shell/site-header'
+import { SiteError } from '@/components/frequency/site/shell/site-error'
 
 export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  // FREQUENCY (ADR-1737, build-time): the website's "hit a snag" hero in the site shell. SiteError
+  // reports to Sentry itself, so the effect below is skipped on this branch (it would report twice).
+  // This boundary is a CLIENT component, so it cannot render SiteShell: SiteShell carries the server-only
+  // footer and resolved to an undefined lazy element here, crashing the error page itself. The client
+  // parts of the shell (root, header, body) are enough to put the snag hero in the site's frame.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <SiteRoot>
+        <SiteHeader />
+        <main id="main">
+          <SiteBody>
+            <SiteError error={error} reset={reset} lead="Something broke on our end. Try again, or head back home." />
+          </SiteBody>
+        </main>
+      </SiteRoot>
+    )
+  }
+  return <DawnError error={error} reset={reset} />
+}
+
+function DawnError({
   error,
   reset,
 }: {
@@ -17,7 +50,7 @@ export default function Error({
     // console.error alone meant a client-side throw was invisible to on-call: server
     // renders are covered by instrumentation.ts onRequestError, but a component that
     // throws during interaction or hydration produced no event, no alert, no digest.
-    // This and app/error.tsx were the only two boundaries not reporting.
+    // This and app/global-error.tsx were the only two boundaries not reporting.
     console.error(error)
     Sentry.captureException(error)
   }, [error])

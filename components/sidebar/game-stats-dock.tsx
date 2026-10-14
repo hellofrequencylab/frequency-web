@@ -22,6 +22,7 @@ import {
   setDockPanelOpen,
   subscribeDockGeometry,
 } from '@/components/layout/dock-bar'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -38,11 +39,20 @@ export type DockData = {
   rankProgress: { nextLabel: string | null; toGo: number; pct: number }
   arc: { chain: string; step: string; pct: number } | null
   vaultGems: number
+  /** Adopted practices and how many are still unlogged on the member's today (the Frequency rail's
+   *  Today's goals). Optional: only loadGameStats fills it. */
+  practices?: { adopted: number; toLog: number }
+  /** The member's calendar day, YYYY-MM-DD (lib/member-day.ts). */
+  today?: string
+  /** Streak freezes banked (profiles.meta.practiceStreak). */
+  freezeTokens?: number
+  /** The live season's name and week, or null between seasons. */
+  season?: { name: string; week: number; weeks: number | null } | null
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-3xs font-semibold uppercase tracking-widest text-muted">{children}</p>
+    <p className={capsLabel('text-3xs font-semibold text-muted', 'widest')}>{children}</p>
   )
 }
 
@@ -385,7 +395,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         data-visual-mask="vault-head"
         // The head height is SHARED with the left rail's account tab (owner: both tabs the same
         // height). It is imported rather than restated — see DOCK_HEAD_H_CLASS.
-        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated`}
+        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-control px-1.5 transition-colors hover:bg-surface-elevated`}
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
@@ -533,7 +543,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       >
         <div className="flex items-center gap-1.5">
           <Lock className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-          <span className="text-meta font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
+          <span className={capsLabel('text-meta font-bold text-primary-strong', 'wider')}>The Vault</span>
         </div>
         {/* The spendable balance is a READING, so it goes through Counter too — same teal Gem,
             same mono numeral as the head above, rather than a third hand-rolled spelling of it. */}

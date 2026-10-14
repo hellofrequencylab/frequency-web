@@ -52,7 +52,7 @@ export function EmailOptInCard({
       type="button"
       onClick={onToggle}
       aria-pressed={checked}
-      className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-colors ${
+      className={`flex w-full items-start gap-3 rounded-card border p-4 text-left transition-colors ${
         checked ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:bg-surface-elevated'
       } ${className}`}
     >

@@ -41,9 +41,9 @@ export function FeedRadiusSlider({ initialRadiusM }: { initialRadiusM: number })
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface px-4 py-4 lift-1">
+    <section className="rounded-card border border-border bg-surface px-4 py-4 lift-1">
       <div className="mb-1 flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+        <span className="flex h-7 w-7 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Radar className="h-4 w-4" />
         </span>
         <h3 className="text-body-sm font-bold text-text">Feed reach</h3>

@@ -8,8 +8,13 @@ import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
 import { OG_SITE, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
+import { FrequencyHome } from '@/components/frequency/site/pages/home/frequency-home'
+import { JsonLd } from '@/components/json-ld'
+import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd } from '@/lib/seo/frequency-pages'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
 // system (edited at /pages/home; the coded strings below are the fallback).
@@ -148,6 +153,27 @@ export default async function RootPage() {
   // the 21 marketing pages already rely on. The page BODY and all SEO output are identical for
   // signed-in and signed-out viewers, so there is nothing viewer-specific to cache wrongly.
 
+  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency the front door wears the public site
+  // shell (components/frequency/site/shell): the kit root, header v4, the ft2 footer and the FX island.
+  // `/` is the one page whose side is not locked: its Browse Community / Host Community toggle is
+  // remembered (lib/frequency/site-pages.ts). The body is the design's coded Home, so the DAWN document
+  // is not read on this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <SiteShell>
+        {/* The page node is read from the Frequency hero (its h1 and lede), never from the DAWN
+            document this build does not render (lib/seo/frequency-pages.ts). No breadcrumb: this IS
+            the root. Organization + WebSite come from the root layout. */}
+        <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.home)} />
+        <FrequencyHome />
+      </SiteShell>
+    )
+  }
+
+  const published = await getPublishedData('home')
+  const template = getTemplate('home')
+  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
+
   // DB-backed nav megas for the header (lib/menus); fall back to code defaults on any miss, so
   // safe pre-migration.
   const [headerMenu, footerMenu, menuTimings] = await Promise.all([
@@ -156,12 +182,10 @@ export default async function RootPage() {
     getMenuSettings(),
   ])
 
-  const published = await getPublishedData('home')
-  const template = getTemplate('home')
-  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
-
   return (
-    <>
+    <div data-surface="stage" className="contents">
+      {/* Stage surface (ADR-1740): under the Frequency design the public site wears Stage, always dark;
+          under DAWN the attribute matches nothing. `contents` keeps the box out of layout. */}
       {/* The page node comes from the rendered document via BlockDocJsonLd, as a WebPage rather than
           an Article (SCAN-802): the front door is not an editorial piece headlined by its hero line,
           and Organization + WebSite already come from the root layout. No breadcrumb: this IS the
@@ -175,9 +199,15 @@ export default async function RootPage() {
           that sets the reader's expectation for all the others. */}
       <MarketingHeader overHero detectClientAuth headerMenu={headerMenu} menuTimings={menuTimings} />
       <main id="main">
+        {/* THE DESIGN SWITCH (ADR-1737). Under Frequency the owner wants the design's own Home
+            (design_handoff/frequency/templates/website/Home.html), so the body is the coded one in
+            components/frequency/site/pages/home; under DAWN it is the published document, as above.
+            SITE_DESIGN is a build-time constant, so this is one branch per deploy, never a request
+            read, and the page stays ISR. The body is imported, not declared here, so the
+            render-path ledger's `home 0` still holds. */}
         <BlockRender config={config} data={data} />
       </main>
       <MarketingFooter menu={footerMenu} />
-    </>
+    </div>
   )
 }

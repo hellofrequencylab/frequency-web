@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { BookUser, Check, Loader2, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { promoteToContacts } from '@/app/(main)/connections/actions'
 import { promotionState, type PromotionState } from '@/lib/connections/promote'
+import { Button } from '@/components/ui/button'
 
 // The member-facing, consent-gated promotion of a personal capture into the shared
 // Frequency contacts DB (ADR-742, riding ADR-099/154). Two-step by design: the button
@@ -52,7 +53,7 @@ export function PromoteToContacts({
 
   if (state === 'linked') {
     return (
-      <p className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-body-sm font-medium text-success">
+      <p className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-body-sm font-medium text-success">
         <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden /> In Frequency contacts
       </p>
     )
@@ -73,13 +74,12 @@ export function PromoteToContacts({
           Add {name} to Frequency contacts, the shared contact list, marked unconfirmed. They stay in your
           private book too.
         </p>
-        <button
+        <Button
           type="button"
           onClick={() => { setError(null); setConfirming(true) }}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <BookUser className="h-4 w-4" aria-hidden /> Add to Frequency contacts
-        </button>
+        </Button>
       </div>
     )
   }
@@ -108,20 +108,19 @@ export function PromoteToContacts({
         </p>
       )}
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="button"
           onClick={confirm}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <BookUser className="h-4 w-4" aria-hidden />}
           Add to Frequency contacts
-        </button>
+        </Button>
         <button
           type="button"
           onClick={() => { setConfirming(false); setError(null) }}
           disabled={pending}
-          className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           Not now
         </button>

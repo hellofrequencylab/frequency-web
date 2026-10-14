@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqSearchLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading UI for Search (PAGE-FRAMEWORK §5).
 //
@@ -8,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // IndexTemplate page.tsx actually renders. The skeleton now paints the template's own shape:
 // PageHeading's title + description, its divider rule, the toolbar row, then the result rows.
 export default function SearchLoading() {
+  if (SITE_DESIGN === 'frequency') return <FqSearchLoading />
   return (
     <div>
       <div className="mb-4 space-y-2 sm:mb-5">

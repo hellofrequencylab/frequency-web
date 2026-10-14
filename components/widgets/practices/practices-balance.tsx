@@ -4,6 +4,7 @@ import { getMemberPillarBalance, getPillars, type PillarCount } from '@/lib/pill
 import { getMemberPillarZaps } from '@/lib/practices/attribution'
 import { ExpressionIcon, expressionPillarStyle } from '@/lib/quest/expression-pillar'
 import { SectionHeader } from '@/components/ui/section-header'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Practices layout module (ADR-270/294): "Pillar balance" — how the member's ADOPTED practices
 // spread across the four Pillars (Mind / Body / Spirit / Expression, docs/NAMING.md — never
@@ -46,7 +47,7 @@ export async function PracticesBalance() {
   return (
     <section id="practices-balance" className="scroll-mt-20">
       <SectionHeader title="Pillar balance" />
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-1.5">
           <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="text-meta font-medium text-muted">Across your adopted practices</span>
@@ -77,14 +78,14 @@ export async function PracticesBalance() {
                         {p.count > 0 && <span className="ml-1.5 text-subtle">{share}%</span>}
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-pill bg-surface-elevated" aria-hidden>
-                      <div
-                        className={isExpression(p) ? 'h-full rounded-pill' : 'h-full rounded-pill bg-primary'}
-                        style={
-                          isExpression(p)
-                            ? { width: `${share}%`, backgroundColor: 'var(--rank-deep)' }
-                            : { width: `${share}%` }
-                        }
+                    {/* data-driven: Expression's bar takes its rank accent (the same --rank-deep the
+                        label above uses); `tone="current"` inherits it from this wrapper. */}
+                    <div style={isExpression(p) ? { color: 'var(--rank-deep)' } : undefined}>
+                      <ProgressTrack
+                        value={share}
+                        label={`${p.name} share`}
+                        size="lg"
+                        tone={isExpression(p) ? 'current' : 'primary'}
                       />
                     </div>
                     {hasZaps && (

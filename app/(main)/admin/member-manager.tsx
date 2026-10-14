@@ -97,7 +97,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
 
       {/* Action error — surfaced inline instead of failing silently */}
       {error && (
-        <p role="alert" className="mb-3 rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-meta text-danger">
+        <p role="alert" className="mb-3 rounded-control border border-danger/30 bg-danger-bg px-3 py-2 text-meta text-danger">
           {error}
         </p>
       )}
@@ -110,7 +110,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
           ariaLabel={`Deactivate ${confirmTarget.displayName}?`}
           className="max-w-sm"
         >
-          <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
+          <div className="bg-surface rounded-card lift-3 border border-border p-6 w-full">
             <h3 className="text-body-sm font-semibold text-text mb-2">
               Deactivate {confirmTarget.displayName}?
             </h3>
@@ -121,14 +121,14 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setConfirmId(null)}
-                className="rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated transition-colors"
+                className="rounded-control border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>
               <button
                 disabled={isPending}
                 onClick={() => handleDeactivate(confirmId)}
-                className="rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-control bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Deactivating...' : 'Deactivate'}
               </button>
@@ -146,7 +146,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
             return (
               <div
                 key={m.membershipId}
-                className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-surface-elevated group -mx-3 transition-colors"
+                className="flex items-start gap-3 rounded-control px-3 py-2.5 hover:bg-surface-elevated group -mx-3 transition-colors"
               >
                 {/* Avatar */}
                 {m.avatarUrl ? (

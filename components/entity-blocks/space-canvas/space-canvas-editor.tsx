@@ -22,6 +22,7 @@ import { useProfileLayout } from '@/components/entity-blocks/profile-layout-cont
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
 // surface over the SHARED entity-layout store (same provider, seed, debounced save + sanitize as the
@@ -144,7 +145,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
 
   if (!store || !store.seeded) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border">
+      <div className="flex min-h-[320px] items-center justify-center rounded-card border border-border">
         <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
       </div>
     )
@@ -227,7 +228,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
               <li key={row.id} className="rounded-card border border-border bg-surface">
                 {/* Section header: reorder, layout picker, remove. */}
                 <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
-                  <span className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <span className={capsLabel('min-w-0 flex-1 truncate text-2xs font-semibold text-muted')}>
                     Section {ri + 1}
                   </span>
                   <SplitPicker active={activeSplit(row.columns, row.ratio)} onChoose={(s) => onSplit(row.id, s)} />
@@ -305,7 +306,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                         <button
                           type="button"
                           onClick={() => setAddingAt({ rowId: row.id, col })}
-                          className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border px-2 py-2 text-2xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                          className="flex w-full items-center justify-center gap-1 rounded-control border border-dashed border-border px-2 py-2 text-2xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
                         >
                           <Plus className="h-3 w-3" aria-hidden /> Add block
                         </button>
@@ -328,7 +329,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
       </aside>
 
       {/* RIGHT — the live, clickable space canvas. */}
-      <div className="min-w-0 overflow-x-auto rounded-2xl border border-border bg-surface p-4 sm:p-6" aria-label="Page canvas">
+      <div className="min-w-0 overflow-x-auto rounded-card border border-border bg-surface p-4 sm:p-6" aria-label="Page canvas">
         {store.rows.length === 0 ? (
           <p className="py-10 text-center text-body-sm text-subtle">Add a section to start building your page.</p>
         ) : (
@@ -351,7 +352,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                           }}
                           role="group"
                           onMouseDown={() => selectBlock(id)}
-                          className={`rounded-lg p-2 transition-colors ${
+                          className={`rounded-control p-2 transition-colors ${
                             id === selectedId ? 'bg-primary-bg/30' : 'hover:bg-surface-elevated/40'
                           }`}
                         >
@@ -410,7 +411,7 @@ function BlockTile({
   return (
     <li
       ref={tileRef}
-      className={`rounded-lg border transition-colors ${
+      className={`rounded-control border transition-colors ${
         active ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:border-border-strong'
       }`}
     >
@@ -486,7 +487,7 @@ function AddBlockPalette({
 }) {
   if (addable.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-surface-elevated/40 p-2 text-2xs text-muted">
+      <div className="rounded-control border border-border bg-surface-elevated/40 p-2 text-2xs text-muted">
         Every block is on your page.{' '}
         <button type="button" onClick={onClose} className="font-semibold text-primary-strong hover:underline">
           Close
@@ -495,9 +496,9 @@ function AddBlockPalette({
     )
   }
   return (
-    <div className="space-y-1.5 rounded-lg border border-border bg-surface-elevated/40 p-2">
+    <div className="space-y-1.5 rounded-control border border-border bg-surface-elevated/40 p-2">
       <div className="flex items-center justify-between">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>Add a block</p>
         <button type="button" onClick={onClose} className="text-2xs font-semibold text-muted hover:text-text">
           Close
         </button>
@@ -509,7 +510,7 @@ function AddBlockPalette({
             type="button"
             onClick={() => onPick(b.id)}
             title={b.description}
-            className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+            className="inline-flex items-center gap-1 rounded-control border border-border bg-surface px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
           >
             <Plus className="h-3 w-3" aria-hidden /> {b.label}
           </button>

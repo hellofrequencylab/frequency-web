@@ -842,6 +842,17 @@ person reading this section will re-ask. Both came from `OWN-060`.
 discovered late — which is the failure mode this whole document exists to avoid.
 
 
+## 11. The Theme Element Library (ADR-1739)
+
+The contract for the element library, the theme manifests and the Infographic block lives in
+[ADR-1739](DECISIONS.md). In short: one library on this registry (tokens feed elements, elements feed
+presets); roles never raw values; every theme ships a manifest and every pack item names a fallback;
+infographics are a typed envelope `{ kind, title, items, source, variant, describe }` rendered on the
+server with the design package's DOM and `.ig-*` classes; every number is nullable and a null blocks
+publish; Vera drafts the envelope only and code verifies every number. It builds E1 (`defineBlock`) and
+E6 (the presets-first inserter) from this document; L0 to L5 there map onto those phases. Nothing is
+built until the design package lands and the owner starts it (ADR-1403).
+
 ## Website builder handoff seam
 
 The Claude Design standalone v4 handoff defines the website administration shell,

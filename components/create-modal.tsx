@@ -89,7 +89,7 @@ export function CreateModal({
     <Dialog open={open} onClose={close} ariaLabel={title} align="bottom" className="sm:max-w-2xl">
       <form
         onSubmit={onSubmit}
-        className="flex max-h-[90vh] w-full flex-col rounded-t-2xl border border-border bg-surface lift-3 outline-none sm:max-h-[calc(100vh-4rem)] sm:rounded-2xl"
+        className="flex max-h-[90vh] w-full flex-col rounded-t-card border border-border bg-surface lift-3 outline-none sm:max-h-[calc(100vh-4rem)] sm:rounded-card"
       >
         {/* Mobile drag indicator */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1">
@@ -98,10 +98,10 @@ export function CreateModal({
 
         {/* Header — a warm sand band so the title reads as a deliberate, on-brand
             header rather than plain white-on-white. */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border bg-surface-elevated/50 sm:rounded-t-2xl shrink-0">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border bg-surface-elevated/50 sm:rounded-t-card shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`w-9 h-9 shrink-0 rounded-xl ${colors.bg} flex items-center justify-center`}>
-              <Icon className={`w-[18px] h-[18px] ${colors.text}`} />
+              <Icon className={`w-4.5 h-4.5 ${colors.text}`} />
             </div>
             <h2 className="text-body-lg font-bold text-text truncate">{title}</h2>
           </div>
@@ -109,7 +109,7 @@ export function CreateModal({
             type="button"
             aria-label="Close"
             onClick={close}
-            className="shrink-0 rounded-lg p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
+            className="shrink-0 rounded-control p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
           >
             <X className="w-4 h-4" aria-hidden />
           </button>
@@ -118,7 +118,7 @@ export function CreateModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           {error && (
-            <p className="text-meta text-danger bg-danger-bg/30 border border-danger rounded-lg px-3 py-2">
+            <p className="text-meta text-danger bg-danger-bg/30 border border-danger rounded-control px-3 py-2">
               {error}
             </p>
           )}
@@ -129,7 +129,7 @@ export function CreateModal({
             padding lives HERE, not on the overlay: `align="bottom"` deliberately leaves the panel
             touching the edge, and only the panel knows which of its bands is last. Without it these
             buttons sat on a notched phone's home indicator. */}
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-surface-elevated/50 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-b-2xl sm:pb-4">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-surface-elevated/50 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-b-card sm:pb-4">
           <Button type="button" variant="secondary" onClick={close} disabled={isPending}>
             Cancel
           </Button>

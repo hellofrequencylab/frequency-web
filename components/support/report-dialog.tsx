@@ -17,6 +17,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -172,7 +173,7 @@ export function ReportDialog({
 
         {done ? (
           <div className="space-y-4 py-2">
-            <div className="flex items-center gap-3 rounded-2xl border border-success/40 bg-success-bg/40 p-4">
+            <div className="flex items-center gap-3 rounded-card border border-success/40 bg-success-bg/40 p-4">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-success-bg text-success">
                 <Check className="h-5 w-5" />
               </span>
@@ -262,7 +263,7 @@ export function ReportDialog({
                   onClick={() => fileRef.current?.click()}
                   disabled={preparing}
                   aria-busy={preparing || undefined}
-                  className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border bg-surface px-3 py-4 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3 py-4 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
                 >
                   {preparing ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Getting your screenshot ready…</>
@@ -302,10 +303,10 @@ export function ReportDialog({
 
             {/* Ask-Vera answer — try the help center before filing. */}
             {vera && (
-              <div className="mt-3 rounded-2xl border border-signal/40 bg-signal-bg/20 p-3">
+              <div className="mt-3 rounded-card border border-signal/40 bg-signal-bg/20 p-3">
                 <div className="mb-1 flex items-center gap-1.5 text-signal-strong">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span className="text-2xs font-bold uppercase tracking-wide">Vera</span>
+                  <span className={capsLabel('text-2xs font-bold')}>Vera</span>
                 </div>
                 <p className="text-body-sm leading-relaxed text-text">
                   {vera.answer ?? "I couldn’t find a sure answer in the help center. Go ahead and send it to the team."}
@@ -313,14 +314,14 @@ export function ReportDialog({
                 {vera.citations.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {vera.citations.map((c) => (
-                      <Link key={c.href} href={c.href} onClick={onClose} className="inline-flex items-center gap-1 rounded-lg bg-surface px-2 py-0.5 text-2xs font-semibold text-signal-strong hover:underline">
+                      <Link key={c.href} href={c.href} onClick={onClose} className="inline-flex items-center gap-1 rounded-control bg-surface px-2 py-0.5 text-2xs font-semibold text-signal-strong hover:underline">
                         {c.heading || c.slug} <ExternalLink className="h-3 w-3" />
                       </Link>
                     ))}
                   </div>
                 )}
                 {vera.answer && (
-                  <button type="button" onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg/50 px-3 py-1.5 text-meta font-semibold text-success transition-colors hover:bg-success-bg/70">
+                  <button type="button" onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-success-bg/50 px-3 py-1.5 text-meta font-semibold text-success transition-colors hover:bg-success-bg/70">
                     <Check className="h-3.5 w-3.5" /> That solved it, close
                   </button>
                 )}

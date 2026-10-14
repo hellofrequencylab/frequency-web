@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-006",
+  "wave": "W7",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const L=fs.readFileSync('scripts/render-path-bodies.txt','utf8').split('\\n');const bad=[];for(const line of L){const m=/^([a-z0-9-]+)\\s+(\\d+)/.exec(line);if(!m)continue;if(m[1]!=='pricing'&&m[2]!=='0')bad.push(m[1]+'='+m[2])}if(bad.length){console.error('a gated slug still carries a coded body outside the ADR-1116 pricing exclusion: '+bad.join(', '));process.exit(1)}const routes={'app/page.tsx':['Splash','LiveProof','PostPreviewCard','EventRow'],'app/(marketing)/about/page.tsx':['LegacyAbout'],'app/(marketing)/spaces/page.tsx':['LegacySpaces'],'app/(marketing)/the-lab/page.tsx':['LegacyTheLab'],'app/(marketing)/the-quest/page.tsx':['LegacyTheQuest'],'app/(marketing)/the-community/page.tsx':['LegacyTheCommunity']};const NC=fs.existsSync('next.config.ts')?fs.readFileSync('next.config.ts','utf8'):'';const MERGED={'app/(marketing)/the-lab/page.tsx':'/the-lab','app/(marketing)/the-quest/page.tsx':'/the-quest'};for(const f of Object.keys(routes)){if(!fs.existsSync(f)){const src=MERGED[f];if(src&&NC.indexOf('source: '+String.fromCharCode(39)+src+String.fromCharCode(39))>=0)continue;console.error('missing route '+f+(src?' and next.config.ts carries no redirect for '+src:''));process.exit(1)}const t=fs.readFileSync(f,'utf8');if(t.indexOf('BlockRender')<0){console.error(f+' no longer renders BlockRender');process.exit(1)}for(const n of routes[f]){if(t.indexOf('function '+n)>=0){console.error(f+' still declares '+n);process.exit(1)}}}process.exit(0)\""
+    }
+  },
+  "append": {
+    "detail": "── PROBE RE-POINTED 2026-10-14 (overhaul, PR #3434). Owner ruling 2026-10-14 merged /the-lab into /vision and /the-quest into /features#f-zaps: both route files are deleted and next.config.ts redirects each path. A deleted route carries no coded body, so the row's consequence holds; the probe now accepts a missing the-lab or the-quest route ONLY when next.config.ts still carries its redirect source, and every other route keeps the BlockRender / no-Legacy assertions unchanged."
+  }
+}

@@ -36,7 +36,7 @@ export function ListingHorizonSection({ days }: { days: number }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+    <div className="rounded-card border border-border bg-surface p-4 sm:p-5">
       <div className="space-y-4">
         <label className="block">
           <span className="block text-body-sm font-semibold text-text">Days ahead</span>
@@ -57,7 +57,7 @@ export function ListingHorizonSection({ days }: { days: number }) {
             type="button"
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:opacity-50"
           >
             {pending ? 'Saving' : 'Save'}
           </button>

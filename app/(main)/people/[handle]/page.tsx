@@ -65,6 +65,15 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { roleUnlocked, stageUnlocked } from '@/lib/unlocks'
 import { getCachedMemberProgress } from '@/lib/member-progress'
 import { supporterMarkShows } from '@/lib/pricing/catalog-config'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
+import {
+  ProfileBody, ProfilePhoto, ProfileCircles, ProfileStanding, ProfileAchievements, ProfilePractice,
+} from '@/components/frequency/members/profile/profile-body'
+import { FqIcon } from '@/components/frequency/icon'
+import { getInPersonCounts, getCircleTenure, getPracticeCounts, sinceLabel } from '@/lib/profile/in-person'
+import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 
 export default async function ProfilePage({
   params,
@@ -239,7 +248,7 @@ export default async function ProfilePage({
     // learned that this member belonged to exactly one UNLISTED Circle and received its slug. The
     // band line is gone; narrowing the read is what stops the achievement republishing the same bit
     // three DOM nodes away.
-    admin.from('memberships').select('circles!circle_id ( id, name, slug, unlisted, status, space_id )').eq('profile_id', profileId).eq('status', 'active'),
+    admin.from('memberships').select('circles!circle_id ( id, name, slug, unlisted, status, space_id, image_url )').eq('profile_id', profileId).eq('status', 'active'),
     // The Frequency Signature — the member's practice spread across the four Pillars
     // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
     getMemberSignature(profileId),
@@ -299,10 +308,10 @@ export default async function ProfilePage({
   const rootSpaceId = await loadRootSpaceId()
   const LISTABLE_CIRCLE_STATUS = ['forming', 'active', 'inactive']
   const circles = ((circlesResult.data ?? []) as unknown as {
-    circles: { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } | null
+    circles: { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null; image_url: string | null } | null
   }[])
     .map(m => m.circles)
-    .filter((c): c is { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } =>
+    .filter((c): c is { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null; image_url: string | null } =>
       !!c && c.unlisted === false && LISTABLE_CIRCLE_STATUS.includes(c.status) && isUnwalledSpaceId(c.space_id, rootSpaceId))
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
@@ -362,13 +371,19 @@ export default async function ProfilePage({
   )
   {/* The remaining chips (Founder / Supporter / season rank / demo) are gamification/status — they read
       BELOW the header with the stats, not over the photo. */}
+  // The bought flair and title, wired ONCE and worn by both designs' status clusters.
+  const cosmetics = (
+    <>
+      <CosmeticFlair value={equippedFlair} />
+      <CosmeticTitle value={equippedTitle} />
+    </>
+  )
   const badges = (
     <span className="flex items-center gap-2 flex-wrap">
       {/* The bought cosmetics (LIVE-013). They ride WITH the status chips rather than over the
           cover: a flair and a title are things this member chose to wear, and they read beside
           Founder / rank, not competing with the name lockup. The border rides the avatar. */}
-      <CosmeticFlair value={equippedFlair} />
-      <CosmeticTitle value={equippedTitle} />
+      {cosmetics}
       <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
@@ -507,6 +522,277 @@ export default async function ProfilePage({
   // height / scrim resolve from the master config (retune site-wide).
   // The owner's picked overlay (profiles.meta) is the surface default — an operator master value in
   // /admin/elements can still override it site-wide (resolveHeaderElement precedence).
+  // ── FREQUENCY (ADR-1737). The same reads, gates and controls on the reference's profile
+  //    (design_handoff/frequency/templates/members/Profile.html). Nothing below is computed for it
+  //    that the DAWN band did not already gate: the Circles tab lists the same listable-only set the
+  //    achievements read, the four numbers are the public counts this page already shows, and every
+  //    viewer control keeps its exact guard. DAWN's Detail composition below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    const fqTab = tab === 'posts' || tab === 'circles' || tab === 'practice' ? tab : 'story'
+    const base = `/people/${profile.handle as string}`
+    // The reference's four numbers are in-person counts (check-ins, people met), read from the host's
+    // attendance marks; the Circles and Practice tabs read only what their tab shows.
+    const [inPerson, tenure, myJourneys, practiceCounts] = await Promise.all([
+      getInPersonCounts(profileId),
+      fqTab === 'circles' ? getCircleTenure(profileId, circles.map((c) => c.id)) : Promise.resolve(new Map()),
+      fqTab === 'practice' && isOwner ? getMemberJourneyProgress(profileId) : Promise.resolve([]),
+      fqTab === 'practice' && isOwner ? getPracticeCounts(profileId) : Promise.resolve([]),
+    ])
+    // The status cluster without the DAWN rank pill: the season rank wears the kit's glass tag instead.
+    const fqBadges = (
+      <>
+        {cosmetics}
+        <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
+        {isSupporter && <SupporterBadge />}
+        {isDemo && <DemoBadge />}
+      </>
+    )
+    const fqActions = isOwner ? (
+      <>
+        <OpenAdminBarButton
+          scope={{ kind: 'profile', id: profileId }}
+          label="Edit profile"
+          icon={<Pencil className="h-4 w-4" />}
+          className="btn"
+        />
+        <Link className="btn pa" href="/codes">
+          <FqIcon name="qr" />
+          My Code
+        </Link>
+        {vcardEnabled && (
+          <a className="btn" href={`${profilePath}/vcard`}>
+            <Contact className="h-3.5 w-3.5" />
+            Save contact
+          </a>
+        )}
+        <QrShareDropdown manager className="btn" />
+      </>
+    ) : (
+      <>
+        {user && !isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+        {user && vcardEnabled && (
+          <a className="btn" href={`${profilePath}/vcard`}>
+            <Contact className="h-3.5 w-3.5" />
+            Save contact
+          </a>
+        )}
+        {user && !isBlocked && friendState.kind === 'accepted' && (
+          <MessageMemberButton profileId={profileId} threadTitle={firstName} className="btn">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Message
+          </MessageMemberButton>
+        )}
+        {user && !isBlocked && canTipRecipient && <TipButton toProfileId={profileId} recipientName={firstName} />}
+        {user && isStaffViewer && (
+          <ProfileSettingsDrawer
+            profileId={profileId}
+            handle={profile.handle as string}
+            initialName={profile.display_name}
+            initialBio={profile.bio ?? ''}
+            spotlightEnabled={spotlightEnabled}
+            spotlightPublished={spotlightPublished}
+            canModerate={canModerateProfile}
+            isJanitor={isJanitorViewer}
+            triggerClassName="btn"
+          />
+        )}
+        <QrShareDropdown manager={false} className="btn" />
+      </>
+    )
+    const isCrew = isEndorsed(profile.membership_tier)
+    const fqChips = (
+      <div className="row wrap">
+        {role !== 'member' && roleBadge}
+        {rankEndorsed && <span className="tag glass">{rankDef.label}</span>}
+        {isCrew && <span className="fq-iri-text on-light mc-crew">Crew</span>}
+        {/* The rest of the status cluster the DAWN band wears: the bought flair and title, Founder,
+            Supporter, demo. */}
+        {fqBadges}
+      </div>
+    )
+    const metaLine = (
+      <>
+        @{profile.handle as string}
+        {regionName ? ` · ${regionName}` : ''} · Member since {joinedDate}
+        {website && (
+          <>
+            {' · '}
+            <a href={website.href} target="_blank" rel="noopener noreferrer nofollow">
+              {website.label}
+            </a>
+          </>
+        )}
+      </>
+    )
+    const tabContent =
+      fqTab === 'circles' ? (
+        <ProfileCircles
+          circles={circles.map((c) => {
+            const t = tenure.get(c.id)
+            return { id: c.id, name: c.name, slug: c.slug, imageUrl: c.image_url, since: sinceLabel(t?.joinedAt ?? null), checkins: t?.checkins ?? 0 }
+          })}
+          emptyLine={isOwner ? 'No Circles yet. Find one near you.' : `${firstName} is not in a public Circle yet.`}
+        />
+      ) : fqTab === 'practice' ? (
+        <ProfilePractice
+          journeys={myJourneys.map((j) => ({
+            slug: j.slug,
+            title: j.title,
+            percent: j.percent,
+            line: j.phasesTotal > 0 ? `${j.phasesComplete} of ${j.phasesTotal} phases` : `${j.percent}%`,
+          }))}
+          practices={practiceCounts.map((p) => ({
+            id: p.id,
+            title: p.title,
+            href: `/practices/${p.id}`,
+            sessions: p.sessions,
+          }))}
+        >
+          <FrequencySignature signature={signature} variant="full" layout="stack" name={isOwner ? undefined : firstName} />
+        </ProfilePractice>
+      ) : (
+        <div className="stack mc-gap-24">
+          {fqTab === 'story' && myProfileId && !blockedEither && (
+            <Composer
+              scopeId={profileId}
+              visibility="public"
+              placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
+            />
+          )}
+          <Suspense fallback={<ProfileFeedSkeleton />}>
+            {fqTab === 'posts' ? (
+              <ProfilePosts
+                profileId={profileId}
+                firstName={firstName}
+                isOwner={isOwner}
+                myProfileId={myProfileId}
+                viewerRole={myRole}
+              />
+            ) : (
+              <ProfileFeed
+                profileId={profileId}
+                profileHandle={profile.handle as string}
+                myProfileId={myProfileId}
+                viewerRole={myRole}
+              />
+            )}
+          </Suspense>
+        </div>
+      )
+    return (
+      <ShareRefProvider profileId={profileId}>
+        <ProfileBody
+          notice={
+            tippedCents !== null ? (
+              <div className="mc-note">
+                <span className="t1">
+                  Thank you. Your ${(tippedCents / 100).toFixed(2)} tip to {firstName} is on its way.
+                </span>
+              </div>
+            ) : null
+          }
+          avatar={
+            <CosmeticBorder value={equippedBorder}>
+              <ProfilePhoto src={profile.avatar_url} initials={initials} name={profile.display_name} />
+            </CosmeticBorder>
+          }
+          metaLine={metaLine}
+          name={profile.display_name}
+          chips={fqChips}
+          bio={<EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />}
+          actions={fqActions}
+          secondary={secondaryControls}
+          stats={[
+            { value: currentStreak.toLocaleString(), label: 'Day streak' },
+            { value: inPerson.checkinsThisYear.toLocaleString(), label: inPerson.checkinsThisYear === 1 ? 'Check-in this year' : 'Check-ins this year' },
+            { value: circles.length.toLocaleString(), label: circles.length === 1 ? 'Circle' : 'Circles' },
+            { value: inPerson.peopleMet.toLocaleString(), label: inPerson.peopleMet === 1 ? 'Person met in person' : 'People met in person' },
+          ]}
+          panels={
+            <>
+              {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
+              {!isOwner && !!user && !isBlocked && (
+                <ConnectionPanel
+                  profileId={profileId}
+                  firstName={firstName}
+                  friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
+                />
+              )}
+              {!isOwner && roleUnlocked('profile.member-support', myRole) && <MemberSupportPanel profileId={profileId} />}
+              <Suspense fallback={null}>
+                {isOwner ? <OwnerProfileLayoutPreview handle={handle} /> : <ProfileSpotlightBlocks handle={handle} />}
+              </Suspense>
+            </>
+          }
+          tabs={[
+            { key: 'story', label: 'Story', href: base },
+            { key: 'posts', label: postCount ? `Posts · ${postCount}` : 'Posts', href: `${base}?tab=posts` },
+            { key: 'circles', label: 'Circles', href: `${base}?tab=circles` },
+            { key: 'practice', label: 'Practice', href: `${base}?tab=practice` },
+          ]}
+          activeTab={fqTab}
+          tabContent={tabContent}
+          side={
+            <>
+              <Suspense fallback={null}>
+                <ProfileAssociations
+                  profileId={profileId}
+                  handle={profile.handle as string}
+                  firstName={firstName}
+                  viewerProfileId={myProfileId}
+                  isOwner={isOwner}
+                  blocked={isBlocked}
+                />
+              </Suspense>
+              <ProfileStanding
+                isOwner={isOwner}
+                rankLabel={rankDef.label}
+                nextLabel={rankNext?.label ?? null}
+                pct={rankPct}
+                zapsToNext={zapsToNext}
+                rows={[
+                  { label: 'Zaps', value: lifetimeZaps.toLocaleString(), href: '/crew/leaderboard' },
+                  { label: 'Gems', value: gems.toLocaleString(), href: '/crew/store' },
+                  { label: 'Streak', value: `${currentStreak} ${currentStreak === 1 ? 'day' : 'days'}`, href: '/crew/leaderboard' },
+                  { label: 'Rank', value: rankDef.label, href: '/crew/leaderboard' },
+                ]}
+              />
+              {showAchievements && (
+                <ProfileAchievements
+                  items={rewards.map((r) => ({
+                    label: r.label,
+                    description: r.description,
+                    earned: r.earned,
+                    current: r.current,
+                    target: r.target,
+                    milestone: r.milestone,
+                  }))}
+                />
+              )}
+              <ProfileAwards awards={awards} firstName={firstName} isOwner={isOwner} />
+              {isOwner && isCrew && (
+                <div className="soft stack mc-start">
+                  <span className="k">Crew</span>
+                  <span className="h3">You&apos;re Crew this season.</span>
+                  <span className="t2">Thank you for backing the community. Your rank shows on your profile while you are Crew.</span>
+                </div>
+              )}
+              {isOwner && (
+                <Suspense fallback={null}>
+                  <HubLinks
+                    title="You"
+                    boxed
+                    links={(v) => hubLinks('{profile}', v).filter((l) => !(isCrew && l.href === '/upgrade'))}
+                  />
+                </Suspense>
+              )}
+            </>
+          }
+        />
+      </ShareRefProvider>
+    )
+  }
+
   const overlayStyle = readProfileOverlayStyle((profile as { meta?: unknown }).meta)
   const overlayColor = readProfileOverlayColor((profile as { meta?: unknown }).meta)
   // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the member's own
@@ -844,7 +1130,7 @@ function ProfileStandingCard({
             <Link
               key={r.label}
               href={r.href}
-              className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+              className="group flex items-center gap-2.5 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-elevated"
             >
               {body}
               <ArrowRight className="h-3 w-3 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />

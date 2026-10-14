@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
@@ -36,12 +37,12 @@ export function JourneyExport({ slug }: { slug: string }) {
 
   return (
     <div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Export</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>Export</p>
       <button
         type="button"
         onClick={exportJourney}
         disabled={pending}
-        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Export as JSON
       </button>

@@ -10,13 +10,19 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPeople } from '@/components/frequency/site/pages/people/frequency-people'
+import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 
 export const revalidate = 3600
 
-export const metadata: Metadata = {
+// The DAWN page's metadata. Under Frequency the body is the design's People page, which shows no
+// Pillars and no Channels, so it carries that page's own (lib/seo/frequency-pages.ts), chosen by the
+// same build-time switch the body is.
+const DAWN_METADATA: Metadata = {
   title: 'What is a Circle? Community with a shape',
   description:
-    'A Circle is a few people near you doing life on purpose. Frequency is a Community Collective: four Pillars and Circles that grow on their own.',
+    'A Circle is a few people near you doing life on purpose. Frequency is local groups that keep meeting, and Circles that grow on their own.',
   alternates: { canonical: '/the-community' },
   openGraph: {
     ...OG_SITE,
@@ -35,6 +41,9 @@ export const metadata: Metadata = {
       'Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.',
   },
 }
+
+export const metadata: Metadata =
+  SITE_DESIGN === 'frequency' ? frequencyPageMetadata(FREQUENCY_PAGE_SEO.community) : DAWN_METADATA
 
 // Article dates. Google requires datePublished/dateModified on an Article node, and every other
 // pillar page stamps them as literals here; without them this URL published a dateless Article.
@@ -114,6 +123,18 @@ const EMPTY: Data = { content: [], root: {} }
 // here fails the build. New marketing structure on this page belongs in a BLOCK
 // (lib/page-editor/config.tsx).
 export default async function TheCommunityPage() {
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the design's People page, and so is
+  // everything Google reads about it: the visible breadcrumb ("For people") and a WebPage read from the
+  // visible h1 and lede, never the DAWN document's Article. The body emits its own FAQPage beside its
+  // questions. Build-time constant, so the route stays ISR and a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.community)} />
+        <FrequencyPeople />
+      </>
+    )
+  }
   const page = await getPublishedPage('the-community')
   const published = page?.doc ?? null
   const template = getTemplate('the-community')

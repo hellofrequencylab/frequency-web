@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import type { CalendarRepeatSeries } from '@/lib/events/calendar-repeats'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The Repeats strip that sits between the month header and the month grid (LIVE-081). One CHIP per
 // series, never a bare icon: a member cannot tell what an unlabelled marker is without clicking it,
@@ -35,7 +36,7 @@ export function CalendarRepeatsStrip({
   return (
     <div className="flex flex-col gap-1.5 border-b border-border px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Repeats</span>
+        <span className={capsLabel('text-2xs font-semibold text-muted')}>Repeats</span>
         {series.map((s) => {
           const on = s.key === activeKey
           return (

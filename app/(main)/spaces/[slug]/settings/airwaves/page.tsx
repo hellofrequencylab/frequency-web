@@ -6,7 +6,7 @@
 // auto-registered by the `/settings` pattern in page-chrome.ts, so no rail edit is needed.
 
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -50,7 +50,7 @@ export default async function AirwavesConsolePage({
   if (featureLocked) {
     if (!canManage) notFound()
     return (
-      <FocusTemplate
+      <ConsoleFocusTemplate
         eyebrow={brandName}
         title="Airwaves"
         description="Turn on Airwaves for this space to host recordings and attach them anywhere."
@@ -59,7 +59,7 @@ export default async function AirwavesConsolePage({
         <p className="rounded-card border border-border bg-surface p-6 text-body-sm text-muted">
           Airwaves is turned off for this space. Turn it on in the module settings to start adding recordings.
         </p>
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
@@ -100,7 +100,7 @@ export default async function AirwavesConsolePage({
   )
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Airwaves"
       description={
@@ -122,6 +122,6 @@ export default async function AirwavesConsolePage({
         coverUrlByShowId={coverUrlByShowId}
         feedBaseUrl={feedBaseUrl}
       />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

@@ -45,17 +45,16 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
 
   return (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => {
           setResult(null)
           setError(null)
           setOpen(true)
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <Send className="h-4 w-4" /> Message my group
-      </button>
+      </Button>
 
       <Dialog open={open} onClose={() => setOpen(false)} align="sheet" ariaLabel="Message my group">
         <div className="space-y-3 p-4">
@@ -68,7 +67,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
           </div>
 
           {result ? (
-            <div className="rounded-lg bg-success-bg px-3 py-3 text-body-sm text-success">
+            <div className="rounded-control bg-success-bg px-3 py-3 text-body-sm text-success">
               Sent to {result.sent} {result.sent === 1 ? 'person' : 'people'}.
               {result.skipped > 0 && (
                 <span className="text-muted"> {result.skipped} skipped (they turned email off or have no address).</span>
@@ -77,7 +76,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
+                  className="rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
                 >
                   Done
                 </button>
@@ -112,7 +111,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                     type="button"
                     onClick={() => setOpen(false)}
                     disabled={pending}
-                    className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                    className="rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                   >
                     Cancel
                   </button>

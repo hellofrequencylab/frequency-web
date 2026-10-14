@@ -123,7 +123,7 @@ export default async function QrStatsPage() {
         {locations.length > 0 && (
           <ul className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {locations.slice(0, 6).map((l) => (
-              <li key={l.key} className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm">
+              <li key={l.key} className="flex items-center justify-between rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm">
                 <span className="truncate text-text">
                   {l.city}
                   {l.country ? <span className="text-subtle"> · {l.country}</span> : null}
@@ -199,7 +199,7 @@ export default async function QrStatsPage() {
 // A ranked value → count list on a white tile (channel / source mix).
 function RankTile({ title, rows }: { title: string; rows: { key: string; count: number }[] }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+    <div className="rounded-card border border-border bg-surface p-4 sm:p-5">
       <p className="eyebrow text-muted">{title}</p>
       {rows.length === 0 ? (
         <p className="mt-2 text-body-sm text-muted">No data yet.</p>

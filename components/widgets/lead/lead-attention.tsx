@@ -5,6 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Leadership dashboard layout module (/lead, per-route module engine): "What needs you" —
 // a short, ranked list of concrete nudges derived from the leader's own circles, in the
@@ -178,7 +179,7 @@ export async function LeadAttention(): Promise<React.ReactElement | null> {
   return (
     <section>
       <SectionHeader title="What needs you" count={items.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {items.map((n) => (
           <li key={n.key}>
             <Link
@@ -189,7 +190,7 @@ export async function LeadAttention(): Promise<React.ReactElement | null> {
                 <n.Icon className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+                <span className={capsLabel('block text-2xs font-semibold text-primary-strong', 'widest')}>
                   {n.eyebrow}
                 </span>
                 <span className="mt-0.5 block text-body-sm leading-relaxed text-text">{n.text}</span>

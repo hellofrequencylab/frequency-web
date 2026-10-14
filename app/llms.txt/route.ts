@@ -2,6 +2,7 @@ import {
   SITE_NAME,
   SITE_URL,
   SITE_TAGLINE,
+  CATEGORY_LINE,
   CONTACT_EMAIL,
   FOUNDING_PLACE,
   SOCIAL_PROOF_FLOOR,
@@ -22,6 +23,9 @@ import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricin
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 import { getAllCategories } from '@/lib/help/content'
 import { listDensityCities } from '@/app/discover/cities/_data'
+import { quickAnswers, quickAnswerLines } from '@/lib/marketing/quick-answers'
+import { SELECTABLE_SKINS } from '@/lib/theme/skins'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-916). Every price and every percentage below is
 // READ from lib/pricing/pricing-grid.ts, the same derived model /pricing renders, resolved against the
@@ -48,13 +52,15 @@ function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
   // a lower rate plus the tools that build the list which takes that rate to zero", which is the
   // inverse of docs/CORE-MODEL.md. The reason and the rate are both PLAN_STORY now, one sentence
   // each, shared with /pricing so the corpus and the page cannot argue different models.
-  return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, at 0%: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
+  return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, with no platform fee, plus card processing: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
 }
 
-/** The plain "the ladder is X, then Y" sentence, priced from the same offerings. */
+/** The plain "the ladder is X, then Y" sentence, priced from the same offerings. It states the price
+ *  a buyer pays today and nothing else: the "Opening Beta rate under the $X list" branch was dormant
+ *  (no list anchor is set) and is gone (LIVE-912, LAUNCH-MARKETING-PLAN §7). */
 function ladderSentence(offerings: Offering[]): string {
   return offerings
-    .map((o) => `${offeringLadderLabel(o)} ${o.monthly}${o.listAnchor ? ` at the Opening Beta rate under the ${o.listAnchor} list` : ''}`)
+    .map((o) => `${offeringLadderLabel(o)} ${o.monthly}`)
     .join(', ')
 }
 
@@ -73,19 +79,24 @@ const abs = (path: string) => `${SITE_URL}${path}`
 
 // The key public pages, each with a one-line description in the locked voice.
 const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; label: string; desc: string }[] => [
-  { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
-  { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then take your first move.' },
+  { path: '/', label: 'Home', desc: `${SITE_NAME}. ${CATEGORY_LINE} The short version of who it is for and how it works.` },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
-  { path: '/the-quest', label: 'The Quest', desc: 'The light game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys. Not a third of the offer.' },
-  { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
-  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
-  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
+  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings, after card processing. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
+  // /features and /vision are Frequency-design routes (they 404 under DAWN, and app/sitemap.ts lists
+  // them only under Frequency), so this list names them only when the deploy serves them.
+  ...(SITE_DESIGN === 'frequency'
+    ? [
+        { path: '/features', label: 'Features', desc: "Everything Frequency does for people and for Spaces: What's happening (the calendar), Circles, Events, door check-in, programs, contacts, email, tickets, memberships and tips." },
+        { path: '/vision', label: 'Vision', desc: 'For partners, investors, civic leaders and press: the plan for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.' },
+      ]
+    : []),
+  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
-  { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings, pay only on the business the network sends you. A Collective Space also gets a public network page: its member Spaces and one shared calendar of their events.' },
-  { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business (included with Collective). Two themes, Frequency and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
+  { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings after card processing, pay only on the business the network sends you. A Collective Space also gets a public network page: its member Spaces and one shared calendar of their events.' },
+  { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). Two themes, Default and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
   { path: '/tools-for-community-builders', label: 'Tools for community builders', desc: 'The operator toolkit: Circles, Events, a calendar, email, a CRM and a storefront, for the people who gather others.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
-  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, each with the Circles meeting and events happening there.' },
+  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, then every town with a Circle meeting or an event coming up.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
 ]
 
@@ -94,13 +105,11 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
 // the brand pages. Same voice rules as `pages`.
 const DIRECTORIES: { path: string; label: string; desc: string }[] = [
   { path: '/events', label: 'Events', desc: 'Upcoming public events: what is happening, when, and in which city.' },
-  { path: '/discover/events', label: 'Events by Channel', desc: 'Public events browsed by Channel and city.' },
+  { path: '/discover/events', label: "What's happening", desc: 'The calendar of public Events near you, browsed by Channel and city.' },
   { path: '/discover/circles', label: 'Circles', desc: 'Live Circles you can visit: the small groups that meet on a standing day.' },
   { path: '/discover/spaces', label: 'Spaces directory', desc: 'The venues, studios, and organizations that host community on Frequency.' },
-  { path: '/discover/partners', label: 'Partners', desc: 'Partner venues and organizations working with Frequency.' },
   { path: '/discover/practices', label: 'Practice library', desc: 'The public practice library: small real-world practices from the community.' },
   { path: '/discover/journeys', label: 'Journeys', desc: 'Guided multi-week Journeys you can take with a group.' },
-  { path: '/discover/places', label: 'Places', desc: 'Every active city, each with the Circles meeting and the events happening there.' },
   { path: '/discover/topics', label: 'Channels', desc: 'The Channels (Movement, Spirituality, and more), each with its Circles and events.' },
 ]
 
@@ -125,7 +134,7 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: feel less awkward in groups and build a social life without drinking. Pick one recurring thing and become a regular.' },
   { path: '/calm-down-fast', label: 'How to calm down fast', desc: 'What to do when you are wired and cannot switch off, and the quiet fix underneath it.' },
   { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering and run a community space without burning out.' },
-  { path: '/how-to-start-a-circle', label: 'How to start a Circle', desc: 'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each week.' },
+  { path: '/how-to-start-a-circle', label: 'How to start a Circle', desc: 'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each time you meet.' },
 ]
 
 // ── Live first-party stats (AIO citation lever, CONTENT-VOICE §8c) ───────────
@@ -239,10 +248,10 @@ export async function GET() {
   const out: string[] = [
     `# ${SITE_NAME}`,
     '',
-    `> ${SITE_NAME} is a Community Collective. It exists to support every community effort and help`,
+    `> ${CATEGORY_LINE} ${SITE_NAME} exists to support every community effort and help`,
     `> everyone in it succeed, together. People find their people by topic, join a Circle (a small standing`,
-    `> local group), show up to nearby Events, grow a Space (a business or organization), and gather at The`,
-    `> Lab (a physical third space). You keep 100% of your own bookings; Frequency earns a share only`,
+    `> local group), show up to nearby Events, and grow a Space (a business or organization). The Lab, a`,
+    `> physical third space, is planned for 2028 and is not open yet. You keep 100% of your own bookings after card processing; Frequency earns a share only`,
     `> of the business the network sends you. The Quest is a light, transparent game that rewards`,
     `> showing up in person, not scrolling. ${SITE_TAGLINE}.`,
     `> ${PLAN_STORY.lines} Taking root in ${FOUNDING_PLACE}.`,
@@ -252,6 +261,13 @@ export async function GET() {
     `## ${WHO_FREQUENCY_IS_FOR_HEADING}`,
     ...WHO_FREQUENCY_IS_FOR.map((line) => `- ${line}`),
     '',
+    // Quick answers (GEO): what it is, who it is for, what it costs, how it works, where. One module,
+    // shared with /llms-full.txt, so the two corpora answer the same questions the same way.
+    '## Quick answers',
+    '',
+    ...quickAnswerLines(
+      quickAnswers({ ladder: ladderSentence(offerings), abs, memberThemes: SELECTABLE_SKINS.map((s) => s.label) }),
+    ),
     '## Key pages',
     ...pages(input, offerings).map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
@@ -266,7 +282,7 @@ export async function GET() {
     '',
     ...help,
     ...cities,
-    '## Pricing for Spaces (a Community Collective, not a tax on your work)',
+    '## Pricing for Spaces (not a tax on your work)',
     `The core promise: people join free, businesses host free, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
     takeRateStory(input, offerings),

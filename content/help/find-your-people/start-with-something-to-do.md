@@ -15,7 +15,7 @@ You don't have to sign up to "find your people." Most people who end up with a c
 
 Open [Events](/events) and look at this week. Filter by what you're into: a run, a walk, a pickup game, a sauna or cold plunge night, a sober social, a game night. Pick one with a real time and a real place, and tap **Going**.
 
-If you'd rather have something every week, look at [Circles](/circles). A run or walk Circle meets at a standing time, so you always know where to be.
+If you'd rather have something on a standing day, look at [Circles](/circles). A run or walk Circle meets at a standing time, so you always know where to be.
 
 ## Do I have to talk to anyone?
 

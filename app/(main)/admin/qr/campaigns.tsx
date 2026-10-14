@@ -51,7 +51,7 @@ export function Campaigns({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-border bg-surface lift-1">
+      <div className="rounded-card border border-border bg-surface lift-1">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div>
             <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
@@ -111,7 +111,7 @@ function CampaignRow({ campaign, codes }: { campaign: CampaignCard; codes: Campa
   const status = windowStatus(campaign.validFrom, campaign.validUntil)
 
   return (
-    <div className="rounded-2xl border border-border bg-surface lift-1 p-4">
+    <div className="rounded-card border border-border bg-surface lift-1 p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">

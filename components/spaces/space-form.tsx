@@ -228,7 +228,7 @@ export function AccentPicker({
               onChange={(e) => onChange(e.target.value)}
               className="h-9 w-12 shrink-0 cursor-pointer rounded-control border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
             />
-            <input
+            <Input
               type="text"
               inputMode="text"
               aria-label="Brand color hex"
@@ -244,10 +244,8 @@ export function AccentPicker({
                   commitHex(draft)
                 }
               }}
-              className={cn(
-                'w-28 rounded-control border bg-surface px-3 py-1.5 text-body-sm text-text outline-none focus:border-border-strong placeholder:text-subtle disabled:opacity-60',
-                draftValid ? 'border-border' : 'border-danger',
-              )}
+              aria-invalid={!draftValid}
+              className="w-28"
             />
             <button
               type="button"

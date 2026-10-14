@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, LayoutTemplate, ChevronDown, Compass } from 'lucide-react'
@@ -81,7 +82,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
   }
 
   return (
-    <section className="rounded-2xl border border-primary/30 bg-primary-bg/20 p-4">
+    <section className="rounded-card border border-primary/30 bg-primary-bg/20 p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
         <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
@@ -98,15 +99,15 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
           <p className="mt-1 text-body-sm text-muted">A few specifics and Vera fills one practice per Pillar (new or from the library). Edit anything after.</p>
           <div className="mt-3 space-y-2.5">
             <label className="block">
-              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
+              <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>Who is it for</span>
               <Input value={who} disabled={pending} onChange={(e) => setWho(e.target.value)} placeholder="e.g. People who feel wired and tired" />
             </label>
             <label className="block">
-              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What is it about</span>
+              <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>What is it about</span>
               <Input value={topic} disabled={pending} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Sleep and screen habits" />
             </label>
             <label className="block">
-              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What they walk away with</span>
+              <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>What they walk away with</span>
               <Input value={outcome} disabled={pending} onChange={(e) => setOutcome(e.target.value)} placeholder="e.g. Fall asleep easier, most nights" />
             </label>
           </div>
@@ -116,15 +117,15 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             <Button type="button" disabled={pending || !topic.trim()} onClick={build}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
             </Button>
-            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-control border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
               <Compass className="h-4 w-4" /> Start from the recommended framework
             </button>
-            <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
               <LayoutTemplate className="h-4 w-4" /> Start with the shape
             </button>
           </div>
           <div className="mt-4">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">What you&apos;ll get</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>What you&apos;ll get</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">

@@ -107,7 +107,7 @@ async function requireEventHost() {
 
 // Scope-aware guard: the caller must hold event.editSettings on THIS event
 // (they host it, manage its circle, or are community admin+/staff). Mirrors the
-// pattern used by toggleCancelEvent / updateEventDetails in admin/actions.ts.
+// pattern used by toggleCancelEvent in admin/actions.ts.
 async function requireEventEditor(eventId: string) {
   const [caller, caps] = await Promise.all([getCallerProfile(), getEventCapabilities(eventId)])
   if (!caller) throw new Error('Unauthorized')

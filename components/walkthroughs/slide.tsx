@@ -6,6 +6,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { WalkthroughStep, StepAccent } from '@/lib/walkthroughs'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Shared, presentational slide renderer for Walkthroughs. Used by BOTH the admin
 // editor's live preview (Phase A) and the member-facing lightbox (Phase B), so the
@@ -84,12 +85,12 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
   const a = ACCENT_CLASSES[step.accent]
 
   const eyebrow = (
-    <span className={`inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${a.text}`}>
+    <span className={capsLabel(`inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1 text-2xs font-semibold ${a.text}`)}>
       <Sparkles className="h-3.5 w-3.5" aria-hidden /> Walkthrough
     </span>
   )
   const iconChip = step.icon ? (
-    <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${a.soft} ${a.text}`}>
+    <span className={`flex h-14 w-14 items-center justify-center rounded-card ${a.soft} ${a.text}`}>
       <StepGlyph name={step.icon} className="h-7 w-7" />
     </span>
   ) : null

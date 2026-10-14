@@ -21,7 +21,7 @@ Yes, once your Space is on Business. Put a workshop on your Space as an Event an
 
 ## Do I get a student list?
 
-Your Space has a **Contacts** list: the people you track, with private notes on each. Add the students you meet, and the list stays with your Space, not with a studio. See [Your Space Contacts](/help/spaces/space-crm).
+Your Space has a **Contacts** list: the people you track, with private notes on each. Add the students you meet, and the list stays with your Space, not with a studio. See [Community Resonance](/help/spaces/community-resonance).
 
 ## Does this compete with the studios?
 

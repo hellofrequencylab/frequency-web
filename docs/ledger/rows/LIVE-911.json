@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-911",
+  "title": "Phase 0.2: the niche doors, About and the Eventbrite comparison stop making money claims the product no longer honors",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LAUNCH-MARKETING-PLAN.md",
+    "ref": "§14 Phase 0.2"
+  },
+  "detail": "The six /for doors still ran the retired ADR-914 rule after ADR-1709 moved selling to Business: six spark cards titled a plan as the reason for the repeat (\"A plan is for the second session\", \"second month\", \"second night\", \"second time they show up\", \"second gift\", \"the student who drifts\") while a free Space runs the email, reminders and nudges they describe (PLAN_STORY.paid); five trustLines promised \"You keep 100% of what you bring in.\" and the nonprofit one \"No take-rate on what you raise, ever.\" with no card processing; the coaches hero said \"made perfect\"; the nonprofit hero said \"Keep all of it\"; the event-hosts door put tickets on a free Space in How it works (\"your tickets ... Free to start, always\", \"Sell your tickets\") beside a pricing beat that says selling tickets is Business, and its ticket card said \"the money is yours\"; the teachers pricing intro said Business is for campaigns and \"the network rate drops with it\". About's principle said \"taking money is never behind a plan\". The Eventbrite comparison called Frequency \"the small, free, repeating room\", contradicting /for/event-hosts, promised \"0% on your own bookings, always\" with no card processing, and its cost row said \"Free to join, always\".\n\nFixed as copy only (lib/marketing/funnel-config.ts, lib/page-editor/templates/about.ts, lib/marketing/comparisons.ts): every trustLine now reads \"0% on your own audience, plus card processing.\" (nonprofit: \"No network fee on what you raise, plus card processing.\"); the spark cards name the repeat with no plan attached; every line that sells (coaches sessions, studio memberships, event tickets, community memberships, nonprofit gifts, teacher workshops) names Business or the Non Profit plan beside it; the break-even caption and the cost FAQ say \"no network fee ... only card processing\" instead of \"You keep 100%\"; About says selling starts at Business and 0% on your own people plus card processing; the Eventbrite money beat reads PLAN_STORY.spine, .selling and .rate verbatim. No behaviour, checkout or billing change. Not in this row's files and still carrying the About claim: components/page-editor/blocks/dawn.tsx:1411 (a block default with the same \"never behind a plan\" sentence).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-0-2-doors-about.mjs"
+  },
+  "closed": "2026-10-13",
+  "wave": "W7"
+}

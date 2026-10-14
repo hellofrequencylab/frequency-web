@@ -66,7 +66,7 @@ export async function HelpGapsTab() {
             description="Vera answered everything from the help center. No gaps to write."
           />
         ) : (
-          <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border bg-surface">
+          <ul className="divide-y divide-border/60 overflow-hidden rounded-card border border-border bg-surface">
             {gaps.map((g, i) => (
               <li key={i} className="flex items-start justify-between gap-3 px-4 py-3">
                 <span className="min-w-0 text-body-sm text-text">{g.sample}</span>

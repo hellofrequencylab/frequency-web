@@ -22,6 +22,7 @@ import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 import type { ThisWeekEvent } from '@/lib/this-week'
+import { palette } from '@/lib/theme/palette'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
 
@@ -306,7 +307,7 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
 }): string {
   const who = escapeHtml(inviterName || 'A friend')
   const hey = recipientName ? `Hey ${escapeHtml(recipientName)}` : 'Hey'
-  const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe</a> and you won't hear from us again.<br>Frequency™ · ${orgContactLine()}`
+  const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe</a> and you won't hear from us again.<br>Frequency™ · ${orgContactLine()}`
   return emailShell(`
     <h1 style="${h1Style}">${hey}</h1>
     <p style="${pStyle}">
@@ -562,7 +563,7 @@ function spaceFollowerReminderHtml({ recipientName, spaceName, eventTitle, whenL
   recipientName: string; spaceName: string; eventTitle: string; whenLabel: string; whenAbsolute: string; location: string | null; eventUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       From a Space you follow
     </p>
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -571,14 +572,14 @@ function spaceFollowerReminderHtml({ recipientName, spaceName, eventTitle, whenL
       You follow them, so we thought you might want to know. No pressure, take a look if it fits your week.
     </p>
     <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#8F8675;">${escapeHtml(location)}</span>` : ''}
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
     </p>
     <a href="${eventUrl}" style="${btnStyle}">See the event &rarr;</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       You're getting this because you follow ${escapeHtml(spaceName)} and asked to hear about their events.
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event emails</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>.
     </p>
   `)
 }
@@ -865,7 +866,7 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
     ? `<p style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.</p>`
     : ''
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailAlert};margin:28px 0 8px;">
       Event cancelled
     </p>
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -879,10 +880,10 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
     ${refundLine}
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd or held a ticket.
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event emails</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>.
     </p>
   `)
 }
@@ -947,7 +948,7 @@ export async function sendGuestEventCancelledEmail(params: {
     to,
     subject: `Cancelled: ${eventTitle}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailAlert};margin:28px 0 8px;">
         Event cancelled
       </p>
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -959,7 +960,7 @@ export async function sendGuestEventCancelledEmail(params: {
       <p style="${pStyle}"><strong>${escapeHtml(whenAbsolute)}</strong></p>
       <a href="${eventUrl}" style="${btnStyle}">View event →</a>
       <hr style="${dividerStyle}">
-      <p style="font-size:13px;color:#8F8675;">
+      <p style="font-size:13px;color:${palette.emailSubtle};">
         You are getting this because this address was used to ${reason} ${escapeHtml(eventTitle)}.
       </p>
     `),
@@ -1055,7 +1056,7 @@ Add this ticket to an account: ${claimUrl}
     to,
     subject: `${whenLabel}: ${eventTitle}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
         ${escapeHtml(whenLabel)}
       </p>
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -1065,7 +1066,7 @@ Add this ticket to an account: ${claimUrl}
       </p>
       <a href="${eventUrl}" style="${btnStyle}">View event →</a>${accountOfferHtml}
       <hr style="${dividerStyle}">
-      <p style="font-size:13px;color:#8F8675;">
+      <p style="font-size:13px;color:${palette.emailSubtle};">
         ${footerHtml}
       </p>
     `),
@@ -1131,16 +1132,16 @@ export async function sendMadeItEmail(params: {
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
       <p style="${pStyle}">${escapeHtml(greeting)}${escapeHtml(intro)}</p>
       <a href="${madeItUrl}" style="${btnStyle}">Yes, I made it</a>
-      <p style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:#9A5E12;">Not this time</a></p>${next ? `
+      <p style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">Not this time</a></p>${next ? `
       <hr style="${dividerStyle}">
       <p style="${pStyle}">${escapeHtml(nextLine ?? '')}</p>
-      <p style="${pStyle}"><a href="${next.url}" style="color:#9A5E12;font-weight:700;">See the next one</a></p>
-      <p style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:#9A5E12;">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
+      <p style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next one</a></p>
+      <p style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:${palette.emailPrimaryStrong};">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
       <hr style="${dividerStyle}">
       <p style="${pStyle}">${escapeHtml(offer)}</p>
-      <a href="${joinUrl}" style="${btnStyle}">Join free &rarr;</a>` : ''}
+      <a href="${joinUrl}" style="${btnStyle}">Find your Circle &rarr;</a>` : ''}
       <hr style="${dividerStyle}">
-      <p style="font-size:13px;color:#8F8675;">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event emails</a>` : ''}</p>
+      <p style="font-size:13px;color:${palette.emailSubtle};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>` : ''}</p>
     `),
     text: `Did you make it to ${eventTitle}?
 
@@ -1155,7 +1156,7 @@ ${friendLine}
 ${next.shareUrl}
 ` : ''}${offer ? `
 ${offer}
-Join free: ${joinUrl}
+Find your Circle: ${joinUrl}
 ` : ''}
 ${footer}${unsubscribeUrl ? `
 Unsubscribe from event emails: ${unsubscribeUrl}` : ''}
@@ -1187,7 +1188,7 @@ export async function sendGuestEventUpdateEmail(params: {
     to,
     subject: updateTitle ? `${eventTitle}: ${updateTitle}` : `Update from ${eventTitle}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#8F8675;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailSubtle};margin:28px 0 8px;">
         Event update
       </p>
       <h1 style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
@@ -1196,7 +1197,7 @@ export async function sendGuestEventUpdateEmail(params: {
       <p style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
       <a href="${eventUrl}" style="${btnStyle}">View event →</a>
       <hr style="${dividerStyle}">
-      <p style="font-size:13px;color:#8F8675;">
+      <p style="font-size:13px;color:${palette.emailSubtle};">
         You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)},
         and the host sent an update to everyone holding one. If that was not you, or you would rather
         not hear from this event again, reply to this email and we will sort it out.
@@ -1254,7 +1255,7 @@ function eventUpdateHtml({ recipientName, eventTitle, updateTitle, body, eventUr
   eventUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#8F8675;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailSubtle};margin:28px 0 8px;">
       Event update
     </p>
     <h1 style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
@@ -1263,10 +1264,10 @@ function eventUpdateHtml({ recipientName, eventTitle, updateTitle, body, eventUr
     <p style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd to this event.
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from dispatch emails</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from dispatch emails</a>.
     </p>
   `)
 }
@@ -1368,7 +1369,7 @@ function guestBookingConfirmHtml(p: {
 }): string {
   const title = p.serviceName ?? `Session with ${p.spaceName}`
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       One quick step
     </p>
     <h1 style="${h1Style}">${escapeHtml(title)}</h1>
@@ -1429,7 +1430,7 @@ function bookingConfirmationHtml(p: {
       ? `Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(p.otherPartyName ?? 'a member')} just booked a time with you.`
       : `Hi ${escapeHtml(p.recipientName)}, your time with ${escapeHtml(p.spaceName)} is set. We added a calendar file to this email.`
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       ${eyebrow}
     </p>
     <h1 style="${h1Style}">${escapeHtml(String(title))}</h1>
@@ -1489,7 +1490,7 @@ export function buildBookingReminderEmail(params: BookingReminderEmailParams): E
     to: params.to,
     subject: `Reminder: ${params.serviceName ?? params.spaceName}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
         Reminder
       </p>
       <h1 style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
@@ -1545,7 +1546,7 @@ export function buildHousingMatchEmail(params: HousingMatchEmailParams): EmailPa
     subject,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
         Roommate matches
       </p>
       <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
@@ -1607,7 +1608,7 @@ export function buildPlanShareEmail(params: PlanShareEmailParams): EmailPayload 
     subject,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
         Working together
       </p>
       <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
@@ -1642,7 +1643,7 @@ export async function sendBookingCancelledEmail(params: {
     to: params.to,
     subject: `Cancelled: ${params.serviceName ?? params.spaceName}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailAlert};margin:28px 0 8px;">
         Booking cancelled
       </p>
       <h1 style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
@@ -1727,16 +1728,16 @@ function outreachNoteHtml({ recipientName, authorName, body, unsubscribeUrl }: {
     .map((para) => `<p style="${pStyle}">${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
     .join('')
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       A note from ${escapeHtml(authorName)}
     </p>
     ${paragraphs}
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       Hi ${escapeHtml(recipientName)}, you are getting this because ${escapeHtml(authorName)} leads your Circle on Frequency.
-      <a href="${BASE_URL}/notifications" style="color:#8F8675;">See it in your notifications</a>
-      · <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from notes like this</a>.
+      <a href="${BASE_URL}/notifications" style="color:${palette.emailSubtle};">See it in your notifications</a>
+      · <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from notes like this</a>.
     </p>
   `)
 }
@@ -1789,7 +1790,7 @@ function optinConfirmHtml({ confirmUrl, firstName }: { confirmUrl: string; first
       <a href="${confirmUrl}" style="color:#888;">${confirmUrl}</a>
     </p>
     <hr style="${dividerStyle}">
-    <p style="${pStyle}font-size:13px;color:#8F8675;margin-bottom:0;">
+    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};margin-bottom:0;">
       Didn't do this? Ignore this email and nothing happens. You won't hear from us again.
     </p>
   `)
@@ -1825,7 +1826,7 @@ export async function sendOptinWelcomeEmail(params: { to: string; firstName?: st
 
 function optinWelcomeHtml({ firstName, unsubscribeUrl }: { firstName: string | null; unsubscribeUrl: string }): string {
   const hi = firstName ? `You're in, ${escapeHtml(firstName)}.` : "You're in."
-  const footer = `You're getting this because you confirmed your email at Frequency. <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe</a> any time.<br>${orgContactLine()}`
+  const footer = `You're getting this because you confirmed your email at Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe</a> any time.<br>${orgContactLine()}`
   return emailShell(`
     <h1 style="${h1Style}">${hi}</h1>
     <p style="${pStyle}">
@@ -1856,21 +1857,21 @@ ${unsubscribeUrl}`
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
-// Warm DAWN palette, copied as literal hex (email clients don't do CSS variables).
-// Mirrors app/globals.css: canvas #FBF8F1, ink #3D352A, primary amber #E2912F,
-// deep amber #9A5E12 for links, hairline #E9E1D4.
+// The email colours come from the design-keyed palette (lib/theme/palette.ts) as literal hex, because
+// email clients don't do CSS variables: cream ground, warm ink, primary amber, deep amber for links,
+// warm hairline. A Frequency deploy switches them with the rest of the platform.
 const containerStyle = `max-width:560px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;`
-const bodyBg         = `background:#FBF8F1;padding:32px 16px;`
-const cardStyle      = `background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px;padding:36px 36px 30px;`
-const logoStyle      = `font-size:22px;font-weight:900;letter-spacing:-0.5px;color:#9A5E12;text-decoration:none;`
-const taglineStyle   = `font-size:11px;color:#8F8675;letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 0;`
-const h1Style        = `font-size:24px;font-weight:800;color:#3D352A;margin:22px 0 12px;line-height:1.25;`
-const pStyle         = `font-size:15px;color:#6B6253;line-height:1.65;margin:0 0 20px;`
-const leadStyle      = `font-size:14px;font-weight:700;color:#3D352A;margin:0 0 10px;`
-const btnStyle       = `display:inline-block;background:#E2912F;color:#FFFFFF;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px;`
-const footerStyle    = `font-size:12px;color:#8F8675;margin-top:24px;text-align:center;line-height:1.7;`
-const unsubBtnStyle  = `display:inline-block;border:1px solid #E9E1D4;border-radius:999px;padding:7px 18px;color:#6B6253;text-decoration:none;font-weight:600;font-size:12px;`
-const dividerStyle   = `border:none;border-top:1px solid #E9E1D4;margin:26px 0;`
+const bodyBg         = `background:${palette.emailCanvas};padding:32px 16px;`
+const cardStyle      = `background:${palette.surface};border:1px solid ${palette.emailBorder};border-radius:16px;padding:36px 36px 30px;`
+const logoStyle      = `font-size:22px;font-weight:900;letter-spacing:-0.5px;color:${palette.emailPrimaryStrong};text-decoration:none;`
+const taglineStyle   = `font-size:11px;color:${palette.emailSubtle};letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 0;`
+const h1Style        = `font-size:24px;font-weight:800;color:${palette.text};margin:22px 0 12px;line-height:1.25;`
+const pStyle         = `font-size:15px;color:${palette.textMuted};line-height:1.65;margin:0 0 20px;`
+const leadStyle      = `font-size:14px;font-weight:700;color:${palette.text};margin:0 0 10px;`
+const btnStyle       = `display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px;`
+const footerStyle    = `font-size:12px;color:${palette.emailSubtle};margin-top:24px;text-align:center;line-height:1.7;`
+const unsubBtnStyle  = `display:inline-block;border:1px solid ${palette.emailBorder};border-radius:999px;padding:7px 18px;color:${palette.textMuted};text-decoration:none;font-weight:600;font-size:12px;`
+const dividerStyle   = `border:none;border-top:1px solid ${palette.emailBorder};margin:26px 0;`
 
 // The shell's parts, for the React Email base template (lib/email-react/shell.tsx, LIVE-695), so
 // the React render and `emailShell` read one set of styles and cannot drift.
@@ -1892,12 +1893,12 @@ export function emailPostalAddress(): string {
 // The same palette as named parts, for the modules that compose their OWN body and hand it to
 // `emailShell` (the money receipts in lib/billing/*). They lived as three private copies in three
 // files until 2026-09-16; one source is what keeps a receipt looking like every other Frequency
-// email. Literal hex, not tokens: mail clients read no design tokens.
-export const EMAIL_INK        = '#3D352A' // token-ok: email HTML
-export const EMAIL_MUTED      = '#6B6253' // token-ok: email HTML
-export const EMAIL_RULE       = '#E9E1D4' // token-ok: email HTML
-export const EMAIL_ACTION     = '#E2912F' // token-ok: email HTML
-export const EMAIL_ACTION_INK = '#FFFFFF' // token-ok: email HTML
+// email. Literal hex from lib/theme/palette.ts, not tokens: mail clients read no design tokens.
+export const EMAIL_INK        = palette.text
+export const EMAIL_MUTED      = palette.textMuted
+export const EMAIL_RULE       = palette.emailBorder
+export const EMAIL_ACTION     = palette.primary
+export const EMAIL_ACTION_INK = palette.onPrimary
 /** One body paragraph, minus its colour: callers append `color:${EMAIL_INK};` or the muted one. */
 export const EMAIL_P = 'font-size:15px;line-height:1.6;margin:0 0 20px;'
 
@@ -1964,7 +1965,7 @@ export function emailShell(content: string, footer?: string | EmailFooter): stri
     <div style="${footerStyle}">
       <p style="margin:0 0 14px;">${foot}</p>
       ${showUnsub ? `<a href="${BASE_URL}/settings/notifications" style="${unsubBtnStyle}">Unsubscribe or manage emails</a>` : ''}
-      <p style="margin:16px 0 0;color:#A89E8C;">${orgContactLine()}</p>
+      <p style="margin:16px 0 0;color:${palette.emailFaint};">${orgContactLine()}</p>
     </div>
   </div>
 </body>
@@ -1975,33 +1976,33 @@ export function emailShell(content: string, footer?: string | EmailFooter): stri
 
 function welcomeHtml({ displayName, inviterName }: { displayName: string; inviterName?: string | null }): string {
   const name = escapeHtml(displayName)
-  const link = `color:#9A5E12;text-decoration:none;font-weight:600;`
+  const link = `color:${palette.emailPrimaryStrong};text-decoration:none;font-weight:600;`
   const inviter = inviterName ? escapeHtml(inviterName) : null
   return emailShell(`
     <h1 style="${h1Style}">Welcome to Frequency, ${name}.</h1>
-    ${inviter ? `<p style="margin:0 0 18px;padding:11px 14px;border-radius:10px;background:#FBEFD9;font-size:14px;line-height:1.5;color:#9A5E12;font-weight:600;">${inviter} invited you in. Find them in your people and say hi when you're settled.</p>` : ''}
+    ${inviter ? `<p style="margin:0 0 18px;padding:11px 14px;border-radius:10px;background:${palette.primaryBg};font-size:14px;line-height:1.5;color:${palette.emailPrimaryStrong};font-weight:600;">${inviter} invited you in. Find them in your people and say hi when you're settled.</p>` : ''}
     <p style="${pStyle}">
-      You're in. Your profile is live, you're connected to your community, and the
-      whole place is yours to explore. Here's where to start.
+      You're in. Your profile is live and the whole place is yours to explore.
+      Here's where to start.
     </p>
     <a href="${BASE_URL}/feed" style="${btnStyle}">Open your feed &rarr;</a>
 
     <hr style="${dividerStyle}">
 
     <p style="${leadStyle}">Find your people</p>
-    <ul style="font-size:15px;color:#6B6253;line-height:1.75;padding-left:20px;margin:0 0 4px;">
+    <ul style="font-size:15px;color:${palette.textMuted};line-height:1.75;padding-left:20px;margin:0 0 4px;">
       <li><a href="${BASE_URL}/circles" style="${link}">Circles</a>: your local group, where it actually happens.</li>
-      <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's on near you this week.</li>
+      <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's happening near you this week.</li>
       <li><a href="${BASE_URL}/practices" style="${link}">Practices</a>: pick one small thing to do for yourself.</li>
       <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: show up, earn Zaps, climb the ranks.</li>
     </ul>
 
     <hr style="${dividerStyle}">
 
-    <p style="${leadStyle}">Bring a friend, earn as you go</p>
+    <p style="${leadStyle}">Bring a friend along</p>
     <p style="${pStyle}">
-      You've got a personal code. Share it, and when someone you bring joins the beta,
-      you both earn. Find yours under
+      You've got a personal code. A friend who joins with it gets a few Zaps to start,
+      and you earn Zaps once they join a Circle or pick up a Practice. Find yours under
       <a href="${BASE_URL}/codes" style="${link}">your codes</a>.
     </p>
     <p style="${pStyle}">See you out there.</p>
@@ -2011,17 +2012,17 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
 function welcomeText({ displayName, inviterName }: { displayName: string; inviterName?: string | null }): string {
   return `Welcome to Frequency, ${displayName}.
 ${inviterName ? `\n${inviterName} invited you in. Find them in your people and say hi when you're settled.\n` : ''}
-You're in. Your profile is live, you're connected to your community, and the whole place is yours to explore.
+You're in. Your profile is live and the whole place is yours to explore.
 
 Open your feed: ${BASE_URL}/feed
 
 Find your people:
 - Circles (your local group): ${BASE_URL}/circles
-- Events (what's on near you): ${BASE_URL}/events
+- Events (what's happening near you): ${BASE_URL}/events
 - Practices (one small thing for yourself): ${BASE_URL}/practices
 - The Quest (earn Zaps, climb the ranks): ${BASE_URL}/crew
 
-Bring a friend, earn as you go: share your personal code and you both earn when someone you bring joins. Find yours at ${BASE_URL}/codes
+Bring a friend along: a friend who joins with your personal code gets a few Zaps to start, and you earn Zaps once they join a Circle or pick up a Practice. Find yours at ${BASE_URL}/codes
 
 See you out there.
 The Frequency Team
@@ -2056,9 +2057,9 @@ function inviteHtml({ inviterName, contextName, inviteUrl, contextKind }: {
     </p>
     <a href="${inviteUrl}" style="${btnStyle}">Accept invite →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       Or paste this link in your browser:<br>
-      <span style="font-family:monospace;color:#6B6253;">${inviteUrl}</span>
+      <span style="font-family:monospace;color:${palette.textMuted};">${inviteUrl}</span>
     </p>
   `)
 }
@@ -2120,12 +2121,12 @@ function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, loca
     </p>
     <a href="${claimUrl}" style="${btnStyle}">Claim your event →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
-      Want to see it first? <a href="${eventUrl}" style="color:#9A5E12;text-decoration:none;font-weight:600;">View the event</a>.
+    <p style="font-size:13px;color:${palette.emailSubtle};">
+      Want to see it first? <a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};text-decoration:none;font-weight:600;">View the event</a>.
     </p>
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       Or paste this link in your browser:<br>
-      <span style="font-family:monospace;color:#6B6253;">${claimUrl}</span>
+      <span style="font-family:monospace;color:${palette.textMuted};">${claimUrl}</span>
     </p>
   `, footer)
 }
@@ -2175,30 +2176,30 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   unsubscribeUrl: string
 }): string {
   const dispatchesHtml = dispatches.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week's dispatches</h2>
+    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week's dispatches</h2>
     ${dispatches.map((d) => `
-      <div style="border-left:3px solid #9A5E12;padding:0 0 0 14px;margin-bottom:18px;">
-        <p style="margin:0 0 4px;font-size:11px;color:#8F8675;font-weight:600;">${escapeHtml(d.authorName)}</p>
-        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#3D352A;">${escapeHtml(d.title)}</p>
-        ${d.excerpt ? `<p style="margin:0 0 8px;font-size:14px;color:#6B6253;line-height:1.5;">${escapeHtml(d.excerpt)}</p>` : ''}
-        <a href="${d.url}" style="font-size:13px;font-weight:600;color:#9A5E12;text-decoration:none;">Read →</a>
+      <div style="border-left:3px solid ${palette.emailPrimaryStrong};padding:0 0 0 14px;margin-bottom:18px;">
+        <p style="margin:0 0 4px;font-size:11px;color:${palette.emailSubtle};font-weight:600;">${escapeHtml(d.authorName)}</p>
+        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:${palette.text};">${escapeHtml(d.title)}</p>
+        ${d.excerpt ? `<p style="margin:0 0 8px;font-size:14px;color:${palette.textMuted};line-height:1.5;">${escapeHtml(d.excerpt)}</p>` : ''}
+        <a href="${d.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Read →</a>
       </div>
     `).join('')}
   ` : ''
 
   const eventsHtml = upcomingEvents.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week on your calendar</h2>
+    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week on your calendar</h2>
     <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
       ${upcomingEvents.map((e) => `
         <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;">
-            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#3D352A;">${e.title}</p>
+          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
+            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${e.title}</p>
             <p style="margin:0;font-size:13px;color:#777;">
               ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}
             </p>
           </td>
-          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;text-align:right;">
-            <a href="${e.url}" style="font-size:13px;font-weight:600;color:#9A5E12;text-decoration:none;">View</a>
+          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};text-align:right;">
+            <a href="${e.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">View</a>
           </td>
         </tr>
       `).join('')}
@@ -2207,18 +2208,18 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
 
   // Leads the email: what is on near you this week that you have not said yes to yet.
   const nearbyHtml = nearbyEvents.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:24px 0 12px;">On near you this week</h2>
+    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:24px 0 12px;">On near you this week</h2>
     <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
       ${nearbyEvents.map((e) => `
         <tr>
-          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;">
-            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#3D352A;">${escapeHtml(e.title)}</p>
+          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
+            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${escapeHtml(e.title)}</p>
             <p style="margin:0;font-size:13px;color:#777;">
               ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${escapeHtml(e.location)}` : ''}
             </p>
           </td>
-          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;text-align:right;">
-            <a href="${e.url}" style="font-size:13px;font-weight:600;color:#9A5E12;text-decoration:none;">Go</a>
+          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};text-align:right;">
+            <a href="${e.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Go</a>
           </td>
         </tr>
       `).join('')}
@@ -2227,24 +2228,24 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
 
   const statusHtml = (topStreak || rank) ? `
     <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;margin:24px 0;">
-      <p style="margin:0;font-size:11px;font-weight:800;color:#8F8675;text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
-      ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:#3D352A;">⚡ <strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
-      ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:#3D352A;">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
+      <p style="margin:0;font-size:11px;font-weight:800;color:${palette.emailSubtle};text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
+      ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:${palette.text};">⚡ <strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
+      ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:${palette.text};">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
     </div>
   ` : ''
 
   const goAgainHtml = goAgain.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">Go again?</h2>
+    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">Go again?</h2>
     ${goAgain.map((g) => `
-      <p style="margin:0 0 10px;font-size:14px;color:#3D352A;">
+      <p style="margin:0 0 10px;font-size:14px;color:${palette.text};">
         You finished your run of <strong>${escapeHtml(g.title)}</strong>.
-        <a href="${g.url}" style="font-weight:600;color:#9A5E12;text-decoration:none;">Take it on again →</a>
+        <a href="${g.url}" style="font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Take it on again →</a>
       </p>
     `).join('')}
   ` : ''
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       Your week
     </p>
     <h1 style="${h1Style}">Hi ${recipientName},</h1>
@@ -2255,12 +2256,12 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
     ${dispatchesHtml}
     ${eventsHtml}
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       <a href="${BASE_URL}/feed" style="${btnStyle}">Open Frequency →</a>
     </p>
-    <p style="font-size:13px;color:#8F8675;">
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from weekly digest</a>.
+    <p style="font-size:13px;color:${palette.emailSubtle};">
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from weekly digest</a>.
     </p>
   `)
 }
@@ -2336,7 +2337,7 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
 }): string {
   const eyebrow = lead === '24h' ? 'Reminder · tomorrow' : 'Starting soon'
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       ${eyebrow}
     </p>
     <h1 style="${h1Style}">${eventTitle}</h1>
@@ -2348,10 +2349,10 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
     </p>
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd to attend.
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event reminders</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event reminders</a>.
     </p>
   `)
 }
@@ -2402,17 +2403,17 @@ function rsvpConfirmationHtml({
 
   // Add-to-calendar only for confirmed seats — pointless on a waitlist hold.
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
-    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:24px 0 8px;">
+    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">
       Add to your calendar
     </p>
     <p style="margin:0 0 8px;">
-      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
-      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
   ` : ''
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       ${eyebrow}
     </p>
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -2424,11 +2425,11 @@ function rsvpConfirmationHtml({
     ${calendarBlock}
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd to attend. Plans change, and that's okay,
-      <a href="${eventUrl}" style="color:#8F8675;">update your RSVP</a> any time.
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event reminders</a>.
+      <a href="${eventUrl}" style="color:${palette.emailSubtle};">update your RSVP</a> any time.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event reminders</a>.
     </p>
   `)
 }
@@ -2514,12 +2515,12 @@ function guestRsvpConfirmationHtml({
   const hostLine = rsvpHostLine(hostName, circleName)
 
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
-    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:24px 0 8px;">
+    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">
       Add to your calendar
     </p>
     <p style="margin:0 0 8px;">
-      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
-      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
   ` : ''
 
@@ -2538,7 +2539,7 @@ function guestRsvpConfirmationHtml({
   ` : ''
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       ${eyebrow}
     </p>
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -2559,7 +2560,7 @@ function guestRsvpConfirmationHtml({
       <a href="${signUpUrl}" style="${btnStyle}">Set up your account →</a>
     </p>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
       If that was not you, ignore this email and nothing further will be sent.
     </p>
@@ -2676,12 +2677,12 @@ function ticketReceiptHtml(
     : ''
 
   const calendarBlock = who.kind === 'member' && (who.icsUrl || who.googleCalUrl) ? `
-    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:24px 0 8px;">
+    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">
       Add to your calendar
     </p>
     <p style="margin:0 0 8px;">
-      ${who.googleCalUrl ? `<a href="${who.googleCalUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
-      ${who.icsUrl ? `<a href="${who.icsUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+      ${who.googleCalUrl ? `<a href="${who.googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${who.icsUrl ? `<a href="${who.icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
   ` : ''
 
@@ -2710,7 +2711,7 @@ function ticketReceiptHtml(
       Questions about this ticket? Reply to this email.`
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       Your ticket
     </p>
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
@@ -2785,17 +2786,17 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
   recipientName: string; authorName: string; dispatchTitle: string; excerpt: string; dispatchUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       New dispatch from ${authorName}
     </p>
     <h1 style="${h1Style}">${dispatchTitle}</h1>
     <p style="${pStyle}">${excerpt}</p>
     <a href="${dispatchUrl}" style="${btnStyle}">Read dispatch →</a>
     <hr style="${dividerStyle}">
-    <p style="font-size:13px;color:#8F8675;">
+    <p style="font-size:13px;color:${palette.emailSubtle};">
       Hi ${recipientName}, this dispatch was posted to your community on Frequency.
-      <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from dispatches</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from dispatches</a>.
     </p>
   `)
 }

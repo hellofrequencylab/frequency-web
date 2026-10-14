@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySpaceConsole } from '@/components/frequency/admin/space-console'
 
 // NOINDEX the entire owner/admin settings surface. Every /spaces/<slug>/settings/** sub-route
 // (profile, members, memberships, availability, check-in, QR, email, AND the CRM) is an
@@ -10,6 +12,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function SpaceSettingsLayout({ children }: { children: React.ReactNode }) {
-  return children
+// Under Frequency (ADR-1737) the settings pages sit in the design's Space console shell, like /manage. A
+// DAWN build (SITE_DESIGN is build-time) returns the children untouched, as it always has.
+export default async function SpaceSettingsLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
+  if (SITE_DESIGN !== 'frequency') return children
+  const { slug } = await params
+  return <FrequencySpaceConsole slug={slug}>{children}</FrequencySpaceConsole>
 }

@@ -46,7 +46,7 @@ export function Analytics({ data }: { data: AnalyticsData }) {
         <StatCard bordered icon={TrendingUp} label="Last 30 days" value={windowTotal.toLocaleString()} />
       </div>
 
-      <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
+      <section className="rounded-card border border-border bg-surface p-4 lift-1">
         <h2 className="text-body-sm font-bold text-text">Scans · last 30 days</h2>
         {windowTotal === 0 ? (
           // 🔴 THE SAME BOX AS THE CHART, ON PURPOSE: `mt-4 h-28`, both branches. This used to be
@@ -96,7 +96,7 @@ export function Analytics({ data }: { data: AnalyticsData }) {
           density="compact"
           caption="Top dynamic links by scan volume"
           empty={
-            <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="rounded-card border border-border bg-surface p-4">
               <p className="text-meta text-muted">No dynamic links have been scanned yet.</p>
             </div>
           }

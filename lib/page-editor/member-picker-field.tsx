@@ -104,7 +104,7 @@ function MemberPickerField({
                 if (dragIndex.current !== null) reorder(dragIndex.current, i)
                 dragIndex.current = null
               }}
-              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5"
+              className="flex items-center gap-2 rounded-control border border-border bg-surface px-2 py-1.5"
             >
               <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-subtle" aria-hidden />
               <Avatar member={m} />

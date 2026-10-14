@@ -10,6 +10,7 @@ import type { SignInErrorCode } from './errors'
 // production build ("The module has no exports at all"), which tsc and vitest cannot see. It lives in
 // the pure helper instead.
 import { NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
+import { safeNextPath } from '@/lib/auth/safe-next'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
 // cinematic welcome (app/join/(induction)/induction.tsx sign-in beat).
@@ -19,8 +20,7 @@ import { NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
 // provider's redirect-allowlist match is never affected (emailRedirectTo stays the
 // bare, known-good /auth/callback). /auth/callback re-reads + re-validates it.
 function safeNext(raw: FormDataEntryValue | null): string {
-  const v = typeof raw === 'string' ? raw : ''
-  return v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : ''
+  return safeNextPath(raw)
 }
 
 /** The funnel a signup came from, narrowed to a slug the CODE defines.
@@ -44,9 +44,22 @@ function safeSeq(raw: FormDataEntryValue | null): string {
 
 const POST_LOGIN_COOKIE = 'fq_post_login'
 
-/** Bounce back to the form with a CODE, never a sentence. See ./errors.ts for why. */
-function fail(code: SignInErrorCode): never {
-  redirect(`/sign-in?error=${code}`)
+/** Bounce back to the form with a CODE, never a sentence. See ./errors.ts for why. The validated
+ *  `next` rides along, so the retry still lands where the person was going: it used to be dropped
+ *  here, and a throttled or failed first try sent the second one to /feed. */
+function fail(code: SignInErrorCode, next = ''): never {
+  redirect(`/sign-in?error=${code}${next ? `&next=${encodeURIComponent(next)}` : ''}`)
+}
+
+/** Supabase's OWN email throttle (HTTP 429, `over_email_send_rate_limit`). It used to fall into
+ *  `send`, which tells a person whose address is fine to check their address. */
+function isProviderThrottle(error: { status?: number; code?: string; message?: string }): boolean {
+  return (
+    error.status === 429 ||
+    error.code === 'over_email_send_rate_limit' ||
+    error.code === 'over_request_rate_limit' ||
+    /rate limit/i.test(error.message ?? '')
+  )
 }
 
 async function callerIp(): Promise<string> {
@@ -97,12 +110,13 @@ export async function signInWithMagicLink(formData: FormData) {
   // decide otherwise. Without the fold, `A@x.com` and `a@x.com` would be two buckets and the
   // per-mailbox ceiling would be trivially doubled.
   const mailbox = (email ?? '').trim().toLowerCase()
-  if (!(await rateLimitOk('signin:ip', ip, IP_LIMIT, WINDOW, OPEN_WHEN_UNSET))) fail('rate')
+  const next = safeNext(formData.get('next'))
+  if (!(await rateLimitOk('signin:ip', ip, IP_LIMIT, WINDOW, OPEN_WHEN_UNSET))) fail('rate', next)
   if (mailbox && !(await rateLimitOk('signin:email', mailbox, EMAIL_LIMIT, WINDOW, OPEN_WHEN_UNSET))) {
-    fail('rate')
+    fail('rate', next)
   }
 
-  await stashNext(safeNext(formData.get('next')))
+  await stashNext(next)
   const supabase = await createClient()
 
   // Signup is OPEN: an unknown email provisions an account here. This used to run a per-email invite
@@ -118,7 +132,8 @@ export async function signInWithMagicLink(formData: FormData) {
   // caller (the join induction, the feature funnels) is a signup and keeps creating in one step, and
   // so does the confirm step itself, which posts `mode=create`.
   const askFirst = formData.get('mode') === 'signin'
-  if (formData.get('mode') === 'create') (await cookies()).delete(NEW_ACCOUNT_EMAIL_COOKIE)
+  // Deleted on the path it was SET on (below): a bare-name delete targets path `/` and left it standing.
+  if (formData.get('mode') === 'create') (await cookies()).delete({ name: NEW_ACCOUNT_EMAIL_COOKIE, path: '/sign-in' })
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
@@ -135,13 +150,14 @@ export async function signInWithMagicLink(formData: FormData) {
       path: '/sign-in',
       maxAge: 60 * 15,
     })
-    redirect('/sign-in?step=new-account')
+    // `next` rides on the URL too: the step's hidden field and its "Go back" link read it from there.
+    redirect(`/sign-in?step=new-account${next ? `&next=${encodeURIComponent(next)}` : ''}`)
   }
 
   if (error) {
     // Supabase's own wording never reaches the page — see ./errors.ts.
     console.error('[sign-in] magic link failed:', error.message)
-    fail('send')
+    fail(isProviderThrottle(error) ? 'rate' : 'send', next)
   }
 
   redirect('/sign-in/confirm')
@@ -157,11 +173,12 @@ export async function signInWithGoogle(formData: FormData) {
   // IP only: the address is not known until Google hands it back, so there is no mailbox to
   // bucket by. A looser ceiling than the magic link's, because this path sends no mail of ours
   // and its cost is one redirect.
+  const next = safeNext(formData.get('next'))
   if (!(await rateLimitOk('signin:oauth', await callerIp(), IP_LIMIT * 2, WINDOW, OPEN_WHEN_UNSET))) {
-    fail('rate')
+    fail('rate', next)
   }
 
-  await stashNext(safeNext(formData.get('next')))
+  await stashNext(next)
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -176,7 +193,7 @@ export async function signInWithGoogle(formData: FormData) {
 
   if (error || !data.url) {
     console.error('[sign-in] google oauth failed:', error?.message ?? 'no redirect url')
-    fail('oauth')
+    fail('oauth', next)
   }
 
   redirect(data.url)

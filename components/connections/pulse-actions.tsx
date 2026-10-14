@@ -6,6 +6,7 @@ import { sendFriendRequest } from '@/app/(main)/people/friend-actions'
 import { isError } from '@/lib/action-result'
 import { recordWelcome } from '@/lib/connections/welcomes'
 import { PulseAvatar } from '@/components/connections/pulse-avatar'
+import { Button } from '@/components/ui/button'
 
 // Client islands for the "Connections this week" pulse (ADR-186, P5 + P3b).
 // Each mutates via an existing server action and resolves in place — the pulse
@@ -19,7 +20,7 @@ export function PulseConnectButton({ targetId }: { targetId: string }) {
 
   if (sent) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-2xs font-medium text-muted">
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-2xs font-medium text-muted">
         <Check className="h-3.5 w-3.5" />
         Request sent
       </span>
@@ -27,7 +28,8 @@ export function PulseConnectButton({ targetId }: { targetId: string }) {
   }
 
   return (
-    <button
+    <Button
+      size="xs"
       type="button"
       disabled={isPending}
       onClick={() =>
@@ -36,11 +38,11 @@ export function PulseConnectButton({ targetId }: { targetId: string }) {
           if (!isError(result)) setSent(true)
         })
       }
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+      className="shrink-0"
     >
       <UserPlus className="h-3.5 w-3.5" />
       Connect
-    </button>
+    </Button>
   )
 }
 
@@ -77,11 +79,12 @@ export function PulseWelcomeRow({
         <p className="truncate text-2xs text-muted">{line}</p>
       </div>
       {gems != null ? (
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-2xs font-semibold text-success">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-2xs font-semibold text-success">
           {gems > 0 ? `+${gems} ` : ''}👋
         </span>
       ) : (
-        <button
+        <Button
+          size="xs"
           type="button"
           disabled={isPending}
           onClick={() =>
@@ -94,11 +97,11 @@ export function PulseWelcomeRow({
               }
             })
           }
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="shrink-0"
         >
           <HandHeart className="h-3.5 w-3.5" />
           Welcome
-        </button>
+        </Button>
       )}
     </div>
   )

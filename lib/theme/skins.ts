@@ -17,6 +17,8 @@
 // Imported statically (no runtime registration), so the registry is deterministic
 // regardless of import order — same pattern as lib/verticals/registry.ts.
 
+import { SITE_DESIGN, type DesignId } from './design'
+
 /** The set of authored skin ids. Add a skin = author its CSS blocks AND extend this union. */
 export type SkinId = 'default' | 'midnight'
 
@@ -40,6 +42,15 @@ export interface SkinDef {
    * and re-adding it later would mean re-authoring rather than re-listing.
    */
   selectable: boolean
+  /**
+   * The design systems this skin is authored for (lib/theme/design.ts, ADR-1737). A skin's CSS retunes
+   * one design's tokens, so under any other design it would paint that design's palette over the wrong
+   * system. Outside this list the skin is neither offered nor applied; it resolves to `default`.
+   */
+  designs: readonly DesignId[]
+  /** The label and line a picker shows under a design whose look differs from DAWN's (the default
+   *  skin IS the design, so under Frequency it is called Frequency, not Dawn). */
+  copy?: Partial<Record<DesignId, { label: string; description: string }>>
 }
 
 /** Every registered skin. `default` (DAWN) is first; it is the fallback everywhere. */
@@ -49,6 +60,9 @@ export const SKINS: readonly SkinDef[] = [
     label: 'Dawn',
     description: 'The signature Frequency look: a warm cream canvas with amber light.',
     selectable: true,
+    // `default` carries no overrides, so it is the base of every design.
+    designs: ['dawn', 'frequency'],
+    copy: { frequency: { label: 'Default', description: 'The signature look: warm sand by day, the thermal room at night.' } },
   },
   {
     id: 'midnight',
@@ -59,13 +73,24 @@ export const SKINS: readonly SkinDef[] = [
     // a member would actually get today is Dawn with a cooler palette rather than the second
     // skin the system promises. Flip this back once role adoption is high enough that the
     // skin changes the FEEL and not just the hue.
-    selectable: false,
+    //
+    // Owner call, 2026-10-13 (ADR-1737): Midnight becomes a theme for users. Members pick it in
+    // Settings, Appearance. DAWN's Midnight lives in app/globals.css; Frequency's own Midnight (blue
+    // hour by day, the UV temple at night, built from the export's tokens) in app/themes/frequency.css.
+    selectable: true,
+    designs: ['dawn', 'frequency'],
+    copy: { frequency: { label: 'Midnight', description: 'A cooler, deeper take: blue hour by day, the UV room at night.' } },
   },
 ]
 
 /** The skins a member may actually pick. Every user-facing picker reads THIS, never SKINS —
  *  SKINS is the full registry and stays the source of truth for resolution and rendering. */
-export const SELECTABLE_SKINS: readonly SkinDef[] = SKINS.filter((s) => s.selectable)
+export const SELECTABLE_SKINS: readonly SkinDef[] = SKINS.filter((s) => s.selectable && s.designs.includes(SITE_DESIGN)).map(
+  (s) => {
+    const copy = s.copy?.[SITE_DESIGN]
+    return copy ? { ...s, ...copy } : s
+  },
+)
 
 /** The fallback skin id. An unknown or missing `spaces.skin` value resolves to this. */
 export const DEFAULT_SKIN: SkinId = 'default'
@@ -80,6 +105,7 @@ export function isSkinId(id: string): id is SkinId {
  * id when known, else DEFAULT_SKIN. This is the one function callers use to map the DB
  * value to a `[data-skin]` value, so an unrecognized/legacy skin never breaks the shell.
  */
-export function resolveSkin(id: string | null | undefined): SkinId {
-  return id != null && isSkinId(id) ? id : DEFAULT_SKIN
+export function resolveSkin(id: string | null | undefined, design: DesignId = SITE_DESIGN): SkinId {
+  if (id == null || !isSkinId(id)) return DEFAULT_SKIN
+  return SKINS.find((s) => s.id === id)?.designs.includes(design) ? id : DEFAULT_SKIN
 }

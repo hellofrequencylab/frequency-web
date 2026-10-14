@@ -1,0 +1,96 @@
+{
+  "_readme": [
+    "Per-file baselines for the theme ratchet in scripts/check-tokens.mjs (ADR-1742).",
+    "counts[class][file] is the number of literals that file may hold; a file not listed may hold 0.",
+    "A count may hold or fall; a rise fails check:tokens. Re-freeze after a sweep, never by hand:",
+    "  node scripts/check-tokens.mjs --update --reason \"<which sweep retired them>\"",
+    "A rise is refused unless --allow-raise is passed, and is then recorded as direction raised.",
+    "The class definitions and what each one exempts are in the header of the THEME GATE section of check-tokens.mjs."
+  ],
+  "frozen": {
+    "at": "2026-10-14",
+    "direction": "raised",
+    "reason": "Merge of main's LIVE-907 Site Editor: under DAWN, components/sites/editor/editor.css scopes the Frequency design system's Commons tokens and faces to the editor as literals (no Commons theme is loaded in a DAWN build); a Frequency build styles the editor from the kit"
+  },
+  "counts": {
+    "tsx-style-colour": {},
+    "tsx-style-font-size": {
+      "components/billing/payment-marks.tsx": 1,
+      "components/marketing/funnel/funnel-graphics.tsx": 8,
+      "components/sites/house-sections.tsx": 12
+    },
+    "tsx-style-font-family": {},
+    "tsx-colour-function": {},
+    "css-colour": {
+      "app/themes/frequency.css": 3,
+      "components/sites/editor/editor.css": 114
+    },
+    "css-font-family": {
+      "components/sites/editor/editor.css": 5
+    },
+    "css-font-size-floor": {
+      "app/themes/frequency/members-a.css": 1,
+      "app/themes/frequency/members-shell.css": 2,
+      "app/themes/frequency/members-ui.css": 1,
+      "app/themes/frequency/site-pages-a.css": 3
+    }
+  },
+  "history": [
+    {
+      "at": "2026-10-13",
+      "direction": "seed",
+      "reason": "Seed: the theme gate's first measurement of the overhaul tree, taken while six fix lanes are still landing (ADR-1742)",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 3,
+        "css-colour": 64,
+        "css-font-family": 0,
+        "css-font-size-floor": 13
+      }
+    },
+    {
+      "at": "2026-10-14",
+      "direction": "lowered",
+      "reason": "Six theme-bulletproofing scans merged into overhaul (2026-10-14): colour functions, CSS colour literals and sub-13px CSS sizes retired",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 3,
+        "css-font-family": 0,
+        "css-font-size-floor": 8
+      }
+    },
+    {
+      "at": "2026-10-14",
+      "direction": "lowered",
+      "reason": "Page editor maturity pass: the Publish change count is the design's 12px badge step (editor-shell.css .pub-badge)",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 3,
+        "css-font-family": 0,
+        "css-font-size-floor": 7
+      }
+    },
+    {
+      "at": "2026-10-14",
+      "direction": "raised",
+      "reason": "Merge of main's LIVE-907 Site Editor: under DAWN, components/sites/editor/editor.css scopes the Frequency design system's Commons tokens and faces to the editor as literals (no Commons theme is loaded in a DAWN build); a Frequency build styles the editor from the kit",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 117,
+        "css-font-family": 5,
+        "css-font-size-floor": 7
+      }
+    }
+  ]
+}

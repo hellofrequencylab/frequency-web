@@ -40,13 +40,13 @@ export function PracticesFilterDisclosure({
   }
 
   return (
-    <section aria-label="Library filters" className="rounded-2xl border border-border bg-surface">
+    <section aria-label="Library filters" className="rounded-card border border-border bg-surface">
       <div className="flex flex-wrap items-center gap-2 px-3 py-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="inline-flex items-center gap-2 rounded-lg px-1.5 py-1 text-body-sm font-bold tracking-tight text-text transition-colors hover:text-primary-strong"
+          className="inline-flex items-center gap-2 rounded-control px-1.5 py-1 text-body-sm font-bold tracking-tight text-text transition-colors hover:text-primary-strong"
         >
           <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted" aria-hidden />
           Filters

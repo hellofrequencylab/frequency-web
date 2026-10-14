@@ -205,7 +205,7 @@ export function PwywPicker({
         className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-body-sm font-bold transition-colors disabled:opacity-60 ${
           open
             ? 'bg-surface-elevated text-text'
-            : 'bg-primary text-on-primary shadow-lg shadow-primary/20 hover:bg-primary-hover'
+            : 'bg-primary text-on-primary shadow-glow-primary-lg hover:bg-primary-hover'
         }`}
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : open ? <ChevronUp className="h-4 w-4" /> : <Zap className="h-4 w-4" />}

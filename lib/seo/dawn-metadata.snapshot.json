@@ -1,0 +1,56 @@
+{
+  "spaces": {
+    "title": "Spaces for businesses, studios and organizations",
+    "description": "Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.",
+    "alternates": {
+      "canonical": "/spaces"
+    },
+    "openGraph": {
+      "siteName": "Frequency",
+      "locale": "en_US",
+      "images": [
+        {
+          "url": "https://frequencylocal.com/opengraph-image.jpg",
+          "width": 1200,
+          "height": 630,
+          "alt": "Frequency · Community Collective"
+        }
+      ],
+      "title": "Spaces · Frequency",
+      "description": "Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours.",
+      "url": "/spaces"
+    },
+    "twitter": {
+      "card": "summary_large_image",
+      "title": "Spaces · Frequency",
+      "description": "Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours."
+    }
+  },
+  "community": {
+    "title": "What is a Circle? Community with a shape",
+    "description": "A Circle is a few people near you doing life on purpose. Frequency is local groups that keep meeting, and Circles that grow on their own.",
+    "alternates": {
+      "canonical": "/the-community"
+    },
+    "openGraph": {
+      "siteName": "Frequency",
+      "locale": "en_US",
+      "images": [
+        {
+          "url": "https://frequencylocal.com/opengraph-image.jpg",
+          "width": 1200,
+          "height": 630,
+          "alt": "Frequency · Community Collective"
+        }
+      ],
+      "title": "The Community · Frequency",
+      "description": "Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.",
+      "url": "/the-community"
+    },
+    "twitter": {
+      "card": "summary_large_image",
+      "title": "The Community · Frequency",
+      "description": "Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last."
+    }
+  }
+}

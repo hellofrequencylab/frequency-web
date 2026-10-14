@@ -88,6 +88,7 @@ import {
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { Field, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -271,6 +272,7 @@ export function OnAirSession({
   onLeaveViaLink,
   mode: doorMode,
   onModeChange,
+  minutesOverride,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
@@ -322,6 +324,10 @@ export function OnAirSession({
    *  Moving toggle wired to this. The standalone /on-air route omits it, so no toggle shows there
    *  and the sit behaves exactly as before. */
   onModeChange?: (mode: TimerMode) => void
+  /** A length the member picked BEFORE the session mounted (the Frequency Mindless door's duration
+   *  chips). It beats the practice's suggested length and the remembered one, never a resume or an
+   *  author-locked length. Absent everywhere else, so every other door behaves exactly as before. */
+  minutesOverride?: number
 }) {
   const [stage, setStage] = useState<Stage>('setup')
   const initialId =
@@ -400,7 +406,11 @@ export function OnAirSession({
   // minutes, then the remembered open length. A locked practice always uses its length.
   const [minutes, setMinutes] = useState(() => {
     if (resuming) return resumeRemainingMin
-    const d = practices.find((p) => p.id === initialId)?.durationMin
+    const initial = practices.find((p) => p.id === initialId)
+    const d = initial?.durationMin
+    if (minutesOverride && minutesOverride > 0 && !(initial?.durationLocked && d && d > 0)) {
+      return clampMinutes(minutesOverride)
+    }
     if (d && d > 0) return clampMinutes(d)
     return saved?.minutes != null ? clampMinutes(saved.minutes) : prefs.minutes
   })
@@ -1362,24 +1372,20 @@ export function OnAirSession({
             no shame, a gentle "finish for the rest". FINISHED: celebrate the top-up. Plain copy,
             no em or en dashes. */}
         {payload.partial && (
-          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-2.5 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-card border border-primary/50 bg-primary-bg/30 px-4 py-2.5 text-center">
             <p className="text-body-sm font-semibold text-text">You banked the day and earned 1 Zap.</p>
             <p className="mt-1 text-meta text-muted">
               Finish the sit any time today and the rest of the Zaps are yours.
             </p>
             {(practice?.durationMin ?? 0) > 0 && (
-              <button
-                type="button"
-                onClick={finishTheRest}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-              >
+              <Button type="button" onClick={finishTheRest} className="mt-2">
                 Finish the sit <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-              </button>
+              </Button>
             )}
           </div>
         )}
         {payload.finished && (
-          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl border border-success/50 bg-success-bg/40 px-4 py-2.5 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm shrink-0 rounded-card border border-success/50 bg-success-bg/40 px-4 py-2.5 text-center">
             <p className="text-body-sm font-semibold text-text">You finished it. The rest of the Zaps are in.</p>
             <p className="mt-1 text-meta text-muted">Full sit, full reward. Nice work.</p>
           </div>
@@ -1449,7 +1455,7 @@ export function OnAirSession({
             tappable on a short screen (owner layout directive, item #5). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-5 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
           <p className="flex animate-pulse items-center gap-2.5 text-body-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
-            <LotusIcon className="h-[18px] w-[18px]" /> Mindless
+            <LotusIcon className="h-4.5 w-4.5" /> Mindless
           </p>
 
           <div className="flex flex-col items-center gap-5">
@@ -1549,16 +1555,12 @@ export function OnAirSession({
             interval, the sit auto-finalizes at the last confirmed point so an unattended run never
             inflates airtime. Voice: plain, no narrated feelings, no em dashes. */}
         {preroll === null && runOverPrompt && (
-          <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
             <p className="text-body-sm font-semibold text-text">Still practicing?</p>
             <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
-            <button
-              type="button"
-              onClick={confirmRunOver}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
+            <Button type="button" onClick={confirmRunOver} className="mt-2.5">
               Still here
-            </button>
+            </Button>
           </div>
         )}
         {/* Docked controls (P10 + item #5): Pause ⇄ Resume while running, Finish once the
@@ -2085,32 +2087,36 @@ export function OnAirSession({
           // An unfinished practice today: the button SPLITS into Continue (resume the remaining
           // time) and New Practice (start the full length fresh, dropping the banked partial).
           <div className="flex gap-2 lg:mx-auto lg:max-w-sm">
-            <button
+            <Button
               type="button"
+              size="lg"
               onClick={() => beginResolved(false)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="flex-1"
             >
               <OnAirIcon className="h-4 w-4" /> Continue
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              size="lg"
               onClick={() => beginResolved(true)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex-1"
             >
               New Practice
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
+          <Button
             type="button"
+            size="lg"
             onClick={() => beginResolved(false)}
             disabled={!runPracticeId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+            className="w-full lg:mx-auto lg:max-w-sm"
           >
             <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Start Practice'}
-          </button>
+          </Button>
         )}
       </div>
       </div>
@@ -2162,7 +2168,7 @@ function InstructionsPopup({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 outline-none lift-3"
+        className="relative w-full max-w-sm rounded-card border border-border bg-surface px-6 py-6 outline-none lift-3"
       >
         <button
           type="button"
@@ -2174,13 +2180,9 @@ function InstructionsPopup({
         </button>
         <h2 className="pr-6 text-body-lg font-semibold text-text">{pattern.name}</h2>
         <p className="mt-3 text-body-sm leading-relaxed text-muted">{pattern.instructions}</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" size="lg" onClick={onClose} className="mt-5 w-full">
           Close
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -2235,7 +2237,7 @@ function Group({
 }
 
 function SubLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-2xs font-medium uppercase tracking-wider text-muted">{children}</p>
+  return <p className={capsLabel('text-2xs font-medium text-muted', 'wider')}>{children}</p>
 }
 
 function ModeButton({

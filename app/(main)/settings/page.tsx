@@ -15,6 +15,8 @@ import { AccountSection } from './account/section'
 import { PlanSection } from './billing/section'
 import { MyMembershipsSection } from './memberships/section'
 import { InstallSettingsCard } from '@/components/push/install-card'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SettingsBody } from '@/components/frequency/members/settings/settings-body'
 
 // The member Settings suite as ONE page (DAWN 2 screen pass, per
 // design_handoff/dawn/ui_kits/screens/settings.html): a chip section-rail up top, then
@@ -63,6 +65,11 @@ export default async function SettingsPage({
   // Stripe checkout / Connect returns land here via the /settings/billing redirect.
   const params = await searchParams
 
+  // FREQUENCY (ADR-1737): the same sections, regrouped into the reference's side list and panes.
+  if (SITE_DESIGN === 'frequency') {
+    return <SettingsBody sessionId={params.session_id} payouts={params.payouts} />
+  }
+
   return (
     <FocusTemplate title="Settings" description="The whole suite on one page." width="wide">
       {/* Section chips — one page, one scroll; each chip jumps to its section. */}
@@ -83,7 +90,7 @@ export default async function SettingsPage({
           href="/settings/profile"
           className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 lift-1 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
         >
-          <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
+          <span className="flex items-center justify-center w-9 h-9 rounded-control bg-surface-elevated shrink-0">
             <User className="w-4 h-4 text-muted" />
           </span>
           <span className="flex-1 min-w-0">

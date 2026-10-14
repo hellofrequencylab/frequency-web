@@ -26,6 +26,7 @@ import { assetRefFromField, assetRefToField } from '@/lib/library/asset-ref'
 import { RepeatPicker } from '@/components/events/repeat-picker'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 import { cn } from '@/lib/utils'
+import { capsLabel } from '@/components/ui/caps-label'
 
 /**
  * Loaded options, keyed by the manifest's `optionsFrom` NAME (not by field path), so one loaded
@@ -329,17 +330,13 @@ function renderControl({
 
     case 'toggle':
       return (
-        <label className="flex items-center gap-2 text-body-sm text-text">
-          <input
-            {...common}
-            {...native}
-            type="checkbox"
-            checked={asText(value) === 'true'}
-            onChange={(e) => onChange(String(e.target.checked))}
-            className="h-4 w-4 rounded border-border accent-primary"
-          />
-          <span>{def.label}</span>
-        </label>
+        <Checkbox
+          {...common}
+          {...native}
+          checked={asText(value) === 'true'}
+          onChange={(e) => onChange(String(e.target.checked))}
+          label={def.label}
+        />
       )
 
     case 'tags':
@@ -747,7 +744,7 @@ function DateRangeControl({
   return (
     <div className={cn('grid gap-2', 'sm:grid-cols-2')}>
       <label className="block">
-        <span className="mb-1 block text-2xs font-medium uppercase tracking-wide text-muted">Starts</span>
+        <span className={capsLabel('mb-1 block text-2xs font-medium text-muted')}>Starts</span>
         <Input
           id={id}
           type="datetime-local"
@@ -759,7 +756,7 @@ function DateRangeControl({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-2xs font-medium uppercase tracking-wide text-muted">Ends</span>
+        <span className={capsLabel('mb-1 block text-2xs font-medium text-muted')}>Ends</span>
         <Input
           type="datetime-local"
           disabled={disabled}

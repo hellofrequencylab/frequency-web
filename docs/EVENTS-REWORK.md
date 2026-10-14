@@ -149,7 +149,7 @@ Eventbrite/Meetup import.
 - **Naming canon:** "Event" stays. Host updates are **Event Dispatches** (ADR-255, NAMING.md).
   All copy runs the CONTENT-VOICE §10 checklist; no em dashes in member copy; never narrate feelings.
 - **Page framework:** compose the kit: Index (`/events`), Detail (`/events/[slug]`), Focus
-  (create/scan), **Dashboard** (host Manage). No hand-rolled layouts; semantic DAWN tokens only.
+  (create/scan), **Dashboard** (host Manage). No hand-rolled layouts; semantic tokens only.
 - **DB-level invariants** for money/capacity (atomic inventory, capacity triggers): already convention.
 - **Trauma-informed overlay:** privacy by default, member-set notification/visibility/pacing,
   blameless copy. Standalone public events (ADR-254) raise the moderation bar: surface it in B1.

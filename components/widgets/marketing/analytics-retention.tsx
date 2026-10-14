@@ -1,6 +1,7 @@
 import { getPracticeRetention } from '@/lib/analytics/practice'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Marketing analytics layout module (ADR-270/294): the practice-retention cohort heatmap — W0 is
 // each cohort's first week (100%); later columns are the share still logging a practice that week,
@@ -23,11 +24,11 @@ export async function MarketingAnalyticsRetention() {
           description="Cohorts appear once members start logging."
         />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
+        <div className="overflow-x-auto rounded-card border border-border bg-surface lift-1">
           <table className="w-full text-body-sm">
             <caption className="sr-only">Weekly practice-retention cohorts</caption>
             <thead>
-              <tr className="border-b border-border bg-surface-elevated/50 text-meta uppercase tracking-wide text-muted">
+              <tr className={capsLabel('border-b border-border bg-surface-elevated/50 text-meta text-muted')}>
                 <th scope="col" className="px-3 py-2.5 text-left font-semibold">Cohort (week of)</th>
                 <th scope="col" className="px-3 py-2.5 text-right font-semibold">Members</th>
                 {Array.from({ length: maxWeeks }).map((_, i) => (

@@ -12,6 +12,8 @@ import {
   loadMySupportThreadAction,
   postMySupportReplyAction,
 } from '@/app/(main)/support/chat-actions'
+import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The member's support CONVERSATIONS inside the dock's Help & support section (chat consolidation).
 // A member sends a "message us" request that becomes a ticketed spine conversation bound to their
@@ -46,13 +48,13 @@ export function SupportConversationsPanel() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4">
       <NewRequest onSent={(ref) => { setOpenRef(ref); setView('thread') }} />
 
-      <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Your requests</p>
+      <p className={capsLabel('mt-4 text-2xs font-semibold text-muted')}>Your requests</p>
       {threads === null ? (
         <div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted" /></div>
       ) : threads.length === 0 ? (
         <p className="mt-2 text-meta text-muted">Nothing yet. Send us a message above and we&rsquo;ll reply here.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
+        <ul className="mt-2 divide-y divide-border overflow-hidden rounded-control border border-border">
           {threads.map((t) => (
             <li key={t.ref}>
               <button
@@ -62,7 +64,7 @@ export function SupportConversationsPanel() {
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="min-w-0 truncate text-body-sm font-medium text-text">{t.subject}</span>
-                  <span className="shrink-0 text-3xs font-semibold uppercase tracking-wide text-muted">{STATUS_COPY[t.status] ?? t.status}</span>
+                  <span className={capsLabel('shrink-0 text-3xs font-semibold text-muted')}>{STATUS_COPY[t.status] ?? t.status}</span>
                 </span>
               </button>
             </li>
@@ -92,7 +94,7 @@ function NewRequest({ onSent }: { onSent: (ref: string) => void }) {
 
   return (
     <div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Send us a message</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>Send us a message</p>
       <p className="mt-1 text-meta text-muted">Tell us what you need. We&rsquo;ll reply right here and by email.</p>
       <Textarea
         value={message}
@@ -103,14 +105,14 @@ function NewRequest({ onSent }: { onSent: (ref: string) => void }) {
         className="mt-2 resize-none"
       />
       {error && <p className="mt-1 text-meta text-danger">{error}</p>}
-      <button
+      <Button
         type="button"
         onClick={send}
         disabled={pending || !message.trim()}
-        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="mt-2 w-full"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send message
-      </button>
+      </Button>
     </div>
   )
 }
@@ -146,7 +148,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <button type="button" onClick={onBack} aria-label="Back" className="rounded-lg p-1.5 text-muted hover:bg-surface-elevated hover:text-text">
+        <button type="button" onClick={onBack} aria-label="Back" className="rounded-control p-1.5 text-muted hover:bg-surface-elevated hover:text-text">
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
         <span className="min-w-0 truncate text-body-sm font-semibold text-text">{detail?.subject ?? 'Support request'}</span>
@@ -157,7 +159,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         ) : (
           detail.messages.map((m) => (
             <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
-              <span className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
+              <span className={`max-w-[80%] whitespace-pre-wrap rounded-card px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
                 {m.body}
               </span>
             </div>

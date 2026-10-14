@@ -122,6 +122,13 @@ function withKind(input: EntryInput, next: EntryKindDef): EntryInput {
   }
 }
 
+/** What each entry kind is for, in the quick add's words. */
+const QUICK_ADD_LINE: Record<string, string> = {
+  pencil: 'Hold the date for something on its way. Only your team sees it.',
+  unavailable: 'Block the day off. You can show it publicly as Unavailable.',
+  private: 'A note on the day for your team only.',
+}
+
 export function StaffCalendar({
   slug,
   spaceId,
@@ -151,6 +158,10 @@ export function StaffCalendar({
   monthFlow,
   moveNotice = null,
   onMoveResult,
+  dayGrid = false,
+  todayKey,
+  onMonthItems,
+  quickAdd,
 }: {
   slug: string
   spaceId: string
@@ -210,6 +221,16 @@ export function StaffCalendar({
   moveNotice?: string | null
   /** One line per move, moved or not, for the host header. A move is never silent. */
   onMoveResult?: (line: string) => void
+  /** Passed straight through to the grid: the keyboard day grid, the host's today and the month's
+   *  items for its chip counts (the Frequency calendar planner). */
+  dayGrid?: boolean
+  todayKey?: string
+  onMonthItems?: (items: CalendarEvent[]) => void
+  /** QUICK ADD (the Frequency calendar planner). A day's + or a click on its empty space asks WHAT
+   *  first: an event (the event form, at `newEventHref`), or one of the entry kinds, which opens this
+   *  drawer's own short form on that day with the kind already chosen. Absent, a day opens a pencil
+   *  exactly as before. */
+  quickAdd?: { newEventHref: string }
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -226,12 +247,15 @@ export function StaffCalendar({
    *  PLAN for the same reason as `askDelete`: the dialog offers exactly what the plan carries. */
   const [askSave, setAskSave] = useState<SeriesSavePlan | null>(null)
   const [pending, startTransition] = useTransition()
+  /** The day a quick add is asking about, or null. */
+  const [chooseOn, setChooseOn] = useState<string | null>(null)
 
   const loadMonth = useCallback((y: number, m: number) => loadStaffCalendarMonth(slug, y, m), [slug])
-  const openNew = (dayKey: string) => {
+  const openNew = (dayKey: string, kind = 'pencil') => {
     setError(null)
-    setDraft({ id: null, input: blankInput('pencil', dayKey, spaceTimeZone) })
+    setDraft({ id: null, input: blankInput(kind, dayKey, spaceTimeZone) })
   }
+  const createAt = (dayKey: string) => (quickAdd ? setChooseOn(dayKey) : openNew(dayKey))
   const today = () => new Date().toLocaleDateString('en-CA')
   // An outside "Pencil it in" (the console header, its N key) lands here as a bumped counter, so the
   // drawer opens from the same `blankInput` the button above the grid uses. Render-time compare, no
@@ -559,7 +583,10 @@ export function StaffCalendar({
         onPickDate={canEdit ? pick : undefined}
         onMoveEntry={canEdit && moveByDrag ? moveEntry : undefined}
         moveNotice={moveNotice}
-        onCreateAt={canEdit ? openNew : undefined}
+        onCreateAt={canEdit ? createAt : undefined}
+        dayGrid={dayGrid}
+        todayKey={todayKey}
+        onMonthItems={onMonthItems}
         onEditEntry={
           canEdit
             ? (item) => {
@@ -1029,6 +1056,39 @@ export function StaffCalendar({
         pending={pending}
         onChoose={chooseSave}
       />
+      {quickAdd && (
+        <Dialog open={chooseOn !== null} onClose={() => setChooseOn(null)} ariaLabelledBy="calendar-quick-add-title" className="max-w-sm">
+          <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-3" data-calendar-quick-add>
+            <h2 id="calendar-quick-add-title" className="text-lead font-bold text-text">
+              Add on {chooseOn ? shortDateLabel(chooseOn) : ''}
+            </h2>
+            <ul className="grid gap-1.5">
+              <li>
+                <a href={quickAdd.newEventHref} className="block rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated">
+                  New event
+                  <span className="block text-meta font-normal text-muted">Published on your calendar. You set the date in the form.</span>
+                </a>
+              </li>
+              {ENTRY_KINDS.map((k) => (
+                <li key={k.kind}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const day = chooseOn
+                      setChooseOn(null)
+                      if (day) openNew(day, k.kind)
+                    }}
+                    className="block w-full rounded-control border border-border px-3 py-2 text-left text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  >
+                    {k.isPencil ? 'Pencil it in' : k.label}
+                    <span className="block text-meta font-normal text-muted">{QUICK_ADD_LINE[k.kind]}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Dialog>
+      )}
       {!onOpenPlan && (
         <PlanDrawer
           slug={slug}

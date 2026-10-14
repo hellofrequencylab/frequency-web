@@ -125,7 +125,7 @@ export function OnboardingControlsView({ data }: { data: Data }) {
           />
           <button
             type="submit"
-            className="rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="rounded-control bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Save
           </button>

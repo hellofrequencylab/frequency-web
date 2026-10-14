@@ -509,7 +509,7 @@ export function EventSpark({
           {thumbSrc && (
             <div className="mt-3 flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbSrc} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
+              <img src={thumbSrc} alt="" className="h-14 w-14 shrink-0 rounded-control border border-border object-cover" />
               <span className="min-w-0 flex-1 text-2xs text-muted">
                 Photo attached. Vera reads it with the text and keeps it as the cover.
               </span>

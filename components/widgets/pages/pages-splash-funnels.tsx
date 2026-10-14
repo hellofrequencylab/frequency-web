@@ -28,7 +28,7 @@ export async function PagesSplashFunnels() {
       />
       <Link
         href="/pages/sequences"
-        className="group flex max-w-3xl items-center gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 lift-1 transition-colors hover:border-primary"
+        className="group flex max-w-3xl items-center gap-4 rounded-card border border-primary/40 bg-primary-bg/60 p-5 lift-1 transition-colors hover:border-primary"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary">
           <Sparkles className="h-5 w-5" aria-hidden />
@@ -52,7 +52,7 @@ export async function PagesSplashFunnels() {
       </Link>
       <p className="mt-2 max-w-3xl text-meta text-subtle">
         Editing the{' '}
-        <Link href="/pages/splash" className="font-semibold text-primary-strong hover:underline">
+        <Link href="/pages/sequences?tab=default" className="font-semibold text-primary-strong hover:underline">
           Default Funnel
         </Link>{' '}
         updates the default flow and every new funnel built from it.

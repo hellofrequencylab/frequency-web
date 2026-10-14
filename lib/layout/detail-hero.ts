@@ -101,7 +101,6 @@ export const DETAIL_HERO_DEFAULTS: readonly DetailHeroDefault[] = [
   { prefix: '/help', image: null, size: 'standard', tail: 'none' },
   { prefix: '/lead/training-library', image: null, size: 'standard', tail: 'none' },
   { prefix: '/discover/journeys', image: null, size: 'standard', tail: 'none' },
-  { prefix: '/discover/partners', image: null, size: 'standard', tail: 'none' },
   { prefix: '/discover/events', image: null, size: 'standard', tail: 'none' },
 ] as const
 

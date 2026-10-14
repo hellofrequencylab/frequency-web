@@ -36,7 +36,7 @@ function FeatureStar({ featured, act }: { featured: boolean; act: (next: boolean
       disabled={pending}
       title={optimistic ? 'Featured. Click to unfeature' : 'Not featured. Click to feature'}
       aria-pressed={optimistic}
-      className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50 ${
+      className={`shrink-0 rounded-control p-1.5 transition-colors disabled:opacity-50 ${
         optimistic ? 'text-signal hover:bg-surface-elevated' : 'text-subtle hover:bg-surface-elevated hover:text-text'
       }`}
     >
@@ -97,9 +97,9 @@ export function EventsAdminList({ upcoming, past }: { upcoming: AdminEvent[]; pa
 
 function EventRow({ event }: { event: AdminEvent }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-card bg-surface-elevated/60 px-4 py-3">
       {/* Date chip */}
-      <div className="flex w-10 shrink-0 flex-col items-center rounded-lg bg-surface-elevated py-1.5 text-center">
+      <div className="flex w-10 shrink-0 flex-col items-center rounded-control bg-surface-elevated py-1.5 text-center">
         <span className="text-meta font-semibold uppercase leading-none text-subtle">
           {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'short' })}
         </span>
@@ -134,7 +134,7 @@ function EventRow({ event }: { event: AdminEvent }) {
       <FeatureStar featured={event.featured_at != null} act={(next) => setEventFeaturedAction(event.id, next)} />
       <Link
         href={`/admin/events/${event.id}`}
-        className="shrink-0 rounded-lg border border-border p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        className="shrink-0 rounded-control border border-border p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
         aria-label="Edit event"
       >
         <Pencil className="h-3.5 w-3.5" />

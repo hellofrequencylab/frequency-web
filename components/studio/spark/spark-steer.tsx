@@ -23,6 +23,7 @@ import { Compass, Lock, Palette } from 'lucide-react'
 import { Textarea } from '@/components/ui/field'
 import { SEED_MOODS, type SeedMood } from '@/lib/studio/kernel/moods'
 import type { SteerCapabilities } from '@/lib/studio/kernel/manifest'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export interface SparkSteerProps {
   /** From the manifest. Only the declared dials render. */
@@ -72,7 +73,7 @@ export function SparkSteer({
     <div className="rounded-card border border-border bg-surface p-4">
       {steer.mood && (
         <div>
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+          <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
             <Palette className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Mood
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Mood">
@@ -99,7 +100,7 @@ export function SparkSteer({
 
       {steer.directions && (
         <div className={steer.mood ? 'mt-4' : ''}>
-          <label htmlFor="spark-directions" className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+          <label htmlFor="spark-directions" className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
             <Compass className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Directions
           </label>
           <Textarea
@@ -119,7 +120,7 @@ export function SparkSteer({
 
       {lockKeys.length > 0 && (
         <div className="mt-4">
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+          <p className={capsLabel('flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
             <Lock className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Keep as is
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">

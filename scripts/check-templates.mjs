@@ -10,8 +10,9 @@
 // THE HOLE A NAIVE GREP FALLS INTO. `grep -l "@/components/templates"` is NOT evidence of composing
 // a template. That barrel also exports PIECES — PageHeading, PageHero, WizardProgress, AdminSection,
 // RailGrid — and a page can import a piece, hand-roll its own layout around it, and score compliant.
-// SHELLS below lists the 12 names that OWN A LAYOUT: the 7 authoring shells, the 3 entity
-// compositions, SparkShell, and 2 aliases reached by path. That is deliberately WIDER than the
+// SHELLS below lists the 13 names that OWN A LAYOUT: the 7 authoring shells, the 3 entity
+// compositions, SparkShell, 2 aliases reached by path, and MarketHero (the editable-index header,
+// §8.5). COMPOSITIONS adds a few named, verified frames outside the kit that wrap one of them. That is deliberately WIDER than the
 // authoring menu in PAGE-FRAMEWORK.md, because this gate answers "does this page own a layout", not
 // "which shell should I pick". (This comment said "the eight real shells" until 2026-09-05, which
 // was wrong twice over: the list holds 11, and an older AGENTS.md restatement counted RailGrid.)
@@ -57,27 +58,35 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = 'app'
 
-/** Route groups that are NOT governed by the template kit. PAGE-FRAMEWORK is explicit that
- *  templates govern "App routes behind auth (app/(main)/*)" and that the public marketing routes
- *  are a separate system with their own conventions (§ the Loom/module split table). A marketing
- *  page hand-rolling its own hero is following ITS system, not violating this one.
+/** Top-level directories that are NOT governed by the template kit, each with its reason. A page
+ *  under one of these is following ANOTHER design system that the change-over restyles at its own
+ *  source, not hand-rolling around this one.
  *
- *  ⚠️ This is NOT the same set as check-headers.mjs's SKIP_DIRS, and an earlier version of this
- *  comment claimed it was. Two real differences, both deliberate:
- *    · CONTENTS — check-headers skips 4 names ('(marketing)', 'sites', 'print', 'discover'); this
- *      skips 8, adding '(capture)', 'dev', 'for', 'spotlight'.
+ *    · (marketing) — the marketing block system (PAGE-FRAMEWORK §10): Loom modules and the
+ *      components/marketing kit. A marketing page hand-rolling its own hero is following ITS system.
+ *    · sites       — the Space-website theme system: a Space's external site renders the one SitePage
+ *      inside the site's own chrome and theme, never an app shell.
+ *    · print       — print sheets: paper layout, no page chrome at all.
+ *    · dev         — local-only developer harnesses, never served in production.
+ *    · for         — the persona landing pages, part of the marketing system above.
+ *
+ *  WIDENED 2026-10-13 (the design-switch program, ADR-1737): 'discover', '(capture)', 'hosted' and
+ *  'spotlight' used to be skipped too. They are governed now, because a page this gate does not see
+ *  is a page the one-env-var change-over cannot reach. What they hold that genuinely belongs to
+ *  another system (the marketing-kit discover landings, a Space's site on its own domain, a member's
+ *  themed Spotlight) is BASELINED with its reason in scripts/templates-baseline.txt rather than
+ *  skipped, so a new hand-rolled page under those trees still fails.
+ *
+ *  ⚠️ This is NOT the same set as check-headers.mjs's SKIP_DIRS. Two real differences, both
+ *  deliberate:
+ *    · CONTENTS — check-headers skips '(marketing)', 'sites', 'print', 'discover'; this skips five
+ *      different names (above), and governs discover.
  *    · DEPTH — check-headers matches a skipped name at ANY path segment (check-headers.mjs:104
  *      in the walk, :142 in isRouteModule); this matches only at the top level (`dir === ROOT`),
  *      so a nested directory that happens to share a name is still governed.
- *  The observable consequence: app/(main)/settings/profile/spotlight/page.tsx IS governed here
- *  (its 'spotlight' is nested, not top-level) and is NOT governed by check:headers (which drops
- *  any path containing that segment). Widening either set is a scope change to that gate's
- *  baseline, so do not "unify" them without re-freezing both numbers.
- *
- *  'hosted' (PROG-E10 phase 2, ADR-1708) is the SAME surface as 'sites': a Space's external website,
- *  served on the Space's own domain. proxy.ts rewrites a custom host there and it renders the one
- *  SitePage /sites uses, inside the site's own chrome, never an app shell. */
-const SKIP_DIRS = new Set(['(marketing)', '(capture)', 'sites', 'hosted', 'print', 'discover', 'dev', 'for', 'spotlight'])
+ *  Widening either set is a scope change to that gate's baseline, so do not "unify" them without
+ *  re-freezing both numbers. */
+export const SKIP_DIRS = new Set(['(marketing)', 'sites', 'print', 'dev', 'for'])
 
 /** The real shells. A page composing any of these has a layout; anything else does not. */
 export const SHELLS = [
@@ -99,7 +108,40 @@ export const SHELLS = [
   // template is imported by path rather than through the barrel.
   'AdminPage',
   'ListingDetailTemplate',
+  // The editable index's header (PAGE-FRAMEWORK §8.5): a sanctioned composition, not drift. It is a
+  // thin wrapper over the kit's PageHero, the same one IndexTemplate's heroOverlay renders, and the
+  // body under it is operator-rearrangeable (BlockRender / PageModules). Counted from 2026-10-13 when
+  // discover/ joined the governed scope and /discover/spaces turned out to compose it.
+  'MarketHero',
 ]
+
+/** REGISTERED COMPOSITIONS: named components OUTSIDE the template kit that exist to put a page on a
+ *  shell, mapped to the file that defines them. A page rendering one composes that shell exactly as a
+ *  page rendering <JourneyDetailTemplate> composes DetailTemplate.
+ *
+ *  This is NOT the regex chasing indirection (see the header): each entry is a NAME a reviewer can
+ *  read, and the gate VERIFIES at run time that its file still renders a shell tag from SHELLS
+ *  (`compositionDrift`). A composition that stops composing fails the gate rather than quietly
+ *  certifying every page that uses it. Add one only for a component whose JOB is that frame; a page
+ *  helper that happens to render a shell does not belong here. */
+export const COMPOSITIONS = {
+  // The public lead-capture card (front doors 2 to 5): a centered card around FocusTemplate.
+  CaptureShell: 'components/crm/leads/capture-shell.tsx',
+  // The /unsubscribe card every state renders inside (confirm, done, invalid, preference center).
+  UnsubscribeFrame: 'app/unsubscribe/card.tsx',
+  // The legal page frame (/privacy, /terms, /guidelines, /space-email-policy): FocusTemplate under DAWN,
+  // the site's reading layout under Frequency (ADR-1737).
+  LegalPage: 'components/legal/legal-page.tsx',
+  // The podcast show page, shared by the public and in-app routes: DetailTemplate with a show band.
+  ShowPageView: 'components/airwaves/show-page-view.tsx',
+  // The onboarding wizard and the persona sequence runner: both are WizardShell walks.
+  OnboardingForm: 'app/onboarding/form.tsx',
+  SequenceRunner: 'components/onboarding/sequence-runner.tsx',
+  // The Space console's page templates (ADR-1737): under DAWN each IS FocusTemplate / DashboardTemplate with
+  // the same props; under Frequency the console shell's AdminPageFrame. Both render the DAWN shell tag.
+  ConsoleFocusTemplate: 'components/templates/console-templates.tsx',
+  ConsoleDashboardTemplate: 'components/templates/console-templates.tsx',
+}
 
 /** Exported by the SAME barrel and deliberately NOT shells. Listed so the distinction is explicit
  *  rather than implied by omission — this is the exact confusion that made the old number wrong. */
@@ -118,16 +160,64 @@ export function pages(dir = ROOT, out = []) {
   return out
 }
 
+/** Source with every comment blanked, read the way the parser reads it: one pass that knows
+ *  strings and both comment kinds. Three regexes in sequence got this wrong twice over: a `/*` inside
+ *  a `//` line (a comment saying "/admin/*") opened a block that swallowed the shell tag below it, and
+ *  `https://` inside a string looked like a line comment. Newlines are kept so nothing else shifts. */
+export function stripComments(src) {
+  let out = ''
+  let i = 0
+  let quote = null
+  while (i < src.length) {
+    const c = src[i]
+    const n = src[i + 1]
+    if (quote) {
+      out += c
+      if (c === '\\') { out += n ?? ''; i += 2; continue }
+      if (c === quote) quote = null
+      i++
+      continue
+    }
+    if (c === '"' || c === "'" || c === '`') { quote = c; out += c; i++; continue }
+    if (c === '/' && n === '/') {
+      while (i < src.length && src[i] !== '\n') i++
+      continue
+    }
+    if (c === '/' && n === '*') {
+      i += 2
+      while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) { if (src[i] === '\n') out += '\n'; i++ }
+      i += 2
+      continue
+    }
+    out += c
+    i++
+  }
+  return out
+}
+
 /** Does this file's own source compose a shell? Comment-blind on purpose: a shell named in a
  *  comment is not a shell rendered, and this is the same reason check:tokens strips comments. */
 export function composesShell(src) {
-  const code = src
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+  const code = stripComments(src)
   // An import is not enough on its own — it must also be RENDERED as a tag. `<AdminTemplate`
   // catches the composition; a bare `import { AdminTemplate }` that is never used does not.
   return SHELLS.some((s) => new RegExp(`<${s}\\b`).test(code))
+}
+
+/** Does this page compose a shell directly OR through a registered composition? Kept separate from
+ *  composesShell so the composition files themselves are checked against the core SHELLS only (a
+ *  composition cannot certify itself by naming another composition). */
+export function composesPageShell(src) {
+  if (composesShell(src)) return true
+  const code = stripComments(src)
+  return Object.keys(COMPOSITIONS).some((c) => new RegExp(`<${c}\\b`).test(code))
+}
+
+/** Registered compositions whose file no longer renders a shell (or no longer exists). */
+export function compositionDrift(read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {
+  return Object.entries(COMPOSITIONS)
+    .filter(([, file]) => !exists(file) || !composesShell(read(file)))
+    .map(([name, file]) => `${name} (${file})`)
 }
 
 /** Walk up from a page to app/, asking each layout.tsx whether it composes a shell.
@@ -147,12 +237,25 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
 }
 
 /** Does this file contain anything that could be a JSX tag? A redirect/notFound stub does not, and
- *  owes no shell. Deliberately OVER-inclusive: `<[A-Za-z]` also matches `a < b` and `Array<string>`,
- *  so a stub with either would be considered and could land in `bare`. That direction is the safe
- *  one — it can only make the reported number too HIGH, never hide a real bare page — but it is why
- *  the success line says "considered" rather than claiming these pages render markup. */
+ *  owes no shell. A `<` directly after an identifier, `.`, `)` or `]` is a type argument or a
+ *  comparison (`Record<…>`, `Array<string>`, `a < b`), never a tag, so it is skipped; that used to
+ *  count six redirect pages as bare. Still over-inclusive in the safe direction: anything else that
+ *  opens like a tag is considered, so the number can be too HIGH, never hide a real bare page. */
 export function rendersJsx(src) {
-  return /<[A-Za-z]/.test(src)
+  const code = stripComments(src)
+  for (const m of code.matchAll(/<[A-Za-z]/g)) {
+    let j = m.index - 1
+    while (j >= 0 && /\s/.test(code[j])) j--
+    if (j >= 0 && /[\w$]/.test(code[j])) {
+      // An identifier before the `<` is a type argument, unless the word is a keyword that can lead
+      // an expression (`return <Page />`).
+      let k = j
+      while (k >= 0 && /[\w$]/.test(code[k])) k--
+      if (!/^(return|yield|await|default|case|in|of|typeof|void)$/.test(code.slice(k + 1, j + 1))) continue
+    } else if (j >= 0 && /[.)\]]/.test(code[j])) continue
+    return true
+  }
+  return false
 }
 
 export function evaluate(io = {}) {
@@ -165,7 +268,7 @@ export function evaluate(io = {}) {
     const src = read(p)
     if (!rendersJsx(src)) continue // redirect / notFound stub
     considered++
-    if (composesShell(src)) continue
+    if (composesPageShell(src)) continue
     if (ancestorComposes(p, read, exists)) continue
     bare.push(p.split('\\').join('/'))
   }
@@ -253,6 +356,16 @@ function main() {
       `✗ check:templates found only ${list.length} page.tsx file(s) under ${ROOT}/, expected at ` +
         `least ${MIN_PAGES}. The walk is broken, so its silence about layout composition means ` +
         'nothing.',
+    )
+    process.exit(1)
+  }
+
+  const drift = compositionDrift()
+  if (drift.length > 0) {
+    console.error(
+      '✗ check:templates: registered composition(s) no longer render a kit shell:\n' +
+        drift.map((d) => `    - ${d}`).join('\n') +
+        '\n  Restore the shell in that file, or remove it from COMPOSITIONS and baseline its pages.',
     )
     process.exit(1)
   }

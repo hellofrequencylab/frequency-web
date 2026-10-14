@@ -91,7 +91,7 @@ ADR-1084 forbids.
 
 **Positioning statement.** For adults who look fine on paper but have no one to call on a Tuesday, and
 for the people who already gather them, Frequency is a local community network that gets the same few
-people into the same real room every week. Feeds and one-off event apps stop at the first night.
+people into the same real room, again and again. Feeds and one-off event apps stop at the first night.
 Frequency is built for the second one: a standing Circle, a format that works, and a game that
 rewards showing up. Joining is free, hosting is free, and you pay when you start charging.
 
@@ -102,7 +102,7 @@ logo lockup only (owner ruling R1, amends ADR-811/944).
 
 | Pillar | Promise | Proof |
 |---|---|---|
-| The same faces, every week | Circles and a standing time; someone notices when you're gone | Run structure, "Bring nothing", live Circle counts above `SOCIAL_PROOF_FLOOR` |
+| The same faces, again | Circles and a standing time; someone notices when you're gone | Run structure, "Bring nothing", live Circle counts above `SOCIAL_PROOF_FLOOR` |
 | Rails for the one who gathers | A first-night script, Starter Circles, a free Space | Hosting free; 0% on your own audience (plus card processing); your data leaves with you |
 | A game that gets you off your phone | The Quest and Mindless reward real acts | No streak shame, no global leaderboard |
 
@@ -116,7 +116,7 @@ stated honestly). Crew (contribute what you want, every amount buys the same Cre
 
 **Tagline shortlist** (sentence case, no em dashes): "Get people together. Do things on purpose."
 (already canon spirit line, strongest) · "See you Thursday." · "Fewer feeds. More Thursdays." ·
-"The same faces, every week."
+"The same faces, again." (ADR-1747: never "every week" where a reader sees it)
 
 ### 3.3 Audience coverage
 
@@ -378,11 +378,11 @@ Circle" (points at `/the-community`), "Upgrade" (`pricing.ts:238`).
 
 | Page | Proposed H1 |
 |---|---|
-| `/` | Your people are closer than you think. (sub: Small groups that meet every week, near you. Join free. Businesses host free.) |
-| `/what-is-frequency` | What is Frequency? Small groups, near you, every week. |
+| `/` | Your people are closer than you think. (sub: Small groups that keep meeting, near you. Join free. Businesses host free. ADR-1747 amended R7) |
+| `/what-is-frequency` | What is Frequency? Small groups, near you, that keep meeting. |
 | `/pricing` | Free to join. Free to host. You pay when you start charging. |
 | `/spaces` | Bring your people. They join free. You keep the door open. |
-| `/the-community` | Friends you see every week, not once a year. |
+| `/the-community` | Friends you keep seeing, not once a year. |
 | `/calm-down-fast` | How to calm down fast when you can't switch off |
 | `/how-to-build-community` | How to build community: start smaller than you think |
 | `/tools-for-community-builders` | Tools for community builders, in one place |

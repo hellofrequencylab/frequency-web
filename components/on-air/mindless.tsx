@@ -405,7 +405,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         (state.data.practices.length === 0 ? (
           <MindlessShell onClose={close}>
             <div className="flex min-h-[60vh] flex-col items-center justify-center">
-              <div className="w-full rounded-2xl border border-border bg-surface p-6 text-center">
+              <div className="w-full rounded-card border border-border bg-surface p-6 text-center">
                 <p className="text-body-sm font-medium text-text">Nothing on your list yet.</p>
                 <p className="mt-1 text-body-sm text-muted">
                   Adopt a practice first; then this is where you do it.
@@ -413,7 +413,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/practices"
                   onClick={close}
-                  className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+                  className="mt-4 inline-block rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
                 >
                   Browse practices
                 </Link>

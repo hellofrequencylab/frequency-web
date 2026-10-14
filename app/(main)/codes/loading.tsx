@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqUtilityLoading } from '@/components/frequency/members/utility-states'
 
 // Instant full-bleed loading for the personal codes / QR hub. The Zap menu's
 // Connect tile ("Share your code") navigates here; without this the feed behind
@@ -6,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 // paints the FocusTemplate's shape immediately (matches the page's `wide` width)
 // so the destination covers the feed the instant navigation starts.
 export default function CodesLoading() {
+  // Under Frequency (build-time) the wait is the kit's own head and pending rows (utility-states.tsx).
+  if (SITE_DESIGN === 'frequency') return <FqUtilityLoading title="Your codes" label="Loading your codes" rows={3} />
   return (
     <div className="mx-auto w-full max-w-3xl">
       {/* Heading band */}

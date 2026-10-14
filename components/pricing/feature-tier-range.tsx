@@ -75,7 +75,7 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <section className="mt-4 rounded-card border border-border bg-surface p-4 lift-1">
       <p className="eyebrow text-subtle">{ladder.title} plans</p>
 
       {/* The segmented range: one radio per tier. Roving tabindex + arrow keys. */}
@@ -138,7 +138,7 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
         ) : (
           <Link
             href={upgradeHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             See {step.label} plans
           </Link>

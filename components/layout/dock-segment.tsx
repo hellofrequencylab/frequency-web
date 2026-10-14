@@ -155,7 +155,7 @@ export function DockSegment({
           literal duration: globals.css zeroes the --motion-* vars for reduced motion rather than
           disabling transitions, so a hardcoded duration opts the member's preference out. */}
       <div
-        className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
@@ -174,7 +174,7 @@ export function DockSegment({
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated`}
+        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-control px-1.5 transition-colors hover:bg-surface-elevated`}
       >
         {head({ open })}
       </button>

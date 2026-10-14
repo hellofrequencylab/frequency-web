@@ -15,7 +15,7 @@ export const EventVenueMapBlock = async () => {
   if (!facts.venuePoint && !facts.mapPin) return null
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <EventLocationMap isOnline={facts.isOnline} mapPin={facts.mapPin} venuePoint={facts.venuePoint} />
     </div>
   )

@@ -77,7 +77,7 @@ export function BlockStyleFrame({ style, children }: { style: BlockStyle | undef
   const align = style?.align === 'center' ? 'text-center' : style?.align === 'end' ? 'text-right' : ''
   // `background: true` fills the block with the plain WHITE surface (bg-surface) against the warm page
   // canvas — a clean "white background on", not a second elevated/tinted card layer on top.
-  const card = bgOn ? 'rounded-2xl border border-border bg-surface' : ''
+  const card = bgOn ? 'rounded-card border border-border bg-surface' : ''
   // `background: false` (item 6) STRIPS the white box a self-carding block draws. A DATA section nests its
   // card inside a ModuleSection <section>, so a direct-child strip misses it — the `.entity-bg-strip` rule
   // (globals.css, ADR-551) flattens every bg-surface card nested at ANY depth to transparent (no border, no
@@ -139,7 +139,7 @@ function FeatureMedia({ item, variant }: { item: FeatureItem; variant: 'inline' 
       variant === 'top'
         ? 'aspect-[4/3] w-full rounded-xl object-cover'
         : variant === 'spotlight'
-          ? 'aspect-[4/3] w-full rounded-2xl object-cover'
+          ? 'aspect-[4/3] w-full rounded-card object-cover'
           : 'h-12 w-12 shrink-0 rounded-xl object-cover'
     // eslint-disable-next-line @next/next/no-img-element -- operator/offering image URL (safeUrl-checked)
     return <img src={item.image} alt="" className={cls} />
@@ -165,7 +165,7 @@ function FeatureCta({ item }: { item: FeatureItem }): ReactNode {
   return (
     <a
       href={item.link}
-      className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+      className="mt-1 inline-flex items-center gap-1 self-start rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
     >
       {item.cta || 'Learn more'}
     </a>
@@ -395,7 +395,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             {hasButton && (
               <a
                 href={buttonUrl || '#'}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <InlineRichText as="span" value={buttonLabel} />
               </a>
@@ -428,7 +428,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         <div className={`flex ${justify}`}>
           <a
             href={url || '#'}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <InlineRichText as="span" value={label} />
           </a>
@@ -479,7 +479,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
               ? 'aspect-square'
               : ''
       // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL; next/image needs configured domains
-      return <img src={src} alt={s(props, 'alt')} className={`w-full rounded-2xl object-cover ${aspect}`.trim()} />
+      return <img src={src} alt={s(props, 'alt')} className={`w-full rounded-card object-cover ${aspect}`.trim()} />
     }
     case 'gallery': {
       const images = Array.isArray(props.images)
@@ -552,13 +552,12 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       if (embed) {
         const src = buildEmbedSrc(embed.provider, embed.ref)
         return (
-          <div className="w-full overflow-hidden rounded-2xl border border-border">
+          <div className="w-full overflow-hidden rounded-card border border-border">
             <iframe
               src={src}
               title="Embedded media"
-              className="w-full"
+              className="w-full border-0"
               height={embedHeight(embed.provider, embed.ref)}
-              style={{ border: 0 }}
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"
               sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
@@ -574,7 +573,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             href={card.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-5 py-4 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             <span>Listen on {card.label}</span>
             <ExternalLink className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />

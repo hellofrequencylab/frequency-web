@@ -26,6 +26,8 @@ import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
 import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { loadUpgradeOffer } from '@/lib/pricing/business-offer'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqMembershipsBody } from '@/components/frequency/admin/pages/memberships/memberships-body'
 
 // MEMBERSHIPS section BODY (extracted from memberships/page.tsx so the unified Offerings surface can
 // compose it as one stacked section). The route + auth gate stays on the caller (the Offerings page).
@@ -115,7 +117,7 @@ export async function MembershipsSection({
     )
   }
 
-  return (
+  const editors = (
     <div className="space-y-8">
       {/* Phase 4 (docs/VALUE-LADDER.md): the space_membership_tiers meter's in-context prompt. The tier
           list is already loaded, so the count is exact. Appears at 80% of the allowance, names the
@@ -173,14 +175,29 @@ export async function MembershipsSection({
         </Suspense>
       </section>
 
-      <section>
-        <SectionHeader title="Members" />
-        <Suspense fallback={<MembersSkeleton />}>
-          <MembershipOwnerList spaceId={space.id} />
-        </Suspense>
-      </section>
+      {/* Under Frequency the members table leads the body instead (FqMembershipsBody), with these same
+          promote and cancel actions on each row, so the list is not drawn twice. */}
+      {SITE_DESIGN !== 'frequency' && (
+        <section>
+          <SectionHeader title="Members" />
+          <Suspense fallback={<MembersSkeleton />}>
+            <MembershipOwnerList spaceId={space.id} />
+          </Suspense>
+        </section>
+      )}
     </div>
   )
+
+  // THE FREQUENCY BODY (SITE_DESIGN, build-time): the Member Admin Memberships page leads (plan cards and
+  // the members table), and every editor above follows it unchanged. DAWN renders the editors alone.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqMembershipsBody spaceId={space.id} tiers={tiers}>
+        {editors}
+      </FqMembershipsBody>
+    )
+  }
+  return editors
 }
 
 /** The honest sentence at the point of tier creation (LIVE-231). What charging members is part of
@@ -295,7 +312,7 @@ function MembersSkeleton() {
   return (
     <div className="space-y-px rounded-card border border-border bg-surface p-2 lift-1">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
+        <div key={i} className="h-14 animate-pulse rounded-control bg-surface-elevated/50" />
       ))}
     </div>
   )

@@ -116,7 +116,7 @@ export function GoBusinessCta({
           {sellable && seatsSellable && (
             <div className="mt-3 flex items-center gap-3">
               <span className="text-meta font-semibold text-text">Extra operator seats</span>
-              <div className="inline-flex items-center gap-1 rounded-lg border border-border">
+              <div className="inline-flex items-center gap-1 rounded-control border border-border">
                 <IconButton
                   label="Remove a seat"
                   onClick={() => setExtraSeats((n) => Math.max(0, n - 1))}

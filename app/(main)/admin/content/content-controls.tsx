@@ -17,7 +17,6 @@ import {
   setJourneyFeaturedAction,
   deleteJourneyPlanAction,
   setPracticeFlagsAction,
-  setPracticeStatusAction,
   setPracticeFeaturedAction,
 } from './actions'
 
@@ -132,7 +131,7 @@ function ReviewButtons({
         onClick={() => run('approved')}
         disabled={pending}
         title="Approve"
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
       >
         <Check className="h-3.5 w-3.5" /> Approve
       </button>
@@ -141,7 +140,7 @@ function ReviewButtons({
         onClick={() => run('rejected')}
         disabled={pending}
         title="Reject"
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
       >
         <X className="h-3.5 w-3.5" /> Reject
       </button>
@@ -171,7 +170,7 @@ export function JourneyRestoreButton({ id }: { id: string }) {
       }
       disabled={pending}
       title="Restore to approved"
-      className="rounded-lg border border-border px-2 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+      className="rounded-control border border-border px-2 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
     >
       Restore
     </button>
@@ -301,10 +300,6 @@ export function JourneyOfficialControl({
 
 // --- Practice controls -----------------------------------------------------------
 
-export function PracticeReviewButtons({ id }: { id: string }) {
-  return <ReviewButtons act={(status) => setPracticeStatusAction(id, status)} />
-}
-
 export function PracticeFeatureToggle({ id, featured }: { id: string; featured: boolean }) {
   return <FeatureStar featured={featured} act={(next) => setPracticeFeaturedAction(id, next)} />
 }
@@ -316,17 +311,6 @@ export function PracticePublicToggle({ id, isPublic }: { id: string; isPublic: b
       act={(next) => setPracticeFlagsAction(id, { is_public: next })}
       titleOn="In the public library. Click to hide"
       titleOff="Hidden. Click to publish to the library"
-    />
-  )
-}
-
-export function PracticeTemplateToggle({ id, isTemplate }: { id: string; isTemplate: boolean }) {
-  return (
-    <ToggleSwitch
-      on={isTemplate}
-      act={(next) => setPracticeFlagsAction(id, { is_template: next })}
-      titleOn="Starter template. Click to remove"
-      titleOff="Not a template. Click to make it a starter template"
     />
   )
 }

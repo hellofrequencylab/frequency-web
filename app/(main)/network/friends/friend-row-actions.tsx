@@ -97,7 +97,7 @@ export function ConnectButton({ targetId }: { targetId: string }) {
   const [sent, setSent] = useState(false)
   if (sent) {
     return (
-      <span className="shrink-0 flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-medium text-muted">
+      <span className="shrink-0 flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-meta font-medium text-muted">
         <Clock className="w-3.5 h-3.5" />
         Request sent
       </span>
@@ -125,7 +125,7 @@ export function ReconnectButton({ handle }: { handle: string }) {
   return (
     <Link
       href={`/people/${handle}`}
-      className="shrink-0 flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated hover:text-text transition-colors"
+      className="shrink-0 flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated hover:text-text transition-colors"
     >
       <HeartHandshake className="w-3.5 h-3.5" />
       Say hi

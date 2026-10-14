@@ -16,11 +16,19 @@ import { scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
 import { loadCachedChromeOverrides, loadCachedAppOverrides } from '@/lib/layout/chrome-sources'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
+import { LEGACY_THEME_AXES, SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyMembersShell } from '@/components/frequency/members/shell/members-shell'
+import { FrequencyRightMicro, FrequencyRightRail } from '@/components/frequency/members/shell/right-rail'
+import type { DockData } from '@/components/sidebar/game-stats-dock'
+// The Frequency members kit and the shell's own rules. Both are scoped to
+// [data-design="frequency"] [data-kit="members"], so under DAWN they match nothing.
+import '@/app/themes/active/kit-members'
+import '@/app/themes/active/members-shell'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { RAIL_FOLD_COOKIE, readRailFoldCookie } from '@/lib/layout/rail-fold'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
-import RightSidebar, { MobileGameStats, VaultDockSlot } from '@/components/sidebar/right-sidebar'
+import RightSidebar, { MobileGameStats, VaultDockSlot, loadGameStats } from '@/components/sidebar/right-sidebar'
 import { isQuestSurface } from '@/lib/layout/rail-panels'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import { DispatchTickerReserve, MobileGameStatsReserve } from '@/components/layout/chrome-reserves'
@@ -36,7 +44,7 @@ import { PERSONAL_CONTEXT } from '@/lib/context/operator-context'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
 import { getStaffMember } from '@/lib/staff'
 import { getViewerHats } from '@/lib/core/viewer-hats'
-import { accessTo, type AccessLevel, type Hats, type Surface } from '@/lib/core/access-matrix'
+import { accessTo, isPaid, type AccessLevel, type Hats, type Surface } from '@/lib/core/access-matrix'
 import { NAV_AREAS } from '@/lib/nav-areas'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ToastLane } from '@/components/toast-lane'
@@ -125,6 +133,7 @@ function isAnonPublicEvent(p: string | null): boolean {
  * reason — a visitor landing on the home page is the behaviour we already ship, and a layout
  * that throws on the signed-out path would take down every public route with it.
  */
+/** Admin and Space console routes, which carry their own Frequency chrome (components/frequency/admin). */
 async function resolvePublicTwin(pathname: string | null): Promise<string | null> {
   const match = matchPublicTwin(pathname)
   if (!match) return null
@@ -268,6 +277,13 @@ export default async function MainLayout({
   // (nav + capabilities) previews a role under them; realRole is the true role, used
   // to show the view-as control + the roles below it. See lib/view-as.ts.
   const realRole = (profile.community_role ?? 'member') as CommunityRole
+
+  // Frequency's rails and header carry the viewer's standing (streak, Zaps, Gems, rank, current
+  // Journey). Started here, never awaited by the layout: the shell resolves it behind Suspense, and
+  // `loadGameStats` is the same request-cached read the right rail already makes, so it costs no
+  // second query. DAWN never starts it.
+  const fqStats =
+    SITE_DESIGN === 'frequency' ? loadGameStats(profile.id).catch((): DockData | null => null) : null
 
   // Request headers (host + current route) — read once and reused below.
   const reqHeaders = await headers()
@@ -644,15 +660,69 @@ export default async function MainLayout({
       !atLeastRole(effectiveRole, pageGate.visibility_role as CommunityRole)
     if (draftHidden || roleHidden) redirect('/feed')
   }
-  const occasion =
-    occasionPinned || theme.occasion !== 'none' ? theme.occasion : autoOccasion
+  // Under a design that overrides everything (Frequency, ADR-1737) no occasion and no Theme Studio
+  // <style> apply: both would re-point tokens the design owns.
+  const occasion = !LEGACY_THEME_AXES
+    ? 'none'
+    : occasionPinned || theme.occasion !== 'none' ? theme.occasion : autoOccasion
   // The STRUCTURE axis (docs/THEME.md): the coarse layout variant the resolved generation maps to
   // (simple / standard / dense). The shell sets it as [data-structure] alongside [data-generation],
   // so the calm/kids ends get a roomier composition and the bold preset a denser one. This is the
   // real (non-test) caller structureFor() was missing (BUILD-CATALOG §A.13 #1).
   const structure = structureFor(theme.generation)
   // The active DB skin/occasion theme as a scoped <style> (fail-safe '' until theme rows exist).
-  const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion })
+  const themeCss = LEGACY_THEME_AXES ? await loadActiveThemeCss({ skin: theme.skin, occasion }) : ''
+
+  // The app-wide overlays and launchers every member page carries, under either design system's shell.
+  const shellChildren = (
+    <>
+      <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
+      {gaStaffExcluded && <GaStaffOptOut />}
+      <ImpersonationBanner />
+      {children}
+      {/* The Spark modal slot (ADR-1017). Sits beside the page rather than inside it, next to the
+          app's other overlay launchers below, because a wizard opened over a page is chrome, not
+          that page's content. It portals to the body, so its position here costs nothing. */}
+      {wizard}
+      {/* ONE bottom-right toast lane. Both stacks used to declare their own identical `fixed`
+          box at z-50, so they claimed the same rect and both sat under the Vera panel — a reward
+          toast fired with Vera open was never seen. components/toast-lane.tsx owns the geometry. */}
+      <ToastLane>
+        <AchievementToastContainer />
+        <ZapToastContainer />
+      </ToastLane>
+      <PresenceHeartbeat />
+      {/* LIVE-671: a reward earned on another device shows here without a reload. Not while a
+          staff member previews as a visitor or another role: the feed is the REAL viewer's. */}
+      {!previewingDown && <RewardLive profileId={profile.id} />}
+      <PushRegistration />
+      {/* One-time browser→home_timezone sync so the practice "day" resolves in the
+          member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}
+      <TimezoneSync />
+      {/* Vera launcher — its help index (parsed Markdown, now React-cached) + the upsell tease
+          gate resolve in their own Suspense slot, so they never block the shell's first byte. */}
+      <Suspense fallback={null}>
+        <VeraLauncherSlot />
+      </Suspense>
+      {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
+          member's wall; reachable from any page in the shell. */}
+      <CaptureLauncher scopeId={profile.id} />
+      {/* Support — the app-wide bug/report dialog; opened from the account menu, the
+          Vera chat box, or any "Report" button via the 'open-support' event. */}
+      <SupportLauncher />
+      {/* Upgrade — the app-wide Crew upsell prompt; raised by every feature gate, the rail's Upgrade
+          tab, or anywhere else that finds a member reaching past their scope, via `openUpgrade()`. */}
+      <UpgradeLauncher />
+      {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
+          account menu / anywhere via the 'open-invite' event. */}
+      <InviteLauncher />
+      <PageViewTracker />
+      <ObserveProvider />
+      {/* Daily check-in — the once-a-day server action that pays the visit gems and ticks the
+          streak, plus its celebration toast. Rewards feedback, not an onboarding engine. */}
+      <DailyCheckIn />
+    </>
+  )
 
   return (
     <>
@@ -697,6 +767,54 @@ export default async function MainLayout({
           __html: `document.documentElement.setAttribute('data-generation',${JSON.stringify(theme.generation)})`,
         }}
       />
+    {/* THE DESIGN SWITCH (ADR-1737). Frequency wears its own member chrome
+        (components/frequency/members/shell, the design handoff's shell.js + Feed rails); DAWN keeps
+        AppShell exactly as it was. Same data, same children, same overlays. */}
+    {SITE_DESIGN === 'frequency' ? (
+      // ALWAYS the member shell, console routes included: a layout does not re-render on a client
+      // navigation, so a bare console render would strand the next member page without its chrome (and
+      // a member render would wrap the console in a second header). The shell reads the live path and
+      // steps aside on console routes itself (lib/nav/console-route.ts: kit root `data-console`, rail
+      // layout edge mode), so the console's own chrome stands alone on every move.
+      // The member's theme (Settings, Appearance: Frequency or Midnight) as [data-skin] on a box-less
+      // wrapper, so the kit's tokens re-resolve for everything inside the shell (app/themes/frequency.css).
+      <div data-skin={theme.skin} className="contents">
+      <FrequencyMembersShell
+        profile={{ ...profile, community_role: effectiveRole }}
+        previewVisitor={previewVisitor}
+        crew={!previewingDown && isPaid(realHats.tier)}
+        stats={fqStats ?? Promise.resolve(null)}
+        sidebar={
+          <FrequencyRightRail
+            profileId={profile.id}
+            role={effectiveRole}
+            pathname={reqPath ?? ''}
+            stats={fqStats ?? Promise.resolve(null)}
+          />
+        }
+        sidebarMicro={<FrequencyRightMicro profileId={profile.id} stats={fqStats ?? Promise.resolve(null)} />}
+        banner={
+          announcement ? (
+            <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />
+          ) : null
+        }
+        unreadCount={unreadCount}
+        messagesUnread={messagesUnread}
+        navAccess={navAccess}
+        myFrequency={myFrequency}
+        operatesSpaces={operatesSpaces}
+        staffRole={staffRole}
+        webRole={pageWebRole}
+        caps={previewingDown ? [] : Array.from(globalCaps)}
+        appOverrides={appOverrides}
+        chromeOverrides={chromeOverrides}
+        availableContexts={availableContexts}
+        skin={theme.skin}
+      >
+        {shellChildren}
+      </FrequencyMembersShell>
+      </div>
+    ) : (
     <AppShell
       railFold={railFold}
       skin={theme.skin}
@@ -743,52 +861,9 @@ export default async function MainLayout({
       menuTimings={menuTimings}
       myFrequency={myFrequency}
     >
-      <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
-      {gaStaffExcluded && <GaStaffOptOut />}
-      <ImpersonationBanner />
-      {children}
-      {/* The Spark modal slot (ADR-1017). Sits beside the page rather than inside it, next to the
-          app's other overlay launchers below, because a wizard opened over a page is chrome, not
-          that page's content. It portals to the body, so its position here costs nothing. */}
-      {wizard}
-      {/* ONE bottom-right toast lane. Both stacks used to declare their own identical `fixed`
-          box at z-50, so they claimed the same rect and both sat under the Vera panel — a reward
-          toast fired with Vera open was never seen. components/toast-lane.tsx owns the geometry. */}
-      <ToastLane>
-        <AchievementToastContainer />
-        <ZapToastContainer />
-      </ToastLane>
-      <PresenceHeartbeat />
-      {/* LIVE-671: a reward earned on another device shows here without a reload. Not while a
-          staff member previews as a visitor or another role: the feed is the REAL viewer's. */}
-      {!previewingDown && <RewardLive profileId={profile.id} />}
-      <PushRegistration />
-      {/* One-time browser→home_timezone sync so the practice "day" resolves in the
-          member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}
-      <TimezoneSync />
-      {/* Vera launcher — its help index (parsed Markdown, now React-cached) + the upsell tease
-          gate resolve in their own Suspense slot, so they never block the shell's first byte. */}
-      <Suspense fallback={null}>
-        <VeraLauncherSlot />
-      </Suspense>
-      {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
-          member's wall; reachable from any page in the shell. */}
-      <CaptureLauncher scopeId={profile.id} />
-      {/* Support — the app-wide bug/report dialog; opened from the account menu, the
-          Vera chat box, or any "Report" button via the 'open-support' event. */}
-      <SupportLauncher />
-      {/* Upgrade — the app-wide Crew upsell prompt; raised by every feature gate, the rail's Upgrade
-          tab, or anywhere else that finds a member reaching past their scope, via `openUpgrade()`. */}
-      <UpgradeLauncher />
-      {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
-          account menu / anywhere via the 'open-invite' event. */}
-      <InviteLauncher />
-      <PageViewTracker />
-      <ObserveProvider />
-      {/* Daily check-in — the once-a-day server action that pays the visit gems and ticks the
-          streak, plus its celebration toast. Rewards feedback, not an onboarding engine. */}
-      <DailyCheckIn />
+      {shellChildren}
     </AppShell>
+    )}
     </>
   )
 }

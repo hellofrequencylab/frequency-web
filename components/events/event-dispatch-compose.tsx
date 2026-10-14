@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Radio, MessageSquare, Smartphone, Megaphone, Mail } from 'lucide-react'
 import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // EventDispatchCompose (ADR-255 / EVENTS-DESIGN B2) — the host's "post an update"
 // box on the event page. The base action ALWAYS posts to the event page; the host
@@ -173,14 +174,15 @@ export function EventDispatchCompose({
           </span>
         )}
 
-        <button
+        <Button
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="ml-auto shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          size="sm"
+          className="ml-auto shrink-0"
         >
           {pending ? 'Posting…' : 'Post update'}
-        </button>
+        </Button>
       </div>
 
       {error && <p className="mt-2 text-2xs font-medium text-danger">{error}</p>}

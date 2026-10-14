@@ -45,7 +45,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
     <div className="flex shrink-0 items-center gap-1 sm:gap-2">
       <Link
         href="/sign-in"
-        className={`text-body-sm font-medium px-2 py-1.5 rounded-lg transition-colors sm:px-3 ${
+        className={`text-body-sm font-medium px-2 py-1.5 rounded-control transition-colors sm:px-3 ${
           dark
             ? 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
             : 'text-muted hover:text-text hover:bg-surface-elevated'
@@ -55,7 +55,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
       </Link>
       <Link
         href={BETA_CTA_HREF}
-        className={`rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-colors whitespace-nowrap sm:px-3 ${
+        className={`rounded-control px-2.5 py-1.5 text-body-sm font-semibold transition-colors whitespace-nowrap sm:px-3 ${
           dark
             ? 'bg-on-ink text-ink hover:bg-surface-elevated'
             : 'bg-primary text-on-primary hover:bg-primary-hover'
@@ -127,7 +127,7 @@ export function UserMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-1.5 rounded-control px-2 py-1.5 hover:bg-surface-elevated transition-colors"
         aria-label="User menu"
         // Same disclosure contract the notification bell now carries: announce that this opens
         // something and whether it is open. It also brings the dropdown into the @overflow

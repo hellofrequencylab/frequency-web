@@ -1,5 +1,13 @@
 import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type LabelHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): under SITE_DESIGN === 'frequency' a boxed field is the members kit's `.input`
+// (48px, a 4% ink well, 16px radius, the focus ring), Field is the kit's `.field` column, and the label,
+// hint and error are `mu-label` / `mu-hint` / `mu-err` (app/themes/frequency/members-ui.css). The kit's
+// well reads on every surface, so the `surface` fills collapse to one. Seamless stays seamless. Inlined
+// at build, so every DAWN string below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Shared form-field styling + primitives — one source of truth for inputs,
 // textareas, selects, and labels (the audit found this class string copy-pasted
@@ -37,9 +45,9 @@ export const fieldToneNeutral = 'border-border text-text'
 
 const fieldChromeNoFill = `${fieldChromeShape} ${fieldToneNeutral}`
 
-export const fieldChromeClasses = `${fieldChromeNoFill} bg-surface`
+export const fieldChromeClasses = FREQUENCY ? 'input' : `${fieldChromeNoFill} bg-surface`
 
-export const fieldClasses = `${fieldChromeClasses} px-3 py-2`
+export const fieldClasses = FREQUENCY ? 'input' : `${fieldChromeClasses} px-3 py-2`
 
 /**
  * Which surface a field's fill sits on.
@@ -118,10 +126,11 @@ const fieldSeamless =
 
 function fieldWithSurface(surface: FieldSurface, variant: FieldVariant = 'boxed'): string {
   if (variant === 'seamless') return fieldSeamless
+  if (FREQUENCY) return 'input'
   return `${fieldChromeNoFill} ${FIELD_FILL[surface]} px-3 py-2`
 }
 
-export const labelClasses = 'text-meta font-medium text-muted'
+export const labelClasses = FREQUENCY ? 'mu-label' : 'text-meta font-medium text-muted'
 
 export const Input = forwardRef<
   HTMLInputElement,
@@ -188,6 +197,19 @@ export function Field({
   labelClassName?: string
   children: ReactNode
 }) {
+  if (FREQUENCY) {
+    return (
+      <label className={cn('field', className)}>
+        <span className={cn('mu-label', labelClassName)}>{label}</span>
+        {children}
+        {hint && !error ? <span className="mu-hint">{hint}</span> : null}
+        {/* `contents`, so the live region adds no empty row (and no gap) to the field's column. */}
+        <span aria-live="polite" className="contents">
+          {error ? <span className="mu-err">{error}</span> : null}
+        </span>
+      </label>
+    )
+  }
   return (
     <label className={cn('block', className)}>
       <span className={cn(labelClasses, 'mb-1 block', labelClassName)}>{label}</span>

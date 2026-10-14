@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-920",
+  "title": "One setting picks the platform's design system (DAWN or Frequency), every design-owned value is replaceable, and Frequency switches the older theme layers off",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1737. Owner 2026-10-13: the only two themes for the main site are DAWN and Frequency, a one-button change-over; the new Frequency theme will override everything; Midnight will become a theme for users; make sure the local installation is fully themeable."
+  },
+  "detail": "lib/theme/design.ts (DesignId, SITE_DESIGN from NEXT_PUBLIC_SITE_DESIGN, LEGACY_THEME_AXES, browser chrome per design); app/layout.tsx stamps data-design statically and loads app/themes/frequency.css (scoped scaffold); app/globals.css adds the design layer (--design-radius-*, --design-shadow-*, --design-font-*, --design-map-*) and @theme inline reads it; lib/theme/server/resolve.ts, app/(main)/layout.tsx, components/spaces/accent-scope.tsx, the Settings switcher and Theme Studio honour LEGACY_THEME_AXES; Midnight is selectable and scoped by SkinDef.designs; lib/maps/css-color.ts feeds the three MapLibre maps; ?design= previews tokens locally. lib/theme/design.test.ts holds the sheet contract.\n\nShipped 2026-10-13. Frequency's values arrive with its design system export.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/design-switch.mjs"
+  },
+  "closed": "2026-10-13",
+  "wave": "W7"
+}

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import {
@@ -55,25 +55,25 @@ export default async function SpaceAutomationPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate
+      <ConsoleFocusTemplate
         eyebrow={brandName}
         title="Automation"
         description="Rules and drip sequences for this space."
       >
         <AutomationBody slug={slug} />
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
   void caps
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Automation"
       description="Set up rules that fire on a trigger, and drip sequences that email your own contacts on a schedule."
       width="wide"
     >
       <AutomationBody slug={slug} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

@@ -31,7 +31,7 @@ function prettify(action: string): string {
 // Stage A.)
 export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRow[] }) {
   return (
-    <section className="mb-8 overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+    <section className="mb-8 overflow-hidden rounded-card border border-border bg-surface lift-1">
       <div className="border-b border-border px-4 py-3">
         <h2 className="text-body-sm font-bold text-text">Reward economy</h2>
         <p className="mt-0.5 text-meta text-muted">
@@ -258,14 +258,14 @@ function RewardTable({
                 type="button"
                 onClick={add}
                 disabled={pending || !draft.action_type.trim()}
-                className="rounded-lg bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                className="rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? 'Adding…' : 'Add'}
               </button>
               <button
                 type="button"
                 onClick={() => { setAdding(false); setStatus('idle') }}
-                className="rounded-lg px-2 py-1 text-meta text-subtle hover:text-text"
+                className="rounded-control px-2 py-1 text-meta text-subtle hover:text-text"
               >
                 Cancel
               </button>
@@ -276,7 +276,7 @@ function RewardTable({
         <button
           type="button"
           onClick={() => { setAdding(true); setStatus('idle') }}
-          className="mt-3 inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
+          className="mt-3 inline-flex items-center gap-1 rounded-control border border-dashed border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
         >
           <Plus className="h-3.5 w-3.5" /> Add {label.slice(0, -1).toLowerCase()} action
         </button>

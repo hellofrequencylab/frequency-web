@@ -37,11 +37,18 @@ const PAGE = 40
 
 export async function loadFeedPage(args: {
   profileId: string
-  sort: 'recent' | 'relevant' | 'popular'
+  sort: 'recent' | 'relevant' | 'popular' | 'nearby'
   scopeId?: string | null
+  /** The member's home + radius. Feeds the 'nearby' lens (filter + order by distance) and
+   *  populates distance_m for the 'relevant' blend, exactly as the web FeedList passes it. */
+  nearby?: { lat: number; lng: number; radiusM: number } | null
 }): Promise<FeedLoad<FeedRow>> {
-  const { profileId, sort, scopeId } = args
+  const { profileId, sort, scopeId, nearby } = args
   const fetchSort = sort === 'popular' ? 'relevant' : sort
+  const geo =
+    nearby && (sort === 'nearby' || sort === 'relevant')
+      ? { _lat: nearby.lat, _lng: nearby.lng, _radius_m: nearby.radiusM }
+      : {}
   const supabase = await createClient()
   const [loaded, resonance] = await Promise.all([
     scopeId
@@ -49,7 +56,7 @@ export async function loadFeedPage(args: {
           .rpc('scoped_feed_for_viewer', { _scope_ids: [scopeId], _sort: fetchSort, _limit: 30 })
           .then((res) => readFeedRpc<FeedRow>('scoped_feed_for_viewer', res))
       : supabase
-          .rpc('feed_for_viewer', { _sort: fetchSort, _limit: PAGE })
+          .rpc('feed_for_viewer', { _sort: fetchSort, _limit: PAGE, ...geo })
           .then((res) => readFeedRpc<FeedRow>('feed_for_viewer', res)),
     sort === 'relevant' ? getViewerResonanceMap(profileId) : null,
   ])
@@ -58,7 +65,7 @@ export async function loadFeedPage(args: {
     const items = loaded.items.map((p) => ({ ...p, authorId: p.author.id, distance_m: p.distance_m ?? null }))
     // LIVE-677: the content-interest term, for the posts the viewer's RLS read returned.
     const interest = await getPostInterest(profileId, items.map((p) => p.id))
-    return { kind: 'ok', items: blendRank(items, { nowMs: feedNowMs(), resonance, interest, radiusM: 25000 }, PAGE) }
+    return { kind: 'ok', items: blendRank(items, { nowMs: feedNowMs(), resonance, interest, radiusM: nearby?.radiusM ?? 25000 }, PAGE) }
   }
   return { kind: 'ok', items: rankFeedPosts(loaded.items, fetchSort, PAGE) }
 }

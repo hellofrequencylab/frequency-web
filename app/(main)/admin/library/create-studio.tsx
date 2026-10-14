@@ -224,7 +224,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
       : 'Generate'
 
   return (
-    <details className="mb-6 rounded-2xl border border-border bg-surface-elevated/50 p-4" open>
+    <details className="mb-6 rounded-card border border-border bg-surface-elevated/50 p-4" open>
       <summary className="flex cursor-pointer items-center gap-2 text-body-sm font-semibold text-text">
         <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
         Create
@@ -272,7 +272,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
               key={s}
               type="button"
               onClick={() => setPrompt(s)}
-              className="max-w-full truncate rounded-lg border border-dashed border-border px-2 py-1 text-meta text-subtle hover:bg-surface-elevated hover:text-text"
+              className="max-w-full truncate rounded-control border border-dashed border-border px-2 py-1 text-meta text-subtle hover:bg-surface-elevated hover:text-text"
               title={s}
             >
               {s}
@@ -283,7 +283,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
         <div className="flex flex-wrap items-center gap-2">
           {/* Engine toggle — only when the type can be either Vera or the Studio. */}
           {supportsVera && supportsStudio && (
-            <div className="inline-flex rounded-2xl border border-border p-0.5">
+            <div className="inline-flex rounded-card border border-border p-0.5">
               <button
                 type="button"
                 onClick={() => {
@@ -292,7 +292,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'vera'}
                 title="Vera draws a clean house-style line mark, instant, no cost"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-control px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'vera' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -306,7 +306,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'studio'}
                 title="The Image Studio generates a richer result (uses the paid engine)"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-control px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'studio' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -356,7 +356,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                   onClick={() => (confirmForget ? forgetStyle() : setConfirmForget(true))}
                   disabled={busy}
                   title="Forget this trained style. Art it already made stays in the library."
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-danger px-3 py-1.5 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-card border border-danger px-3 py-1.5 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-70"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden /> {confirmForget ? 'Confirm forget' : 'Forget'}
                 </button>
@@ -368,7 +368,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             type="button"
             onClick={create}
             disabled={busy || !prompt.trim() || engineUnavailable}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+            className="inline-flex items-center gap-2 rounded-card bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             {createLabel}
@@ -378,7 +378,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-body-sm text-muted hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-body-sm text-muted hover:bg-surface-elevated"
             >
               <RotateCcw className="h-4 w-4" /> Clear
             </button>
@@ -388,7 +388,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
 
         {/* Vera preview + save (the Studio auto-saves, so it has no preview step). */}
         {engine === 'vera' && safeSvg && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-3 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-3 sm:flex-row sm:items-end">
             <div
               className={
                 cfg.veraMode === 'icon'
@@ -406,7 +406,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
               type="button"
               onClick={saveVera}
               disabled={busy || !title.trim()}
-              className="rounded-2xl bg-signal px-4 py-2 text-body-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
+              className="rounded-card bg-signal px-4 py-2 text-body-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
             >
               {busy ? 'Saving…' : 'Save to library'}
             </button>

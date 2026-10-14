@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frequency™ · Website strategy</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+body{background:var(--bg-canvas);color:var(--text-body);padding:48px clamp(18px,4vw,48px);box-sizing:border-box;position:relative;overflow-x:hidden}
+.wrap{max-width:1320px;margin:0 auto;position:relative;z-index:1}
+.lbl{font:var(--type-label);letter-spacing:var(--track-label);text-transform:uppercase;color:var(--text-muted)}
+h1{font:600 clamp(36px,5vw,72px)/.95 var(--font-display);letter-spacing:-0.05em;color:var(--text-strong);margin:14px 0 18px}
+.lede{font-size:18px;line-height:1.55;max-width:60ch;margin:0}
+.rules{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:36px 0 48px}
+.rules div{border-radius:18px;padding:16px;background:var(--surface-card);border:1px solid var(--border-hair);font:500 14px/1.4 var(--font-sans)}
+.rules b{display:block;font:600 15px/1.2 var(--font-display);letter-spacing:-0.02em;color:var(--text-strong);margin-bottom:6px}
+.home{border-radius:24px;padding:22px 26px;text-align:center;margin:0 auto 18px;max-width:640px}
+.home h2{font:600 26px/1.05 var(--font-display);letter-spacing:-0.04em;color:var(--text-strong);margin:8px 0}
+.wings{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.wing{border-radius:28px;padding:24px;background:var(--surface-card);position:relative;overflow:hidden}
+.wing>*{position:relative;z-index:1}.wing .fq-aura{z-index:0}
+.wing h3{font:600 28px/1 var(--font-display);letter-spacing:-0.04em;color:var(--text-strong);margin:8px 0 4px}
+.wing .cta{display:inline-flex;margin:10px 0 18px;height:38px;align-items:center;padding:0 16px;border-radius:999px;font:600 14px/1 var(--font-sans)}
+.page{border-radius:16px;padding:14px 16px;background:var(--surface-glass);backdrop-filter:blur(12px);border:1px solid var(--border-hair);margin-top:8px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px}
+.page code{font:500 12px/1.4 var(--font-sans);color:var(--accent-2)}
+.page b{font:600 15px/1.2 var(--font-display);letter-spacing:-0.02em;color:var(--text-strong);display:block;margin-bottom:4px}
+.page span{font:400 13.5px/1.45 var(--font-sans)}
+.page .f{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.page .f i{font-style:normal;font:600 11px/1 var(--font-sans);padding:5px 8px;border-radius:999px;background:var(--surface-raised);color:var(--text-muted)}
+.shared{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.vision{border-radius:22px;padding:20px;background:var(--surface-raised);border:1px dashed var(--border-strong)}
+@media (max-width:1000px){.rules{grid-template-columns:1fr 1fr}.wings,.shared{grid-template-columns:1fr}.page{grid-template-columns:1fr}}
+</style></head>
+<body data-theme="stage" data-energy="still">
+<div class="fq-aura" style="position:fixed;--aura-opacity:.35"></div>
+<div class="wrap">
+<span class="lbl">Website strategy · Stage theme · messaging per guidelines/messaging.md</span>
+<h1>Two wings. <span class="fq-iri-text">One network.</span></h1>
+<p class="lede">Every page serves one market: Community (people) or Community Spaces (the businesses that host them). Only the homepage is shared, and it splits on the first screen. The third-space vision lives on a quiet sub-page.</p>
+<div class="rules">
+<div><b>Two wings, never mixed</b>One market per page.</div>
+<div><b>Outcome, then feature</b>"Your people" before "Circles."</div>
+<div><b>End in a community</b>Real Circles and communities, not a form.</div>
+<div><b>Proof over pitch</b>Live counts, real Hosts, real standing.</div>
+<div><b>Search for the pain</b>City and question pages for SEO and answer engines.</div>
+</div>
+<div class="home fq-iri-rim" style="background:var(--surface-card)"><span class="lbl">/ · Home · the split door</span><h2>Gather like it <span class="fq-iri-text">matters.</span></h2><span style="font-size:14px">Story: "We lost our communities" · live proof strip · both doors · "Sacred, not serious" closer</span></div>
+<div class="wings">
+<div class="wing fq-iri-rim" data-energy="flow"><div class="fq-aura" style="--aura-opacity:.35"></div>
+<span class="lbl">Wing one · Community</span><h3>Find your Circle.</h3><span>"A hundred contacts. No one to call on a Tuesday."</span><br><span class="cta fq-iri-btn">Find your Circle</span>
+<div class="page"><code>/community</code><div><b>Wing home</b><span>Three steps, what a first night is like, kinds of Circles, near-you strip.</span><div class="f"><i>Circles</i><i>Events + RSVP</i><i>Check-in</i><i>Invites</i></div></div></div>
+<div class="page"><code>/community/how</code><div><b>How it works</b><span>Circle vs. night, the door, safety, FAQ.</span><div class="f"><i>Verified Hosts</i><i>Report + block</i></div></div></div>
+<div class="page"><code>/community/play</code><div><b>The game</b><span>"The only way to win is to show up." Seasons, cooperative, no streak shame.</span><div class="f"><i>Zaps</i><i>Gems</i><i>Seasons</i><i>Circle meter</i></div></div></div>
+<div class="page"><code>/community/host</code><div><b>Host a Circle</b><span>"You're already the one who organizes. Here's backup."</span><div class="f"><i>Starter Circles</i><i>Programs</i><i>Host kit</i></div></div></div>
+<div class="page"><code>/near/[city]</code><div><b>What's happening near you</b><span>Search-language H1, live listings, top Spaces, FAQ.</span><div class="f"><i>Discover</i><i>Events</i><i>Standing</i></div></div></div>
+</div>
+<div class="wing fq-iri-rim" data-energy="charge"><div class="fq-aura" style="--aura-opacity:.3"></div>
+<span class="lbl">Wing two · Community Spaces</span><h3>Grow your community.</h3><span>"You’ve built a community. Let the people looking for one find it."</span><br><span class="cta fq-iri-btn">Open your Space</span>
+<div class="page"><code>/spaces</code><div><b>Wing home</b><span>What the network does, the kit, rank by gathering, the deal, live Space example.</span><div class="f"><i>City calendar</i><i>Space page</i><i>Standing</i></div></div></div>
+<div class="page"><code>/spaces/tools</code><div><b>The kit</b><span>One outcome per tool: remember, bring back, get paid, run together, look good, know.</span><div class="f"><i>Door QR</i><i>CRM</i><i>Memberships</i><i>Tickets</i><i>Programs</i><i>Page editor</i></div></div></div>
+<div class="page"><code>/spaces/standing</code><div><b>How placement is earned</b><span>What counts (gathering), what never counts (money), a worked example.</span></div></div>
+<div class="page"><code>/spaces/pricing</code><div><b>The deal</b><span>One price per plan. "Your regulars: 0%." Ends on booked and returned, never revenue.</span></div></div>
+<div class="page"><code>/spaces/for/[type]</code><div><b>Persona doors</b><span>Studios · coaches & practitioners · event hosts · cafés & venues · non-profits.</span></div></div>
+</div>
+</div>
+<div class="shared">
+<div class="vision"><span class="lbl">Shared</span><b style="display:block;font:600 18px/1.2 var(--font-display);color:var(--text-strong);margin:6px 0">/stories</b><span style="font-size:14px">Hosts and Spaces in their own words. Each ends with "Join their Circle" or "Visit their Space."</span></div>
+<div class="vision fq-iri-rim"><span class="lbl">Sub-page · footer + about only</span><b style="display:block;font:600 18px/1.2 var(--font-display);color:var(--text-strong);margin:6px 0">/vision · Third spaces</b><span style="font-size:14px">For partners, investors and press. The density story, concepts labeled "Vision · late 2027," and a partner form.</span></div>
+<div class="vision"><span class="lbl">Shared</span><b style="display:block;font:600 18px/1.2 var(--font-display);color:var(--text-strong);margin:6px 0">/about · /help</b><span style="font-size:14px">The manifesto, the one rule, help articles. Long reading goes in Commons light.</span></div>
+</div>
+</div>
+</body></html>

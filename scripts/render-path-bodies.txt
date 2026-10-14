@@ -81,12 +81,7 @@ spaces          0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacySpaces +
                     #    document, always well-formed), so the retirement moved no pixels. The two
                     #    sections only the coded body carried were recovered into the template in
                     #    Lift 5b. Template-only from here.
-the-lab         0   # ✅ RETIRED 2026-08-18 (Lift 5c, ADR-1068). LegacyTheLab + Room + BuildStep deleted,
-                    #    not moved: `git log -p app/(marketing)/the-lab/page.tsx` is the only copy left.
-                    #    The body was already unreachable (getTemplate('the-lab') is a static 7-block
-                    #    document, always well-formed), so the retirement moved no pixels. Every section
-                    #    it drew is in the template word for word. The only thing deleted with it was
-                    #    THE_LAB_FAQ, which neither rung rendered. Template-only from here.
+# the-lab: REMOVED 2026-10-14. The page merged (into /vision, owner ruling) and left EDITABLE_PAGES; its route file is deleted and next.config.ts redirects it.
 the-community   0   # ✅ RETIRED 2026-08-24 (Lift 5c, ADR-1068). LegacyTheCommunity + Step + Layer +
                     #    Hold + DayBeat deleted, not moved, along with the COMMUNITY_FAQ / PILLARS
                     #    tables and the ProductTour client island in ./tour, its only caller:
@@ -115,19 +110,12 @@ the-community   0   # ✅ RETIRED 2026-08-24 (Lift 5c, ADR-1068). LegacyTheCommu
                     #    the-community.ts does not, so this page no longer cross-links to its two
                     #    siblings. That is a missing BLOCK, not a dropped sentence; it is a backlog
                     #    row, not a silent part of a retirement.
-the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest + Guard deleted, not
-                    #    moved: `git log -p app/(marketing)/the-quest/page.tsx` is the only copy left.
-                    #    The body was already unreachable (getTemplate('the-quest') is a static
-                    #    18-block document, always well-formed), so the retirement moved no pixels.
-                    #    THE FAQPage SURVIVES and was checked, not assumed: the deleted faqSchema()
-                    #    rode the legacy branch and emitted nothing, while the template's Accordion
-                    #    (`tq-faq`) carries the same five Q&A byte-identical and AccordionBlock emits
-                    #    its own FAQPage from them — rendered through BlockRender it produces one
-                    #    FAQPage and five Question nodes. NOT the LIVE-040 shape. Three coded details
-                    #    the template did not draw (the "Generosity over grinding" guardrail, the
-                    #    /discover link, the /pricing link) were recovered into existing template
-                    #    blocks in the same change. Template-only from here.
-pricing         6   # PlanCard + RateLine + PlanPrice + PlanCta + ExtraCard + ComparisonBlock (826 lines)
+# the-quest: REMOVED 2026-10-14. The page merged (into /features#f-zaps, owner ruling) and left EDITABLE_PAGES; its route file is deleted and next.config.ts redirects it.
+pricing         0   # MOVED, not retired (2026-10-13, ADR-1737 marketing lane): the six coded bodies
+                    #    (PlanCard, RateLine, PlanPrice, PlanCta, ExtraCard, ComparisonBlock) now live in
+                    #    app/(marketing)/pricing/pricing-sections.tsx and plan-cards.tsx, so the page file
+                    #    counts 0. The coded body still renders; this is a file split, not a Phase 5 win.
+                    # was: 6 (PlanCard + RateLine + PlanPrice + PlanCta + ExtraCard + ComparisonBlock, 826 lines)
                     #    7 -> 6 on 2026-09-09: IndependentStrip RETIRED, not moved (LIVE-227). The
                     #    owner ruled that the Independent tier stops being advertised and is sold by
                     #    hand, so the offering leaves the ladder and the strip that rendered it has no

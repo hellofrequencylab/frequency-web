@@ -9,6 +9,7 @@ import { useMindless } from '@/components/on-air/mindless'
 import { Dialog } from '@/components/ui/dialog'
 import { CaptureBox } from './capture-box'
 import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
+import { capsLabel } from '@/components/ui/caps-label'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -174,7 +175,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-2">
                 <span className="block text-body font-bold leading-tight text-text">Mindless</span>
-                <span className="hidden shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
+                <span className={capsLabel('hidden shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-2xs font-bold text-primary-strong min-[400px]:inline-block')}>
                   Daily timer
                 </span>
               </span>

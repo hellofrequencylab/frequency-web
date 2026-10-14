@@ -76,7 +76,7 @@ function PersonaCard({ row }: { row: PersonaRow }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface lift-1">
+    <div className="rounded-card border border-border bg-surface lift-1">
       <div className="flex items-center gap-3 p-4">
         <span className="text-page-title leading-none" aria-hidden>{row.emoji}</span>
         <button
@@ -253,7 +253,7 @@ function AddStep({ sequenceId }: { sequenceId: string }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text hover:border-border-strong">
+      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-control border border-dashed border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text hover:border-border-strong">
         <Plus className="h-3.5 w-3.5" /> Add step
       </button>
     )

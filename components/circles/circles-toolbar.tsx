@@ -76,12 +76,12 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
         </div>
 
         {/* Sort — ordering, not a facet, so a labelled native select stays clearest. */}
-        <div className="flex items-center gap-1.5 rounded-control border border-border bg-surface pl-2.5">
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-surface pl-2.5">
           <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <select
             value={sort}
             onChange={(e) => update({ sort: e.target.value })}
-            className="cursor-pointer rounded-r-lg bg-transparent py-2 pr-2 text-body-sm font-medium text-muted focus:outline-none"
+            className="cursor-pointer rounded-r-control bg-transparent py-2 pr-2 text-body-sm font-medium text-muted focus:outline-none"
             aria-label="Sort circles"
           >
             {SORTS.map((s) => (

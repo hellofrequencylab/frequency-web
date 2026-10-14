@@ -9,6 +9,8 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { helpArticleJsonLd } from '@/lib/help/article-jsonld'
 import { OG_SITE } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyHelpArticle } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 type Params = { params: Promise<{ category: string; slug: string }> }
 
@@ -69,6 +71,26 @@ export default async function HelpArticlePage({ params }: Params) {
   // The standard entity cover (PROG-P5, ADR-1136): the operator's /help Settings image, or
   // nothing. Help articles carry no cover of their own.
   const hero = await resolveDetailHero(helpHref(cat.slug, article.slug))
+
+  // The Frequency design (ADR-1737, build-time): the same article, ids, schema and neighbours, in the
+  // help center (the index beside the reading column). DAWN never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={helpArticleJsonLd({ article, category: cat, coverImage: hero.coverImage })} />
+        <FrequencyHelpArticle
+          slug={article.slug}
+          title={article.title}
+          description={article.description}
+          body={article.body}
+          updated={article.updated}
+          category={{ slug: cat.slug, title: cat.title }}
+          prev={prev ? { title: prev.title, href: helpHref(cat.slug, prev.slug) } : null}
+          next={next ? { title: next.title, href: helpHref(cat.slug, next.slug) } : null}
+        />
+      </>
+    )
+  }
 
   return (
     <>

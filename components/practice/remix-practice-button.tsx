@@ -5,6 +5,7 @@ import { Wand2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { forkPracticeAction, remixDirectionsAction } from '@/app/(main)/practices/actions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // "Remix" a library practice you don't own (ADR-109 fork flow). Remix makes a NEW
 // practice you own, starting from this one — a copy you can edit and publish. The
@@ -62,7 +63,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
       </button>
 
       <Dialog open={open} onClose={() => (pending ? null : setOpen(false))} ariaLabel="Remix this practice?" className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
+        <div className="rounded-card border border-border bg-surface p-6 lift-1">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
               <Wand2 className="h-4 w-4" />
@@ -74,8 +75,8 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             Make it yours: a new angle, a different setting, your own niche. Publish your version so
             the community gets a practice only you would make. The original stays exactly as it is.
           </p>
-          <div className="mt-4 rounded-card bg-surface-elevated/60 p-4">
-            <p id={labelId} className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+          <div className="mt-4 rounded-2xl bg-surface-elevated/60 p-4">
+            <p id={labelId} className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>
               Ways to make it yours
             </p>
             {directions.length > 0 ? (

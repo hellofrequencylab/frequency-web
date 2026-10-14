@@ -1,4 +1,5 @@
 import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/article'
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW TO BUILD COMMUNITY — the SECOND seeker article enrolled in the page editor
@@ -166,7 +167,7 @@ export const spec: ArticleSpec = {
           eyebrow: 'What makes it recur',
           title: 'Protect the ritual, flex the details.',
           kicker: 'People come back to a plan that is easy to keep and hard to forget.',
-          body: 'A moving time and a missing reminder are the two quiet killers of attendance. Nobody decides to stop coming; they just lose track, and the gap between meetings does the rest. Fix the slot so it lives in their week, and send the same short note before each one: when, where, and what to bring. That is not nagging. It is the thing that turns an intention into a turnout.\n\nThe anchor of a recurring gathering is the part that never changes: the time, the opening, the one thing you always do. Guard it, and let the details move around it. A Circle on Frequency runs the same shape every week and Dispatch sends the reminder for you, so the recurrence stops living in your head.',
+          body: 'A moving time and a missing reminder are the two quiet killers of attendance. Nobody decides to stop coming; they just lose track, and the gap between meetings does the rest. Fix the slot so it lives in their week, and send the same short note before each one: when, where, and what to bring. That is not nagging. It is the thing that turns an intention into a turnout.\n\nThe anchor of a recurring gathering is the part that never changes: the time, the opening, the one thing you always do. Guard it, and let the details move around it. A Circle on Frequency runs the same shape each time and Dispatch sends the reminder for you, so the recurrence stops living in your head.',
           side: 'left',
         },
         {
@@ -235,7 +236,7 @@ export const spec: ArticleSpec = {
         eyebrow: 'The rails',
         title: 'What do I do if I have never run a group before?',
         kicker: 'You set out the chairs. The format does the rest.',
-        body: 'You do not start from a blank page. A Circle on Frequency comes with the rails: a format, a first-night script, a standing rhythm, and backup when you need it. The Circle runs the same shape every week, so the host is never improvising the night.\n\nYou do not need to be a natural leader. You need to set out the chairs and be the reason your people have somewhere to go. When you want the tooling that carries the admin, the [community builder toolkit](/tools-for-community-builders) is the whole kit in one place.',
+        body: 'You do not start from a blank page. A Circle on Frequency comes with the rails: a format, a first-night script, a standing rhythm, and backup when you need it. The Circle runs the same shape each time, so the host is never improvising the night.\n\nYou do not need to be a natural leader. You need to set out the chairs and be the reason your people have somewhere to go. When you want the tooling that carries the admin, the [community builder toolkit](/tools-for-community-builders) is the whole kit in one place.',
         side: 'right',
         ctaLabel: 'Or start a Circle with the format built in',
         ctaHref: '/how-to-start-a-circle',
@@ -245,7 +246,7 @@ export const spec: ArticleSpec = {
       question: 'Do I have to do this alone?',
       answer:
         'No, and you should not. You step up exactly as far as you want, and every rung has the one above it for backup.',
-      body: 'The path goes Member, then Crew, then Host, then Guide, then Mentor. You show up to a Circle as a Member. You learn the format as Crew. You hold one Circle as a Host, with the script and the backup handed to you. A Guide looks after the Hosts nearby, so nobody runs a room alone, and a Mentor keeps the Guides steady across a whole local community. Take whichever rung feels right, and step back any time.\n\nThat is the point of the structure: it is leaderful, not leader-dependent. Take any one person out and it keeps running, because the people and the rhythm were the thing all along. Frequency is a Community Collective, built to support every community effort and help everyone in it succeed together, so the rails are shared, not something you assemble alone.',
+      body: 'The path goes Member, then Host, then Guide, then Mentor. You show up to a Circle as a Member, and learn the format by being in the room. You hold one Circle as a Host, with the script and the backup handed to you. A Guide looks after the Hosts nearby, so nobody runs a room alone, and a Mentor keeps the Guides steady across a whole local community. Take whichever rung feels right, and step back any time.\n\nThat is the point of the structure: it is leaderful, not leader-dependent. Take any one person out and it keeps running, because the people and the rhythm were the thing all along. Frequency is built to support every community effort and help everyone in it succeed together, so the rails are shared, not something you assemble alone.',
       beat: {
         kind: 'statement',
         text: 'Groups do not die from low numbers. They die from chaos and burnout.',
@@ -256,7 +257,7 @@ export const spec: ArticleSpec = {
       question: 'Where do I start?',
       answer:
         'Pick what you practice, find a few people near you, and hold the door open for one Circle. Frequency hands community builders the format, the first-night script, and the rails, so hosting is a clear next step instead of a blank page.',
-      body: 'You keep 100% of your own bookings, always. See exactly what a plan costs on the [pricing page](/pricing), month to month, leave anytime.',
+      body: `You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always. See exactly what a plan costs on the [pricing page](/pricing), month to month, leave anytime.`,
       links: [
         { label: 'Host your first Circle', href: '/the-community', variant: 'primary' },
         { label: 'Run a group you already gather', href: '/spaces', variant: 'secondary' },
@@ -295,7 +296,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'Do I need a venue, a building, or a budget?',
-      a: 'No. A living room, a park, a hall, a cafe corner, or a video call all work. Most community spaces run in a room someone borrows. What makes it a community space is the standing rhythm and the regulars, not the lease. Start with a time and a spot you can get every week, and worry about walls much later, if ever.',
+      a: 'No. A living room, a park, a hall, a cafe corner, or a video call all work. Most community spaces run in a room someone borrows. What makes it a community space is the standing rhythm and the regulars, not the lease. Start with a time and a spot you can keep getting, and worry about walls much later, if ever.',
     },
     {
       q: 'What tools do I need to keep a group going?',
@@ -303,11 +304,11 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What if I host something and nobody comes back?',
-      a: 'That usually means the format had no rhythm, not that you failed. People come back to a standing plan, not a one-off. Set the same day and place every week, keep it simple, and invite the people who showed up to the next one before they leave. Small, quiet nights are normal early; cancelling teaches people the event is not reliable, so hold it anyway.',
+      a: 'That usually means the format had no rhythm, not that you failed. People come back to a standing plan, not a one-off. Set the same day and place each time, keep it simple, and invite the people who showed up to the next one before they leave. Small, quiet nights are normal early; cancelling teaches people the event is not reliable, so hold it anyway.',
     },
     {
       q: 'Do I have to do this alone?',
-      a: 'No. On Frequency you host one Circle on a path that goes Member, Crew, Host, Guide, Mentor, and every rung has the one above it for backup. You hold the room; a Guide looks after the Hosts nearby. You bring the people and the willingness to show up, and the structure carries the rest.',
+      a: 'No. On Frequency you host one Circle on a path that goes Member, Host, Guide, Mentor, and every rung has the one above it for backup. You hold the room; a Guide looks after the Hosts nearby. You bring the people and the willingness to show up, and the structure carries the rest.',
     },
     {
       q: 'How do I keep a community group going long-term?',
@@ -315,7 +316,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What does Frequency cost to build community here?',
-      a: 'People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on a sale the network brought you, never on the people you bring yourself. A plan is what you take when money starts moving, and the rate is what a plan settles at, not what a plan is for. See the plans on the pricing page. Month to month, take your data and leave anytime.',
+      a: `People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always. We earn only on a sale the network brought you, never on the people you bring yourself. A plan is what you take when money starts moving, and the rate is what a plan settles at, not what a plan is for. See the plans on the pricing page. Month to month, take your data and leave anytime.`,
     },
   ],
 

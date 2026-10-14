@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { SURFACE_PANELS, isPanelId } from '@/components/spaces/workspace/surface-panels'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 import { SpaceMenuDropdown } from '@/components/spaces/space-menu-dropdown'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // THE SPACE MENU'S MARKUP, WITH NO HOOKS (LIVE-522).
 //
@@ -44,6 +45,7 @@ export function SpaceProfileMenuView({
   pathname,
   panel,
   homeHref,
+  tools,
 }: {
   tabs: SpaceProfileTab[]
   /** The Space's index (`/spaces/<slug>`), for Home's active state and the Manage pin. */
@@ -54,6 +56,9 @@ export function SpaceProfileMenuView({
   pathname: string
   /** The open `?panel=<id>`, when there is one. A PROP, not a router hook. */
   panel?: string
+  /** Frequency only: the viewer's quiet Space actions (Follow, Boost) at the right end of the tab row,
+   *  where the Circle page keeps its Boost. Under DAWN they live in the identity lockup instead. */
+  tools?: React.ReactNode
 }) {
 
   // When a `?panel=<id>` workspace surface is open, the operator is on that surface even though the
@@ -73,6 +78,68 @@ export function SpaceProfileMenuView({
     if (tab.href.includes('#')) return false
     if (tab.href === indexHref) return pathname === tab.href && openPanelLabel == null
     return pathname === tab.href || pathname.startsWith(`${tab.href}/`)
+  }
+
+  // THE FREQUENCY TAB ROW (ADR-1737, templates/members/Circle.html). The same tabs, the same active
+  // rule, the same Manage pin and editing cue, drawn as the kit's underline `.tabs` (no pills). One view,
+  // two looks: SITE_DESIGN is build-time, so a deploy ships one branch. app/themes/frequency/space-page.css
+  // holds the `.fqs-*` placement.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <div className="fqs-tabrow">
+          {/* LIVE-744 (owner, 2026-10-06): one horizontal scroll rail carrying every tab, Manage pinned outside it. */}
+          <div data-space-menu-rail className="min-w-0 flex-1 overflow-x-auto">
+          <nav aria-label="Space menu" className="tabs">
+            {tabs.map((tab) => {
+              if (tab.mega) return <SpaceMenuDropdown key={`mega:${tab.label}`} tab={tab} itemClassName="" />
+              if (tab.external) {
+                return (
+                  <a key={tab.href} href={tab.href} target="_blank" rel="noopener noreferrer">
+                    {tab.label}
+                  </a>
+                )
+              }
+              const active = isActive(tab)
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={active ? 'on' : undefined}
+                >
+                  {tab.label}
+                </Link>
+              )
+            })}
+          </nav>
+          </div>
+          {(tools || (canManage && indexHref)) && (
+            <div className="row shrink-0">
+              {tools}
+              {canManage && indexHref && (
+                <Link
+                  href={`${indexHref}?panel=manage`}
+                  aria-current={manageActive ? 'page' : undefined}
+                  className={manageActive ? 'btn sm ink' : 'btn sm'}
+                >
+                  <SlidersHorizontal aria-hidden />
+                  Manage
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+        {openPanelLabel && (
+          <div className="row fqs-editing">
+            <span className="t2">You are editing</span>
+            <span aria-current="page" className="tag">
+              {openPanelLabel}
+            </span>
+          </div>
+        )}
+      </>
+    )
   }
 
   const itemClasses = (active: boolean) =>

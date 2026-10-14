@@ -16,6 +16,19 @@
 // All colors are DAWN semantic tokens (no raw hex/palette), so a branded space still
 // re-themes these. Keep the two kits SEPARATE: in-app pages compose the kit per
 // docs/PAGE-FRAMEWORK.md; only the public marketing pages import from here.
+//
+// ONE OF EACH FOR THE PUBLIC SITE (ADR-1737, the design switch). This file is the single marketing
+// `Button` / `buttonClasses`, the single marketing `Card` / `cardClasses`, and the single text hero
+// (`PageHero`) + photo hero (`PhotoHero`). The Puck block kit's `CtaButton`
+// (components/page-editor/blocks/kit.tsx) is a thin wrapper over `buttonClasses` here, and the fluid
+// display sizes come from `DISPLAY_TYPE` (./display-type.ts). So a design change-over restyles each
+// of these once. Why they are not re-exports of the in-app primitives, measured rather than assumed:
+//   · ui `Button`: `rounded-control` (14px) + `font-semibold` + `lift-1`, sizes topping out at
+//     `px-4 py-2 text-body-sm`. Marketing paints 24px corners, bold, `shadow-pop`, up to `px-10 py-4
+//     text-body-lg`. `cn` is a plain join, so the marketing look cannot be passed as overrides.
+//   · `EntityCard`: entity-browse chrome (media slot, meta row). Marketing cards are bare surfaces.
+//   · templates `PageHero`: a cover band with a measured-tone sensor. Marketing `PageHero` is a
+//     coverless centred lockup; `PhotoHero` carries the fact dock and the LED seam.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Link from 'next/link'
@@ -24,7 +37,9 @@ import { ArrowRight, ChevronDown } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
 import { Reveal } from '@/components/marketing/motion'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { safeHref } from '@/lib/page-editor/richtext'
+import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
 // Full-bleed photo hero — the editorial counterpart to PageHero, for pages that
 // open on imagery. Warm ink wash + amber glow + LED light-strip seam, matching
@@ -114,8 +129,8 @@ export function PhotoHero({
           </p>
         )}
         <h1
-          className={`font-display uppercase text-on-ink text-balance leading-[0.95] ${
-            isScreen ? 'text-[clamp(2.5rem,9vw,6rem)]' : 'text-[clamp(2.25rem,8vw,4.5rem)]'
+          className={`font-display uppercase text-on-ink text-balance leading-display ${
+            isScreen ? DISPLAY_TYPE.splash : DISPLAY_TYPE.masthead
           }`}
         >
           {title}
@@ -157,11 +172,11 @@ export function PhotoHero({
           never more" (ui_kits/marketing/sections.jsx); the wrap was a local addition. Below
           `sm` the strip is a GRID, so it cannot grow upward at all. */}
       {facts && (
-        <div className="glass-ink lift-3 relative z-20 mx-6 mb-16 grid grid-cols-3 items-start gap-3 rounded-2xl px-4 py-3 sm:absolute sm:-bottom-8 sm:left-1/2 sm:mx-0 sm:mb-0 sm:flex sm:w-max sm:max-w-[calc(100vw-2rem)] sm:-translate-x-1/2 sm:justify-center sm:gap-10 sm:px-9 sm:py-4">
+        <div className="glass-ink lift-3 relative z-20 mx-6 mb-16 grid grid-cols-3 items-start gap-3 rounded-card px-4 py-3 sm:absolute sm:-bottom-8 sm:left-1/2 sm:mx-0 sm:mb-0 sm:flex sm:w-max sm:max-w-[calc(100vw-2rem)] sm:-translate-x-1/2 sm:justify-center sm:gap-10 sm:px-9 sm:py-4">
           {facts.map(([value, label]) => (
             <div key={label} className="min-w-0 text-center">
               {/* A numeral never wraps; the label may take two lines. */}
-              <div className="font-display text-lead leading-none whitespace-nowrap text-primary sm:text-3xl">
+              <div className="font-display text-lead leading-none whitespace-nowrap text-primary sm:text-stat-sm">
                 {value}
               </div>
               <div className="mt-1.5 text-3xs font-bold uppercase tracking-eyebrow-soft text-on-ink-muted sm:tracking-eyebrow">
@@ -205,7 +220,7 @@ export function PageHero({
             {eyebrow}
           </p>
         )}
-        <h1 className="font-display uppercase text-text text-[clamp(2.25rem,8vw,4.5rem)]">
+        <h1 className={`font-display uppercase text-text ${DISPLAY_TYPE.masthead}`}>
           {title}
         </h1>
         {subtitle && (
@@ -313,7 +328,7 @@ export function SectionHeading({
         </p>
       )}
       <h2
-        className={`font-display uppercase text-[clamp(1.875rem,5.5vw,3rem)] ${
+        className={`font-display uppercase ${DISPLAY_TYPE.section} ${
           isInk ? 'text-on-ink' : 'text-text'
         }`}
       >
@@ -366,7 +381,7 @@ export function PullQuote({
     <section className={`${bg} px-6 py-14 sm:py-24`}>
       <figure className="max-w-3xl mx-auto text-center">
         <blockquote
-          className={`font-display uppercase text-[clamp(1.75rem,5.5vw,3rem)] leading-[1.08] text-balance ${
+          className={`font-display uppercase ${DISPLAY_TYPE.quote} text-balance ${
             isInk ? 'text-on-ink' : 'text-text'
           }`}
         >
@@ -441,8 +456,10 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
 export function FaqList({ items }: { items: readonly { q: string; a: React.ReactNode }[] }) {
   return (
     <div className="space-y-3">
-      {items.map((f) => (
-        <Faq key={f.q} q={f.q}>
+      {/* Index in the key: an operator's live FAQ can repeat a question word for word, and a
+          question-only key then collided (React's duplicate-key warning on the Space page). */}
+      {items.map((f, i) => (
+        <Faq key={`${i}:${f.q}`} q={f.q}>
           {f.a}
         </Faq>
       ))}
@@ -454,7 +471,19 @@ export function FaqList({ items }: { items: readonly { q: string; a: React.React
 // padding/radius/shadow wobbled page to page. `primary` is the amber action;
 // `secondary` is the quiet outline; `ghost` is the inline text link. Renders an
 // <a>/<Link> (every marketing CTA is a navigation).
-type ButtonVariant = 'primary' | 'secondary' | 'ghost'
+// The Puck block kit's `CtaButton` used to carry its own copy of this look; it is a wrapper over
+// `buttonClasses` now, which is why `outline` and the two `*Ink` variants live here.
+export type MarketingButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  /** The hairline outline the block kit's secondary CTA paints on a light band. */
+  | 'outline'
+  /** `outline` on an ink band or a photo scrim. */
+  | 'outlineInk'
+  /** `ghost` on an ink band or a photo scrim. */
+  | 'ghostInk'
+type ButtonVariant = MarketingButtonVariant
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
@@ -466,18 +495,30 @@ const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
   secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
   ghost: 'text-primary-strong hover:underline',
+  outline: 'border border-border-strong text-text hover:bg-surface-elevated',
+  outlineInk: 'border border-on-ink/30 text-on-ink hover:bg-on-ink/10 hover:border-on-ink/50',
+  ghostInk: 'text-on-ink/80 hover:text-on-ink',
 }
+// `shadow-pop` is the primary's elevation. A primary that sits INSIDE a form card (the subscribe
+// form) never carried it, so `flat` drops it rather than the caller fighting it with a className.
+const BUTTON_PRIMARY_FLAT = 'bg-primary text-on-primary hover:bg-primary-hover'
 
 /** The button LOOK, without the element. `Button` is always a navigation, but a few marketing
  *  surfaces need the identical chrome on a real `<button>` that fires a server action (the
  *  double-opt-in confirm, the RSVP submit). Those call this instead of re-typing the classes,
- *  which is how the padding/radius drifted the first time. */
+ *  which is how the padding/radius drifted the first time.
+ *
+ *  `rounded-card`, not a radius step: at the DAWN base it IS the 24px `rounded-2xl` this used to
+ *  name, and as a ROLE it re-resolves under a Space page theme and a design switch, which is the
+ *  shape the block kit's CTA already took (ADR-578). */
 export function buttonClasses({
   variant = 'primary',
   size = 'md',
+  flat = false,
   className = '',
-}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
-  return `inline-flex items-center justify-center rounded-2xl font-bold transition-colors ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]} ${className}`
+}: { variant?: ButtonVariant; size?: ButtonSize; flat?: boolean; className?: string } = {}) {
+  const paint = flat && variant === 'primary' ? BUTTON_PRIMARY_FLAT : BUTTON_VARIANTS[variant]
+  return `inline-flex items-center justify-center rounded-card font-bold transition-colors ${BUTTON_SIZES[size]} ${paint} ${className}`
 }
 
 export function Button({
@@ -498,6 +539,25 @@ export function Button({
       {children}
     </Link>
   )
+}
+
+// ── The arrow link: the uppercase "read more →" text CTA ──────────────────────────────────────────
+// Seven call sites hand-typed this string (ZigZag here, four collection cards, two design blocks) in two
+// registers that had drifted apart: `inline` (tight tracking, the card/zigzag link) and `band` (the
+// eyebrow's tracking, the design blocks' browse link). Both registers are kept exactly; what changes is
+// that each is typed once.
+const ARROW_LINK = {
+  inline: 'inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide hover:underline',
+  band: 'inline-flex items-center gap-2 eyebrow hover:underline',
+} as const
+
+export function arrowLinkClasses({
+  ink = false,
+  register = 'inline',
+  className = '',
+}: { ink?: boolean; register?: keyof typeof ARROW_LINK; className?: string } = {}) {
+  // The accent takes the band (ADR-929): `text-primary` on ink, `-strong` on a light one.
+  return `${className} ${ARROW_LINK[register]} ${ink ? 'text-primary' : 'text-primary-strong'}`.trim()
 }
 
 // ── The outcome panel: one block for every "this worked / this did not" surface ───────────────
@@ -588,7 +648,7 @@ export function OutcomeSkeleton() {
           <div className="mx-auto h-5 w-full rounded bg-surface-elevated" />
           <div className="mx-auto h-5 w-3/4 rounded bg-surface-elevated" />
         </div>
-        <div className="mx-auto mt-8 h-12 w-48 rounded-2xl bg-surface-elevated" />
+        <div className="mx-auto mt-8 h-12 w-48 rounded-card bg-surface-elevated" />
       </div>
     </section>
   )
@@ -604,7 +664,7 @@ export function Card({
   className = '',
 }: {
   children: React.ReactNode
-  tone?: 'soft' | 'feature' | 'elevated' | 'highlight'
+  tone?: MarketingCardTone
   /**
    * The card's own padding, as a prop rather than a className override — for exactly the reason
    * the `highlight` tone below is a tone.
@@ -619,15 +679,55 @@ export function Card({
   pad?: string
   className?: string
 }) {
-  const tones = {
-    soft: 'bg-surface-elevated/60',
-    feature: 'border border-border bg-surface lift-1',
-    elevated: 'border border-border bg-surface shadow-pop',
-    // The one CHOSEN card in a set (the featured plan). A tone rather than a className override, so
-    // the border width cannot depend on which utility Tailwind happened to emit last.
-    highlight: 'border-2 border-primary bg-surface shadow-pop ring-4 ring-primary-bg',
-  } as const
-  return <div className={`rounded-2xl ${pad} ${tones[tone]} ${className}`}>{children}</div>
+  return <div className={cardClasses({ tone, pad, className })}>{children}</div>
+}
+
+export type MarketingCardTone = 'soft' | 'feature' | 'elevated' | 'highlight'
+
+const CARD_TONES: Record<MarketingCardTone, string> = {
+  soft: 'bg-surface-elevated/60',
+  feature: 'border border-border bg-surface lift-1',
+  elevated: 'border border-border bg-surface shadow-pop',
+  // The one CHOSEN card in a set (the featured plan). A tone rather than a className override, so
+  // the border width cannot depend on which utility Tailwind happened to emit last.
+  highlight: 'border-2 border-primary bg-surface shadow-pop ring-4 ring-primary-bg',
+}
+
+/** The card LOOK, without the element — for a surface that has to be an `<article>`, a `<figure>`
+ *  or a `<Link>` and still wear the one marketing card. `rounded-card` is the 24px `rounded-2xl`
+ *  this used to name at the DAWN base, as a role a design switch can retune. */
+export function cardClasses({
+  tone = 'soft',
+  pad = 'p-6',
+  className = '',
+}: { tone?: MarketingCardTone; pad?: string; className?: string } = {}) {
+  return `rounded-card ${pad} ${CARD_TONES[tone]} ${className}`
+}
+
+// ── The plan card shell + its ribbon ──────────────────────────────────────────────────────────────
+// The coded /pricing page and the Puck Tiers block (components/page-editor/blocks/dawn.tsx) each drew
+// the same plan card: the featured card floats (lift-2, primary border, taller via the negative block
+// margin, the ribbon), the rest rest on the page (lift-1). Both read their shell and ribbon from here,
+// so the two plan rows cannot drift and a design switch restyles them once. The CONTENT of each card
+// stays with its caller, because the two read different models (the live offering vs a block's props).
+
+/** The plan card's outer chrome. Pair it with `relative flex flex-col` on the element. */
+export function planCardClasses({ featured, ink = false }: { featured: boolean; ink?: boolean }) {
+  const shell = featured
+    ? `lift-2 border-2 border-primary p-7 sm:p-8 lg:-my-4 ${
+        ink ? 'bg-on-ink/5' : 'bg-surface ring-4 ring-primary-bg'
+      }`
+    : `lift-1 border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'}`
+  return `relative flex flex-col rounded-card ${shell}`
+}
+
+/** The featured plan's corner ribbon ("Recommended", "Most chosen"). Sits on the card's top edge. */
+export function PlanRibbon({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
+      {children}
+    </span>
+  )
 }
 
 export function Lead({ children }: { children: React.ReactNode }) {
@@ -675,7 +775,7 @@ export function Statement({
       <p
         className={`font-display uppercase max-w-3xl mx-auto text-center ${
           isInk ? 'text-on-ink' : 'text-text'
-        } text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]`}
+        } ${DISPLAY_TYPE.statement}`}
       >
         {children}
       </p>
@@ -718,7 +818,7 @@ export function PhotoBeat({
         {eyebrow && (
           <p className="eyebrow text-primary">{eyebrow}</p>
         )}
-        <p className="mt-4 font-display uppercase text-on-ink text-balance text-[clamp(2rem,4.6vw,3.5rem)] leading-[1.05]">
+        <p className={`mt-4 font-display uppercase text-on-ink text-balance ${DISPLAY_TYPE.beat}`}>
           {line}
         </p>
         {note && (
@@ -745,7 +845,7 @@ export function PhotoTrio({
         <Reveal
           as="figure"
           key={item.title}
-          className="lift-1 overflow-hidden rounded-2xl border border-border bg-surface"
+          className={cardClasses({ tone: 'feature', pad: '', className: 'overflow-hidden' })}
         >
           <SiteImage
             src={item.img}
@@ -821,7 +921,7 @@ export function ZigZag({
     <section className={`${bg} px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
         <div
-          className={`w-full ${wrapMax} rounded-2xl overflow-hidden border ${
+          className={`w-full ${wrapMax} rounded-card overflow-hidden border ${
             isInk ? 'border-ink-border shadow-pop' : 'border-border lift-1'
           } ${reverse ? 'md:order-last' : ''}`}
         >
@@ -867,9 +967,7 @@ export function ZigZag({
           {cta && (
             <Link
               href={safeHref(cta.href) ?? '#'}
-              className={`mt-6 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide hover:underline ${
-                isInk ? 'text-primary' : 'text-primary-strong'
-              }`}
+              className={arrowLinkClasses({ ink: isInk, className: 'mt-6' })}
             >
               {cta.label} <ArrowRight className="w-4 h-4" />
             </Link>
@@ -888,7 +986,7 @@ export function Marquee({ items }: { items: string[] }) {
     <div className="overflow-hidden border-y border-on-ink/10 py-5 select-none">
       <div className="flex w-max animate-marquee items-center whitespace-nowrap">
         {row.map((t, i) => (
-          <span key={i} className="flex items-center font-display uppercase text-3xl text-on-ink/15">
+          <span key={i} className="flex items-center font-display uppercase text-stat-sm text-on-ink/15">
             <span className="px-7">{t}</span>
             <span className="text-primary text-lead">&bull;</span>
           </span>
@@ -902,9 +1000,11 @@ export function Marquee({ items }: { items: string[] }) {
 // peer of The Lab and The Community. The two story pages sit as a pair; The Quest
 // rides underneath as the side thing we all do together. Place near the bottom of
 // each of those pages, above the BetaCTA. Token-only; Server Component.
+// `key` is the block's stored `current` value (an identifier in published documents, so it keeps the
+// old path); `href` is where the link lands now (/the-lab merged into /vision, 2026-10-14).
 const STORY_PAGES = [
-  { n: '1', label: 'The Lab', href: '/the-lab', tag: 'The place' },
-  { n: '2', label: 'The Community', href: '/the-community', tag: 'The people' },
+  { n: '1', label: 'The Lab', key: '/the-lab', href: LAB_HREF, tag: 'The place' },
+  { n: '2', label: 'The Community', key: '/the-community', href: '/the-community', tag: 'The people' },
 ] as const
 
 export function PillarNav({
@@ -929,9 +1029,9 @@ export function PillarNav({
         </p>
         <ol className="grid gap-4 sm:grid-cols-2">
           {STORY_PAGES.map((p) => {
-            const active = p.href === current
+            const active = p.key === current
             return (
-              <li key={p.href}>
+              <li key={p.key}>
                 {active ? (
                   <div
                     aria-current="page"
@@ -970,7 +1070,7 @@ export function PillarNav({
             <>
               The Quest is the light game everyone plays alongside their Circle.{' '}
               <Link
-                href="/the-quest"
+                href={QUEST_HREF}
                 className={isInk ? 'text-primary underline underline-offset-2' : 'text-primary-strong underline underline-offset-2'}
               >
                 How it works
@@ -1001,12 +1101,12 @@ function PillarFace({
   const sub = isInk ? 'text-on-ink-subtle' : 'text-subtle'
   return (
     <div className="flex items-baseline gap-3">
-      <span className={`font-display text-4xl leading-none ${active ? accent : isInk ? 'text-ink-border' : 'text-border-strong'}`}>
+      <span className={`font-display text-stat-md leading-none ${active ? accent : isInk ? 'text-ink-border' : 'text-border-strong'}`}>
         {n}
       </span>
       <div>
         <p className={`font-display uppercase text-page-title leading-none ${head}`}>{label}</p>
-        <p className={`mt-1.5 text-meta font-bold uppercase tracking-eyebrow ${active ? accent : sub}`}>
+        <p className={`mt-1.5 eyebrow ${active ? accent : sub}`}>
           {active ? 'You are here' : tag}
         </p>
       </div>

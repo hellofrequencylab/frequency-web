@@ -7,6 +7,7 @@ import { RankBadge } from '@/components/ui/rank-badge'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
 import { CosmeticBorder, CosmeticFlair, CosmeticTitle } from '@/components/profile/profile-cosmetics'
 import { resolveBorder, resolveFlair, resolveTitle } from '@/lib/store/cosmetics'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Vault layout module: Your Vault — Amplitude (the lifetime layer), the earning ledger, and
 // equipped winnings.
@@ -33,11 +34,11 @@ export async function VaultSummary() {
           </span>
         }
       />
-      <div className="rounded-2xl border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg p-5 lift-1">
+      <div className="rounded-card border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg p-5 lift-1">
         {/* Amplitude — lifetime XP beside the season rank; never resets. */}
         {hasAmplitude && (
           <div className="flex items-center justify-between rounded-xl bg-success-bg/50 px-3 py-2">
-            <span className="text-meta font-semibold uppercase tracking-wider text-signal">
+            <span className={capsLabel('text-meta font-semibold text-signal', 'wider')}>
               Amplitude · Level {amplitudeLevel(d.amplitude)}
             </span>
             <span className="flex items-center gap-1.5">
@@ -68,7 +69,7 @@ export async function VaultSummary() {
             is what "Equipped" was always claiming. */}
         {(border || flair || title) && (
           <div className="mt-4 border-t border-success/40 pt-3">
-            <span className="text-meta font-semibold uppercase tracking-wider text-signal">Equipped</span>
+            <span className={capsLabel('text-meta font-semibold text-signal', 'wider')}>Equipped</span>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               {border && (
                 <CosmeticBorder value={equipped.border}>

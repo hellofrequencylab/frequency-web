@@ -259,7 +259,7 @@ export function railFor(pathname: string): Rail {
   // its own operator info rail on the right, so the member right rail is suppressed.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
 
-  // The Pages workspace (/pages and its sub-managers: /pages/home, /pages/splash, /pages/sequences)
+  // The Pages workspace (/pages and its sub-managers: /pages/home, /pages/sequences and its Default Funnel tab)
   // is a member-accessible operator MANAGER (a list of pages to open + edit), not the /admin
   // workspace with its own info rail. So it keeps the GLOBAL community right rail like every other
   // member surface (owner directive, 2026-06-20: the right rail shows on every page) — it falls
@@ -553,6 +553,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // Settings + the centered single-task surfaces now keep the GLOBAL community rail too
   // (owner directive, 2026-06-20: the right rail shows on every member page).
   { route: '/settings', label: 'Settings', area: 'Member' },
+  { route: '/notifications', label: 'Notifications', area: 'Member' },
   { route: '/settings/profile', label: 'Profile editor', area: 'Member' },
   { route: '/codes', label: 'Personal codes / QR hub', area: 'Member' },
   { route: '/journal', label: 'Journal (Capture)', area: 'Member' },

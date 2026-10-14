@@ -366,7 +366,7 @@ export function MemberViewer({
                     aria-pressed={active}
                     onClick={() => chooseSort(o.key)}
                     className={cn(
-                      'rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors',
+                      'rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors',
                       active
                         ? 'bg-primary text-on-primary'
                         : 'text-muted hover:bg-surface-elevated hover:text-text',
@@ -447,7 +447,7 @@ export function MemberViewer({
                           chooseRow(m.id)
                         }}
                         className={cn(
-                          'cursor-pointer rounded-2xl transition-shadow',
+                          'cursor-pointer rounded-card transition-shadow',
                           m.id === effectiveSelectedId && 'ring-2 ring-primary/50',
                         )}
                       >
@@ -462,7 +462,7 @@ export function MemberViewer({
                     ))}
                   </div>
                 ) : (
-                  <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+                  <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
                     {visible.map((m) => (
                       <ListRow
                         key={m.id}
@@ -501,7 +501,7 @@ export function MemberViewer({
             scroll or sticky cap, so the member's stats stretch to their natural height and the page
             (not this panel) scrolls. The email editor opens in a popup, so this pane never has to hold it. */}
         <div ref={detailPaneRef} className="hidden min-w-0 flex-1 scroll-mt-4 lg:block">
-          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="rounded-card border border-border bg-surface p-5 lift-1">
             {detailPane}
           </div>
         </div>
@@ -514,7 +514,7 @@ export function MemberViewer({
             <button
               type="button"
               onClick={() => setOverlayOpen(false)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              className="inline-flex items-center gap-1.5 rounded-control px-2 py-1 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
               Back

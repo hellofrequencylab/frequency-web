@@ -96,7 +96,7 @@ export function ProfileSettingsDrawer({
 
             <div className="flex-1 space-y-6 p-4">
               {status && (
-                <p className="rounded-lg bg-success-bg/40 px-3 py-2 text-meta font-medium text-success">{status}</p>
+                <p className="rounded-control bg-success-bg/40 px-3 py-2 text-meta font-medium text-success">{status}</p>
               )}
 
               {/* Profile (name + bio) — the old "Edit (mod)" */}

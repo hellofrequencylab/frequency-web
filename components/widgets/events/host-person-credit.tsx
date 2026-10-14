@@ -12,6 +12,7 @@ import { messageHost } from '@/app/(main)/events/[slug]/social-actions'
 import { openDockThread } from '@/lib/messages/dock-open'
 import type { HostLite } from '@/lib/events/active-event'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The PERSON Host credit inside the Host & Co Hosts section — a client island so the row can open a
 // modal compose. CHROME-FREE on purpose: the section (host-cohost-section.tsx) owns the card border
@@ -75,13 +76,9 @@ export function HostPersonCredit({
       />
 
       {canMessage ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="mt-3 w-full rounded-xl bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" onClick={() => setOpen(true)} className="mt-3 w-full">
           Message Host
-        </button>
+        </Button>
       ) : (
         <Link
           href={signInHref}
@@ -92,7 +89,7 @@ export function HostPersonCredit({
       )}
 
       <Dialog open={open} onClose={close} ariaLabel={`Message ${host.display_name}`} className="max-w-md">
-        <div className="w-full rounded-2xl border border-border bg-surface p-6 lift-3">
+        <div className="w-full rounded-card border border-border bg-surface p-6 lift-3">
           {/* The larger host profile header. */}
           <div className="flex items-center gap-4">
             {host.avatar_url ? (
@@ -121,23 +118,18 @@ export function HostPersonCredit({
             <>
               <p className="mt-5 text-body-sm text-muted">Your message is on its way to {firstName}.</p>
               <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={close}
-                  className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                >
+                <Button type="button" variant="secondary" onClick={close}>
                   Done
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => {
                     openDockThread({ kind: 'dm', id: sentConversationId, title: host.display_name })
                     close()
                   }}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   Open the conversation
-                </button>
+                </Button>
               </div>
             </>
           ) : (
@@ -159,21 +151,12 @@ export function HostPersonCredit({
               {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
 
               <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={close}
-                  className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                >
+                <Button type="button" variant="secondary" onClick={close}>
                   Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={submit}
-                  disabled={isPending || !body.trim()}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-                >
+                </Button>
+                <Button type="button" onClick={submit} disabled={isPending || !body.trim()}>
                   {isPending ? 'Sending...' : 'Send message'}
-                </button>
+                </Button>
               </div>
             </>
           )}

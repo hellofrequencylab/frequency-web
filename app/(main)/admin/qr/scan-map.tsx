@@ -13,6 +13,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
 import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
 import type { ScanLocation } from '@/lib/qr/analytics'
+import { mapColor } from '@/lib/maps/css-color'
 
 // Keyless vector tiles (same default as the circles/discover maps). Loaded via
 // next/dynamic({ssr:false}) — maplibre must never run on the server. Plots one dot
@@ -29,7 +30,7 @@ const STYLE = MAPLIBRE_STYLE
 
 export default function ScanMap({
   locations,
-  className = 'h-full w-full overflow-hidden rounded-2xl border border-border',
+  className = 'h-full w-full overflow-hidden rounded-card border border-border',
 }: {
   locations: ScanLocation[]
   className?: string
@@ -64,11 +65,11 @@ export default function ScanMap({
         type: 'circle',
         source: 'scans',
         paint: {
-          'circle-color': '#E2912F',
+          'circle-color': mapColor('--design-map-pin'),
           'circle-opacity': 0.8,
           'circle-radius': ['interpolate', ['linear'], ['get', 'scans'], 1, 8, 50, 30],
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': mapColor('--design-map-pin-ring'),
         },
       })
       map.addLayer({
@@ -76,7 +77,7 @@ export default function ScanMap({
         type: 'symbol',
         source: 'scans',
         layout: { 'text-field': ['to-string', ['get', 'scans']], 'text-size': 11, 'text-font': ['Noto Sans Regular'] },
-        paint: { 'text-color': '#2A1B06' },
+        paint: { 'text-color': mapColor('--design-map-count') },
       })
 
       if (features.length > 0) {
@@ -95,8 +96,8 @@ export default function ScanMap({
         new maplibregl.Popup({ offset: 12, closeButton: false })
           .setLngLat(geom.coordinates as [number, number])
           .setHTML(
-            `<div style="font-weight:600;color:#2A1B06">${city}</div>` +
-              `<div style="font-size:13px;color:#A8631B">${scans} scan${scans === 1 ? '' : 's'}</div>`,
+            `<div style="font-weight:600;color:var(--design-map-count)">${city}</div>` +
+              `<div style="font-size:13px;color:var(--design-map-link)">${scans} scan${scans === 1 ? '' : 's'}</div>`,
           )
           .addTo(map)
       })

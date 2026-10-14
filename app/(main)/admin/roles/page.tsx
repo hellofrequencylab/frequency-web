@@ -99,10 +99,10 @@ export default async function AdminRolesPage() {
           {ROLE_HIERARCHY.map((r) => {
             const RoleIcon = ROLE_META[r].Icon
             return (
-              <div key={r} className="rounded-2xl border border-border bg-canvas/40 p-4">
+              <div key={r} className="rounded-card border border-border bg-canvas/40 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-elevated text-muted">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-control bg-surface-elevated text-muted">
                       <RoleIcon className="h-4 w-4" aria-hidden />
                     </span>
                     <RoleBadge role={r} size="lg" />

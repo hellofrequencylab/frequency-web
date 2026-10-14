@@ -1,7 +1,7 @@
-// SEO pillar (Labs track): "tools for community builders", "best tools to build a
+// SEO pillar (builder track): "tools for community builders", "best tools to build a
 // community", "community building software". Answer-first toolkit page. Speaks to
 // the Latent Leader / builder assembling the stack (CONTENT-VOICE §2b), not the
-// Seeker. Relational register, no health claims. Single-pillar Labs.
+// Seeker. Relational register, no health claims. Single-pillar builder page.
 import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
@@ -19,7 +19,7 @@ const SLUG = 'tools-for-community-builders'
 const PATH = '/tools-for-community-builders'
 const TITLE = 'Tools for community builders'
 const DESCRIPTION =
-  'The tools a community builder actually needs: a way in for new people, a place to gather, a shared feed, and recognition that brings folks back. Here is the toolkit, and how Frequency Labs covers it in one place.'
+  'The tools a community builder actually needs: a way in for new people, a place to gather, a shared feed, and recognition that brings folks back. Here is the toolkit, and how Frequency covers it in one place.'
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). Fed into the Article schema below so answer engines
@@ -34,12 +34,12 @@ const IMAGES = [
 // The dates the coded article published under. Kept here rather than in the document
 // because they belong to the ROUTE's Article node, not to the words an operator edits.
 const PUBLISHED = '2026-07-02'
-const UPDATED = '2026-07-02'
+const UPDATED = '2026-10-13'
 
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'Tools for community builders · Frequency'
 const OG_DESCRIPTION =
-  'Membership, gatherings, a shared feed, and recognition: the four tools every community builder needs, and how Frequency Labs covers them in one place.'
+  'Membership, gatherings, a shared feed, and recognition: the four tools every community builder needs, and how Frequency covers them in one place.'
 
 export function generateMetadata(): Metadata {
   return {

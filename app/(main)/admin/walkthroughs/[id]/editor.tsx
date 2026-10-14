@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Check, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
+  Check, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AdminTemplate } from '@/components/templates'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
@@ -154,23 +154,22 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
   const step = wt.steps[selected] as WalkthroughStep | undefined
 
+  // The header COMPOSES AdminTemplate (PAGE-FRAMEWORK §3/§8.1) instead of hand-rolling a back-link +
+  // <h1> band, the same move the Theme Studio editor made. The title tracks the live name and the
+  // save state rides the actions slot, which is why the shell lives here and not in the server page.
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      {/* Header band */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href="/admin/walkthroughs"
-            className="inline-flex items-center gap-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to Walkthroughs
-          </Link>
-          <h1 className="mt-1 text-lead font-bold text-text">{wt.name || 'Untitled walkthrough'}</h1>
-          {!persisted && (
-            <p className="text-2xs text-warning">Draft. Save to create it (the table appears once migrated).</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
+    <AdminTemplate
+      title={wt.name || 'Untitled walkthrough'}
+      back={{ href: '/admin/walkthroughs', label: 'Back to Walkthroughs' }}
+      description={
+        !persisted ? (
+          <span className="text-warning">Draft. Save to create it (the table appears once migrated).</span>
+        ) : undefined
+      }
+      adminBar={false}
+      width="wide"
+      actions={
+        <>
           {dirty && <span className="text-2xs font-medium text-warning">Unsaved</span>}
           {saved && (
             <span className="inline-flex items-center gap-1 text-2xs font-semibold text-success">
@@ -181,14 +180,14 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             {pending ? 'Saving…' : 'Save'}
           </Button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       <div className="grid gap-5 lg:grid-cols-2">
         {/* ── LEFT: controls ── */}
         <div className="space-y-5">
           {/* Sequence meta */}
-          <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
             <h2 className="text-body font-bold text-text">Sequence</h2>
             <Field label="Name" labelClassName={lbl}>
               <Input value={wt.name} onChange={(e) => setMeta('name', e.target.value)} />
@@ -286,7 +285,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           </div>
 
           {/* Slide list */}
-          <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-1">
             <div className="flex items-center justify-between">
               <h2 className="text-body font-bold text-text">Slides</h2>
               <Button type="button" variant="secondary" size="sm" onClick={addStep}>
@@ -294,7 +293,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               </Button>
             </div>
             {wt.steps.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-body-sm text-subtle">
+              <p className="rounded-control border border-dashed border-border px-3 py-6 text-center text-body-sm text-subtle">
                 No slides yet. Add one to start.
               </p>
             ) : (
@@ -354,7 +353,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
           {/* Per-slide editor */}
           {step && (
-            <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+            <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
               <h2 className="text-body font-bold text-text">Slide {selected + 1}</h2>
               <Field label="Title" labelClassName={lbl}>
                 <Input value={step.title} onChange={(e) => setStep(selected, { title: e.target.value })} />
@@ -412,7 +411,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               {/* Layout toggle */}
               <div>
                 <span className={groupLbl}>Layout</span>
-                <div className="inline-flex rounded-lg border border-border bg-surface p-0.5">
+                <div className="inline-flex rounded-control border border-border bg-surface p-0.5">
                   {LAYOUTS.map((l) => (
                     <button
                       key={l}
@@ -436,7 +435,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     type="button"
                     aria-pressed={!step.icon}
                     onClick={() => setStep(selected, { icon: undefined })}
-                    className={`rounded-lg border px-2 py-1.5 text-2xs font-medium transition-colors ${
+                    className={`rounded-control border px-2 py-1.5 text-2xs font-medium transition-colors ${
                       !step.icon ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-subtle hover:bg-surface-elevated'
                     }`}
                   >
@@ -449,7 +448,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                       aria-label={name}
                       aria-pressed={step.icon === name}
                       onClick={() => setStep(selected, { icon: name })}
-                      className={`rounded-lg border p-2 transition-colors ${
+                      className={`rounded-control border p-2 transition-colors ${
                         step.icon === name ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted hover:bg-surface-elevated'
                       }`}
                     >
@@ -521,6 +520,6 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           </p>
         </div>
       </div>
-    </div>
+    </AdminTemplate>
   )
 }

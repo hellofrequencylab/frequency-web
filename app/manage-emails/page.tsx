@@ -18,6 +18,8 @@ import {
 } from '@/lib/notification-preferences'
 import { isPreferenceWired } from '@/lib/notifications/wired'
 import { ManageEmailsForm, type EmailCategoryState } from './manage-form'
+import { FrequencyUtilityCard } from '@/components/frequency/site/pages/legal/legal-reading'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Token-authorised transactional landing (reached from an email link, never crawled). noindex as
 // defense-in-depth so the URL can never enter the index.
@@ -81,6 +83,15 @@ function Layout({
   description?: React.ReactNode
   children: React.ReactNode
 }) {
+  // Under Frequency (ADR-1737, build-time) the card sits in the public site shell on Commons
+  // (app/manage-emails/layout.tsx), which already carries the wordmark; DAWN is unchanged below.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FrequencyUtilityCard title={title} description={description}>
+        {children}
+      </FrequencyUtilityCard>
+    )
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
       <div className="max-w-md w-full bg-surface border border-border rounded-card lift-1 p-8">

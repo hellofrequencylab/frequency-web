@@ -32,7 +32,7 @@ export function InviteLinkButton({ circleId }: { circleId: string }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
+      className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
       aria-label={copied ? 'Link copied!' : 'Copy invite link'}
       title={copied ? 'Link copied!' : 'Copy invite link'}
     >

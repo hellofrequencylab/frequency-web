@@ -119,6 +119,11 @@ export function isResting(rest: RestWindow | null | undefined, today: string): b
 // "life happens" kindness, info teal + snowflake — had no live producer anywhere in the
 // app and the rail painted a deliberate rest as a MISS (LIVE-101).
 
+/** How many streak freezes the member has banked (profiles.meta.practiceStreak). Pure. */
+export function freezeTokensFrom(meta: Record<string, unknown> | null | undefined): number {
+  return readStored(meta).freezeTokens
+}
+
 /**
  * The days a member's stored streak augmentation has COVERED as of `today`: reserve days
  * already spent (`frozenDates`) plus every day an active rest window covers. Pure — it

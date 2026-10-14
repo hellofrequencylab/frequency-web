@@ -92,13 +92,13 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
           </form>
 
           {featured.length === 0 ? (
-            <p className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-meta text-subtle">
+            <p className="rounded-control border border-border bg-surface-elevated px-3 py-2 text-meta text-subtle">
               Nothing featured yet. The home page falls back to the latest public posts until Vera curates a set.
             </p>
           ) : (
             <ul className="space-y-2">
               {featured.map((post) => (
-                <li key={post.id} className="flex items-start gap-3 rounded-lg border border-border bg-surface-elevated px-3 py-2">
+                <li key={post.id} className="flex items-start gap-3 rounded-control border border-border bg-surface-elevated px-3 py-2">
                   <div className="min-w-0 flex-1">
                     <p className="text-meta font-semibold text-text">
                       {post.author_display_name ?? 'Community member'}

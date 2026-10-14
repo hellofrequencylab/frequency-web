@@ -4,6 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Sparkles, ArrowRight, ArrowLeft, Pause, X } from 'lucide-react'
 import type { SpotlightStop } from '@/lib/onboarding/spotlight'
 import { setSpotlightTourState } from '@/app/onboarding/tour-actions'
+import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The guided spotlight tour (the "site tour" Vera walks new members through). It
 // dims the whole page and cuts a lit window around one real surface at a time
@@ -156,7 +158,7 @@ export function SpotlightTour({
         ref={cardRef}
         tabIndex={-1}
         style={anchored ? { top: cardPos!.top, left: cardPos!.left } : undefined}
-        className={`absolute w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-surface p-4 lift-3 outline-none motion-safe:animate-cue-pop ${
+        className={`absolute w-80 max-w-[calc(100vw-1.5rem)] rounded-card border border-border bg-surface p-4 lift-3 outline-none motion-safe:animate-cue-pop ${
           anchored ? '' : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
         }`}
       >
@@ -165,7 +167,7 @@ export function SpotlightTour({
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-2xs font-semibold uppercase tracking-wider text-primary-strong">Vera</p>
+            <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'wider')}>Vera</p>
             <h2 id="spotlight-title" className="mt-0.5 text-body-sm font-bold text-text">{stop.title}</h2>
             <p className="mt-1 text-body-sm leading-snug text-muted">{stop.body}</p>
           </div>
@@ -173,7 +175,7 @@ export function SpotlightTour({
             type="button"
             onClick={pause}
             aria-label="Pause tour"
-            className="-mr-1 -mt-1 rounded-lg p-1 text-subtle transition-colors hover:text-text"
+            className="-mr-1 -mt-1 rounded-control p-1 text-subtle transition-colors hover:text-text"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -202,18 +204,18 @@ export function SpotlightTour({
               <button
                 type="button"
                 onClick={() => setI((n) => n - 1)}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
+                className="inline-flex items-center gap-1 rounded-control px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
               >
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
               </button>
             )}
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               {last ? 'Done' : 'Next'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </button>
+            </Button>
           </div>
         </div>
         <p className="mt-1.5 text-center text-2xs tabular-nums text-muted">

@@ -1,0 +1,174 @@
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+import { DEFAULT_DESIGN, DESIGNS, isDesignId, resolveDesign } from './design'
+import { ALIAS_STUB, STUB_DIR, designSheets, renderStubs } from '../../scripts/lib/design-styles.mjs'
+
+// THE DESIGN SWITCH CONTRACT (ADR-1737). A design other than DAWN is one CSS file that redefines
+// DAWN's own token names under `[data-design="<id>"]`. These assertions hold the three ways that can
+// drift: a registered design with no sheet, a sheet the root layout never loads, and a sheet that
+// declares a name DAWN does not have (a typo, or a token nothing reads).
+
+const globals = readFileSync('app/globals.css', 'utf8')
+const layout = readFileSync('app/layout.tsx', 'utf8')
+
+/** Every custom property DAWN declares anywhere in globals.css. */
+const dawnNames = new Set([...globals.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1]))
+
+describe('the design registry', () => {
+  it('reads an unset or unknown switch as DAWN, so a missing variable never ships a half-built system', () => {
+    expect(DEFAULT_DESIGN).toBe('dawn')
+    expect(resolveDesign(undefined)).toBe('dawn')
+    expect(resolveDesign('')).toBe('dawn')
+    expect(resolveDesign('midnight')).toBe('dawn')
+    expect(resolveDesign('frequency')).toBe('frequency')
+    expect(isDesignId('dawn')).toBe(true)
+  })
+
+  it('gives every design browser-chrome colours as hex', () => {
+    for (const d of DESIGNS) {
+      expect(d.chrome.light).toMatch(/^#[0-9a-f]{6}$/i)
+      expect(d.chrome.dark).toMatch(/^#[0-9a-f]{6}$/i)
+    }
+  })
+})
+
+describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) => {
+  const path = `app/themes/${id}.css`
+
+  it('exists and is loaded by the root layout, through its stub', () => {
+    expect(existsSync(path)).toBe(true)
+    expect(layout).toContain(`import "./themes/active/${ALIAS_STUB}"`)
+    expect(renderStubs(id, [id])[ALIAS_STUB]).toContain(`import '../${id}.css'`)
+  })
+
+  const sheet = existsSync(path) ? readFileSync(path, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') : ''
+
+  it('scopes every rule to its own data-design attribute', () => {
+    const selectors = [...sheet.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter(Boolean)
+    for (const sel of selectors) expect(sel, sel).toContain(`[data-design="${id}"]`)
+  })
+
+  // ADR-1740: a design is its OWN vocabulary in a generated core sheet (app/themes/<id>/core.css, every
+  // name in a `--<prefix>-` namespace), plus this alias layer pointing DAWN's names at it.
+  const corePath = `app/themes/${id}/core.css`
+  const core = existsSync(corePath) ? readFileSync(corePath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') : ''
+  const coreNames = new Set([...core.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1]))
+
+  it('declares only DAWN names, or names its installed core declares', () => {
+    const declared = [...sheet.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1])
+    const unknown = declared.filter((n) => !dawnNames.has(n) && !coreNames.has(n))
+    expect(unknown, `neither a DAWN token nor one the core declares: ${unknown.join(', ')}`).toEqual([])
+  })
+
+  it('reads only --fq- names its core declares (a typo would silently fall back to nothing)', () => {
+    const read = [...sheet.matchAll(/var\((--fq-[a-z0-9-]+)/gi)].map((m) => m[1])
+    const missing = [...new Set(read)].filter((n) => !coreNames.has(n))
+    expect(missing, `read but never declared by the core: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('loads the generated core before the alias layer', () => {
+    const coreAt = layout.indexOf(`import "./themes/active/core"`)
+    const aliasAt = layout.indexOf(`import "./themes/active/${ALIAS_STUB}"`)
+    expect(coreAt, 'the core stub is imported by the root layout').toBeGreaterThan(-1)
+    expect(coreAt).toBeLessThan(aliasAt)
+    expect(renderStubs(id, [id]).core).toContain(`import '../${id}/core.css'`)
+  })
+
+  it('keeps the generated core inert outside the design and inside its own namespace', () => {
+    const heads = [...core.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter(Boolean)
+    for (const h of heads) {
+      if (/^(@keyframes|@media|@layer|from$|to$|\d+%|\.fq-)/.test(h)) continue
+      expect(h, h).toContain(`[data-design="${id}"]`)
+    }
+    const declared = [...core.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1])
+    expect(declared.filter((n) => !n.startsWith('--fq-'))).toEqual([])
+    expect(core).not.toMatch(/@import/)
+    // A relative url() cannot resolve from app/themes/ and fails the whole build (2026-10-13).
+    expect(core).not.toMatch(/url\(['"]?\.\.?\//)
+  })
+})
+
+describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
+  it('wears Frequency, switches the older layers off, and offers Default (Frequency) and its own Midnight', async () => {
+    const { vi } = await import('vitest')
+    vi.resetModules()
+    vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', 'frequency')
+    try {
+      const design = await import('./design')
+      const skins = await import('./skins')
+      expect(design.SITE_DESIGN).toBe('frequency')
+      expect(design.LEGACY_THEME_AXES).toBe(false)
+      expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
+      // The picker names the default skin after the design it is, never "Dawn" under Frequency.
+      expect(skins.SELECTABLE_SKINS.map((s) => s.label)).toEqual(['Default', 'Midnight'])
+      expect(skins.resolveSkin('midnight')).toBe('midnight')
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
+  it('wears DAWN with every layer on when the variable is unset', async () => {
+    const { vi } = await import('vitest')
+    vi.resetModules()
+    vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', '')
+    try {
+      const design = await import('./design')
+      const skins = await import('./skins')
+      expect(design.SITE_DESIGN).toBe('dawn')
+      expect(design.LEGACY_THEME_AXES).toBe(true)
+      expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+})
+
+// STYLES PER DESIGN (scripts/lib/design-styles.mjs). A CSS import is not tree-shaken by a runtime
+// `SITE_DESIGN` branch, so a sheet imported directly ships in every deploy, DAWN's included. Code reaches a
+// design's sheets only through the app/themes/active/ stubs, which write-design-assets.mjs points at the
+// build's design; the committed stubs are DAWN's (empty), like lib/theme/design-fonts/active.ts.
+describe('styles per design', () => {
+  const ids = DESIGNS.map((d) => d.id)
+  const onDisk = readdirSync(STUB_DIR)
+    .filter((f) => f.endsWith('.ts'))
+    .map((f) => f.slice(0, -3))
+    .sort()
+
+  it("commits every stub as DAWN's (empty), one per design sheet and no others", () => {
+    const dawn = renderStubs('dawn', ids)
+    expect(onDisk).toEqual(Object.keys(dawn).sort())
+    for (const name of onDisk) {
+      const src = readFileSync(`${STUB_DIR}/${name}.ts`, 'utf8')
+      expect(src, `${STUB_DIR}/${name}.ts: run \`pnpm design:use dawn\` before committing`).toBe(dawn[name])
+      expect(src).not.toMatch(/^import /m)
+    }
+  })
+
+  it('points every stub at its own sheet when the build wears that design', () => {
+    for (const id of ids.filter((d) => d !== 'dawn')) {
+      const stubs = renderStubs(id, ids)
+      const sheets = designSheets([id])
+      expect(sheets.length).toBeGreaterThan(1)
+      for (const s of sheets) {
+        expect(stubs[s.stub].split('\n')).toContain(`import '${s.href}'`)
+        expect(existsSync(`${STUB_DIR}/${s.href}`), s.href).toBe(true)
+      }
+    }
+  })
+
+  it('no code imports a design sheet directly (only the generated stubs may)', () => {
+    const others = ids.filter((d) => d !== 'dawn').join('|')
+    const direct = new RegExp(`(?:\\bimport\\b|@import)[^'"\\n]*['"](?:[^'"]*/)?(?:${others})(?:/[^'"]*)?\\.css['"]`)
+    const offenders: string[] = []
+    for (const root of ['app', 'components', 'lib']) {
+      for (const rel of readdirSync(root, { recursive: true }) as string[]) {
+        const file = `${root}/${rel}`
+        if (!/\.(tsx?|css|mjs)$/.test(file) || file.startsWith(`${STUB_DIR}/`)) continue
+        if (direct.test(readFileSync(file, 'utf8'))) offenders.push(file)
+      }
+    }
+    expect(offenders, 'import the app/themes/active/<sheet> stub instead').toEqual([])
+  })
+})

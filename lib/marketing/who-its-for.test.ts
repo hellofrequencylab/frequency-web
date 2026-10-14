@@ -11,6 +11,13 @@ describe('who Frequency is for (ADR-1715)', () => {
     }
   })
 
+  // LIVE-912: comped Crew ends at public launch (R2) and Crew is positioned as support first (R8),
+  // so the list may not promise that Crew keeps Frequency free for everyone.
+  it('frames Crew as backing Frequency, never as keeping it free for everyone', () => {
+    expect(all).toMatch(/back Frequency with Crew/)
+    expect(all).not.toMatch(/free for everyone/i)
+  })
+
   it('never says an internal archetype name, "seekers", or an em dash', () => {
     expect(all).not.toMatch(ARCHETYPE_NAME_RE)
     expect(all).not.toMatch(/\bseekers\b/i)

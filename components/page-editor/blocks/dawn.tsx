@@ -52,6 +52,8 @@ import {
   Body,
   Card,
   PillarNav,
+  PlanRibbon,
+  planCardClasses,
 } from '@/components/marketing/marketing-ui'
 import { SiteImage } from '@/components/marketing/site-image'
 import { Reveal } from '@/components/marketing/motion'
@@ -763,18 +765,9 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
 /** One plan card. `featured` is the row's floating middle card (lift-2, primary
  *  border, the badge, taller via the negative block margin). */
 function PlanCard({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
-  const shell = plan.featured
-    ? `lift-2 border-2 border-primary p-7 sm:p-8 lg:-my-4 ${
-        ink ? 'bg-on-ink/5' : 'bg-surface ring-4 ring-primary-bg'
-      }`
-    : `lift-1 border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'}`
   return (
-    <Reveal as="article" className={`relative flex flex-col rounded-card ${shell}`}>
-      {plan.featured && (
-        <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
-          Most chosen
-        </span>
-      )}
+    <Reveal as="article" className={planCardClasses({ featured: plan.featured, ink })}>
+      {plan.featured && <PlanRibbon>Most chosen</PlanRibbon>}
       <h3
         className={`font-display uppercase ${plan.featured ? 'text-3xl' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
@@ -1408,7 +1401,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         {
           icon: 'HandHeart',
           title: 'One honest price',
-          body: 'Zero percent on your own bookings, always, and taking money is never behind a plan. One price, no surprise invoices.',
+          body: 'Zero percent on your own bookings, plus card processing. Hosting is free and selling starts at Business. One price, no surprise invoices.',
         },
         {
           icon: 'Home',
@@ -1661,7 +1654,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           forWho: 'Anyone who wants to find their people, go to things, and join Circles.',
           rate: '',
           featured: 'normal',
-          ctaLabel: 'Join free',
+          ctaLabel: 'Find your Circle',
           ctaHref: '/join',
         },
         {
@@ -1688,7 +1681,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           yearly: '',
           billing: 'Free forever. No card.',
           trial: '',
-          forWho: 'Anyone opening a Space: every business tool with launch-sized limits, and tips with no fee. Selling starts at Business.',
+          forWho: 'Anyone opening a Space: every business tool with launch-sized limits, and tips with no platform fee, plus card processing. Selling starts at Business.',
           rate: '',
           featured: 'featured',
           ctaLabel: 'Start a Space',
@@ -1797,7 +1790,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         },
         {
           name: 'Pick a standing time',
-          text: 'Same day, same hour, every week. A standing time is what turns a plan into a habit.',
+          text: 'Same day, same hour, on repeat. A standing time is what turns a plan into a habit.',
           image: '',
           alt: '',
         },

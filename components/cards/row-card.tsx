@@ -1,4 +1,70 @@
 import Link from 'next/link'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.card` as a row (`mu-row`): the `.t1` title, `.t2` context and
+// meta, the anchor on the left, controls on the right; a linked row lifts like an `a.card`
+// (app/themes/frequency/members-ui.css). Inlined at build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
+function FrequencyRowCard({
+  href,
+  anchor,
+  title,
+  badge,
+  context,
+  description,
+  meta,
+  trailing,
+  actions,
+  footer,
+  dimmed,
+}: Parameters<typeof RowCard>[0]) {
+  const managed = Boolean(actions || footer)
+  const body = (
+    <>
+      {anchor && <div className="shrink-0">{anchor}</div>}
+      <div className="grow" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="row wrap" style={{ gap: 8 }}>
+          {managed && href ? (
+            <Link href={href} className="t1">
+              {title}
+            </Link>
+          ) : (
+            <h3 className="t1">{title}</h3>
+          )}
+          {badge}
+        </div>
+        {context && <div className="t2 truncate">{context}</div>}
+        {description && <div className="t2 line-clamp-1">{description}</div>}
+        {meta && <div className="mu-emeta" style={{ paddingTop: 2 }}>{meta}</div>}
+      </div>
+    </>
+  )
+  const dim = dimmed ? ' mu-dim' : ''
+  if (managed) {
+    return (
+      <div className={`card mu-row mu-managed${dim}`}>
+        <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3.5">{body}</div>
+          {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+        </div>
+        {footer && <div className="mu-efoot">{footer}</div>}
+      </div>
+    )
+  }
+  const row = (
+    <>
+      {body}
+      {trailing && <div className="shrink-0">{trailing}</div>}
+    </>
+  )
+  if (!href) return <div className={`card mu-row${dim}`}>{row}</div>
+  return (
+    <Link href={href} className={`card mu-row${dim}`}>
+      {row}
+    </Link>
+  )
+}
 
 // RowCard — the compact, dense-row sibling of EntityCard (docs/MEMBER-DESIGN-SYSTEM.md
 // §5): one object per row for list surfaces where a full card grid is too heavy
@@ -66,6 +132,23 @@ export function RowCard({
 }) {
   // Anchor mode is the DEFAULT, and any interactive slot cancels it: a control bar inside the
   // row's own <Link> would nest interactive elements in an anchor.
+  if (FREQUENCY) {
+    return (
+      <FrequencyRowCard
+        href={href}
+        anchor={anchor}
+        title={title}
+        badge={badge}
+        context={context}
+        description={description}
+        meta={meta}
+        trailing={trailing}
+        actions={actions}
+        footer={footer}
+        dimmed={dimmed}
+      />
+    )
+  }
   const managed = Boolean(actions || footer)
 
   const body = (
@@ -99,7 +182,7 @@ export function RowCard({
   // every content zone keeps the same px-5 inset.
   // `transform` joins the transition list so `.press` below eases instead of snapping; the
   // motion-reduce guard was already here and still covers it.
-  const surface = `rounded-2xl border border-border bg-surface lift-1 transition-[color,background-color,border-color,box-shadow,transform] hover:border-primary-bg motion-reduce:transition-none ${
+  const surface = `rounded-card border border-border bg-surface lift-1 transition-[color,background-color,border-color,box-shadow,transform] hover:border-primary-bg motion-reduce:transition-none ${
     dimmed ? 'opacity-[0.72]' : ''
   }`
   const pad = 'px-5 py-4'

@@ -5,10 +5,13 @@
 
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
+import { FrequencyUtilityCard } from '@/components/frequency/site/pages/legal/legal-reading'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // ── Layout helpers ─────────────────────────────────────────────────────
 
-export function Layout({
+export function UnsubscribeFrame({
   title,
   description,
   children,
@@ -17,6 +20,15 @@ export function Layout({
   description?: React.ReactNode
   children: React.ReactNode
 }) {
+  // Under Frequency (ADR-1737, build-time) the card sits in the public site shell on Commons
+  // (app/unsubscribe/layout.tsx), which already carries the wordmark; DAWN is unchanged below.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FrequencyUtilityCard title={title} description={description}>
+        {children}
+      </FrequencyUtilityCard>
+    )
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
       <div className="max-w-md w-full bg-surface border border-border rounded-card lift-1 p-8">
@@ -43,7 +55,7 @@ export function ManageLink() {
     <div className="pt-3">
       <Link
         href="/settings#notifications"
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary text-body-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors"
+        className={buttonClasses('primary', 'md')}
       >
         Manage all preferences →
       </Link>

@@ -19,7 +19,7 @@ const loadPanel = () => import('./support-chat-widget')
 const SupportChatPanel = dynamic(() => loadPanel().then((m) => m.SupportChatPanel), {
   ssr: false,
   loading: () => (
-    <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] items-center justify-center rounded-2xl border border-border bg-surface shadow-pop">
+    <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] items-center justify-center rounded-card border border-border bg-surface shadow-pop">
       <Loader2 className="h-5 w-5 animate-spin text-muted" aria-hidden />
     </div>
   ),

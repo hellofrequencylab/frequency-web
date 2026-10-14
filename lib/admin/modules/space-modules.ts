@@ -134,8 +134,8 @@ export interface SpaceModule {
   /** BOX CONSOLIDATION (ADR-782, widened by ADR-846, folded to five by ADR-1432 / LIVE-246): the id of
    *  the PARENT box this module folds UNDER, so the menu reads as ONE box per area with its tools nested
    *  (Page / Reviews / Plan and billing / Danger under Your page; Team + CRM cluster under Your people;
-   *  Calendar / libraries / Your reach under Gather; Shop + the commerce services under Money; Email
-   *  trio under Reach). The module stays a first-class catalog row (still gated, still deep-linkable,
+   *  Calendar / libraries under Gather; Shop + the commerce services under Money; Your reach + the Email
+   *  trio under Reach, ADR-1746). The module stays a first-class catalog row (still gated, still deep-linkable,
    *  still reachable); it is simply owned by its box rather than standing as its own top-level card. A
    *  TOP-LEVEL BOX omits this field, and there are exactly FIVE of them (CORE-MODEL §5.4). Nesting is ONE
    *  level deep: a parent may never itself carry a `parent`. */
@@ -297,14 +297,13 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // QR codes ⇒ one Reach group on both surfaces. (`comms` stays live for the core-entity CRM modules in
   // ADMIN_MODULES; only the Space rows move.)
   // The operator RECEIPT (LIVE-265, docs/CORE-MODEL.md Phase 10 §8.4): what the network sent you, and what
-  // would send more. THE THIRTEENTH TOP-LEVEL BOX (ADR-1313, amending ADR-846's twelve): it moved to the
-  // Content & Programs tab, and a tool that files under a different tab than its box is exactly the orphan
-  // class ADR-1313 removes, so the `parent: 'space.reach'` it carried came off with the move. It renders one
-  // step further out on the admin rail as a result (orderByBox indents by `parent`), which is the cost the
-  // ruling accepted. No gate and no feature key: every Space is ranked in the directory whether or not it
+  // would send more. ADR-1313 moved it to Content & Programs; the owner ruling of 2026-10-14 (ADR-1746,
+  // amending ADR-1313) moves it BACK to Marketing, next to Reach: it is a read on outbound reach, the same
+  // job as the QR scans and email stats beside it. It files under the Reach box again (`parent:
+  // 'space.reach'`), so the tool and its box share one tab and the orphan guard holds. No gate and no feature key: every Space is ranked in the directory whether or not it
   // pays for anything, so every Space can see why. That is the point of the page, and gating it would
   // contradict it.
-  { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', hub: 'programs', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included', parent: 'space.content' },
+  { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', hub: 'marketing', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included', parent: 'space.reach' },
 
   { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: emailCatalogNote(), parent: 'space.reach' },
   // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio

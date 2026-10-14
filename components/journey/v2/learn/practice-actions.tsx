@@ -14,6 +14,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Timer } from 'lucide-react'
+import { Button, buttonClasses, buttonGeometry } from '@/components/ui/button'
 import { useMindless } from '@/components/on-air/mindless'
 import { useMovement } from '@/components/on-air/movement'
 import { logPracticeAction } from '@/app/(main)/practices/actions'
@@ -100,8 +101,6 @@ export function PracticeActions({
     })
   }
 
-  const base =
-    'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg px-4 text-body-sm font-semibold transition-colors disabled:opacity-60'
   const restLogged = logged && !done
 
   return (
@@ -109,13 +108,13 @@ export function PracticeActions({
       <div className="flex flex-wrap items-center gap-2">
         {usesTimer ? (
           // Practice — opens the timer overlay pre-set to this practice. No navigation.
-          <button
+          <Button
             type="button"
             onClick={openTimer}
-            className={`${base} bg-primary text-on-primary hover:bg-primary-hover`}
+            className="min-h-[44px]"
           >
             <Timer className="h-4 w-4 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Start Practice'}
-          </button>
+          </Button>
         ) : (
           // Log it — earns Zaps + a streak tick. Confirms inline, then resets.
           <button
@@ -123,11 +122,11 @@ export function PracticeActions({
             onClick={log}
             disabled={pending}
             aria-live="polite"
-            className={`${base} ${
+            className={
               restLogged
-                ? 'border border-success/40 bg-success-bg text-success'
-                : 'bg-primary text-on-primary hover:bg-primary-hover'
-            }`}
+                ? buttonGeometry('md', 'min-h-[44px] border border-success/40 bg-success-bg text-success')
+                : buttonClasses('primary', 'md', 'min-h-[44px]')
+            }
           >
             {pending ? (
               <>

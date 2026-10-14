@@ -6,6 +6,7 @@
 // owner-checked plan actions (so the season Studio builder can retire). Autosaves: text on blur,
 // toggles/selects on change; never blocks the editor.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Repeat, Video, MapPin, Users, Clock } from 'lucide-react'
@@ -232,7 +233,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           {/* Header overlay — the shared None / Shade / Blend control (ADR-794). None keeps a clean photo,
               Shade darkens it, Blend fades it into the page; Shade/Blend take a pickable color. Autosaves. */}
           <div>
-            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Header overlay</span>
+            <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>Header overlay</span>
             <div className="flex flex-wrap gap-2">
               {([['none', 'None'], ['shadow', 'Shade'], ['fade', 'Blend']] as const).map(([v, label]) => {
                 const active = overlayStyle === v
@@ -242,7 +243,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                     type="button"
                     onClick={() => { setOverlayStyle(v); meta({ headerOverlayStyle: v }) }}
                     aria-pressed={active}
-                    className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
+                    className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                       active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-canvas text-muted hover:border-border-strong'
                     }`}
                   >
@@ -275,10 +276,10 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* Delivery + rewards */}
       <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Delivery and rewards</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>Delivery and rewards</p>
         <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+          <span className={capsLabel('inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
             <Gem className="h-3.5 w-3.5" /> Completion Gems
           </span>
           <Input
@@ -292,7 +293,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+          <span className={capsLabel('inline-flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
             <CalendarClock className="h-3.5 w-3.5" /> Phase drip (days)
           </span>
           <Input
@@ -326,7 +327,7 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
         {/* Certificate — a proper on/off switch (the shared settings Toggle), in its own clear row
             so the control isn't cramped beside the number inputs. */}
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-canvas px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3 rounded-control border border-border bg-canvas px-3 py-2.5">
           <span className="flex min-w-0 flex-col">
             <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-text">
               <Award className="h-4 w-4 text-rank-gold" aria-hidden /> Certificate
@@ -346,7 +347,7 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* Publish / visibility */}
       <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Who can see it</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>Who can see it</p>
         <div className="flex flex-wrap items-center gap-2 text-meta">
         {([
           ['private', Lock, 'Just me'],
@@ -372,7 +373,7 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* Discovery + delivery attributes (ADR-302) */}
       <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">More</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>More</p>
 
         <div>
           <span className="mb-1 block text-2xs font-medium text-muted">Difficulty</span>
@@ -448,7 +449,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           chooses. Both share the same controls and persist through one setJourneyMeeting call (the
           flat fields for the Meetup, the nested `gathering` for the Gathering). */}
       <div className="space-y-5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">How the Circle gathers</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>How the Circle gathers</p>
 
         {/* Circle Meetup — the mid-week touchpoint, on the flat fields. */}
         <TouchpointForm

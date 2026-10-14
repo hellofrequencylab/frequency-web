@@ -25,7 +25,7 @@ export function FounderClaim() {
   if (!earned) return null
 
   return (
-    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-signal-strong/30 bg-signal-bg px-4 py-3">
+    <div className="mb-4 flex items-center gap-3 rounded-card border border-signal-strong/30 bg-signal-bg px-4 py-3">
       {earned.badge ? <Rocket className="h-5 w-5 shrink-0 text-signal" aria-hidden /> : <Gem className="h-5 w-5 shrink-0 text-signal" aria-hidden />}
       <p className="text-body-sm font-semibold text-signal">
         {earned.badge ? 'Founder’s First Week complete. Badge earned! ' : ''}

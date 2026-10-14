@@ -38,9 +38,7 @@ export const EDITABLE_PAGES = [
   { slug: 'home', title: 'Home', path: '/' },
   { slug: 'about', title: 'About', path: '/about' },
   { slug: 'spaces', title: 'Spaces', path: '/spaces' },
-  { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
   { slug: 'the-community', title: 'The Community', path: '/the-community' },
-  { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
   { slug: 'pricing', title: 'Pricing', path: '/pricing' },
   { slug: 'circles', title: 'Circles', path: '/circles' },
   // The SEEKER ARTICLES (UX-MATURITY-PLAN Lift 5d, ADR-1068). Informational routes, not
@@ -132,7 +130,7 @@ export async function getPublishedData(slug: string, spaceId?: string | null): P
 /** The live document PLUS the row's real timestamps, for a route that publishes Article dates.
  *  `published_at` is the last Publish from /edit/<slug>; `updated_at` moves on every draft save, so
  *  it is NOT a publish signal. Null when nothing is published (the route falls to its template). */
-export interface PublishedPage {
+interface PublishedPage {
   doc: Data
   published_at: string | null
   updated_at: string | null

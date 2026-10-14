@@ -203,7 +203,7 @@ export function StoryBlock({ intro }: { intro: string | null }) {
   return (
     <section>
       <SectionHeader title="The story" />
-      <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-body-sm leading-relaxed text-text">
+      <div className="whitespace-pre-wrap rounded-card border border-border bg-surface p-5 text-body-sm leading-relaxed text-text">
         {intro}
       </div>
     </section>
@@ -216,7 +216,7 @@ export function OutcomesBlock({ outcomes }: { outcomes: readonly string[] }) {
   return (
     <section>
       <SectionHeader title="What you'll learn" />
-      <ul className="space-y-2 rounded-2xl border border-border bg-surface p-5">
+      <ul className="space-y-2 rounded-card border border-border bg-surface p-5">
         {outcomes.map((line, i) => (
           <li key={`${i}:${line}`} className="flex items-start gap-2 text-body-sm leading-relaxed text-text">
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-pill bg-border-strong" aria-hidden />
@@ -264,6 +264,7 @@ export function PathBlock({
           <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated/60 [&::-webkit-details-marker]:hidden">
             <span
               className="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-meta font-bold tabular-nums ring-4 ring-surface"
+              // data-driven: member-chosen Journey accent colour
               style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
             >
               {i + 1}
@@ -443,7 +444,7 @@ export function InstructorBlock({
       <SectionHeader title="Your guide" />
       <Link
         href={`/people/${author.handle}`}
-        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
+        className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
       >
         {author.avatarUrl ? (
           <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(author.avatarUrl)} />
@@ -504,7 +505,7 @@ export function JourneyFaq({
         {faqs.map((f) => (
           <details
             key={f.q}
-            className="group overflow-hidden rounded-2xl border border-border bg-surface lift-1"
+            className="group overflow-hidden rounded-card border border-border bg-surface lift-1"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
               <span className="text-body-sm font-semibold text-text">{f.q}</span>

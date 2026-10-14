@@ -259,7 +259,7 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
           </div>
         )}
 
-        <p className="rounded-lg bg-surface-elevated p-3 text-meta text-subtle">
+        <p className="rounded-control bg-surface-elevated p-3 text-meta text-subtle">
           Straight talk on roommate matching: tidiness, rhythm, and house rules help us rank who
           you would actually get along with, and they stay private to you. Gender preference is only
           offered when you are sharing a living space, and age is a soft hint for ranking, never a

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -56,20 +56,20 @@ export default async function SpaceQrPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate eyebrow={brandName} title="QR codes" description="The codes for this space.">
+      <ConsoleFocusTemplate eyebrow={brandName} title="QR codes" description="The codes for this space.">
         <QrBody slug={slug} />
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="QR codes"
       description="Make a code that points anywhere, and change where it goes any time without a reprint. Add a splash landing when you want a scan to see a page first."
       width="wide"
     >
       <QrBody slug={slug} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

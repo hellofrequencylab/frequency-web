@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Smile } from 'lucide-react'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // A small, dependency-free emoji popover. Curated common sets grouped by feel —
 // enough to react quickly without shipping a multi-megabyte emoji database. Opens
@@ -78,7 +79,7 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
         >
           {GROUPS.map((group) => (
             <div key={group.label} className="mb-1.5 last:mb-0">
-              <p className="px-1.5 pb-1 pt-1 text-3xs font-semibold uppercase tracking-wide text-muted">
+              <p className={capsLabel('px-1.5 pb-1 pt-1 text-3xs font-semibold text-muted')}>
                 {group.label}
               </p>
               <div className="grid grid-cols-8 gap-0.5">

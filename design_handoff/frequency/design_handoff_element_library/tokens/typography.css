@@ -1,0 +1,23 @@
+/* CORE · locked. Edit only in the Frequency design system; products import, never override. */
+/* Frequency type. Unbounded (display, the charge), Instrument Serif italic (the temple voice), Hanken Grotesk (UI + body). Google Fonts. */
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+:root{
+--font-display:'Unbounded','Hanken Grotesk',system-ui,sans-serif;
+--font-serif:'Instrument Serif',Georgia,serif;
+--font-sans:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+--text-display-xl:96px;--lh-display-xl:0.95;/* @kind other */--track-display-xl:-0.04em;/* @kind other */
+--text-display-l:64px;--lh-display-l:1;/* @kind other */--track-display-l:-0.035em;/* @kind other */
+--text-h1:44px;--lh-h1:1.05;/* @kind other */--track-h1:-0.03em;/* @kind other */
+--text-h2:30px;--lh-h2:1.12;/* @kind other */--track-h2:-0.02em;/* @kind other */
+--text-h3:22px;--lh-h3:1.2;/* @kind other */--track-h3:-0.015em;/* @kind other */
+--text-h4:18px;--lh-h4:1.25;/* @kind other */--track-h4:-0.01em;/* @kind other */
+--text-serif-xl:72px;--text-serif-l:40px;--text-serif-m:26px;
+--text-body-l:19px;--lh-body-l:1.55;/* @kind other */
+--text-body:16px;--lh-body:1.55;/* @kind other */
+--text-body-s:14px;--lh-body-s:1.5;/* @kind other */
+--text-meta:13px;--lh-meta:1.4;/* @kind other */
+--text-label:11px;--track-label:0.14em;/* @kind other */
+--type-body:400 var(--text-body)/var(--lh-body) var(--font-sans);
+--type-meta:500 var(--text-meta)/var(--lh-meta) var(--font-sans);
+--type-label:500 var(--text-label)/1 var(--font-display);
+}

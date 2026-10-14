@@ -12,6 +12,7 @@ import type * as GeoJSON from 'geojson'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
 import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
+import { mapColor } from '@/lib/maps/css-color'
 
 // Keyless vector tiles out of the box (same default as the circles map); override
 // with NEXT_PUBLIC_MAP_STYLE. PRIVACY: this map only ever receives city-level
@@ -48,7 +49,7 @@ function escapeHtml(s: string): string {
 export default function DiscoverMap({
   cities,
   center = null,
-  className = 'h-full w-full overflow-hidden rounded-2xl border border-border',
+  className = 'h-full w-full overflow-hidden rounded-card border border-border',
 }: {
   cities: MapCity[]
   /** [lng, lat] of the viewer (IP geo) — the map eases here when it arrives. */
@@ -94,11 +95,11 @@ export default function DiscoverMap({
         type: 'circle',
         source: 'cities',
         paint: {
-          'circle-color': '#E2912F',
+          'circle-color': mapColor('--design-map-pin'),
           'circle-opacity': 0.85,
           'circle-radius': ['interpolate', ['linear'], ['get', 'circles'], 1, 11, 10, 26],
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': mapColor('--design-map-pin-ring'),
         },
       })
       map.addLayer({
@@ -110,7 +111,7 @@ export default function DiscoverMap({
           'text-size': 12,
           'text-font': ['Noto Sans Regular'],
         },
-        paint: { 'text-color': '#2A1B06' },
+        paint: { 'text-color': mapColor('--design-map-count') },
       })
 
       if (centerRef.current) {
@@ -132,8 +133,8 @@ export default function DiscoverMap({
         new maplibregl.Popup({ offset: 12, closeButton: false })
           .setLngLat(geom.coordinates as [number, number])
           .setHTML(
-            `<div style="font-weight:600;color:#2A1B06">${city}</div>` +
-              `<a href="/discover/circles?city=${cityParam}" style="font-size:13px;color:#A8631B;text-decoration:none">${circles} ${circles === 1 ? 'circle' : 'circles'} →</a>`,
+            `<div style="font-weight:600;color:var(--design-map-count)">${city}</div>` +
+              `<a href="/discover/circles?city=${cityParam}" style="font-size:13px;color:var(--design-map-link);text-decoration:none">${circles} ${circles === 1 ? 'circle' : 'circles'} →</a>`,
           )
           .addTo(map)
       })

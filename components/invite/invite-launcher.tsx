@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { UserPlus, X, Link2, Check, Share2, Loader2, Zap, Gem } from 'lucide-react'
 import { getInviteLink } from '@/app/(main)/invite-actions'
 import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 // Mounts the Invite modal once, app-wide, and opens it on the `open-invite` window
 // event — so an "Invite friends" affordance anywhere just dispatches that event.
@@ -75,7 +76,7 @@ export function InviteLauncher() {
         </div>
 
         {/* Reward banner */}
-        <div className="mt-2 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3">
+        <div className="mt-2 flex items-center gap-3 rounded-card border border-primary/30 bg-primary-bg/40 p-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop">
             <Zap className="h-5 w-5" />
           </span>
@@ -93,7 +94,7 @@ export function InviteLauncher() {
             {/* QR for in-person */}
             <div className="mt-4 flex justify-center">
               {/* KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface. */}
-              <div className="h-44 w-44 overflow-hidden rounded-2xl border border-border bg-white p-2">
+              <div className="h-44 w-44 overflow-hidden rounded-card border border-border bg-white p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`/api/qr?code=${encodeURIComponent(data.codeId)}&format=png&size=512`} alt="Your invite QR code" className="h-full w-full" />
               </div>
@@ -109,9 +110,9 @@ export function InviteLauncher() {
               </button>
             </div>
 
-            <button type="button" onClick={share} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+            <Button size="lg" type="button" onClick={share} className="mt-3 w-full">
               <Share2 className="h-4 w-4" /> Share your invite
-            </button>
+            </Button>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-2xs text-muted">
               <Gem className="h-3 w-3 text-signal" /> They land on your profile; when they join, you’re connected and the Zaps are yours.

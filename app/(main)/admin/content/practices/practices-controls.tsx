@@ -142,7 +142,7 @@ function ToggleChip({
       type="button"
       aria-pressed={active}
       onClick={() => patch({ [paramKey]: active ? null : value })}
-      className={`inline-flex min-h-[2rem] items-center rounded-lg border px-2.5 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
+      className={`inline-flex min-h-[2rem] items-center rounded-control border px-2.5 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
         active
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border text-muted hover:border-border-strong hover:text-text'
@@ -293,7 +293,7 @@ export function PracticeSavedViews() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary"
       >
         <Bookmark className="h-3.5 w-3.5" aria-hidden />
         <span>Saved views</span>
@@ -309,7 +309,7 @@ export function PracticeSavedViews() {
           <button
             type="button"
             onClick={save}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center gap-2 rounded-control-nested px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
           >
             <Bookmark className="h-3.5 w-3.5" aria-hidden /> Save the current view
           </button>
@@ -321,7 +321,7 @@ export function PracticeSavedViews() {
               views.map((view) => (
                 <div
                   key={view.name}
-                  className="group flex items-center gap-1 rounded-lg pl-2.5 pr-1 transition-colors hover:bg-surface-elevated"
+                  className="group flex items-center gap-1 rounded-control-nested pl-2.5 pr-1 transition-colors hover:bg-surface-elevated"
                 >
                   <button
                     type="button"

@@ -7,6 +7,7 @@ import { claimCircle } from '@/app/(main)/circles/[slug]/claim-actions'
 import { Dialog } from '@/components/ui/dialog'
 import { Select } from '@/components/ui/select'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type Practice = { id: string; title: string }
 
@@ -57,15 +58,15 @@ export function ClaimCircle({
             area. Is it yours? Make it real and become the host.
           </p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => setOpen(true)}
           title="Claim this circle, or make it your own"
           aria-label="Remix this circle. Claim it, or make it your own."
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="shrink-0"
         >
           <Sparkles className="h-4 w-4" /> Remix
-        </button>
+        </Button>
       </div>
 
       {/* Modal wizard */}
@@ -122,14 +123,13 @@ export function ClaimCircle({
               <button type="button" onClick={() => setOpen(false)} className="rounded-control px-3 py-2 text-body-sm font-medium text-muted hover:text-text">
                 Cancel
               </button>
-              <button
+              <Button
                 type="button"
                 onClick={submit}
                 disabled={pending || !theName.trim()}
-                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Make it real
-              </button>
+              </Button>
             </div>
           </div>
       </Dialog>

@@ -1,0 +1,229 @@
+/* CORE · locked. Infographic primitives, drawn in the brand's own shapes: orbs, circles, breath rings and the signal line.
+   Every element reads data from CSS vars (--v 0–100) or data-* attributes (assets/infographics/ig.js) and themes itself on Stage or Commons. */
+:root,[data-theme="commons"]{--ig-fill:linear-gradient(120deg,#EEC1EC,#C4B8FF 55%,#8FE9FF);/* @kind other */--ig-orb:radial-gradient(circle at 34% 30%,#fff 0,#E6CDF4 26%,#B3C6FF 58%,#C4B8FF 100%);/* @kind other */--ig-iri:linear-gradient(120deg,#EEC1EC,#C4B8FF 55%,#8FE9FF);/* @kind other */--ig-track:rgba(30,27,24,.07);--ig-dash:rgba(30,27,24,.16);--ig-ink:var(--text-strong);--ig-sub:var(--text-muted);--ig-node:#FFFFFF;--ig-hole:#FFFFFF;--ig-halo:rgba(196,184,255,.22);--ig-glow:0 0 10px rgba(179,198,255,.45);--ig-glass:linear-gradient(150deg,rgba(255,255,255,.8),rgba(255,255,255,.45));/* @kind other */}
+[data-theme="stage"]{--ig-fill:var(--iridescent-sweep);/* @kind other */--ig-orb:radial-gradient(circle at 34% 30%,#fff 0,#FFB8EE 22%,#B8A2FF 55%,#3DF2FF 100%);/* @kind other */--ig-iri:var(--iridescent-sweep);/* @kind other */--ig-track:rgba(246,240,255,.09);--ig-dash:rgba(246,240,255,.22);--ig-ink:#F6F0FF;--ig-sub:#A89BC2;--ig-node:#140B22;--ig-hole:#0A0612;--ig-halo:rgba(184,162,255,.3);--ig-glow:0 0 14px rgba(184,162,255,.45);--ig-glass:linear-gradient(150deg,rgba(30,18,50,.75),rgba(30,18,50,.45));/* @kind other */}
+@keyframes ig-breath{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.08);opacity:.75}}
+/* stat: display number, serif unit */
+.ig-stat{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ig-n{font:500 clamp(30px,3.2vw,44px)/.95 var(--font-display);letter-spacing:-.055em;color:var(--ig-ink);font-variant-numeric:tabular-nums}
+.ig-n small{font:400 italic .62em/1 var(--font-serif);letter-spacing:-.01em;margin-left:4px;color:var(--ig-sub)}
+.ig-l{font:400 13px/1.35 var(--font-sans);color:var(--ig-sub);max-width:24ch}
+.ig-d{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;height:24px;padding:0 10px;border-radius:999px;font:600 12px/1 var(--font-sans);background:var(--ig-track);color:var(--ig-ink)}
+.ig-d::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.ig-d.up{background:rgba(196,184,255,.22)}.ig-d.up::before{background:var(--ig-iri)}
+.ig-d.down{color:var(--danger)}
+.ig-k{font:500 10.5px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--ig-sub)}
+/* breath ring: dashed breath halo, iridescent arc, orb at the head */
+.ig-ring{--v:50;/* @kind other */--s:120px;--w:6px;position:relative;width:var(--s);height:var(--s);flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.ig-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -90deg,#EEC1EC 0,#C4B8FF calc(var(--v)*.5%),#8FE9FF calc(var(--v)*1%),var(--ig-track) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--w) - 1px),#000 calc(100% - var(--w)));mask:radial-gradient(farthest-side,transparent calc(100% - var(--w) - 1px),#000 calc(100% - var(--w)))}
+.ig-ring::after{content:"";position:absolute;inset:calc(var(--w)*-1.6);border-radius:50%;border:1px dashed var(--ig-dash);opacity:.7}
+.ig-ring>i.h{position:absolute;inset:0;transform:rotate(calc(var(--v)*3.6deg));pointer-events:none}
+.ig-ring>i.h::before{content:"";position:absolute;left:50%;top:0;width:calc(var(--w)*1.6);height:calc(var(--w)*1.6);margin:calc(var(--w)*-.3) 0 0 calc(var(--w)*-.8);border-radius:50%;background:var(--ig-orb);box-shadow:var(--ig-glow)}
+.ig-ring>span{position:relative;text-align:center}
+.ig-ring b{display:block;font:500 calc(var(--s)*.22)/1 var(--font-display);letter-spacing:-.05em;color:var(--ig-ink)}
+.ig-ring em{display:block;font:400 italic calc(var(--s)*.12)/1 var(--font-serif);color:var(--ig-sub);margin-top:4px}
+.ig-ring.glow::before{filter:drop-shadow(0 0 6px rgba(184,162,255,.35))}
+/* thread streak: the week as a waveform. Done days rise as lit capsules, today is the breathing orb, future days rest on the line */
+.ig-chain{display:flex;flex-direction:column;gap:10px}
+.ig-chain .tr{position:relative;display:flex;align-items:center;justify-content:space-between;height:var(--ch,64px);padding:0 4px}
+.ig-chain .tr::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;border-radius:2px;background:var(--ig-track)}
+.ig-chain .tr span{position:relative;flex:1;display:flex;justify-content:center;align-items:center;height:100%}
+.ig-chain .tr i{display:block;width:6px;height:6px;border-radius:999px;background:var(--ig-dash);font-style:normal}
+.ig-chain .done i{width:12px;height:calc(var(--h)*100%);background:linear-gradient(180deg,#EEC1EC,#C4B8FF 50%,#8FE9FF)}
+.ig-chain .freeze i{width:12px;height:calc(var(--h)*55%);background:none;box-shadow:inset 0 0 0 1.25px #8FE9FF}
+.ig-chain .today i{width:26px;height:26px;box-shadow:0 0 0 4px var(--ig-hole),0 8px 20px -6px rgba(120,150,225,.7);border-radius:50%;background:var(--ig-orb);box-shadow:var(--ig-glow);position:relative}
+.ig-chain .today i::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid #C4B8FF;animation:ig-breath var(--breath-flow) var(--ease-breath) infinite}
+.ig-chain .miss i{width:12px;height:2px;background:var(--danger);opacity:.5}
+.ig-chain .dy{display:flex;justify-content:space-between;padding:0 4px}.ig-chain .dy em{flex:1;text-align:center;font:400 italic 13px/1 var(--font-serif);color:var(--ig-sub)}
+.ig-chain .dy em.today{font:600 11px/1 var(--font-sans);color:var(--ig-ink)}
+/* arc streak: the week as a half orbit around the count */
+.ig-streak{position:relative;width:100%;max-width:var(--s,340px)}.ig-streak::before{content:"";position:absolute;left:18%;right:18%;bottom:4%;height:55%;border-radius:50% 50% 0 0;background:radial-gradient(60% 80% at 50% 100%,rgba(196,184,255,.32),transparent 70%);pointer-events:none}
+.ig-streak svg{display:block;width:100%;height:auto;overflow:visible}
+.ig-streak .base{fill:none;stroke:var(--ig-track);stroke-width:14;stroke-linecap:round}
+.ig-streak .halo{fill:none;stroke:var(--ig-dash);stroke-width:1;stroke-dasharray:1 7;opacity:.7}
+.ig-streak .lit{fill:none;stroke-width:14;stroke-linecap:round;filter:drop-shadow(0 6px 14px rgba(120,150,225,.35))}
+.ig-streak .nd{stroke:var(--ig-hole);stroke-width:3.5}
+.ig-streak .nt{stroke:var(--ig-hole);stroke-width:3}
+.ig-streak .hl{fill:none;stroke:#C4B8FF;stroke-width:1;opacity:.6;transform-box:fill-box;transform-origin:center;animation:ig-breath var(--breath-flow) var(--ease-breath) infinite}
+.ig-streak .fz{fill:rgba(143,233,255,.18);stroke:#8FE9FF;stroke-width:1.5}
+.ig-streak .nx{fill:var(--ig-node);stroke:var(--ig-dash);stroke-width:1.5;stroke-dasharray:3 3}
+.ig-streak .dl{font:400 italic 13px var(--font-serif);fill:var(--ig-sub);text-anchor:middle}.ig-streak .dl.on{font:600 11px var(--font-sans);fill:var(--ig-ink)}
+.ig-streak .ct{position:absolute;left:0;right:0;bottom:6%;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.ig-streak .ct b{font:600 clamp(48px,5.6vw,68px)/.9 var(--font-display);letter-spacing:-.06em;color:var(--ig-ink)}
+.ig-streak .ct em{font:400 italic 18px/1 var(--font-serif);color:var(--ig-sub)}
+.ig-streak .ct small{margin-top:6px;font:600 11px/1 var(--font-sans);color:var(--ig-ink);padding:5px 10px;border-radius:999px;background:var(--ig-track)}
+/* meter: a soft tide with a glowing orb at its head */
+.ig-meter{--v:50;/* @kind other */height:6px;border-radius:999px;background:var(--ig-track);position:relative}
+.ig-meter::after{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--v)*1%);border-radius:inherit;background:var(--ig-fill);transition:width var(--dur-slow) var(--ease-out)}
+.ig-meter::before{content:"";position:absolute;z-index:1;top:50%;left:calc(var(--v)*1%);width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #C4B8FF,0 1px 4px rgba(30,27,24,.15);transition:left var(--dur-slow) var(--ease-out)}
+.ig-meter.thin{height:4px}.ig-meter.thin::before{display:none}
+.ig-meter.thick{height:10px}.ig-meter.thick::before{width:14px;height:14px;margin:-7px 0 0 -7px}
+.ig-meter.seg{--n:5;/* @kind other */height:12px;background:radial-gradient(circle,var(--ig-track) 5px,transparent 5.5px) 0 50%/calc(100%/var(--n)) 100% repeat-x}
+.ig-meter.seg::after{background:radial-gradient(circle,#C4B8FF 5px,transparent 5.5px) 0 50%/calc(100%/var(--n)*100/max(var(--v),1)) 100% repeat-x;border-radius:0}
+.ig-meter.seg::before{display:none}
+/* bars: tight capsules. The highlight carries the orb */
+.ig-bars{display:flex;align-items:flex-end;gap:3px;height:var(--h,140px);padding-top:12px;background:linear-gradient(var(--ig-dash),var(--ig-dash)) 0 100%/100% 1px no-repeat}
+.ig-bars i{flex:1;max-width:26px;margin:0 auto;position:relative;height:calc(var(--v)*1%);min-height:6px;border-radius:999px;background:rgba(196,184,255,.28);transition:height var(--dur-slow) var(--ease-out)}
+[data-theme="stage"] .ig-bars i{background:linear-gradient(180deg,rgba(184,162,255,.6),rgba(184,162,255,.1))}
+.ig-bars i.hi,.ig-bars.fill i{background:linear-gradient(180deg,#EEC1EC,#C4B8FF 50%,#8FE9FF)}
+.ig-bars i.hi::before{content:"";position:absolute;left:50%;top:-12px;width:6px;height:6px;transform:translateX(-50%);border-radius:50%;background:#C4B8FF}
+.ig-axis{display:flex;gap:4px;margin-top:10px}.ig-axis span{flex:1;text-align:center;font:400 italic 13px/1 var(--font-serif);color:var(--ig-sub)}
+/* stack: multi-tier chart drawn by ig.js. bar / stack / target / line / dot series */
+.ig-stack{display:flex;flex-direction:column;gap:14px;width:100%}
+.ig-tog{display:inline-flex;align-self:flex-end;gap:2px;padding:3px;border-radius:999px;background:var(--ig-track)}
+.ig-tog button{height:28px;min-width:36px;padding:0 10px;border:none;border-radius:999px;background:none;font:600 12px/1 var(--font-sans);color:var(--ig-sub);cursor:pointer}
+.ig-tog button.on{background:var(--ig-hole);color:var(--ig-ink);box-shadow:0 1px 3px rgba(30,27,24,.12)}
+.ig-legend i{font-style:normal;opacity:.7;margin-left:2px}
+.ig-stack svg{display:block;overflow:visible}
+.ig-stack .bl{stroke:var(--ig-dash);stroke-width:1}
+.ig-stack .tg{stroke-width:1.5;stroke-dasharray:4 5;opacity:.9}
+.ig-stack .tl{font:400 italic 13px var(--font-serif);fill:var(--ig-sub)}
+.ig-stack .ln{fill:none;stroke-width:2;stroke-linecap:round}
+.ig-stack .halo{fill:none;stroke-width:1.5;opacity:.55;transform-box:fill-box;transform-origin:center;animation:ig-breath var(--breath-flow) var(--ease-breath) infinite}
+.ig-stack .dt{opacity:.9}
+.ig-stack .ax{font:400 italic 13px var(--font-serif);fill:var(--ig-sub)}
+.ig-legend .t-bar::before{border-radius:4px}
+.ig-legend .t-stack::before{border-radius:4px;background:radial-gradient(circle,var(--c) 1.2px,transparent 1.6px) 0 0/4px 4px,color-mix(in oklab,var(--c) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c)}
+.ig-legend .t-target::before{width:16px;height:0;border-radius:0;border-top:1.5px dashed var(--c);background:none;box-shadow:none}
+.ig-legend .t-line::before{width:16px;height:3px;border-radius:2px}
+/* signal line: the standing waveform, glowing, with a dashed baseline and a live orb */
+.ig-spark{display:block;width:100%;height:var(--h,64px);max-width:100%;overflow:visible}
+.ig-spark .bl{stroke:var(--ig-dash);stroke-width:1;stroke-dasharray:3 5}
+.ig-spark .ln{fill:none;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.ig-spark .ar{opacity:.35}
+.ig-spark .pt{fill:var(--ig-hole);stroke:#C4B8FF;stroke-width:2}
+.ig-spark .halo{fill:none;stroke:#C4B8FF;stroke-width:1.5;opacity:.6;transform-box:fill-box;transform-origin:center;animation:ig-breath var(--breath-flow) var(--ease-breath) infinite}
+/* rank: a constellation of growing circles */
+.ig-rank{display:flex;align-items:flex-end;justify-content:space-between;position:relative;padding-top:6px}
+.ig-rank::before{content:"";position:absolute;left:12px;right:12px;bottom:32px;border-top:2px dotted var(--ig-dash)}
+.ig-rank span{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ig-rank span::before{content:"";width:22px;height:22px;border-radius:50%;border:1.5px dashed var(--ig-dash);background:var(--ig-node)}
+.ig-rank span:nth-child(1)::before{width:20px;height:20px}.ig-rank span:nth-child(2)::before{width:28px;height:28px}.ig-rank span:nth-child(3)::before{width:36px;height:36px}.ig-rank span:nth-child(4)::before{width:44px;height:44px}
+.ig-rank span.on::before{border:none;background:#C4B8FF}
+.ig-rank span.now::before{border:2px solid #C4B8FF;background:conic-gradient(from -90deg,rgba(196,184,255,.55) calc(var(--v,50)*1%),var(--ig-node) 0);box-shadow:none}
+.ig-rank b{font:400 italic 14px/1 var(--font-serif);color:var(--ig-sub)}.ig-rank .on b,.ig-rank .now b{color:var(--ig-ink)}
+/* leaderboard: each person is an orb, sized and lit by standing */
+.ig-board{display:flex;flex-direction:column;gap:12px}
+.ig-board>div{display:grid;grid-template-columns:20px 30px minmax(0,1fr) auto;align-items:center;gap:12px}
+.ig-board .r{font:400 italic 16px/1 var(--font-serif);color:var(--ig-sub)}
+.ig-board .f{width:30px;height:30px;border-radius:50%;background:center/cover;background-color:var(--ig-track)}
+.ig-board>div:first-child .f{box-shadow:0 0 0 2px var(--ig-hole),0 0 0 3.5px #C4B8FF,var(--ig-glow)}
+.ig-board .b{display:flex;flex-direction:column;gap:8px;min-width:0}.ig-board .b span{font:500 13px/1 var(--font-sans);color:var(--ig-ink)}
+.ig-board .v{font:600 13px/1 var(--font-display);letter-spacing:-.02em;color:var(--ig-ink);font-variant-numeric:tabular-nums}
+.ig-board .me .b span{font-weight:700}
+/* faces: a circle of people, with a soft halo */
+.ig-faces{display:flex;align-items:center}
+.ig-faces span{width:var(--s,32px);height:var(--s,32px);border-radius:50%;margin-left:calc(var(--s,32px)*-.3);background:center/cover;background-color:var(--ig-track);box-shadow:0 0 0 2px var(--ig-hole)}
+.ig-faces span:first-child{margin-left:0}
+.ig-faces b{margin-left:-8px;height:var(--s,32px);min-width:var(--s,32px);padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:var(--ig-orb);font:600 12px/1 var(--font-sans);color:#1E1B18;box-shadow:0 0 0 2px var(--ig-hole)}
+/* path: numbered circles that overlap like a chain of Circles */
+.ig-path{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));counter-reset:ig}
+.ig-path>div{position:relative;display:flex;flex-direction:column;gap:10px;padding-right:14px}
+.ig-path>div::before{counter-increment:ig;content:counter(ig,decimal-leading-zero);position:relative;z-index:1;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 12px/1 var(--font-display);color:var(--ig-ink);background:var(--ig-node);border:1.5px dashed var(--ig-dash)}
+.ig-path>div.on::before{border:none;background:#C4B8FF;color:#1E1B18}
+.ig-path>div::after{content:"";position:absolute;top:22px;left:46px;right:0;border-top:2px dotted var(--ig-dash)}
+.ig-path>div.on::after{border-top:2px solid #C4B8FF}
+.ig-path>div:last-child::after{display:none}
+.ig-path h4{margin:0;font:600 16px/1.15 var(--font-display);letter-spacing:-.03em;color:var(--ig-ink)}
+.ig-path p{margin:0;font:400 13px/1.45 var(--font-sans);color:var(--ig-sub)}
+/* overlap: two circles sized by share. The brand's own chart (replaces a pie) */
+.ig-donut{--a:60;/* @kind other */--s:120px;position:relative;width:calc(var(--s)*1.5);height:var(--s);flex:none}
+.ig-donut::before,.ig-donut::after{content:"";position:absolute;top:50%;border-radius:50%;mix-blend-mode:multiply}
+.ig-donut::before{left:0;width:calc(var(--s)*(.55 + var(--a)/220));aspect-ratio:1;transform:translateY(-50%);background:radial-gradient(circle at 35% 30%,#fff 0,#E6CDF4 30%,#C4B8FF 80%)}
+.ig-donut::after{right:0;width:calc(var(--s)*(.55 + (100 - var(--a))/220));aspect-ratio:1;transform:translateY(-50%);background:radial-gradient(circle at 35% 30%,#fff 0,#C9F3FA 30%,#8FE9FF 80%)}
+[data-theme="stage"] .ig-donut::before,[data-theme="stage"] .ig-donut::after{mix-blend-mode:screen;opacity:.85}
+/* heat: a field of circles, size and light by count */
+.ig-heat{display:grid;grid-template-columns:repeat(var(--c,7),1fr);gap:8px}
+.ig-heat i{aspect-ratio:1;border-radius:50%;display:block;background:radial-gradient(circle,var(--ig-dash) 2px,transparent 2.5px)}
+.ig-heat i[data-l="1"]{background:radial-gradient(circle,rgba(196,184,255,.55) 30%,transparent 32%)}
+.ig-heat i[data-l="2"]{background:radial-gradient(circle,rgba(196,184,255,.8) 44%,transparent 46%)}
+.ig-heat i[data-l="3"]{background:radial-gradient(circle at 40% 35%,#fff 0,#C4B8FF 40%,transparent 62%)}
+.ig-heat i[data-l="4"]{background:radial-gradient(circle,#C4B8FF 58%,transparent 60%)}
+/* radius: breath rings around you */
+.ig-radius{position:relative;width:var(--s,180px);aspect-ratio:1;flex:none}
+.ig-radius::before,.ig-radius::after,.ig-radius>span.r{content:"";position:absolute;border-radius:50%}
+.ig-radius::before{inset:0;border:1.5px dashed var(--ig-dash)}
+.ig-radius::after{inset:20%;border:1.5px dashed var(--ig-dash);animation:ig-breath var(--breath-still) var(--ease-breath) infinite}
+.ig-radius>span.r{inset:38%;background:radial-gradient(circle,rgba(196,184,255,.45),transparent 70%)}
+.ig-radius>i{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;background:#C4B8FF}
+.ig-radius>i.me{width:18px;height:18px;margin:-9px;left:50%;top:50%;background:var(--ig-node);box-shadow:0 0 0 2px #C4B8FF}
+/* orbit: the planetary system. A core orb with Circles and people circling it on breath rings */
+@keyframes ig-spin{to{transform:rotate(360deg)}}
+.ig-orbit{--s:320px;position:relative;width:var(--s);aspect-ratio:1;flex:none}
+.ig-orbit .o{position:absolute;inset:var(--i,0%);border-radius:50%;border:1px dashed var(--ig-dash);animation:ig-spin var(--t,60s) linear infinite}
+.ig-orbit .o:nth-child(even){animation-direction:reverse}
+.ig-orbit .o>i{position:absolute;inset:0;transform:rotate(var(--a,0deg));pointer-events:none}
+.ig-orbit .o>i::before{content:"";position:absolute;left:50%;top:0;width:var(--d,14px);height:var(--d,14px);margin:calc(var(--d,14px)/-2);border-radius:50%;background:var(--c,var(--ig-orb));background-size:cover}
+.ig-orbit .o>i.ph::before{background-image:var(--img);box-shadow:0 0 0 2px var(--ig-hole),0 0 0 3.5px #C4B8FF}
+.ig-orbit .core{position:absolute;inset:var(--ci,34%);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.95) 0,#FFB8EE 14%,#C4B8FF 42%,#6A4BD6 76%,#2A1A45 100%);box-shadow:0 0 70px rgba(184,162,255,.55),inset 0 0 0 1px rgba(255,255,255,.35)}
+.ig-orbit .core b{font:600 calc(var(--s)*.12)/.9 var(--font-display);letter-spacing:-.06em;color:#0A0612}
+.ig-orbit .core em{font:400 italic calc(var(--s)*.045)/1.15 var(--font-serif);color:#1E1232;max-width:12ch;margin-top:4px}
+.ig-orbit .lbl{position:absolute;left:50%;transform:translateX(-50%);font:400 italic 13px/1 var(--font-serif);color:var(--ig-sub);white-space:nowrap;background:var(--ig-hole);padding:0 6px}
+/* weave: overlapping Circles. Shared members glow where they meet */
+.ig-weave{position:relative;width:min(var(--w,360px),100%);aspect-ratio:3/2;flex:none}
+.ig-weave>.c{position:absolute;left:var(--x);top:var(--y);width:var(--r);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 50% 50%,color-mix(in oklab,var(--c) 22%,transparent),color-mix(in oklab,var(--c) 8%,transparent) 70%);box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--c) 70%,transparent);display:flex;align-items:flex-start;justify-content:center;padding-top:12%}
+.ig-weave>.c span{font:600 12px/1.1 var(--font-display);letter-spacing:-.02em;color:var(--ig-ink);text-align:center;max-width:9ch}
+[data-theme="commons"] .ig-weave>.c,.ig-weave>.c{mix-blend-mode:normal}
+.ig-weave>i{position:absolute;left:var(--x);top:var(--y);width:var(--d,9px);height:var(--d,9px);transform:translate(-50%,-50%);border-radius:50%;background:#8FE9FF}
+.ig-weave>i.big{width:14px;height:14px;box-shadow:0 0 0 3px var(--ig-hole),0 0 0 4px #8FE9FF}
+@media (prefers-reduced-motion:reduce){.ig-orbit .o{animation:none}}
+/* infographic kinds (assets/infographics/ig-kinds.js): figure chrome, need-a-number slots, per-kind layouts */
+.ig-fig{display:flex;flex-direction:column;gap:20px;margin:0}
+.ig-fig-h{display:flex;flex-direction:column;gap:8px}.ig-fig-h h3{margin:0;font:500 24px/1.1 var(--font-display);letter-spacing:-.04em;color:var(--ig-ink)}
+.ig-fig-f{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--ig-track)}
+.ig-src{font:400 italic 13px/1.3 var(--font-serif);color:var(--ig-sub)}
+.ig-fig-note{margin:0;font:400 14px/1.5 var(--font-sans);color:var(--ig-sub)}
+.ig-need{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:1px dashed #8FE9FF;color:#5B3FD0;font:500 11.5px/1 var(--font-sans);font-style:normal;letter-spacing:0;white-space:nowrap}
+.ig-n .ig-need{vertical-align:middle}
+.ig-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ig-data summary{cursor:pointer;font:500 12.5px/1 var(--font-sans);color:var(--ig-sub)}.ig-data table{margin-top:10px;border-collapse:collapse;font:400 13px/1.4 var(--font-sans);color:var(--ig-ink)}.ig-data td{padding:6px 16px 6px 0;border-bottom:1px solid var(--ig-track)}
+.ig-k-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}.ig-k-stats.v-grid-2,.ig-k-stats.v-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ig-k-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:22px}.ig-k-list>div{display:flex;gap:14px;align-items:flex-start}.ig-k-list .ic{flex:none;width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(196,184,255,.14);color:#5B3FD0}.ig-k-list .ic svg{width:20px;height:20px}.ig-k-list b{display:block;font:500 15px/1.25 var(--font-sans);color:var(--ig-ink)}.ig-k-list em{display:block;margin-top:4px;font:400 13px/1.45 var(--font-sans);font-style:normal;color:var(--ig-sub)}
+.ig-k-time{display:flex;flex-direction:column}.ig-k-time>div{display:grid;grid-template-columns:76px 18px minmax(0,1fr);gap:14px;align-items:start;padding:12px 0;position:relative}.ig-k-time>div::before{content:"";position:absolute;left:98px;top:0;bottom:0;border-left:1px solid var(--ig-track)}.ig-k-time>div:first-child::before{top:22px}.ig-k-time>div:last-child::before{bottom:calc(100% - 22px)}.ig-k-time time{font:500 13px/1.5 var(--font-display);letter-spacing:-.02em;color:var(--ig-ink);text-align:right}.ig-k-time .dt{position:relative;z-index:1;width:10px;height:10px;margin:5px 0 0 4px;border-radius:50%;background:#C4B8FF;box-shadow:0 0 0 3px var(--ig-hole)}.ig-k-time b{display:block;font:500 15px/1.3 var(--font-sans);color:var(--ig-ink)}.ig-k-time em{display:block;font:400 13px/1.45 var(--font-sans);font-style:normal;color:var(--ig-sub)}
+.ig-k-cmp{width:100%;border-collapse:collapse;font:400 14px/1.4 var(--font-sans)}.ig-k-cmp th,.ig-k-cmp td{padding:12px 14px;text-align:center;border-bottom:1px solid var(--ig-track);color:var(--ig-ink)}.ig-k-cmp thead th{font:500 14px/1.2 var(--font-display);letter-spacing:-.02em}.ig-k-cmp tbody th{text-align:left;font-weight:400;color:var(--ig-sub)}.ig-k-cmp .hi{background:rgba(196,184,255,.1)}.ig-k-cmp thead .hi{border-radius:12px 12px 0 0}.ig-k-cmp .ck{display:inline-block;width:12px;height:12px;border-radius:50%;background:#C4B8FF}.ig-k-cmp .no{display:inline-block;width:12px;height:1.5px;background:var(--ig-dash);vertical-align:middle}
+.ig-k-bar .ig-bars i.need{background:none;border:1px dashed #8FE9FF}
+.ig-k-donut{display:flex;align-items:center;gap:32px;flex-wrap:wrap}.ig-k-donut .ring{position:relative;width:150px;height:150px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}.ig-k-donut .ring::before{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--ig-hole)}.ig-k-donut .ring span{position:relative;text-align:center}.ig-k-donut .ring b{display:block;font:500 32px/1 var(--font-display);letter-spacing:-.05em;color:var(--ig-ink)}.ig-k-donut .ring em{display:block;margin-top:4px;font:400 italic 13px/1 var(--font-serif);color:var(--ig-sub)}
+.ig-k-meter{display:flex;flex-direction:column;gap:22px}.ig-k-meter .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px}
+.ig-k-pic{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px}.ig-k-pic>div{display:flex;flex-direction:column;gap:8px}.ig-k-pic .row2{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.ig-k-pic .row2 span{color:var(--ig-dash)}.ig-k-pic .row2 span.on{color:#8FE9FF}.ig-k-pic svg{width:22px;height:22px}
+.ig-k-quote{margin:0;padding:6px 0}.ig-k-quote p{margin:0;font:400 italic clamp(22px,2.4vw,30px)/1.3 var(--font-serif);color:var(--ig-ink)}.ig-k-quote p::before{content:"“";color:#C4B8FF;margin-right:2px}.ig-k-quote cite{display:block;margin-top:12px;font:500 13px/1 var(--font-sans);font-style:normal;color:var(--ig-sub)}
+@media (max-width:720px){.ig-k-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* callout, legend */
+.ig-callout{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px 0 10px;border-radius:999px;background:var(--ig-glass);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px var(--ig-track);color:var(--ig-ink);font:500 12.5px/1 var(--font-sans);white-space:nowrap}
+.ig-callout::before{content:"";width:7px;height:7px;border-radius:50%;background:#C4B8FF}
+.ig-callout.soft{background:var(--pa-soft)}
+.ig-legend{display:flex;gap:16px;flex-wrap:wrap;font:400 italic 14px/1 var(--font-serif);color:var(--ig-sub)}
+.ig-legend span{display:inline-flex;align-items:center;gap:7px}.ig-legend span::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c,#C4B8FF)}
+@media (prefers-reduced-motion:reduce){.ig-streak .hl,.ig-stack .halo,.ig-chain .today i::before,.ig-spark .halo,.ig-radius::after{animation:none}.ig-meter::after,.ig-meter::before,.ig-bars i{transition:none}}
+/* podium: the top three as orbs on one horizon. Cooperative, not competitive: everyone shares the line */
+.ig-podium{display:flex;align-items:flex-end;justify-content:center;gap:28px;position:relative;padding-bottom:30px}
+.ig-podium::after{content:"";position:absolute;left:0;right:0;bottom:30px;border-top:1.5px dashed var(--ig-dash)}
+.ig-podium>div{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ig-podium .f{width:var(--d,56px);height:var(--d,56px);border-radius:50%;background:center/cover;background-color:var(--ig-track);box-shadow:0 0 0 3px var(--ig-hole),0 0 0 4px var(--ig-dash)}
+.ig-podium>div:nth-child(2) .f{width:72px;height:72px;box-shadow:0 0 0 3px var(--ig-hole),0 0 0 4.5px #C4B8FF}
+.ig-podium .r{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ig-hole);box-shadow:inset 0 0 0 1px var(--ig-dash);font:400 italic 14px/1 var(--font-serif);color:#1E1B18;box-shadow:0 0 0 2px var(--ig-hole)}
+.ig-podium b{font:600 14px/1 var(--font-display);letter-spacing:-.02em;color:var(--ig-ink)}
+.ig-podium small{position:absolute;bottom:-26px;font:500 12px/1 var(--font-sans);color:var(--ig-sub);white-space:nowrap}
+/* stat card: a number with its own orb and a trace of the trend */
+.ig-card{position:relative;display:flex;flex-direction:column;gap:10px;padding:22px 22px 16px;border-radius:20px;background:var(--ig-glass);box-shadow:inset 0 0 0 1px var(--ig-track);overflow:hidden}
+.ig-card::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:var(--ig-orb);opacity:.18;filter:blur(8px)}
+.ig-card>*{position:relative}
+.ig-card .ig-spark{height:36px;margin-top:4px}
+
+/* ===== richer bars, meters, layered columns ===== */
+@keyframes ig-sheen{to{background-position:-200% 0}}
+.ig-bars{gap:3px;background:linear-gradient(var(--ig-dash),var(--ig-dash)) 0 100%/100% 1px no-repeat,repeating-linear-gradient(0deg,transparent 0 calc(25% - 1px),var(--ig-track) calc(25% - 1px) 25%)}
+.ig-bars i{border-radius:10px 10px 3px 3px;background:linear-gradient(180deg,rgba(196,184,255,.62),rgba(196,184,255,.12));box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}
+[data-theme="stage"] .ig-bars i{background:linear-gradient(180deg,rgba(184,162,255,.55),rgba(184,162,255,.06));box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.ig-bars i.hi,.ig-bars.fill i{background:linear-gradient(180deg,#EEC1EC,#C4B8FF 45%,#8FE9FF);background-size:100% 200%;box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 14px 30px -12px rgba(120,150,225,.65)}
+.ig-bars i.hi::before{content:attr(title);position:absolute;left:50%;top:auto;bottom:calc(100% + 8px);width:auto;height:auto;transform:translateX(-50%);padding:5px 9px;border-radius:999px;background:var(--tip-bg);color:#fff;font:600 11px/1 var(--font-sans);white-space:nowrap;box-shadow:none}
+[data-theme="stage"] .ig-bars i.hi::before{background:#F6F0FF;color:#0A0612}
+.ig-meter{height:10px;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1.5px),var(--ig-hole) calc(10% - 1.5px) 10%),var(--ig-track);overflow:visible}
+.ig-meter::after{background:var(--ig-fill);background-size:200% 100%;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);animation:ig-sheen 8s linear infinite}
+.ig-meter::before{width:18px;height:18px;margin:-9px 0 0 -9px;background:#fff;box-shadow:0 0 0 3px #C4B8FF,0 6px 14px -4px rgba(120,150,225,.6)}
+.ig-meter.thick{height:14px}.ig-meter.thick::before{width:22px;height:22px;margin:-11px 0 0 -11px}
+.ig-meter.thin{height:5px;background:var(--ig-track)}
+.ig-meter.seg{height:12px;background:none;display:block}
+.ig-meter.seg::after{animation:none}
+.ig-stack .seg{stroke:var(--ig-hole);stroke-width:.6;stroke-opacity:.7}
+.ig-stack svg{filter:drop-shadow(0 16px 24px rgba(120,150,225,.18))}
+@media (prefers-reduced-motion:reduce){.ig-meter::after{animation:none}}

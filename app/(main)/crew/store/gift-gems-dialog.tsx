@@ -123,7 +123,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                 {/* Heading: the picked-recipient chip or a search box that names its own input. */}
                 <p className="eyebrow text-muted">To</p>
                 {recipient ? (
-                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+                  <div className="mt-1 flex items-center gap-2 rounded-control border border-border px-3 py-2">
                     <span className="flex-1 text-body-sm text-text">
                       {recipient.displayName || 'Member'}
                     </span>
@@ -150,7 +150,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                       />
                     </div>
                     {query.trim().length >= 2 && (
-                      <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-border bg-surface">
+                      <div className="mt-1 max-h-40 overflow-y-auto rounded-control border border-border bg-surface">
                         {searching ? (
                           <p className="flex items-center gap-2 px-3 py-2 text-meta text-subtle">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

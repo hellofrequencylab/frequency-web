@@ -44,7 +44,7 @@ export default async function MessagingFunnelFlowPage({
       actions={
         <Link
           href={`/admin/growth/funnels/${funnel.id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
         >
           Advanced builder
         </Link>
@@ -86,7 +86,7 @@ function RollupSkeleton() {
   return (
     <div className="space-y-2.5">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-9 animate-pulse rounded-lg bg-surface-elevated/70" />
+        <div key={i} className="h-9 animate-pulse rounded-control bg-surface-elevated/70" />
       ))}
     </div>
   )

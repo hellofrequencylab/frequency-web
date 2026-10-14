@@ -30,7 +30,7 @@ export function SpaceFrontDoor({
   if (!door) return null
 
   return (
-    <div className="mx-auto mt-14 max-w-xl rounded-card bg-surface-elevated p-6 text-center lift-1">
+    <div data-fq="door" className="mx-auto mt-14 max-w-xl rounded-card bg-surface-elevated p-6 text-center lift-1">
       <h2 className="font-section text-lead font-bold text-text">{door.title}</h2>
       <p className="mt-2 text-body-sm leading-relaxed text-muted">{door.body}</p>
       {door.action ? (

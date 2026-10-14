@@ -96,7 +96,7 @@ function MineRow({
   const href = `/practices/${p.slug ?? p.id}`
   return (
     <li>
-      <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 lift-2 transition-colors hover:border-primary-bg motion-reduce:transition-none">
+      <div className="flex h-full flex-col rounded-card border border-border bg-surface p-4 lift-2 transition-colors hover:border-primary-bg motion-reduce:transition-none">
         <div className="flex items-start justify-between gap-2">
           <Link href={href} className="min-w-0 flex-1">
             <h3 className="truncate text-body-sm font-bold leading-tight text-text transition-colors hover:text-primary-strong">

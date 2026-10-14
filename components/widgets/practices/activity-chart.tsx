@@ -84,7 +84,7 @@ export function ActivityChart({
 
       {/* Fixed-height bar row (same in every view). Height = minutes; a logged-but-untimed period
           gets a short bar; an empty one a faint baseline tick. */}
-      <div className="flex h-16 items-end gap-[3px]" role="img" aria-label={`Practice activity, ${PERIOD[view]}`}>
+      <div className="flex h-16 items-end gap-0.75" role="img" aria-label={`Practice activity, ${PERIOD[view]}`}>
         {bars.map((b) => {
           const pct = b.minutes > 0 ? Math.min(100, Math.max(20, Math.round((b.minutes / maxMin) * 100))) : b.active ? 16 : 0
           return (

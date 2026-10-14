@@ -13,6 +13,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
 import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
 import { distanceKm } from '@/lib/distance'
+import { mapColor } from '@/lib/maps/css-color'
 
 // Default to OpenFreeMap (free vector tiles, no API key) so the map works out of
 // the box. Override with a Mapbox/MapTiler style URL via NEXT_PUBLIC_MAP_STYLE.
@@ -82,7 +83,7 @@ export default function CircleMap({
   circles,
   starters = [],
   interactive = true,
-  className = 'h-[420px] w-full overflow-hidden rounded-card border border-border',
+  className = 'h-105 w-full overflow-hidden rounded-card border border-border',
   center = null,
 }: {
   circles: MapCircle[]
@@ -160,7 +161,7 @@ export default function CircleMap({
         source: 'circles',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#E2912F',
+          'circle-color': mapColor('--design-map-pin'),
           'circle-opacity': 0.85,
           'circle-radius': ['step', ['get', 'point_count'], 16, 10, 22, 50, 30],
         },
@@ -176,7 +177,7 @@ export default function CircleMap({
           // OpenFreeMap hosts Noto Sans; the maplibre default (Open Sans) 404s.
           'text-font': ['Noto Sans Regular'],
         },
-        paint: { 'text-color': '#2A1B06' },
+        paint: { 'text-color': mapColor('--design-map-count') },
       })
       map.addLayer({
         id: 'point',
@@ -184,10 +185,10 @@ export default function CircleMap({
         source: 'circles',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': '#E2912F',
+          'circle-color': mapColor('--design-map-pin'),
           'circle-radius': 7,
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': mapColor('--design-map-pin-ring'),
         },
       })
 
@@ -207,10 +208,10 @@ export default function CircleMap({
         type: 'circle',
         source: 'starters',
         paint: {
-          'circle-color': '#7C5CD6',
+          'circle-color': mapColor('--design-map-starter'),
           'circle-radius': 7,
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': mapColor('--design-map-pin-ring'),
         },
       })
 
@@ -252,8 +253,8 @@ export default function CircleMap({
         new maplibregl.Popup({ offset: 12, closeButton: false })
           .setLngLat(geom.coordinates as [number, number])
           .setHTML(
-            `<a href="/circles/${slug}" style="font-weight:600;color:#A8631B;text-decoration:none">${name}</a>` +
-              (hood ? `<div style="font-size:12px;color:#8a7a66;margin-top:2px">${hood}</div>` : ''),
+            `<a href="/circles/${slug}" style="font-weight:600;color:var(--design-map-link);text-decoration:none">${name}</a>` +
+              (hood ? `<div style="font-size:12px;color:var(--design-map-meta);margin-top:2px">${hood}</div>` : ''),
           )
           .addTo(map)
       })
@@ -270,8 +271,8 @@ export default function CircleMap({
         new maplibregl.Popup({ offset: 12, closeButton: false })
           .setLngLat(geom.coordinates as [number, number])
           .setHTML(
-            `<a href="/circles/starter/${slug}" style="font-weight:600;color:#5B3FB0;text-decoration:none">${name}</a>` +
-              `<div style="font-size:12px;color:#8a7a66;margin-top:2px">Starter Circle · claim it</div>`,
+            `<a href="/circles/starter/${slug}" style="font-weight:600;color:var(--design-map-starter-link);text-decoration:none">${name}</a>` +
+              `<div style="font-size:12px;color:var(--design-map-meta);margin-top:2px">Starter Circle · claim it</div>`,
           )
           .addTo(map)
       })

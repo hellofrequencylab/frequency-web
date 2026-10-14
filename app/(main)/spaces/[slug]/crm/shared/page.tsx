@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { isSpaceTeamMember } from '@/lib/spaces/operated'
@@ -11,7 +11,7 @@ import { SharedContactsView } from '@/components/spaces/crm/shared-contacts-view
 // member can share a contact's CARD with a Space's team (setVisibility 'shared', gated on operatesSpace);
 // this is the surface where that team reads what was shared with them. Registered as the `space.shared`
 // menu row (lib/admin/modules/space-modules.ts, per docs/MENU-CONTRACT.md), a CRM sub-view beside Lead
-// capture. Composes <DashboardTemplate>; the rail falls through to 'global' in page-chrome (like the CRM
+// capture. Composes <ConsoleDashboardTemplate>; the rail falls through to 'global' in page-chrome (like the CRM
 // board + Lead capture). Voice per CONTENT-VOICE §10 (plain, no em dashes).
 //
 // GATE (broader than the CRM board on purpose): the READ audience for the 'shared' tier is ANY member of
@@ -45,17 +45,17 @@ export default async function SpaceSharedContactsPage({
   const brandName = space.brandName ?? space.name
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title="Shared with team"
       description="Contact cards your members chose to share with the team. You see the card only, never a member's private notes or tags."
       back={{ href: `/spaces/${space.slug}/crm`, label: 'CRM' }}
       width="wide"
     >
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-surface-elevated/50" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-card bg-surface-elevated/50" />}>
         <SharedSection spaceId={space.id} />
       </Suspense>
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }
 

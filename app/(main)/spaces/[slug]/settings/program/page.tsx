@@ -19,7 +19,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Network, UsersRound } from 'lucide-react'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button, buttonClasses } from '@/components/ui/button'
@@ -76,7 +76,7 @@ export default async function SpaceProgramPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate
+      <ConsoleFocusTemplate
         eyebrow={brandName}
         title="Program"
         description="Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere."
@@ -86,7 +86,7 @@ export default async function SpaceProgramPage({
           Program is turned off for this space, or your role does not include it. An admin can turn it on
           in the module settings.
         </p>
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
@@ -116,7 +116,7 @@ export default async function SpaceProgramPage({
   const programTease = staffViewing ? null : await resolveSpaceTeaseGate(space, 'program')
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Program"
       description={
@@ -140,17 +140,17 @@ export default async function SpaceProgramPage({
           />
         )}
         {errorMsg && (
-          <p className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-body-sm text-danger">
+          <p className="rounded-control border border-danger/30 bg-danger-bg px-3 py-2 text-body-sm text-danger">
             {errorMsg}
           </p>
         )}
         {!errorMsg && saved && (
-          <p className="rounded-lg border border-success/30 bg-success-bg px-3 py-2 text-body-sm text-success">
+          <p className="rounded-control border border-success/30 bg-success-bg px-3 py-2 text-body-sm text-success">
             Saved.
           </p>
         )}
         {spacePlan && (
-          <p className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-muted">
+          <p className="rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-muted">
             Producing <span className="font-medium text-text">{spacePlan.title}</span>.
             {programs.length > 0
               ? ' This space already runs a Program, so this page edits the one you have.'
@@ -158,7 +158,7 @@ export default async function SpaceProgramPage({
           </p>
         )}
         {droppedPlanLink && (
-          <p className="rounded-lg border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text">
+          <p className="rounded-control border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text">
             You opened this from a Plan this space does not run, so the Program below will not be
             linked to it. Open the Plan from the space Calendar and try again.
           </p>
@@ -309,6 +309,6 @@ export default async function SpaceProgramPage({
           </form>
         )}
       </div>
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

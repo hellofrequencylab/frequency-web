@@ -1,4 +1,5 @@
 import { getCrewContext } from '@/lib/quest/crew-context'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // My Quest layout module (ADR-270/294): the season's INTENTION — the operator-set season
 // theme, in their own words, as the orienting line for the member's season home. Self-fetching
@@ -11,8 +12,8 @@ export async function QuestIntention() {
   if (!season?.theme) return null
 
   return (
-    <div className="rounded-2xl border border-primary-bg bg-primary-bg/30 px-5 py-4 dark:bg-primary-bg/10">
-      <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+    <div className="rounded-card border border-primary-bg bg-primary-bg/30 px-5 py-4 dark:bg-primary-bg/10">
+      <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>
         {season.name ? `${season.name} · the intention` : 'This season'}
       </p>
       <p className="mt-1 text-body-lg font-semibold leading-snug text-text">{season.theme}</p>

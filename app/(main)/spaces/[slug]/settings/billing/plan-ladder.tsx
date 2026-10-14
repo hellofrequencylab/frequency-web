@@ -138,7 +138,7 @@ export function PlanLadder({
       </h2>
       {/* The promise, stated plainly (CONTENT-VOICE §1a, brand promise #1 + #4). No guilt, no hype. */}
       <p className="mt-1 text-body-sm leading-relaxed text-muted">
-        Hosting is free, with every tool on launch-sized limits and tips at no fee. Selling starts at
+        Hosting is free, with every tool on launch-sized limits and tips at no platform fee, plus card processing. Selling starts at
         Business. You keep 100% of what you bring in, and we earn only on a customer the network
         introduces, once.
       </p>
@@ -157,7 +157,7 @@ export function PlanLadder({
               key={rung.plan}
               className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated/40 px-4 py-3"
             >
-              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg/40">
+              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-bg/40">
                 <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
               </div>
               <div className="min-w-0 flex-1">

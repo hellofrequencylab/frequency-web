@@ -95,7 +95,7 @@ export function SpotlightShell({
                 style={avatarFocusStyle(profile.avatar_url)}
               />
             ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-3xl font-bold text-primary-strong ring-4 ring-canvas lift-1">
+              <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-stat-sm font-bold text-primary-strong ring-4 ring-canvas lift-1">
                 {getInitials(name)}
               </div>
             )}
@@ -132,7 +132,7 @@ export function SpotlightShell({
 
           {showJoinCta ? (
             <footer className="mt-12">
-              <div className="rounded-2xl border border-border bg-surface p-6 text-center lift-1">
+              <div className="rounded-card border border-border bg-surface p-6 text-center lift-1">
                 <p className="text-body-sm font-semibold text-text">Want a page like this?</p>
                 <p className="mx-auto mt-1 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">
                   {name.replace(/^@/, '')} built this on Frequency, a place to gather your people and bring real

@@ -1,0 +1,199 @@
+/* SITE DISCOVER (lane C: the /discover hub, What's happening, the city x type hubs, host pages, cities and
+   places): the page-body styles the "site" kit does not carry. The date-chip card is ported from
+   design_handoff/frequency/templates/members/app/events.css (.ev-date, .ev-list) as a list card, since the
+   public reads carry no cover; the rest (grouped calendar, proof strip, ask card, town cards, chips) is drawn
+   in the kit's own card language (.pc: surface-card, a hairline inset, radius-l).
+   Scoped exactly like kit-site.css, so it matches nothing under DAWN. --fq- tokens only; an off-scale step
+   (a 12px pill, a 22px chip numeral, a 14px radius) is the template's own literal, which the export has no
+   token for. Imported by components/frequency/site/pages/discover/parts.tsx. */
+@layer components {
+/* ── page tone: the decorative side colour, falling back to the accent when no side is set ── */
+[data-design="frequency"] [data-kit="site"] .dx-page{display:contents;--dx-hi:var(--fq-side,var(--fq-accent));--dx-hi-soft:var(--fq-side-soft,var(--fq-accent-soft))}
+[data-design="frequency"] [data-kit="site"] .phero .crumbs .dx-crumb{display:inline-flex;gap:8px}
+[data-design="frequency"] [data-kit="site"] .phero .dx-hp{margin:-10px 0 28px;font-size:var(--fq-text-body-size)}
+[data-design="frequency"] [data-kit="site"] .phero .dx-hp b{font-weight:600}
+[data-design="frequency"] [data-kit="site"] .phero .dx-av{display:inline-grid;place-items:center;width:64px;height:64px;margin-bottom:18px;border-radius:50%;overflow:hidden;background:var(--fq-accent-soft);font:600 22px/1 var(--fq-font-display);color:var(--fq-text-strong);box-shadow:0 0 0 2px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="site"] .phero .dx-av img{width:100%;height:100%;object-fit:cover;display:block}
+[data-design="frequency"] [data-kit="site"] .dx-lede{margin:0}
+[data-design="frequency"] [data-kit="site"] .dx-chap-h{margin:20px 0 24px}
+[data-design="frequency"] [data-kit="site"] .dx-sec.chap .split{align-items:center}
+[data-design="frequency"] [data-kit="site"] .dx-sec{padding:clamp(64px,8vw,112px) 0}
+[data-design="frequency"] [data-kit="site"] .dx-sec+.dx-sec{padding-top:0}
+[data-design="frequency"] [data-kit="site"] .dx-foot{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:28px}
+[data-design="frequency"] [data-kit="site"] .dx-link{display:inline-flex;align-items:center;gap:6px;font:600 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-link);text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .dx-link:hover{color:var(--fq-text-link-hover);text-decoration:underline}
+/* ── the grouped calendar (templates/members/app/events.css .ev-list / .ev-date, as a list card) ── */
+[data-design="frequency"] [data-kit="site"] .dx-cal{display:flex;flex-direction:column;gap:36px}
+[data-design="frequency"] [data-kit="site"] .dx-grp-h{display:flex;align-items:baseline;gap:12px;margin:0 0 14px;font:600 var(--fq-text-h4)/1.1 var(--fq-font-display);letter-spacing:-0.02em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-grp-h span{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);letter-spacing:0;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dx-evs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+[data-design="frequency"] [data-kit="site"] .dx-ev{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:14px;align-items:center;min-width:0;padding:14px 16px 14px 14px;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);text-decoration:none;transition:transform var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="site"] .dx-ev:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1.5px var(--dx-hi),var(--fq-shadow-2)}
+[data-design="frequency"] [data-kit="site"] .dx-ev:focus-visible{outline:none;box-shadow:var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="site"] .dx-date{width:52px;padding:8px 0 7px;border-radius:14px;background:var(--fq-accent-soft);display:flex;flex-direction:column;align-items:center;gap:3px}
+[data-design="frequency"] [data-kit="site"] .dx-date i{font:600 11px/1 var(--fq-font-sans);font-style:normal;text-transform:uppercase;letter-spacing:.08em;color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="site"] .dx-date b{font:500 22px/1 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-tx{min-width:0;display:flex;flex-direction:column;gap:4px}
+[data-design="frequency"] [data-kit="site"] .dx-tx small{font:600 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="site"] .dx-tx b{font:600 17px/1.2 var(--fq-font-display);letter-spacing:-0.02em;color:var(--fq-text-strong);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="site"] .dx-tx em{font-style:normal;font-size:var(--fq-text-meta);line-height:1.3;color:var(--fq-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="site"] .dx-tag{flex:none;height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;font:600 12px/1 var(--fq-font-sans);color:var(--fq-text-muted);box-shadow:inset 0 0 0 1px var(--fq-border-hair);white-space:nowrap}
+[data-design="frequency"] [data-kit="site"] .dx-tag.paid{color:var(--fq-text-strong);background:var(--fq-accent-soft);box-shadow:none}
+[data-design="frequency"] [data-kit="site"] .dx-more{margin-top:28px}
+[data-design="frequency"] [data-kit="site"] .dx-more>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-strong);box-shadow:inset 0 0 0 1.5px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-more>summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="site"] .dx-more>summary::after{content:"+";font-size:18px;line-height:1;color:var(--dx-hi)}
+[data-design="frequency"] [data-kit="site"] .dx-more[open]>summary{margin-bottom:32px}
+[data-design="frequency"] [data-kit="site"] .dx-more[open]>summary::after{content:"\2212"}
+/* ── proof strip, figures, ask card, empty note ── */
+[data-design="frequency"] [data-kit="site"] .dx-proof{border-radius:var(--fq-radius-l);padding:24px 28px;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .dx-proof p{margin:0;font-size:var(--fq-text-body-size);line-height:1.6;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dx-proof p b{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-proof-k{display:block;margin-bottom:16px;font:600 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="site"] .dx-proof dl{display:flex;flex-wrap:wrap;gap:16px 40px;margin:0}
+[data-design="frequency"] [data-kit="site"] .dx-stat{display:flex;flex-direction:column-reverse;gap:6px;margin:0}
+[data-design="frequency"] [data-kit="site"] .dx-stat dd{margin:0;font:600 clamp(30px,3.4vw,44px)/1 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-stat dt{font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:0}
+[data-design="frequency"] [data-kit="site"] .dx-stats .dx-stat{padding:22px 24px;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .dx-ask{display:flex;align-items:center;justify-content:space-between;gap:20px 28px;flex-wrap:wrap;margin-top:16px;padding:24px 28px;border-radius:var(--fq-radius-l);background:var(--dx-hi-soft);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .dx-ask b{display:block;font:600 22px/1.15 var(--fq-font-display);letter-spacing:-0.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-ask p{margin:6px 0 0;max-width:52ch;font-size:var(--fq-text-body-size);line-height:1.5;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dx-note{border-radius:var(--fq-radius-l);padding:32px 28px;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);max-width:720px}
+[data-design="frequency"] [data-kit="site"] .dx-note b{display:block;margin-bottom:8px;font:600 22px/1.2 var(--fq-font-display);letter-spacing:-0.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-note p{margin:0 0 18px;font-size:var(--fq-text-body-size);line-height:1.6;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dx-note p:last-child{margin-bottom:0}
+[data-design="frequency"] [data-kit="site"] .dx-aside{display:grid;gap:12px;margin-top:40px;max-width:900px}
+[data-design="frequency"] [data-kit="site"] .dx-aside .dx-ask{margin-top:0}
+[data-design="frequency"] [data-kit="site"] .dx-aside .sh{margin-bottom:20px}
+/* ── chips, cards, towns, posts ── */
+[data-design="frequency"] [data-kit="site"] .dx-chips{display:flex;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] [data-kit="site"] .dx-chips a{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-strong);text-decoration:none;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);transition:box-shadow var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="site"] .dx-chips a:hover{box-shadow:inset 0 0 0 1.5px var(--dx-hi)}
+[data-design="frequency"] [data-kit="site"] .dx-chips a i{font:600 12px/1 var(--fq-font-sans);font-style:normal;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dx-cards .dx-card{text-decoration:none;transition:transform var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-slow)}
+[data-design="frequency"] [data-kit="site"] .dx-cards .dx-card:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 1.5px var(--dx-hi)}
+[data-design="frequency"] [data-kit="site"] .dx-cards .dx-card h3{overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="site"] .dx-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="site"] .dx-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:auto;padding-top:6px;font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dx-towns{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:10px}
+[data-design="frequency"] [data-kit="site"] .dx-town{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 18px;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);text-decoration:none;transition:box-shadow var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="site"] .dx-town:hover{box-shadow:inset 0 0 0 1.5px var(--dx-hi)}
+[data-design="frequency"] [data-kit="site"] .dx-town .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--fq-accent);background:var(--fq-accent-soft)}
+[data-design="frequency"] [data-kit="site"] .dx-town .ic svg{width:20px;height:20px}
+[data-design="frequency"] [data-kit="site"] .dx-town .ar{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dx-find{display:flex;align-items:center;gap:10px;max-width:420px;height:52px;margin:0 0 24px;padding:0 18px;border-radius:999px;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-find svg{width:18px;height:18px;color:var(--fq-text-muted);flex:none}
+[data-design="frequency"] [data-kit="site"] .dx-find input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;font:500 var(--fq-text-body-size)/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dx-find:focus-within{box-shadow:var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="site"] .dx-posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+[data-design="frequency"] [data-kit="site"] .dx-post{display:flex;flex-direction:column;gap:12px;padding:22px;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .dx-post p{margin:0;font-size:var(--fq-text-body-size);line-height:1.55;color:var(--fq-text-body);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+/* The kit paints every <footer> as the site footer (kit-site: ink band, 56px padding); a post's byline
+   footer is not that band, so it drops the fill and the padding and reads on its own card. */
+[data-design="frequency"] [data-kit="site"] .dx-post footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:var(--fq-text-meta);color:var(--fq-text-muted);background:none;padding:0}
+/* The byline link is a 24px target (WCAG 2.5.8), padded, not drawn bigger. */
+[data-design="frequency"] [data-kit="site"] .dx-post footer a{display:inline-block;padding:5px 0;margin:-5px 0}
+[data-design="frequency"] [data-kit="site"] .dx-post footer b{color:var(--fq-text-strong);font-weight:600}
+[data-design="frequency"] [data-kit="site"] .dx-past .dx-ev{opacity:.78}
+@media (max-width:560px){
+[data-design="frequency"] [data-kit="site"] .dx-ev{grid-template-columns:48px minmax(0,1fr);padding:12px}
+[data-design="frequency"] [data-kit="site"] .dx-ev .dx-tag{grid-column:2;justify-self:start}
+[data-design="frequency"] [data-kit="site"] .dx-date{width:48px}
+[data-design="frequency"] [data-kit="site"] .dx-ask, [data-design="frequency"] [data-kit="site"] .dx-proof, [data-design="frequency"] [data-kit="site"] .dx-note{padding:22px 20px}
+[data-design="frequency"] [data-kit="site"] .dx-ask .btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+[data-design="frequency"] [data-kit="site"] .dx-ev, [data-design="frequency"] [data-kit="site"] .dx-cards .dx-card{transition:none}
+[data-design="frequency"] [data-kit="site"] .dx-ev:hover, [data-design="frequency"] [data-kit="site"] .dx-cards .dx-card:hover{transform:none}
+}
+}
+
+/* ── Discover directories (circles, journeys, practices, partners, spaces, topics) ── */
+/* SITE DISCOVER DIRECTORIES (Circles, Journeys, Practices, Partners, Spaces, Channels, index + detail):
+   the few styles the public directories need that the "site" kit does not carry. Everything else on
+   those pages is the kit's own markup (.phero, .crumbs, .sh, .g3 > .pc, .subnav, .qa, .panel, .tools,
+   .feats, .band) so they read as the same site as People, Spaces and Features.
+   Scoped exactly like kit-site.css, so it matches nothing under DAWN. --fq- variables only. */
+@layer components {
+/* A directory hero is a shelf, not a splash: shorter than the persuasion pages' .phero. */
+[data-design="frequency"] [data-kit="site"] .phero.dd-hero{min-height:min(64vh,620px)}
+[data-design="frequency"] [data-kit="site"] .phero.dd-hero .wrap{padding-bottom:clamp(40px,6vw,64px)}
+[data-design="frequency"] [data-kit="site"] .phero .dd-facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin:18px 0 0;font-size:var(--fq-text-body-size)}
+[data-design="frequency"] [data-kit="site"] .dd-facts span{display:inline-flex;align-items:center;gap:8px}
+[data-design="frequency"] [data-kit="site"] .dd-facts .fq-icon{width:18px;height:18px}
+[data-design="frequency"] [data-kit="site"] .dd-facts a{text-decoration:underline;text-underline-offset:3px}
+
+/* Sections run tighter than a persuasion page's .sec: a directory is read, not scrolled through. */
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec{padding:clamp(48px,7vw,88px) 0}
+/* Two directory sections hand over at half a gap each, so the fx seam (drawn at a borderless .sec's top)
+   sits mid-gap and the next heading never touches it; the total gap is the one section pad, as before. */
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec:has(+.sec.dd-sec){padding-bottom:clamp(24px,3.5vw,44px)}
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec+.sec.dd-sec{padding-top:clamp(24px,3.5vw,44px)}
+[data-design="frequency"] [data-kit="site"] .dd-sec .sh{margin-bottom:28px}
+[data-design="frequency"] [data-kit="site"] .dd-sec .sh .body-l{margin:0}
+
+/* Filters: the kit's .subnav pills, scrolling sideways on a phone rather than wrapping into a wall. */
+[data-design="frequency"] [data-kit="site"] .subnav.dd-chips{margin:0 0 28px}
+@media (max-width:640px){[data-design="frequency"] [data-kit="site"] .subnav.dd-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+[data-design="frequency"] [data-kit="site"] .subnav.dd-chips a{flex:none}}
+[data-design="frequency"] [data-kit="site"] .dd-tools{display:flex;flex-direction:column;gap:14px;margin:0 0 28px}
+[data-design="frequency"] [data-kit="site"] .dd-tools .subnav.dd-chips{margin:0}
+[data-design="frequency"] [data-kit="site"] .dd-tools .label{margin-top:4px}
+
+/* Cards: the kit's .pc, as a link (or an article holding links), with no pop-in so a long list shows
+   at once with or without the FX island. */
+[data-design="frequency"] [data-kit="site"] .pc.dd-card{text-decoration:none;color:inherit;position:relative}
+[data-design="frequency"] [data-kit="site"] a.pc.dd-card:hover, [data-design="frequency"] [data-kit="site"] .pc.dd-card:has(h3 a:hover){transform:translateY(-3px);box-shadow:inset 0 0 0 1px var(--fq-border-strong),var(--fq-shadow-1)}
+[data-design="frequency"] [data-kit="site"] a.pc.dd-card:focus-visible, [data-design="frequency"] [data-kit="site"] .dd-card h3 a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .dd-card h3 a{color:inherit;text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .dd-card h3 a::after{content:"";position:absolute;inset:0;border-radius:inherit}
+[data-design="frequency"] [data-kit="site"] .dd-card .ic img{width:28px;height:28px;object-fit:contain;border-radius:var(--fq-radius-s)}
+[data-design="frequency"] [data-kit="site"] .dd-card .ph{background:var(--fq-bg-sunken)}
+[data-design="frequency"] [data-kit="site"] .dd-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="site"] .dd-meta{margin-top:auto;padding-top:4px;display:flex;flex-wrap:wrap;gap:4px 14px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-act{position:relative;z-index:2;align-self:flex-start;font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-pc,var(--fq-side));text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .dd-act:hover{text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .dd-grid{list-style:none;margin:0;padding:0}
+[data-design="frequency"] [data-kit="site"] .dd-grid>li{display:block;min-width:0}
+@media (min-width:561px) and (max-width:860px){[data-design="frequency"] [data-kit="site"] .g3.dd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* A group of cards under its own heading (Channels under a Pillar). */
+[data-design="frequency"] [data-kit="site"] .dd-group+.dd-group{margin-top:56px}
+[data-design="frequency"] [data-kit="site"] .dd-group>h3{margin:0 0 8px;font:600 var(--fq-text-h3)/var(--fq-lh-h3) var(--fq-font-display);letter-spacing:var(--fq-track-h3);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-group>p{margin:0 0 20px;max-width:64ch;color:var(--fq-text-body)}
+
+/* The honest empty state, and the pager under a long list. */
+[data-design="frequency"] [data-kit="site"] .dd-empty{border-radius:var(--fq-radius-xl);padding:clamp(28px,4vw,48px);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);display:flex;flex-direction:column;gap:14px;max-width:760px}
+[data-design="frequency"] [data-kit="site"] .dd-empty h3{margin:0;font:600 clamp(24px,2.6vw,34px)/1.05 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-empty p{margin:0;line-height:1.55;color:var(--fq-text-body);max-width:58ch}
+[data-design="frequency"] [data-kit="site"] .dd-empty .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+[data-design="frequency"] [data-kit="site"] .dd-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:32px;padding-top:20px;border-top:1px solid var(--fq-border-hair);font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-pager .subnav{margin:0}
+
+/* Detail pages: a reading column beside a sticky side panel, collapsing to one column on a phone. */
+[data-design="frequency"] [data-kit="site"] .split.dd-split{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .split.dd-split{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="site"] .dd-split .stack{position:static}}
+[data-design="frequency"] [data-kit="site"] .dd-main{display:flex;flex-direction:column;gap:44px;min-width:0}
+[data-design="frequency"] [data-kit="site"] .dd-main>section>h2{margin:0 0 16px;font:600 var(--fq-text-h3)/var(--fq-lh-h3) var(--fq-font-display);letter-spacing:var(--fq-track-h3);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-prose{margin:0;white-space:pre-line;font-size:var(--fq-text-body-l);line-height:1.65;color:var(--fq-text-body);max-width:64ch}
+[data-design="frequency"] [data-kit="site"] .dd-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+[data-design="frequency"] [data-kit="site"] .dd-list li{display:flex;gap:12px;line-height:1.5;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dd-list li::before{content:"";flex:none;width:6px;height:6px;margin-top:9px;border-radius:50%;background:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .dd-list li small{margin-left:auto;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .qa.dd-qa summary small{display:block;margin-top:6px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .qa.dd-qa .dd-list{padding:0 0 20px}
+[data-design="frequency"] [data-kit="site"] .panel.dd-panel{display:flex;flex-direction:column;gap:14px;padding:24px}
+[data-design="frequency"] [data-kit="site"] .dd-panel h2{margin:0;font:600 var(--fq-text-h4)/var(--fq-lh-h4) var(--fq-font-display);letter-spacing:var(--fq-track-h4);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-panel p{margin:0;line-height:1.55;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dd-panel .btn{width:100%}
+[data-design="frequency"] [data-kit="site"] .dd-panel .dd-price{font:600 var(--fq-text-h2)/1 var(--fq-font-display);letter-spacing:var(--fq-track-h2);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-panel .dd-fine{font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-panel dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font:var(--fq-type-meta)}
+[data-design="frequency"] [data-kit="site"] .dd-panel dt{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-panel dd{margin:0;color:var(--fq-text-strong);text-align:right}
+[data-design="frequency"] [data-kit="site"] .dd-guide{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
+[data-design="frequency"] [data-kit="site"] .dd-guide b{display:block;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-guide small{color:var(--fq-text-muted)}
+}

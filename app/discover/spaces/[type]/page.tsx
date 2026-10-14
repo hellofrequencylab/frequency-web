@@ -9,6 +9,8 @@ import { PageHero, Section, SectionHeading, BetaCTA, Button } from '@/components
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, spaceListSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySpaceTypeHub } from '@/components/frequency/site/pages/discover/spaces'
 
 export const revalidate = 3600
 
@@ -62,25 +64,34 @@ export default async function DiscoverSpacesByTypePage({
 
   const spaces = await listNetworkedSpaces({ type })
   const label = spaceTypeLabel(type)
+  const schema = [
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Spaces', path: '/spaces' },
+      { name: hub.plural, path: `/discover/spaces/${type}` },
+    ]),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `${hub.plural} on ${SITE_NAME}`,
+      url: `${SITE_URL}/discover/spaces/${type}`,
+    },
+    spaces.length > 0 && spaceListSchema(spaces, `${hub.plural} on ${SITE_NAME}`),
+  ].filter(Boolean)
+
+  // THE DESIGN SWITCH (ADR-1737): the same hub, Spaces and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencySpaceTypeHub type={type} hub={hub} hubs={TYPE_HUBS} label={label} spaces={spaces} />
+      </>
+    )
+  }
 
   return (
     <>
-      <JsonLd
-        data={[
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Spaces', path: '/spaces' },
-            { name: hub.plural, path: `/discover/spaces/${type}` },
-          ]),
-          {
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: `${hub.plural} on ${SITE_NAME}`,
-            url: `${SITE_URL}/discover/spaces/${type}`,
-          },
-          spaces.length > 0 && spaceListSchema(spaces, `${hub.plural} on ${SITE_NAME}`),
-        ].filter(Boolean)}
-      />
+      <JsonLd data={schema} />
 
       <PageHero
         eyebrow="Discover by type"

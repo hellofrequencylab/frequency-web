@@ -168,7 +168,7 @@ export async function AdminInfoRail({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-border bg-surface p-2">
+      <section className="rounded-card border border-border bg-surface p-2">
         <p className="px-3 pb-1.5 pt-2 text-meta font-semibold uppercase tracking-wide text-muted">Live</p>
         <InfoStat label="Members" value={d.members.toLocaleString()} href="/admin/members" icon={Users} />
         <InfoStat label="Active this week" value={d.wam} href="/admin/insights?tab=engagement" icon={Zap} />
@@ -176,7 +176,7 @@ export async function AdminInfoRail({
       </section>
 
       {candidates.length > 0 && (
-        <section className="rounded-2xl border border-border bg-surface p-2">
+        <section className="rounded-card border border-border bg-surface p-2">
           <p className="px-3 pb-1.5 pt-2 text-meta font-semibold uppercase tracking-wide text-muted">
             Needs attention
           </p>

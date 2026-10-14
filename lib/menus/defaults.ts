@@ -287,7 +287,9 @@ function footerMenu(): ResolvedMenu {
 // (the sub-page tabs / dropdowns), each group's links the items. The shell renders ONLY
 // the ACTIVE section's children as the mega sub-header (contextual to the route), with
 // the admin/Vera search bar. The section gate (min + staffDomain) rides onto the category
-// AND its items (ADR-390), so the sub-nav matches each page's own gate.
+// and its own landing item; every other item carries ITS OWN leaf gate (ADR-1745, replacing
+// ADR-390's section stamp), so the sub-nav matches each page's own gate and a section can group
+// tools by job without re-gating them. The renderers decide a section by its visible items.
 function adminHeaderMenu(): ResolvedMenu {
   const categories: ResolvedCategory[] = ADMIN_NAV.map((section: AdminNavSection, si: number) => {
     const access = toAccess(section.min)
@@ -308,8 +310,9 @@ function adminHeaderMenu(): ResolvedMenu {
     const children: ResolvedCategory[] = section.groups.map((group, gi) => {
       const items = group.items.map((link, li) =>
         item(`${catId}:child:${gi}:item:${li}`, link.label, link.href, li, {
-          minAccess: access,
-          staffDomain,
+          minAccess: toAccess(link.min),
+          staffDomain: link.staffDomain,
+          ...(link.staffLevel ? { staffLevel: link.staffLevel } : {}),
         }),
       )
       return category(`${catId}:child:${gi}`, group.heading, gi, items, [], gate)

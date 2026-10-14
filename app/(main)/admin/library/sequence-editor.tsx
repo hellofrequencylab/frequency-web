@@ -254,7 +254,7 @@ export function SequenceEditor({
           <Link
             href="/onboarding/sequence-preview"
             target="_blank"
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated"
           >
             <Eye className="h-4 w-4" aria-hidden />
             Preview
@@ -263,7 +263,7 @@ export function SequenceEditor({
             type="button"
             onClick={togglePublish}
             disabled={pending}
-            className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-body-sm font-semibold disabled:opacity-60 ${
+            className={`inline-flex items-center gap-1.5 rounded-card px-4 py-2 text-body-sm font-semibold disabled:opacity-60 ${
               live
                 ? 'border border-border-strong text-text hover:bg-surface-elevated'
                 : 'bg-primary text-on-primary hover:opacity-90'
@@ -282,7 +282,7 @@ export function SequenceEditor({
       </div>
 
       {errors.length > 0 && (
-        <div role="alert" className="mb-4 rounded-2xl border border-danger/40 bg-danger/5 p-4">
+        <div role="alert" className="mb-4 rounded-card border border-danger/40 bg-danger/5 p-4">
           <p className="text-body-sm font-semibold text-danger">This flow could not be saved.</p>
           <ul className="mt-1 list-disc pl-5 text-body-sm text-danger">
             {errors.map((e, i) => (
@@ -292,7 +292,7 @@ export function SequenceEditor({
         </div>
       )}
       {saved && !pending && errors.length === 0 && (
-        <div className="mb-4 rounded-2xl border border-border bg-surface-elevated/50 p-3 text-body-sm text-muted">
+        <div className="mb-4 rounded-card border border-border bg-surface-elevated/50 p-3 text-body-sm text-muted">
           Saved. A version was snapshotted before the change.
         </div>
       )}
@@ -319,7 +319,7 @@ export function SequenceEditor({
             const fields = contentFieldsFor(step.type)
             const isLast = index === steps.length - 1
             return (
-              <div key={step.id} className="rounded-2xl border border-border bg-surface p-4">
+              <div key={step.id} className="rounded-card border border-border bg-surface p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                   <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
                     Step {index + 1}
@@ -330,13 +330,13 @@ export function SequenceEditor({
                     </span>
                   )}
                   <span className="ml-auto flex items-center gap-1">
-                    <button type="button" onClick={() => move(index, -1)} disabled={index === 0 || pending} className="rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-text disabled:opacity-30" aria-label="Move up">
+                    <button type="button" onClick={() => move(index, -1)} disabled={index === 0 || pending} className="rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-text disabled:opacity-30" aria-label="Move up">
                       <ArrowUp className="h-4 w-4" />
                     </button>
-                    <button type="button" onClick={() => move(index, 1)} disabled={isLast || pending} className="rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-text disabled:opacity-30" aria-label="Move down">
+                    <button type="button" onClick={() => move(index, 1)} disabled={isLast || pending} className="rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-text disabled:opacity-30" aria-label="Move down">
                       <ArrowDown className="h-4 w-4" />
                     </button>
-                    <button type="button" onClick={() => removeStep(index)} disabled={steps.length === 1 || pending} className="rounded-lg p-1.5 text-subtle hover:bg-danger/10 hover:text-danger disabled:opacity-30" aria-label="Remove step">
+                    <button type="button" onClick={() => removeStep(index)} disabled={steps.length === 1 || pending} className="rounded-control p-1.5 text-subtle hover:bg-danger/10 hover:text-danger disabled:opacity-30" aria-label="Remove step">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </span>
@@ -396,7 +396,7 @@ export function SequenceEditor({
             type="button"
             onClick={addStep}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-dashed border-border-strong px-4 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-card border border-dashed border-border-strong px-4 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Add step
@@ -450,7 +450,7 @@ export function SequenceEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-card bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           Save changes
@@ -462,7 +462,7 @@ export function SequenceEditor({
 
       {versions.length > 0 && (
         <AdminSection title="History" description="Every save snapshots the prior flow. Restore any point; the current flow is snapshotted first, so a rollback is itself reversible.">
-          <ul className="divide-y divide-border rounded-2xl border border-border">
+          <ul className="divide-y divide-border rounded-card border border-border">
             {versions.map((v) => (
               <li key={v.id} className="flex items-center gap-3 px-4 py-3">
                 <History className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -522,7 +522,7 @@ export function NewSequenceButton() {
         type="button"
         onClick={create}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-card bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
         New onboarding flow

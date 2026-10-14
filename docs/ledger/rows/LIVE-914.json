@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-914",
+  "title": "Phase 0.5: the welcome email, the day 1/3/7 nudges, the invite card and the Market Read stop promising what the product does not do and stop leaning on FOMO",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LAUNCH-MARKETING-PLAN.md",
+    "ref": "§14 Phase 0.5 (row '0.5 Lifecycle copy'), §1 item 5 and §9: the welcome email's false referral promise ('you both earn'), the day 1/3/7 notifications' exclamation points and leaderboard pointer, the invite card's 'Earn Zaps when they join' and 'find your people' share text, the Market Read FOMO lines and lowercase 'circle', and the unverified 'Others are looking too.'"
+  },
+  "detail": "The referral programme today (lib/qr/referral.ts, lib/onboarding/welcome.ts, lib/zaps.ts): a newcomer who joins through a personal code gets referred_join_bonus Zaps at signup; the referrer gets invite_accepted Zaps only once that member activates (circle.joined, practice.adopted or practice.verified), rate-capped. So 'you both earn when someone you bring joins' was false for the referrer. Copy only, no trigger, timing, recipient or reward changed.\n\nlib/email.ts welcome (html + text): drops 'you're connected to your community' and 'Bring a friend, earn as you go ... you both earn'; now 'Bring a friend along: a friend who joins with it gets a few Zaps to start, and you earn Zaps once they join a Circle or pick up a Practice.' app/api/cron/lifecycle-triggers/route.ts: no exclamation points, Circle capitalised, day 3 drops 'earn some Zaps!', day 7 points at an upcoming Event instead of the leaderboard (which opens at Regular). components/sidebar/invite-friend-button.tsx: rail line 'Earn Zaps once they get started', dialog states the activation gate, share text no longer says 'find your people'. lib/marketing/market-read.ts: 'Get in early', 'be one of the first through the door', 'Be one of the founders, not a follower' and 'Come find your circle' replaced; Circle capitalised. app/(main)/network/page.tsx: 'Others are looking too.' removed.\n\nOut of scope and still open: app/(main)/codes/member-codes.tsx:32 also says 'you both earn Zaps'.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-0-5-lifecycle.mjs"
+  },
+  "closed": "2026-10-13"
+}

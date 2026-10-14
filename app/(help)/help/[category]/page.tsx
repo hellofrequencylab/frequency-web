@@ -7,6 +7,8 @@ import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyHelpCategory } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 type Params = { params: Promise<{ category: string }> }
 
@@ -39,6 +41,31 @@ export default async function HelpCategoryPage({ params }: Params) {
   const cat = (await getAllCategories()).find((c) => c.slug === category)
   if (!cat) notFound()
 
+  const crumbsLd = (
+    <JsonLd
+      data={breadcrumbSchema([
+        { name: 'Help', path: '/help' },
+        { name: cat.title, path: `/help/${cat.slug}` },
+      ])}
+    />
+  )
+
+  // The Frequency design (ADR-1737, build-time): the same topic, articles and routes in the kit's help
+  // idiom. DAWN never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        {crumbsLd}
+        <FrequencyHelpCategory
+          slug={cat.slug}
+          title={cat.title}
+          description={cat.description}
+          articles={cat.articles.map((a) => ({ title: a.title, description: a.description, href: helpHref(cat.slug, a.slug) }))}
+        />
+      </>
+    )
+  }
+
   // The shared hero band (LIVE-117, ADR-1261). A category page is a DYNAMIC route, so rung 1 reads
   // `page_settings` on '/help' — the section key the map hands it — and the Help image an operator
   // set on the section root stands behind every category.
@@ -51,12 +78,7 @@ export default async function HelpCategoryPage({ params }: Params) {
       description={cat.description}
       back={{ href: '/help', label: 'Help center' }}
     >
-      <JsonLd
-        data={breadcrumbSchema([
-          { name: 'Help', path: '/help' },
-          { name: cat.title, path: `/help/${cat.slug}` },
-        ])}
-      />
+      {crumbsLd}
       <ul className="divide-y divide-border rounded-card border border-border bg-surface-elevated">
         {cat.articles.map((a) => (
           <li key={a.slug}>

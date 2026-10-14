@@ -14,19 +14,23 @@ type TopEarner = Pick<
   'id' | 'display_name' | 'handle' | 'achievement_count' | 'lifetime_zaps' | 'current_streak'
 >
 
-export async function GamificationTopAchievers() {
+/** The five members with the most achievements (the leaderboard read), shared with the Frequency Standing body. */
+export async function loadTopAchievers(): Promise<(TopEarner & { avatar_url: string | null })[]> {
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
-    .select('id, display_name, handle, achievement_count, lifetime_zaps, current_streak')
+    .select('id, display_name, handle, achievement_count, lifetime_zaps, current_streak, avatar_url')
     .order('achievement_count', { ascending: false })
     .limit(5)
+  return (data ?? []) as (TopEarner & { avatar_url: string | null })[]
+}
 
-  const topEarners = (data ?? []) as TopEarner[]
+export async function GamificationTopAchievers() {
+  const topEarners: TopEarner[] = await loadTopAchievers()
 
   return (
     <AdminSection title="Top achievers">
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         {topEarners.length === 0 ? (
           <EmptyState
             variant="first-use"

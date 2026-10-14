@@ -101,7 +101,7 @@ export async function GrowthFunnel() {
         >
           <TrendArea points={d.growthSeries} height={64} />
         </GraphTile>
-        <div className="col-span-1 flex items-center rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        <div className="col-span-1 flex items-center rounded-card border border-border bg-surface p-4 sm:p-5">
           <RingGauge
             pct={d.activationRate}
             label="Activation · 7d"

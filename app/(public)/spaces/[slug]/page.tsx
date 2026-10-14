@@ -24,6 +24,8 @@ import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
 // render is a dynamic API and would void ISR; signed-in members rewrite to
@@ -104,6 +106,7 @@ export default async function PublicSpacePage({
 
   const brandName = space.brandName?.trim() || space.name
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
+  const coverFocus = readCoverFocus(space.preferences)
   // The cover resolves through the one detail-hero ladder (PROG-P5, ADR-1498), like the 20+
   // entity pages before it: the Space's own cover (or its deterministic stock stand-in, the same
   // photo the OG card draws) is rung 1, and the operator's FOCAL POINT travels with it, which the
@@ -114,7 +117,7 @@ export default async function PublicSpacePage({
     readTagline(space.id),
     resolveDetailHero(`/spaces/${space.slug}`, {
       entityImage: coverSrc,
-      entityFocus: readCoverFocus(space.preferences),
+      entityFocus: coverFocus,
     }),
     // The Space's published tiers, for the front door at the foot of the page (LIVE-524). SPACE
     // data, not VIEWER data, so it costs this route nothing: `listMembershipTiers` takes a spaceId
@@ -168,78 +171,117 @@ export default async function PublicSpacePage({
   // .test.ts makes getCallerProfile throw and proves this call still resolves.
   const { tabs } = await buildPublicSpaceProfileNav(space)
 
+  const structuredData = (
+    <JsonLd
+      data={[
+        spaceSchema({
+          slug: space.slug,
+          type: space.type,
+          name: brandName,
+          tagline,
+          logoUrl: space.brandLogoUrl,
+          aggregateRating,
+          telephone: spaceProfile.phone,
+          // The place half (street, addressLocality, addressRegion, postalCode, addressCountry and geo) is
+          // built once in lib/spaces/schema-location.ts, which also applies the owner's location precision.
+          address: schemaLocation.address,
+          geo: schemaLocation.geo,
+          sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
+          priceRange: spaceProfile.priceRange,
+          openingHours: parseOpeningHours(spaceProfile.hours),
+        }),
+        // Under Frequency the trail is the one the page shows: its back link reads "Spaces" and opens the
+        // directory (/discover/spaces), while /spaces is the "For spaces" page for owners, not this
+        // Space's parent. DAWN keeps its trail unchanged.
+        breadcrumbSchema([
+          SITE_DESIGN === 'frequency'
+            ? { name: 'Spaces', path: '/discover/spaces' }
+            : { name: 'Spaces', path: '/spaces' },
+          { name: brandName, path: `/spaces/${space.slug}` },
+        ]),
+      ]}
+    />
+  )
+
+  // The HOOK-FREE view, not the client wrapper: `useSearchParams()` in a prerendered page
+  // bails the subtree out of the static HTML, and this is the page crawlers read. Measured --
+  // mounting the wrapper here failed the Vercel build outright on /spaces/encinitas-nexus with
+  // "useSearchParams() should be wrapped in a suspense boundary".
+  //
+  // `pathname` is the canonical Space URL, which is the only path this route serves, and
+  // `canManage` is false by construction rather than by choice: this tree has no viewer to be
+  // a manager. An operator who signs in is rewritten to the member body by
+  // lib/nav/member-space-rewrite.ts and never renders this page at all.
+  const menu = <SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} homeHref={`/spaces/${space.slug}`} />
+
+  const body = (
+    <>
+      <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+      {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.
+          LIVE-500's probe fails if `<SpaceProfileModules` appears after `<SignInCta` in this
+          file, because a sign-in card in front of the content is the exact defect ADR-1526
+          closed. The Space's own page comes first; the door follows it.
+
+          `anonymous` is the only viewer this tree can pass, and that is a fact rather than a
+          choice: markAnonymousRender() above means every caller read resolves false, so this
+          render genuinely does not know whether the reader is already a member. The tiers are
+          Space data, not viewer data, so reading them costs the page nothing.
+
+          When the Space sells nothing the door returns null and the original sign-in card below
+          is what renders, unchanged. */}
+      {tierCount > 0 ? (
+        <SpaceFrontDoor
+          viewer="anonymous"
+          brandName={brandName}
+          spaceSlug={space.slug}
+          tierCount={tierCount}
+        />
+      ) : (
+        <div className="mx-auto mt-14 max-w-xl">
+          <SignInCta
+            title={`Want to know ${brandName}?`}
+            body="Sign in free to follow this Space, see what's happening, and be a face the host recognizes."
+            action={BETA_CTA_LABEL}
+            href={BETA_CTA_HREF}
+          />
+        </div>
+      )}
+    </>
+  )
+
+  // THE FREQUENCY CHROME (ADR-1737): the member profile's cover card and kit tab row, opened in its own
+  // kit scope because this page sits outside the member shell. Same reads, same menu, same body; the
+  // cover carries no viewer actions because this tree has no viewer (markAnonymousRender above).
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        {structuredData}
+        <FqSpaceChrome
+          public
+          back={{ href: '/discover/spaces', label: 'Spaces' }}
+          coverImage={coverSrc}
+          coverFocus={coverFocus}
+          name={brandName}
+          tagline={tagline ? <p className="fqs-tagline">{tagline}</p> : null}
+          nav={menu}
+        >
+          {body}
+        </FqSpaceChrome>
+      </>
+    )
+  }
+
   return (
     <>
-      <JsonLd
-        data={[
-          spaceSchema({
-            slug: space.slug,
-            type: space.type,
-            name: brandName,
-            tagline,
-            logoUrl: space.brandLogoUrl,
-            aggregateRating,
-            telephone: spaceProfile.phone,
-            // The place half (street, addressLocality, addressRegion, postalCode, addressCountry and geo) is
-            // built once in lib/spaces/schema-location.ts, which also applies the owner's location precision.
-            address: schemaLocation.address,
-            geo: schemaLocation.geo,
-            sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
-            priceRange: spaceProfile.priceRange,
-            openingHours: parseOpeningHours(spaceProfile.hours),
-          }),
-          breadcrumbSchema([
-            { name: 'Spaces', path: '/spaces' },
-            { name: brandName, path: `/spaces/${space.slug}` },
-          ]),
-        ]}
-      />
+      {structuredData}
       <DetailTemplate
         {...hero}
         title={brandName}
         subtitle={tagline ?? undefined}
         back={{ href: '/discover/spaces', label: 'Spaces' }}
-        // The HOOK-FREE view, not the client wrapper: `useSearchParams()` in a prerendered page
-        // bails the subtree out of the static HTML, and this is the page crawlers read. Measured --
-        // mounting the wrapper here failed the Vercel build outright on /spaces/encinitas-nexus with
-        // "useSearchParams() should be wrapped in a suspense boundary".
-        //
-        // `pathname` is the canonical Space URL, which is the only path this route serves, and
-        // `canManage` is false by construction rather than by choice: this tree has no viewer to be
-        // a manager. An operator who signs in is rewritten to the member body by
-        // lib/nav/member-space-rewrite.ts and never renders this page at all.
-        stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} homeHref={`/spaces/${space.slug}`} />}
+        stickyNav={menu}
       >
-        <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
-        {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.
-            LIVE-500's probe fails if `<SpaceProfileModules` appears after `<SignInCta` in this
-            file, because a sign-in card in front of the content is the exact defect ADR-1526
-            closed. The Space's own page comes first; the door follows it.
-
-            `anonymous` is the only viewer this tree can pass, and that is a fact rather than a
-            choice: markAnonymousRender() above means every caller read resolves false, so this
-            render genuinely does not know whether the reader is already a member. The tiers are
-            Space data, not viewer data, so reading them costs the page nothing.
-
-            When the Space sells nothing the door returns null and the original sign-in card below
-            is what renders, unchanged. */}
-        {tierCount > 0 ? (
-          <SpaceFrontDoor
-            viewer="anonymous"
-            brandName={brandName}
-            spaceSlug={space.slug}
-            tierCount={tierCount}
-          />
-        ) : (
-          <div className="mx-auto mt-14 max-w-xl">
-            <SignInCta
-              title={`Want to know ${brandName}?`}
-              body="Sign in free to follow this Space, see what's on, and be a face the host recognizes."
-              action={BETA_CTA_LABEL}
-              href={BETA_CTA_HREF}
-            />
-          </div>
-        )}
+        {body}
       </DetailTemplate>
     </>
   )

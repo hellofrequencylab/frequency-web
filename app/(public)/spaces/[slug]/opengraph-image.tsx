@@ -9,6 +9,7 @@ import { loadNunito } from '@/lib/og/load-nunito'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A space on ${SITE_NAME}`
@@ -30,15 +31,14 @@ export const contentType = OG_CONTENT_TYPE
 // brand card with NO name, type, cover, or logo, so a shared link to a noindex private profile never
 // leaks its identity through the image. Brand identity only — never member data.
 //
-// Satori has NO access to the CSS token system, so the DAWN tokens it needs are mirrored here as
-// literals (app/globals.css :root): ink #141210 · on-ink #F3EEE3 · primary #E2912F ·
-// broadcast (business accent) #1EB6C5 · signal (nonprofit accent) #0F8E78.
-const INK = '#141210'
-const ON_INK = '#F3EEE3'
-const PRIMARY = '#E2912F'
+// Satori has NO access to the CSS token system, so its colours come from the design-keyed palette
+// (lib/theme/palette.ts): ink · onInk · primary · broadcast (business accent) · signal (nonprofit accent).
+const INK = palette.ink
+const ON_INK = palette.onInk
+const PRIMARY = palette.primary
 const ACCENT_BY_TYPE: Record<string, string> = {
-  business: '#1EB6C5',
-  nonprofit: '#0F8E78',
+  business: palette.broadcast,
+  nonprofit: palette.signal,
 }
 // The logo chip's corner, mirroring `--radius-cover` (app/globals.css :root, 24px). The chip on the
 // page is BrandAnchor, which rides that token because a Space's cover photo and logo chip are its
@@ -74,7 +74,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: 72,
-            backgroundImage: `linear-gradient(180deg, ${INK} 0%, #211D17 100%)`,
+            backgroundImage: `linear-gradient(180deg, ${INK} 0%, ${palette.inkElevated} 100%)`,
             color: '#ffffff',
             fontFamily: 'sans-serif',
           }}

@@ -258,12 +258,12 @@ export function AdminBarBody({
                 key={app.id}
                 type="button"
                 onClick={() => revealSection(app)}
-                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+                className="flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
               >
                 {inner}
               </button>
             ) : (
-              <div key={app.id} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left">
+              <div key={app.id} className="flex w-full items-center gap-3 rounded-control px-2 py-2 text-left">
                 {inner}
               </div>
             )
@@ -298,7 +298,7 @@ export function AdminBarBody({
               {(inlineSections.length > 0 || model.pageGroup) && <hr className="border-border" />}
               <p className="px-1 pt-2 text-2xs font-semibold uppercase tracking-wide text-muted">Unlock more</p>
               {model.lockedApps.map((row) => (
-                <div key={row.id} className="flex items-start gap-3 rounded-lg px-2 py-2">
+                <div key={row.id} className="flex items-start gap-3 rounded-control px-2 py-2">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-body-sm font-medium text-muted">
@@ -327,9 +327,9 @@ export function AdminBarBody({
             <details
               open={moreOpen}
               onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)}
-              className="group rounded-lg border border-border"
+              className="group rounded-control border border-border"
             >
-              <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-body-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer select-none items-center gap-2 rounded-control px-3 py-3 text-body-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
                 More
                 <span
                   className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted"
@@ -361,7 +361,7 @@ export function AdminBarBody({
                     <a
                       key={link.href}
                       href={link.href}
-                      className="flex min-h-[44px] items-center gap-2 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
+                      className="flex min-h-[44px] items-center gap-2 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
                     >
                       <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 truncate">{link.label}</span>

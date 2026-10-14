@@ -133,7 +133,7 @@ export function TicketTiersPanel({
           onUpgraded={() => setError(null)}
         />
       ) : (
-        error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
+        error && <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
       )}
 
       {tiers.length > 0 && (
@@ -426,7 +426,7 @@ function TierForm({
             )}
           </div>
         ) : (
-          <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">
+          <p className="rounded-control bg-surface px-3 py-2 text-meta text-muted">
             Members-only tickets, linked to your space membership, come with {spaceAccess.wallLabel}.
           </p>
         ))}

@@ -14,6 +14,9 @@ import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqCirclesBody } from '@/components/frequency/members/circles/circles-body'
+import { loadNextMeetups } from '@/lib/circles/next-meetups'
 
 // The Circles index — a TEMPLATE + BLOCKS surface (PAGE-FRAMEWORK). It now opens on the SHARED
 // MarketHero header (the same hero band Events / Marketplace Events / Business Spaces use) so every
@@ -37,8 +40,16 @@ export default async function CirclesPage({
 }: {
   searchParams: Promise<{ type?: string; interest?: string; sort?: string; q?: string; channel?: string }>
 }) {
-  const circlesIndex = await getCirclesIndexData(await searchParams)
+  const sp = await searchParams
+  const circlesIndex = await getCirclesIndexData(sp)
   const { content, signedIn, interests, canCreate } = circlesIndex
+
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the member kit's Circles page, on the
+  // same live read. Build-time, so the DAWN block layout below is untouched when it is off.
+  if (SITE_DESIGN === 'frequency') {
+    const nextMeetups = await loadNextMeetups(circlesIndex.myCircleIds)
+    return <FqCirclesBody data={circlesIndex} params={sp} nextMeetups={nextMeetups} />
+  }
 
   // Block layout: an operator-published doc wins; else the coded default template.
   const published = await getPublishedData('circles')

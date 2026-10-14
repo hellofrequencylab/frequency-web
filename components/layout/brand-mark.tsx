@@ -1,5 +1,11 @@
 import Link from 'next/link'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { brandmarkMaskStyle } from '@/lib/theme/brand-assets'
+
+// The engraved mark masks the design's wordmark file (lib/theme/brand-assets.ts). Under DAWN this is
+// undefined and `.brandmark` in app/globals.css owns the mask; a design with its own wordmark overrides
+// just the mask image and the aspect, so the engraving, shine and press states carry over unchanged.
+const BRANDMARK_MASK = brandmarkMaskStyle()
 
 // The in-app header wordmark. By DEFAULT renders the Frequency logo as an engraved,
 // warm dark-sandy-brown fill (the wordmark PNG is an alpha mask) that lightly fades at rest,
@@ -91,7 +97,7 @@ export function BrandMark({
           phone width, and at 320 it drew 8px tall. The cluster's min-content is 165.8px against a
           186.3px link, which is why 360 is the first width with slack and why 320 is the only one
           that still asks the mark for anything. */}
-      <span className="brandmark h-[22px] min-w-[6.5rem] max-w-full md:h-8" aria-hidden />
+      <span className="brandmark h-[22px] min-w-[6.5rem] max-w-full md:h-8" style={BRANDMARK_MASK} aria-hidden />
     </Link>
   )
 }

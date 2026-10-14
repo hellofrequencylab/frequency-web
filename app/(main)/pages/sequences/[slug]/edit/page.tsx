@@ -6,12 +6,12 @@ import { AdminPage } from '@/components/admin/admin-page'
 import { DEFAULT_FUNNEL } from '@/lib/funnels/definitions'
 import { resolveFunnel } from '@/lib/funnels/resolve'
 import { getFunnelOverride } from '@/lib/funnels/overrides'
-import { SplashCopyEditor } from '@/app/(main)/pages/splash/editor'
+import { SplashCopyEditor } from '@/app/(main)/pages/sequences/_default/editor'
 
 export const dynamic = 'force-dynamic'
 
 // Edit a CUSTOM Funnel's copy (ADR-162 → splash-editor refactor). Mounts the
-// SAME live-preview copy editor as the default template (/pages/splash), scoped to this
+// SAME live-preview copy editor as the default template (the Default Funnel tab), scoped to this
 // funnel's slug: the operator retitles it, rewrites every voiced beat, and watches the
 // real induction update. Saving writes this slug's override (saveFunnelVersion) and
 // carries its publish state forward, so a draft stays a draft until published from the
@@ -20,7 +20,7 @@ export default async function EditFunnelPage({ params }: { params: Promise<{ slu
   if (!(await getJanitor())) notFound()
   const { slug } = await params
   // The default template has its own editor; never edit it as a custom funnel.
-  if (slug === DEFAULT_FUNNEL) redirect('/pages/splash')
+  if (slug === DEFAULT_FUNNEL) redirect('/pages/sequences?tab=default')
   // Only DB-backed custom funnels are editable here (a row in sequence_overrides).
   const override = await getFunnelOverride(slug)
   if (!override) notFound()
@@ -39,7 +39,7 @@ export default async function EditFunnelPage({ params }: { params: Promise<{ slu
         <div className="flex items-center gap-2">
           <Link
             href="/pages/sequences"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All funnels
           </Link>
@@ -47,7 +47,7 @@ export default async function EditFunnelPage({ params }: { params: Promise<{ slu
             href={inductionPath}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <ExternalLink className="h-3.5 w-3.5" /> Preview
           </a>

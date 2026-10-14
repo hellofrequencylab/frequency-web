@@ -9,6 +9,8 @@ import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
 import { getMenu } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyAdminConsole } from '@/components/frequency/admin/admin-console'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home rather than shown a dead-end 404. Pages re-assert their
@@ -25,7 +27,14 @@ import { viewerRoleFor } from '@/components/layout/menu-role'
 // (railFor → 'none'). The info rail streams behind Suspense.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { role, webRole, staffRole } = await requireAdminFloor()
+  const { profileId, role, webRole, staffRole } = await requireAdminFloor()
+
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the console wears the design's admin shell (the glass
+  // sidebar over the same admin_header menu, the sticky top bar) and nothing below renders. SITE_DESIGN is
+  // build-time, so a DAWN build never takes this branch and renders exactly as before.
+  if (SITE_DESIGN === 'frequency') {
+    return <FrequencyAdminConsole profileId={profileId} role={role} webRole={webRole} staffRole={staffRole}>{children}</FrequencyAdminConsole>
+  }
 
   // The admin sub-nav (§6): the ACTIVE Studio world's sub-pages render as a flat horizontal row of
   // text links at the TOP of this sticky band, directly above the search bar — the MegaBar's second
@@ -51,13 +60,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               in ONE opaque sticky container (search on top since ADR-790 swapped the two — the comment
               here used to describe the old order), so page content scrolls cleanly UNDERNEATH
               the whole band like header chrome — nothing bleeds through the padding (the old bug was a
-              transparent gap above the input). bg-[var(--color-canvas)] at FULL opacity spans the whole
+              transparent gap above the input). `bg-canvas` at FULL opacity spans the whole
               band height; a hairline border-b reads the scroll seam as chrome. The old shell-rendered
               admin sub-header is gone, so this band now pins directly under the main header (3.5rem) at
               EVERY breakpoint — the sub-nav row it absorbed is inside this same container. */}
           {/* Owner directive (ADR-790): the search command bar sits ON TOP, the world sub-nav menu BELOW
               it — so the Resonance CRM (and every world) reads "search, then the tab menu under it". */}
-          <div className="sticky top-[var(--app-header-h)] z-20 mb-6 border-b border-border bg-[var(--color-canvas)]">
+          <div className="sticky top-[var(--app-header-h)] z-20 mb-6 border-b border-border bg-canvas">
             <div className="py-2.5">
               <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
             </div>
@@ -71,7 +80,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             drawer slides OVER. The drawer mounts inside this column (not the shell's) so it
             covers the rail and compresses the center as its grab handle widens it. */}
         <AdminRailDrawerColumn>
-          <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-card border border-border bg-surface" />}>
             <AdminInfoRail role={role} webRole={webRole} staffRole={staffRole} />
           </Suspense>
         </AdminRailDrawerColumn>

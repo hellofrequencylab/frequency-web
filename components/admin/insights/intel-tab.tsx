@@ -133,7 +133,7 @@ async function IntelContent() {
         ) : (
           <ol className="space-y-2">
             {strategy.map((s: StrategyItem, i) => (
-              <li key={i} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+              <li key={i} className="flex items-start gap-3 rounded-card border border-border bg-surface p-4">
                 <StatusChip tone={STATUS[s.status].tone} size="sm">{STATUS[s.status].label}</StatusChip>
                 <div className="min-w-0">
                   <p className="text-body-sm font-semibold text-text">{s.title}</p>
@@ -161,7 +161,7 @@ async function IntelContent() {
           <form action={runAcquisitionBackfill}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
             >
               <Compass className="h-3.5 w-3.5" aria-hidden /> Backfill from referrals + beta
             </button>
@@ -250,7 +250,7 @@ function IntelSkeleton() {
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/70" />
+          <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/70" />
         ))}
       </div>
       <TableSkeleton rows={6} cols={4} />

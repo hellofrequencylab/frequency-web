@@ -1,0 +1,346 @@
+/* ══ FREQUENCY · the shared primitives in the members kit's idiom (kept by hand) ══════════════════
+   Under SITE_DESIGN === 'frequency' the shared page shells and primitives (components/templates/*,
+   components/ui/*, components/cards/*) render the members kit's own markup: PageHeading is the
+   design's `.head`, Button is `.btn` (.pa / .ink / .txt), Badge is `.tag`, UnderlineTabs is `.tabs`,
+   Field / Input / Select / Switch are `.field` / `.input` / `.sw`, StatCard is a `.panel` with a `.num`,
+   Meter and ProgressTrack are `.meter`, EntityCard and RowCard are `.card`. Every member route that
+   still renders a DAWN body therefore wears the design from the source (design_handoff/frequency/
+   templates/members/app/app.css; kit installed at kit-members.css).
+
+   FOUR PARTS.
+     1. The few states and tones the kit has no class for (a danger button, a tinted tag, an invalid
+        field, a tab count, the empty state, a stat card's sizes, the wizard's step bar). `mu-` names
+        only, so nothing collides with a kit class. Scoped exactly like the kit.
+     2. THE FALLBACK. The same primitives also render on Frequency pages that sit inside no kit at all
+        (sign-in, onboarding, the public discover pages). There the kit's selectors match nothing, so
+        this part repeats the kit's values for the classes the primitives emit, matched only
+        OUTSIDE every kit (`:not([data-kit] *)`), so it can never fight the members, site, admin or
+        editor kit where one applies. Values mirror kit-members.css; when the kit is re-installed
+        with new values, update these by hand (they are the same numbers, side by side).
+     3. The display role, unlayered: `.font-display` was tuned for DAWN's Anton (caps, wide tracking,
+        weight 400). Under Frequency it is Unbounded, which the design never sets in caps.
+     4. The three DAWN idioms a body still hand-rolls (a primary action, a bold heading, the eyebrow),
+        answered once in the kit's voice so no hand-rolled page needs a DAWN-moving edit.
+
+   Imported by app/layout.tsx (so the fallback reaches routes outside the member shell). Every rule is
+   scoped to [data-design="frequency"], so under DAWN this sheet paints nothing. --fq- tokens throughout; the
+   few literals left (the card hover's periwinkle glow, the white switch thumb) mirror the kit verbatim
+   and say so on their line (token-ok).
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
+
+@layer components {
+
+/* ── 1. Kit-scoped extras ─────────────────────────────────────────────────────────────────────── */
+
+/* A primitive that stamps its own kit scope inside the shell (WizardShell) keeps the shell's wash. */
+[data-design="frequency"] [data-kit="members"] [data-kit="members"]{background:transparent}
+
+/* PageHeading: the `.head` lockup. The actions block is a row, not the column `.head>div` makes. */
+[data-design="frequency"] [data-kit="members"] .head>.mu-actions{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+[data-design="frequency"] [data-kit="members"] .head .meta{margin:0;max-width:62ch;text-wrap:pretty}
+[data-design="frequency"] [data-kit="members"] .head .h1{overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .mu-back{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .mu-back:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mu-back svg{width:16px;height:16px}
+[data-design="frequency"] [data-kit="members"] .mu-toolbar{margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .mu-stats{margin-bottom:40px}
+[data-design="frequency"] [data-kit="members"] .mu-flow{display:flex;flex-direction:column;gap:40px}
+
+/* Button: the variants and the one size the kit leaves to the page. */
+[data-design="frequency"] [data-kit="members"] .btn.xs{height:32px;padding:0 12px;font-size:var(--fq-text-meta)}
+[data-design="frequency"] [data-kit="members"] .btn.mu-soft,[data-design="frequency"] [data-kit="members"] .btn.mu-soft:hover{background:var(--fq-pa-soft);color:var(--fq-text-strong);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .btn.mu-danger,[data-design="frequency"] [data-kit="members"] .btn.mu-danger:hover{background:var(--fq-danger);color:var(--color-text-on-danger);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .btn.mu-warning,[data-design="frequency"] [data-kit="members"] .btn.mu-warning:hover{background:var(--fq-warning);color:var(--color-text-on-warning);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .btn.mu-danger-o,[data-design="frequency"] [data-kit="members"] .btn.mu-danger-o:hover{color:var(--fq-danger);box-shadow:inset 0 0 0 1px var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .btn.mu-warning-o,[data-design="frequency"] [data-kit="members"] .btn.mu-warning-o:hover{color:var(--fq-warning);box-shadow:inset 0 0 0 1px var(--fq-warning)}
+[data-design="frequency"] [data-kit="members"] .btn.mu-success-o,[data-design="frequency"] [data-kit="members"] .btn.mu-success-o:hover{color:var(--fq-success);box-shadow:inset 0 0 0 1px var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .btn:disabled,[data-design="frequency"] [data-kit="members"] .btn[aria-disabled="true"]{opacity:.4;cursor:not-allowed;transform:none}
+
+/* Badge: the kit's `.tag`, toned by meaning (violet act, magenta live, aqua presence). */
+[data-design="frequency"] [data-kit="members"] .tag svg{width:12px;height:12px;flex:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-sm{height:20px;padding:0 8px;font-size:12px /* token-ok: the kit .tag size; the export has no 12px step */}
+[data-design="frequency"] [data-kit="members"] .tag.mu-primary{background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-signal{background:var(--fq-presence-soft);color:var(--fq-presence);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-broadcast{background:var(--fq-live-soft);color:var(--fq-live);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-success{background:var(--color-success-bg);color:var(--fq-success);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-warning{background:var(--color-warning-bg);color:var(--fq-warning);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-danger{background:var(--color-danger-bg);color:var(--fq-danger);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid{background:var(--fq-text-strong);color:var(--fq-surface-card);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-primary{background:var(--fq-pa);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-signal{background:var(--fq-presence);color:var(--fq-text-on-accent)}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-broadcast{background:var(--fq-live);color:var(--fq-text-on-accent)}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-success{background:var(--fq-success);color:var(--color-text-on-success)}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-warning{background:var(--fq-warning);color:var(--color-text-on-warning)}
+[data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-danger{background:var(--fq-danger);color:var(--color-text-on-danger)}
+
+/* Tabs: links and a dropdown summary in the kit's underline strip. */
+[data-design="frequency"] [data-kit="members"] .tabs>a,[data-design="frequency"] [data-kit="members"] .tabs summary{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .tabs>a:hover,[data-design="frequency"] [data-kit="members"] .tabs summary:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .tabs summary{height:44px;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer;list-style:none;box-shadow:inset 0 -1.5px 0 transparent}
+[data-design="frequency"] [data-kit="members"] .tabs summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="members"] .tabs summary.on{color:var(--fq-text-strong);box-shadow:inset 0 -1.5px 0 var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .tabs summary svg{width:14px;height:14px}
+[data-design="frequency"] [data-kit="members"] .tabs.mu-wrap{flex-wrap:wrap;overflow:visible}
+[data-design="frequency"] [data-kit="members"] .mu-count{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-text-strong) 6%,transparent);font:600 12px/1 var(--fq-font-sans);color:var(--fq-text-muted);font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .on>.mu-count{background:var(--fq-pa);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mu-menu{position:absolute;left:0;z-index:20;margin-top:6px;min-width:10rem;padding:6px;border-radius:18px;background:var(--fq-surface-raised);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .mu-menu a{height:40px;display:flex;align-items:center;padding:0 12px;border-radius:12px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .mu-menu a:hover{background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mu-menu a[aria-current="page"]{background:var(--fq-pa-soft);color:var(--fq-text-strong)}
+
+/* Field: the label text, hint and error inside the kit's `.field` column, and the select's chevron. */
+[data-design="frequency"] [data-kit="members"] .mu-label{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .mu-hint{font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .mu-err{font:500 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .input[aria-invalid="true"]{box-shadow:0 0 0 2px color-mix(in oklab,var(--fq-danger) 55%,transparent)}
+[data-design="frequency"] [data-kit="members"] .input:disabled{opacity:.5;cursor:not-allowed}
+[data-design="frequency"] [data-kit="members"] select.input{appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .input.mu-active{background:var(--fq-pa-soft)}
+[data-design="frequency"] [data-kit="members"] .mu-select{position:relative;display:block;width:100%}
+[data-design="frequency"] [data-kit="members"] .mu-select>svg{position:absolute;right:16px;top:50%;width:16px;height:16px;transform:translateY(-50%);pointer-events:none;color:var(--fq-text-muted)}
+
+/* Switch: the kit's `.sw`; pending reads dimmed, disabled faded. */
+[data-design="frequency"] [data-kit="members"] .sw:disabled{cursor:default;opacity:.5}
+[data-design="frequency"] [data-kit="members"] .sw.mu-pending{opacity:.6}
+
+/* EmptyState: the kit's `.empty`, given a soft room of its own so it reads as a state, not a gap. */
+[data-design="frequency"] [data-kit="members"] .empty.mu-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:44px 24px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-text-strong) 2.5%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mu-empty .ic{width:48px;height:48px;border-radius:50%;background:var(--fq-pa-soft)}
+[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="error"] .ic{background:var(--color-danger-bg);color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="cleared"] .ic{background:var(--color-success-bg);color:var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .mu-empty .t2{max-width:42ch}
+[data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act{margin-top:8px;display:flex;justify-content:center}
+/* The member status screens' row of ways back in (components/frequency/members/member-status.tsx). */
+[data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act.mu-ways{flex-wrap:wrap;gap:10px}
+/* The Settings wait's side list (components/frequency/members/utility-states.tsx): the kit's nav pill
+   drawn on a span, so it needs the box a <button> gets for free. */
+[data-design="frequency"] [data-kit="members"] .mc-navbtn.mu-sk-nav{display:flex;align-items:center;cursor:default}
+
+/* StatCard: a `.panel` with the kit's `.k` label and `.num` reading; two denser sizes. */
+[data-design="frequency"] [data-kit="members"] .panel.mu-stat{display:flex;flex-direction:column;gap:8px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .mu-stat .num{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .mu-stat.mu-sm{padding:16px 18px}
+[data-design="frequency"] [data-kit="members"] .mu-stat.mu-sm .num{font-size:20px;letter-spacing:-.03em}
+[data-design="frequency"] [data-kit="members"] .mu-stat.mu-xs{padding:12px 14px;gap:4px;border-radius:18px}
+[data-design="frequency"] [data-kit="members"] .mu-stat.mu-xs .num{font-size:18px;letter-spacing:-.03em}
+[data-design="frequency"] [data-kit="members"] .mu-stat .row svg{width:16px;height:16px;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .mu-up{color:var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .mu-down{color:var(--fq-danger)}
+
+/* Meter / ProgressTrack: the kit's `.meter`, with heights and tones by meaning. */
+[data-design="frequency"] [data-kit="members"] .meter.mu-h6{height:6px}
+[data-design="frequency"] [data-kit="members"] .meter.mu-h8{height:8px}
+[data-design="frequency"] [data-kit="members"] .meter.mu-h10{height:10px}
+[data-design="frequency"] [data-kit="members"] .meter.mu-h12{height:12px}
+[data-design="frequency"] [data-kit="members"] .meter.mu-success i{background:var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-warning i{background:var(--fq-warning)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-danger i{background:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-signal i{background:var(--fq-presence)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-broadcast i{background:var(--fq-live)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-move i{background:var(--fq-accent-2)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-current i{background:currentColor}
+[data-design="frequency"] [data-kit="members"] .meter.mu-neutral i{background:var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .meter.mu-ease i{transition:width 500ms var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .mu-reading{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-strong);font-variant-numeric:tabular-nums}
+
+/* EntityCard / RowCard: the kit's `.card`, lifting on hover like an `a.card`. */
+[data-design="frequency"] [data-kit="members"] .card.mu-ecard{position:relative;display:flex;flex-direction:column;height:100%;transition:transform var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .card.mu-ecard:hover,[data-design="frequency"] [data-kit="members"] a.card.mu-row:hover{transform:translateY(-3px);box-shadow:0 1px 2px color-mix(in oklab,var(--fq-ink) 4%,transparent),0 30px 60px -36px rgba(120,150,225,.55),inset 0 0 0 1px rgba(196,184,255,.6)} /* token-ok: kit-members a.card:hover verbatim; the export ships the PA periwinkle and lilac only inside its --fq-pa-* gradients */
+[data-design="frequency"] [data-kit="members"] .mu-ecard>a{flex:1;display:flex;flex-direction:column;color:inherit}
+[data-design="frequency"] [data-kit="members"] .mu-ecard>a:focus-visible{outline-offset:-2px;border-radius:var(--fq-radius-l)}
+[data-design="frequency"] [data-kit="members"] .mu-ecard .ph{position:relative;flex:none;overflow:hidden;aspect-ratio:16/9;transition:transform var(--fq-dur-slow) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .mu-ecard .ph.mu-short{aspect-ratio:16/7}
+[data-design="frequency"] [data-kit="members"] .mu-ecard:hover .ph{transform:scale(1.03)}
+[data-design="frequency"] [data-kit="members"] .mu-ebody{flex:1;display:flex;flex-direction:column;gap:6px;padding:18px 20px 20px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .mu-ebody .h3,[data-design="frequency"] [data-kit="members"] .mu-row .t1{overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .mu-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .mu-emeta{margin-top:auto;padding-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .mu-emeta.mu-nowrap{flex-wrap:nowrap;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .mu-efoot{padding:12px 16px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .mu-eact{position:absolute;top:14px;right:14px;z-index:1}
+[data-design="frequency"] [data-kit="members"] .card.mu-row{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;color:inherit}
+[data-design="frequency"] [data-kit="members"] .card.mu-row.mu-managed{display:block;padding:0}
+[data-design="frequency"] [data-kit="members"] .mu-row .t1 a:hover{color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .mu-dim{opacity:.72;filter:saturate(.6)}
+
+/* SegmentedControl: the kit's pill rail (the header's `.ap-nav` grammar), the selected segment ink. */
+[data-design="frequency"] [data-kit="members"] .mu-seg{gap:2px;padding:4px;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>*{height:36px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:transparent;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer;white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>*:hover{color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-surface-raised) 60%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>.on,[data-design="frequency"] [data-kit="members"] .mu-seg>.on:hover{background:var(--fq-text-strong);color:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .mu-seg>.mu-md{height:40px;padding:0 16px}
+[data-design="frequency"] [data-kit="members"] .mu-seg.mu-v{border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .mu-seg.mu-v>*{justify-content:flex-start;height:40px;border-radius:var(--fq-radius-m)}
+
+/* SectionHeader: the kit's `.sec-h` with the `.h2` title, the count beside it, the arrow on a link. */
+[data-design="frequency"] [data-kit="members"] .mu-sec-t{display:flex;align-items:baseline;gap:10px}
+[data-design="frequency"] [data-kit="members"] .mu-sec-t .meta{font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .mu-sec-arrow{flex:none;align-self:center;width:16px;height:16px;color:var(--fq-text-muted);transition:transform var(--fq-dur-fast) var(--fq-ease-out),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .mu-sec-link{min-width:0;border-radius:var(--fq-radius-s)}
+[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .h2,[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .mu-sec-arrow{color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .mu-sec-arrow{transform:translate(2px,-2px)}
+
+/* StudioWindow (create and edit): the kit's floating sheet. Opaque, no backdrop filter: a blurred
+   takeover repaints on every pointer move (LIVE-495, components/ui/dialog.tsx). */
+[data-design="frequency"] [data-kit="members"] .mu-window{background:var(--fq-surface-card);box-shadow:var(--fq-shadow-float),inset 0 0 0 1px var(--fq-border-hair)}
+@media (min-width:640px){[data-design="frequency"] [data-kit="members"] .mu-window{border-radius:28px}}
+
+/* WizardShell: the step bar, and the room. */
+[data-design="frequency"] [data-kit="members"] .mu-steps{display:flex;gap:6px}
+[data-design="frequency"] [data-kit="members"] .mu-steps>span{flex:1;height:4px;border-radius:var(--fq-radius-orb);background:var(--fq-track);transition:background var(--fq-dur-base)}
+[data-design="frequency"] [data-kit="members"] .mu-steps>span.on{background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .mu-dots{display:flex;justify-content:center;gap:8px}
+[data-design="frequency"] [data-kit="members"] .mu-dots>span{width:8px;height:8px;border-radius:var(--fq-radius-orb);background:var(--fq-track);transition:width var(--fq-dur-base) var(--fq-ease-out),background var(--fq-dur-base)}
+[data-design="frequency"] [data-kit="members"] .mu-dots>span.on{width:24px;background:var(--fq-pa)}
+
+/* ── 2. The fallback: the same classes on a Frequency page inside no kit ─────────────────────────── */
+/* Mirrors kit-members.css (templates/members/app/app.css). Matched only outside every [data-kit], AND in
+   the body of a Commons page of the public site (`[data-kit="site"] .fq-commons-body`, SiteShell): there the
+   shared primitives (Button, Badge, cards, fields) are the members idiom, which is the Commons idiom, and
+   the bridge outranks the site kit's own `.btn` / `.panel` / `.meter` / `.sw`. A members-kit body nested
+   inside (`[data-kit]` under the Commons body) keeps the kit itself. */
+[data-design="frequency"] .btn:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn:not(.fq-commons-body [data-kit] *){height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 20px;border-radius:var(--fq-radius-orb);border:none;font:500 15px/1 var(--fq-font-sans);cursor:pointer;white-space:nowrap;background:transparent;color:var(--fq-text-strong);box-shadow:inset 0 0 0 1px var(--fq-border-strong);text-decoration:none;transition:transform var(--fq-dur-fast) var(--fq-ease-out),box-shadow var(--fq-dur-base) var(--fq-ease-out),background var(--fq-dur-fast)}
+[data-design="frequency"] .btn:not([data-kit] *):hover,[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn:not(.fq-commons-body [data-kit] *):hover{transform:translateY(-1px)}
+[data-design="frequency"] .btn:not([data-kit] *):active,[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn:not(.fq-commons-body [data-kit] *):active{transform:scale(.97)}
+[data-design="frequency"] .btn.pa:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.pa:not(.fq-commons-body [data-kit] *){background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent);font-weight:600}
+[data-design="frequency"] .btn.lg:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.lg:not(.fq-commons-body [data-kit] *){height:48px;padding:0 24px}
+[data-design="frequency"] .btn.sm:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.sm:not(.fq-commons-body [data-kit] *){height:36px;padding:0 14px;font-size:var(--fq-text-body-s)}
+[data-design="frequency"] .btn.xs:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.xs:not(.fq-commons-body [data-kit] *){height:32px;padding:0 12px;font-size:var(--fq-text-meta)}
+[data-design="frequency"] .btn.ink:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.ink:not(.fq-commons-body [data-kit] *){background:var(--fq-text-strong);color:var(--fq-surface-card);box-shadow:none}
+[data-design="frequency"] .btn.txt:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.txt:not(.fq-commons-body [data-kit] *){box-shadow:none;color:var(--fq-text-muted);padding:0 10px}
+[data-design="frequency"] .btn.mu-soft:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.mu-soft:not(.fq-commons-body [data-kit] *){background:var(--fq-pa-soft);box-shadow:none}
+[data-design="frequency"] .btn.mu-danger:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.mu-danger:not(.fq-commons-body [data-kit] *){background:var(--fq-danger);color:var(--color-text-on-danger);box-shadow:none}
+[data-design="frequency"] .btn.mu-warning:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.mu-warning:not(.fq-commons-body [data-kit] *){background:var(--fq-warning);color:var(--color-text-on-warning);box-shadow:none}
+[data-design="frequency"] .btn.mu-danger-o:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.mu-danger-o:not(.fq-commons-body [data-kit] *){color:var(--fq-danger);box-shadow:inset 0 0 0 1px var(--fq-danger)}
+[data-design="frequency"] .btn.mu-warning-o:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.mu-warning-o:not(.fq-commons-body [data-kit] *){color:var(--fq-warning);box-shadow:inset 0 0 0 1px var(--fq-warning)}
+[data-design="frequency"] .btn.mu-success-o:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn.mu-success-o:not(.fq-commons-body [data-kit] *){color:var(--fq-success);box-shadow:inset 0 0 0 1px var(--fq-success)}
+[data-design="frequency"] .btn:not([data-kit] *):disabled,[data-design="frequency"] .btn[aria-disabled="true"]:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn:not(.fq-commons-body [data-kit] *):disabled,[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn[aria-disabled="true"]:not(.fq-commons-body [data-kit] *){opacity:.4;cursor:not-allowed;transform:none}
+[data-design="frequency"] .btn:not([data-kit] *) svg,[data-design="frequency"] [data-kit="site"] .fq-commons-body .btn:not(.fq-commons-body [data-kit] *) svg{width:16px;height:16px}
+[data-design="frequency"] .tag:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .tag:not(.fq-commons-body [data-kit] *){display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--fq-radius-orb);font:500 12px/1 var(--fq-font-sans);background:color-mix(in oklab,var(--fq-surface-raised) 70%,transparent);color:var(--fq-text-strong);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .tag.mu-sm:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .tag.mu-sm:not(.fq-commons-body [data-kit] *){height:20px;padding:0 8px;font-size:12px /* token-ok: the kit .tag size; the export has no 12px step */}
+[data-design="frequency"] .tag.mu-primary:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .tag.mu-primary:not(.fq-commons-body [data-kit] *){background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
+[data-design="frequency"] .tag.mu-solid:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .tag.mu-solid:not(.fq-commons-body [data-kit] *){background:var(--fq-text-strong);color:var(--fq-surface-card);box-shadow:none}
+[data-design="frequency"] .field:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .field:not(.fq-commons-body [data-kit] *){display:flex;flex-direction:column;gap:8px}
+[data-design="frequency"] .mu-label:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-label:not(.fq-commons-body [data-kit] *){font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] .mu-hint:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-hint:not(.fq-commons-body [data-kit] *){font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] .mu-err:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-err:not(.fq-commons-body [data-kit] *){font:500 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-danger)}
+[data-design="frequency"] .input:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .input:not(.fq-commons-body [data-kit] *){height:48px;width:100%;padding:0 18px;border-radius:var(--fq-radius-m);border:none;background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent);font:400 15px/1 var(--fq-font-sans);color:var(--fq-text-strong);outline:none}
+[data-design="frequency"] .input:not([data-kit] *):focus,[data-design="frequency"] [data-kit="site"] .fq-commons-body .input:not(.fq-commons-body [data-kit] *):focus{box-shadow:0 0 0 2px var(--fq-focus-ring)}
+[data-design="frequency"] .input:not([data-kit] *)::placeholder,[data-design="frequency"] [data-kit="site"] .fq-commons-body .input:not(.fq-commons-body [data-kit] *)::placeholder{color:var(--fq-text-faint)}
+[data-design="frequency"] .input[aria-invalid="true"]:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .input[aria-invalid="true"]:not(.fq-commons-body [data-kit] *){box-shadow:0 0 0 2px color-mix(in oklab,var(--fq-danger) 55%,transparent)}
+[data-design="frequency"] textarea.input:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body textarea.input:not(.fq-commons-body [data-kit] *){height:auto;min-height:110px;padding:14px 18px;line-height:1.5;resize:vertical}
+[data-design="frequency"] select.input:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body select.input:not(.fq-commons-body [data-kit] *){appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer}
+[data-design="frequency"] .mu-select:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-select:not(.fq-commons-body [data-kit] *){position:relative;display:block;width:100%}
+[data-design="frequency"] .mu-select:not([data-kit] *)>svg,[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-select:not(.fq-commons-body [data-kit] *)>svg{position:absolute;right:16px;top:50%;width:16px;height:16px;transform:translateY(-50%);pointer-events:none;color:var(--fq-text-muted)}
+[data-design="frequency"] .sw:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .sw:not(.fq-commons-body [data-kit] *){position:relative;flex:none;width:46px;height:28px;border-radius:var(--fq-radius-orb);border:none;background:var(--fq-track);cursor:pointer;transition:background var(--fq-dur-base)}
+[data-design="frequency"] .sw:not([data-kit] *)::after,[data-design="frequency"] [data-kit="site"] .fq-commons-body .sw:not(.fq-commons-body [data-kit] *)::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px color-mix(in oklab,var(--fq-ink) 25%,transparent);transition:transform var(--fq-dur-base) var(--fq-ease-out)} /* token-ok: the kit's switch thumb is white in every room (kit-members .sw::after); no export token is always-white */
+[data-design="frequency"] .sw.on:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .sw.on:not(.fq-commons-body [data-kit] *){background:var(--fq-pa)}
+[data-design="frequency"] .sw.on:not([data-kit] *)::after,[data-design="frequency"] [data-kit="site"] .fq-commons-body .sw.on:not(.fq-commons-body [data-kit] *)::after{transform:translateX(18px)}
+[data-design="frequency"] .meter:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .meter:not(.fq-commons-body [data-kit] *){height:4px;border-radius:var(--fq-radius-orb);background:var(--fq-track);overflow:hidden}
+[data-design="frequency"] .meter:not([data-kit] *) i,[data-design="frequency"] [data-kit="site"] .fq-commons-body .meter:not(.fq-commons-body [data-kit] *) i{display:block;height:100%;border-radius:inherit;background:var(--fq-pa)}
+[data-design="frequency"] .tabs:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .tabs:not(.fq-commons-body [data-kit] *){display:flex;gap:24px;border-bottom:1px solid var(--fq-border-hair);overflow-x:auto;scrollbar-width:none}
+[data-design="frequency"] .tabs:not([data-kit] *)>a,[data-design="frequency"] [data-kit="site"] .fq-commons-body .tabs:not(.fq-commons-body [data-kit] *)>a{flex:none;height:44px;display:inline-flex;align-items:center;gap:8px;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-muted);box-shadow:inset 0 -1.5px 0 transparent}
+[data-design="frequency"] .tabs:not([data-kit] *)>a.on,[data-design="frequency"] [data-kit="site"] .fq-commons-body .tabs:not(.fq-commons-body [data-kit] *)>a.on{color:var(--fq-text-strong);box-shadow:inset 0 -1.5px 0 var(--fq-text-strong)}
+[data-design="frequency"] .head:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .head:not(.fq-commons-body [data-kit] *){display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+[data-design="frequency"] .head:not([data-kit] *)>div,[data-design="frequency"] [data-kit="site"] .fq-commons-body .head:not(.fq-commons-body [data-kit] *)>div{display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] .head:not([data-kit] *)>.mu-actions,[data-design="frequency"] [data-kit="site"] .fq-commons-body .head:not(.fq-commons-body [data-kit] *)>.mu-actions{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+[data-design="frequency"] .k:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .k:not(.fq-commons-body [data-kit] *){font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] .h1:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .h1:not(.fq-commons-body [data-kit] *){margin:0;font:500 clamp(32px,4vw,46px)/1.02 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] .mu-seg:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-seg:not(.fq-commons-body [data-kit] *){gap:2px;padding:4px;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent)}
+[data-design="frequency"] .mu-seg:not([data-kit] *)>*,[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-seg:not(.fq-commons-body [data-kit] *)>*{height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:transparent;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer;white-space:nowrap}
+[data-design="frequency"] .mu-seg:not([data-kit] *)>.on,[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-seg:not(.fq-commons-body [data-kit] *)>.on{background:var(--fq-text-strong);color:var(--fq-surface-card)}
+[data-design="frequency"] .sec-h:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .sec-h:not(.fq-commons-body [data-kit] *){display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px}
+[data-design="frequency"] .h2:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .h2:not(.fq-commons-body [data-kit] *){margin:0;font:500 var(--fq-text-h3)/1.1 var(--fq-font-display);letter-spacing:-.035em;color:var(--fq-text-strong)}
+[data-design="frequency"] .mu-sec-t:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-sec-t:not(.fq-commons-body [data-kit] *){display:flex;align-items:baseline;gap:10px}
+[data-design="frequency"] .mu-sec-arrow:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-sec-arrow:not(.fq-commons-body [data-kit] *){width:16px;height:16px;align-self:center;color:var(--fq-text-muted)}
+[data-design="frequency"] .h3:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .h3:not(.fq-commons-body [data-kit] *){margin:0;font:500 17px/1.2 var(--fq-font-display);letter-spacing:-.025em;color:var(--fq-text-strong)}
+[data-design="frequency"] .meta:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .meta:not(.fq-commons-body [data-kit] *){margin:0;font:400 var(--fq-text-body-s)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] .t1:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .t1:not(.fq-commons-body [data-kit] *){font:500 15px/1.25 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] .t2:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .t2:not(.fq-commons-body [data-kit] *){font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] .num:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .num:not(.fq-commons-body [data-kit] *){font:500 40px/1 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong)}
+[data-design="frequency"] .mu-back:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-back:not(.fq-commons-body [data-kit] *){align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] .panel:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .panel:not(.fq-commons-body [data-kit] *){background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow);border-radius:var(--fq-radius-l);padding:22px}
+[data-design="frequency"] .card:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .card:not(.fq-commons-body [data-kit] *){border-radius:var(--fq-radius-l);overflow:hidden;background:var(--fq-surface-raised);box-shadow:0 1px 2px color-mix(in oklab,var(--fq-ink) 4%,transparent),0 20px 50px -36px color-mix(in oklab,var(--fq-ink) 30%,transparent),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .ic:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .ic:not(.fq-commons-body [data-kit] *){flex:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);color:var(--fq-text-strong)}
+[data-design="frequency"] .empty.mu-empty:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .empty.mu-empty:not(.fq-commons-body [data-kit] *){display:flex;flex-direction:column;align-items:center;gap:10px;padding:44px 24px;text-align:center;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-text-strong) 2.5%,transparent)}
+[data-design="frequency"] .mu-ebody:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .mu-ebody:not(.fq-commons-body [data-kit] *){flex:1;display:flex;flex-direction:column;gap:6px;padding:18px 20px 20px;min-width:0}
+[data-design="frequency"] .card.mu-row:not([data-kit] *),[data-design="frequency"] [data-kit="site"] .fq-commons-body .card.mu-row:not(.fq-commons-body [data-kit] *){display:flex;align-items:flex-start;gap:14px;padding:16px 20px}
+}
+
+/* ── 3. The display role (unlayered, so it outranks the `uppercase` / `tracking-*` utilities the
+   DAWN call sites pair with it): Unbounded in the design's own register, never in Anton's caps. ── */
+[data-design="frequency"] .font-display{text-transform:none;font-weight:var(--design-display-weight);letter-spacing:-.04em}
+
+/* ── 4. The DAWN idioms a page still hand-rolls, read in the kit's voice (unlayered, kit-scoped) ──
+   Most member bodies compose the primitives above; the rest still write DAWN's own class strings by
+   hand. Three of those strings are unmistakable and say exactly one thing, so they are answered here,
+   once, instead of by a per-page edit that would also move DAWN:
+     a hand-rolled primary action   `bg-primary text-on-primary` on a link or button -> the kit's
+                                    `.btn.pa` (iridescent pill, the glow), as Button renders it
+     a heading in a bold weight     Unbounded is never set bold in the design (500, like `.h1`-`.h3`)
+     DAWN's `eyebrow` kicker        the kit's `.k` (the display face at 11px, tracked caps, muted)
+   Unlayered on purpose: the call sites' Tailwind utilities live in `@layer utilities`, which an
+   unlayered rule outranks without an !important. Scoped to the members kit, so DAWN and the other
+   Frequency kits are untouched. */
+[data-design="frequency"] [data-kit="members"] :is(a,button).bg-primary.text-on-primary{background:var(--fq-pa);color:var(--fq-text-strong);border-radius:var(--fq-radius-orb);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
+[data-design="frequency"] [data-kit="members"] :is(h1,h2,h3,h4):is(.font-bold,.font-extrabold,.font-black){font-weight:500}
+[data-design="frequency"] [data-kit="members"] .eyebrow{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+
+/* ── Loading placeholders, one look everywhere (owner, 2026-10-14) ───────────────────────────────────
+   Several loading screens borrowed the kit's photo placeholder (`.ph`, warm sand by design) or rolled
+   their own fill, so skeletons loaded in tan on the cool members canvas. Every skeleton class reads the
+   same neutral ink wash and the same soft pulse; reduced motion holds it still. The `.ph.fqm-sk` arm
+   out-ranks the kit's `.ph` fill. */
+[data-design="frequency"] [data-kit] :is(.ph.fqm-sk, .fqm-sk, .fqm-skel, .ev-skel-bar, .fa-sk, .hp-skel, [class*="mu-sk"]) {
+  background: color-mix(in oklab, var(--fq-text-strong) 6%, transparent);
+  background-image: none;
+  box-shadow: none;
+  animation: fq-sk-pulse 1.6s var(--fq-ease-out) infinite;
+}
+@keyframes fq-sk-pulse { 50% { opacity: .55 } }
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit] :is(.ph.fqm-sk, .fqm-sk, .fqm-skel, .ev-skel-bar, .fa-sk, .hp-skel, [class*="mu-sk"]) { animation: none }
+}
+
+/* ── Navigation progress (components/frequency/shared/nav-progress.tsx) ─────────────────────────────
+   A 3px iridescent bar along the top edge from the click until the next route lands, so a slow page
+   never reads as a dead link. Reduced motion: it holds as a static bar instead of sweeping. */
+[data-design="frequency"] .fq-navprog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 3px;
+  background: var(--fq-pa);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fq-dur-fast) var(--fq-ease-out);
+}
+[data-design="frequency"] .fq-navprog.on {
+  opacity: 1;
+  animation: fq-navprog 8s var(--fq-ease-out) forwards;
+}
+@keyframes fq-navprog { 0% { transform: scaleX(0) } 20% { transform: scaleX(.45) } 100% { transform: scaleX(.92) } }
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] .fq-navprog.on { animation: none; transform: scaleX(1) }
+}
+
+/* ── Hand-built switches (owner, 2026-10-14: "the crazy purple color is still there") ─────────────────
+   About a dozen DAWN forms draw their own `role="switch"` with `bg-primary` when on, which Frequency
+   resolves to its saturated action violet. The kit's switch (.sw) is the iridescent --fq-pa when on and
+   --fq-track when off; every hand-built switch in the app kits now reads the same. */
+[data-design="frequency"] [data-kit] [role="switch"]:is(.bg-primary, [aria-checked="true"]):not(.sw),
+[data-design="frequency"] [data-kit] [role="switch"][aria-checked="true"] > .bg-primary {
+  background: var(--fq-pa);
+  border-color: transparent;
+}
+[data-design="frequency"] [data-kit] [role="switch"]:is(.bg-border, .bg-surface-elevated, [aria-checked="false"]):not(.sw),
+[data-design="frequency"] [data-kit] [role="switch"][aria-checked="false"] > :is(.bg-border, .bg-surface-elevated) {
+  background: var(--fq-track);
+  border-color: transparent;
+}

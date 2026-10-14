@@ -60,6 +60,7 @@ import { BlockPicker } from './block-picker'
 import { BlockEditPanel } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { Input } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -287,7 +288,7 @@ export function EntityPageBuilder({
   }
 
   if (loading) {
-    return <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-40 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   // Owner + kind gate: the builder edits THIS page's layout, so it mounts only on the page whose match id
   // the read-gated seed returned (your own /people/<handle>, or a Space you manage), and only against a
@@ -686,22 +687,22 @@ export function EntityPageBuilder({
       {header}
 
       {store.error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
+        <p className="rounded-control bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
           {store.error}
         </p>
       )}
 
       {/* Starters — schematic wireframe thumbnails, shown on a default / empty layout (no lock). */}
       {showStarters && (
-        <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-3">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Start with a layout</p>
+        <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
+          <p className={capsLabel('text-2xs font-semibold text-muted')}>Start with a layout</p>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(STARTER_LAYOUTS[kind]) as StarterId[]).map((id) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => onStarter(id)}
-                className="group rounded-lg border border-border bg-surface p-1.5 text-left transition-colors hover:border-primary"
+                className="group rounded-control border border-border bg-surface p-1.5 text-left transition-colors hover:border-primary"
               >
                 <StarterThumb rows={STARTER_LAYOUTS[kind][id]} />
                 <span className="mt-1 block text-center text-2xs font-medium capitalize text-muted group-hover:text-text">
@@ -771,9 +772,9 @@ export function EntityPageBuilder({
           {bench.length > 0 && (
             <section
               aria-label="Add a block"
-              className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-2"
+              className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-2"
             >
-              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
+              <p className={capsLabel('px-1 text-2xs font-semibold text-muted')}>Add a block</p>
               <ul className="flex flex-wrap gap-1.5">
                 {bench.map((id) => (
                   <li key={id}>
@@ -815,7 +816,7 @@ export function EntityPageBuilder({
               key={row.id}
               onDragOver={(e) => dragRow.current && e.preventDefault()}
               onDrop={(e) => dropOnRow(e, index)}
-              className={`rounded-2xl border bg-surface transition-colors ${
+              className={`rounded-card border bg-surface transition-colors ${
                 grabbed
                   ? 'border-primary ring-1 ring-primary'
                   : // While a DIFFERENT row is dragged, every other row reads as a reorder drop target (item 7).
@@ -939,7 +940,7 @@ export function EntityPageBuilder({
                       {/* The row layout (Full · 50/50 · Main/Side) is the strip's own picker now; the menu
                           carries the per-row SPACING control (ADR-569 C3) + the destructive action. */}
                       <div className="space-y-1.5 px-2.5 py-2">
-                        <p className="text-3xs font-semibold uppercase tracking-wide text-muted">Spacing</p>
+                        <p className={capsLabel('text-3xs font-semibold text-muted')}>Spacing</p>
                         <MarginControl
                           top={row.mt ?? 'none'}
                           bottom={row.mb ?? 'none'}
@@ -961,7 +962,7 @@ export function EntityPageBuilder({
                   {row.cells.map((stack, col) => (
                     <div
                       key={`${row.id}-${col}`}
-                      className={`space-y-1.5 rounded-lg transition-colors ${
+                      className={`space-y-1.5 rounded-control transition-colors ${
                         // While a block is dragged, every column reads as a clear "drop here" zone (item 7), so
                         // the operator drops a block without hunting for a target. Ring + tint ONLY (never a
                         // padding / size change): mutating a drop zone's box mid-drag makes the browser abort
@@ -1019,7 +1020,7 @@ export function EntityPageBuilder({
                         <button
                           type="button"
                           onClick={() => setAddingAt({ rowId: row.id, col })}
-                          className={`flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-2 py-3 text-meta font-medium transition-colors hover:border-primary hover:text-text ${
+                          className={`flex w-full items-center justify-center gap-1 rounded-control border border-dashed px-2 py-3 text-meta font-medium transition-colors hover:border-primary hover:text-text ${
                             // A dragged block turns every add slot into an obvious drop hint (item 7).
                             dragKind === 'block' ? 'border-primary text-primary-strong' : 'border-border text-muted'
                           }`}
@@ -1204,7 +1205,7 @@ function BlockPill({
         // While its settings panel is open the pill fuses to it: keep the top corners rounded but square the
         // bottom and drop the bottom border so the header + settings read as ONE surface, no seam (item 3). The
         // panel below pulls up (-mt-px) with no top border, so the left / right borders run straight through.
-        editing ? 'rounded-t-lg rounded-b-none border-b-0' : 'rounded-lg'
+        editing ? 'rounded-t-control rounded-b-none border-b-0' : 'rounded-control'
       } ${grabbed ? 'border-primary ring-1 ring-primary' : 'border-border'} ${hidden ? 'opacity-60' : ''}`}
     >
       <button
@@ -1276,7 +1277,7 @@ function BlockPill({
               <>
                 {sections.length > 0 && (
                   <>
-                    <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">Move to section</p>
+                    <p className={capsLabel('px-2.5 pt-1.5 text-3xs font-semibold text-muted')}>Move to section</p>
                     {sections
                       .filter((s) => s.rowId !== currentRowId)
                       .map((s) => (
@@ -1329,7 +1330,7 @@ function BlocksTray({
 }) {
   const [open, setOpen] = useState(true)
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated/40 p-2">
+    <div className="rounded-card border border-border bg-surface-elevated/40 p-2">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1374,7 +1375,7 @@ function BlocksTray({
                   </div>
                   {openMenu === `bench:${id}` && (
                     <Menu>
-                      <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">Place in</p>
+                      <p className={capsLabel('px-2.5 pt-1.5 text-3xs font-semibold text-muted')}>Place in</p>
                       {emptySlots.length === 0 ? (
                         <p className="px-2.5 py-1.5 text-2xs text-muted">No empty slots. Add a row or widen one.</p>
                       ) : (
@@ -1409,7 +1410,7 @@ function MenuItem({ children, onClick, danger = false }: { children: React.React
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-meta font-medium transition-colors ${
+      className={`flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-meta font-medium transition-colors ${
         danger ? 'text-danger hover:bg-danger-bg' : 'text-text hover:bg-surface-elevated'
       }`}
     >

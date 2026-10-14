@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -31,6 +31,9 @@ import { SharedPlansPanel } from './shared-plans-panel'
 import { CalendarPlansPanel } from './calendar-plans-panel'
 import { SpaceTodosPanel } from './space-todos-panel'
 import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
+import { CalendarPlanner, type PlannerUpNext } from '@/components/frequency/admin/calendar-planner'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
 // space's events: the month grid AND the chronological list (the calendar's own toggle), every item
@@ -135,13 +138,35 @@ export default async function SpaceCalendarConsolePage({
 
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
+  const newEventHref = `/events/new?space=${space.id}`
+
+  // THE FREQUENCY PLANNER (components/frequency/admin/calendar-planner.tsx). Under SITE_DESIGN=frequency the
+  // calendar is a full-width planning surface with its own toolbar and side bar; everything below it (the
+  // to-dos, Plans, settings and the manage table) is the same set DAWN shows. Its today is the Space's own
+  // day (America/Los_Angeles when the Space has none), so the server and the browser shade the same days.
+  const planner = SITE_DESIGN === 'frequency' && !featureLocked
+  const todayKey = dayKeyIn(space.timeZone, now)
+  const upNext: PlannerUpNext[] = planner
+    ? ownedRows
+        .filter((ev) => !ev.is_cancelled && ev.starts_at >= nowIso)
+        .sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
+        .slice(0, 5)
+        .map((ev) => ({
+          id: ev.id,
+          title: ev.title,
+          whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'dayTime' }),
+          href: canManage ? `/events/${ev.slug}/manage?section=settings` : `/events/${ev.slug}`,
+          isDraft: ev.status === 'draft',
+        }))
+    : []
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Calendar"
       description="Run your space's calendar. Your public events, plus private entries and unavailable time only your team can see."
       width={featureLocked ? undefined : 'wide'}
+      consoleMeasure={planner ? 'full' : 'focus'}
     >
       {featureLocked ? (
         <FeatureLockedNotice
@@ -154,6 +179,30 @@ export default async function SpaceCalendarConsolePage({
         />
       ) : (
         <div className="space-y-4">
+          {planner ? (
+            <CalendarPlanner
+              slug={space.slug}
+              spaceId={space.id}
+              brandName={brandName}
+              events={events}
+              initialYear={initialYear}
+              initialMonth1={initialMonth1}
+              todayKey={todayKey}
+              canEdit={canManage}
+              spaceTimeZone={spaceTimeZone}
+              dayNotes={dayNotes}
+              skyMarkers={settingsSky}
+              plans={plans}
+              pencilByPlan={pencilByPlan}
+              upNext={upNext}
+              todos={canManage ? todos : []}
+              upcomingCount={upcomingCount}
+              newEventHref={newEventHref}
+              httpsUrl={httpsUrl}
+              webcalUrl={webcalUrl}
+            />
+          ) : (
+          <>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-body-sm text-muted">
               {upcomingCount > 0
@@ -168,7 +217,7 @@ export default async function SpaceCalendarConsolePage({
                 description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
               />
               <Link
-                href={`/events/new?space=${space.id}`}
+                href={newEventHref}
                 className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> New event
@@ -191,7 +240,12 @@ export default async function SpaceCalendarConsolePage({
             skyMarkers={settingsSky}
             plans={plans}
           />
+          </>
+          )}
 
+          {planner && <EventShareApprovals spaceId={space.id} />}
+
+          <div id="calendar-settings" className="space-y-4">
           <SpaceTimeZoneField slug={space.slug} timeZone={spaceTimeZone} canEdit={canManage} />
 
           {/* Beside the zone on purpose: both decide how this Space's calendar READS rather than
@@ -203,14 +257,18 @@ export default async function SpaceCalendarConsolePage({
           />
 
           <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
+          </div>
 
           {canManage && (
-            <SpaceTodosPanel slug={space.slug} tasks={todos} viewerId={viewerProfileId} />
+            <div id="calendar-todos">
+              <SpaceTodosPanel slug={space.slug} tasks={todos} viewerId={viewerProfileId} />
+            </div>
           )}
 
           {canManage && <SharedPlansPanel slug={space.slug} incoming={incomingShares} sharedPlans={sharedPlans} />}
 
           {canManage && (
+            <div id="calendar-plans">
             <CalendarPlansPanel
               slug={space.slug}
               spaceId={space.id}
@@ -219,16 +277,17 @@ export default async function SpaceCalendarConsolePage({
               pencilByPlan={pencilByPlan}
               initialPlanId={Array.isArray(query.plan) ? query.plan[0] : query.plan}
             />
+            </div>
           )}
 
           {managedEvents.length > 0 && (
-            <div className="pt-2">
+            <div className="pt-2" id="calendar-manage-events">
               <SectionHeader title="Manage events" count={managedEvents.length} />
               <SpaceEventsManager events={managedEvents} />
             </div>
           )}
         </div>
       )}
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

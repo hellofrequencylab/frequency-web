@@ -1,3 +1,4 @@
+import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { Zap, Gem, Flame, Trophy } from 'lucide-react'
 import {
@@ -48,14 +49,13 @@ export function StandingHero({
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 pt-6 sm:px-7">
         <div className="flex items-center gap-3.5">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-on-rank lift-1"
-            style={{ background: `var(--rank-${def.rankKey})` }}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-card text-on-rank lift-1 ${def.color}`}
             aria-hidden
           >
             <Trophy className="h-6 w-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+            <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>
               {seasonName ? `Season · ${seasonName}` : 'Season standing'}
             </p>
             <p className="flex items-center gap-2 text-lead font-bold leading-tight text-text">

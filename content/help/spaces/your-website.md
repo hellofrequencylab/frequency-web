@@ -51,7 +51,7 @@ labelled as Frequency, like the On Frequency section and the small mark in the f
 
 There are two themes. Your content stays the same in both; only the look changes.
 
-- **Frequency** (the default): warm, bright and airy, with soft cards, a frosted menu bar and generous space.
+- **Default**: warm, bright and airy, with soft cards, a frosted menu bar and generous space.
 - **Bold**: dark, graphic and direct, with charcoal, a bright accent and angled cuts.
 
 Choosing a theme also sets its fonts. You can pick other fonts after.
@@ -78,7 +78,7 @@ Either way, the change shows on your live website straight away.
 ## One page in the other theme
 
 Your site has one theme, and any page can step out of it. In the website editor, open the page, select
-**Page settings**, and under **Page theme** pick **Frequency** or **Bold**. That page wears the theme you
+**Page settings**, and under **Page theme** pick **Default** or **Bold**. That page wears the theme you
 picked, in that theme's own fonts, and your explicit global styles still hold. Everything else on the
 site keeps the site theme.
 

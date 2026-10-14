@@ -6,6 +6,7 @@
 // pre-v2 journeys have steps with no phase) so nothing is ever hidden — matching the player,
 // which wraps loose steps in an implicit phase. Calls the author-gated edit actions.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition, type DragEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw, Anchor, GripVertical } from 'lucide-react'
@@ -77,7 +78,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
   const commit = (next: CheckConfig) => { setCfg(next); onSave(next) }
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-2.5">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Knowledge check</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>Knowledge check</p>
       <Input value={cfg.question} disabled={disabled} onChange={(e) => setCfg({ ...cfg, question: e.target.value })} onBlur={() => onSave(cfg)} aria-label="Question" placeholder="Question" />
       <div className="space-y-1.5">
         {cfg.options.map((opt, i) => (
@@ -161,11 +162,11 @@ function SlotCoaching({
     })
   }
   return (
-    <div className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary-bg/20 p-2.5">
+    <div className="mt-2 rounded-control border border-dashed border-primary/30 bg-primary-bg/20 p-2.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-primary-strong" />
-          <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Vera coaching prompt</span>
+          <span className={capsLabel('text-2xs font-semibold text-muted')}>Vera coaching prompt</span>
           {pillarName && (
             <span className="rounded-pill border border-border bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted">{pillarName}</span>
           )}
@@ -191,7 +192,7 @@ function SlotCoaching({
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
           the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
-      <p className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up message for this step</p>
+      <p className={capsLabel('mt-2 block text-2xs font-semibold text-muted')}>Warm-up message for this step</p>
       <Textarea
         value={warmup}
         disabled={disabled}
@@ -376,7 +377,7 @@ export function JourneyEditor({
     <div key={m.id} {...dropProps(m)} className={`mt-2 rounded-card border border-border bg-canvas p-3${dropRing(m)}`}>
       <div className="flex flex-wrap items-center gap-2">
         {dragHandle(m)}
-        <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">Module</span>
+        <span className={capsLabel('shrink-0 text-2xs font-semibold text-muted')}>Module</span>
         <Input
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
@@ -490,7 +491,7 @@ export function JourneyEditor({
                 type="button"
                 disabled={pending}
                 onClick={() => onPick(pr.id)}
-                className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-primary-bg/50"
+                className="flex w-full items-center justify-between gap-3 rounded-control px-2 py-1.5 text-left hover:bg-primary-bg/50"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-body-sm font-medium text-text">{pr.title}</span>
@@ -718,7 +719,7 @@ export function JourneyEditor({
           type="button"
           disabled={pending}
           onClick={() => addAndOpen(() => addLessonAction(slug, parentId, 'lesson'))}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-primary-strong hover:bg-primary-bg"
+          className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-primary-strong hover:bg-primary-bg"
         >
           <Plus className="h-4 w-4" /> Add lesson
         </button>
@@ -726,7 +727,7 @@ export function JourneyEditor({
           <button
             type="button"
             onClick={() => { setPicker((v) => (v === pickerKey ? null : pickerKey)); setQuery('') }}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
           >
             <Dumbbell className="h-4 w-4" /> Add practice
           </button>
@@ -735,7 +736,7 @@ export function JourneyEditor({
           type="button"
           disabled={pending}
           onClick={() => addAndOpen(() => addExtraCreditAction(slug, parentId))}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-signal-strong hover:bg-signal-bg/50"
+          className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-signal-strong hover:bg-signal-bg/50"
           title="A bonus task, above and beyond, that pays Zaps"
         >
           <Award className="h-4 w-4" /> Add extra credit
@@ -771,7 +772,7 @@ export function JourneyEditor({
 
       {/* Loose steps (pre-v2 content with no phase) — editable, with a nudge to organize. */}
       {looseLeaves.length > 0 && (
-        <section className="rounded-2xl border border-border bg-surface p-4">
+        <section className="rounded-card border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <Layers className="h-4 w-4 shrink-0 text-subtle" />
             <span className="text-body font-semibold text-text">Steps</span>
@@ -788,7 +789,7 @@ export function JourneyEditor({
         const phaseOpen = !closedPhases.has(p.id)
         const stepCount = lessonsOf(p.id).length + modulesOf(p.id).length
         return (
-        <section key={p.id} {...dropProps(p)} className={`rounded-2xl border border-border bg-surface p-4${dropRing(p)}`}>
+        <section key={p.id} {...dropProps(p)} className={`rounded-card border border-border bg-surface p-4${dropRing(p)}`}>
           <div className="flex flex-wrap items-center gap-2">
             {dragHandle(p)}
             <button
@@ -848,7 +849,7 @@ export function JourneyEditor({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => addModuleAction(slug, p.id))}
-                className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated"
+                className="mt-1 inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated"
               >
                 <Layers className="h-4 w-4" /> Add module
               </button>

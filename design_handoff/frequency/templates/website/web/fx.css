@@ -1,0 +1,88 @@
+/* Frequency web kit · FX layer. Mood (page energy + palette, orbs) and texture (grain, signal lines, card light, logo sheen).
+   Load after site.css. Behaviour in fx.js. Everything is additive and stops under prefers-reduced-motion. */
+
+/* ---- Page mood ---- */
+body[data-mood]{background:transparent;--m1:var(--x-violet-neon);--m2:var(--x-magenta-neon);--m3:var(--x-aqua-neon)}
+body[data-mood]::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60% 50% at 0% 100%,color-mix(in oklab,var(--m1) 16%,transparent),transparent 70%),radial-gradient(50% 45% at 100% 0%,color-mix(in oklab,var(--m2) 12%,transparent),transparent 70%),radial-gradient(40% 40% at 80% 90%,color-mix(in oklab,var(--m3) 8%,transparent),transparent 70%)}
+body[data-energy-page="still"]{--tx-d:26s;--tx-b:8s;--tx-o:.3}
+body[data-energy-page="flow"]{--tx-d:14s;--tx-b:5s;--tx-o:.4}
+body[data-energy-page="charge"]{--tx-d:8s;--tx-b:2.5s;--tx-o:.5}
+
+/* ---- Orb fields ---- */
+.tx-host{isolation:isolate}
+.tx-field{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;contain:strict}
+.tx-field.under{z-index:-1}
+.tx-field[data-off] *,.tx-field[data-off] *::before,.tx-field[data-off] *::after{animation-play-state:paused!important}
+.tx-halo{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1;translate:calc(-50% + var(--dx,0px)) calc(-50% + var(--dy,0px));border-radius:50%;background:radial-gradient(circle,var(--c) 0,color-mix(in oklab,var(--c) 45%,transparent) 32%,transparent 68%);opacity:var(--o,var(--tx-o));will-change:transform;animation:tx-float var(--tx-d) var(--ease-breath) infinite alternate;animation-delay:var(--dl,0s)}
+.tx-jewel{position:absolute;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0,color-mix(in oklab,var(--c) 70%,#fff) 18%,var(--c) 45%,color-mix(in oklab,var(--c) 55%,#0A0612) 100%);box-shadow:0 0 calc(var(--s)*.8) var(--c),0 0 calc(var(--s)*2.4) color-mix(in oklab,var(--c) 45%,transparent);animation:tx-bob var(--tx-b) var(--ease-breath) infinite;animation-delay:var(--dl,0s);will-change:transform}
+.fold-stage>.tx-field .tx-jewel{opacity:.9}
+.tx-sphere{position:absolute;mix-blend-mode:screen;opacity:.55;left:var(--x);top:var(--y);width:var(--s);aspect-ratio:1;translate:calc(-50% + var(--dx,0px)) calc(-50% + var(--dy,0px));border-radius:50%;will-change:transform;animation:tx-sph var(--tx-d) var(--ease-breath) infinite alternate}
+.tx-sphere>i{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0,color-mix(in oklab,var(--c1) 60%,#fff) 10%,var(--c1) 30%,var(--c2) 64%,color-mix(in oklab,var(--c2) 35%,#0A0612) 100%);box-shadow:0 0 70px -6px var(--c1),0 0 200px 20px color-mix(in oklab,var(--c2) 38%,transparent),inset -24px -36px 70px rgba(10,6,18,.5)}
+.tx-sphere>i::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--iridescent-sweep);background-size:220% 100%;mix-blend-mode:soft-light;opacity:.6;animation:fq-sweep 10s linear infinite}
+.tx-sphere::before{content:"";position:absolute;inset:-22%;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(246,240,255,.12);animation:tx-ring var(--tx-b) var(--ease-breath) infinite}
+.tx-sphere::after{content:"";position:absolute;inset:-14% -40%;border-radius:50%;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--c1) 40%,transparent);transform:rotate(-18deg) scaleY(.32);opacity:.7}
+.tx-sphere>b{position:absolute;inset:-14% -40%;transform:rotate(-18deg) scaleY(.32);pointer-events:none}
+.tx-sphere>b::before{content:"";position:absolute;left:50%;top:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;box-shadow:0 0 14px var(--c1),0 0 30px var(--c1);offset-path:ellipse(50% 50% at 50% 50%);offset-rotate:0deg;transform:scaleY(3.1);animation:tx-orbit calc(var(--tx-d)*1.4) linear infinite}
+.tx-seam{position:absolute;left:0;right:0;top:0;height:1px;z-index:2;pointer-events:none;background:linear-gradient(90deg,transparent,var(--m1) 25%,var(--m2) 55%,var(--m3) 80%,transparent);opacity:.55}
+.tx-seam::after{content:"";position:absolute;left:15%;right:15%;top:0;height:60px;background:radial-gradient(50% 100% at 50% 0%,color-mix(in oklab,var(--m2) 18%,transparent),transparent)}
+@keyframes tx-float{0%{transform:translate3d(-4%,-3%,0) scale(1)}100%{transform:translate3d(5%,4%,0) scale(1.12)}}
+@keyframes tx-bob{0%,100%{transform:translate3d(0,0,0) scale(1);opacity:.85}50%{transform:translate3d(0,-10px,0) scale(1.12);opacity:1}}
+@keyframes tx-sph{0%{transform:translate3d(0,-10px,0)}100%{transform:translate3d(-12px,14px,0)}}
+@keyframes tx-ring{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.08);opacity:.25}}
+@keyframes tx-orbit{to{offset-distance:100%}}
+
+/* ---- Home hero → photo scroll seam ---- */
+.hero>.wrap{z-index:3}
+.fold::before{content:"";position:absolute;left:0;right:0;top:-38vh;height:38vh;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(10,6,18,0) 0%,rgba(10,6,18,.35) 35%,rgba(10,6,18,.8) 70%,var(--bg-canvas) 100%)}
+
+/* ---- Grain ---- */
+.tx-film{position:fixed;inset:-10%;z-index:45;pointer-events:none;opacity:.06;background-image:var(--fx-noise);background-size:180px 180px;animation:tx-film 1.2s steps(6) infinite;will-change:transform}
+@keyframes tx-film{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+/* Swap the core SVG-filter noise for one shared bitmap tile (much cheaper to paint). */
+:root[data-fx] .fq-grain{background-image:var(--fx-noise);background-size:180px 180px}
+.photo>.fq-grain,.pd>.fq-grain,.mm-card>.fq-grain{z-index:1;opacity:.16}
+
+/* ---- Photos ---- */
+.photo.fq-iri-rim:not(.fq-iri-sheen)::after{content:"";position:absolute;inset:0;background:var(--iridescent-sweep);background-size:220% 100%;mix-blend-mode:soft-light;opacity:0;pointer-events:none;transition:opacity var(--dur-slow) var(--ease-out)}
+.photo.fq-iri-rim:not(.fq-iri-sheen):hover::after{opacity:.5;animation:fq-sweep 10s linear infinite}
+.photo img{transition:transform 1.2s var(--ease-out)}
+.photo:hover img{transform:scale(1.03)}
+
+/* ---- Signal lines + living dots ---- */
+.tx-sig{display:inline-block;flex:none;width:72px;height:20px;vertical-align:middle;color:var(--side,var(--wing,var(--x-aqua-neon)));overflow:visible}
+.tx-sig path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tx-sig path+path{opacity:.35;stroke-width:1.2}
+.lv-live .tx-sig{width:96px;height:22px;margin-left:6px}
+.locpill .tx-sig{width:44px;height:16px}
+.fqm-live .tx-sig{width:60px;height:16px;margin-left:auto}
+.lv-live i,.fqm-live i,.live,.acct-dot,.wingtag::before{animation:tx-orb var(--pulse,5s) var(--ease-breath) infinite}
+@keyframes tx-orb{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.35);opacity:1}}
+
+/* ---- Cards: side-tinted sheen, icon glow, pointer light ---- */
+.fx .ic,.acts a .ic,.lv-i,.fqm-it .ic,.mm-ic{box-shadow:0 0 26px -8px var(--side,var(--wing)),inset 0 0 0 1px color-mix(in oklab,var(--side,var(--wing)) 28%,transparent)}
+.fx,.block,.door,.ledger>div,.panel,.half,.stub,.wv-cap{background-image:linear-gradient(155deg,color-mix(in oklab,var(--side,var(--m1)) 10%,transparent),transparent 42%),radial-gradient(120% 80% at 100% 100%,color-mix(in oklab,var(--m2,var(--x-magenta-neon)) 6%,transparent),transparent 60%)}
+.tx-lit{position:relative;isolation:isolate}
+.tx-spot{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;opacity:0;transition:opacity var(--dur-slow) var(--ease-out);background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%),color-mix(in oklab,var(--side,var(--wing,var(--x-violet-neon))) 16%,transparent),transparent 70%)}
+.tx-lit:hover>.tx-spot{opacity:1}
+.tx-lit>*:not(.tx-spot):not(.fq-aura){position:relative;z-index:1}
+.tx-lit>.fq-aura{z-index:0}
+.concept{background:var(--surface-glass)!important;backdrop-filter:blur(var(--blur-glass)) saturate(1.3)!important;-webkit-backdrop-filter:blur(var(--blur-glass)) saturate(1.3)!important;box-shadow:inset 0 0 0 1px rgba(246,240,255,.18)}
+
+/* ---- Logos: iridescent sheen at rest, flash on hover (size lives in site.css) ---- */
+.lg-fx{position:relative;display:flex}
+.ft2-brand .lg-fx{display:inline-flex}
+.lg-fx img{opacity:.42}
+.lg-sheen{position:absolute;inset:0;pointer-events:none;-webkit-mask:var(--lg) left center/contain no-repeat;mask:var(--lg) left center/contain no-repeat}
+.lg-sheen::before{content:"";position:absolute;inset:0;background:var(--iridescent-sweep);background-size:220% 100%;opacity:.9;animation:fq-sweep 10s linear infinite}
+.lg-sheen::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.15) 44%,rgba(255,255,255,.75) 50%,color-mix(in oklab,var(--x-aqua-neon) 60%,#fff) 53%,rgba(255,255,255,.15) 58%,transparent 66%);background-size:250% 100%;background-position:130% 0;opacity:0}
+.lg-fx:hover .lg-sheen::after,.lg-fx:focus-visible .lg-sheen::after{animation:lg-flash .9s var(--ease-out) forwards}
+@keyframes lg-flash{0%{background-position:130% 0;opacity:0}12%{opacity:1}100%{background-position:-30% 0;opacity:.9}}
+.ft2-sign{display:flex;align-items:center;gap:14px}
+.ft2-roundel{width:44px;height:44px;flex:none;background:var(--iridescent-sweep);background-size:220% 100%;animation:fq-sweep 10s linear infinite}
+
+/* ---- Responsive + motion ---- */
+@media (max-width:860px){.tx-sphere{opacity:.45}.tx-jewel{display:none}.tx-jewel.keep{display:block}.tx-film{display:none}}
+@media (prefers-reduced-motion:reduce){
+.tx-halo,.tx-jewel,.tx-sphere,.tx-sphere>i::after,.tx-sphere::before,.tx-sphere>b::before,.tx-film,.lv-live i,.fqm-live i,.live,.acct-dot,.wingtag::before,.lg-sheen::before,.ft2-roundel{animation:none!important}
+.photo:hover img{transform:none}
+.lg-fx:hover .lg-sheen::after{animation:none;opacity:.5;background-position:50% 0}}

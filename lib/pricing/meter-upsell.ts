@@ -33,6 +33,7 @@ import {
 } from './feature-meters'
 import type { GateAxis } from './gates'
 import { isSpacePlanLabel } from './plans'
+import { PLAN_STORY } from './plan-story'
 import {
   networkTakeRateBpsForPlan,
   networkTakeRateFromStored,
@@ -134,7 +135,7 @@ function changeSentence(next: FeatureMeterStep, unit: string, period: MeterPerio
  *  what is already there (docs/VALUE-LADDER.md §1, dark pattern #1), so the line says what stays rather
  *  than reassuring about a loss we would never cause. PURE. */
 export const METER_UPSELL_PROMISE =
-  'Sales to your own people stay 0% on every plan, and everything you have already built stays where it is.'
+  `Sales to your own people stay 0% on every plan, ${PLAN_STORY.plusProcessing}, and everything you have already built stays where it is.`
 
 /** The single CTA label every in-context meter upsell uses. Plain, navigational, never a checkout. */
 export const METER_UPSELL_CTA = 'See plans'

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { getEventPeopleData, approveEventRsvp, type EventPeopleData } from '@/app/(main)/events/admin-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Button } from '@/components/ui/button'
 import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "People" module (ENTITY-MANAGEMENT-OVERHAUL §4, the 'people' spine cell). Renders in
@@ -123,14 +124,15 @@ export function EventPeopleModule() {
                     {p.displayName}
                     {p.handle && <span className="text-subtle"> @{p.handle}</span>}
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
                     onClick={() => handleApprove(p.rsvpId)}
                     disabled={pending}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    className="shrink-0"
                   >
                     <Check className="h-3.5 w-3.5" /> Approve
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

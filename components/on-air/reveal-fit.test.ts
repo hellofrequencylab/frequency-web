@@ -102,7 +102,7 @@ describe('the banners above the cards are taxed, not free', () => {
   // Each of these is ~100px off the card budget on a phone. They stay `shrink-0` (a squeezed
   // notice is an unreadable one) and tight.
   it('keeps the partial-sit and finished notices pinned and compact', () => {
-    const pinned = MINDLESS.match(/mx-auto mb-2 w-full max-w-sm shrink-0 rounded-2xl/g) ?? []
+    const pinned = MINDLESS.match(/mx-auto mb-2 w-full max-w-sm shrink-0 rounded-card/g) ?? []
     expect(pinned).toHaveLength(2)
   })
 

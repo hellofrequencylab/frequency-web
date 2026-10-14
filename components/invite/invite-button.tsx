@@ -20,7 +20,7 @@ export function InviteButton({
       ? 'rounded-xl bg-primary px-4 py-2 text-body-sm text-on-primary hover:bg-primary-hover'
       : variant === 'chip'
         ? 'rounded-pill border border-border bg-surface px-3 py-1 text-meta text-text hover:bg-surface-elevated'
-        : 'rounded-lg px-2 py-1.5 text-body-sm text-muted hover:text-text'
+        : 'rounded-control px-2 py-1.5 text-body-sm text-muted hover:text-text'
   return (
     <button type="button" onClick={() => openInvite()} className={`${base} ${styles} ${className}`}>
       <UserPlus className="h-4 w-4 shrink-0" /> {label}

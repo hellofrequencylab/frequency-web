@@ -19,7 +19,7 @@ import { CockpitMemberViewer } from './cockpit-member-viewer'
 // (<ImportContactsButton>), not a separate view. Like /nearby and /friends, this is one coupled,
 // searchParam-driven view, so it composes the kit directly rather than <PageModules>.
 //
-// STAFF-GATED: requireAdmin('janitor'). The /admin/* group mounts its own info rail (page-chrome
+// STAFF-GATED: requireAdmin('janitor'). The /admin group mounts its own info rail (page-chrome
 // 'none'), so no rail registration is needed here.
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +45,7 @@ export default async function PlatformCrmPage({
       actions={<ImportContactsButton target={{ kind: 'platform' }} />}
     >
       {/* The compact health read, where the old section headers were. Fail-safe + streamed. */}
-      <Suspense fallback={<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>}>
+      <Suspense fallback={<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-card" />)}</div>}>
         <CrmHealthStatRow />
       </Suspense>
 

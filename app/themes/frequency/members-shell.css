@@ -1,0 +1,529 @@
+/* ══ FREQUENCY · the member shell's own rules (kept by hand) ═══════════════════════════════════════
+   The members kit (kit-members.css, GENERATED) carries app.css: the official app shell from shell.js
+   (header, section pill, mega menu, Zap and Notifications sheets, scrim, ambient layer), the footer
+   and the toast. Only the owner's rulings over that shell sit here. The Feed prototype
+   (templates/members/Members.dc.html) draws more chrome than the kit has classes for: the resizable
+   rails with their micro state, the rail tabs and the tooltip. Those live here, written from the prototype's
+   inline styles, scoped the way the kit is and reading only --fq- tokens. Ink and white tints are
+   color-mix() of the Commons tokens, so the night room re-tints them instead of keeping day values.
+
+   Rendered by components/frequency/members/shell/**. Imported by app/(main)/layout.tsx with the kit.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
+
+@layer components {
+/* FqAvatar (components/frequency/members/shared/avatar.tsx): the initials a photo-less .av shows. Here,
+   not in a page sheet, because the avatar is drawn on every member page. */
+[data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
+[data-design="frequency"] [data-kit="members"] .av.m .fa-initials{font-size:15px}
+[data-design="frequency"] [data-kit="members"]{
+  --app-header-h:76px;
+  --tab-bar-clearance:0px;
+  --fqm-ink-3:color-mix(in oklab,var(--fq-text-strong) 3.5%,transparent);
+  --fqm-ink-4:color-mix(in oklab,var(--fq-text-strong) 4%,transparent);
+  --fqm-ink-5:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);
+  --fqm-ink-6:color-mix(in oklab,var(--fq-text-strong) 6%,transparent);
+  --fqm-ink-8:color-mix(in oklab,var(--fq-text-strong) 8%,transparent);
+  --fqm-ink-14:color-mix(in oklab,var(--fq-text-strong) 14%,transparent);
+  --fqm-white-60:color-mix(in oklab,var(--fq-surface-raised) 60%,transparent);
+  --fqm-white-75:color-mix(in oklab,var(--fq-surface-raised) 75%,transparent);
+  --fqm-white-90:color-mix(in oklab,var(--fq-surface-raised) 90%,transparent);
+  --fqm-lilac-22:color-mix(in oklab,var(--fq-x-violet-neon) 18%,transparent);
+  --fqm-float:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent);
+  --fqm-glass-chip:linear-gradient(150deg,var(--fqm-white-75),color-mix(in oklab,var(--fq-surface-raised) 35%,transparent));
+  --fqm-glass-tab:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 86%,transparent),color-mix(in oklab,var(--fq-surface-card) 62%,transparent));
+  position:relative;min-height:100dvh;display:flex;flex-direction:column;overflow-x:clip;
+}
+
+/* The background wash bleeds 12vh past the viewport so ambient.tsx can drift it with the scroll. */
+[data-design="frequency"] [data-kit="members"]>.fq-wash{inset:-12vh 0;will-change:translate}
+
+/* Skip link (WCAG 2.4.1): first focusable element, visible on focus only. */
+[data-design="frequency"] [data-kit="members"] .fqm-skip{position:absolute;left:16px;top:-80px;z-index:60;height:44px;display:inline-flex;align-items:center;padding:0 18px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);color:var(--fq-text-strong);font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);box-shadow:var(--fqm-float)}
+[data-design="frequency"] [data-kit="members"] .fqm-skip:focus{top:16px}
+
+/* ── Header, mega menu, sheets, scrim ────────────────────────────────────────────────────────────
+   The kit's official app shell draws all of it (kit-members.css .ap-hdr, .ap-nav, .ap-mega, .ap-sheet,
+   .ap-scrim; header.tsx renders shell.js's markup). Only what the kit does not cover, and the owner's
+   rulings over the design, live here. */
+
+/* Owner ruling (2026-10-14): page text must not read through the frosted header. The kit's 86% card
+   let bold headings and the Space tab row show through while scrolling; the header's frost is a near-
+   solid card so only colour, never words, comes through. */
+[data-design="frequency"] [data-kit="members"] .ap-hdr.scrolled, [data-design="frequency"] [data-kit="members"] .ap-hdr.open{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
+
+/* Owner ruling (2026-10-13): the pill's first item is a plain Feed / Home link, not a menu button, so
+   it wears the kit's `.ap-nav button` look, which the kit no longer gives a link. */
+[data-design="frequency"] [data-kit="members"] .ap-nav>a{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 16px 0 12px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:-.01em;white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .ap-nav>a:hover{color:var(--fq-text-strong);background:var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .ap-nav>a svg{width:17px;height:17px;opacity:.75}
+/* The Home/Feed link keeps its word at every width (owner, 2026-10-14): an unlabelled house icon read as
+   decoration, and it is the member's one way back to the website. The section pills still go icon-only. */
+/* Phones follow the kit: under 720px the section pill and Zap give way to .ap-burger, which opens the
+   left rail as a drawer (header.tsx draws it as .ap-rail-l; the kit slides it in on .rl-drawer). The
+   drawer exists only where the kit shows the burger, and drops its slide under reduced motion. */
+@media (min-width:721px){[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{display:none}}
+[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{gap:0}
+[data-design="frequency"] [data-kit="members"] .fqm-drawer .rl-scroll{gap:24px;padding-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-drawer-me{padding:0 4px}
+[data-design="frequency"] [data-kit="members"] .fqm-drawer-me small{display:block;margin-top:6px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-drawer .rl-sub{margin-left:12px}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{transition:none}}
+/* shell.js draws the search glyph at 17px in the muted ink (an inline style there). */
+[data-design="frequency"] [data-kit="members"] .ap-search svg{width:17px;height:17px;flex:none;color:var(--fq-text-muted)}
+/* Real data only (owner ruling): the kit's .ap-me paints a stock photo; a member with no picture gets
+   their initials on the ink tint. A real avatar arrives as an inline background-image (avatar.ts). */
+[data-design="frequency"] [data-kit="members"] .ap-me{display:flex;align-items:center;justify-content:center;background:var(--fqm-ink-6) center/cover no-repeat;color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
+/* The avatar is a menu button now (header.tsx AccountSheet): the button's own chrome off. */
+[data-design="frequency"] [data-kit="members"] .ap-me{border:0;padding:0;cursor:pointer}
+/* The avatar menu: the kit's .ap-sheet, holding the personal and account rows in labelled groups, the
+   look control and Sign out. It scrolls inside the viewport rather than running off it. */
+[data-design="frequency"] [data-kit="members"] .ap-sheet.fqm-acct{max-height:calc(100vh - var(--fq-hdr) - 32px);overflow-y:auto;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-head{display:flex;gap:12px;align-items:center;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-head b{display:block;font:500 15px/1 var(--fq-font-display);letter-spacing:-.03em}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-head small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-g{display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-g .k{color:var(--fq-text-faint);padding-bottom:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-row{width:100%;height:38px;display:flex;align-items:center;gap:12px;padding:0;border:0;background:none;cursor:pointer;text-align:left;color:var(--fq-text-body);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-row:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-row svg{width:18px;height:18px;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-out{height:48px;padding-top:10px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-about{display:flex;flex-wrap:wrap;gap:6px 14px;font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-about a{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-acct-about a:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-seg{display:flex;gap:4px;padding:4px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-seg+.fqm-seg{margin-top:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-seg button{flex:1;height:32px;border:0;border-radius:var(--fq-radius-orb);background:none;cursor:pointer;color:var(--fq-text-muted);font:500 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-seg button[aria-pressed="true"]{background:var(--fq-surface-card);color:var(--fq-text-strong)}
+/* The You panel's work menu: one kit fold (.rl-mf) per group. The sprite's chevron points right, so
+   it turns down when closed and up when open. */
+[data-design="frequency"] [data-kit="members"] .fqm-work{display:flex;flex-direction:column;gap:2px}
+[data-design="frequency"] [data-kit="members"] .fqm-work .rl-mf-btn svg:last-child{width:14px;height:14px;margin-left:auto;transform:rotate(90deg)}
+[data-design="frequency"] [data-kit="members"] .fqm-work .rl-mf.open .rl-mf-btn svg:last-child{transform:rotate(-90deg)}
+
+/* The mega menu wears the kit's own frosted panel. The 2026-10-13 "no background" ruling was reversed
+   on 2026-10-14: with no panel the menu's links sat directly over the page beneath and could not be read. */
+/* On a phone the photo cards take one column (the kit spans two, which would add a column). */
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .ap-mega-cards{grid-column:auto}}
+/* Owner ruling: every section ends with the Frequency website row (FQ_SITE_LINKS). */
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site{max-width:1280px;margin:0 auto;padding:18px 32px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;border-top:1px solid var(--fqm-ink-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site .k{padding-right:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site a{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong);padding:6px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-mega-site a:hover{opacity:.65;color:var(--fq-text-strong)}
+
+/* The Zap actions are real buttons and links where shell.js draws spans. */
+[data-design="frequency"] [data-kit="members"] .ap-zapg>button,[data-design="frequency"] [data-kit="members"] .ap-zapg>a{display:flex;justify-content:center;padding:0;border:none;background:none;cursor:pointer;font:inherit}
+/* The notifications sheet scrolls once the list outgrows the window; an unread row carries the dot. */
+[data-design="frequency"] [data-kit="members"] .ap-sheet[data-s="bell"]{max-height:calc(100vh - 110px);overflow-y:auto}
+[data-design="frequency"] [data-kit="members"] .ap-note.unread>span>span:first-child::after{content:"";display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--fq-pa);vertical-align:middle}
+
+/* ── The rail grid ──────────────────────────────────────────────────────────────────────────────── */
+/* Each rail has its own width (220-320, default 248; --fqm-l / --fqm-r, set by rail-layout.tsx from the
+   member's stored choice); a collapsed rail is the 76px micro rail.
+   `data-l` / `data-r` are the member's choice (full | micro) or `auto`, which follows the viewport
+   (README: right auto-micro under 1240, left under 960, both hidden under 680). */
+[data-design="frequency"] [data-kit="members"] .fqm-body{--fqm-l:248px;--fqm-r:248px;--fqm-lw:var(--fqm-l);--fqm-rw:var(--fqm-r);position:relative;z-index:1;flex:1;width:100%;padding:24px 40px 160px;display:grid;gap:56px;align-items:start;grid-template-columns:var(--fqm-lw) minmax(0,1fr) var(--fqm-rw);transition:grid-template-columns 300ms var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-drag]{transition:none;user-select:none}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-has="l"]{grid-template-columns:var(--fqm-lw) minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-has="r"]{grid-template-columns:minmax(0,1fr) var(--fqm-rw)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-has="none"]{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-edge]{padding:0;gap:0}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="micro"]{--fqm-lw:76px}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="micro"]{--fqm-rw:76px}
+@media (max-width:1239px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"]{--fqm-rw:76px}}
+@media (max-width:959px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="auto"]{--fqm-lw:76px}}
+@media (max-width:679px){[data-design="frequency"] [data-kit="members"] .fqm-body{grid-template-columns:minmax(0,1fr)!important;padding:32px 18px 100px}
+[data-design="frequency"] [data-kit="members"] .fqm-body .fqm-rail{display:none}}
+
+/* Which face of a rail shows: hide-only rules, so each face keeps its own display. */
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="micro"] .fqm-rail-l .fqm-full,
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="full"] .fqm-rail-l .fqm-micro,
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="micro"] .fqm-rail-r .fqm-full,
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="full"] .fqm-rail-r .fqm-micro{display:none}
+@media (min-width:960px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="auto"] .fqm-rail-l .fqm-micro{display:none}}
+@media (max-width:959px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="auto"] .fqm-rail-l .fqm-full{display:none}}
+@media (min-width:1240px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"] .fqm-rail-r .fqm-micro{display:none}}
+@media (max-width:1239px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"] .fqm-rail-r .fqm-full{display:none}}
+
+[data-design="frequency"] [data-kit="members"] .fqm-center{min-width:0;width:100%;max-width:860px;justify-self:center;display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-has="none"] .fqm-center{max-width:none}
+[data-design="frequency"] [data-kit="members"] .fqm-center:focus{outline:none}
+
+[data-design="frequency"] [data-kit="members"] .fqm-rail{position:sticky;top:108px;height:calc(100vh - 132px);min-height:420px;min-width:0;display:flex;flex-direction:column;gap:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;padding:8px 2px 12px}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-scroll::-webkit-scrollbar{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-handle{position:absolute;top:0;bottom:0;width:12px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-handle{right:-34px}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-handle{left:-34px}
+[data-design="frequency"] [data-kit="members"] .fqm-chev{flex:none;width:28px;height:28px;margin:0 -8px;border:none;border-radius:50%;background:var(--fqm-white-75);box-shadow:inset 0 0 0 1px var(--fqm-ink-8),0 6px 16px -10px color-mix(in oklab,var(--fq-ink) 40%,transparent);color:var(--fq-text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fqm-chev:hover{color:var(--fq-text-strong);background:var(--fq-surface-raised)}
+[data-design="frequency"] [data-kit="members"] .fqm-chev svg{width:10px;height:10px;transition:transform var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-drag{flex:1;width:12px;border-radius:6px;cursor:col-resize;touch-action:none;display:flex;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fqm-drag:hover{background:var(--fqm-lilac-22)}
+[data-design="frequency"] [data-kit="members"] .fqm-drag::before{content:"";width:1px;height:100%;background:var(--fqm-ink-6)}
+/* Chevron points inward when the rail is open, outward when micro. */
+[data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-chev svg{transform:rotate(180deg)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="micro"] .fqm-rail-l .fqm-chev svg{transform:rotate(180deg)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="micro"] .fqm-rail-r .fqm-chev svg{transform:none}
+@media (max-width:959px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="auto"] .fqm-rail-l .fqm-chev svg{transform:rotate(180deg)}}
+@media (max-width:1239px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"] .fqm-rail-r .fqm-chev svg{transform:none}}
+
+/* ── Left rail ──────────────────────────────────────────────────────────────────────────────────── */
+[data-design="frequency"] [data-kit="members"] .fqm-l-full{display:flex;flex-direction:column;gap:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-me-row{display:flex;gap:12px;align-items:center}
+[data-design="frequency"] [data-kit="members"] .fqm-av{flex:none;border-radius:50%;background:var(--fqm-ink-6) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-me-row b{display:block;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .fqm-me-tags{display:flex;gap:6px;align-items:center;margin-top:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-glass-chip{height:24px;display:inline-flex;align-items:center;padding:0 10px;border-radius:var(--fq-radius-orb);background:var(--fqm-glass-chip);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 24px -16px color-mix(in oklab,var(--fq-x-violet-deep) 35%,transparent),inset 0 0 0 1px var(--fqm-white-90);font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-crew{font:500 12px/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-sc{display:flex;flex-direction:column;gap:2px;margin:-10px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-sc a{display:flex;align-items:center;gap:14px;height:44px;padding:0 12px;margin:0 -12px;border-radius:var(--fq-radius-m);font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-body);white-space:nowrap;transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-sc a:hover,[data-design="frequency"] [data-kit="members"] .fqm-sc a[aria-current="page"]{color:var(--fq-text-strong);background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 85%,transparent);transform:translateX(3px)}
+[data-design="frequency"] [data-kit="members"] .fqm-sc svg{width:20px;height:20px;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-sc a span{flex:1}
+[data-design="frequency"] [data-kit="members"] .fqm-sc a small{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .fqm-group{display:flex;flex-direction:column;gap:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-group-h{font:500 15px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-circle{display:flex;align-items:center;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-circle-orb{position:relative;flex:none;width:36px;height:36px;border-radius:50%;background:var(--fq-pa-soft);display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-display)}
+[data-design="frequency"] [data-kit="members"] .fqm-circle-orb[data-live]::after{content:"";position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:var(--fq-pa);box-shadow:0 0 0 2px var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .fqm-circle b{display:block;font:500 var(--fq-text-body-s)/1.15 var(--fq-font-sans);color:var(--fq-text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .fqm-circle small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-learn{display:flex;flex-direction:column;gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-learn b{font:500 15px/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-learn small{font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-bar{display:block;height:3px;border-radius:3px;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-bar i{display:block;height:100%;border-radius:3px;background:var(--fq-pa)}
+
+[data-design="frequency"] [data-kit="members"] .fqm-micro{display:flex;flex-direction:column;align-items:center;gap:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-micro nav{display:flex;flex-direction:column;gap:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-mi{position:relative;width:48px;height:48px;border:none;border-radius:var(--fq-radius-m);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--fq-text-muted);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .fqm-mi:hover,[data-design="frequency"] [data-kit="members"] .fqm-mi[aria-current="page"]{color:var(--fq-text-strong);background:var(--fqm-white-75);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 85%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-mi svg{width:24px;height:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-mi i{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--fq-pa);box-shadow:0 0 0 2px var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .fqm-divider{width:24px;height:1px;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-micro .fqm-circle-orb{width:40px;height:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-ring{position:relative;width:40px;height:40px;border-radius:50%;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--fq-pa);-webkit-mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0);mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0)}
+[data-design="frequency"] [data-kit="members"] .fqm-ring>span{position:absolute;inset:3px;border-radius:50%;background:var(--fq-surface-card);display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-ring svg{width:18px;height:18px}
+
+/* ── Rail tabs (You, Vera + Vault) and their rising panels ──────────────────────────────────────── */
+[data-design="frequency"] [data-kit="members"] .fqm-tab-wrap{position:relative;flex:none;width:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-tab{position:relative;width:100%;height:60px;border:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px 4px 10px;border-radius:24px 24px 18px 18px;background:var(--fqm-glass-tab);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px color-mix(in oklab,var(--fq-ink) 45%,transparent),inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab:hover{transform:translateY(-2px)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab:active{transform:scale(.98)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab::before{content:"";position:absolute;left:50%;top:6px;width:28px;height:4px;margin-left:-14px;border-radius:4px;background:var(--fqm-ink-14)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-you{text-align:left}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-you>span:nth-of-type(2){flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-you small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-chev{width:10px;height:10px;opacity:.45;transition:transform 340ms var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab[aria-expanded="true"] .fqm-tab-chev{transform:rotate(180deg)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-micro{justify-content:center;padding:8px 0 0}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-micro::before{width:20px;margin-left:-10px}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split{display:flex;align-items:center;gap:0;padding:10px 6px 4px}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split>button{height:44px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong);font:500 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-btn{width:44px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-orb{width:28px;height:28px;border-radius:50%;background:var(--fq-pa-orb);box-shadow:0 0 18px color-mix(in oklab,var(--fq-x-aqua-neon) 45%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-sep{width:1px;height:28px;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-btn{flex:1;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-btn .fqm-live-dot{width:7px;height:7px;border-radius:50%;background:var(--fq-pa);display:inline-block;margin-right:5px}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split.micro{flex-direction:column;height:auto;padding:12px 0 8px;gap:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-tab-split.micro .fqm-tab-sep{display:none}
+
+[data-design="frequency"] [data-kit="members"] .fqm-rise{position:absolute;bottom:calc(100% + 8px);z-index:50;opacity:0;transform:translateY(14px) scale(.96);pointer-events:none;transition:opacity 200ms var(--fq-ease-out),transform 340ms var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-rise{left:0;transform-origin:bottom left}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-rise{right:0;transform-origin:bottom right}
+[data-design="frequency"] [data-kit="members"] .fqm-rise[data-open]{opacity:1;transform:none;pointer-events:auto}
+/* The console's corner dock: the right rail's foot tab, fixed bottom-right while the rails are away. */
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock{position:fixed;right:24px;bottom:20px;z-index:45;width:248px}
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-micro{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-rise{right:0;transform-origin:bottom right}
+@media (max-width:767px){[data-design="frequency"] [data-kit="members"] .fqm-console-dock{display:none}}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card{max-height:calc(100vh - 220px);overflow-y:auto;width:300px;padding:20px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 40%,transparent),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 80%,transparent);display:flex;flex-direction:column;gap:18px}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault{position:relative;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault .fq-aura{opacity:.28}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault>*{position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-you-head{display:flex;gap:12px;align-items:center}
+[data-design="frequency"] [data-kit="members"] .fqm-you-head b{display:block;font:500 15px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-you-head small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-you-foot{display:flex;justify-content:space-between;font:400 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-you-foot a{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-h{display:flex;justify-content:space-between;align-items:baseline}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-h b{font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+/* The Vault panel (2026-10-14 export): Season standing over a hairline, then labelled blocks. */
+[data-design="frequency"] [data-kit="members"] .fqm-vault-sec{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-chip{height:26px;display:inline-flex;align-items:center;gap:6px;padding:0 11px;border-radius:var(--fq-radius-orb);background:var(--fq-pa);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 60%,transparent);font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-chip svg{width:13px;height:13px}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-link{align-self:flex-start;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-link)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week{display:flex;justify-content:space-between}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week>span{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 var(--fq-text-label)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--fqm-ink-14)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="on"] i{background:var(--fq-pa);box-shadow:var(--fq-pa-glow)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="frozen"] i{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1.5px var(--fq-x-aqua-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="today"] i{background:var(--fq-surface-raised);box-shadow:0 0 0 2px var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card .fqm-bar{height:4px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-6);overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .fqm-rise-card .btn.pa{align-self:stretch}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row:hover{color:var(--fq-text-strong);background:var(--fqm-white-75)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row b{display:block;font:600 var(--fq-text-body-s)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row svg{width:16px;height:16px;color:var(--fq-text-muted);transform:rotate(-90deg)}
+
+/* The right rail's micro face (Members.dc.html `rMicroItems`): 56x62 buttons, icon over a value. */
+[data-design="frequency"] [data-kit="members"] .fqm-rmi{width:56px;height:62px;border:none;border-radius:var(--fq-radius-m);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--fq-text-strong);cursor:pointer;font:500 12px/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-rmi:hover{background:var(--fqm-white-75);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 85%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-rmi svg{width:24px;height:24px;color:var(--fq-text-muted)}
+
+/* The micro rail tooltip: fixed, beside the item, outside the rail. */
+[data-design="frequency"] [data-kit="members"] .fqm-tip{position:fixed;z-index:80;transform:translateY(-50%);pointer-events:none;max-width:240px;padding:9px 13px;border-radius:14px;background:var(--fq-tip-bg);color:var(--fq-bg-canvas);display:flex;flex-direction:column;gap:3px}
+[data-design="frequency"] [data-kit="members"] .fqm-tip b{font:500 var(--fq-text-meta)/1.25 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-tip small{font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);opacity:.7}
+
+/* ── The right rail's panels (README §3; right-rail.tsx) ─────────────────────────────────────────────
+   Glass sections, radius 24, padding 22, 20px apart. Get started is the stronger glass with an aura;
+   the rest read the kit's --fq-glass-panel. */
+[data-design="frequency"] [data-kit="members"] .fqm-grow{flex:1;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-r-stack{display:flex;flex-direction:column;gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-rp{display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--fq-radius-l);background:var(--fq-glass-panel);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:var(--fq-glass-panel-shadow)}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-h b{font:500 15px/1.15 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-h span{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-faint);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar{height:4px;border-radius:4px;background:var(--fqm-ink-6);overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar i{border-radius:4px;transition:width var(--fq-dur-slow) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar.iri i{background:var(--fq-iridescent-sweep-deep);background-size:220% 100%}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-foot{font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-foot:hover{color:var(--fq-text-strong)}
+
+/* Get started: the conic ring with the count, the step rows, the breathing current step. */
+[data-design="frequency"] [data-kit="members"] .fqm-gs{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--fq-radius-l);background:linear-gradient(150deg,color-mix(in oklab,var(--fq-surface-raised) 86%,transparent),color-mix(in oklab,var(--fq-surface-raised) 50%,transparent));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 24px 60px -36px color-mix(in oklab,var(--fq-ink) 35%,transparent),inset 0 0 0 1px var(--fqm-white-90)}
+[data-design="frequency"] [data-kit="members"] .fqm-gs>.fq-aura{opacity:.28}
+[data-design="frequency"] [data-kit="members"] .fqm-gs>*{position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-gs-h{display:flex;align-items:center;gap:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-gs-h b{display:block;font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-gs-h small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-gs-ring{position:relative;width:46px;height:46px;flex:none;border-radius:50%;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-gs-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--fq-pa);-webkit-mask:conic-gradient(black var(--p,0%),transparent 0);mask:conic-gradient(black var(--p,0%),transparent 0)}
+[data-design="frequency"] [data-kit="members"] .fqm-gs-ring::after{content:attr(data-n);position:absolute;inset:4px;border-radius:50%;background:var(--fq-surface-raised);display:flex;align-items:center;justify-content:center;font:500 var(--fq-text-meta)/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-steps{display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .fqm-step{display:flex;flex-direction:column;border-top:1px solid var(--fqm-ink-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-step>button{min-height:44px;display:flex;align-items:center;gap:12px;padding:0;border:none;background:none;text-align:left;cursor:pointer;font:500 var(--fq-text-body-s)/1.25 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-step.done>button{color:var(--fq-text-faint);cursor:default;font-weight:400}
+[data-design="frequency"] [data-kit="members"] .fqm-mark{width:22px;height:22px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--fqm-ink-14);display:flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fqm-step.done .fqm-mark{background:var(--fq-pa);box-shadow:none;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-step.done .fqm-mark svg{width:13px;height:13px}
+[data-design="frequency"] [data-kit="members"] .fqm-step.now .fqm-mark{background:var(--fq-surface-raised);box-shadow:0 0 0 2px var(--fq-x-violet-neon),0 0 14px color-mix(in oklab,var(--fq-x-violet-neon) 60%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-step.now .fqm-mark i{width:8px;height:8px;border-radius:50%;background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .fqm-step-open{display:flex;flex-direction:column;gap:12px;padding:0 0 16px 34px}
+[data-design="frequency"] [data-kit="members"] .fqm-step-open p{margin:0;font:400 var(--fq-text-meta)/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-step-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+[data-design="frequency"] [data-kit="members"] .fqm-step-open .btn.pa{height:40px;padding:0 16px;font-size:var(--fq-text-meta)}
+/* The Feed's own copy shows only where the rails are hidden (README responsive table, < 680). */
+[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{margin-top:44px}
+@media (min-width:680px){[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}}
+
+/* Your week: only the days that carry a plan, day name over the date, then a dot, name and time. */
+[data-design="frequency"] [data-kit="members"] .fqm-week{display:flex;flex-direction:column;gap:2px}
+[data-design="frequency"] [data-kit="members"] .fqm-day{display:flex;gap:14px;align-items:flex-start;padding:6px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-day-d{width:30px;flex:none;display:flex;flex-direction:column;gap:3px}
+[data-design="frequency"] [data-kit="members"] .fqm-day-d small{font:500 var(--fq-text-label)/1 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .fqm-day-d b{font:500 16px/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-day-items{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding-top:2px}
+[data-design="frequency"] [data-kit="members"] .fqm-day-items a{display:flex;align-items:center;gap:8px;min-width:0;font:500 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-day-items a>i{width:6px;height:6px;flex:none;border-radius:50%;background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .fqm-day-items a>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-day-items a>small{flex:none;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+
+/* Today's goals: title and reading over a 4px bar; a finished goal is struck through with a check. */
+[data-design="frequency"] [data-kit="members"] .fqm-goal{display:flex;flex-direction:column;gap:9px;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-goal:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-goal-t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 15px/1.2 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-goal-t small{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-goal-t svg{width:18px;height:18px;flex:none;color:var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-goal.done .fqm-goal-t>span{font-weight:400;color:var(--fq-text-faint);text-decoration:line-through}
+
+/* Stats and streaks (rail-stats.tsx): the streak in Unbounded with today's state as a kit tag, the
+   seven-day strip, a 2-up grid of the member's readings, the rank bar and an eight-week sparkline. */
+[data-design="frequency"] [data-kit="members"] .fqm-stats{gap:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-streak{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-streak:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num{display:flex;align-items:baseline;gap:8px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num svg{width:22px;height:22px;flex:none;align-self:center;color:var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num b{font:500 34px/1 var(--fq-font-display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-line{margin:-6px 0 0;font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-vault-week>span{font-size:var(--fq-text-meta)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--fq-radius-m);background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong);min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile:hover{color:var(--fq-text-strong);background:var(--fqm-white-75)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b{display:flex;align-items:center;gap:6px;font:500 17px/1 var(--fq-font-display);letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b svg{width:15px;height:15px;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile small{font:400 var(--fq-text-meta)/1.1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-rank,[data-design="frequency"] [data-kit="members"] .fqm-stats-spark{display:flex;flex-direction:column;gap:9px;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-spark:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-goal-t{font-size:var(--fq-text-body-s)}
+[data-design="frequency"] [data-kit="members"] .fqm-spark{display:flex;align-items:flex-end;gap:5px;height:34px}
+[data-design="frequency"] [data-kit="members"] .fqm-spark i{flex:1;min-height:2px;border-radius:3px;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-spark i[data-on]{background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-foot{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--fq-border-hair);font:500 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-foot a{color:var(--fq-text-link)}
+/* The stats box sizes itself to its rail (220-320px, or a dragged width), never the viewport: the panel is
+   a size container, numbers scale with it, rows wrap instead of clipping (owner, 2026-10-13). */
+[data-design="frequency"] [data-kit="members"] .fqm-stats{container-type:inline-size}
+/* No panel behind it (owner, 2026-10-13: "feels small in that rail ... remove the background"): the
+   box sits bare like the left rail, its content spanning the rail's full width; the tiles keep their wash. */
+[data-design="frequency"] [data-kit="members"] .fqm-rp.fqm-stats{padding:4px 0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;border-radius:0}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-rp-h{flex-wrap:wrap;row-gap:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-rp-h b{white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-rp-h span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-streak{flex-wrap:wrap;row-gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-streak .tag{white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num b{font-size:clamp(26px,15cqi,34px)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num small{white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,92px),1fr))}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b{font-size:clamp(15px,7cqi,17px)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-goal-t{flex-wrap:wrap;row-gap:2px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-vault-week i{width:clamp(16px,9cqi,22px);height:clamp(16px,9cqi,22px)}
+
+/* The local board: place, face, name, Zaps; the member's own row in bold. */
+[data-design="frequency"] [data-kit="members"] .fqm-board{display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .fqm-board>div{display:flex;align-items:center;gap:12px;padding:9px 0;font:400 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-board>div .fqm-grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-board>div.me{font-weight:500;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-n{width:14px;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .fqm-board small{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap}
+
+/* People to know: face, name over the plain reason, Add. */
+[data-design="frequency"] [data-kit="members"] .fqm-person{display:flex;gap:12px;align-items:center}
+[data-design="frequency"] [data-kit="members"] .fqm-person .fqm-grow{display:flex;flex-direction:column;gap:5px}
+[data-design="frequency"] [data-kit="members"] .fqm-person .fqm-grow a{font:500 var(--fq-text-body-s)/1.1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-person .fqm-grow small{font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-muted)}
+
+/* Invite a friend and Report a bug: quiet glass utility rows at the foot of the rail. */
+[data-design="frequency"] [data-kit="members"] .fqm-utils{display:flex;flex-direction:column;gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-util{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;padding:10px 14px;border:none;border-radius:20px;background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow);text-align:left;cursor:pointer;color:var(--fq-text-strong);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-util:hover{transform:translateY(-1px)}
+[data-design="frequency"] [data-kit="members"] .fqm-util b{display:block;font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-util small{display:block;margin-top:3px;font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-util-ic{width:34px;height:34px;flex:none;border-radius:50%;background:var(--fq-pa-soft);display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-util-ic svg{width:18px;height:18px}
+
+@media (prefers-reduced-motion:reduce){
+[data-design="frequency"] [data-kit="members"] .fqm-body,[data-design="frequency"] [data-kit="members"] .fqm-rise,[data-design="frequency"] [data-kit="members"] .fqm-sc a,[data-design="frequency"] [data-kit="members"] .fqm-tab{transition:none}
+[data-design="frequency"] [data-kit="members"] .fqm-sc a:hover,[data-design="frequency"] [data-kit="members"] .fqm-tab:hover,[data-design="frequency"] [data-kit="members"] .fqm-util:hover{transform:none}
+[data-design="frequency"] [data-kit="members"] .fqm-rp .fqm-bar i{transition:none}}
+}
+
+/* ── The platform's own rail panels, in the kit's idiom (.fqm-legacy, right-rail.tsx) ───────────────
+   DAWN's panels (components/sidebar/rail-panels.tsx through WidgetCard, the activity chart, the
+   Signature dial, the Invite row) are kept under Frequency and restyled here rather than forked.
+   They are drawn with Tailwind utilities, and a utility beats the components layer whatever the
+   specificity, so these overrides sit in the UTILITIES layer, where the scoped selectors (0,3,x)
+   outrank a single utility class (0,1,0). Scoped to the Frequency members kit: DAWN never sees them. */
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] .fqm-legacy{display:flex;flex-direction:column;gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy:empty{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section{margin:0;padding:22px;border:none;border-radius:var(--fq-radius-l);background:var(--fq-glass-panel);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:var(--fq-glass-panel-shadow);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section section{padding:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section>div:first-child{padding-left:0;padding-right:0}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy h3{font:500 15px/1.15 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy h3+span{background:var(--fqm-ink-4);color:var(--fq-text-muted);font:500 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section a{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section a:hover{background:var(--fqm-white-60);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section a.font-semibold{font:500 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section a.font-semibold:hover{background:none;opacity:.7}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section p{font-family:var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section .text-text{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section .text-muted,[data-design="frequency"] [data-kit="members"] .fqm-legacy section .text-subtle{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section .rounded-lg{border-radius:var(--fq-radius-m)}
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section .border{border-color:var(--fqm-ink-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util){min-height:56px;padding:10px 14px;border:none;border-radius:20px;background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util):hover{background:var(--fq-glass-panel);transform:translateY(-1px)}
+[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util)>span:first-child{width:34px;height:34px;border-radius:50%;background:var(--fq-pa-soft);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util) .font-bold{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util) .text-muted{font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-muted)}
+}
+@media (prefers-reduced-motion:reduce){@layer utilities{[data-design="frequency"] [data-kit="members"] .fqm-utils>button:not(.fqm-util):hover{transform:none}}}
+
+/* ── Console routes (lib/nav/console-route.ts) ───────────────────────────────────────────────────────
+   The operator and Space consoles wear their own chrome (components/frequency/admin). The member shell
+   stays mounted so client navigation in and out keeps working, but on a console route its header,
+   menus, sheets, drawer and wash step aside; the rail layout goes edge-to-edge (rail-layout.tsx). */
+[data-design="frequency"] [data-kit="members"][data-console] :is(.ap-hdr, .ap-mega, .ap-sheets, .ap-scrim, .fqm-drawer, .fq-wash) { display: none }
+/* Edge mode (consoles, full-width editors): no 860px reading measure; the page owns the full width. */
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-edge] .fqm-center { max-width: none; justify-self: stretch }
+/* Owner, 2026-10-14: "fill more of the space with the control column; bring the content up". The page
+   starts 24px under the header (was 44), and a left-side menu column (`.ap-cols.l`: Settings, console
+   sub-navs) is 220px with a 40px gap (kit: 280 / 56), so the working pane gets the width. */
+@media (min-width: 1001px) {
+  [data-design="frequency"] [data-kit="members"] .ap-cols.l { grid-template-columns: 220px minmax(0, 1fr); gap: 40px }
+}
+
+/* Owner, 2026-10-14: "remove the background from the Notifications box (and others like it); spread the
+   main content area out and create more white space".
+   1. The working pane beside a left menu (Settings panes and any `.ap-cols.l` main panel) is open space,
+      not a card: no fill, no ring, no shadow, no blur; its content keeps the pane's rhythm.
+   2. A quiet info note (DAWN's `rounded-card border bg-surface-elevated` callout) keeps a hairline and
+      loses its fill.
+   3. The centre column widens to 1040px and the panes breathe (more gap between sections). */
+[data-design="frequency"] [data-kit="members"] :is(.mc-pane.panel, .ap-cols.l > .panel) {
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding-inline: 0;
+}
+[data-design="frequency"] [data-kit="members"] .mc-pane.panel { gap: 28px }
+[data-design="frequency"] [data-kit="members"] :is(div, section, aside).rounded-card.border.bg-surface-elevated:not(:has(button, a, input, select, textarea)) {
+  background: none;
+  border-color: var(--fq-border-hair);
+}
+@media (min-width: 1001px) {
+  [data-design="frequency"] [data-kit="members"] .fqm-center { max-width: 1040px }
+}
+/* Owner, 2026-10-14: "move the page header onto the same row as the profile, top left". Inside the
+   member shell a page's `.ap-main` (components/frequency/members/shared/members-body.tsx) drops the
+   kit's 48px top pad: the body already starts 24px under the header, so the page heading now sits level
+   with the left rail's profile card (both start 8px into their columns). */
+[data-design="frequency"] [data-kit="members"] .fqm-center .ap-main { padding-top: 8px }
+/* Owner, 2026-10-13: the Feed leads with its own stats box (expanded), then a row of four links, then
+   Up next. The right rail drops its Stats & streaks box on /feed instead (right-rail.tsx), so the two
+   never repeat. `.fa-standing` is a box-less wrapper so the Feed's spacing is unchanged. */
+[data-design="frequency"] [data-kit="members"] .fa-standing { display: contents }
+[data-design="frequency"] [data-kit="members"] .fa-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px }
+[data-design="frequency"] [data-kit="members"] .fa-quick a { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px 16px; border-radius: var(--fq-radius-m); background: var(--fqm-white-60); box-shadow: inset 0 0 0 1px var(--fqm-white-90); color: var(--fq-text-strong); font: 500 var(--fq-text-body-s)/1.2 var(--fq-font-sans); transition: background var(--fq-dur-fast) var(--fq-ease-out) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a:hover { background: var(--fqm-white-75); color: var(--fq-text-strong) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a svg { width: 18px; height: 18px; flex: none; color: var(--fq-text-muted) }
+[data-design="frequency"] [data-kit="members"] .fa-quick a span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+@media (max-width: 720px) { [data-design="frequency"] [data-kit="members"] .fa-quick { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* THE NARROW FLOOR (go-live overflow gate, ADR-1035). Three boxes ran off a phone:
+   - the Zap button, 39px past a 320px screen: under 480px it keeps its icon and its name (aria-label)
+     and drops the caption, so the header row fits;
+   - the Zap, Notifications and account sheets, a fixed 340px anchored 24px from the right, 4px past a
+     360px screen: they now cap at the screen less a 12px gutter each side;
+   - the two-column pages (.ap-cols, Settings) collapse to `1fr`, whose floor is its content's
+     min-content, so one wide row widened the whole column past the screen; minmax(0,1fr) holds it. */
+@layer components {
+  @media (max-width: 1000px) {
+    [data-design="frequency"] [data-kit="members"] .ap-cols,
+    [data-design="frequency"] [data-kit="members"] .ap-cols.l { grid-template-columns: minmax(0, 1fr) }
+    [data-design="frequency"] [data-kit="members"] .ap-cols > * { min-width: 0 }
+  }
+  @media (max-width: 720px) {
+    [data-design="frequency"] [data-kit="members"] .ap-sheets { right: 12px }
+    [data-design="frequency"] [data-kit="members"] .ap-sheet { width: min(340px, calc(100vw - 24px)) }
+    /* The feed's Create menu hung from the Create button's right edge, but on a phone that button
+       sits at the left, so the 280px menu opened 165px off the screen. It hangs from the left here. */
+    [data-design="frequency"] [data-kit="members"] .fa-menu { left: 0; right: auto; width: min(280px, calc(100vw - 36px)) }
+    /* A text button longer than the row (Settings' "Handle, photo, links and your Spotlight page",
+       318px on a 268px column) wraps instead of running off the screen; one line is unchanged. */
+    [data-design="frequency"] [data-kit="members"] .btn.txt { max-width: 100%; height: auto; min-height: 44px; white-space: normal }
+  }
+  @media (max-width: 480px) {
+    [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap { width: 40px; height: 40px; padding: 0 }
+    [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap-l { display: none }
+  }
+}

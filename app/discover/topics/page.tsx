@@ -14,6 +14,8 @@ import { CircleConstellation, OrganicBlob } from '@/components/marketing/vector-
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, topicListSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyTopics } from '@/components/frequency/site/pages/discover/topics'
 
 export const metadata: Metadata = {
   title: 'Channels',
@@ -52,18 +54,27 @@ export default async function DiscoverTopicsPage() {
 
   // Flat list of every Channel (for the ItemList schema, unchanged shape).
   const allTopics = sections.flatMap((d) => d.topics)
+  const schema = [
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Channels', path: '/discover/topics' },
+    ]),
+    topicListSchema(allTopics, 'Channels on Frequency'),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same Pillar groups and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyTopics sections={sections} counts={counts} events={events.length} />
+      </>
+    )
+  }
 
   return (
     <>
-      <JsonLd
-        data={[
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Channels', path: '/discover/topics' },
-          ]),
-          topicListSchema(allTopics, 'Channels on Frequency'),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <PhotoHero
         image="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"

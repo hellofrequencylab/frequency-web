@@ -4,6 +4,7 @@ import { loadSpaceName } from '@/lib/crm/capture-context'
 import { CaptureShell } from '@/components/crm/leads/capture-shell'
 import { CaptureForm } from '@/components/crm/leads/capture-form'
 import { captureExchange } from './actions'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // FRONT DOOR #5 — reciprocal share-back. Someone shares their card; the visitor shares theirs back and
 // gets the card in return. A simple two-way handshake. Not a subscription, so it never promises email.
@@ -41,7 +42,7 @@ export default async function ExchangePage({ searchParams }: { searchParams: Pro
       description={`${who} shared their card. Share yours back and you'll both have each other's.`}
     >
       {payload.l?.trim() && (
-        <p className="mb-5 rounded-card border border-border bg-canvas p-4 text-body-sm text-muted">
+        <p className={SITE_DESIGN === 'frequency' ? 'fn-card' : 'mb-5 rounded-card border border-border bg-canvas p-4 text-body-sm text-muted'}>
           {payload.l.trim()}
           {profileLink && (
             <>

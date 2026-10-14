@@ -591,23 +591,11 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Join now' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
   ],
-  // The two TEXT design blocks (ADR-571). Each carries a single authored string plus its font choice; the
-  // rich size / weight / color / shadow live on the shared C1 text-style bag (blockBearsText → the editor's
-  // Text style group), so the block schema stays a single content field. The `font` segmented lets the
-  // operator pick the display face for the heading and the reading face for prose (both token-safe ids).
+  // The two TEXT design blocks (ADR-571). Each carries a single authored string; the rich size / weight /
+  // color / shadow live on the shared C1 text-style bag (blockBearsText → the editor's Text style group).
+  // The face is the theme's: a Space picks its fonts once, in its theme, not per heading.
   displayHeading: [
     { key: 'text', label: 'Heading', type: 'textarea', placeholder: 'A big, bold title' },
-    {
-      key: 'font',
-      label: 'Font',
-      type: 'segmented',
-      defaultValue: 'display',
-      options: [
-        { value: 'display', label: 'Display' },
-        { value: 'serif', label: 'Serif' },
-        { value: 'grotesk', label: 'Grotesk' },
-      ],
-    },
   ],
   prose: [
     { key: 'text', label: 'Paragraph', type: 'textarea', placeholder: 'Write a paragraph of body text' },
@@ -630,7 +618,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'showPhone', label: 'Ask for a phone number', type: 'toggle', default: false },
     { key: 'showMessage', label: 'Ask for a message', type: 'toggle', default: true },
     { key: 'messageLabel', label: 'Message label', type: 'text', placeholder: 'Your message' },
-    { key: 'optInLabel', label: 'Opt-in wording', type: 'text', placeholder: 'Email me about what is on' },
+    { key: 'optInLabel', label: 'Opt-in wording', type: 'text', placeholder: 'Email me about what’s happening' },
     { key: 'submitLabel', label: 'Button label', type: 'text', placeholder: 'Send' },
     { key: 'successMessage', label: 'Thank-you message', type: 'textarea', placeholder: 'Thanks. We will be in touch.' },
   ],

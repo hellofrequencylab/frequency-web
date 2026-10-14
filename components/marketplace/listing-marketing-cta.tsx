@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
-const COPY: Record<ListingDetailView['vertical'], { heading: string; body: string; href: string; cta: string }> = {
+export const LISTING_CTA_COPY: Record<ListingDetailView['vertical'], { heading: string; body: string; href: string; cta: string }> = {
   classifieds: {
     heading: 'Have something to pass on?',
     body: 'Post it to Classifieds and reach neighbors nearby. No fees, no checkout, just a quick way to hand it off.',
@@ -28,11 +28,11 @@ const COPY: Record<ListingDetailView['vertical'], { heading: string; body: strin
 }
 
 export function ListingMarketingCTA({ vertical }: { vertical: ListingDetailView['vertical'] }) {
-  const c = COPY[vertical]
+  const c = LISTING_CTA_COPY[vertical]
   return (
     <section className="mt-12 overflow-hidden rounded-card border border-border bg-gradient-to-br from-primary-bg via-surface to-signal-bg p-6 sm:p-10">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
-        <h2 className="text-page-title font-bold text-text sm:text-3xl">{c.heading}</h2>
+        <h2 className="text-page-title font-bold text-text sm:text-stat-sm">{c.heading}</h2>
         <p className="max-w-xl text-body-sm text-muted sm:text-body">{c.body}</p>
         <Link
           href={c.href}

@@ -13,12 +13,13 @@ export interface DashSectionDef {
 }
 
 export const DASH_SCOPES: Record<DashScope, readonly DashSectionDef[]> = {
+  // The console's order and labels (ADR-1746). Ids are unchanged so a saved cookie order still reads.
   home: [
     { id: 'vera', label: "Vera's read" },
-    { id: 'programs', label: 'Programs' },
     { id: 'community', label: 'Community' },
+    { id: 'programs', label: 'Content' },
     { id: 'growth', label: 'Growth' },
-    { id: 'operations', label: 'Operations' },
+    { id: 'operations', label: 'Platform' },
   ],
   programs: [
     { id: 'catalog', label: 'The catalog' },
@@ -38,7 +39,7 @@ export const DASH_SCOPES: Record<DashScope, readonly DashSectionDef[]> = {
   operations: [
     { id: 'ai', label: 'AI & assistant' },
     { id: 'platform', label: 'Platform' },
-    { id: 'work', label: 'Work in Operations' },
+    { id: 'work', label: 'Work in Platform' },
   ],
 }
 

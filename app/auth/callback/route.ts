@@ -9,6 +9,8 @@ import {
   maskEmail,
 } from '@/lib/auth/sign-in-hint'
 import { createClient } from '@/lib/supabase/server'
+import { safeNextPath } from '@/lib/auth/safe-next'
+import { callbackErrorCode } from '@/app/sign-in/errors'
 import { track } from '@/lib/analytics/track'
 import { runGuestClaims } from '@/lib/auth/post-sign-in'
 import {
@@ -32,11 +34,7 @@ export async function GET(request: Request) {
   // protocol-relative open-redirect to another host.
   const cookieStore = await cookies()
   const asked = searchParams.get('next') ?? cookieStore.get(POST_LOGIN_COOKIE)?.value ?? null
-  const requested = asked ?? '/feed'
-  const next =
-    requested.startsWith('/') && !requested.startsWith('//') && !requested.startsWith('/\\')
-      ? requested
-      : '/feed'
+  const next = safeNextPath(asked) || '/feed'
   // Whether a destination was actually ASKED FOR, as opposed to defaulted. The guest-seat landing
   // below may only fill the default: someone who followed a `?next=` (or whose sign-in stashed one)
   // asked to go somewhere, and a claim is never a reason to overrule them.
@@ -169,5 +167,14 @@ export async function GET(request: Request) {
 
   // Something went wrong. Send the user back to sign-in with a CODE, not a sentence — the form
   // owns the wording now, and only codes it recognises render at all (app/sign-in/errors.ts).
-  return NextResponse.redirect(`${origin}/sign-in?error=callback`)
+  // The code is read from what Supabase put on this URL, so an expired link and a cancelled Google
+  // consent each get their own line. The validated destination rides back on the URL and the
+  // stashed cookie is cleared: left standing, a stale `next` hijacked a later, unrelated sign-in.
+  const failCode = callbackErrorCode({ error: searchParams.get('error'), error_code: searchParams.get('error_code') })
+  const back = safeNextPath(asked)
+  const res = NextResponse.redirect(
+    `${origin}/sign-in?error=${failCode}${back ? `&next=${encodeURIComponent(back)}` : ''}`,
+  )
+  res.cookies.delete(POST_LOGIN_COOKIE)
+  return res
 }

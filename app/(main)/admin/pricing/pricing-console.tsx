@@ -424,7 +424,7 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-body-sm font-semibold text-text">Seat activation</span>
@@ -1040,7 +1040,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 
       <FormSection
         title="Take-rate"
-        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no fee. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
+        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no platform fee, only card processing. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
       >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>
@@ -1235,7 +1235,7 @@ function FeatureGatesSection({ gates }: { gates: FeatureGateRow[] }) {
       title="Feature gates"
       description="Which plan each feature needs. These take effect only once the master switch is on. While billing is off, every feature stays available exactly as today."
     >
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-muted">
           <span>Feature</span>
           <span>Axis</span>
@@ -1346,7 +1346,7 @@ function StripeStatusSection({ stripe }: { stripe: PricingConsoleData['stripe'] 
       description="Connect Stripe, then sync your prices to Stripe products. Syncing is safe while billing is off: it only creates the products and prices, it does not charge anyone."
     >
       <FormSection title="Status" description="Whether Stripe is connected and billing is live.">
-        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        <div className="rounded-card border border-border bg-surface p-4 sm:p-5">
           <dl className="grid gap-3 sm:grid-cols-3">
             <StatusItem label="Stripe keys" ok={stripe.configured} okText="Configured" offText="Not configured" />
             <StatusItem label="Master switch" ok={stripe.masterLive} okText="On" offText="Off" />
@@ -1458,7 +1458,7 @@ function SyncRow({
 
 function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['stripe']['prices']; foundingLabel?: boolean }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+    <div className="overflow-hidden rounded-card border border-border bg-surface">
       <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-muted">
         <span>Key</span>
         <span>Price id</span>

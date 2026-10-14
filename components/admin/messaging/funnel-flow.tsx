@@ -149,7 +149,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
       {/* ── The flow canvas ─────────────────────────────────────────────────── */}
       <div>
         {error && (
-          <p className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
+          <p className="mb-3 rounded-control border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
             {error}
           </p>
         )}
@@ -195,7 +195,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
                     }
                   }}
                   className={cn(
-                    'flex items-center gap-3 rounded-2xl border bg-surface p-3 text-left transition-colors',
+                    'flex items-center gap-3 rounded-card border bg-surface p-3 text-left transition-colors',
                     active ? 'border-primary-strong ring-1 ring-primary-strong' : 'border-border hover:border-border-strong',
                     dragId === stage.id && 'opacity-60',
                   )}
@@ -257,7 +257,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
         {/* Add a split (branch) — a documented deferred seam (the plan keeps funnels
             linear by default; a branch needs the automation condition grammar + a new
             stage kind, P4's deep end). Present but off, so the affordance is honest. */}
-        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-dashed border-border p-3">
+        <div className="mt-4 flex items-center gap-2 rounded-card border border-dashed border-border p-3">
           <GitBranch className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="text-body-sm font-medium text-text">Add a split</p>
@@ -281,7 +281,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
             onRemoveLink={(linkId) => run(() => removeStageLink(linkId))}
           />
         ) : (
-          <div className="rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted">
+          <div className="rounded-card border border-border bg-surface p-4 text-body-sm text-muted">
             Add a step to start editing.
           </div>
         )}
@@ -308,7 +308,7 @@ function FlowBanner({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-2xl border p-3',
+        'flex items-center gap-3 rounded-card border p-3',
         tone === 'trigger' ? 'border-info/30 bg-info-bg' : 'border-success/30 bg-success-bg',
       )}
     >
@@ -361,7 +361,7 @@ function StagePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <p className="text-2xs font-bold uppercase tracking-wide text-muted">{kindMeta.label} step</p>
       <p className="mt-0.5 text-meta text-muted">{kindMeta.blurb}</p>
 
@@ -392,7 +392,7 @@ function StagePanel({
             {stage.links.map((link) => (
               <li
                 key={link.id}
-                className="flex items-center gap-2 rounded-lg border border-border bg-canvas px-2.5 py-1.5"
+                className="flex items-center gap-2 rounded-control border border-border bg-canvas px-2.5 py-1.5"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block text-2xs font-medium uppercase tracking-wide text-muted">

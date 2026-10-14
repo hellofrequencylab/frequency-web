@@ -5,6 +5,7 @@ import {
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
 } from '@/lib/site'
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPACES — regenerated onto the DAWN 2 block set (UX-MATURITY-PLAN Lift 5b),
@@ -83,7 +84,7 @@ export const data: Data = {
         focal: 'center',
         minHeight: 'auto',
         facts: [
-          { value: '0%', label: 'On your own bookings' },
+          { value: '0%', label: `On your own bookings, ${PLAN_STORY.plusProcessing}` },
           { value: 'Free', label: 'For everyone you bring' },
           { value: 'No card', label: 'To open your room' },
         ],
@@ -112,7 +113,7 @@ export const data: Data = {
         items: [
           {
             title: 'For the people who gather people.',
-            body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces find every week. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
+            body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces keep finding. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
           },
           {
             title: 'The practitioners who already do the work.',
@@ -273,7 +274,7 @@ export const data: Data = {
           {
             icon: 'HandHeart',
             title: 'A door held open',
-            body: 'Your people join free, always, and a free Space hosts free for as long as you like. When you start charging, that is Business: you keep 100% of the bookings you bring yourself, and the network earns only on a customer it introduces, once.',
+            body: `Your people join free, always, and a free Space hosts free for as long as you like. When you start charging, that is Business: you keep 100% of the bookings you bring yourself, ${PLAN_STORY.afterProcessing}, and the network earns only on a customer it introduces, once.`,
           },
           {
             icon: 'LineChart',
@@ -323,7 +324,7 @@ export const data: Data = {
             icon: '',
             image: '',
             title: 'You: free until you charge',
-            body: 'Hosting is free. Open a Space, run Circles and Events, and take tips with no fee. Business is what you take when you start charging, never a bill for access to people.',
+            body: 'Hosting is free. Open a Space, run Circles and Events, and take tips with no platform fee, only card processing. Business is what you take when you start charging, never a bill for access to people.',
             href: '',
           },
         ],
@@ -337,7 +338,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'sp-deal-note',
-        body: "That's the whole shape of it. A free Space is the whole thing, not a trial of it, and selling starts at Business, one honest monthly price. Your own bookings stay yours: 0% on what you book yourself, always. We earn a share only of the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing).",
+        body: `That's the whole shape of it. A free Space is the whole thing, not a trial of it, and selling starts at Business, one honest monthly price. Your own bookings stay yours: 0% on what you book yourself, ${PLAN_STORY.plusProcessing}, always. We earn a share only of the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing).`,
         size: 'base',
         tone: 'surface',
         width: 'default',
@@ -421,7 +422,6 @@ export const data: Data = {
         kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
         rungs: [
           { name: 'Member', blurb: "Your people show up to a Circle. That's the whole entry fee." },
-          { name: 'Crew', blurb: "They're in for the season, learning the format and lending a hand." },
           { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
           { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
           { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },

@@ -1,3 +1,4 @@
+import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { Trophy, Zap, Gem, Target } from 'lucide-react'
 import {
@@ -39,6 +40,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
       <span
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-body-lg lift-1"
         style={{
+          // data-driven: --rank / --rank-deep are scoped per element by seasonRankStyle (rank from data)
           background: 'color-mix(in srgb, var(--rank) 16%, var(--color-surface))',
           color: 'var(--rank-deep)',
         }}
@@ -52,7 +54,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           {trophy.pillar && (
-            <span className="text-2xs font-bold uppercase tracking-widest text-muted">
+            <span className={capsLabel('text-2xs font-bold text-muted', 'widest')}>
               {trophy.pillar}
             </span>
           )}
@@ -177,6 +179,7 @@ export function TrophyCase({
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control lift-1"
           style={{
+            // data-driven: --rank / --rank-deep are scoped per element by seasonRankStyle
             ...seasonRankStyle('master'),
             background: 'color-mix(in srgb, var(--rank) 16%, var(--color-surface))',
             color: 'var(--rank-deep)',
@@ -186,7 +189,7 @@ export function TrophyCase({
           <Trophy className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-muted">
+          <p className={capsLabel('text-2xs font-semibold text-muted', 'widest')}>
             Yours to keep
           </p>
           <p className="text-body-sm font-bold text-text">

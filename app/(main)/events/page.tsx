@@ -5,6 +5,8 @@ import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventsListingSchema } from '@/lib/jsonld'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getEventsIndexData, CONTENT_FALLBACK } from './index-data'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqEventsBody } from '@/components/frequency/members/events/events-body'
 
 // EVENTS — the one events home, for members and for the commerce hub alike. The hub's Events tab
 // links here and the old /marketplace/events twin 308-redirects here (ADR-866; it rendered this
@@ -33,6 +35,10 @@ export default async function EventsPage({
     spots?: string
     near?: string
     sort?: string
+    /** The Frequency body's view (list | map | calendar) and the calendar's month (YYYY-MM).
+     *  DAWN ignores both. */
+    view?: string
+    month?: string
   }>
 }) {
   const sp = await searchParams
@@ -72,12 +78,17 @@ export default async function EventsPage({
     <>
       <JsonLd data={jsonLd} />
       {onCommerceFace && <CommerceLastVisited surface="events" />}
+      {/* THE DESIGN SWITCH (ADR-1737): build-time, so DAWN's tree is untouched when it is off. */}
+      {SITE_DESIGN === 'frequency' ? (
+        <FqEventsBody data={data} params={sp} />
+      ) : (
       <EventsSurface
         data={data}
         basePath="/events"
         activeCategory={sp.category}
         actions={actions}
       />
+      )}
     </>
   )
 }

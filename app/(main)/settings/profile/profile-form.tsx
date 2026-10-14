@@ -511,7 +511,7 @@ export function ProfileForm({
               rows/slots builder, previewing every change live. */}
           <Link
             href={`/people/${initial.handle}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Sparkles className="h-3.5 w-3.5" /> Build your page (arrange your blocks)
           </Link>

@@ -1,3 +1,4 @@
+import { capsLabel } from '@/components/ui/caps-label'
 import { Users, Zap } from 'lucide-react'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
@@ -67,7 +68,7 @@ export function CollectiveGoal({
       aria-labelledby="collective-goal-heading"
     >
       <div className="px-6 pt-6 sm:px-7">
-        <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+        <p className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>
           {seasonName ? `The Quest · ${seasonName}` : 'The Quest'}
         </p>
         <h2 id="collective-goal-heading" className="mt-0.5 text-lead font-bold leading-tight text-text">
@@ -84,7 +85,7 @@ export function CollectiveGoal({
         <div className="flex items-end justify-between gap-3">
           <p className="flex items-baseline gap-2">
             <Zap className="h-5 w-5 shrink-0 self-center text-primary" aria-hidden />
-            <span className="text-3xl font-extrabold leading-none tabular-nums text-text">
+            <span className="text-stat-sm font-extrabold leading-none tabular-nums text-text">
               {total.toLocaleString()}
             </span>
             <span className="text-body-sm font-medium text-muted">

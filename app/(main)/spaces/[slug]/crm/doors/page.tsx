@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Gauge, Lock } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -35,7 +35,7 @@ export default async function SpaceDoorsPage({ params }: { params: Promise<{ slu
 
   if (!canUseCrm || !canEdit) {
     return (
-      <DashboardTemplate
+      <ConsoleDashboardTemplate
         eyebrow={brandName}
         title="Capture links"
         description="Make a link for a warm intro, an event, a lead magnet, or a card swap."
@@ -59,12 +59,12 @@ export default async function SpaceDoorsPage({ params }: { params: Promise<{ slu
             </Link>
           }
         />
-      </DashboardTemplate>
+      </ConsoleDashboardTemplate>
     )
   }
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title="Capture links"
       description="One link per door. Share it in an email, a DM, a flyer, or a link in your bio, and whoever opens it lands in your CRM with the door they came through kept forever."
@@ -72,6 +72,6 @@ export default async function SpaceDoorsPage({ params }: { params: Promise<{ slu
       width="default"
     >
       <DoorLinks slug={space.slug} />
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }

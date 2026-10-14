@@ -47,7 +47,12 @@ function widthOf(page: import('@playwright/test').Page) {
   return page.evaluate(() => ({
     doc: document.documentElement.clientWidth,
     header: Math.round(document.querySelector('header')?.getBoundingClientRect().width ?? -1),
-    rail: Math.round(document.querySelector('[data-rail-column]')?.getBoundingClientRect().right ?? -1),
+    // The RIGHTMOST rail column's right edge. DAWN has one rail (right); Frequency stamps the hook on
+    // both rails, and its left rail is pinned to the left edge, so only the right one can show a
+    // gutter shift.
+    rail: Math.round(
+      Math.max(-1, ...[...document.querySelectorAll('[data-rail-column]')].map((el) => el.getBoundingClientRect().right)),
+    ),
   }))
 }
 
@@ -124,7 +129,7 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
     const response = await page.goto(settingsPath)
     expect(response, `navigation to ${settingsPath} returned a response`).toBeTruthy()
     expect(response!.ok(), `expected 2xx for ${settingsPath}, got ${response!.status()}`).toBe(true)
-    await expect(page.locator('[data-rail-column]')).toBeVisible()
+    await expect(page.locator('[data-rail-column]').last()).toBeVisible()
     await expectRootScrollbar(page, settingsPath)
 
     const before = await widthOf(page)
@@ -132,7 +137,11 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
 
     // The desktop search pill is a button whose visible text is split across a span and a kbd, so its
     // title is the stable handle; the mobile icon button is display-none at this width.
-    await page.getByTitle('Search (⌘K)').click()
+    // DAWN's header pill opens the overlay; Frequency's pill is a link to /search, and ⌘K is its
+    // overlay (components/frequency/members/shell/header.tsx), so the same lock is reached by key.
+    const frequency = (await page.locator('html').getAttribute('data-design')) === 'frequency'
+    if (frequency) await page.keyboard.press(process.platform === 'darwin' ? 'Meta+k' : 'Control+k')
+    else await page.getByTitle('Search (⌘K)').click()
     const overlay = page.getByRole('dialog', { name: 'Search' })
     await expect(overlay).toBeVisible()
     await page.waitForTimeout(400)

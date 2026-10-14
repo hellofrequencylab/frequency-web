@@ -1,0 +1,200 @@
+/* The Frequency public site SHELL: what the React port needs that the generated kit (kit-site.css,
+   do not edit) does not carry, because the prototype hung it on <body> or never needed it.
+   Hand-kept. --fq- variables only, scoped like the kit to [data-design="frequency"] [data-kit="site"];
+   the one exception is the document canvas below, which has to be the html/body pair.
+   Imported by components/frequency/site/shell/site-shell.tsx.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
+
+@layer components {
+  /* The document canvas behind the kit: Stage's void, so overscroll and the first paint are dark (fx.js
+     set this on <html> from script; here it is in the first paint). A Commons page keeps the root's own
+     canvas (sand, or Thermal at night) and colour scheme. */
+  [data-design="frequency"]:has([data-kit="site"][data-surface="stage"]),
+  [data-design="frequency"]:has([data-kit="site"][data-surface="stage"]) body {
+    background: var(--fq-uv-void);
+    color-scheme: dark;
+  }
+  [data-design="frequency"]:has([data-kit="site"][data-surface="commons"]),
+  [data-design="frequency"]:has([data-kit="site"][data-surface="commons"]) body {
+    background: var(--fq-bg-canvas);
+  }
+
+  /* The kit root is the prototype's <body>: it paints the canvas, and it is the stacking context the
+     mood wash (`[data-mood]::before`, fixed, z-index -1) sits in, so the wash lands above the canvas
+     and below the page. The kit sets `background: transparent` on [data-mood] for the body it wrote
+     for; this more specific rule restores the canvas on the element that replaced it. */
+  [data-design="frequency"] [data-kit="site"].fq-site,
+  [data-design="frequency"] [data-kit="site"].fq-site[data-mood] {
+    position: relative;
+    isolation: isolate;
+    display: flow-root;
+    flex: 1 0 auto;
+    min-height: 100dvh;
+    background: var(--fq-bg-canvas);
+    color: var(--fq-text-body);
+    font-family: var(--fq-font-sans);
+  }
+
+  /* Skip link: the first focusable element, hidden until a keyboard user reaches it (WCAG 2.4.1). */
+  [data-design="frequency"] [data-kit="site"] .fq-skip {
+    position: fixed;
+    top: 10px;
+    left: 12px;
+    z-index: 90;
+    padding: 12px 18px;
+    border-radius: var(--fq-radius-orb);
+    background: var(--fq-surface-raised);
+    color: var(--fq-text-strong);
+    font: 600 15px/1 var(--fq-font-sans);
+    text-decoration: none;
+    transform: translateY(-160%);
+    transition: transform var(--fq-dur-fast) var(--fq-ease-out);
+  }
+  [data-design="frequency"] [data-kit="site"] .fq-skip:focus-visible {
+    transform: none;
+    outline: 2px solid var(--fq-x-aqua-neon);
+    outline-offset: 3px;
+  }
+
+  /* The fixed header clears the iPhone notch in a standalone PWA (viewport-fit=cover); env() is 0
+     everywhere else, so the kit's 84 / 64px bar is unchanged off-device. */
+  /* The bar's two heights are named once, so a page that sticks something under the bar (the /pricing
+     matrix header) offsets by the bar's real height instead of retyping it. --fq-site-nav-h is the
+     height the bar has right now: the resting bar, the scrolled bar, or nothing while it is hidden. */
+  [data-design="frequency"] [data-kit="site"] {
+    --fq-site-nav-rest: calc(84px + env(safe-area-inset-top));
+    --fq-site-nav-scrolled: calc(64px + env(safe-area-inset-top));
+    --fq-site-nav-h: var(--fq-site-nav-rest);
+  }
+  [data-design="frequency"] [data-kit="site"]:has(header.nav.is-scrolled) {
+    --fq-site-nav-h: var(--fq-site-nav-scrolled);
+  }
+  [data-design="frequency"] [data-kit="site"]:has(header.nav.is-hidden) {
+    --fq-site-nav-h: 0px;
+  }
+  [data-design="frequency"] [data-kit="site"] header.nav {
+    height: var(--fq-site-nav-rest) !important;
+    padding-top: env(safe-area-inset-top) !important;
+  }
+  [data-design="frequency"] [data-kit="site"] header.nav.is-scrolled {
+    height: var(--fq-site-nav-scrolled) !important;
+  }
+
+  /* The prototype's Log in and avatar are <button>s; here they are links, so they need the box. */
+  [data-design="frequency"] [data-kit="site"] a.acct-login,
+  [data-design="frequency"] [data-kit="site"] a.acct-me {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  /* A page that does not open on a kit hero (which sits under the transparent bar by design) is pushed
+     clear of the fixed header. */
+  [data-design="frequency"] [data-kit="site"] main.fq-main:not(:has(.hero, .phero, .hp-hero, .jx, .fold)) {
+    padding-top: calc(84px + env(safe-area-inset-top));
+  }
+
+  /* Keep going, "row" variant: the inline style Vision's prototype carried. */
+  [data-design="frequency"] [data-kit="site"] .next .fq-kg-body {
+    margin: 10px 0 0;
+    font-size: var(--fq-text-body-size);
+  }
+
+  /* ── SURFACE: Commons (guidelines/site-themes.md; SiteShell's header says which routes) ───────────
+     The header and the footer sit in a Stage band on every page: a box with no box of its own, there
+     only to carry the Stage tokens. */
+  [data-design="frequency"] [data-kit="site"] .fq-stage-band,
+  [data-design="frequency"] [data-kit="site"] .fq-body {
+    display: contents;
+  }
+
+  /* The side colour on Commons is the DEEP hue (site-themes: "Never put neon hues on Commons light"):
+     presence for People, reward for Spaces, each lifted to stay AA in the Thermal room at night. The
+     Stage band keeps the neon one. */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="p"] {
+    --fq-side: var(--fq-presence);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="e"] {
+    --fq-side: var(--fq-reward);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="p"] .fq-stage-band {
+    --fq-side: var(--fq-x-aqua-neon);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"][data-side="e"] .fq-stage-band {
+    --fq-side: var(--fq-x-sun-neon);
+  }
+
+  /* The fixed bar is transparent over a Stage hero by design. Over a light page it needs its own night,
+     so on Commons it is solid from the first paint, scrolled or not, menu open or not.
+     `!important` because the kit's header v4 paints the bar with `!important` (kit-site.css: a 55%
+     void gradient fading to nothing at rest, a 78% void when scrolled). Without it this rule lost on
+     every Commons route and the bar was that gradient over sand: a pale grey band with the Stage
+     header's pale links and inverted wordmark on it, barely readable (owner, 2026-10-13, /help
+     articles). Same layer, higher specificity, both important: this one wins. */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] .fq-stage-band header.nav {
+    background: var(--fq-bg-canvas) !important;
+    border-bottom-color: var(--fq-border-hair) !important;
+  }
+
+  /* The kit's few Stage literals that a Commons body meets: crumbs, and the focus ring. */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs {
+    color: var(--fq-text-muted);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs a {
+    color: var(--fq-text-body);
+  }
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main :is(a, button):focus-visible {
+    outline-color: var(--fq-focus-ring);
+  }
+
+  /* Section rhythm for a run of `.sec` sections (pricing's `.pb-sec` in site-pages-b.css is the model).
+     A section that continues the one above it is `.sec.sec-next`, never `.sec` with its top zeroed: a
+     zeroed top sat the eyebrow ON the fx seam (the hairline site-fx draws at the top of a borderless
+     `.sec`). Both sides of the hand-over pad the same fluid amount, so the gap is an even
+     clamp(80px,10vw,128px) with the seam in its middle. */
+  [data-design="frequency"] [data-kit="site"] .sec:has(+ .sec.sec-next) {
+    padding-bottom: clamp(40px, 5vw, 64px);
+  }
+  [data-design="frequency"] [data-kit="site"] .sec.sec-next {
+    padding-top: clamp(40px, 5vw, 64px);
+  }
+
+  /* Chrome-free (SiteShell chrome={false}): there is no fixed bar to clear. */
+  [data-design="frequency"] [data-kit="site"] main.fq-main.fq-bare {
+    padding-top: 0;
+  }
+
+  /* The narrow floor (320px, ADR-1035): the 38px wordmark, search and Menu summed to 352px, so Menu
+     sat 32px off the screen. Below 360 the wordmark steps down and the bar's gaps close, so the three
+     fit with room to spare; 360 and up are unchanged. */
+  @media (max-width: 359px) {
+    [data-design="frequency"] [data-kit="site"] .nav {
+      gap: 10px !important;
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+    [data-design="frequency"] [data-kit="site"] .nav .logo,
+    [data-design="frequency"] [data-kit="site"] .nav.is-scrolled .logo {
+      height: 28px !important;
+    }
+    [data-design="frequency"] [data-kit="site"] .acct {
+      gap: 6px;
+    }
+    [data-design="frequency"] [data-kit="site"] .mm-menu {
+      padding: 0 14px !important;
+    }
+  }
+}
+
+/* Reduced motion for the kit loops kit-site.css (generated, do not edit) leaves running: the meter
+   fill, and the iridescent rims on the mega-menu panel, the next-step card and the mobile sheet. */
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit="site"] .meter i,
+  [data-design="frequency"] [data-kit="site"] .mm-panel::before,
+  [data-design="frequency"] [data-kit="site"] .next2::before,
+  [data-design="frequency"] [data-kit="site"] .fqm::before {
+    animation: none;
+  }
+}

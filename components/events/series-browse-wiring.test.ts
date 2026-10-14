@@ -37,7 +37,7 @@ const SURFACES: Surface[] = [
   },
   { path: 'components/events/upcoming-widget.tsx', sizing: 'readUpcomingSeries<', oldLimit: '.limit(3)' },
   { path: 'app/discover/events/_data.ts', sizing: 'SERIES_WIDE_READ', oldLimit: 'limit = 500' },
-  { path: 'app/(main)/search/page.tsx', sizing: 'seriesFetchLimit(' },
+  { path: 'app/(main)/search/search-data.ts', sizing: 'seriesFetchLimit(' },
   { path: 'app/api/search/route.ts', sizing: 'seriesFetchLimit(' },
   // LIVE-206: the three list-shaped gaps LIVE-198 enumerated. The two Space surfaces read through
   // lib/events/store.ts listEventsForSpace, whose own COLS carries SERIES_COLUMNS; the public
@@ -148,7 +148,7 @@ describe('the surfaces with a shape of their own', () => {
     expect(mapAt).toBeGreaterThan(foldAt)
   })
 
-  for (const path of ['app/(main)/search/page.tsx', 'app/api/search/route.ts']) {
+  for (const path of ['app/(main)/search/search-data.ts', 'app/api/search/route.ts']) {
     it(`${path} partitions around the floor instead of folding a floorless window`, () => {
       const code = stripComments(read(path))
       // Two reads: upcoming ascending, past DESCENDING. One fold over a floorless ascending read
