@@ -45,6 +45,9 @@ export const ROUTES = {
   happening: '/discover/events',
   signIn: '/sign-in',
   feed: '/feed',
+  /** The home page for a signed-in member: bare `/` sends a member to the Feed (lib/nav/front-door.ts),
+   *  `?home` is the door taken on purpose. */
+  memberHome: '/?home',
 } as const
 
 /** Where the logo goes: a signed-in member's home is their feed, everyone else's is the front door. */
@@ -52,9 +55,13 @@ export function siteLogoHref(member: boolean): string {
   return member ? ROUTES.feed : ROUTES.home
 }
 
-/** The nav's first item for a signed-in member (owner, 2026-10-13): back to the feed. Signed out: none. */
-export function memberFeedLink(member: boolean): SiteLink | null {
-  return member ? { href: ROUTES.feed, label: 'Feed' } : null
+/** The nav's first item, for everyone (owner, 2026-10-14): Feed, which a signed-out visitor opens as the
+ *  public preview; on the Feed itself it reads Home and goes to the home page (a member's Home skips the
+ *  front door's Feed redirect). The member shell's twin is homeFeedItem (members/shell/nav.ts). */
+export function feedHomeLink(pathname: string, member: boolean): { href: string; label: 'Feed' | 'Home' } {
+  const onFeed = pathname === ROUTES.feed || pathname.startsWith(ROUTES.feed + '/')
+  if (!onFeed) return { href: ROUTES.feed, label: 'Feed' }
+  return { href: member ? ROUTES.memberHome : ROUTES.home, label: 'Home' }
 }
 
 /** A link the shell draws. `href: null` means "no route yet": renderers drop it. */
