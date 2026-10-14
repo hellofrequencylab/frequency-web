@@ -377,15 +377,28 @@ const readTiers = cache(async (spaceId: string, activeOnly: boolean): Promise<Me
 })
 
 /** Read a Space's OPEN memberships — active + waitlist (service-role; FAIL-SAFE to []). */
+// PostgREST caps every response at max_rows (1000, supabase/config.toml), so the open-membership read pages
+// with .range() until a short page: a Space past 1000 members still counts (capacity) and lists them all.
+// The ceiling only bounds a runaway read.
+const MEMBERSHIP_PAGE = 1000
+const MEMBERSHIP_MAX = 50_000
+
 async function readOpenMemberships(spaceId: string): Promise<MembershipRow[]> {
   try {
-    const { data, error } = await membershipsTable()
-      .select(MEMBERSHIP_COLS)
-      .eq('space_id', spaceId)
-      .in('status', ['active', 'waitlist'])
-      .order('started_at', { ascending: false })
-    if (error || !data) return []
-    return data
+    const out: MembershipRow[] = []
+    for (let from = 0; from < MEMBERSHIP_MAX; from += MEMBERSHIP_PAGE) {
+      const { data, error } = await membershipsTable()
+        .select(MEMBERSHIP_COLS)
+        .eq('space_id', spaceId)
+        .in('status', ['active', 'waitlist'])
+        .order('started_at', { ascending: false })
+        .order('id')
+        .range(from, from + MEMBERSHIP_PAGE - 1)
+      if (error || !data) return []
+      out.push(...data)
+      if (data.length < MEMBERSHIP_PAGE) break
+    }
+    return out
   } catch {
     return []
   }

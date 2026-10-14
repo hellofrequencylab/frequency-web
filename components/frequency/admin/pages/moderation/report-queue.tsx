@@ -7,6 +7,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
 import type { ReportWithPreview } from '@/components/widgets/admin/admin-moderation-queue'
 import type { BlockedMember, ResolvedReport } from './moderation-reads'
+import { FqIcon } from '@/components/frequency/icon'
 import { Av, EMPTY } from '../shared'
 
 // HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
@@ -18,6 +19,10 @@ const HOME_TZ = 'America/Los_Angeles'
 // the list once its action succeeds. The design's four tabs: Open (the queue), Resolved (the latest reviewed
 // reports), Blocked (members whose posting is suspended) and Rules (the community guidelines), all read on
 // the server (moderation-reads.ts) and switched here without a fetch.
+//
+// CONFIRMATION. Every action that changes something a member sees (hide the content, warn, suspend, cancel
+// an event) asks once, inline on its card, before it runs: the card names the consequence and offers the
+// action again beside Keep. Dismiss only closes the report, so it runs straight away.
 
 const REASON: Record<string, { label: string; tone: 'bad' | 'warn' | 'n' }> = {
   harassment: { label: 'Harassment', tone: 'bad' },
@@ -64,6 +69,7 @@ export function HouseRules({ children }: { children?: ReactNode }) {
         <span className="t2">{children ?? 'The community guidelines, the rules every report here is judged against.'}</span>
       </span>
       <Link className="btn sm" href="/guidelines">
+        <FqIcon name="shield" />
         Read the guidelines
       </Link>
     </div>
@@ -75,6 +81,9 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
   const [isPending, startTransition] = useTransition()
   const [done, setDone] = useState<Set<string>>(() => new Set())
   const [suspendFor, setSuspendFor] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<{ reportId: string; ask: string; yes: string; action: () => Promise<ActionResult> } | null>(
+    null,
+  )
   const [error, setError] = useState<string | null>(null)
 
   function run(reportId: string, action: () => Promise<ActionResult>) {
@@ -86,6 +95,7 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
         return
       }
       setSuspendFor(null)
+      setConfirm(null)
       setDone((prev) => new Set(prev).add(reportId))
     })
   }
@@ -154,8 +164,16 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
                       type="button"
                       className="btn sm ink"
                       disabled={isPending}
-                      onClick={() => run(r.id, () => reviewReport(r.id, 'actioned'))}
+                      onClick={() =>
+                        setConfirm({
+                          reportId: r.id,
+                          ask: `Hide this ${target.toLowerCase()}? Members stop seeing it straight away.`,
+                          yes: `Hide ${target.toLowerCase()}`,
+                          action: () => reviewReport(r.id, 'actioned'),
+                        })
+                      }
                     >
+                      <FqIcon name="close" />
                       Hide {target.toLowerCase()}
                     </button>
                   )}
@@ -165,16 +183,29 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
                         type="button"
                         className="btn sm ink"
                         disabled={isPending}
-                        onClick={() => setSuspendFor(suspendFor === r.id ? null : r.id)}
+                        aria-expanded={suspendFor === r.id}
+                        onClick={() => {
+                          setConfirm(null)
+                          setSuspendFor(suspendFor === r.id ? null : r.id)
+                        }}
                       >
+                        <FqIcon name="shield" />
                         Suspend
                       </button>
                       <button
                         type="button"
                         className="btn sm"
                         disabled={isPending}
-                        onClick={() => run(r.id, () => warnMember(r.id, r.target_id, r.reason))}
+                        onClick={() =>
+                          setConfirm({
+                            reportId: r.id,
+                            ask: `Send ${r.preview || 'this member'} a warning? Vera sends them a direct message.`,
+                            yes: 'Send warning',
+                            action: () => warnMember(r.id, r.target_id, r.reason),
+                          })
+                        }
                       >
+                        <FqIcon name="flag" />
                         Warn
                       </button>
                     </>
@@ -184,8 +215,16 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
                       type="button"
                       className="btn sm ink"
                       disabled={isPending}
-                      onClick={() => run(r.id, () => cancelEventFromReport(r.id, r.target_id))}
+                      onClick={() =>
+                        setConfirm({
+                          reportId: r.id,
+                          ask: 'Cancel this event? It is marked cancelled for everyone who sees it.',
+                          yes: 'Cancel event',
+                          action: () => cancelEventFromReport(r.id, r.target_id),
+                        })
+                      }
                     >
+                      <FqIcon name="event" />
                       Cancel event
                     </button>
                   )}
@@ -195,9 +234,23 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
                     disabled={isPending}
                     onClick={() => run(r.id, () => reviewReport(r.id, 'dismissed'))}
                   >
+                    <FqIcon name="check" />
                     Dismiss
                   </button>
                 </div>
+                {confirm?.reportId === r.id && (
+                  <div className="soft stack adp-tight" role="alertdialog" aria-label="Confirm moderation action">
+                    <span className="t1">{confirm.ask}</span>
+                    <div className="row wrap">
+                      <button type="button" className="btn sm ink" disabled={isPending} onClick={() => run(r.id, confirm.action)}>
+                        {isPending ? 'Working' : confirm.yes}
+                      </button>
+                      <button type="button" className="btn sm txt" disabled={isPending} onClick={() => setConfirm(null)}>
+                        Keep
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {suspendFor === r.id && (
                   <div className="stack adp-tight">
                     <span className="t2">Suspend posting for how long? Reading and messages stay open.</span>
@@ -209,9 +262,12 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
                           className="chip"
                           disabled={isPending}
                           onClick={() =>
-                            run(r.id, () =>
-                              suspendMember(r.id, r.target_id, { reason: r.reason, durationDays: o.days ?? undefined }),
-                            )
+                            setConfirm({
+                              reportId: r.id,
+                              ask: `Suspend posting ${o.days === null ? 'until you lift it' : `for ${o.label}`}? Reading and messages stay open.`,
+                              yes: o.days === null ? 'Suspend until lifted' : `Suspend for ${o.label}`,
+                              action: () => suspendMember(r.id, r.target_id, { reason: r.reason, durationDays: o.days ?? undefined }),
+                            })
                           }
                         >
                           {o.label}

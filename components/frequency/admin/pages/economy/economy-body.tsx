@@ -7,7 +7,9 @@ import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import type { Space } from '@/lib/spaces/types'
 import { AdminHead, AdminPageBody, EMPTY, Kpi, WeekBars, n, trendOf, usd } from '../shared'
 import { loadEarnRates } from '../earn-rates'
-import { percentChange } from '../checkin-stats'
+import { DAY_MS, percentChange } from '../checkin-stats'
+import { StatementButton } from './statement-button'
+import { HOME_TZ } from '@/lib/time/zone'
 import { loadSpaceRevenueSeries } from '../space-reads'
 
 // ECONOMY, FREQUENCY (design_handoff/frequency/templates/admin/Economy.html). The Space's Get paid page
@@ -22,7 +24,8 @@ import { loadSpaceRevenueSeries } from '../space-reads'
 //
 // NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): Next payout, Zaps issued and Gems spent here (Zaps and Gems
 // are not recorded per Space), and the trends on those. There is no payout ledger in the app (Stripe pays out on its own schedule), so
-// the design's Payouts table is the money-paths table instead, and there is no Statement action to draw.
+// the design's Payouts table is the money-paths table instead. Statement (statement-button.tsx) downloads the
+// weekly revenue the bars draw, the one statement the app can stand behind.
 
 const PATH_STATUS: Record<MoneyPathState, { label: string; tone: 'ok' | 'warn' | 'n' }> = {
   live: { label: 'Live', tone: 'ok' },
@@ -46,12 +49,25 @@ export async function FqEconomyBody({
     loadEarnRates(),
     loadSpaceRevenueSeries(space.id),
   ])
-  const month = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date())
+  const now = new Date().getTime()
+  const month = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: HOME_TZ }).format(now)
+  const weekEnd = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: HOME_TZ })
+  const statement = series
+    ? series.weeks.map((cents, i) => ({
+        week: weekEnd.format(now - (series.weeks.length - 1 - i) * 7 * DAY_MS),
+        net: usd(cents),
+      }))
+    : null
 
   return (
     <AdminPageBody>
       {staffViewing && <StaffPreviewBanner spaceName={space.brandName ?? space.name} />}
-      <AdminHead kicker="Zaps, Gems and payouts" title="Economy" meta={`${month} · next payout ${EMPTY}`} />
+      <AdminHead
+        kicker="Zaps, Gems and payouts"
+        title="Economy"
+        meta={`${month} · next payout ${EMPTY}`}
+        actions={<StatementButton rows={statement} filename={`${space.slug}-revenue-by-week.csv`} />}
+      />
 
       <div className="g4">
         <Kpi
