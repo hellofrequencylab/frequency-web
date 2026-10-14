@@ -491,7 +491,8 @@ const nextConfig: NextConfig = {
       // beta" for a window the owner closed on 2026-08-17, and under the core model free is
       // PERMANENT, so its premise was gone rather than just its dates. It was also the
       // second-highest priority URL in the sitemap, so an inbound link would 404 without this.
-      { source: '/beta', destination: '/start', permanent: true },
+      // Re-pointed straight at /join when /start merged into it (2026-10-14): one hop, not two.
+      { source: '/beta', destination: '/join', permanent: true },
       { source: '/beta/:slug', destination: '/join/:slug', permanent: true },
       { source: '/onboarding/beta', destination: '/join', permanent: true },
       // The retired operator-calendar beta door was a product route, not a Funnel slug.
@@ -665,6 +666,10 @@ const nextConfig: NextConfig = {
       FREQUENCY_DESIGN
         ? { source: '/the-lab', destination: '/vision', permanent: true }
         : { source: '/the-lab', destination: '/about', permanent: false },
+      // /start (the Build / Practice / Spread picker) MERGED into /join, the one front door, whose own
+      // picker replaced it. EXACT source: /start/[flow] stays live, because printed QR codes and the
+      // lead flows (lib/entry-points/templates.ts) point at /start/welcome, /start/event, /start/partner.
+      { source: '/start', destination: '/join', permanent: true },
     ]
   },
   images: {

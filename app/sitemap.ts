@@ -228,10 +228,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
-    // The /start role picker (the funnel hub). Build / Practice / Spread were FOLDED
-    // into The Community + The Quest (their routes 308-redirect), so a redirected URL
-    // is no longer advertised here as canonical.
-    { url: `${SITE_URL}/start`, changeFrequency: "monthly", priority: 0.9 },
+    // /start MERGED into /join (2026-10-14): it 301s, so it is not listed. /join is the front door.
     // /the-lab MERGED into /vision (owner ruling 2026-10-14): it 301s, so it is not listed.
     // Frequency-only pages (ADR-1737): /vision exists in the Frequency design's site map and answers
     // 404 under DAWN, so it is advertised only when the build wears Frequency. /stories is HIDDEN until

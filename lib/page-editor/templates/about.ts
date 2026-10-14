@@ -47,7 +47,7 @@ export const data: Data = {
           { value: '0%', label: 'On your own bookings, plus card processing' },
         ],
         ctaPrimaryLabel: BETA_CTA_LABEL,
-        ctaPrimaryHref: '/start',
+        ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: '',
         ctaSecondaryHref: '',
         note: '',
