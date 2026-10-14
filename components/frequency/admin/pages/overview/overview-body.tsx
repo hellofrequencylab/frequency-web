@@ -307,7 +307,8 @@ export async function FqOverviewBody({
                 All events
               </Link>
             </div>
-            <div className="tbl-wrap">
+            {/* The table scrolls sideways on a phone; a keyboard reaches it as one labelled stop. */}
+            <div className="tbl-wrap" tabIndex={0} role="region" aria-label="This week's events">
               <table className="tbl">
                 <thead>
                   <tr>

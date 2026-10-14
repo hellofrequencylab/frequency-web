@@ -18,7 +18,7 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .h-xl{max-width:15ch;font-size:clamp(44px,6.4vw,94px)}
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .eyebrow{margin:34px 0 18px;font:400 italic clamp(22px,2.2vw,30px)/1 var(--fq-font-serif);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .lede{min-height:5.2em}
-[data-design="frequency"] [data-kit="site"] .pa-home .hero .wrap{display:flex;flex-direction:column;min-height:max(680px,100vh);padding-top:clamp(108px,13vh,140px)}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .wrap{display:flex;flex-direction:column;min-height:max(680px,min(100vh,1200px));padding-top:clamp(108px,13vh,140px)}
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .wrap{padding-bottom:0!important}
 [data-design="frequency"] [data-kit="site"] .pa-home .h-top{display:flex;justify-content:space-between;align-items:center;gap:16px 24px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="site"] .pa-home .h-ctl{display:contents}
@@ -156,6 +156,13 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-svg path.flow{stroke-dasharray:4 8;animation:wvflow 1.6s linear infinite}
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-svg path.on{opacity:1;stroke-width:2.2}
 @keyframes wvflow{to{stroke-dashoffset:-24}}
+/* The hero is a screen tall, up to a point. An uncapped 100vh tracks every change to the viewport
+   height, including the one a full-page capture makes when it extends the window past the fold: the
+   hero grew with the window, the page grew with the hero, and the camera never held a still frame
+   (home--*-light timed out). Capped, it fills any real screen and stops moving. The fold's dusk
+   gradient takes the same cap. */
+[data-design="frequency"] [data-kit="site"] .pa-home .hero{min-height:max(680px,min(100vh,1200px))}
+[data-design="frequency"] [data-kit="site"] .pa-home .fold::before{top:max(-38vh,-460px);height:min(38vh,460px)}
 /* Reduced motion: the Home loops the kit sheet does not already stop (the marquee mark, the ring breath,
    the live figure sweep, the weave threads). */
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pa-home .h-sig-run .fq-logo-icon, [data-design="frequency"] [data-kit="site"] .pa-home .rings::after, [data-design="frequency"] [data-kit="site"] .pa-home .lv-stat b, [data-design="frequency"] [data-kit="site"] .pa-home .wv-svg path.flow{animation:none}}

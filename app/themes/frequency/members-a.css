@@ -183,7 +183,11 @@
 [data-design="frequency"] [data-kit="members"] .fa-post-h .grow{display:flex;flex-direction:column;gap:5px}
 [data-design="frequency"] [data-kit="members"] .fa-src{display:flex;align-items:center;gap:6px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fa-src::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--fq-pa);flex:none}
-[data-design="frequency"] [data-kit="members"] .fa-src a{color:inherit;display:inline-block;padding:6px 0;margin:-6px 0}  /* a 25px target (WCAG 2.5.8) the line does not grow for */
+/* 24px targets (WCAG 2.5.8) the header does not grow for. The author link (18.8px) and the source link
+   (13px) are stacked 5px apart, so their padding splits that gap instead of overlapping it: the author
+   takes 3px below, the source 2px above and its slack below. */
+[data-design="frequency"] [data-kit="members"] .fa-post-h .grow>a.t1{padding:3px 0;margin:-3px 0}
+[data-design="frequency"] [data-kit="members"] .fa-src a{color:inherit;display:inline-block;padding:2px 0 9px;margin:-2px 0 -9px}
 [data-design="frequency"] [data-kit="members"] .fa-whytag{font:400 12px/1 var(--fq-font-sans);color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="members"] .fa-post-b{margin:0;font:400 17px/1.55 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="members"] .fa-kick{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}

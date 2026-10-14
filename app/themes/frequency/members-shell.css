@@ -515,6 +515,12 @@
   @media (max-width: 720px) {
     [data-design="frequency"] [data-kit="members"] .ap-sheets { right: 12px }
     [data-design="frequency"] [data-kit="members"] .ap-sheet { width: min(340px, calc(100vw - 24px)) }
+    /* The feed's Create menu hung from the Create button's right edge, but on a phone that button
+       sits at the left, so the 280px menu opened 165px off the screen. It hangs from the left here. */
+    [data-design="frequency"] [data-kit="members"] .fa-menu { left: 0; right: auto; width: min(280px, calc(100vw - 36px)) }
+    /* A text button longer than the row (Settings' "Handle, photo, links and your Spotlight page",
+       318px on a 268px column) wraps instead of running off the screen; one line is unchanged. */
+    [data-design="frequency"] [data-kit="members"] .btn.txt { max-width: 100%; height: auto; min-height: 44px; white-space: normal }
   }
   @media (max-width: 480px) {
     [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap { width: 40px; height: 40px; padding: 0 }

@@ -255,6 +255,11 @@ async function capture(
   try {
     await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
       fullPage: !surface.viewportOnly,
+      // A full-page desktop shot of Home is many screens of blur and mask compositing on a
+      // GPU-less runner. On run 38540677414 the FIRST shot had not returned when the 5s default
+      // ran out ("taking page screenshot … fonts loaded … Timeout 5000ms"), so no comparison ever
+      // ran. More time for the shutter; the matcher still needs two identical frames.
+      ...(surface.viewportOnly ? {} : { timeout: 15_000 }),
       mask: masksFor(page, surface),
     })
   } catch (error) {

@@ -178,10 +178,10 @@
      sunken sand, the app kits' 4% ink wash and its own 14% status wash. The export's values read 2.4
      to 4.45. Faint #A59F98 read 2.4 on the console's search pill. */
   --fq-text-faint: #6F6961; /* export faint #A59F98, deepened: 4.5 on sunken sand, 5.4 on card */
-  --fq-success: #2A7150;    /* export #2F7F5A (4.03 on its wash): 4.86 */
-  --fq-warning: #8E5A00;    /* export #A86A00 (3.69 on its wash): 4.84 */
-  --fq-danger: #B53328;     /* export #C2362B (4.05 on its sand wash): 4.5 */
-  --fq-info: #2D6A89;       /* export #2F6F8F (4.2 on its sand wash): 4.5 */
+  --fq-success: #296E4E;    /* export #2F7F5A (4.03 on its wash): 4.6 on its sand wash, 4.9 on the card's */
+  --fq-warning: #895700;    /* export #A86A00 (3.69 on its wash): 4.6 on its sand wash, 4.9 on the card's */
+  --fq-danger: #B23227;     /* export #C2362B (4.05 on its sand wash): 4.6 */
+  --fq-info: #2C6886;       /* export #2F6F8F (4.2 on its sand wash): 4.6 */
   --fq-presence: #156D7E;   /* export aqua-deep #17788A (4.45 on presence-soft): 5.17 */
 }
 
@@ -194,8 +194,8 @@
 :root[data-design="frequency"][data-surface="stage"] {
   --fq-success: #3FA374; /* export #2F7F5A lifted for night (5.0:1 on its own dark wash) */
   --fq-warning: #C98200; /* export #A86A00 lifted for night (5.0:1 on its own dark wash) */
-  --fq-danger: #DA6057;  /* export #C2362B lifted for night */
-  --fq-info: #3C8FB8;    /* export #2F6F8F lifted for night */
+  --fq-danger: #DC685F;  /* export #C2362B lifted for night (4.6:1 on its own dark wash) */
+  --fq-info: #3E94BE;    /* export #2F6F8F lifted for night (4.6:1 on its own dark wash) */
 }
 :root.dark[data-design="frequency"],
 :root.dark[data-design="frequency"] [data-skin],
