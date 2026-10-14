@@ -12,13 +12,12 @@ import { SiteBooking } from '@/components/sites/site-booking'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
 import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
-import { resolveAccentVars } from '@/lib/spaces/accent'
+import { siteRenderStyle } from '@/lib/sites/site-render-style'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { hasPage, readPageDoc, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
-import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
-import { wildheartAccentVars } from '@/lib/theme/wildheart'
-import { networkAccentVars, networkScheme } from '@/lib/theme/network'
+import { mensworkSeason } from '@/lib/theme/menswork'
+import { networkScheme } from '@/lib/theme/network'
 import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
@@ -165,7 +164,10 @@ export async function SitePage({
   // A PAGE may wear its own theme (LIVE-699, preferences.siteStyle.pages); every other page keeps the site's.
   const siteStyle = readSitePageStyle(space.preferences, pageSlug)
   // ONE source (ADR-1728): the theme is the site style, edited from Identity and branding or the editor's
-  // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in.
+  // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in. The
+  // theme, the font set and the accent resolve through lib/sites/site-render-style.ts, the same resolver the
+  // website editor's canvas uses, so the preview is this page.
+  const render = siteRenderStyle(siteStyle, websiteBrand.accent, defaultAccentForType(space.type))
   const boldSite = siteStyle.theme === 'bold'
   // The Wildheart theme (lib/theme/wildheart.ts): the third skin, light where Bold is dark. Its Space page
   // wears its font set like any theme; its own faces ride the website root (WILDHEART_FONT_CLASS).
@@ -173,7 +175,8 @@ export async function SitePage({
   // The Network theme (lib/theme/network.ts): light and coastal, one bold color in four schemes. Its faces
   // ride the website root (NETWORK_FONT_CLASS); the scheme follows the owner's accent.
   const netSite = siteStyle.theme === 'network'
-  const theme = boldSite ? 'menswork' : website && !wildSite && !netSite ? 'frequency' : siteStyle.fonts
+  // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
+  const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins. Wildheart does the same with its violet.
@@ -186,17 +189,10 @@ export async function SitePage({
         : null
   const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
-  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : wildSite ? ('wildheart' as const) : netSite ? ('network' as const) : ('frequency' as const) }
-  const lookOverrides = siteLookOverrides(lookStyle)
-  const fullFooter = siteLook(lookStyle).footer === 'full'
-  const accentVars = boldSite
-    ? mensworkAccentVars(websiteBrand.accent)
-    : wildSite
-      ? wildheartAccentVars(websiteBrand.accent)
-      : netSite
-        ? networkAccentVars(websiteBrand.accent)
-        : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
-  const editorTheme = boldSite ? ('Menswork' as const) : wildSite ? ('Wildheart' as const) : netSite ? ('Network' as const) : ('DAWN' as const)
+  const lookOverrides = siteLookOverrides(render.lookStyle)
+  const fullFooter = siteLook(render.lookStyle).footer === 'full'
+  const accentVars = render.accentVars
+  const editorTheme = render.editorTheme
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`

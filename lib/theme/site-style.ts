@@ -171,7 +171,12 @@ function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
  *  theme takes that theme's own fonts; the owner's explicit corners, spacing, header and footer still hold,
  *  and anything left to "the theme's own" follows the page's theme (siteLook). */
 export function readSitePageStyle(preferences: unknown, pageSlug: string): SiteStyle {
-  const style = readSiteStyle(preferences)
+  return sitePageStyle(readSiteStyle(preferences), pageSlug)
+}
+
+/** readSitePageStyle over a style already in hand: the website editor resolves its canvas through this with
+ *  its live (unsaved) style, so the preview and the published page pick the same theme and fonts. */
+export function sitePageStyle(style: SiteStyle, pageSlug: string): SiteStyle {
   const theme = style.pages?.[pageSlug]
   if (!theme || theme === style.theme) return style
   return { ...style, theme, fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts }

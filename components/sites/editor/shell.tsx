@@ -14,7 +14,8 @@ import { websiteThemeVars } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, type WebsiteSnapshot, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
@@ -38,6 +39,8 @@ export interface WebsiteEditorShellProps {
   onPropose?: (request: string, value: string) => Promise<{ ok: true; text: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
+  /** The Space type's default accent (defaultAccentForType): what the live site paints when no brand accent is set. */
+  defaultAccent?: string | null
   /** The `--font-*` classes of the theme faces the canvas may wear (Network, Wildheart), set on the editor root so
    *  the canvas frame copies them; the editor's own chrome wears the Frequency design system. */
   fontClass?: string
@@ -53,7 +56,7 @@ function subscribeViewport(callback: () => void) {
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
  *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
 const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Frequency', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network' }
-const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network' }
+const EDITOR_THEME = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
 const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : 'frequency')
 const LOOK_LABEL: Record<SiteLookKey, string> = { corners: 'Corners', spacing: 'Spacing', header: 'Header', footer: 'Footer' }
@@ -87,7 +90,7 @@ function Icon({ label, children, className = '', ...props }: { label: string; ch
   return <button type="button" className={`we-icon ${className}`} aria-label={label} title={label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, onStyle, fontClass }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, defaultAccent, onStyle, fontClass }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -120,9 +123,6 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const websiteBrand = resolveWebsiteBrand(draft, { logo, accent: brandAccent })
   const activeLogo = websiteBrand.logo
   const chromeDefaults = { name: brandName, tagline: (metadata?.websiteChrome as { tagline?: string | null } | undefined)?.tagline ?? null, cta: (metadata?.websiteChrome as { cta?: { label: string; href: string } | null } | undefined)?.cta ?? null }
-  const activeAccent = draft.theme === 'Menswork' || draft.theme === 'Wildheart' || draft.theme === 'Network' ? websiteBrand.accent : draft.brand?.accent
-  const accentValue = String(websiteThemeVars(draft.theme, activeAccent)['--th-accent' as keyof React.CSSProperties])
-  const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const latest = useRef(initial.draft)
   const revision = useRef(initial.revision)
   const saved = useRef(JSON.stringify(initial.draft))
@@ -169,9 +169,20 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const page = draft.pages.find((p) => p.slug === pageSlug) ?? draft.pages[0]
   // A THEME PER PAGE (LIVE-699): the page's own theme from the shared site style, else the draft's. The canvas
   // wears it, with the page theme's own defaults for any global style left to "the theme's own".
+  // THE PREVIEW IS THE PUBLISHED PAGE: the theme, the font set and the brand accent resolve through the live
+  // site's own resolver (lib/sites/site-render-style.ts) over the editor's live style, so a Theme tab pick
+  // repaints the canvas at once and a Frequency site wears the owner's fonts and accent, not DAWN's defaults.
   const pageTheme = style.pages?.[page.slug] ?? null
-  const canvasTheme = pageTheme ? EDITOR_THEME[pageTheme] : draft.theme
-  const pageLookStyle = { ...style, theme: siteThemeOf(canvasTheme) }
+  const pageSlugNow = page.slug
+  const draftTheme = draft.theme
+  const brandAccentNow = websiteBrand.accent
+  const render = useMemo(() => siteRenderStyle(sitePageStyle({ ...style, theme: siteThemeOf(draftTheme) }, pageSlugNow), brandAccentNow, defaultAccent ?? null), [style, draftTheme, pageSlugNow, brandAccentNow, defaultAccent])
+  const canvasTheme = render.editorTheme
+  const canvasVars = useMemo(() => siteCanvasVars(render), [render])
+  const pageLookStyle = render.lookStyle
+  const activeAccent = render.accent
+  const accentValue = String(canvasVars['--th-accent' as keyof React.CSSProperties])
+  const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const selected = selectedId ? findBlockDeep(page.doc, config, selectedId) : null
   const outline = useMemo(() => buildOutline(page.doc, config), [page.doc, config])
   const groups = useMemo(() => derivePickerGroups(config, page.doc, 'website'), [page.doc, config])
@@ -388,13 +399,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
             <div className="we-caption">Logo</div>{activeLogo && <img src={activeLogo} alt={`${brandName} logo`} style={{ width: 44, height: 44, objectFit: 'contain', margin: 8 }} />}
             <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
             <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
-            <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role} style={websiteThemeVars(draft.theme)}>{role}<strong style={{ display: 'block', color: 'var(--th-text)', fontFamily: `var(--th-${role}-render)` }}>{String(websiteThemeVars(draft.theme)[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
+            <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role} style={canvasVars}>{role}<strong style={{ display: 'block', color: 'var(--th-text)', fontFamily: `var(--th-${role}-render)` }}>{String(canvasVars[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
             <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>}
         </div></> : <div className="we-strip">{TABS.map(({ label, icon: TabIcon }) => <Icon key={label} label={label} onClick={() => { setTab(label); setLeft(true) }}><TabIcon size={18} /></Icon>)}</div>}
       <div className="we-foot"><span className="we-foot-lbl">Changes save as a draft</span><a className="we-action txt sm" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
+      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
         {(asking || veraStatus || proposal) && <div className="we-thread">
