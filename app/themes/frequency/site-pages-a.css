@@ -77,7 +77,6 @@
 @keyframes pdwhite{0%{opacity:0}10%{opacity:.95}100%{opacity:0}}
 [data-design="frequency"] [data-kit="site"] .pa-home .pdw .pd{position:relative;z-index:1}
 [data-design="frequency"] [data-kit="site"] .pa-home .pdw.in .pd{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-dc) 45%,transparent),0 0 44px -18px var(--fq-dc)}
-[data-design="frequency"] [data-kit="site"] .pa-home .pd-hint{margin:22px 0 0;font:500 var(--fq-text-body-s)/1.4 var(--fq-font-sans);color:var(--fq-text-muted);opacity:0;transition:opacity .6s}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity var(--fq-dur-slow),transform var(--fq-dur-slow) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,color-mix(in oklab,var(--fq-uv-void) 95%,transparent) 15%,color-mix(in oklab,var(--fq-uv-void) 30%,transparent) 70%)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd>span, [data-design="frequency"] [data-kit="site"] .pa-home .pd>b{position:relative;z-index:1}

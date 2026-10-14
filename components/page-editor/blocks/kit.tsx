@@ -178,34 +178,9 @@ export function CtaButton({
 }
 
 // ── REFERENCE BLOCK ──────────────────────────────────────────────────────────
-// Copy this exact shape for new blocks: a presentational component that takes
-// resolved props, plus a ComponentConfig with fields → defaultProps → render.
-// The render maps editor field values to the component and threads the standard
-// `blockFields()` adjust controls through <Band>.
-
-export function HeadingBlock({
-  eyebrow,
-  title,
-  kicker,
-  ink,
-  size,
-}: {
-  eyebrow?: string
-  title: React.ReactNode
-  kicker?: string
-  ink?: boolean
-  size?: 'default' | 'lg'
-}) {
-  return (
-    <>
-      {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-      <DisplayHeading ink={ink} size={size}>
-        {title}
-      </DisplayHeading>
-      {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
-    </>
-  )
-}
+// Copy this exact shape for new blocks: a ComponentConfig with fields →
+// defaultProps → render. The render maps editor field values to the markup and
+// threads the standard `blockFields()` adjust controls through <Band>.
 
 export const headingComponents: Record<string, ComponentConfig> = {
   Heading: {

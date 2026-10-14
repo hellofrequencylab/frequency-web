@@ -43,8 +43,3 @@ export function seasonStateFromStatus(status: string | null | undefined): Season
 export function seasonStateMeta(state: SeasonState): { label: string; tone: StatusTone } {
   return STATE_META[state]
 }
-
-/** The label + tone for a stored status, in one call (list rows). */
-export function seasonStatusMeta(status: string | null | undefined): { label: string; tone: StatusTone } {
-  return STATE_META[seasonStateFromStatus(status)]
-}

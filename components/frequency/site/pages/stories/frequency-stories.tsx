@@ -142,7 +142,7 @@ export function FrequencyStories() {
         </div>
       </section>
 
-      <section className="sec" id="tell" style={{ paddingTop: 0 }} data-screen-label="03 Tell us your story">
+      <section className="sec sec-next" id="tell" data-screen-label="03 Tell us your story">
         <div className="wrap">
           <div className="band">
             <div>

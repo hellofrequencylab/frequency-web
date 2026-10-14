@@ -156,7 +156,7 @@ export function FrequencyVision() {
         </div>
       </section>
 
-      <section className="sec" id="concepts" style={{ paddingTop: 0 }} data-screen-label="03 Concepts">
+      <section className="sec sec-next" id="concepts" data-screen-label="03 Concepts">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -185,7 +185,7 @@ export function FrequencyVision() {
         </div>
       </section>
 
-      <section className="sec" id="plan" style={{ paddingTop: 0 }} data-screen-label="04 The plan">
+      <section className="sec sec-next" id="plan" data-screen-label="04 The plan">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -210,7 +210,7 @@ export function FrequencyVision() {
         </div>
       </section>
 
-      <section className="sec" id="questions" style={{ paddingTop: 0 }} data-screen-label="05 Questions">
+      <section className="sec sec-next" id="questions" data-screen-label="05 Questions">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -230,7 +230,7 @@ export function FrequencyVision() {
         </div>
       </section>
 
-      <section className="sec" id="partner" style={{ paddingTop: 0 }} data-screen-label="06 Partner with us">
+      <section className="sec sec-next" id="partner" data-screen-label="06 Partner with us">
         <div className="wrap">
           <div className="band">
             <div>
@@ -243,7 +243,7 @@ export function FrequencyVision() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="07 Back to today">
+      <section className="sec sec-next" data-screen-label="07 Back to today">
         <div className="wrap">
           <KeepGoing
             variant="row"

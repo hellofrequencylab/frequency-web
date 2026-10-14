@@ -21,7 +21,7 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
     <>
       <HelpCenter topics={topics} />
 
-      <section className="sec" id="policies" style={{ paddingTop: 0 }} data-screen-label="03 Policies">
+      <section className="sec sec-next" id="policies" data-screen-label="03 Policies">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -73,7 +73,7 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
         </div>
       </section>
 
-      <section className="sec" id="contact" style={{ paddingTop: 0 }} data-screen-label="04 Contact">
+      <section className="sec sec-next" id="contact" data-screen-label="04 Contact">
         <div className="wrap">
           <div className="band">
             <div>

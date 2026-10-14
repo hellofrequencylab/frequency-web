@@ -190,7 +190,7 @@ export async function FrequencyPeople() {
         </div>
       </section>
 
-      <section className="sec" id="near" style={{ paddingTop: 0 }} data-screen-label="04 Near you">
+      <section className="sec sec-next" id="near" data-screen-label="04 Near you">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -218,7 +218,7 @@ export async function FrequencyPeople() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="Features">
+      <section className="sec sec-next" data-screen-label="Features">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -248,7 +248,7 @@ export async function FrequencyPeople() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="06 Questions">
+      <section className="sec sec-next" data-screen-label="06 Questions">
         <div className="fq-aura" style={aura(0.22)} />
         <div className="wrap">
           <div className="sh">

@@ -17,7 +17,6 @@ import {
   setJourneyFeaturedAction,
   deleteJourneyPlanAction,
   setPracticeFlagsAction,
-  setPracticeStatusAction,
   setPracticeFeaturedAction,
 } from './actions'
 
@@ -301,10 +300,6 @@ export function JourneyOfficialControl({
 
 // --- Practice controls -----------------------------------------------------------
 
-export function PracticeReviewButtons({ id }: { id: string }) {
-  return <ReviewButtons act={(status) => setPracticeStatusAction(id, status)} />
-}
-
 export function PracticeFeatureToggle({ id, featured }: { id: string; featured: boolean }) {
   return <FeatureStar featured={featured} act={(next) => setPracticeFeaturedAction(id, next)} />
 }
@@ -316,17 +311,6 @@ export function PracticePublicToggle({ id, isPublic }: { id: string; isPublic: b
       act={(next) => setPracticeFlagsAction(id, { is_public: next })}
       titleOn="In the public library. Click to hide"
       titleOff="Hidden. Click to publish to the library"
-    />
-  )
-}
-
-export function PracticeTemplateToggle({ id, isTemplate }: { id: string; isTemplate: boolean }) {
-  return (
-    <ToggleSwitch
-      on={isTemplate}
-      act={(next) => setPracticeFlagsAction(id, { is_template: next })}
-      titleOn="Starter template. Click to remove"
-      titleOff="Not a template. Click to make it a starter template"
     />
   )
 }

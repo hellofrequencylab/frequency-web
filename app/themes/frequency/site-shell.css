@@ -149,6 +149,18 @@
     outline-color: var(--fq-focus-ring);
   }
 
+  /* Section rhythm for a run of `.sec` sections (pricing's `.pb-sec` in site-pages-b.css is the model).
+     A section that continues the one above it is `.sec.sec-next`, never `.sec` with its top zeroed: a
+     zeroed top sat the eyebrow ON the fx seam (the hairline site-fx draws at the top of a borderless
+     `.sec`). Both sides of the hand-over pad the same fluid amount, so the gap is an even
+     clamp(80px,10vw,128px) with the seam in its middle. */
+  [data-design="frequency"] [data-kit="site"] .sec:has(+ .sec.sec-next) {
+    padding-bottom: clamp(40px, 5vw, 64px);
+  }
+  [data-design="frequency"] [data-kit="site"] .sec.sec-next {
+    padding-top: clamp(40px, 5vw, 64px);
+  }
+
   /* Chrome-free (SiteShell chrome={false}): there is no fixed bar to clear. */
   [data-design="frequency"] [data-kit="site"] main.fq-main.fq-bare {
     padding-top: 0;
