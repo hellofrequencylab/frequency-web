@@ -95,6 +95,15 @@ for (const route of ['app/(main)/spaces/[slug]/(profile)/full/page.tsx', 'app/(p
 const layout0 = seed.buildProfileLayout()
 assert.ok(layout0.rows.flatMap((r) => r.cells.flat()).every((id) => !/^Network/.test(id)), 'the Space Home is built from Space blocks')
 assert.ok(!JSON.stringify(layout0).includes('*'), 'no voice marks reach the Space blocks')
+// The custom tabs are Space blocks too (owner ask 2026-10-14): every block the Space palette offers, none Network.
+const tabs = seed.buildSpaceTabDocs()
+assert.deepEqual(Object.keys(tabs), seed.PAGES.slice(1).map((p) => p.slug), 'every custom tab has its doc')
+const spacePalette = new Set(['PhotoHero', 'Zigzag', 'CardGrid', 'EditorialSection', 'AccentBeat', 'SpaceEvents', 'SpaceCommunity', 'SpaceOfferings', 'SpaceTeam'])
+for (const [slug, d] of Object.entries(tabs)) {
+  for (const b of d.content) assert.ok(spacePalette.has(b.type), `${slug}: ${b.type} is a Space block`)
+  assert.ok(!JSON.stringify(d).includes('*'), `${slug}: accents ride accentWord, never *marks*`)
+}
+assert.ok(Object.keys(seed.buildPageDocs()).every((k) => k === 'home' || !JSON.stringify(seed.buildPageDocs()[k]).includes('"Network')), 'pageDocs carry no Network block on a tab')
 assert.ok(!readFileSync('components/spaces/network-page-scope.tsx', 'utf8').includes("from '@/components/sites/network-fonts'"), 'the Space page never registers the Network faces through next/font')
 
 // 5. The seed.
