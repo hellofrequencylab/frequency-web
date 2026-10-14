@@ -161,7 +161,7 @@ export const FQ_NAV: readonly FqNavSection[] = [
 
 /** Home for a signed-in member. Bare `/` sends a member to the Feed (lib/nav/front-door.ts, owner directive
  *  2026-09-01: opening the site lands on the Feed); `?home` is the door a member takes on purpose. */
-export const MEMBER_HOME_HREF = '/?home'
+export const MEMBER_HOME_HREF = ROUTES.memberHome
 
 /** The member Feed. */
 export const FEED_HREF = '/feed'

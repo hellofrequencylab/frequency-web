@@ -28,6 +28,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { eventHasEnded } from '@/lib/events/end-time'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { cityCentroid } from '@/lib/maps/city-centroids'
 
 // ── Row shapes (mirror the RPC RETURNS TABLE columns) ─────────────────────────
 
@@ -534,28 +535,6 @@ type CityCluster = {
   lng: number
 }
 
-// Approximate city centroids [lat, lng] for the founding metro (San Diego /
-// North County). Cities not listed here are still counted but not plotted.
-const CITY_CENTROIDS: Record<string, [number, number]> = {
-  'Encinitas': [33.0370, -117.2920],
-  'Carlsbad': [33.1581, -117.3506],
-  'Oceanside': [33.1959, -117.3795],
-  'Vista': [33.2000, -117.2425],
-  'San Marcos': [33.1434, -117.1661],
-  'Escondido': [33.1192, -117.0864],
-  'Solana Beach': [32.9912, -117.2712],
-  'Del Mar': [32.9595, -117.2653],
-  'Cardiff': [33.0203, -117.2786],
-  'Cardiff-by-the-Sea': [33.0203, -117.2786],
-  'Leucadia': [33.0686, -117.2986],
-  'Rancho Santa Fe': [33.0214, -117.2025],
-  'Carmel Valley': [32.9462, -117.2235],
-  'Fallbrook': [33.3764, -117.2511],
-  'Poway': [32.9628, -117.0359],
-  'La Jolla': [32.8328, -117.2713],
-  'San Diego': [32.7157, -117.1611],
-}
-
 export async function getPublicCityClusters(): Promise<CityCluster[]> {
   const [circles, events] = await Promise.all([getPublicCircles(200), getPublicEvents(100)])
   const byCity = new Map<string, { circles: number; events: number }>()
@@ -574,9 +553,9 @@ export async function getPublicCityClusters(): Promise<CityCluster[]> {
 
   const clusters: CityCluster[] = []
   for (const [city, agg] of byCity) {
-    const key = Object.keys(CITY_CENTROIDS).find((k) => k.toLowerCase() === city.toLowerCase())
-    if (!key) continue // unrecognized city — counted in aggregates elsewhere, just not plotted
-    const [lat, lng] = CITY_CENTROIDS[key]
+    const at = cityCentroid(city)
+    if (!at) continue // unrecognized city — counted in aggregates elsewhere, just not plotted
+    const [lat, lng] = at
     clusters.push({ city, circles: agg.circles, events: agg.events, lat, lng })
   }
   return clusters.sort((a, b) => b.circles - a.circles)

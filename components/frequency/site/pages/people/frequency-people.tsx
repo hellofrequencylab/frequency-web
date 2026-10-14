@@ -23,10 +23,10 @@ import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
 
-const FIRST_NIGHT: { icon: FqIconName; title: string; body: string }[] = [
-  { icon: 'host', title: 'The Host at the door', body: 'Someone is there to say hi and tell you where to put your things.' },
-  { icon: 'contacts', title: 'Faces, not a crowd', body: 'Circles are small. You’ll learn names in the first ten minutes.' },
-  { icon: 'event', title: 'About an hour', body: 'Most Circles run an hour or so. Stay after if you like.' },
+const FIRST_GATHERING: { icon: FqIconName; title: string; body: string }[] = [
+  { icon: 'host', title: 'The Host at the door', body: 'Someone is there to say hi and show you where to put your things.' },
+  { icon: 'contacts', title: 'Join in, or just watch', body: 'Circles are small and nobody is put on the spot. Sitting back counts.' },
+  { icon: 'event', title: 'About an hour', body: 'Most run an hour or so. Leave when you need to, or stay after if you like.' },
 ]
 
 const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] = [
@@ -41,7 +41,7 @@ const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] 
 ]
 
 const QUESTIONS: [string, string][] = [
-  ['I don’t know anyone.', 'That’s most people on their first night. Circles are small on purpose, and the Host will introduce you.'],
+  ['I don’t know anyone.', 'That’s most people the first time. Circles are small on purpose, and the Host will say hi. Nobody expects you to know anyone.'],
   ['I’m not spiritual.', 'You don’t need to be. Circles run around anything: moving, making, eating, sitting still, going out.'],
   ['I’m not fit.', 'Plenty of Circles don’t involve exercise at all. The ones that do say so up front.'],
   ['Is it free?', 'Yes. Joining, checking in, playing and hosting are free. Some Spaces sell tickets or memberships, and that money goes to them.'],
@@ -126,7 +126,7 @@ export async function FrequencyPeople() {
             <p className="body-l">Scan at the door and you’re counted. Being in the room is the only thing that earns Zaps here.</p>
             <Acts
               items={[
-                { href: '#first-night', icon: 'ticket', title: 'Your first night', sub: 'What to expect' },
+                { href: '#first-night', icon: 'ticket', title: 'Your first gathering', sub: 'What to expect' },
                 { href: feature('f-zaps'), icon: 'checkin', title: 'Why check-in counts', sub: '+25 Zaps for being there' },
               ]}
             />
@@ -164,17 +164,17 @@ export async function FrequencyPeople() {
         </Chapter>
       </section>
 
-      <section className="sec" id="first-night" data-screen-label="03 Your first night">
+      <section className="sec" id="first-night" data-screen-label="03 Your first gathering">
         <div className="fq-aura" style={aura(0.22)} />
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>Your first night</b>No surprises
+              <b>Your first gathering</b>No pressure
             </div>
             <h2 className="h-l">What it’s actually like.</h2>
           </div>
           <div className="g3">
-            {FIRST_NIGHT.map((c) => (
+            {FIRST_GATHERING.map((c) => (
               <div className="pop" key={c.title}>
                 <span className="pglow" />
                 <article className="pc">
@@ -212,7 +212,7 @@ export async function FrequencyPeople() {
               Set your town
             </Link>
             <a className="btn btn-ghost fq-iri-rim" href="#first-night">
-              What to expect on your first night
+              What your first gathering is like
             </a>
           </div>
         </div>

@@ -47,6 +47,10 @@ const REF_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 // soon is a member's dark mode silently reverting to light mid-use.
 const ACCOUNT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
+// The member Feed, and where a signed-out visitor reads its public preview (the rewrite below).
+const FEED_PATH = '/feed'
+const FEED_PREVIEW_PATH = '/feed-preview'
+
 const PROTECTED_PATHS = [
   '/feed',
   '/nearby',
@@ -368,6 +372,21 @@ export async function proxy(request: NextRequest) {
     !isPublicEventView &&
     !isTwinRedirectable &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+
+  // THE FEED PREVIEW (owner, 2026-10-14). The header's first item is Feed for everyone, so a signed-out
+  // visitor who opens /feed reads the public preview instead of a sign-in wall, with a free-membership
+  // prompt after 30 seconds. The rewrite is internal: the URL stays /feed (the header reads it and
+  // shows Home), and the preview lives in the public chrome at app/(public)/feed-preview. Only the
+  // bare path: every /feed/* stays protected below.
+  if (!user && pathname === FEED_PATH) {
+    const previewUrl = request.nextUrl.clone()
+    previewUrl.pathname = FEED_PREVIEW_PATH
+    const rewriteResponse = NextResponse.rewrite(previewUrl, {
+      request: { headers: withPath(request) },
+    })
+    supabaseResponse.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie))
+    return rewriteResponse
+  }
 
   if (!user && isProtected) {
     const signInUrl = request.nextUrl.clone()

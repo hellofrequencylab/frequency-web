@@ -1902,7 +1902,8 @@ export const EMAIL_ACTION_INK = palette.onPrimary
 /** One body paragraph, minus its colour: callers append `color:${EMAIL_INK};` or the muted one. */
 export const EMAIL_P = 'font-size:15px;line-height:1.6;margin:0 0 20px;'
 
-function escapeHtml(s: string): string {
+/** Escape member-written text (a name, an event title, a post) for an email's HTML body. */
+export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
@@ -2340,12 +2341,12 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       ${eyebrow}
     </p>
-    <h1 style="${h1Style}">${eventTitle}</h1>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
     <p style="${pStyle}">
-      Hi ${recipientName}, your event is ${whenLabel}.
+      Hi ${escapeHtml(recipientName)}, your event is ${escapeHtml(whenLabel)}.
     </p>
     <p style="${pStyle}">
-      <strong>${whenAbsolute}</strong>${location ? `<br><span style="color:#777;">${location}</span>` : ''}
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
     </p>
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
@@ -2787,14 +2788,14 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
 }): string {
   return emailShell(`
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      New dispatch from ${authorName}
+      New dispatch from ${escapeHtml(authorName)}
     </p>
-    <h1 style="${h1Style}">${dispatchTitle}</h1>
-    <p style="${pStyle}">${excerpt}</p>
+    <h1 style="${h1Style}">${escapeHtml(dispatchTitle)}</h1>
+    <p style="${pStyle}">${escapeHtml(excerpt)}</p>
     <a href="${dispatchUrl}" style="${btnStyle}">Read dispatch →</a>
     <hr style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
-      Hi ${recipientName}, this dispatch was posted to your community on Frequency.
+      Hi ${escapeHtml(recipientName)}, this dispatch was posted to your community on Frequency.
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
       · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from dispatches</a>.
     </p>
