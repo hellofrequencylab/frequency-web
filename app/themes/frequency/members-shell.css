@@ -257,9 +257,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-vault-sec{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-chip{height:26px;display:inline-flex;align-items:center;gap:6px;padding:0 11px;border-radius:var(--fq-radius-orb);background:var(--fq-pa);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 60%,transparent);font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-chip svg{width:13px;height:13px}
-[data-design="frequency"] [data-kit="members"] .fqm-vault-block{display:flex;flex-direction:column;gap:10px}
-[data-design="frequency"] [data-kit="members"] .fqm-vault-kh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-[data-design="frequency"] [data-kit="members"] .fqm-vault-kh small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-link{align-self:flex-start;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-link)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-week{display:flex;justify-content:space-between}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-week>span{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 var(--fq-text-label)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
@@ -331,7 +328,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-gs-inline{margin-top:44px}
 @media (min-width:680px){[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}}
 
-/* Your week: day name over the date, plans as a dot, name and time; an empty day is a hairline. */
+/* Your week: only the days that carry a plan, day name over the date, then a dot, name and time. */
 [data-design="frequency"] [data-kit="members"] .fqm-week{display:flex;flex-direction:column;gap:2px}
 [data-design="frequency"] [data-kit="members"] .fqm-day{display:flex;gap:14px;align-items:flex-start;padding:6px 0}
 [data-design="frequency"] [data-kit="members"] .fqm-day-d{width:30px;flex:none;display:flex;flex-direction:column;gap:3px}
@@ -342,7 +339,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>i{width:6px;height:6px;flex:none;border-radius:50%;background:var(--fq-pa)}
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>small{flex:none;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-day-empty{display:block;height:1px;margin-top:8px;background:var(--fqm-ink-6)}
 
 /* Today's goals: title and reading over a 4px bar; a finished goal is struck through with a check. */
 [data-design="frequency"] [data-kit="members"] .fqm-goal{display:flex;flex-direction:column;gap:9px;color:var(--fq-text-strong)}
@@ -351,6 +347,32 @@
 [data-design="frequency"] [data-kit="members"] .fqm-goal-t small{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fqm-goal-t svg{width:18px;height:18px;flex:none;color:var(--fq-x-violet-neon)}
 [data-design="frequency"] [data-kit="members"] .fqm-goal.done .fqm-goal-t>span{font-weight:400;color:var(--fq-text-faint);text-decoration:line-through}
+
+/* Stats and streaks (rail-stats.tsx): the streak in Unbounded with today's state as a kit tag, the
+   seven-day strip, a 2-up grid of the member's readings, the rank bar and an eight-week sparkline. */
+[data-design="frequency"] [data-kit="members"] .fqm-stats{gap:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-streak{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-streak:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num{display:flex;align-items:baseline;gap:8px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num svg{width:22px;height:22px;flex:none;align-self:center;color:var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num b{font:500 34px/1 var(--fq-font-display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-line{margin:-6px 0 0;font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-vault-week>span{font-size:var(--fq-text-meta)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--fq-radius-m);background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong);min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile:hover{color:var(--fq-text-strong);background:var(--fqm-white-75)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b{display:flex;align-items:center;gap:6px;font:500 17px/1 var(--fq-font-display);letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b svg{width:15px;height:15px;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile small{font:400 var(--fq-text-meta)/1.1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-rank,[data-design="frequency"] [data-kit="members"] .fqm-stats-spark{display:flex;flex-direction:column;gap:9px;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-spark:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .fqm-goal-t{font-size:var(--fq-text-body-s)}
+[data-design="frequency"] [data-kit="members"] .fqm-spark{display:flex;align-items:flex-end;gap:5px;height:34px}
+[data-design="frequency"] [data-kit="members"] .fqm-spark i{flex:1;min-height:2px;border-radius:3px;background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-spark i[data-on]{background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-foot{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--fq-border-hair);font:500 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-foot a{color:var(--fq-text-link)}
 
 /* The local board: place, face, name, Zaps; the member's own row in bold. */
 [data-design="frequency"] [data-kit="members"] .fqm-board{display:flex;flex-direction:column}

@@ -5,6 +5,7 @@ import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { getPeopleSuggestions, suggestionReason } from '@/lib/people-suggestions'
 import { isOptedOut } from '@/app/(main)/crew/leaderboard/opt-out'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { getMemberActivity, type MemberActivity } from '@/lib/practice-activity'
 import { buildBoard, buildWeek, type Board, type BoardRow, type WeekDay, type WeekPlanRow } from './frequency-rail-core'
 
 // THE FREQUENCY RIGHT RAIL'S READS (README §3). Each is request-cached so the open rail and its
@@ -113,5 +114,19 @@ export const loadPeopleToKnow = cache(async (profileId: string): Promise<RailPer
   } catch (e) {
     note('people to know', e)
     return []
+  }
+})
+
+/** The member's practice activity (lib/practice-activity.ts, the read behind DAWN's "Your activity"
+ *  chart) for the Stats and streaks box's sparkline. It replaces the Frequency rail's full activity
+ *  chart rather than adding to it, so the rail makes this read once, not twice. Null on a refused
+ *  read or when the member has no practices and no logs. */
+export const loadRailActivity = cache(async (profileId: string): Promise<MemberActivity | null> => {
+  try {
+    const a = await getMemberActivity(profileId)
+    return a.hasAny ? a : null
+  } catch (e) {
+    note('activity', e)
+    return null
   }
 })

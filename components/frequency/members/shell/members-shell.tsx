@@ -103,18 +103,13 @@ function rankOf(d: DockData): string | null {
 
 const n = (v: number) => v.toLocaleString('en-US')
 
-const DOW_LETTER = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
-/** The Vault panel's body (Members.dc.html, 2026-10-14 export): Season standing with the rank chip,
- *  Your practices (adopted vs logged on the member's today), the seven-day streak and the rank bar.
- *  The 3-number grid it replaced rides on the tab face. Every reading is the member's own (DockData); the prototype's per-practice timer list needs a read
- *  the shell does not make on every page, so the practices row is the count and the door to them. */
+/** The Vault panel's body (Members.dc.html, 2026-10-14 export): Season standing with the rank chip.
+ *  The export also drew Your practices, the seven-day streak and the rank bar here; those now ride at
+ *  the top of the open right rail in Stats and streaks (rail-stats.tsx, owner 2026-10-14), so the
+ *  Vault keeps to what it is for: standing, the freeze and the store. The tab face still carries
+ *  streak, Zaps and Gems at rest, for the folded rail. */
 function VaultStanding({ d }: { d: DockData }) {
   const rank = rankOf(d)
-  const adopted = d.practices?.adopted ?? 0
-  const logged = adopted - (d.practices?.toLog ?? 0)
-  const loggedToday = d.todaysMove.kind === 'done'
-  const todayDow = d.today ? new Date(`${d.today}T12:00:00Z`).getUTCDay() : null
   return (
     <>
       <div className="fqm-vault-sec">
@@ -126,55 +121,9 @@ function VaultStanding({ d }: { d: DockData }) {
           </span>
         )}
       </div>
-      <div className="fqm-vault-block">
-        <div className="fqm-vault-kh">
-          <span className="k">Your practices</span>
-          <small>{adopted > 0 ? `${logged} of ${adopted} today` : 'None adopted yet'}</small>
-        </div>
-        <Link href="/practices" className="fqm-vault-link">
-          {adopted > 0 ? (logged >= adopted ? 'Adopt another practice' : 'Log today’s practice') : 'Adopt a practice'}
-        </Link>
-      </div>
-      {d.last7.length > 0 && (
-        <div className="fqm-vault-block">
-          <div className="fqm-vault-kh">
-            <span className="k">Streak</span>
-            <small>
-              {loggedToday
-                ? `Safe today · ${d.streak} ${d.streak === 1 ? 'day' : 'days'}`
-                : d.streak > 0
-                  ? `Log one to make it ${d.streak + 1}`
-                  : 'Log one to start'}
-            </small>
-          </div>
-          <div className="fqm-vault-week">
-            {d.last7.map((s, i) => {
-              const today = i === d.last7.length - 1
-              const state = s === 'done' ? 'on' : s === 'frozen' ? 'frozen' : today ? 'today' : 'off'
-              const dow = todayDow == null ? null : (todayDow - (d.last7.length - 1 - i) + 7) % 7
-              return (
-                <span key={i} data-s={state}>
-                  <i aria-hidden />
-                  {dow == null ? null : DOW_LETTER[dow]}
-                </span>
-              )
-            })}
-          </div>
-        </div>
-      )}
-      {d.rankProgress.nextLabel && (
-        <div className="fqm-vault-block">
-          <div className="fqm-vault-kh">
-            <span className="k">Rank</span>
-            <small>
-              {n(d.rankProgress.toGo)} Zaps to {d.rankProgress.nextLabel}
-            </small>
-          </div>
-          <span className="fqm-bar">
-            <i style={{ width: `${Math.max(0, Math.min(100, d.rankProgress.pct))}%` }} />
-          </span>
-        </div>
-      )}
+      <Link href="/crew" className="fqm-vault-link">
+        See your Quest
+      </Link>
     </>
   )
 }
@@ -384,7 +333,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
 
   // ── Right rail ───────────────────────────────────────────────────────────────────────────────────
   // Both faces come from right-rail.tsx through the layout: the open face draws the design's panels
-  // (Get started, Your week, Today's goals, the local board, People to know) and then the platform's
+  // (Get started, Stats and streaks, Today's goals, Your week, the local board, People to know) and then the platform's
   // own, restyled; the micro face is one button per panel. The tab carries the standing.
   const rightTab = (
     <RailVaultTab

@@ -111,6 +111,13 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         <CreateButton />
       </div>
 
+      {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
+          Feed carries the same box inline there and nowhere else (.fqm-gs-inline). It sits above
+          Standing for the rail's own order (Get started, then Stats and streaks): on a phone,
+          Standing IS the stats box. The rail's Your week has no phone copy, so an empty week shows
+          nothing there either. */}
+      {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
+
       <Standing
         streak={p.standing.streak}
         loggedToday={p.standing.loggedToday}
@@ -130,10 +137,6 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         todayDow={todayDow}
         practices={p.practices}
       />
-
-      {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
-          Feed carries the same box inline there and nowhere else (.fqm-gs-inline). */}
-      {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
 
       <Suspense fallback={<section className="fa-hero" aria-busy="true"><div className="fa-hero-body"><span className="k">Up next for you</span></div></section>}>
         <PlannerSection eventsP={eventsP} hasHome={!!p.home} profileId={p.profileId} />

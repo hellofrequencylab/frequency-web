@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildBoard, buildGoals, buildWeek, wallTime, weekPlanCount } from './frequency-rail-core'
+import { activitySpark, buildBoard, buildGoals, buildWeek, plannedDays, streakReading, wallTime, weekPlanCount } from './frequency-rail-core'
 
 describe('buildWeek', () => {
   it('lays out seven days from today and files each plan on its own day', () => {
@@ -64,5 +64,35 @@ describe('buildBoard', () => {
 
   it('draws nothing for a board of one', () => {
     expect(buildBoard([row('me', 10)], 'me')).toBeNull()
+  })
+})
+
+describe('plannedDays', () => {
+  it('keeps only the days with a plan, and nothing for an empty week', () => {
+    const week = buildWeek('2026-10-12', [{ eventId: 'a', slug: 's', title: 'T', startsAt: '2026-10-15T18:00:00.000Z' }])
+    expect(plannedDays(week).map((d) => d.date)).toEqual(['2026-10-15'])
+    expect(plannedDays(buildWeek('2026-10-12', []))).toEqual([])
+  })
+})
+
+describe('streakReading', () => {
+  it('reads today from the last day of the run, and a freeze is not a log', () => {
+    expect(streakReading(4, ['missed', 'done', 'done', 'done', 'done'])).toEqual({ loggedToday: true, line: 'Logged today · 4 days safe' })
+    expect(streakReading(3, ['done', 'done', 'done', 'frozen'])).toMatchObject({ loggedToday: false, line: 'Log today to make it 4' })
+    expect(streakReading(0, [])).toMatchObject({ loggedToday: false, line: 'Log a practice to start one' })
+  })
+})
+
+describe('activitySpark', () => {
+  const p = (key: string, minutes: number, active = minutes > 0) => ({ key, label: key, minutes, active })
+
+  it('scales the last n periods to the busiest, with a floor for a plain log', () => {
+    const s = activitySpark([p('0', 99), p('1', 0), p('2', 0, true), p('3', 20), p('4', 40)], 3)
+    expect(s?.bars.map((b) => b.h)).toEqual([12, 50, 100])
+    expect(s).toMatchObject({ activeCount: 3, latestMinutes: 40 })
+  })
+
+  it('draws nothing when no period in the window was active', () => {
+    expect(activitySpark([p('0', 30), p('1', 0), p('2', 0)], 2)).toBeNull()
   })
 })

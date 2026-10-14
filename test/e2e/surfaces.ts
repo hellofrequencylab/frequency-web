@@ -1142,7 +1142,13 @@ export const VISUAL_MASK_SITES: readonly {
     value: 'rail-panel',
     file: 'components/frequency/members/shell/right-rail.tsx',
     kind: 'live',
-    why: 'The Frequency right rail (ADR-1740): Get started, Your week, Today’s goals, Your Circles this season and People to know, every one a reading of the member’s own rows.',
+    why: 'The Frequency right rail (ADR-1740): Get started, Today’s goals, Your week (only with plans), Your Circles this season and People to know, every one a reading of the member’s own rows.',
+  },
+  {
+    value: 'rail-panel',
+    file: 'components/frequency/members/shell/rail-stats.tsx',
+    kind: 'live',
+    why: 'Stats and streaks at the top of the Frequency right rail: the streak and today’s state, the seven-day strip, Zaps, Gems, rank, practices today and an eight-week activity sparkline, all the member’s own readings.',
   },
   {
     value: 'rail-panel',
