@@ -9,8 +9,8 @@
   ],
   "frozen": {
     "at": "2026-10-14",
-    "direction": "lowered",
-    "reason": "Page editor maturity pass: the Publish change count is the design's 12px badge step (editor-shell.css .pub-badge)"
+    "direction": "raised",
+    "reason": "Merge of main's LIVE-907 Site Editor: under DAWN, components/sites/editor/editor.css scopes the Frequency design system's Commons tokens and faces to the editor as literals (no Commons theme is loaded in a DAWN build); a Frequency build styles the editor from the kit"
   },
   "counts": {
     "tsx-style-colour": {},
@@ -22,9 +22,12 @@
     "tsx-style-font-family": {},
     "tsx-colour-function": {},
     "css-colour": {
-      "app/themes/frequency.css": 3
+      "app/themes/frequency.css": 3,
+      "components/sites/editor/editor.css": 114
     },
-    "css-font-family": {},
+    "css-font-family": {
+      "components/sites/editor/editor.css": 5
+    },
     "css-font-size-floor": {
       "app/themes/frequency/members-a.css": 1,
       "app/themes/frequency/members-shell.css": 2,
@@ -72,6 +75,20 @@
         "tsx-colour-function": 0,
         "css-colour": 3,
         "css-font-family": 0,
+        "css-font-size-floor": 7
+      }
+    },
+    {
+      "at": "2026-10-14",
+      "direction": "raised",
+      "reason": "Merge of main's LIVE-907 Site Editor: under DAWN, components/sites/editor/editor.css scopes the Frequency design system's Commons tokens and faces to the editor as literals (no Commons theme is loaded in a DAWN build); a Frequency build styles the editor from the kit",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 117,
+        "css-font-family": 5,
         "css-font-size-floor": 7
       }
     }
