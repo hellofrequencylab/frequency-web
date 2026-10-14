@@ -96,7 +96,8 @@ export interface MensworkPageInput {
 
 export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, renderOther, now = new Date(), wrapSection }: MensworkPageInput) {
   // One h1 per page: a leading hero owns it, else the first heading-type text block, else a hidden page title.
-  const leadsWithHero = plan[0]?.kind === 'hero'
+  // A Network hero (kind `own`) draws its own h1, so it leads the page the same way.
+  const leadsWithHero = plan[0]?.kind === 'hero' || (plan[0]?.kind === 'own' && plan[0].hero)
   const headAt = plan.find((p) => p.kind === 'text' && HEADING_TYPES.has(blocks[p.at].type))
   const ctx: Ctx = { links, origin, live, now, h1At: leadsWithHero || !headAt || Array.isArray(headAt.at) ? null : headAt.at }
   return (
@@ -150,6 +151,9 @@ export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, ren
             return <Circles key={key} p={props} ctx={ctx} />
           case 'journeys':
             return <Journeys key={key} p={props} ctx={ctx} />
+          case 'own':
+            // A data hook, not a class: the theme that owns the family styles it (components/sites/network-css.ts).
+            return <div key={key} data-mw-own="">{renderOther(blocks[p.at])}</div>
           default:
             return (
               <div key={key} className="mw-wrap mw-other">

@@ -1,14 +1,18 @@
 import { MENSWORK_PALETTE } from '@/lib/theme/menswork'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
+import { NETWORK_SCHEMES } from '@/lib/theme/network'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 
-// THE SITE STYLE (owner ask 2026-10-11, ADR-1726). A Space and its website wear one of three THEMES:
+// THE SITE STYLE (owner ask 2026-10-11, ADR-1726). A Space and its website wear one of four THEMES:
 //
 //   · Frequency (the default): the house look danieltyack.com wears (components/sites/house-css.ts).
 //   · Bold: the look Heart on Fire wears, until now called Menswork (components/sites/menswork-css.ts).
 //   · Wildheart (2026-10-12): light, ancient and organic; parchment, violet, petal corners and the astrology
 //     calendar (components/sites/wildheart-css.ts, lib/theme/wildheart.ts). A stock theme: nothing applies
 //     it on its own; an owner picks it in Identity and branding or the website editor's Theme tab.
+//   · Network (2026-10-13): coastal and warm for community and business groups; butter-cream grounds, deep
+//     ink, one solid hero color in four schemes (Marigold, Ocean, Lagoon, Coral), pill buttons and soft
+//     28px cards (components/sites/network-css.ts, lib/theme/network.ts). A stock theme, first worn by The Group.
 //
 // Inside a theme the owner picks a FONT SET (lib/theme/space-themes.ts: Frequency, Editorial, Classic,
 // Playful, Accessible, Modern, Bold). The website's style leads: the Space page follows it unless the
@@ -30,7 +34,7 @@ import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -60,6 +64,14 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
     label: 'Wildheart',
     description: 'Light, ancient and organic: parchment, violet, soft petal corners and a turning sky.',
     defaultFonts: 'classic',
+  },
+  {
+    // Typography-only on the Space page too (ADR-578): Bricolage Grotesque and Outfit load on the website
+    // alone, so a synced Space page wears Modern (a crisp geometric headline over friendly body text).
+    id: 'network',
+    label: 'Network',
+    description: 'Coastal and warm: butter-cream grounds, one bold color, pill buttons and real photos up front.',
+    defaultFonts: 'modern',
   },
 ]
 
@@ -99,6 +111,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   frequency: { corners: 'soft', spacing: 'airy', header: 'pill', footer: 'minimal' },
   bold: { corners: 'square', spacing: 'balanced', header: 'bar', footer: 'full' },
   wildheart: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  network: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -129,7 +142,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -223,11 +236,13 @@ export function withSiteStyle(preferences: unknown, patch: Partial<SiteStyle>): 
 }
 
 /** The accent a Space page falls back to when the owner picked none. A synced Space page on a Bold
- *  website wears Bold's fonts and Bold's teal, on a Wildheart website Wildheart's violet, but keeps the
+ *  website wears Bold's fonts and Bold's teal, on a Wildheart website Wildheart's violet, on a Network
+ *  website Network's marigold, but keeps the
  *  app's own surfaces and layout so member pages stay readable (ADR-1728); any other Space page keeps its
  *  type's default. */
 export function spacePageDefaultAccent(preferences: unknown, typeDefault: string): string {
   const style = readSiteStyle(preferences)
   if (!style.synced) return typeDefault
+  if (style.theme === 'network') return NETWORK_SCHEMES.marigold.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }

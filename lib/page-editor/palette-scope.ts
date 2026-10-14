@@ -45,7 +45,7 @@ export type EditorSurface = 'marketing' | 'space' | 'website'
  *  The generic kit (blocks, layout, content, sections, productStory, media, dynamic) renders from
  *  its own props on every surface — verified block by block — so both surfaces keep all of it. */
 export const SURFACE_CATEGORIES: Record<EditorSurface, readonly string[]> = {
-  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'wildheart'],
+  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'wildheart', 'network'],
   marketing: [
     'blocks',
     'layout',

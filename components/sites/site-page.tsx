@@ -18,6 +18,9 @@ import { hasPage, readPageDoc, readProfilePages, HOME_SLUG } from '@/lib/spaces/
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
 import { wildheartAccentVars } from '@/lib/theme/wildheart'
+import { networkAccentVars, networkScheme } from '@/lib/theme/network'
+import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
+import { NETWORK_CSS } from '@/components/sites/network-css'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -167,7 +170,10 @@ export async function SitePage({
   // The Wildheart theme (lib/theme/wildheart.ts): the third skin, light where Bold is dark. Its Space page
   // wears its font set like any theme; its own faces ride the website root (WILDHEART_FONT_CLASS).
   const wildSite = siteStyle.theme === 'wildheart'
-  const theme = boldSite ? 'menswork' : website && !wildSite ? 'frequency' : siteStyle.fonts
+  // The Network theme (lib/theme/network.ts): light and coastal, one bold color in four schemes. Its faces
+  // ride the website root (NETWORK_FONT_CLASS); the scheme follows the owner's accent.
+  const netSite = siteStyle.theme === 'network'
+  const theme = boldSite ? 'menswork' : website && !wildSite && !netSite ? 'frequency' : siteStyle.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins. Wildheart does the same with its violet.
@@ -175,17 +181,22 @@ export async function SitePage({
     ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) }
     : wildSite
       ? { theme: 'wildheart' as const, season: seasonOf(new Date()) }
-      : null
+      : netSite
+        ? { theme: 'network' as const, season: mensworkSeason(new Date()), scheme: networkScheme(websiteBrand.accent) }
+        : null
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
-  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : wildSite ? ('wildheart' as const) : ('frequency' as const) }
+  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : wildSite ? ('wildheart' as const) : netSite ? ('network' as const) : ('frequency' as const) }
   const lookOverrides = siteLookOverrides(lookStyle)
   const fullFooter = siteLook(lookStyle).footer === 'full'
   const accentVars = boldSite
     ? mensworkAccentVars(websiteBrand.accent)
     : wildSite
       ? wildheartAccentVars(websiteBrand.accent)
-      : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
-  const editorTheme = boldSite ? ('Menswork' as const) : wildSite ? ('Wildheart' as const) : ('DAWN' as const)
+      : netSite
+        ? networkAccentVars(websiteBrand.accent)
+        : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
+  const editorTheme = boldSite ? ('Menswork' as const) : wildSite ? ('Wildheart' as const) : netSite ? ('Network' as const) : ('DAWN' as const)
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`
@@ -197,8 +208,8 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-season={skin.season} className={wildSite ? WILDHEART_FONT_CLASS : undefined}>
-            <style>{wildSite ? WILDHEART_CSS : MENSWORK_CSS}</style>
+          <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -228,7 +239,9 @@ export async function SitePage({
   // same sections as every other page (the handoff's Home is a composition, not the house Home's rows).
   // Without a Home doc the site keeps the house Home over the profile rows, like any theme.
   const wildHome = home && wildSite && !websitePage && readPageDoc(space.preferences, HOME_SLUG) !== null
-  const model = home && !websitePage && !wildHome
+  // Network does the same (LIVE-906): The Group's Home is a composition of the Network section blocks.
+  const netHome = home && netSite && !websitePage && readPageDoc(space.preferences, HOME_SLUG) !== null
+  const model = home && !websitePage && !wildHome && !netHome
     ? await buildHouseHome({
         space,
         grid: profileGrid(space.preferences),
@@ -257,7 +270,7 @@ export async function SitePage({
   // LIVE-869: a site's `calendar` page (listed among its pages, so the owner places it in the menu) is the
   // public yearly calendar, not a page doc.
   const calendarPage = pageSlug === SITE_CALENDAR_SLUG
-  const customPage = (!home || wildHome) && !contactPage && !bookPage && !calendarPage
+  const customPage = (!home || wildHome || netHome) && !contactPage && !bookPage && !calendarPage
   const mwBlocks: MwBlock[] | null =
     customPage
       ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])
@@ -309,7 +322,7 @@ export async function SitePage({
     <AccentScope vars={accentVars} theme={theme}>
       <JsonLd data={entity} />
       {/* A Bold or Wildheart site wears the editor's tokens; a Frequency site keeps the house tokens its sheets read. */}
-      <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={wildSite ? WILDHEART_FONT_CLASS : undefined}>
+      <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={siteFontClass}>
       {website && skin && <style>{WEBSITE_TOKEN_CSS}</style>}
       {websitePage && !skin && <style>{FREQUENCY_PAGE_CSS}</style>}
       <SiteChrome
