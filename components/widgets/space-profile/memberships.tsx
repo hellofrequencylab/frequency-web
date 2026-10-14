@@ -80,7 +80,7 @@ async function MembershipsBand({
     return null
 
   return (
-    <div className="rounded-card border border-border bg-surface-elevated px-6 py-8 text-center sm:px-8 sm:py-10">
+    <div data-fq="band" className="rounded-card border border-border bg-surface-elevated px-6 py-8 text-center sm:px-8 sm:py-10">
       <MembershipsHeader eyebrow={eyebrow} heading={heading} />
       {body && <p className="mx-auto max-w-prose text-body-sm leading-relaxed text-muted">{body}</p>}
       <div className="mt-6 flex flex-col items-center gap-3">

@@ -270,6 +270,40 @@ export function resolveSiteMenu(
     if (!joinsAutomatically(e.key) || known.has(e.key) || referenced.has(e.key)) continue
     out.push({ href: e.href, label: e.label, ...(e.external ? { external: true } : {}) })
   }
+  return dedupeMenuLinks(out)
+}
+
+/**
+ * One menu row per destination and per word. A saved menu can list a link the automatic set later
+ * appends again (a menu saved before the Memberships tab existed gets "Memberships" twice: the owner's
+ * row, then the feature joining the end), and a Home section anchor can carry the same word as a
+ * dedicated tab. Rule: the first row with a given href or label keeps its place, so the owner's order
+ * wins; when the duplicate is a real page and the kept row only scrolls to an anchor, the kept row
+ * takes the page's address (navigating beats scrolling, the "two Reviews" rule in profile-nav.ts).
+ * Pure; stored menus are never rewritten, the duplicate is dropped at read.
+ */
+export function dedupeMenuLinks<T extends { href: string; label: string; mega?: unknown }>(links: T[]): T[] {
+  const out: T[] = []
+  const byHref = new Set<string>()
+  const byLabel = new Map<string, number>()
+  const norm = (l: string) => l.trim().toLowerCase().replace(/\s+/g, ' ')
+  const isAnchor = (h: string) => h.includes('#')
+  for (const link of links) {
+    const word = norm(link.label)
+    const seen = byLabel.get(word)
+    if (seen !== undefined) {
+      const kept = out[seen]!
+      if (!kept.mega && !link.mega && isAnchor(kept.href) && !isAnchor(link.href) && !byHref.has(link.href)) {
+        out[seen] = { ...kept, href: link.href }
+        byHref.add(link.href)
+      }
+      continue
+    }
+    if (!link.mega && byHref.has(link.href)) continue
+    byLabel.set(word, out.length)
+    byHref.add(link.href)
+    out.push(link)
+  }
   return out
 }
 
