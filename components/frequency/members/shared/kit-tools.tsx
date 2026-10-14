@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
+import { Input } from '@/components/ui/field'
 
 // THE KIT'S FIND-AND-FILTER ROW (Frequency member bodies, members-b.css `.fqm-tools`). The reference
 // templates draw a page's filters as chips and its search as one white pill (templates/members/
@@ -43,7 +44,7 @@ export function FqFindField({
   return (
     <form method="GET" action={action} className="fqm-find" role="search">
       <FqIcon name="search" />
-      <input name={name} defaultValue={value ?? ''} placeholder={placeholder} aria-label={placeholder} autoComplete="off" />
+      <Input variant="seamless" name={name} defaultValue={value ?? ''} placeholder={placeholder} aria-label={placeholder} autoComplete="off" />
       {Object.entries(keep).map(([k, v]) => (k !== name && v ? <input key={k} type="hidden" name={k} value={v} /> : null))}
     </form>
   )

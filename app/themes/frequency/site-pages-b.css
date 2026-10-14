@@ -31,6 +31,13 @@
 [data-design="frequency"] [data-kit="site"] .hp-c .st-lab{display:flex;flex-direction:column;gap:8px;font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="site"] .hp-c input, [data-design="frequency"] [data-kit="site"] .hp-c select{height:52px;padding:0 16px;border-radius:14px;border:0;background:color-mix(in srgb,var(--fq-text-strong) 6%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-strong);font:500 var(--fq-text-body-size) var(--fq-font-sans);outline:0}
 [data-design="frequency"] [data-kit="site"] .hp-c select option{background:var(--fq-surface-card)}
+/* These forms' controls are the field primitives (components/ui/field.tsx, select.tsx). Under Frequency
+   they carry the members kit's `.input`, which is scoped to `[data-kit="members"]` and so is inert here:
+   the `.hp-c` / `.jx-f` element rules above and below stay the whole dress. Select also wraps its
+   control in `.mu-select` with a chevron; the reference (Join.html) keeps the native select arrow, so
+   on the website the wrapper steps out of the layout and the chevron is not drawn. */
+[data-design="frequency"] [data-kit="site"] :is(.hp-c,.jx-f) .mu-select{display:contents}
+[data-design="frequency"] [data-kit="site"] :is(.hp-c,.jx-f) .mu-select>svg{display:none}
 [data-design="frequency"] [data-kit="site"] .hp-c input:focus, [data-design="frequency"] [data-kit="site"] .hp-c select:focus, [data-design="frequency"] [data-kit="site"] .hp-c textarea:focus{box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 0 4px var(--fq-side-soft);outline:0}
 [data-design="frequency"] [data-kit="site"] .hp-ok{margin:0;font-size:17px;line-height:1.5;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .hp-again{border:0;padding:0;background:none;cursor:pointer;font:inherit;color:var(--fq-side);text-decoration:underline;text-underline-offset:3px}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Av } from '../shared'
+import { Input } from '@/components/ui/field'
 
 // The Contacts chip bar, search, table and Export (templates/admin/Contacts.html). A thin client island over
 // rows the server already read and shaped (contacts-body.tsx): the chips and the search filter in the
@@ -73,8 +74,8 @@ export function ContactsTable({ rows }: { rows: ContactRow[] }) {
           ))}
         </div>
         <span className="ap-sp" />
-        <input
-          className="input adp-search"
+        <Input
+          className="adp-search"
           type="search"
           placeholder="Search contacts"
           aria-label="Search contacts"

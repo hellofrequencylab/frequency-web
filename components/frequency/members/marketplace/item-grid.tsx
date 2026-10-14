@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { distanceKm } from '@/lib/distance'
 import { getBrowserPosition } from '@/lib/geo-browser'
+import { Input } from '@/components/ui/field'
 
 // THE MARKETPLACE GRID, IN THE KIT (templates/members/Marketplace.html: four-up portrait cards, the
 // title and price on one line, "who · how far" under it, one button). The DAWN pages' instant search
@@ -90,7 +91,7 @@ export function FqItemGrid({
       <div className="fqm-tools">
         <label className="fqm-find">
           <FqIcon name="search" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder} aria-label={placeholder} autoComplete="off" />
+          <Input variant="seamless" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder} aria-label={placeholder} autoComplete="off" />
         </label>
         {nearMe && (
           <button type="button" className={coords ? 'chip on' : 'chip'} onClick={locate} disabled={locating} aria-pressed={!!coords}>

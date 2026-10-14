@@ -4,6 +4,8 @@
 // partner intake endpoint, so, like Help's "Write to us", Send opens the visitor's own mail app with the
 // note addressed to the real contact address. Nothing is submitted on their behalf.
 import { useState } from 'react'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 const WHO = ['A partner', 'An investor', 'A civic leader', 'Press', 'A building owner'] as const
 
@@ -22,19 +24,19 @@ export function PartnerForm({ email }: { email: string }) {
     >
       <label className="st-lab">
         I am
-        <select value={who} onChange={(e) => setWho(e.target.value)}>
+        <Select value={who} onChange={(e) => setWho(e.target.value)}>
           {WHO.map((w) => (
             <option key={w}>{w}</option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="st-lab">
         Your town or building
-        <input value={town} onChange={(e) => setTown(e.target.value)} placeholder="Where it is" />
+        <Input value={town} onChange={(e) => setTown(e.target.value)} placeholder="Where it is" />
       </label>
       <label className="st-lab">
         What you have in mind
-        <textarea required rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+        <Textarea required rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </label>
       <button className="btn fq-iri-btn" type="submit">
         Send

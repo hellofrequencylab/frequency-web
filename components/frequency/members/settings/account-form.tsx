@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { updateProfile } from '@/app/(main)/settings/profile/actions'
 import { fqToast } from '@/components/frequency/members/shell/toast'
+import { Input, Textarea } from '@/components/ui/field'
 
 // The reference's Account pane (Settings.html): Name, Email, About you, Save. It saves through the
 // SAME action as the full profile editor (updateProfile). That action writes phone, city and website
@@ -53,11 +54,11 @@ export function AccountForm({ initial, email }: { initial: Initial; email: strin
       <div className="g2">
         <div className="field">
           <label htmlFor="fq-account-name">Name</label>
-          <input id="fq-account-name" className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
+          <Input id="fq-account-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
         </div>
         <div className="field">
           <label htmlFor="fq-account-email">Email</label>
-          <input id="fq-account-email" className="input" value={email ?? ''} readOnly aria-describedby="fq-account-email-note" />
+          <Input id="fq-account-email" value={email ?? ''} readOnly aria-describedby="fq-account-email-note" />
           <span id="fq-account-email-note" className="t2">
             The address you sign in with.
           </span>
@@ -65,7 +66,7 @@ export function AccountForm({ initial, email }: { initial: Initial; email: strin
       </div>
       <div className="field">
         <label htmlFor="fq-account-bio">About you</label>
-        <textarea id="fq-account-bio" className="input" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} />
+        <Textarea id="fq-account-bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} />
       </div>
       {error && (
         <p className="t2" role="alert">

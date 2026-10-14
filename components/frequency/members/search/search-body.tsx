@@ -29,6 +29,7 @@ import { FqToaster } from '../shared/toast'
 import { FqRecentSearches } from './recent-searches'
 import { FqAvatar, phStyle } from '../shared/avatar'
 import { AddToggle, GoToggle } from '../shared/toggles'
+import { Input } from '@/components/ui/field'
 
 // THE FREQUENCY SEARCH BODY (design_handoff/frequency/templates/members/Search.html): one large
 // query field, kind chips, then Events / Circles / People sections in the main column and a side
@@ -141,7 +142,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
         <h1 className="k">Search</h1>
         <form method="GET" action="/search" className="fa-searchbar" role="search">
           <FqIcon name="search" />
-          <input name="q" defaultValue={query} placeholder="People, Circles, events, Spaces, listings" aria-label="Search" autoComplete="off" autoFocus />
+          <Input variant="seamless" name="q" defaultValue={query} placeholder="People, Circles, events, Spaces, listings" aria-label="Search" autoComplete="off" autoFocus />
           {kind !== 'all' && <input type="hidden" name="tab" value={kind} />}
           {countLine && <span className="meta">{countLine}</span>}
         </form>

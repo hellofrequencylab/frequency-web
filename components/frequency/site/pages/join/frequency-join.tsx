@@ -36,6 +36,8 @@ import { stashPendingInduction } from '@/app/join/(induction)/actions'
 import { captureLead } from '@/app/join/(induction)/lead-actions'
 import type { PersonaId } from '@/lib/onboarding/personas'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 const INTERESTS = ['Moving', 'Making', 'Eating', 'Sitting still', 'Going out'] as const
 
@@ -192,7 +194,7 @@ export function FrequencyJoin() {
             <form className="jx-f" onSubmit={onLooking}>
               <label>
                 Your town
-                <input name="town" required placeholder="San Diego" autoComplete="address-level2" />
+                <Input name="town" required placeholder="San Diego" autoComplete="address-level2" />
               </label>
               <div className="jx-lab" role="group" aria-labelledby="jx-likes">
                 <span id="jx-likes">What do you like doing?</span>
@@ -206,7 +208,7 @@ export function FrequencyJoin() {
               </div>
               <label>
                 Email
-                <input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+                <Input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
               </label>
               {error && <p className="jx-err" role="alert">{error}</p>}
               <button className="btn fq-iri-btn" type="submit" disabled={pending}>
@@ -218,25 +220,25 @@ export function FrequencyJoin() {
             <form className="jx-f" onSubmit={onHosting}>
               <label>
                 Space name
-                <input name="name" required placeholder="Saltwater Studio" />
+                <Input name="name" required placeholder="Saltwater Studio" />
               </label>
               <div className="jx-row">
                 <label>
                   Type
-                  <select name="type" defaultValue={SPACE_TYPES[0]!.label}>
+                  <Select name="type" defaultValue={SPACE_TYPES[0]!.label}>
                     {SPACE_TYPES.map((t) => (
                       <option key={t.label}>{t.label}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label>
                   Town
-                  <input name="town" required placeholder="San Diego" autoComplete="address-level2" />
+                  <Input name="town" required placeholder="San Diego" autoComplete="address-level2" />
                 </label>
               </div>
               <label>
                 Email
-                <input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+                <Input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
               </label>
               {error && <p className="jx-err" role="alert">{error}</p>}
               <button className="btn fq-iri-btn" type="submit" disabled={pending}>

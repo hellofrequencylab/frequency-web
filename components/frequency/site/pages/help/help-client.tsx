@@ -12,6 +12,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { Input, Textarea } from '@/components/ui/field'
 
 export interface HelpTopic {
   slug: string
@@ -47,7 +48,7 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
           </h1>
           <label className="hp-s">
             <FqIcon name="search" />
-            <input
+            <Input
               type="search"
               placeholder="Search questions"
               aria-label="Search help"
@@ -134,7 +135,7 @@ export function HelpContact({ email }: { email: string }) {
         setSent(true)
       }}
     >
-      <input
+      <Input
         required
         type="email"
         placeholder="Your email"
@@ -143,7 +144,7 @@ export function HelpContact({ email }: { email: string }) {
         value={from}
         onChange={(e) => setFrom(e.target.value)}
       />
-      <textarea
+      <Textarea
         required
         placeholder="What’s going on?"
         aria-label="Message"

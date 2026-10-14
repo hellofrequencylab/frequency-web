@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { isError } from '@/lib/action-result'
 import { messageHost } from '@/app/(main)/events/[slug]/social-actions'
 import { openDockThread } from '@/lib/messages/dock-open'
+import { Textarea } from '@/components/ui/field'
 
 // The Host panel's Message button (templates/members/Event.html), on the real action: the same
 // `messageHost` the DAWN Host card's dialog calls, then the dock opens over the page on the new
@@ -52,8 +53,7 @@ export function FqMessageHost({ eventId, hostName }: { eventId: string; hostName
         })
       }}
     >
-      <textarea
-        className="input"
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder={`Write to ${first}`}

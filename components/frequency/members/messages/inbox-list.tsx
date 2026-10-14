@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { FqAvatar } from '../shared/avatar'
+import { Input } from '@/components/ui/field'
 
 // The thread list and its tabs (the design's data-group tabs, as component state). The design's
 // "Requests" tab has no message-request concept behind it, so the tabs are All, People (direct
@@ -69,7 +70,7 @@ export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activ
       <div className="row fqm-inbox-tools">
         <label className="fqm-find grow">
           <FqIcon name="search" />
-          <input value={find} onChange={(e) => setFind(e.target.value)} placeholder="Find a conversation" aria-label="Find a conversation" />
+          <Input variant="seamless" value={find} onChange={(e) => setFind(e.target.value)} placeholder="Find a conversation" aria-label="Find a conversation" />
         </label>
       </div>
       <div className="fqm-seg" role="group" aria-label="Sort">

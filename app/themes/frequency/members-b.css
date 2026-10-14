@@ -77,7 +77,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-find{height:44px;flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:10px;padding:0 18px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqm-find .fq-icon{width:18px;height:18px;color:var(--fq-text-muted);flex:none}
 [data-design="frequency"] [data-kit="members"] .fqm-find input{flex:1;min-width:0;border:none;outline:none;background:none;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-find input::placeholder{color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="members"] .fqm-find:focus-within{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px var(--fq-focus-ring)}
 [data-design="frequency"] [data-kit="members"] .fqm-menu{position:relative}
 [data-design="frequency"] [data-kit="members"] .fqm-menu>summary{list-style:none}
@@ -135,4 +134,11 @@
 [data-design="frequency"] [data-kit="members"] .fqm-pad{padding:14px}
 [data-design="frequency"] [data-kit="members"] .fqm-daysep{align-self:center;text-align:center}
 [data-design="frequency"] [data-kit="members"] .fqm-pane-more{padding:0 28px 28px;overflow-y:auto}
+}
+
+/* The find band's field is the Input primitive's SEAMLESS variant (components/ui/field.tsx), which
+   carries `placeholder:text-subtle`. A utility beats the components layer whatever the specificity, so
+   the kit's fainter placeholder sits in the UTILITIES layer, where this scoped selector outranks it. */
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] .fqm-find input::placeholder{color:var(--fq-text-faint)}
 }
