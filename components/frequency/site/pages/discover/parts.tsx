@@ -359,7 +359,9 @@ export function DxChapter({
           <h2 className="h-l dx-chap-h">{title}</h2>
           {children}
         </div>
-        <div className="photo fq-iri-rim">
+        {/* data-visual-mask: a camera hook, not styling. The lazy photo's decode races a full-page
+            capture (VISUAL_MASK_SITES in test/e2e/surfaces.ts, kind 'load'). */}
+        <div className="photo fq-iri-rim" data-visual-mask="discover-chapter-photo">
           {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img itself (object-fit cover) */}
           <img loading="lazy" decoding="async" src={photo} alt={alt} />
         </div>

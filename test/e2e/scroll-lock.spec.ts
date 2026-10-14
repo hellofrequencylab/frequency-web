@@ -47,7 +47,12 @@ function widthOf(page: import('@playwright/test').Page) {
   return page.evaluate(() => ({
     doc: document.documentElement.clientWidth,
     header: Math.round(document.querySelector('header')?.getBoundingClientRect().width ?? -1),
-    rail: Math.round(document.querySelector('[data-rail-column]')?.getBoundingClientRect().right ?? -1),
+    // The RIGHTMOST rail column's right edge. DAWN has one rail (right); Frequency stamps the hook on
+    // both rails, and its left rail is pinned to the left edge, so only the right one can show a
+    // gutter shift.
+    rail: Math.round(
+      Math.max(-1, ...[...document.querySelectorAll('[data-rail-column]')].map((el) => el.getBoundingClientRect().right)),
+    ),
   }))
 }
 
@@ -124,7 +129,7 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
     const response = await page.goto(settingsPath)
     expect(response, `navigation to ${settingsPath} returned a response`).toBeTruthy()
     expect(response!.ok(), `expected 2xx for ${settingsPath}, got ${response!.status()}`).toBe(true)
-    await expect(page.locator('[data-rail-column]')).toBeVisible()
+    await expect(page.locator('[data-rail-column]').last()).toBeVisible()
     await expectRootScrollbar(page, settingsPath)
 
     const before = await widthOf(page)

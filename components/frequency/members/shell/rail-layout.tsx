@@ -283,8 +283,11 @@ export function FqRailLayout({
           <main id="main" tabIndex={-1} className="fqm-center" data-tour-anchor="content">
             {children}
           </main>
+          {/* `data-rail-column` on BOTH rails is a camera hook, not styling (LIVE-457; RAIL_COLUMN_MASK
+              in test/e2e/surfaces.ts): each rail is a sticky box of fixed size holding live lists, so
+              the visual suite masks the box instead of photographing how many rows those lists held. */}
           {showR && right && (
-            <aside className="fqm-rail fqm-rail-r" aria-label="Your community" onMouseOver={onOver('R')} onMouseOut={onOut} onClick={onRightClick}>
+            <aside data-rail-column className="fqm-rail fqm-rail-r" aria-label="Your community" onMouseOver={onOver('R')} onMouseOut={onOut} onClick={onRightClick}>
               {handle('R')}
               <div className="fqm-rail-scroll">
                 <div className="fqm-full">{right.full}</div>
