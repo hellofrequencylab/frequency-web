@@ -38,7 +38,20 @@
 }
 [data-design="frequency"] [data-space-fonts] .fqs-hero h1 {
   font-family: var(--space-font-display), var(--fq-font-display);
+  font-size: calc(clamp(32px, 4vw, 46px) * var(--space-display-scale, 1));
+  letter-spacing: var(--space-display-track, -0.05em);
 }
+
+/* METRICS PER SET (owner ruling 2026-10-14, "Space font, consistent"). Frequency's sizes and its
+   -0.04em tracking are tuned for Unbounded, which is very wide. A set's display face keeps Frequency's
+   sizes, weights and line heights, with two per-set corrections so it stays readable:
+   · --space-display-track replaces the negative tracking (a serif or a condensed face crushed by
+     Unbounded's -0.04em reads as one smudge);
+   · --space-display-scale lifts a condensed face, whose narrow letters at Unbounded's sizes read a
+     size smaller than the scale means. Every heading size below multiplies by it (default 1). */
+[data-design="frequency"] :is([data-space-fonts="editorial"], [data-space-fonts="classic"]) { --space-display-track: -0.015em; }
+[data-design="frequency"] :is([data-space-fonts="playful"], [data-space-fonts="accessible"], [data-space-fonts="modern"]) { --space-display-track: -0.02em; }
+[data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */
 
@@ -50,30 +63,47 @@
   font-weight: 500;
   font-style: normal;
   text-transform: none;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--space-display-track, -0.04em);
   line-height: var(--fq-lh-h2);
   text-wrap: balance;
 }
 [data-design="frequency"] [data-space-page] :is(.font-display, .font-section).text-text {
   color: var(--fq-text-strong);
 }
+/* ONE VOICE: every heading on the page, whatever drew it (a block's own <h3>, a card title, a FAQ
+   question, a form heading), takes the Space's display face, not only the ones carrying a display
+   class. Without this, a bare heading fell to the theme's base rule (Unbounded at 600) beside
+   section titles in the Space's set, two voices on one page. Size stays with the rules below. */
+[data-design="frequency"] [data-space-page] :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--space-font-display, var(--fq-font-display));
+  font-weight: 500;
+  letter-spacing: var(--space-display-track, var(--fq-track-h3));
+}
 /* The scale (app.css .h1/.h2/.h3): a page title, a section title, a card title. */
 [data-design="frequency"] [data-space-page] h1:is(.font-display, .font-section),
 [data-design="frequency"] [data-space-page] .font-display.leading-display {
-  font-size: clamp(32px, 4.2vw, 48px);
-  letter-spacing: -0.05em;
+  font-size: calc(clamp(32px, 4.2vw, 48px) * var(--space-display-scale, 1));
+  letter-spacing: var(--space-display-track, -0.05em);
   line-height: var(--fq-lh-h1);
 }
 [data-design="frequency"] [data-space-page] h2.font-display {
-  font-size: clamp(26px, 3vw, 34px);
+  font-size: calc(clamp(26px, 3vw, 34px) * var(--space-display-scale, 1));
 }
 [data-design="frequency"] [data-space-page] :is(h2, h3).font-section {
-  font-size: var(--fq-text-h3);
-  letter-spacing: -0.035em;
+  font-size: calc(var(--fq-text-h3) * var(--space-display-scale, 1));
+  letter-spacing: var(--space-display-track, -0.035em);
 }
 [data-design="frequency"] [data-space-page] h3.font-display {
-  font-size: 20px;
-  letter-spacing: -0.035em;
+  font-size: calc(20px * var(--space-display-scale, 1));
+  letter-spacing: var(--space-display-track, -0.035em);
+}
+/* A FAQ question is a heading by semantics and a list row by design (marketing-ui.tsx Faq): the kit's
+   h4, not the 22px h3 the base rule gives every <h3>. */
+[data-design="frequency"] [data-space-page] summary :is(h2, h3, h4) {
+  font-size: calc(var(--fq-text-h4) * var(--space-display-scale, 1));
+  line-height: var(--fq-lh-h4);
+  letter-spacing: var(--space-display-track, var(--fq-track-h4));
+  font-weight: 500;
 }
 /* A display numeral (a stats figure, a card stat) reads as the kit's `.num`. */
 [data-design="frequency"] [data-space-page] :is(dt, dd, div, span, p).font-display:not(.leading-display) {
@@ -189,8 +219,8 @@
   transform: translateY(-3px);
 }
 [data-design="frequency"] [data-space-page] [data-fq="offering-title"] {
-  font: 500 20px/1.1 var(--fq-font-display);
-  letter-spacing: -0.035em;
+  font: 500 calc(20px * var(--space-display-scale, 1))/1.1 var(--space-font-display, var(--fq-font-display));
+  letter-spacing: var(--space-display-track, -0.035em);
   color: var(--fq-text-strong);
   text-wrap: balance;
 }
@@ -235,6 +265,15 @@
   background: var(--fq-pa-soft);
   box-shadow: none;
   padding: 28px;
+}
+
+/* A call-to-action band (the Memberships block) is the kit's `.soft` band too, not DAWN's flat raised
+   fill, which read as a sand slab against the Commons canvas. */
+[data-design="frequency"] [data-space-page] [data-fq="band"] {
+  border-color: transparent;
+  border-radius: 28px;
+  background: var(--fq-pa-soft);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
 }
 
 /* ══ 5. THE CHROME: cover card, identity, actions, tab row (members kit) ════════════════════════ */

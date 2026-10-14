@@ -456,8 +456,10 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
 export function FaqList({ items }: { items: readonly { q: string; a: React.ReactNode }[] }) {
   return (
     <div className="space-y-3">
-      {items.map((f) => (
-        <Faq key={f.q} q={f.q}>
+      {/* Index in the key: an operator's live FAQ can repeat a question word for word, and a
+          question-only key then collided (React's duplicate-key warning on the Space page). */}
+      {items.map((f, i) => (
+        <Faq key={`${i}:${f.q}`} q={f.q}>
           {f.a}
         </Faq>
       ))}

@@ -44,6 +44,11 @@
    .ap-scrim; header.tsx renders shell.js's markup). Only what the kit does not cover, and the owner's
    rulings over the design, live here. */
 
+/* Owner ruling (2026-10-14): page text must not read through the frosted header. The kit's 86% card
+   let bold headings and the Space tab row show through while scrolling; the header's frost is a near-
+   solid card so only colour, never words, comes through. */
+[data-design="frequency"] [data-kit="members"] .ap-hdr.scrolled, [data-design="frequency"] [data-kit="members"] .ap-hdr.open{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
+
 /* Owner ruling (2026-10-13): the pill's first item is a plain Feed / Home link, not a menu button, so
    it wears the kit's `.ap-nav button` look, which the kit no longer gives a link. */
 [data-design="frequency"] [data-kit="members"] .ap-nav>a{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 16px 0 12px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:-.01em;white-space:nowrap;transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}

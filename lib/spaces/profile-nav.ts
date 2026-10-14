@@ -2,7 +2,7 @@ import { collectiveNetworkOpen } from '@/lib/collective/network'
 import { getCallerProfile } from '@/lib/auth'
 import type { WebRole } from '@/lib/core/roles'
 import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
-import { readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
+import { dedupeMenuLinks, readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
@@ -251,9 +251,13 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
   // a feature or page newer than the save joins the end. Free Spaces and Spaces that never saved keep
   // the automatic tabs above, unchanged.
   const saved = resolveSiteMenu(readSiteMenu(space.preferences), autoTabs, 'space', { canEdit: spaceCanUseFullWebsite(space) })
-  const tabs: SpaceProfileTab[] = saved
-    ? saved.map((l) => ({ href: l.href, label: l.label, ...(l.external ? { external: true } : {}), ...(l.mega ? { mega: l.mega } : {}), ...(l.href === base ? { key: 'home' } : {}) }))
-    : autoTabs
+  // One row per destination and per word (dedupeMenuLinks): a menu saved before a feature existed
+  // otherwise lists it twice, once where the owner put it and once where new features join the end.
+  const tabs = dedupeMenuLinks<SpaceProfileTab>(
+    saved
+      ? saved.map((l) => ({ href: l.href, label: l.label, ...(l.external ? { external: true } : {}), ...(l.mega ? { mega: l.mega } : {}), ...(l.href === base ? { key: 'home' } : {}) }))
+      : autoTabs,
+  )
 
   // Just "Manage" now: the CRM has no separate menu item (it lives inside the Manage dashboard's
   // Community area). `spaceManageHref` is the full-page console; the profile menu instead opens the

@@ -118,11 +118,16 @@ export function FqHeader({
   }
 
   // shell.js `hdrState`: frosted once the page has scrolled past 8px.
+  // The document is the page's scroller, but a route may scroll its body in the main column instead, and
+  // then window.scrollY stays 0 while content slides under the header. A capture-phase listener hears
+  // every scroll; the header frosts when the document or the main column has moved (rail scrollers sit
+  // beside the header, never under it, so they do not count).
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
+    const main = () => document.getElementById('main')
+    const onScroll = () => setScrolled(window.scrollY > 8 || (main()?.scrollTop ?? 0) > 8)
     onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+    return () => document.removeEventListener('scroll', onScroll, { capture: true })
   }, [])
 
   // ⌘K and the app-wide 'open-search' event open the search overlay (the DAWN shell's contract).

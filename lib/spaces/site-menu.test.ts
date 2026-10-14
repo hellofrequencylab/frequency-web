@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  dedupeMenuLinks,
   headerLogoSlot,
   isMenuHref,
   parseHeaderLogo,
@@ -132,5 +133,32 @@ describe('the header logo', () => {
     expect(parseHeaderLogo({ mode: 'logo', logoUrl: null })).toBeNull()
     expect(parseHeaderLogo({ mode: 'logo', logoUrl: 'javascript:x' })).toBeNull()
     expect(parseHeaderLogo({ mode: 'name', logoUrl: '' })).toEqual({ mode: 'name', logoUrl: null })
+  })
+})
+
+describe('dedupeMenuLinks', () => {
+  const b = '/spaces/x'
+  it('drops a feature that joins the end when the saved menu already lists the same word', () => {
+    const out = dedupeMenuLinks([
+      { href: b, label: 'Home' },
+      { href: `${b}/memberships`, label: 'Memberships' },
+      { href: `${b}/network`, label: 'Network' },
+      { href: `${b}/memberships`, label: 'Memberships' },
+    ])
+    expect(out.map((l) => l.label)).toEqual(['Home', 'Memberships', 'Network'])
+  })
+  it('keeps the owner position but takes the page address over an anchor with the same word', () => {
+    const out = dedupeMenuLinks([
+      { href: `${b}#memberships`, label: 'Memberships' },
+      { href: `${b}/network`, label: 'Network' },
+      { href: `${b}/memberships`, label: ' memberships ' },
+    ])
+    expect(out).toEqual([
+      { href: `${b}/memberships`, label: 'Memberships' },
+      { href: `${b}/network`, label: 'Network' },
+    ])
+  })
+  it('drops a second row to the same address under another word', () => {
+    expect(dedupeMenuLinks([{ href: `${b}/book`, label: 'Book' }, { href: `${b}/book`, label: 'Booking' }])).toHaveLength(1)
   })
 })
