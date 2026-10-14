@@ -191,7 +191,7 @@ export function SeasonTimelineBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. CircleFirstNight, the concrete shape of a Circle's first night / weekly Run.
+// 2. CircleFirstNight, the concrete shape of a Circle's first gathering / weekly Run.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type RunRow = {
@@ -666,7 +666,7 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
 
   // ── CircleFirstNight ──────────────────────────────────────────────────────────
   CircleFirstNight: {
-    label: 'Circle first night',
+    label: 'Circle first gathering',
     fields: {
       eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
       title: { type: 'textarea', label: 'Heading (optional)' },
@@ -691,17 +691,17 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
     },
     defaultProps: {
       eyebrow: 'A Run, up close',
-      title: 'What the first night actually looks like.',
-      titleAccent: 'first night',
+      title: 'What a first gathering actually looks like.',
+      titleAccent: 'first gathering',
       kicker: 'A Circle running a Journey together is a Run. Here is the shape of one evening.',
-      footnote: 'No host has to invent it. The format comes with the Journey, so the first night runs itself and you just show up.',
+      footnote: 'No host has to invent it. The format comes with the Journey, so it runs itself. Come once, join in as much or as little as you like, and see if it fits.',
       cardLabel: 'Weekly Run',
       cardTitle: 'Tuesday, 6:30pm',
       rows: [
-        { time: '0:00', title: 'Arrive and settle', note: 'Tea, a folding chair, names around the room.' },
+        { time: '0:00', title: 'Arrive and settle', note: 'Tea, a folding chair, a few names. Sit back as long as you like.' },
         { time: '0:15', title: 'Open the week', note: 'The host reads the prompt the Journey set for tonight.' },
         { time: '0:30', title: 'The practice', note: 'You do the thing together: sit, move, or make.' },
-        { time: '1:00', title: 'Share and close', note: 'A short round, then plans for next week.' },
+        { time: '1:00', title: 'Share and close', note: 'A short round if you feel like it. Passing is always fine.' },
       ],
       emphasis: emphasisDefault,
       density: densityDefault,

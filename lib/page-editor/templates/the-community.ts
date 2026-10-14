@@ -156,18 +156,18 @@ export const data: Data = {
       props: {
         id: 'tc-first-night',
         eyebrow: 'A Run, up close',
-        title: 'What the first night actually looks like.',
-        titleAccent: 'first night',
+        title: 'What a first gathering actually looks like.',
+        titleAccent: 'first gathering',
         kicker: 'A Circle running a Journey together is a Run. Here is the shape of one evening.',
         footnote:
-          'No host has to invent it. The format comes with the Journey, so the first night runs itself and you just hold the door.',
+          'No host has to invent it. The format comes with the Journey, so it runs itself and you just hold the door. Newcomers can join in as much or as little as they like.',
         cardLabel: 'Weekly Run',
         cardTitle: 'Tuesday, 6:30pm',
         rows: [
-          { time: '0:00', title: 'Arrive and settle', note: 'Tea, a folding chair, names around the room.' },
+          { time: '0:00', title: 'Arrive and settle', note: 'Tea, a folding chair, a few names. Sit back as long as you like.' },
           { time: '0:15', title: 'Open the week', note: 'The host reads the prompt the Journey set for tonight.' },
           { time: '0:30', title: 'The practice', note: 'You do the thing together: sit, move, or make.' },
-          { time: '1:00', title: 'Share and close', note: 'A short round, then plans for next week.' },
+          { time: '1:00', title: 'Share and close', note: 'A short round if you feel like it. Passing is always fine.' },
         ],
         tone: 'canvas',
         width: 'wide',

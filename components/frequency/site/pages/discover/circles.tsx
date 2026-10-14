@@ -76,7 +76,7 @@ export function FrequencyCircles({
         label="Near you"
         meta={circles.length > 0 ? count(circles.length, 'Circle', 'Circles') : null}
         title="Find the one you’d show up to."
-        lede="Read the rooms, the practices, the standing times. The first night is the hardest. After that, you’re a regular."
+        lede="Read the rooms, the practices, the standing times. Drop in once and see how it feels. Come back if it fits."
       >
         {channels.size > 1 && (
           <DirChips
