@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // The admin DASHBOARD language (ADR-228 addendum — the owner's redesign brief +
 // dashboard best practice). TWO section grammars share the same stat/graph parts:
@@ -16,6 +17,22 @@ import type { LucideIcon } from 'lucide-react'
 //     number, quiet sentence-case label underneath), divided columns, not nested boxes.
 //
 // Presentational + server-friendly (no hooks). Semantic tokens only.
+//
+// FREQUENCY (ADR-1740): every part renders the admin kit's own markup inside the console (a section is the
+// kit's `.sec-h` over its content, a tile is the glass `.panel` with a `.k` label, a stat is a `.num` over
+// a `.t2`, a severity is a `.tag`), so a dashboard reads as templates/admin/Overview.html, not as DAWN
+// white tiles on the canvas. Spacing lives in app/themes/frequency/admin-pages.css (`.adp-dash*`). DAWN's
+// strings below are unchanged; SITE_DESIGN is inlined at build.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
+function FqMore({ href, label }: { href: string; label?: string }) {
+  return (
+    <Link href={href} className="btn txt sm">
+      {label ?? 'Open'}
+      <ChevronRight aria-hidden />
+    </Link>
+  )
+}
 
 export function DashSection({
   title,
@@ -32,6 +49,20 @@ export function DashSection({
   hrefLabel?: string
   children: React.ReactNode
 }) {
+  if (FREQUENCY) {
+    return (
+      <section className="panel adp-dash-sec">
+        <div className="sec-h">
+          <div className="stack adp-tight">
+            <h2 className="h3">{title}</h2>
+            {description && <p className="t2">{description}</p>}
+          </div>
+          {href && <FqMore href={href} label={hrefLabel} />}
+        </div>
+        {children}
+      </section>
+    )
+  }
   return (
     <section className="rounded-card border border-border bg-surface px-5 py-4 sm:px-6 sm:py-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -78,6 +109,24 @@ export function DashArea({
   footnote?: React.ReactNode
   children: React.ReactNode
 }) {
+  if (FREQUENCY) {
+    return (
+      <section className="adp-dash-area">
+        <div className="sec-h">
+          <div className="stack adp-tight">
+            <h2 className="h2 adp-dash-h">
+              {Icon && <Icon aria-hidden />}
+              {label}
+            </h2>
+            {blurb && <p className="t2 adp-dash-blurb">{blurb}</p>}
+          </div>
+          {href && <FqMore href={href} label={hrefLabel} />}
+        </div>
+        {children}
+        {footnote && <p className="t2 adp-dash-foot">{footnote}</p>}
+      </section>
+    )
+  }
   return (
     <section className="border-t border-border/70 pt-8 first:border-t-0 first:pt-0 sm:pt-9">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -131,6 +180,15 @@ export function Tile({
   span?: keyof typeof SPAN
   children: React.ReactNode
 }) {
+  if (FREQUENCY) {
+    return (
+      <div className={`panel adp-dash-tile ${SPAN[span]}`}>
+        {label && <p className="k">{label}</p>}
+        <div className="adp-dash-body">{children}</div>
+        {caption && <p className="t2">{caption}</p>}
+      </div>
+    )
+  }
   return (
     <div className={`flex h-full flex-col rounded-card border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
       {label && <p className="eyebrow text-muted">{label}</p>}
@@ -154,6 +212,18 @@ export function GraphTile({
   span?: keyof typeof SPAN
   children: React.ReactNode
 }) {
+  if (FREQUENCY) {
+    return (
+      <div className={`panel adp-dash-tile ${SPAN[span]}`}>
+        <div className="row adp-dash-gh">
+          <p className="k">{label}</p>
+          {value !== undefined && <p className="t1">{value}</p>}
+        </div>
+        <div className="adp-dash-body">{children}</div>
+        {caption && <p className="t2">{caption}</p>}
+      </div>
+    )
+  }
   return (
     <div className={`flex h-full flex-col rounded-card border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
       <div className="flex items-baseline justify-between gap-2">
@@ -177,6 +247,14 @@ export function MiniStat({
   label: string
   tone?: 'good' | 'bad' | 'neutral'
 }) {
+  if (FREQUENCY) {
+    return (
+      <div className="adp-dash-stat">
+        <p className={`num adp-dash-num${tone === 'neutral' ? '' : ` adp-${tone}`}`}>{value}</p>
+        <p className="t2">{label}</p>
+      </div>
+    )
+  }
   const valueTone = tone === 'good' ? 'text-success' : tone === 'bad' ? 'text-danger' : 'text-text'
   return (
     <div className="min-w-0">
@@ -216,6 +294,20 @@ export function StatItem({
   deltaTone?: 'good' | 'bad' | 'neutral'
   href?: string
 }) {
+  if (FREQUENCY) {
+    const body = (
+      <>
+        <p className="num adp-dash-num">{value}</p>
+        <p className="t2">{label}</p>
+        {delta && <p className={deltaTone === 'good' ? 'up' : deltaTone === 'bad' ? 'down' : 't2'}>{delta}</p>}
+      </>
+    )
+    return href ? (
+      <Link href={href} className="adp-dash-stat adp-dash-item">{body}</Link>
+    ) : (
+      <div className="adp-dash-stat adp-dash-item">{body}</div>
+    )
+  }
   const tone =
     deltaTone === 'good' ? 'text-success' : deltaTone === 'bad' ? 'text-danger' : 'text-subtle'
   const inner = (
@@ -238,6 +330,10 @@ export function StatItem({
 
 /** Severity chip for advice/insight lines (Vera's read). */
 export function SeverityChip({ severity }: { severity: 'good' | 'watch' | 'risk' }) {
+  if (FREQUENCY) {
+    const tone = severity === 'risk' ? 'mu-danger' : severity === 'watch' ? 'mu-warning' : 'mu-success'
+    return <span className={`tag ${tone}`}>{severity === 'risk' ? 'Needs attention' : severity === 'watch' ? 'Watch' : 'Healthy'}</span>
+  }
   const cls =
     severity === 'risk'
       ? 'bg-danger-bg text-danger'

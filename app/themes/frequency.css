@@ -250,4 +250,10 @@
   --color-surface-elevated: color-mix(in oklab, var(--fq-text-strong) 4%, var(--fq-surface-card));
   --color-chrome: color-mix(in oklab, var(--fq-text-strong) 4%, var(--fq-surface-card));
   --color-chrome-hover: color-mix(in oklab, var(--fq-text-strong) 7%, var(--fq-surface-card));
+  /* The status chip fills were a 14% wash on Commons sand (above); in the app kits they wash the card
+     surface, so a success or warning callout stops carrying a tan cast. */
+  --color-success-bg: color-mix(in srgb, var(--fq-success) 14%, var(--fq-surface-card));
+  --color-warning-bg: color-mix(in srgb, var(--fq-warning) 14%, var(--fq-surface-card));
+  --color-danger-bg: color-mix(in srgb, var(--fq-danger) 14%, var(--fq-surface-card));
+  --color-info-bg: color-mix(in srgb, var(--fq-info) 14%, var(--fq-surface-card));
 }

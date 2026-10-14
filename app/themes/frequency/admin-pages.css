@@ -54,7 +54,7 @@
 
 /* THE ADMIN PAGE FRAME (components/frequency/admin/admin-page-frame.tsx): a console page with no Member Admin
    design of its own. The head and section heads are the kit's; the page's own content keeps its markup, and
-   its tables and cards take the kit's lines and glass panel through the token layer, by class only. */
+   its tables, cards, headings, actions and fields are translated by THE DAWN BODY TRANSLATION below. */
 [data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back:hover{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back-ic{transform:rotate(180deg)}
@@ -64,14 +64,31 @@
 [data-design="frequency"] [data-kit="admin"] .adp-frame[data-measure="focus"] .adp-frame-body{max-width:760px}
 [data-design="frequency"] [data-kit="admin"] .adp-fsec{min-width:0}
 [data-design="frequency"] [data-kit="admin"] .adp-fsec>.sec-h{align-items:flex-end}
-/* The page's own tables read as the kit's .tbl: muted 12px heads, 14px cells, hairlines, tabular numbers. */
-[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl){width:100%;border-collapse:collapse;font:400 var(--fq-text-body-s)/1.35 var(--fq-font-sans);font-variant-numeric:tabular-nums}
-[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl) th{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--fq-border-hair);background:transparent;text-transform:none;letter-spacing:0}
-[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl) td{padding:14px;border-bottom:1px solid var(--fq-border-hair);color:var(--fq-text-body);vertical-align:middle}
-[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl) tbody tr:hover td{background:var(--fq-track)}
-/* The page's own cards (the DAWN surface card: a bordered surface with a large radius) wear the glass panel. */
-[data-design="frequency"] [data-kit="admin"] .adp-frame-body :is(.rounded-2xl,.rounded-card,.rounded-xl).border.bg-surface{background:var(--fq-glass-panel);border-color:transparent;border-radius:var(--fq-radius-l);box-shadow:var(--fq-glass-panel-shadow)}
 
+/* THE DASHBOARD PARTS (components/admin/dash.tsx under Frequency): an area is a section head over its tiles,
+   parted from the next by the kit's hairline; a tile is the glass panel; a stat is a `.num` over a `.t2`. */
+[data-design="frequency"] [data-kit="admin"] .adp-dash-area{padding-top:40px;box-shadow:0 -1px 0 var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-area:first-child{padding-top:0;box-shadow:none}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-area>.sec-h{margin-bottom:0}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-h{display:flex;align-items:center;gap:10px}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-h svg{width:20px;height:20px;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-blurb{max-width:68ch;font-size:var(--fq-text-body-s)}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-foot{margin-top:16px}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-tile{display:flex;flex-direction:column;gap:12px;height:100%;min-width:0}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-body{flex:1;min-height:48px;min-width:0}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-gh{justify-content:space-between;align-items:baseline;gap:8px}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-stat{display:flex;flex-direction:column;gap:6px;min-width:0}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-item{flex:1;min-width:7rem;padding:0 16px;box-shadow:inset 1px 0 0 var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-item:first-child{padding-left:0;box-shadow:none}
+[data-design="frequency"] [data-kit="admin"] a.adp-dash-item:hover .num{opacity:.8}
+[data-design="frequency"] [data-kit="admin"] .num.adp-dash-num{font-size:28px;font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="admin"] .num.adp-good{color:var(--fq-success)}
+[data-design="frequency"] [data-kit="admin"] .num.adp-bad{color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="admin"] .adp-dash-sec>.sec-h{align-items:flex-start}
+/* A FormSection (components/admin/form-section.tsx): one settings group, parted by the hairline. */
+[data-design="frequency"] [data-kit="admin"] .adp-formsec{padding:24px 0;box-shadow:0 -1px 0 var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="admin"] .adp-formsec:first-child{padding-top:0;box-shadow:none}
+[data-design="frequency"] [data-kit="admin"] .tag.adp-count{font-variant-numeric:tabular-nums}
 /* Moderation: the inline confirmation on a report card (a destructive action asks once before it runs). */
 [data-design="frequency"] [data-kit="admin"] .adp .soft.adp-tight[role="alertdialog"]{padding:14px 16px}
 
@@ -95,4 +112,173 @@
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{position:static}
 }
+}
+
+/* ══ THE DAWN BODY TRANSLATION (owner, 2026-10-14: "we have a lot of rogue styles. Check all the admin pages.")
+   Most console page bodies are DAWN components (components/admin/**, components/crm/**, the Space settings,
+   CRM and manage bodies, billing, analytics, the menu, layout, email and theme studios): about 700 files
+   that hand-roll DAWN's card, heading, eyebrow, action, field and table idioms in Tailwind utilities. The
+   shared admin primitives speak the kit directly (components/admin/{dash,status,form-section}.tsx); what is
+   left is translated here, by class combination, inside the console's main column only.
+
+   UNLAYERED on purpose (the space-page.css mechanism): Tailwind's utilities sit in `@layer utilities`, which
+   beats every `@layer components` rule whatever its specificity, so a layered rule could never undo an
+   `uppercase` or a `bg-primary`. The kit-built bodies (`.adp`) use kit classes, never these utilities, and
+   the kit's own elements are excluded by name (`.tbl`, `.input`, `.h1` to `.h3`). A preview that shows
+   another look on purpose (a Space theme card, a Space page) is left alone: `[data-space-theme]`,
+   `[data-space-page]`. DAWN never loads this sheet. */
+
+/* ── Type: the kit's scale, sentence case, no condensed caps ──────────────────────────────────────── */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.font-display, .font-section):not(:is([data-space-theme], [data-space-page]) *) {
+  font-family: var(--fq-font-display);
+  font-weight: 500;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: -0.035em;
+}
+/* A heading the body draws itself: h1 is the kit's h2 (the frame owns the page title), h2 its h3 (a
+   section), h3 to h5 its `.t1` (a card or group title: sans, not a second display voice). */
+[data-design="frequency"] [data-kit="admin"] .ad-main h1:not(.h1, .h2, .h3):not(:is([data-space-theme], [data-space-page]) *) {
+  font: 500 clamp(24px, 3vw, var(--fq-text-h2))/var(--fq-lh-h2) var(--fq-font-display);
+  letter-spacing: -0.035em;
+  text-transform: none;
+  color: var(--fq-text-strong);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main h2:not(.h1, .h2, .h3, .t1, .t2, .k):not(:is([data-space-theme], [data-space-page]) *) {
+  font: 500 17px/1.2 var(--fq-font-display);
+  letter-spacing: -0.025em;
+  text-transform: none;
+  color: var(--fq-text-strong);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(h3, h4, h5):not(.h1, .h2, .h3, .t1, .t2, .k):not(:is([data-space-theme], [data-space-page]) *) {
+  font: 600 15px/1.3 var(--fq-font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fq-text-strong);
+}
+/* A display numeral (a stat figure) keeps its size and reads as the kit's `.num`. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(p, span, div, dd).font-display:not(:is([data-space-theme], [data-space-page]) *) {
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--fq-text-strong);
+}
+/* Kickers and eyebrows are the kit's `.k`: the 11px display label in quiet ink, never an accent colour. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.eyebrow, .font-eyebrow):not(:is([data-space-theme], [data-space-page]) *) {
+  font: 500 var(--fq-text-label)/1.2 var(--fq-font-display);
+  letter-spacing: var(--fq-track-label);
+  text-transform: uppercase;
+  color: var(--fq-text-muted);
+}
+/* Any other uppercase run (a table head, a fact label, a section rubric) is sentence case in the kit. */
+[data-design="frequency"] [data-kit="admin"] .ad-main .uppercase:not(.eyebrow, .font-eyebrow, .k):not(:is([data-space-theme], [data-space-page]) *) {
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* The 13px floor for read text: DAWN's 2xs step (the kit's 12px tag) carries hints and captions here. */
+[data-design="frequency"] [data-kit="admin"] .ad-main {
+  --text-2xs: var(--fq-text-meta);
+  --text-2xs--line-height: var(--fq-lh-meta);
+}
+
+/* ── Surfaces: DAWN's bordered card is the kit's glass `.panel`; a card inside a card is a quiet well ── */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.rounded-card, .rounded-2xl, .rounded-xl, .rounded-lg).border.bg-surface:not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-glass-panel);
+  border-color: transparent;
+  box-shadow: var(--fq-glass-panel-shadow);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.rounded-card, .rounded-2xl, .rounded-xl, .rounded-lg).border.bg-surface :is(.rounded-card, .rounded-2xl, .rounded-xl, .rounded-lg).border.bg-surface:not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--color-surface-elevated);
+  box-shadow: none;
+}
+/* The accent wash (a callout, a selected row, a recommended band) is the kit's `.soft`, not a violet tint. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15, .bg-primary\/20, .bg-accent-bg):not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-pa-soft);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15, .bg-primary\/20).text-primary-strong:not(:is([data-space-theme], [data-space-page]) *) {
+  color: var(--fq-text-strong);
+}
+/* A selected outline reads as the kit's pick ring (Memberships' most-picked plan), not saturated violet. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(.border-primary, .border-primary\/40, .border-primary\/50, .ring-primary):not(:is([data-space-theme], [data-space-page]) *) {
+  border-color: color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent);
+  --tw-ring-color: color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent);
+}
+
+/* The same on hover: a row or tile that lights up lights with the kit's wash and ring. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is([class*="hover:bg-primary-bg"], [class*="hover:bg-primary/"]):hover:not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-pa-soft);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main [class*="hover:border-primary"]:hover:not(:is([data-space-theme], [data-space-page]) *) {
+  border-color: color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent);
+}
+
+/* ── Actions and selection: never a solid saturated violet ─────────────────────────────────────────── */
+/* Any primary fill that is not a switch (a dot, a progress bar, a count badge) takes the iridescent fill. */
+[data-design="frequency"] [data-kit="admin"] .ad-main .bg-primary:not([role="switch"], [role="switch"] > *):not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-pa);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main .bg-primary.text-on-primary:not(:is([data-space-theme], [data-space-page]) *) {
+  color: var(--fq-ink);
+}
+/* A hand-built primary button is the kit's `.btn.pa`: a pill in the iridescent fill, ink text. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(a, button, label).bg-primary.text-on-primary:not(:is([data-space-theme], [data-space-page]) *) {
+  border-radius: var(--fq-radius-orb);
+  border-color: transparent;
+  font-family: var(--fq-font-sans);
+  box-shadow: var(--fq-pa-glow), inset 0 0 0 1px color-mix(in oklab, var(--fq-surface-card) 50%, transparent);
+}
+/* A selected tab, segment, chip or row is the kit's `.chip.on`: solid ink, not an action fill. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="true"], [data-state="active"], [data-state="on"], [data-active="true"]):is(.bg-primary, .bg-text, .bg-ink):not([role="switch"]):not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-text-strong);
+  color: var(--fq-surface-card);
+  box-shadow: none;
+}
+/* A hand-built secondary button is the kit's outline `.btn`. */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(a, button).rounded-control.border.bg-surface:not(:is([data-space-theme], [data-space-page]) *) {
+  border-radius: var(--fq-radius-orb);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--fq-border-strong);
+}
+
+/* ── Fields: a raw input is the kit's `.input` well ───────────────────────────────────────────────── */
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"], [type="color"], [type="file"]), textarea, select):not(.input):not(:is([data-space-theme], [data-space-page]) *) {
+  border-color: transparent;
+  border-radius: var(--fq-radius-m);
+  background-color: color-mix(in oklab, var(--fq-text-strong) 4%, transparent);
+  color: var(--fq-text-strong);
+  font-family: var(--fq-font-sans);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(input, textarea, select):not(.input):focus-visible:not(:is([data-space-theme], [data-space-page]) *) {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--fq-focus-ring);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+  accent-color: var(--fq-text-strong);
+}
+
+/* ── Tables: every page's own table reads as the kit's `.tbl` ─────────────────────────────────────── */
+[data-design="frequency"] [data-kit="admin"] .ad-main table:not(.tbl):not(:is([data-space-theme], [data-space-page]) *) {
+  font-family: var(--fq-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main table:not(.tbl) :is(thead, thead tr):not(:is([data-space-theme], [data-space-page]) *) {
+  background: transparent;
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main table:not(.tbl) th:not(:is([data-space-theme], [data-space-page]) *) {
+  font: 500 var(--fq-text-meta)/1.2 var(--fq-font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fq-text-muted);
+  border-bottom: 1px solid var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main table:not(.tbl) td:not(:is([data-space-theme], [data-space-page]) *) {
+  border-color: var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="admin"] .ad-main table:not(.tbl) tbody tr:hover > td:not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-track);
+}
+
+/* ── Gradients: a DAWN brand gradient band is the kit's `.soft` ───────────────────────────────────── */
+[data-design="frequency"] [data-kit="admin"] .ad-main [class*="bg-gradient-to-"]:is([class*="from-primary"], [class*="from-signal"], [class*="from-broadcast"], [class*="from-canvas"], [class*="from-surface"]):not(:is([data-space-theme], [data-space-page]) *) {
+  background: var(--fq-pa-soft);
 }
