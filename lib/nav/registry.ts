@@ -179,7 +179,7 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       { label: 'Discover', href: '/discover', desc: 'Everything happening near you' },
       { label: 'Circles', href: '/discover/circles', desc: 'Small groups around an interest' },
       { label: 'Events', href: '/discover/events', desc: 'Gatherings you can show up to' },
-      { label: 'Partners', href: '/discover/partners', desc: 'Shops, studios, and makers in the network' },
+      { label: 'Partners', href: '/discover/spaces#partners', desc: 'Shops, studios, and makers in the network' },
       // LIVE-254: The Quest left the tab bar. Grouped here, not deleted. The game is
       // the side thing we all do together; Journeys / Practices / Channels (topics)
       // ride with it so the old Quest panel is still one click from Community.

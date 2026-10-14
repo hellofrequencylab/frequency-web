@@ -13,7 +13,6 @@ import {
 } from "@/lib/events/series-seo";
 import { getSeriesDisplayConfig } from "@/lib/events/series-config";
 import { listPublicJourneys } from "@/lib/journey-plans";
-import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
 import {
   DISCOVERY_FETCH_LIMIT,
@@ -258,7 +257,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/events`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/journeys`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/topics`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/discover/partners`, changeFrequency: "weekly", priority: 0.8 },
+    // /discover/partners MERGED into /discover/spaces (owner ruling 2026-10-14): both URLs 301, and the
+    // partners are a section of the Spaces directory, so neither the index nor a partner is listed.
     { url: `${SITE_URL}/discover/practices`, changeFrequency: "weekly", priority: 0.8 },
     // Public Business Spaces directory — the indexable, no-rail twin of the in-app /spaces/directory (the
     // per-type hubs /discover/spaces/[type] are dynamic, below).
@@ -393,7 +393,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // self-contradicting crawl signal. Read sequentially because it sizes the fold below; it is one
     // request-cached settings row, and it never throws (a failed read returns the shipped defaults).
     const { indexedOccurrences } = await getSeriesDisplayConfig();
-    const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       getTopicalChannels(),
       // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
       getPublicCircles(CIRCLE_SITEMAP_CAP),
@@ -432,7 +432,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // City × category hubs — only pairs that actually have upcoming public
       // events (empty/low-value facets never get a URL, so they stay out of crawl).
       sectionRead("city x category event hubs", getCityCategoryHubs()),
-      sectionRead("partners", listActivePartners({ limit: 500 })),
       sectionRead("practices", listPublicPractices("top")),
       // Networked entity Spaces, via the same redaction-safe reader the directory uses. It returns
       // ONLY visibility='network', status='active' Spaces and excludes the root, so PRIVATE Spaces
@@ -463,7 +462,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // EVERY podcast Show URL, so a truncation there quietly shrinks three sections. Wrapping is
     // observability only; no behaviour changes until a cap is actually reached.
     atCap(spaces, DISCOVERY_FETCH_LIMIT, "spaces", "listNetworkedSpaces");
-    atCap(partners, 500, "partners", "listActivePartners");
     atCap(organizers, 500, "organizers", "public_organizer_handles");
     atCap(spotlights, 1000, "spotlights", "the spotlight read in getSpotlightRoutes");
 
@@ -516,12 +514,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE_URL}/discover/spaces/${t.value}`,
       changeFrequency: "weekly" as const,
       priority: 0.7,
-    }));
-
-    const partnerRoutes: MetadataRoute.Sitemap = partners.map((p) => ({
-      url: `${SITE_URL}/discover/partners/${p.slug}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
     }));
 
     const practiceRoutes: MetadataRoute.Sitemap = practices.map((p) => ({
@@ -747,7 +739,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...eventRoutes,
       ...hubRoutes,
       ...journeyRoutes,
-      ...partnerRoutes,
       ...practiceRoutes,
       ...spaceRoutes,
       ...spaceTabRoutes,

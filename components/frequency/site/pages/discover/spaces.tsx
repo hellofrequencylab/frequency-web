@@ -6,6 +6,11 @@
 // pager and the legacy `?category=` kind filter an old shared link may carry. The filters and the sort
 // are real links built server-side, so a filtered view is shareable and the page needs no toolbar JS.
 // Order is STANDING by default (earned, never sold); Founding and Boosted are marks on a card only.
+//
+// PARTNERS LIVE HERE NOW (owner ruling 2026-10-14). /discover/partners merged into this page: the local
+// shops, studios and makers with member offers are the `#partners` section under the directory. Each card
+// opens the member partner page (/partners/<slug>), where the offers are; a signed-out visitor is asked
+// to sign in there, which is where an offer is claimed anyway. The DAWN body does not draw this section.
 
 import Link from 'next/link'
 import { SPACE_SORTS, type NetworkedSpace, type SpaceSort } from '@/lib/spaces/discovery'
@@ -17,7 +22,7 @@ import { DirectorySearch } from '@/components/ui/directory-search'
 import { BETA_CTA_HREF, BETA_CTA_LABEL, SITE_NAME } from '@/lib/site'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { FqIcon } from '@/components/frequency/icon'
-import { count, DirChips, DirEmpty, DirHero, DirPage, DirSection, photo } from './dir-parts'
+import { count, DirCard, DirChips, DirEmpty, DirGrid, DirHero, DirPage, DirSection, photo } from './dir-parts'
 
 const BASE = '/discover/spaces'
 
@@ -132,16 +137,34 @@ const CLOSER = {
   secondary: { href: '/spaces', label: 'How Spaces work' },
 }
 
+/** A partner as the directory's Partners section needs it (lib/partners/read.ts PartnerSummary). */
+export interface PartnerRow {
+  id: string
+  slug: string
+  name: string
+  category: string | null
+  city: string | null
+  description: string | null
+}
+
+/** "cafe" → "Cafe": the category is stored lower-case. */
+function cap(s: string | null): string | null {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : null
+}
+
 export function FrequencySpacesDirectory({
   spaces,
   total,
   query,
   image,
+  partners = [],
 }: {
   spaces: readonly NetworkedSpace[]
   total: number
   query: SpacesQuery
   image: string | null
+  /** The active partners (the merged /discover/partners directory). Shown unfiltered, under the grid. */
+  partners?: readonly PartnerRow[]
 }) {
   const filtering = !!((query.q ?? '').trim() || (query.subject ?? '').trim() || (query.category ?? '').trim())
   const facet = findSubject(query.subject)?.label ?? (isSpaceKind(query.category) ? spaceKindLabel(query.category) : null)
@@ -223,6 +246,30 @@ export function FrequencySpacesDirectory({
           </>
         )}
       </DirSection>
+
+      {partners.length > 0 && !filtering && (
+        <DirSection
+          id="partners"
+          label="Partners"
+          meta={count(partners.length, 'partner', 'partners')}
+          title="Walk in. Say you’re a member."
+          lede="Local shops, studios and makers with an offer for members. Open one to see what it is."
+        >
+          <DirGrid label="Partners">
+            {partners.map((p) => (
+              <DirCard
+                key={p.id}
+                href={`/partners/${p.slug}`}
+                icon="tag"
+                kicker={cap(p.category)}
+                title={p.name}
+                body={p.description}
+                meta={[p.city]}
+              />
+            ))}
+          </DirGrid>
+        </DirSection>
+      )}
 
       <DirSection label="By type" title="Browse a whole kind at once.">
         <DirChips

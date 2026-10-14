@@ -28,10 +28,9 @@ describe('member detail routes redirect a signed-out visitor to their public twi
     expect(PROXY).toContain('!isTwinRedirectable')
   })
 
-  describe('the three families whose twin is a pure rewrite', () => {
+  describe('the two families whose twin is a pure rewrite (partners left on 2026-10-14)', () => {
     const DIRECT: [string, string][] = [
       ['/journeys/morning-light', '/discover/journeys/morning-light'],
-      ['/partners/rapid-cold-plunge', '/discover/partners/rapid-cold-plunge'],
       ['/practices/abc-123', '/discover/practices/abc-123'],
     ]
     for (const [from, to] of DIRECT) {

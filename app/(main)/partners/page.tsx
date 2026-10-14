@@ -17,13 +17,13 @@ import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
 
-// The canonical partner directory lives at /discover/partners; this app-shell index twins it, so
-// point the canonical there to consolidate ranking signals rather than compete with the discover surface.
+// The public partner directory is the Partners section of /discover/spaces (/discover/partners merged
+// there, 2026-10-14); this app-shell index points its canonical at that page, as it did at the old one.
 export const metadata: Metadata = {
   title: 'Partners',
   description:
     'Local businesses that back the community. Walk in, tap their plaque or scan a code to claim a members-only offer.',
-  alternates: { canonical: '/discover/partners' },
+  alternates: { canonical: '/discover/spaces' },
 }
 
 // Partner directory (Phase 3 partners module) + the offers-first surface behind

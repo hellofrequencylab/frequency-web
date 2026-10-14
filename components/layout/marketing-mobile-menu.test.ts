@@ -67,7 +67,7 @@ describe('the phone sheet reaches everything the desktop bar reaches', () => {
     // The exact set measured on 2026-08-24. Named one by one rather than counted, because a
     // count passes the day someone swaps one destination for another.
     const WAS_UNREACHABLE = [
-      '/discover/partners',
+      '/discover/spaces#partners', // was /discover/partners, merged into the Spaces directory 2026-10-14
       '/discover/practices',
       '/discover/spaces', // was /spaces/directory, the robots-disallowed app-shell twin
       '/for/coaches-and-healers',

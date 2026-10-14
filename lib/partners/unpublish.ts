@@ -41,10 +41,10 @@ export async function hidePartnerListing(profileId: string): Promise<{ slugs: st
 
   revalidatePath('/partners')
   revalidatePath('/partners/listing')
-  revalidatePath('/discover/partners')
+  // The public directory merged into /discover/spaces (2026-10-14), which lists the partners.
+  revalidatePath('/discover/spaces')
   for (const p of listings) {
     revalidatePath(`/partners/${p.slug}`)
-    revalidatePath(`/discover/partners/${p.slug}`)
   }
   return { slugs: listings.map((p) => p.slug) }
 }

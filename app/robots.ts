@@ -21,7 +21,7 @@ const DISALLOW = [
   "/events/new$",
   "/events/new?",
   // App-shell TWINS of canonical /discover surfaces — these pages canonical to
-  // /discover/partners|journeys, so keep crawlers off the twins to stop them cannibalizing
+  // /discover/journeys (and /partners to /discover/spaces), so keep crawlers off the twins to stop them cannibalizing
   // the canonicals. (/discover/* is NOT disallowed.) NOTE: the four marketplace indexes —
   // /store, /market, /housing, /classifieds — are deliberately NOT listed, but only so a
   // PREFIX rule on any of the four does not catch the /<vertical>/<id> detail URLs beneath

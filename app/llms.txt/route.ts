@@ -108,7 +108,6 @@ const DIRECTORIES: { path: string; label: string; desc: string }[] = [
   { path: '/discover/events', label: "What's happening", desc: 'The calendar of public Events near you, browsed by Channel and city.' },
   { path: '/discover/circles', label: 'Circles', desc: 'Live Circles you can visit: the small groups that meet on a standing day.' },
   { path: '/discover/spaces', label: 'Spaces directory', desc: 'The venues, studios, and organizations that host community on Frequency.' },
-  { path: '/discover/partners', label: 'Partners', desc: 'Partner venues and organizations working with Frequency.' },
   { path: '/discover/practices', label: 'Practice library', desc: 'The public practice library: small real-world practices from the community.' },
   { path: '/discover/journeys', label: 'Journeys', desc: 'Guided multi-week Journeys you can take with a group.' },
   { path: '/discover/topics', label: 'Channels', desc: 'The Channels (Movement, Spirituality, and more), each with its Circles and events.' },

@@ -675,6 +675,11 @@ const nextConfig: NextConfig = {
       // one index carrying both lists. The slug is the same citySlug() form on both sides.
       { source: '/discover/places', destination: '/discover/cities', permanent: true },
       { source: '/discover/places/:citySlug', destination: '/discover/cities/:citySlug', permanent: true },
+      // /discover/partners MERGED into /discover/spaces (owner ruling 2026-10-14): the partners are a
+      // section of the Spaces directory now (#partners, Frequency body). A partner carries no link to a
+      // Space in the schema (partners has no space_id), so each partner page lands on the directory.
+      { source: '/discover/partners', destination: '/discover/spaces', permanent: true },
+      { source: '/discover/partners/:slug', destination: '/discover/spaces', permanent: true },
     ]
   },
   images: {
