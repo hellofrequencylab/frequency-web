@@ -323,6 +323,9 @@
 /* The Feed's own copy shows only where the rails are hidden (< 768, with the phone tab bar). */
 [data-design="frequency"] [data-kit="members"] .fqm-gs-inline{margin-top:44px}
 @media (min-width:768px){[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-inline{display:flex;flex-direction:column;gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-rp-inline>section:first-of-type{margin-top:44px}
+@media (min-width:768px){[data-design="frequency"] [data-kit="members"] .fqm-rp-inline{display:none}}
 
 /* Your week: only the days that carry a plan, day name over the date, then a dot, name and time. */
 [data-design="frequency"] [data-kit="members"] .fqm-week{display:flex;flex-direction:column;gap:2px}
