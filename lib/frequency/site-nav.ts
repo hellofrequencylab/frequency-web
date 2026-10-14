@@ -73,7 +73,7 @@ export interface SiteLink {
   icon?: FqIconName
 }
 
-/** People.html#first-night: the People page's own "Your first night" section. */
+/** People.html#first-night: the People page's own "Your first gathering" section. */
 const FIRST_NIGHT = `${ROUTES.people}#first-night`
 
 export type Wing = 'people' | 'spaces'
@@ -193,7 +193,7 @@ export const WING_MENUS: WingMenu[] = [
         heading: 'Start',
         links: [
           { href: ROUTES.people, label: 'Find your Circle', hint: 'How Frequency works for you', icon: 'circle' },
-          { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect, start to finish', icon: 'checkin' },
+          { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect, no pressure', icon: 'checkin' },
           { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
         ],
       },
@@ -268,7 +268,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
   { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
-  { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect', icon: 'checkin' },
+  { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect', icon: 'checkin' },
   { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, non-profits', icon: 'contacts' },
 ]
@@ -302,7 +302,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
     heading: 'For people',
     links: [
       { href: ROUTES.people, label: 'Find your Circle' },
-      { href: FIRST_NIGHT, label: 'Your first night' },
+      { href: FIRST_NIGHT, label: 'Your first gathering' },
       { href: ROUTES.happening, label: 'What’s happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },
     ],

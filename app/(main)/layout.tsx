@@ -84,6 +84,7 @@ import { viewerRoleFor } from '@/components/layout/menu-role'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
 // (/spaces/<slug> + its public tabs) is public + crawlable (SEO/AIO) — those render in the
@@ -184,6 +185,22 @@ export default async function MainLayout({
   // still pay the auth cookie read. Accepted by ADR-1707 (SCAN-788) at the current size.
   // Sitemap share URLs for events + listings moved to app/(public)/ (no cookies/headers).
   const publicChrome = async () => {
+    // THE DESIGN SWITCH (ADR-1737). Under Frequency a signed-out visitor on a leftover public view
+    // (a Space profile tab, the /events index) gets the public Frequency chrome, exactly as
+    // app/(public)/layout.tsx does. The bodies here are members-kit bodies (FqSpaceChrome, FqEventsBody)
+    // that the signed-in shell scopes with MembersKitRoot; without that scope they render unstyled under
+    // DAWN's header, so this wrapper carries the same `data-kit="members"` root on Commons.
+    if (SITE_DESIGN === 'frequency') {
+      return (
+        <ViewerProvider>
+          <SiteShell surface="commons">
+            <div data-kit="members" data-theme="commons" data-energy="flow">
+              {children}
+            </div>
+          </SiteShell>
+        </ViewerProvider>
+      )
+    }
     // SiteHeader fetches its own header menu. The footer stays the marketing one: this row is
     // the header split (SCAN-641), not a footer unification.
     const footerMenu = await getMenu('footer')
