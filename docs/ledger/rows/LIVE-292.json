@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-292",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const q=String.fromCharCode(39);const line=(id)=>{const i=s.indexOf(\"id: \"+q+id+q);if(i<0)return \"\";const j=s.indexOf(String.fromCharCode(10),i);return j<0?s.slice(i):s.slice(i,j)};const hub=(id)=>{const m=/hub: .([a-z]+)./.exec(line(id));return m?m[1]:null};const parent=(id)=>{const m=/parent: .([a-z.]+)./.exec(line(id));return m?m[1]:null};const ok=hub(\"space.collaborators\")===\"settings\"&&hub(\"space.reachreceipt\")===\"marketing\"&&parent(\"space.reachreceipt\")===\"space.reach\"&&hub(\"space.calendar\")===\"programs\"&&hub(\"space.automation\")===\"resonance\"&&hub(\"space.offerings\")===\"none\";process.exit(ok?0:1)'",
+      "note": "Reads the hub (and, for Your reach, the parent box) each named module DECLARES, per catalog row line. Your reach is Marketing under the Reach box since ADR-1746 (owner ruling 2026-10-14, amending ADR-1313's Content & Programs placement); the other arms are this row's original ruling unchanged."
+    }
+  },
+  "append": {
+    "detail": "\n\nProbe re-pointed 2026-10-14: the owner ruled Your reach back to Marketing, next to Reach, nested under the Reach box (ADR-1746, amending ADR-1313). The probe now reads each row's whole catalog line, so the parent arm sees the field it asserts (the old slice stopped at the gate object's brace and could not see `parent`)."
+  },
+  "wave": "W7"
+}

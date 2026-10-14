@@ -49,7 +49,7 @@ export default async function FunnelInductionPage({
   // The sequence drives the copy. No ?seq (or ?seq=beta-default) = the base VERA
   // flow, fully merged with the owner's edits: resolveFunnel layers the coded
   // copy, the legacy /admin/vera induction tweaks, and the `beta-default` override
-  // saved by the /pages/splash editor. DB-built versions resolve the same way.
+  // saved by the Default Funnel editor (/pages/sequences?tab=default). DB-built versions resolve the same way.
   const { seq: seqSlug, persona: personaSlug, next: nextParam } = await searchParams
   const seq = await resolveFunnel(seqSlug)
   // A `?next=` in-app path (e.g. an event-claim landing) overrides the sequence destination so

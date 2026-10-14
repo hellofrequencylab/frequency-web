@@ -52,7 +52,7 @@ export async function PagesSplashFunnels() {
       </Link>
       <p className="mt-2 max-w-3xl text-meta text-subtle">
         Editing the{' '}
-        <Link href="/pages/splash" className="font-semibold text-primary-strong hover:underline">
+        <Link href="/pages/sequences?tab=default" className="font-semibold text-primary-strong hover:underline">
           Default Funnel
         </Link>{' '}
         updates the default flow and every new funnel built from it.

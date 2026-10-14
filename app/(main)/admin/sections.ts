@@ -1,13 +1,13 @@
 // The admin IA — the grouped catalog of every admin surface, the role each one needs,
-// and where it lives. The admin nav (sub-nav.tsx), the three domain dashboards
+// and where it lives. The admin nav (sub-nav.tsx), the domain dashboards
 // (programs/operations/growth), the Home overview (page.tsx), and the in-context console
 // (admin-console.tsx) all render from this, so a feature is declared in exactly ONE place
 // and can never be orphaned again.
 //
 // STRANGLER-FIG (NAV-SYSTEM-REDESIGN §5b, §8, phase 2): this catalog is now a THIN
 // DERIVATION of the ONE Studio sub-tree (lib/nav/studio.ts). ADMIN_GROUPS is built from
-// ADMIN_GROUP_SPECS (the ten dashboard domains + folded roll-ups) + STUDIO_LEAVES (the
-// operator destinations, declared ONCE). Every EXPORT SIGNATURE — the AdminGroup /
+// ADMIN_GROUP_SPECS (the seven dashboard sections, the same seven as the operator console,
+// ADR-1746) + STUDIO_LEAVES (the operator destinations, declared ONCE). Every EXPORT SIGNATURE — the AdminGroup /
 // AdminLink / DomainKey / AdminDestination types, ADMIN_GROUPS, ADMIN_HOME,
 // adminDestinations, canUseLink, canSeeGroup, visibleGroups, visibleLinks, groupLinks,
 // groupSections, domainForPath, relatedGroups, pageLabelForPath, backToDomainFor — is
@@ -152,27 +152,15 @@ export interface AdminGroup {
   links: readonly AdminLink[]
 }
 
-/** Resolve one link ref (a leaf id OR a synthetic roll-up tab) into an AdminLink, applying
- *  the domain's `section` override where the spec sets one. */
+/** Resolve one link ref (a leaf id + the console group heading it sits under) into an AdminLink. */
 function linkFromRef(ref: AdminGroupLinkRef): AdminLink | null {
-  if ('synthetic' in ref) {
-    const s = ref.synthetic
-    const link: AdminLink = { href: s.href, label: s.label, desc: s.desc, Icon: icon(s.icon), min: s.min }
-    if (s.staffDomain) link.staffDomain = s.staffDomain
-    if (s.staffLevel) link.staffLevel = s.staffLevel
-    if (s.section) link.section = s.section
-    return link
-  }
   const leaf = studioLeaf(ref.leaf)
   if (!leaf) return null
-  const groupTag = leaf.adminGroups?.find(() => true)
   const link: AdminLink = { href: leaf.href, label: leaf.label, desc: leaf.desc, Icon: icon(leaf.icon), min: leaf.min }
   if (leaf.staffDomain) link.staffDomain = leaf.staffDomain
   if (leaf.staffLevel) link.staffLevel = leaf.staffLevel
   if (leaf.exact) link.exact = leaf.exact
-  // Section: the ref-level override wins, else the leaf's tag for THIS domain, else its first.
-  const section = ref.section ?? groupTag?.section
-  if (section) link.section = section
+  if (ref.section) link.section = ref.section
   return link
 }
 
@@ -195,7 +183,7 @@ function groupFromSpec(spec: AdminGroupSpec): AdminGroup {
 export const ADMIN_GROUPS: readonly AdminGroup[] = ADMIN_GROUP_SPECS.map(groupFromSpec)
 
 // ── Home pseudo-entry ─────────────────────────────────────────────────────────
-// /admin is the exec dashboard that fans out to the three domains. It is not a
+// /admin is the exec dashboard (the Overview section) that fans out to the six others. It is not a
 // domain (no area cards of its own), so it lives outside ADMIN_GROUPS but is part of
 // the stable top switcher + the rail.
 
@@ -216,11 +204,14 @@ export const ADMIN_HOME: AdminDestination = {
   exact: true,
 }
 
-/** The four stable top-switcher / rail destinations: Home + the three domains. */
+/** The domain sections other than Overview, whose landing IS the Home pseudo-entry (/admin). */
+export const ADMIN_DOMAIN_GROUPS: readonly AdminGroup[] = ADMIN_GROUPS.filter((g) => g.href !== ADMIN_HOME.href)
+
+/** The stable top-switcher / rail destinations: Home (the Overview section) + the six other sections. */
 export function adminDestinations(): AdminDestination[] {
   return [
     ADMIN_HOME,
-    ...ADMIN_GROUPS.map((g) => ({ key: g.key, label: g.label, href: g.href, Icon: g.Icon })),
+    ...ADMIN_DOMAIN_GROUPS.map((g) => ({ key: g.key, label: g.label, href: g.href, Icon: g.Icon })),
   ]
 }
 
@@ -324,9 +315,11 @@ export function groupSections(
 // ADMIN_GROUPS so the switcher highlights the right domain for any /admin/* page AND
 // the external routes (/pages, …). Longest hrefs first so the most
 // specific prefix wins.
+// Overview's own href (/admin) is left out: it would prefix-match every admin path, and /admin itself
+// resolves to Home (null) above.
 const HREF_TO_DOMAIN: ReadonlyArray<{ href: string; key: DomainKey }> = ADMIN_GROUPS
   .flatMap((g) => g.links.map((l) => ({ href: l.href, key: g.key })))
-  .concat(ADMIN_GROUPS.map((g) => ({ href: g.href, key: g.key })))
+  .concat(ADMIN_DOMAIN_GROUPS.map((g) => ({ href: g.href, key: g.key })))
   .sort((a, b) => b.href.length - a.href.length)
 
 /** The domain a path belongs to, or null for Home (/admin) and anything unowned. */
@@ -374,9 +367,8 @@ export function pageLabelForPath(pathname: string): string | null {
 }
 
 /** The back-link a sub-page shows to its parent DOMAIN dashboard (or null on a domain
- *  root / unowned path). A folded sub-group (content/rewards/acquisition/crm/marketing)
- *  resolves UP to its primary domain by stripping the ?tab from its href, so e.g. a
- *  Journeys editor links back to "Programs", a Campaign back to "Growth". */
+ *  root / unowned path), e.g. a Journeys editor links back to "Content", Funnels back to
+ *  "Growth". A ?tab in a section href is stripped before the primary-section lookup. */
 export function backToDomainFor(pathname: string): { href: string; label: string } | null {
   if (pathname === '/admin') return null
   const group = domainForPath(pathname)

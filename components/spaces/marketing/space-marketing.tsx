@@ -36,6 +36,8 @@ const TOOL_LABEL: Record<string, string> = {
   'space.marketing': 'Email design',
   'space.emailstyle': 'Email style',
   'space.reach': 'QR codes and insights',
+  // Your reach (the ranking receipt) files here beside Reach (ADR-1746, amending ADR-1313).
+  'space.reachreceipt': 'Your reach',
   'space.automation': 'Automation',
 }
 

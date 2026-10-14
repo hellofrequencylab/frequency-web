@@ -52,7 +52,7 @@ export default async function ProgramsDashboard() {
         <ManageSections />
       </Suspense>
 
-      <RelatedAreas current="programs" role={role} webRole={webRole} staffRole={staffRole} />
+      <RelatedAreas current="content" role={role} webRole={webRole} staffRole={staffRole} />
     </AdminTemplate>
   )
 }

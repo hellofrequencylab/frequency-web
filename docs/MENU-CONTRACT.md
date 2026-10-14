@@ -82,7 +82,7 @@ so a sixth lane or a repointed lane fails the build until it is registered:
   guard's shape rule correctly ignores them. Each hub's Settings tab mounts the SAME catalog module the
   rail does; it never builds a parallel form.
 
-## The consolidated IA (ADR‑1745, 2026‑10‑14)
+## The consolidated IA (ADR‑1745, amended by ADR‑1746, 2026‑10‑14)
 
 Both consoles follow one framework: **at most seven top‑level groups, at most seven links per group,
 one canonical home per function, every surface within two clicks of the console home** (group, then
@@ -95,22 +95,32 @@ link). The member shell carries one door into each console; the console carries 
 | Overview | (the `/admin` exec read) |
 | Community | Spaces & groups · People · Activity · Trust & safety |
 | Content | Library · Rewards · Assets (Loom Studio, Elements) |
-| Growth | Acquisition (incl. QR Studio) · Onboarding · Marketing |
+| Growth | Acquisition (incl. QR Studio) · Onboarding (Funnels holds the Default Funnel as a tab) · Marketing |
 | Resonance CRM | Engine · Audiences |
 | Vera AI | Assistant · Intelligence |
 | Platform | Site · Commerce (incl. Market) · Accounts · Tools |
 
 **Each link carries its own leaf's gate**, not its section's (this replaces ADR‑390's section stamp and
-retires the reason ADR‑979 gave Loom Studio a section of its own). A `FROZEN_GATE_DEBT` row that
-appears carries a `gate` override set to its page's side. `lib/menus/gates.test.ts` pins the sections,
-one place per href, and that every `STUDIO_LEAVES` row is reachable.
+retires the reason ADR‑979 gave Loom Studio a section of its own). Every leaf states its page's gate:
+the eleven `FROZEN_GATE_DEBT` rows were fixed on the catalog side (ADR‑1746), the list is empty, and
+there is no per‑item `gate` override. `lib/menus/gates.test.ts` pins the sections, one place per href,
+and that every `STUDIO_LEAVES` row is reachable.
+
+**One IA, three surfaces (ADR‑1746).** The `/admin` dashboard's sections (`ADMIN_GROUP_SPECS`) are
+DERIVED from `ADMIN_NAV_SPECS`: the same seven, same order, same labels, each card bucketed under its
+console group heading (Resonance CRM also lists the Roster, which the console reaches by its landing).
+The member rail's Admin rows (`NAV_AREAS` in `lib/nav-areas.ts`) carry the same names: Overview,
+Community, Content, Growth, Resonance CRM, Vera AI, Platform, with Market's row named Commerce (its
+console group) under Platform. Keys are unchanged (`area_permissions` is keyed by them). The Default
+Funnel is a tab of Funnels (`/pages/sequences?tab=default`); `/pages/splash` 301s there and has no
+catalog row.
 
 **Space console** (`SPACE_HUB_SECTIONS` in `lib/admin/modules/space-hub.ts` over `SPACE_MODULES`):
 Home · Community Resonance · Marketing · Offerings & Money · Content & Programs · Profile & Settings,
 plus the website editor door. A row declares its tab in `SpaceModule.hub`; the tab's cards are its links.
-⚠️ Content & Programs holds seven cards by default and nine once an owner switches on Airwaves and Loom
-Studio (ADR‑796 advanced tools); "Your reach" sits there by an ADR‑1313 owner ruling, so moving it is
-an owner call, not a tidy.
+Content & Programs holds six cards by default and eight once an owner switches on Airwaves and Loom
+Studio (ADR‑796 advanced tools). "Your reach" sits on Marketing beside Reach, nested under the Reach box
+(ADR‑1746, amending ADR‑1313's placement on Content & Programs).
 
 ## What is enforced, and how
 

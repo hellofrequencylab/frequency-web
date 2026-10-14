@@ -480,6 +480,11 @@ const nextConfig: NextConfig = {
       // keeps its own route (the ruling says so); a wildcard would take it out
       // (lib/marketing/redirect-shadow.test.ts fails if one is added).
       { source: '/library', destination: '/practices', permanent: true },
+      // Default Funnel merged into Funnels (owner ruling 2026-10-14, ADR-1746): the default flow's
+      // live-preview editor is now the Default Funnel TAB of /pages/sequences, and its old page is
+      // deleted, so this shadows nothing. A 301 because the ruling names one; an operator bookmark
+      // and any stored `admin_header` row still naming /pages/splash land on the same editor.
+      { source: '/pages/splash', destination: '/pages/sequences?tab=default', statusCode: 301 },
       // Funnels rename (ADR-1090): the sign-up feature is Funnels and its routes moved to /join.
       // Old links are IN THE WILD and cannot be rewritten — QR codes on posters, shared splash
       // links, and CTAs in sent emails all point at /beta/<slug> and /onboarding/beta — so all

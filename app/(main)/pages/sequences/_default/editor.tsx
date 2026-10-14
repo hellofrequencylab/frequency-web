@@ -25,7 +25,7 @@ import { saveFunnelVersion, renameFunnelSlug } from '@/app/(main)/pages/sequence
 // (or using the tabs) switches the previewed beat.
 //
 // Reused for TWO surfaces (ADR-162 → splash-editor refactor):
-//   • The DEFAULT template (slug `beta-default`, /pages/splash) — saves the
+//   • The DEFAULT template (slug `beta-default`, the Funnels page's Default Funnel tab) — saves the
 //     `beta-default` override via saveDefaultFunnelCopy, with a reset-to-script button.
 //   • Any CUSTOM funnel (slug = its own value, /pages/sequences/<slug>/edit) — saves
 //     that slug's override via saveFunnelVersion, and exposes an editable title

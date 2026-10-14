@@ -63,10 +63,11 @@ describe('sectionForModule (the hub IA)', () => {
     }
   })
 
-  it('routes the outbound reach surfaces to Marketing (the email trio + QR codes)', () => {
+  it('routes the outbound reach surfaces to Marketing (the email trio, QR codes, and Your reach)', () => {
     // Automation LEFT this set in ADR-1313: it is drip over your own contacts, owned by the CRM box, and
     // being listed here while its parent sat in Resonance is the orphan class the declared hub removes.
-    for (const id of ['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach']) {
+    // Your reach moved here beside Reach on the owner ruling in ADR-1746 (amending ADR-1313).
+    for (const id of ['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.reachreceipt']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('marketing')
     }
   })
@@ -80,9 +81,9 @@ describe('sectionForModule (the hub IA)', () => {
     }
   })
 
-  it('routes the practitioner content, the Calendar and Your reach to Content & Programs', () => {
-    // Calendar and Your reach moved here on the owner ruling in ADR-1313 (both used to fall into the
-    // Offerings catch-all).
+  it('routes the practitioner content and the Calendar to Content & Programs', () => {
+    // Calendar moved here on the owner ruling in ADR-1313 (it used to fall into the Offerings catch-all).
+    // Your reach left for Marketing on the owner ruling in ADR-1746.
     for (const id of [
       'space.practices',
       'space.journeys',
@@ -91,7 +92,6 @@ describe('sectionForModule (the hub IA)', () => {
       'space.airwaves',
       'space.loom',
       'space.calendar',
-      'space.reachreceipt',
     ]) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('programs')
     }
@@ -195,9 +195,9 @@ describe('every tool files under its box (the Automation class, by construction)
     const parented = SPACE_MODULES.filter((m) => m.parent)
     expect(parented.length).toBeGreaterThanOrEqual(18)
     const underExcludedBox = parented.filter((m) => spaceModuleById(m.parent!)!.hub === 'none')
-    // Gather (content) owns 9 tools (Leadership joined it, LIVE-862); Money (offerings) owns 5. Page is
-    // hub:none under Your page (settings), so it is not in this set.
-    expect(underExcludedBox.length).toBe(14)
+    // Gather (content) owns 8 tools (Leadership joined it, LIVE-862; Your reach left for Reach, ADR-1746);
+    // Money (offerings) owns 5. Page is hub:none under Your page (settings), so it is not in this set.
+    expect(underExcludedBox.length).toBe(13)
     for (const m of underExcludedBox) {
       expect(EXCLUDED_BOX_TAB[m.parent!], `${m.parent} must stand for a tab`).toBeTruthy()
     }

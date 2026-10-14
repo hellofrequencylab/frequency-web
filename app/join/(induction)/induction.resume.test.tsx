@@ -8,7 +8,7 @@ import { join } from 'node:path'
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // THE INDUCTION RESUMES. IT USED TO RESTART, EVERY TIME (2026-09-11).
 //
-// `initialBeat` existed and only the /pages/splash editor's preview ever passed it, so the real
+// `initialBeat` existed and only the Default Funnel editor (/pages/sequences?tab=default)'s preview ever passed it, so the real
 // /join page always mounted the flow at beat 0. Nothing read a visitor's progress back. The copy
 // under the Beat-0 email field promised "Your email saves your spot so you can finish later" and
 // `step_reached` was written to the lead row and never read, so the promise was never kept.

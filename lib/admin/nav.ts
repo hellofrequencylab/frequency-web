@@ -17,8 +17,8 @@ import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } fro
 import { staffCan, type StaffRole, type StaffDomain, type Access } from '@/lib/core/staff-roles'
 import { ADMIN_NAV_SPECS, adminNavLeafGate, studioLeaf } from '@/lib/nav/studio'
 
-/** One sub-page link, carrying ITS OWN gate (ADR-1745): the leaf's row gate, or the page-side override
- *  for a FROZEN_GATE_DEBT row. lib/menus/defaults.ts stamps it onto the menu item. */
+/** One sub-page link, carrying ITS OWN gate (ADR-1745): the leaf's row gate, which check:gate-parity
+ *  locks to the page. lib/menus/defaults.ts stamps it onto the menu item. */
 type AdminNavLink = { label: string; href: string; min: CommunityRole; staffDomain?: StaffDomain; staffLevel?: Access }
 type AdminNavGroup = { heading?: string; items: AdminNavLink[] }
 
