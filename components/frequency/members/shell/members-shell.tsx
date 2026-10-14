@@ -128,6 +128,52 @@ function VaultStanding({ d }: { d: DockData }) {
   )
 }
 
+/** The phone drawer's standing strip: the three numbers the Vault tab carries on a desktop (whose
+ *  rails a phone does not show), each a door into the Vault. */
+function DrawerStanding({ d }: { d: DockData }) {
+  return (
+    <Link href="/crew/store" className="fqm-standing" aria-label={`The Vault: ${n(d.streak)} day streak, ${n(d.zaps)} Zaps, ${n(d.vaultGems)} Gems`}>
+      <span data-tone="sun">
+        <FqIcon name="streak" />
+        <b>{n(d.streak)}</b>
+        <small>Streak</small>
+      </span>
+      <span data-tone="violet">
+        <FqIcon name="zap" />
+        <b>{n(d.zaps)}</b>
+        <small>Zaps</small>
+      </span>
+      <span data-tone="aqua">
+        <FqIcon name="gem" />
+        <b>{n(d.vaultGems)}</b>
+        <small>Gems</small>
+      </span>
+    </Link>
+  )
+}
+
+/** The phone drawer's head: the standing strip, then the Journey in progress (the left rail's Keep
+ *  learning card, which a phone does not show). */
+function DrawerHead({ d }: { d: DockData }) {
+  return (
+    <>
+      <DrawerStanding d={d} />
+      {d.arc && (
+        <Link href="/journeys" className="fqm-learn fqm-drawer-learn">
+          <span className="fqm-group-h">Keep learning</span>
+          <b>{d.arc.chain}</b>
+          <span className="fqm-bar">
+            <i style={{ width: `${d.arc.pct}%` }} />
+          </span>
+          <small>
+            {d.arc.pct}% · {d.arc.step}
+          </small>
+        </Link>
+      )}
+    </>
+  )
+}
+
 export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   const { profile, crew, stats, navAccess, myFrequency } = props
   const profileHref = `/people/${profile.handle}`
@@ -158,7 +204,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     <div className="fqm-l-full">
       <Link href={profileHref} className="fqm-me-row">
         <Avatar url={profile.avatar_url} name={profile.display_name} size={44} />
-        <span style={{ minWidth: 0 }}>
+        <span className="fqm-grow">
           <b>{profile.display_name}</b>
           <span className="fqm-me-tags">
             <Suspense fallback={null}>
@@ -190,7 +236,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
               <span className="fqm-circle-orb" data-live={c.notices > 0 ? '' : undefined} aria-hidden>
                 {getInitials(c.label).slice(0, 1)}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="fqm-grow">
                 <b>{c.label}</b>
                 {c.notices > 0 && <small>{c.notices} new</small>}
               </span>
@@ -435,6 +481,11 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             workGroups={workGroups}
             skins={skins}
             skin={props.skin}
+            standing={
+              <Suspense fallback={null}>
+                <WithStats stats={stats}>{(d) => <DrawerHead d={d} />}</WithStats>
+              </Suspense>
+            }
           />
           {props.banner}
           <FqRailLayout

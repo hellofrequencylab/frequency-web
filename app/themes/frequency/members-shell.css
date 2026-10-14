@@ -61,10 +61,10 @@
 [data-design="frequency"] [data-kit="members"] .ap-nav>a svg{width:17px;height:17px;opacity:.75}
 /* The Home/Feed link keeps its word at every width (owner, 2026-10-14): an unlabelled house icon read as
    decoration, and it is the member's one way back to the website. The section pills still go icon-only. */
-/* Phones follow the kit: under 720px the section pill and Zap give way to .ap-burger, which opens the
-   left rail as a drawer (header.tsx draws it as .ap-rail-l; the kit slides it in on .rl-drawer). The
-   drawer exists only where the kit shows the burger, and drops its slide under reduced motion. */
-@media (min-width:721px){[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{display:none}}
+/* Phones: under 768px the section pill and Zap give way to the bottom tab bar (the PHONE TAB BAR block
+   below), whose Menu opens the left rail as a drawer (header.tsx draws it as .ap-rail-l; the kit slides
+   it in on .rl-drawer). The drawer exists only where the bar does, and drops its slide under reduced
+   motion. */
 [data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{gap:0}
 [data-design="frequency"] [data-kit="members"] .fqm-drawer .rl-scroll{gap:24px;padding-bottom:24px}
 [data-design="frequency"] [data-kit="members"] .fqm-drawer-me{padding:0 4px}
@@ -80,7 +80,7 @@
 [data-design="frequency"] [data-kit="members"] .ap-me{border:0;padding:0;cursor:pointer}
 /* The avatar menu: the kit's .ap-sheet, holding the personal and account rows in labelled groups, the
    look control and Sign out. It scrolls inside the viewport rather than running off it. */
-[data-design="frequency"] [data-kit="members"] .ap-sheet.fqm-acct{max-height:calc(100vh - var(--fq-hdr) - 32px);overflow-y:auto;gap:12px}
+[data-design="frequency"] [data-kit="members"] .ap-sheet.fqm-acct{max-height:calc(100dvh - var(--fq-hdr) - var(--tab-bar-clearance) - 32px);overflow-y:auto;gap:12px}
 [data-design="frequency"] [data-kit="members"] .fqm-acct-head{display:flex;gap:12px;align-items:center;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-acct-head b{display:block;font:500 15px/1 var(--fq-font-display);letter-spacing:-.03em}
 [data-design="frequency"] [data-kit="members"] .fqm-acct-head small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
@@ -116,14 +116,14 @@
 /* The Zap actions are real buttons and links where shell.js draws spans. */
 [data-design="frequency"] [data-kit="members"] .ap-zapg>button,[data-design="frequency"] [data-kit="members"] .ap-zapg>a{display:flex;justify-content:center;padding:0;border:none;background:none;cursor:pointer;font:inherit}
 /* The notifications sheet scrolls once the list outgrows the window; an unread row carries the dot. */
-[data-design="frequency"] [data-kit="members"] .ap-sheet[data-s="bell"]{max-height:calc(100vh - 110px);overflow-y:auto}
+[data-design="frequency"] [data-kit="members"] .ap-sheet[data-s="bell"]{max-height:calc(100dvh - var(--fq-hdr) - var(--tab-bar-clearance) - 32px);overflow-y:auto}
 [data-design="frequency"] [data-kit="members"] .ap-note.unread>span>span:first-child::after{content:"";display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--fq-pa);vertical-align:middle}
 
 /* ── The rail grid ──────────────────────────────────────────────────────────────────────────────── */
 /* Each rail has its own width (220-320, default 248; --fqm-l / --fqm-r, set by rail-layout.tsx from the
    member's stored choice); a collapsed rail is the 76px micro rail.
    `data-l` / `data-r` are the member's choice (full | micro) or `auto`, which follows the viewport
-   (README: right auto-micro under 1240, left under 960, both hidden under 680). */
+   (README: right auto-micro under 1240, left under 960, both hidden under 768, where the phone tab bar takes over). */
 [data-design="frequency"] [data-kit="members"] .fqm-body{--fqm-l:248px;--fqm-r:248px;--fqm-lw:var(--fqm-l);--fqm-rw:var(--fqm-r);position:relative;z-index:1;flex:1;width:100%;padding:24px 40px 160px;display:grid;gap:56px;align-items:start;grid-template-columns:var(--fqm-lw) minmax(0,1fr) var(--fqm-rw);transition:grid-template-columns 300ms var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-drag]{transition:none;user-select:none}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-has="l"]{grid-template-columns:var(--fqm-lw) minmax(0,1fr)}
@@ -134,7 +134,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-r="micro"]{--fqm-rw:76px}
 @media (max-width:1239px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-r="auto"]{--fqm-rw:76px}}
 @media (max-width:959px){[data-design="frequency"] [data-kit="members"] .fqm-body[data-l="auto"]{--fqm-lw:76px}}
-@media (max-width:679px){[data-design="frequency"] [data-kit="members"] .fqm-body{grid-template-columns:minmax(0,1fr)!important;padding:32px 18px 100px}
+@media (max-width:767px){[data-design="frequency"] [data-kit="members"] .fqm-body{grid-template-columns:minmax(0,1fr)!important;padding:20px var(--fq-gutter-mobile) 48px;z-index:auto}
 [data-design="frequency"] [data-kit="members"] .fqm-body .fqm-rail{display:none}}
 
 /* Which face of a rail shows: hide-only rules, so each face keeps its own display. */
@@ -320,9 +320,9 @@
 [data-design="frequency"] [data-kit="members"] .fqm-step-open p{margin:0;font:400 var(--fq-text-meta)/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="members"] .fqm-step-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqm-step-open .btn.pa{height:40px;padding:0 16px;font-size:var(--fq-text-meta)}
-/* The Feed's own copy shows only where the rails are hidden (README responsive table, < 680). */
+/* The Feed's own copy shows only where the rails are hidden (< 768, with the phone tab bar). */
 [data-design="frequency"] [data-kit="members"] .fqm-gs-inline{margin-top:44px}
-@media (min-width:680px){[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}}
+@media (min-width:768px){[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}}
 
 /* Your week: only the days that carry a plan, day name over the date, then a dot, name and time. */
 [data-design="frequency"] [data-kit="members"] .fqm-week{display:flex;flex-direction:column;gap:2px}
@@ -500,8 +500,7 @@
 @media (max-width: 720px) { [data-design="frequency"] [data-kit="members"] .fa-quick { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 
 /* THE NARROW FLOOR (go-live overflow gate, ADR-1035). Three boxes ran off a phone:
-   - the Zap button, 39px past a 320px screen: under 480px it keeps its icon and its name (aria-label)
-     and drops the caption, so the header row fits;
+   - the Zap button, 39px past a 320px screen: it now rides the phone tab bar instead;
    - the Zap, Notifications and account sheets, a fixed 340px anchored 24px from the right, 4px past a
      360px screen: they now cap at the screen less a 12px gutter each side;
    - the two-column pages (.ap-cols, Settings) collapse to `1fr`, whose floor is its content's
@@ -522,8 +521,194 @@
        318px on a 268px column) wraps instead of running off the screen; one line is unchanged. */
     [data-design="frequency"] [data-kit="members"] .btn.txt { max-width: 100%; height: auto; min-height: 44px; white-space: normal }
   }
-  @media (max-width: 480px) {
-    [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap { width: 40px; height: 40px; padding: 0 }
-    [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap-l { display: none }
+}
+
+/* ── THE PHONE TAB BAR (tab-bar.tsx) and the phone drawer's head ─────────────────────────────────────
+   Owner, 2026-10-14: "check out how we had the menu at the bottom on the last mobile theme and work that
+   into the new site; the mobile site feels a little flat and too sterile, give it some good life".
+   DAWN's five-slot bottom bar (Menu · Feed · Zap · Events · Marketplace) in the kit's idiom: a floating
+   frosted pill with the header's iridescent wash, the active tab in the section pill's gradient, and Zap
+   a raised orb that breathes. Under 768px (Tailwind `md`, the line every DAWN overlay clears the bar
+   at), the header's section pill and Zap step aside for it, and the kit's lane tokens come back on so
+   the toasts, the chat tab and the page action bars ride above it (globals.css, "The mobile bottom lane").
+   The bar is 62px riding 10px off the bottom; --tab-bar-h is that whole box, the orb rises 16px over it. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-tabbar{display:none}
+@media (max-width:767px){
+  [data-design="frequency"] [data-kit="members"]{
+    --tab-bar-h:calc(72px + env(safe-area-inset-bottom));
+    --tab-bar-lift:16px;
+    --tab-bar-clearance:calc(var(--tab-bar-h) + var(--lane-rise));
   }
+  [data-design="frequency"] [data-kit="members"] .ap-nav,
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap{display:none}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr{padding:0 12px 0 16px;gap:8px;grid-template-columns:auto minmax(0,1fr) auto}
+  /* The flowing wordmark, not the roundel: on a phone it is the one moving thing in the header. */
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-logo{display:block;width:118px}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-roundel{display:none}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-burger{display:none}
+  [data-design="frequency"] [data-kit="members"] .ap-search{margin-left:auto}
+
+  [data-design="frequency"] [data-kit="members"] .fqm-tabbar{
+    position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:62px;
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;padding:0 4px;
+    border-radius:var(--fq-radius-orb);
+    background:color-mix(in oklab,var(--fq-surface-card) 95%,transparent);
+    backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);
+    box-shadow:inset 0 0 0 1px var(--fqm-white-90),0 1px 0 var(--fqm-ink-6),var(--fq-shadow-float);
+  }
+  /* The header's iridescent wash, so the bar reads as the same glass as the frosted header. */
+  [data-design="frequency"] [data-kit="members"] .fqm-tabbar::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--fq-pa-soft);opacity:.9;pointer-events:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb{
+    position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    border:none;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;
+    color:var(--fq-text-muted);font:500 var(--fq-text-label)/1 var(--fq-font-sans);letter-spacing:-.005em;
+    transition:color var(--fq-dur-fast) var(--fq-ease-out);
+  }
+  [data-design="frequency"] [data-kit="members"] .fqm-tb:hover{color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-l{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic{position:relative;width:48px;height:30px;border-radius:var(--fq-radius-orb);display:flex;align-items:center;justify-content:center;transition:transform var(--fq-dur-base) var(--fq-ease-out),background var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-base)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic svg{width:21px;height:21px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic>i{position:absolute;top:3px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--fq-x-magenta-deep);box-shadow:0 0 0 2px var(--fq-surface-card)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb:active .fqm-tb-ic{transform:scale(.92)}
+  /* The active tab wears the section pill's gradient and glow (.ap-nav button.on). */
+  [data-design="frequency"] [data-kit="members"] .fqm-tb.on{color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic{background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px var(--fqm-white-60);animation:fqm-tb-pop var(--fq-dur-slow) var(--fq-ease-out)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-l{font-weight:600}
+
+  /* Zap: the raised orb. A ring of the bar's own glass seats it; a soft halo breathes behind it. */
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap{justify-content:flex-end;padding-bottom:9px;color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb{position:absolute;left:50%;top:-16px;width:54px;height:54px;margin-left:-27px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--fq-pa);color:var(--fq-text-strong);
+    box-shadow:0 0 0 5px color-mix(in oklab,var(--fq-surface-card) 92%,transparent),var(--fq-pa-glow),0 14px 30px -12px color-mix(in oklab,var(--fq-x-violet-deep) 55%,transparent);
+    transition:transform var(--fq-dur-base) var(--fq-ease-out)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb::before{content:"";position:absolute;inset:-9px;border-radius:50%;background:var(--fq-pa);opacity:.35;filter:blur(10px);z-index:-1;animation:fq-breath var(--fq-breath-flow) var(--fq-ease-breath) infinite}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg{width:24px;height:24px;transition:transform var(--fq-dur-base) var(--fq-ease-out)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:active .fqm-tb-orb{transform:scale(.94)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap.on .fqm-tb-orb svg{transform:rotate(90deg)}
+
+  /* The page clears the bar: the content column and the footer end above the lane. */
+  [data-design="frequency"] [data-kit="members"] .fqm-body:not([data-edge]){padding-bottom:48px}
+  [data-design="frequency"] [data-kit="members"] .ap-foot{padding-bottom:calc(var(--tab-bar-clearance) + 16px)}
+  [data-design="frequency"] [data-kit="members"] .ap-toast{bottom:calc(var(--tab-bar-h) + 28px)}
+
+  /* The bar sits over the header's menus (43-45) and under every takeover (Mindless and Vera at 50,
+     dialogs at 80). The drawer stops at the bar, so Menu stays on screen to close what it opened. */
+  [data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{bottom:var(--tab-bar-h);border-radius:0 var(--fq-radius-xl) var(--fq-radius-xl) 0;overflow-y:auto;overscroll-behavior:contain}
+
+  /* The Zap sheet rises from the bar on a phone: full width less the gutter, above the orb. */
+  [data-design="frequency"] [data-kit="members"] #fqm-zap{position:fixed;top:auto;left:12px;right:12px;width:auto;bottom:calc(var(--tab-bar-h) + var(--tab-bar-lift) + 14px);transform:translateY(16px) scale(.98);transform-origin:bottom center}
+  [data-design="frequency"] [data-kit="members"] #fqm-zap.on{transform:none}
+  [data-design="frequency"] [data-kit="members"] #fqm-zap{background:color-mix(in oklab,var(--fq-surface-card) 97%,transparent);box-shadow:inset 0 0 0 1px var(--fqm-white-90),var(--fq-shadow-float)}
+  [data-design="frequency"] [data-kit="members"] #fqm-zap .ap-zapg i{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
+}
+@media (min-width:768px){[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{display:none}}
+@keyframes fqm-tb-pop{0%{transform:scale(.7);opacity:.4}60%{transform:scale(1.06);opacity:1}100%{transform:none}}
+[data-design="frequency"] [data-kit="members"][data-console] .fqm-tabbar{display:none}
+
+/* The drawer's head: the member's standing (on a phone the rails that carry it are away), Ask Vera
+   (the right rail's orb), then the core features as toned tiles, so Menu opens on colour, not a list. */
+[data-design="frequency"] [data-kit="members"] .fqm-standing{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-standing>span{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;border-radius:var(--fq-radius-m);background:color-mix(in oklab,var(--fqm-tone) 12%,var(--fq-surface-card));box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fqm-tone) 18%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-standing svg{width:16px;height:16px;color:var(--fqm-tone)}
+[data-design="frequency"] [data-kit="members"] .fqm-standing b{font:600 var(--fq-text-h4)/1 var(--fq-font-display);letter-spacing:-.02em}
+[data-design="frequency"] [data-kit="members"] .fqm-standing small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] [data-tone="violet"]{--fqm-tone:var(--fq-x-violet-deep)}
+[data-design="frequency"] [data-kit="members"] [data-tone="aqua"]{--fqm-tone:var(--fq-x-aqua-deep)}
+[data-design="frequency"] [data-kit="members"] [data-tone="sun"]{--fqm-tone:var(--fq-x-sun-deep)}
+[data-design="frequency"] [data-kit="members"] [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-deep)}
+
+[data-design="frequency"] [data-kit="members"] .fqm-vera-card{width:100%;min-height:var(--fq-hit-min);display:flex;align-items:center;gap:12px;padding:12px 14px;border:none;cursor:pointer;text-align:left;border-radius:var(--fq-radius-l);background:var(--fq-pa-soft),var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fqm-white-90),var(--fq-pa-glow);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-card .fqm-vera-orb{width:34px;height:34px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-card>span:nth-child(2){flex:1;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-card b{display:block;font:600 var(--fq-text-body-s)/1.2 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-card small{display:block;margin-top:3px;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-vera-card>svg{width:14px;height:14px;color:var(--fq-text-muted)}
+
+[data-design="frequency"] [data-kit="members"] .fqm-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-tile{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:10px 2px 8px;border-radius:var(--fq-radius-m);color:var(--fq-text-strong);font:500 var(--fq-text-label)/1.15 var(--fq-font-sans);text-align:center;transition:background var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-tile:hover,[data-design="frequency"] [data-kit="members"] .fqm-tile[aria-current]{background:color-mix(in oklab,var(--fqm-tone) 8%,transparent);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-tile>i{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--fqm-tone);background:linear-gradient(150deg,color-mix(in oklab,var(--fqm-tone) 20%,var(--fq-surface-card)),color-mix(in oklab,var(--fqm-tone) 8%,var(--fq-surface-card)));box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fqm-tone) 18%,transparent),0 8px 18px -12px var(--fqm-tone);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-tile:active>i{transform:scale(.94)}
+[data-design="frequency"] [data-kit="members"] .fqm-tile svg{width:21px;height:21px}
+[data-design="frequency"] [data-kit="members"] .fqm-tile>span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-tile>b{position:absolute;top:4px;right:calc(50% - 30px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--fq-x-magenta-deep);color:var(--fq-text-on-accent);font:600 var(--fq-text-label)/18px var(--fq-font-sans)}
+
+@media (prefers-reduced-motion:reduce){
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb::before,[data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic{animation:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg,[data-design="frequency"] [data-kit="members"] #fqm-zap{transition:none}
+}
+}
+
+/* ── PHONE POLISH (the 2026-10-14 mobile audit) ──────────────────────────────────────────────────────
+   One gutter (--fq-gutter-mobile) for the column, the footer and the menus; 44px taps; nothing wider
+   than the screen; the header clear of the notch in the installed app (viewport-fit=cover); and the
+   page bits that only ever had a desktop size. */
+@layer components {
+[data-design="frequency"] [data-kit="members"]{--fq-hdr:calc(76px + env(safe-area-inset-top));--app-header-h:var(--fq-hdr)}
+[data-design="frequency"] [data-kit="members"] .ap-hdr{padding-top:env(safe-area-inset-top)}
+[data-design="frequency"] [data-kit="members"] .ap-mega{max-height:calc(100dvh - var(--fq-hdr))}
+@media (max-width:767px){
+  /* The drawer's geometry from 721 to 767 too (the kit only makes .ap-rail-l a drawer under 720). */
+  [data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{position:fixed;z-index:60;top:var(--fq-hdr);left:0;height:auto;width:min(320px,88vw);padding:20px 16px;background:var(--fq-bg-canvas);box-shadow:20px 0 60px -30px color-mix(in oklab,var(--fq-ink) 50%,transparent);transform:translateX(-105%);transition:transform var(--fq-dur-base) var(--fq-ease-out)}
+  [data-design="frequency"] [data-kit="members"].rl-drawer .ap-rail.fqm-drawer{transform:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-body{padding-inline:max(var(--fq-gutter-mobile),env(safe-area-inset-left))}
+  [data-design="frequency"] [data-kit="members"] .fqm-center .ap-main{padding-inline:0}
+  [data-design="frequency"] [data-kit="members"] .ap-foot{padding-inline:var(--fq-gutter-mobile);gap:0 20px;align-items:center}
+  [data-design="frequency"] [data-kit="members"] .ap-foot a{display:inline-flex;align-items:center;min-height:var(--fq-hit-min)}
+  [data-design="frequency"] [data-kit="members"] .fqm-mega-site{padding-inline:var(--fq-gutter-mobile)}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-ic,[data-design="frequency"] [data-kit="members"] .ap-hdr .ap-me,[data-design="frequency"] [data-kit="members"] .ap-hdr .ap-search{width:var(--fq-hit-min);height:var(--fq-hit-min)}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-search{padding:0;justify-content:center;background:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-acct-row{height:var(--fq-hit-min)}
+  [data-design="frequency"] [data-kit="members"] .fqm-seg button{min-height:36px}
+  [data-design="frequency"] [data-kit="members"] :is(.btn.sm,.chip,.fqm-menu-p a,.mu-menu a){min-height:var(--fq-hit-min)}
+  /* Rows that scroll sideways run to the screen edge instead of stopping at the gutter. */
+  [data-design="frequency"] [data-kit="members"] :is(.fa-plans,.fqs-tabrow){margin-inline:calc(-1 * var(--fq-gutter-mobile));padding-inline:var(--fq-gutter-mobile);scroll-padding-inline:var(--fq-gutter-mobile)}
+  [data-design="frequency"] [data-kit="members"] .fqs-tabrow{top:var(--fq-hdr)}
+}
+[data-design="frequency"] [data-kit="members"] .ev-cal-day{display:none}
+@media (max-width:720px){
+  [data-design="frequency"] [data-kit="members"] .fa-listings{grid-template-columns:repeat(2,minmax(0,1fr))}
+  [data-design="frequency"] [data-kit="members"] .fqm-ev-in>.h1{font-size:var(--fq-text-h2)}
+  [data-design="frequency"] [data-kit="members"] .fqm-map{height:min(60dvh,340px)}
+  [data-design="frequency"] [data-kit="members"] :is(.fa-pane-b,.mc-hero){padding:20px}
+  [data-design="frequency"] [data-kit="members"] .fqm-pane-more{padding:0 20px 20px}
+  [data-design="frequency"] [data-kit="members"] .fa-zrow>span:first-child{width:auto;flex:1 1 40%}
+  /* A facet menu hangs under the whole filter row, so a chip near the right edge never opens it off
+     the screen. */
+  [data-design="frequency"] [data-kit="members"] .fqm-tools{position:relative}
+  [data-design="frequency"] [data-kit="members"] .fqm-tools .fqm-menu{position:static}
+  [data-design="frequency"] [data-kit="members"] .fqm-tools .fqm-menu-p{left:0;right:0;top:auto;margin-top:6px;min-width:0}
+  [data-design="frequency"] [data-kit="members"] .fqm-menu-p a{white-space:normal}
+  /* The calendar's marks are too small to tap: a tap picks the day (events-calendar.tsx), and that
+     day's events list under the grid. */
+  [data-design="frequency"] [data-kit="members"] .ev-cell{cursor:pointer}
+  [data-design="frequency"] [data-kit="members"] .ev-cell .ev-cal-chip{pointer-events:none}
+  [data-design="frequency"] [data-kit="members"] .ev-cell .btn.txt{display:none}
+  [data-design="frequency"] [data-kit="members"] .ev-cell[data-picked]{box-shadow:inset 0 0 0 2px var(--fq-accent)}
+  [data-design="frequency"] [data-kit="members"] .ev-cal-day{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+  [data-design="frequency"] [data-kit="members"] .ev-cal-row-ev{display:flex;align-items:center;gap:12px;min-height:var(--fq-hit-min);padding:10px 14px;border-radius:var(--fq-radius-m);background:var(--fq-accent-soft);color:var(--fq-text-strong);font:500 var(--fq-text-body-s)/1.3 var(--fq-font-sans)}
+  [data-design="frequency"] [data-kit="members"] .ev-cal-row-ev b{flex:none;font-weight:600;color:var(--fq-accent)}
+  [data-design="frequency"] [data-kit="members"] .ev-cal-row-ev>span:nth-child(2){flex:1;min-width:0}
+  [data-design="frequency"] [data-kit="members"] .ev-cal-row-ev.going{background:var(--fq-pa)}
+  [data-design="frequency"] [data-kit="members"] .ev-cal-row-ev.going b{color:var(--fq-ink)}
+}
+/* A Circle's About and counts come before its feed once the columns stack. */
+@media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .fqm-cl-hero~.ap-cols>.side{order:-1;margin-bottom:28px}}
+/* A profile's four numbers stay two by two on a phone rather than one tall column. */
+@media (max-width:560px){[data-design="frequency"] [data-kit="members"] .g4.mc-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+}
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-sheet-orb{width:40px;height:40px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-drawer-learn{padding:14px;border-radius:var(--fq-radius-m);background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
+}
+/* The narrowest phones (320-380): four 44px header controls and the wordmark overran the row, so the
+   wordmark and the controls step down a size and the row loses its gaps. */
+@layer components {
+@media (max-width:380px){
+  [data-design="frequency"] [data-kit="members"] .ap-hdr{padding-inline:12px 8px;gap:4px}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-c{gap:0}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-logo{width:92px}
+  [data-design="frequency"] [data-kit="members"] :is(.ap-hdr .ap-ic,.ap-hdr .ap-me,.ap-hdr .ap-search){width:40px;height:40px}
+}
 }

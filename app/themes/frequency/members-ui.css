@@ -64,9 +64,9 @@
 [data-design="frequency"] [data-kit="members"] .tag.mu-primary{background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-signal{background:var(--fq-presence-soft);color:var(--fq-presence);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-broadcast{background:var(--fq-live-soft);color:var(--fq-live);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-success{background:var(--color-success-bg);color:var(--fq-success);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-warning{background:var(--color-warning-bg);color:var(--fq-warning);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-danger{background:var(--color-danger-bg);color:var(--fq-danger);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-success{background:color-mix(in oklab,var(--fq-success) 14%,transparent);color:var(--fq-success);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-warning{background:color-mix(in oklab,var(--fq-warning) 14%,transparent);color:var(--fq-warning);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-danger{background:color-mix(in oklab,var(--fq-danger) 14%,transparent);color:var(--fq-danger);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-solid{background:var(--fq-text-strong);color:var(--fq-surface-card);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-primary{background:var(--fq-pa);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-signal{background:var(--fq-presence);color:var(--fq-text-on-accent)}
@@ -108,8 +108,8 @@
 /* EmptyState: the kit's `.empty`, given a soft room of its own so it reads as a state, not a gap. */
 [data-design="frequency"] [data-kit="members"] .empty.mu-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:44px 24px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-text-strong) 2.5%,transparent)}
 [data-design="frequency"] [data-kit="members"] .mu-empty .ic{width:48px;height:48px;border-radius:50%;background:var(--fq-pa-soft)}
-[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="error"] .ic{background:var(--color-danger-bg);color:var(--fq-danger)}
-[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="cleared"] .ic{background:var(--color-success-bg);color:var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="error"] .ic{background:color-mix(in oklab,var(--fq-danger) 14%,transparent);color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="cleared"] .ic{background:color-mix(in oklab,var(--fq-success) 14%,transparent);color:var(--fq-success)}
 [data-design="frequency"] [data-kit="members"] .mu-empty .t2{max-width:42ch}
 [data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act{margin-top:8px;display:flex;justify-content:center}
 /* The member status screens' row of ways back in (components/frequency/members/member-status.tsx). */

@@ -321,7 +321,8 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
       setSlot(el && el.getClientRects().length > 0 ? el : null)
       // The Frequency shell's own Vera orb (its rail foot tab, or the console's corner dock) is the
       // way in wherever it shows, so the edge pill stands down there (owner, 2026-10-13).
-      setOrb(Array.from(document.querySelectorAll('.fqm-vera-btn')).some((b) => b.getClientRects().length > 0))
+      // On a phone the Frequency tab bar's Menu carries Ask Vera at the top of the drawer, so it counts too.
+      setOrb(Array.from(document.querySelectorAll('.fqm-vera-btn, .fqm-tabbar')).some((b) => b.getClientRects().length > 0))
       setSlotChecked(true)
     }
     read()
