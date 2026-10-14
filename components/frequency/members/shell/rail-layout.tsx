@@ -271,7 +271,7 @@ export function FqRailLayout({
           style={style}
         >
           {showL && (
-            <aside className="fqm-rail fqm-rail-l" aria-label="Your shortcuts" onMouseOver={onOver('L')} onMouseOut={onOut}>
+            <aside data-rail-column className="fqm-rail fqm-rail-l" aria-label="Your shortcuts" onMouseOver={onOver('L')} onMouseOut={onOut}>
               <div className="fqm-rail-scroll">
                 <div className="fqm-full">{left.full}</div>
                 <div className="fqm-micro">{left.micro}</div>

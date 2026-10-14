@@ -132,7 +132,11 @@ test.describe('a scroll lock never resizes the document', { tag: ['@smoke', '@sh
 
     // The desktop search pill is a button whose visible text is split across a span and a kbd, so its
     // title is the stable handle; the mobile icon button is display-none at this width.
-    await page.getByTitle('Search (⌘K)').click()
+    // DAWN's header pill opens the overlay; Frequency's pill is a link to /search, and ⌘K is its
+    // overlay (components/frequency/members/shell/header.tsx), so the same lock is reached by key.
+    const frequency = (await page.locator('html').getAttribute('data-design')) === 'frequency'
+    if (frequency) await page.keyboard.press(process.platform === 'darwin' ? 'Meta+k' : 'Control+k')
+    else await page.getByTitle('Search (⌘K)').click()
     const overlay = page.getByRole('dialog', { name: 'Search' })
     await expect(overlay).toBeVisible()
     await page.waitForTimeout(400)

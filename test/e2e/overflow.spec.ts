@@ -348,6 +348,9 @@ test.describe('overflow', { tag: '@overflow' }, () => {
       await assertNotProtectionWall(page)
       await assertMemberSession(page, feed!)
       await settle(page)
+      // Frequency's phone shell has no bottom tab bar (the header and its drawer carry navigation),
+      // so the caption budget this guards has nothing to measure there.
+      test.skip((await page.locator('html').getAttribute('data-design')) === 'frequency', 'Frequency has no bottom tab bar (HYG-033 is a DAWN shell contract).')
 
       const measured = await page.evaluate(() => {
         const nav = [...document.querySelectorAll('nav')].find((n) => {
