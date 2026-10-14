@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { spaceCrumbs } from '@/lib/spaces/owner-nav'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { isConsoleRoute } from '@/lib/nav/console-route'
 
 // THE ONE Space breadcrumb — rendered by the Space root layout so it shows on EVERY /spaces/<slug>
 // route (the profile + every owner surface), replacing the per-page back links + the low-fidelity
@@ -20,6 +22,9 @@ export function SpaceBreadcrumbs({
   manageHref: string
 }) {
   const pathname = usePathname()
+  // Under Frequency a console route (manage / crm / settings) wears the admin shell, whose own top bar
+  // carries the breadcrumb, so this DAWN trail would be a second one sitting above the console.
+  if (SITE_DESIGN === 'frequency' && isConsoleRoute(pathname)) return null
   const trail = spaceCrumbs(pathname, slug, brandName, manageHref)
   if (trail.length < 2) return null
   return <Breadcrumbs trail={trail} />

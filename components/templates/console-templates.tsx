@@ -13,11 +13,18 @@ import { DashboardTemplate } from './dashboard-template'
 // every other page.
 
 /** FocusTemplate for a console page: a single task, kept to a readable column in the frame. */
-export function ConsoleFocusTemplate(props: ComponentProps<typeof FocusTemplate>) {
+export function ConsoleFocusTemplate({
+  consoleMeasure = 'focus',
+  ...props
+}: ComponentProps<typeof FocusTemplate> & {
+  /** Frequency only: 'full' lets a page that is a working surface rather than a form (the Calendar
+   *  planner) use the console's whole width. DAWN ignores it. */
+  consoleMeasure?: 'focus' | 'full'
+}) {
   if (SITE_DESIGN !== 'frequency') return <FocusTemplate {...props} />
   const { eyebrow, title, description, actions, back, children } = props
   return (
-    <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={back} measure="focus">
+    <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={back} measure={consoleMeasure}>
       {children}
     </AdminPageFrame>
   )
