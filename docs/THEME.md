@@ -25,7 +25,7 @@ the code wins.
 The platform wears ONE design system per deploy: **DAWN** or **Frequency**. It is chosen by
 `NEXT_PUBLIC_SITE_DESIGN` (unset reads as DAWN), stamped as `data-design` on `<html>` by the root
 layout, and defined in `lib/theme/design.ts`. It is the one-button change-over: set the variable,
-redeploy.
+redeploy (a rebuild: the value is inlined). The gate, go-live and roll back: [RUNBOOKS.md](RUNBOOKS.md) section 8.
 
 | Piece | Where |
 |---|---|
@@ -39,7 +39,7 @@ redeploy.
 **Frequency overrides everything.** Under it the four axes below collapse: no Space skin, no
 generation (`balanced`), no occasion, no Space font set or accent, no Theme Studio `<style>`. A
 member's own skin applies only when it is authored for the active design (`SkinDef.designs`);
-**Midnight** is a member theme under DAWN until a Frequency Midnight exists.
+**Midnight** is a member theme under both designs: Frequency authors its own (`[data-skin="midnight"]` under `.dark[data-design="frequency"]` in `app/themes/frequency.css`).
 
 **Load per design.** A design's CSS ships only in a build that wears it, as its faces do
 (`lib/theme/design-fonts/active.ts`). A CSS import is not tree-shaken by a runtime `SITE_DESIGN` branch,
