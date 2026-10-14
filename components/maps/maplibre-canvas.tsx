@@ -12,6 +12,7 @@ import { clusterPoints, shouldRecluster, zoomIntoCluster } from '@/lib/maps/clus
 import { mapDiag } from '@/lib/maps/diagnostics'
 import { resolvePinPaint } from '@/lib/maps/pin-kinds'
 import { MAPLIBRE_STYLE, MAPLIBRE_WORKER_URL, WARM_FILTER } from '@/lib/maps/provider'
+import { maplibreTileFilter, readBasemapPalette } from '@/lib/maps/basemap-look'
 import { buildClusterMarker, makeMarkerActivatable, onMarkerActivate } from './cluster-marker'
 import { configureMaplibreWorker } from './maplibre-worker'
 import { buildPopupContent } from './popup-content'
@@ -121,6 +122,13 @@ export default function MapLibreCanvas({
       attributionControl: { compact: true },
     })
     mapRef.current = map
+    // The design's basemap (lib/maps/basemap-look.ts): under Frequency the TILE CANVAS takes the
+    // design's treatment and the container drops DAWN's warm filter, so pins keep their token colour.
+    const palette = readBasemapPalette(container)
+    if (palette) {
+      container.style.filter = 'none'
+      map.getCanvas().style.filter = maplibreTileFilter(palette)
+    }
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     }

@@ -68,6 +68,8 @@ import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-st
 import { sendRawEmail } from '@/lib/email'
 import { spaceEmailColors } from '@/lib/spaces/email-colors'
 import type { Space } from '@/lib/spaces/types'
+import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
+import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
 import type {
   EmailCampaignCard,
   LoadedEmailCampaign,
@@ -459,9 +461,14 @@ export async function sendSpaceEmailDraft(
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
     { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
-    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
+    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER, sentWithFrequency: campaignCarriesFrequencyFooter(space.plan) },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
+
+  // The same gates the plain campaign send runs (SCAN-866): campaigns a month (space_campaigns_month,
+  // LIVE-751) and, below, a send that reached nobody is not stamped sent.
+  const meter = await checkCampaignMonthMeter(spaceId)
+  if (!meter.ok) return fail(meter.error)
 
   // A broadcast is not personalized, so any unfilled merge token degrades to its default fallback rather
   // than rendering a raw {{token}}. The per-recipient unsubscribe placeholder is left intact for the seam.
@@ -477,6 +484,8 @@ export async function sendSpaceEmailDraft(
 
   const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
   if (isError(res)) return res
+  // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
+  if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
 
   // Stamp the draft as sent with how many it reached (best-effort: the emails already went out, so a
   // failed status write must not surface as a send failure). recipient_count feeds the campaign list
@@ -524,9 +533,14 @@ export async function sendSpaceEmailDraftToRecipients(
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
     { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
-    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
+    { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER, sentWithFrequency: campaignCarriesFrequencyFooter(space.plan) },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
+
+  // The same gates the plain campaign send runs (SCAN-866): campaigns a month (space_campaigns_month,
+  // LIVE-751) and, below, a send that reached nobody is not stamped sent.
+  const meter = await checkCampaignMonthMeter(spaceId)
+  if (!meter.ok) return fail(meter.error)
 
   const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
   const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
@@ -534,6 +548,8 @@ export async function sendSpaceEmailDraftToRecipients(
 
   const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
   if (isError(res)) return res
+  // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
+  if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
 
   // Stamp the draft as sent with how many it reached (best-effort: the emails already went out).
   try {
