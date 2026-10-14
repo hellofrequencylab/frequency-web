@@ -37,54 +37,122 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
 
-function PlanCard({ offering, hue }: { offering: Offering; hue: string }) {
+/** A card's price, split for the type: an optional lead word ("from"), the figure, and its period
+ *  ("/mo") set smaller beside it. Parsed off the display label the model already formats, never
+ *  re-priced; a label with no figure ("Free", "Set by the Space") is shown whole. */
+export function splitPrice(label: string): { lead?: string; amount: string; per?: string } {
+  const m = label.match(/^(?:(\D+?)\s+)?(\S*\d[^\s/]*)(\/[a-z]+)?$/i)
+  if (!m) return { amount: label }
+  return { lead: m[1] || undefined, amount: m[2]!, per: m[3] || undefined }
+}
+
+/** What one plan card shows. The Space offerings, the personal offerings and the reference's Buying
+ *  card all render through it, so both plan rows are the one component. */
+interface PlanCardView {
+  name: string
+  who: string
+  price: string
+  /** The struck list price where the config carries a beta anchor ("$29"), else null. */
+  anchor?: string | null
+  points: string[]
+  detail?: string
+  cta?: { label: string; href: string }
+  featured?: boolean
+  hue: string
+}
+
+function offeringView(o: Offering, hue: string): PlanCardView {
+  return {
+    name: o.label,
+    who: o.tagline,
+    price: o.monthly,
+    anchor: o.listAnchor,
+    points: [o.billing, o.trial, o.betaNote, o.takeRate].filter((x): x is string => Boolean(x)),
+    detail: o.forWho,
+    cta: o.cta,
+    featured: o.featured,
+    hue,
+  }
+}
+
+/** The reference's third people card: what buying costs a member. Copy only, no figure. */
+const BUYING: Omit<PlanCardView, 'hue'> = {
+  name: 'Buying',
+  who: 'Tickets, memberships and tips.',
+  price: 'Set by the Space',
+  points: ['Payment goes straight to the host', 'Hosts can refund a ticket'],
+}
+
+/** One plan card, in five named rows: head, price, points, detail, CTA. Inside a plan row the rows
+ *  are a subgrid, so every card lines its price, its list and its button up with its neighbours (a
+ *  flex column with the CTA pinned to the bottom where subgrid is missing). The price is sized off the
+ *  card's own width (a container query), and wraps rather than clips. The featured plan, read off
+ *  `Offering.featured`, wears the kit's iridescent rim and the "Recommended" flag the DAWN card uses. */
+function PlanCard({ view }: { view: PlanCardView }) {
+  const { lead, amount, per } = splitPrice(view.price)
+  // A figure or a one-word price ("Free") takes the display size; a phrase ("Set by the Space") steps down.
+  const big = /\d/.test(amount) || !/\s/.test(amount)
   return (
-    <div className="pop" style={vars({ '--fq-pc': hue })}>
+    <div className={`pop pb-plan${view.featured ? ' is-feat' : ''}`} style={vars({ '--fq-pc': view.hue })}>
       <span className="pglow" />
-      <article className="pc">
-        <span className="v">{offering.label}</span>
-        <div className="price">
-          {offering.monthly}
-          <small>{offering.tagline}</small>
+      <article className={`pc pb-pc${view.featured ? ' fq-iri-rim' : ''}`}>
+        <header className="pb-head">
+          <div className="pb-top">
+            <h3>{view.name}</h3>
+            {view.featured && <span className="pb-flag">Recommended</span>}
+          </div>
+          <p className="pb-who">{view.who}</p>
+        </header>
+        <div className={big ? 'pb-price' : 'pb-price is-text'}>
+          {view.anchor && (
+            <s className="pb-was">
+              <span className="sr-only">Was </span>
+              {view.anchor}/mo
+            </s>
+          )}
+          <span className="pb-fig">
+            {lead && <span className="pb-lead">{lead}</span>}
+            <span className="pb-amt">{amount}</span>
+            {per && <span className="pb-per">{per}</span>}
+          </span>
         </div>
-        <ul>
-          <li>{offering.billing}</li>
-          {offering.trial && <li>{offering.trial}</li>}
-          {offering.betaNote && <li>{offering.betaNote}</li>}
-          <li>{offering.takeRate}</li>
+        <ul className="pb-pts">
+          {view.points.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
         </ul>
-        <p>{offering.forWho}</p>
+        {view.detail ? <p className="pb-for">{view.detail}</p> : <span className="pb-for" aria-hidden="true" />}
         <div className="pb-cta">
-          <Link
-            className={offering.featured ? 'btn fq-iri-btn' : 'btn btn-ghost fq-iri-rim'}
-            href={offering.cta.href}
-          >
-            {offering.cta.label}
-          </Link>
+          {view.cta && (
+            <Link className={view.featured ? 'btn fq-iri-btn' : 'btn btn-ghost fq-iri-rim'} href={view.cta.href}>
+              {view.cta.label}
+            </Link>
+          )}
         </div>
       </article>
     </div>
   )
 }
 
-/** One matrix cell, in the reference's grammar: ● for yes, – for no, the phrase for a value. The full
- *  phrase rides along for a screen reader, so a row reads on its own. */
-function Cell({ kind, text }: { kind: 'yes' | 'no' | 'value'; text: string }) {
+/** One matrix cell: ✓ for yes, – for no, the phrase for a value. The full phrase rides along for a
+ *  screen reader, so a row reads on its own. `feat` tints the featured plan's column. */
+function Cell({ kind, text, feat }: { kind: 'yes' | 'no' | 'value'; text: string; feat?: boolean }) {
+  const f = feat ? ' is-feat' : ''
   if (kind === 'yes')
     return (
-      <td className="c y">
-        <span aria-hidden="true">●</span>
+      <td className={`c y${f}`}>
+        <span aria-hidden="true">✓</span>
         <span className="sr-only">{text}</span>
       </td>
     )
   if (kind === 'no')
     return (
-      <td className="c no">
+      <td className={`c no${f}`}>
         <span aria-hidden="true">–</span>
         <span className="sr-only">{text}</span>
       </td>
     )
-  return <td className="c pb-v">{text}</td>
+  return <td className={`c pb-v${f}`}>{text}</td>
 }
 
 export function FrequencyPricing({
@@ -99,6 +167,10 @@ export function FrequencyPricing({
   faq: Faq
 }) {
   const planCount = COUNT_WORD[spaces.length] ?? String(spaces.length)
+  // The matrix columns are the Space offerings: each header carries its price, and the featured plan's
+  // column is tinted, so the table reads against the cards above it.
+  const byId = new Map(spaces.map((o) => [o.id, o]))
+  const featId = spaces.find((o) => o.featured)?.id
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
@@ -126,7 +198,7 @@ export function FrequencyPricing({
         </div>
       </section>
 
-      <section className="sec" id="spaces" data-screen-label="02 Plans">
+      <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
@@ -136,16 +208,18 @@ export function FrequencyPricing({
             <h2 className="h-l">{`${planCount} plans. Start free.`}</h2>
             <p className="pb-note">{PLAN_STORY.paid}</p>
           </div>
-          <div className={`g3${spaces.length > 3 ? ' pb-g4' : ''}`}>
-            {spaces.map((o, i) => (
-              <PlanCard key={o.id} offering={o} hue={HUES[i % HUES.length]!} />
-            ))}
+          <div className="pb-row">
+            <div className={`pb-plans n${spaces.length}`}>
+              {spaces.map((o, i) => (
+                <PlanCard key={o.id} view={offeringView(o, HUES[i % HUES.length]!)} />
+              ))}
+            </div>
           </div>
           <p className="pb-note">{PLAN_STORY.selling}</p>
         </div>
       </section>
 
-      <section className="sec" id="people" style={{ paddingTop: 0 }} data-screen-label="02b For people">
+      <section className="sec pb-sec" id="people" data-screen-label="02b For people">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
@@ -155,28 +229,18 @@ export function FrequencyPricing({
             <h2 className="h-l">Everything for people is free.</h2>
             <p className="pb-note">{PLAN_STORY.crew}</p>
           </div>
-          <div className="g3">
-            {members.map((o, i) => (
-              <PlanCard key={o.id} offering={o} hue={HUES[(i + 1) % HUES.length]!} />
-            ))}
-            <div className="pop" style={vars({ '--fq-pc': 'var(--fq-x-magenta-neon)' })}>
-              <span className="pglow" />
-              <article className="pc">
-                <span className="v">Buying</span>
-                <div className="price">
-                  Set by the Space<small>Tickets, memberships and tips.</small>
-                </div>
-                <ul>
-                  <li>Payment goes straight to the host</li>
-                  <li>Hosts can refund a ticket</li>
-                </ul>
-              </article>
+          <div className="pb-row">
+            <div className={`pb-plans n${members.length + 1}`}>
+              {members.map((o, i) => (
+                <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
+              ))}
+              <PlanCard view={{ ...BUYING, hue: 'var(--fq-x-magenta-neon)' }} />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="sec" id="features" style={{ paddingTop: 0 }} data-screen-label="03 Features by plan">
+      <section className="sec pb-sec" id="features" data-screen-label="03 Features by plan">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
@@ -186,17 +250,21 @@ export function FrequencyPricing({
             <h2 className="h-l">Every feature, every plan.</h2>
             <p className="pb-note">{PLAN_STORY.meters}</p>
           </div>
-          <div className="mxw" role="region" aria-label="Features by plan" tabIndex={0}>
-            <table className="mx">
+          <div className="mxw pb-mxw" role="region" aria-label="Features by plan" tabIndex={0}>
+            <table className="mx pb-mx">
               <caption className="sr-only">Every feature, by plan</caption>
               <thead>
                 <tr>
                   <th scope="col">Feature</th>
-                  {grid.columns.map((c) => (
-                    <th key={c.id} scope="col" className="c">
-                      {c.label}
-                    </th>
-                  ))}
+                  {grid.columns.map((c) => {
+                    const o = byId.get(c.id)
+                    return (
+                      <th key={c.id} scope="col" className={c.id === featId ? 'c is-feat' : 'c'}>
+                        {c.label}
+                        {o && <small>{o.monthly}</small>}
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -208,7 +276,12 @@ export function FrequencyPricing({
                     <tr key={`${g.key}-${r.key}`}>
                       <td>{r.label}</td>
                       {r.cells.map((cell, i) => (
-                        <Cell key={grid.columns[i]?.id ?? i} kind={cell.kind} text={cell.text} />
+                        <Cell
+                          key={grid.columns[i]?.id ?? i}
+                          kind={cell.kind}
+                          text={cell.text}
+                          feat={grid.columns[i]?.id === featId}
+                        />
                       ))}
                     </tr>
                   )),
@@ -220,7 +293,7 @@ export function FrequencyPricing({
         </div>
       </section>
 
-      <section className="sec" id="questions" style={{ paddingTop: 0 }} data-screen-label="04 Questions">
+      <section className="sec pb-sec" id="questions" data-screen-label="04 Questions">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
