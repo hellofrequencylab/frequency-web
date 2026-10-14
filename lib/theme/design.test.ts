@@ -1,6 +1,7 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_DESIGN, DESIGNS, isDesignId, resolveDesign } from './design'
+import { ALIAS_STUB, STUB_DIR, designSheets, renderStubs } from '../../scripts/lib/design-styles.mjs'
 
 // THE DESIGN SWITCH CONTRACT (ADR-1737). A design other than DAWN is one CSS file that redefines
 // DAWN's own token names under `[data-design="<id>"]`. These assertions hold the three ways that can
@@ -34,9 +35,10 @@ describe('the design registry', () => {
 describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) => {
   const path = `app/themes/${id}.css`
 
-  it('exists and is loaded by the root layout', () => {
+  it('exists and is loaded by the root layout, through its stub', () => {
     expect(existsSync(path)).toBe(true)
-    expect(layout).toContain(`import "./themes/${id}.css"`)
+    expect(layout).toContain(`import "./themes/active/${ALIAS_STUB}"`)
+    expect(renderStubs(id, [id])[ALIAS_STUB]).toContain(`import '../${id}.css'`)
   })
 
   const sheet = existsSync(path) ? readFileSync(path, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') : ''
@@ -65,10 +67,11 @@ describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) 
   })
 
   it('loads the generated core before the alias layer', () => {
-    const coreAt = layout.indexOf(`import "./themes/${id}/core.css"`)
-    const aliasAt = layout.indexOf(`import "./themes/${id}.css"`)
-    expect(coreAt, 'core.css is imported by the root layout').toBeGreaterThan(-1)
+    const coreAt = layout.indexOf(`import "./themes/active/core"`)
+    const aliasAt = layout.indexOf(`import "./themes/active/${ALIAS_STUB}"`)
+    expect(coreAt, 'the core stub is imported by the root layout').toBeGreaterThan(-1)
     expect(coreAt).toBeLessThan(aliasAt)
+    expect(renderStubs(id, [id]).core).toContain(`import '../${id}/core.css'`)
   })
 
   it('keeps the generated core inert outside the design and inside its own namespace', () => {
@@ -119,5 +122,53 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
       vi.unstubAllEnvs()
       vi.resetModules()
     }
+  })
+})
+
+// STYLES PER DESIGN (scripts/lib/design-styles.mjs). A CSS import is not tree-shaken by a runtime
+// `SITE_DESIGN` branch, so a sheet imported directly ships in every deploy, DAWN's included. Code reaches a
+// design's sheets only through the app/themes/active/ stubs, which write-design-assets.mjs points at the
+// build's design; the committed stubs are DAWN's (empty), like lib/theme/design-fonts/active.ts.
+describe('styles per design', () => {
+  const ids = DESIGNS.map((d) => d.id)
+  const onDisk = readdirSync(STUB_DIR)
+    .filter((f) => f.endsWith('.ts'))
+    .map((f) => f.slice(0, -3))
+    .sort()
+
+  it("commits every stub as DAWN's (empty), one per design sheet and no others", () => {
+    const dawn = renderStubs('dawn', ids)
+    expect(onDisk).toEqual(Object.keys(dawn).sort())
+    for (const name of onDisk) {
+      const src = readFileSync(`${STUB_DIR}/${name}.ts`, 'utf8')
+      expect(src, `${STUB_DIR}/${name}.ts: run \`pnpm design:use dawn\` before committing`).toBe(dawn[name])
+      expect(src).not.toMatch(/^import /m)
+    }
+  })
+
+  it('points every stub at its own sheet when the build wears that design', () => {
+    for (const id of ids.filter((d) => d !== 'dawn')) {
+      const stubs = renderStubs(id, ids)
+      const sheets = designSheets([id])
+      expect(sheets.length).toBeGreaterThan(1)
+      for (const s of sheets) {
+        expect(stubs[s.stub].split('\n')).toContain(`import '${s.href}'`)
+        expect(existsSync(`${STUB_DIR}/${s.href}`), s.href).toBe(true)
+      }
+    }
+  })
+
+  it('no code imports a design sheet directly (only the generated stubs may)', () => {
+    const others = ids.filter((d) => d !== 'dawn').join('|')
+    const direct = new RegExp(`(?:\\bimport\\b|@import)[^'"\\n]*['"](?:[^'"]*/)?(?:${others})(?:/[^'"]*)?\\.css['"]`)
+    const offenders: string[] = []
+    for (const root of ['app', 'components', 'lib']) {
+      for (const rel of readdirSync(root, { recursive: true }) as string[]) {
+        const file = `${root}/${rel}`
+        if (!/\.(tsx?|css|mjs)$/.test(file) || file.startsWith(`${STUB_DIR}/`)) continue
+        if (direct.test(readFileSync(file, 'utf8'))) offenders.push(file)
+      }
+    }
+    expect(offenders, 'import the app/themes/active/<sheet> stub instead').toEqual([])
   })
 })

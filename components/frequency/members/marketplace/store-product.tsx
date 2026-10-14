@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import { EventGallery } from '@/components/events/event-gallery'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 

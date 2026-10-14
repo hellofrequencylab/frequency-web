@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import '@/app/themes/frequency/members-community.css'
+import '@/app/themes/active/members-community'
 
 // The community pages' error boundary face, in the kit (Circles, Classifieds). The route's error.tsx
 // keeps its own Sentry report and hands this the copy and the reset; under DAWN it draws its

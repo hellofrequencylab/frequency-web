@@ -11,8 +11,8 @@
 // Server Component. The two sheets are scoped to [data-design="frequency"] [data-kit="members"], so
 // under DAWN they paint nothing.
 
-import '@/app/themes/frequency/kit-members.css'
-import '@/app/themes/frequency/members-c.css'
+import '@/app/themes/active/kit-members'
+import '@/app/themes/active/members-c'
 
 export function MembersBody({
   children,

@@ -1,4 +1,4 @@
-import '@/app/themes/frequency/members-events.css'
+import '@/app/themes/active/members-events'
 
 // THE EVENTS WAIT, UNDER FREQUENCY: the destination's own frame (the hero, the tab bar, a grid of
 // card shapes), so nothing jumps when the list lands. Drawn from the same ev-* classes the page uses.

@@ -51,6 +51,23 @@ describe('the kit root carries the surface', () => {
     const html = renderToStaticMarkup(<SiteRoot surface="commons">x</SiteRoot>)
     expect(html).toContain('data-surface="commons"') // Home has no surface: the layout's wins
   })
+
+  // Owner, 2026-10-14: "light for articles". The Help front page is the dark Stage of Help.html; its
+  // topics, articles and What's new are long reading, so Commons, in the first paint.
+  it('wears Stage on the Help front page and Commons on every page below it', () => {
+    for (const [path, surface] of [
+      ['/help', 'stage'],
+      ['/help/getting-started', 'commons'],
+      ['/help/getting-started/create-an-account', 'commons'],
+      ['/help/changelog', 'commons'],
+    ] as const) {
+      pathname = path
+      expect(resolveSitePage(path).surface, path).toBe(surface)
+      const html = renderToStaticMarkup(<SiteRoot>x</SiteRoot>)
+      expect(html, path).toContain(`data-surface="${surface}"`)
+    }
+    expect(resolveSitePage('/help/changelog').cta).toEqual(resolveSitePage('/help').cta)
+  })
 })
 
 describe('every public layout wears the site shell under Frequency', () => {

@@ -6,8 +6,8 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
-import '@/app/themes/frequency/site-pages-b.css'
-import '@/app/themes/frequency/site-funnel.css'
+import '@/app/themes/active/site-pages-b'
+import '@/app/themes/active/site-funnel'
 
 /** A page hero without a photo: kicker, h1, one lede, optional meta line and actions. */
 export function FnHero({

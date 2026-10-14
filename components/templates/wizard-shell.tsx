@@ -10,7 +10,7 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 // where the kit's selectors had no sheet behind them and the outside-the-kit fallback in members-ui.css
 // is switched off by the stamp itself: the brand orb, the step buttons and the fields fell back to bare
 // browser chrome. Scoped to [data-design="frequency"] [data-kit="members"], so DAWN paints nothing new.
-import '@/app/themes/frequency/kit-members.css'
+import '@/app/themes/active/kit-members'
 
 // FREQUENCY (ADR-1737): the wizard stamps the members kit on its own room (it renders outside the member
 // shell as often as inside it), wears the kit's buttons (`.btn.pa.lg` / `.btn.lg`) and its step bar, and

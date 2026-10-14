@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import { EventGallery } from '@/components/events/event-gallery'
 import { JsonLd } from '@/components/json-ld'
 import { ListingQna } from '@/components/marketplace/listing-qna'

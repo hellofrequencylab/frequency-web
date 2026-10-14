@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 
 // CIRCLE MEMBERS PANE (templates/members/Circle.html, the Members tab): the roster as a four-up grid
 // of faces, name and role. The page keeps the reads and the gates; a manager's role picker rides

@@ -13,7 +13,7 @@
 //   3. "Tell us your story", the path in (story-form.tsx), in the Help contact band's dress.
 // When a real source exists, its cards replace the prompts in the same `.fg > .pop > .pc` shape.
 import Link from 'next/link'
-import '@/app/themes/frequency/site-pages-b.css'
+import '@/app/themes/active/site-pages-b'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { StoryForm } from './story-form'

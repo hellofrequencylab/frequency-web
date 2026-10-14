@@ -22,8 +22,8 @@ import { FrequencyRightMicro, FrequencyRightRail } from '@/components/frequency/
 import type { DockData } from '@/components/sidebar/game-stats-dock'
 // The Frequency members kit and the shell's own rules. Both are scoped to
 // [data-design="frequency"] [data-kit="members"], so under DAWN they match nothing.
-import '@/app/themes/frequency/kit-members.css'
-import '@/app/themes/frequency/members-shell.css'
+import '@/app/themes/active/kit-members'
+import '@/app/themes/active/members-shell'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { RAIL_FOLD_COOKIE, readRailFoldCookie } from '@/lib/layout/rail-fold'

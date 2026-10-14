@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import { FqIcon } from '@/components/frequency/icon'
 import { FqModules } from '@/components/frequency/members/modules'
 import { FqCopyLink } from '@/components/frequency/members/shared/copy-link'

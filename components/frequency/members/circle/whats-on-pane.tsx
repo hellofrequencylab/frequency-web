@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import type { CircleUpcomingEvent } from '@/lib/events/circle-upcoming'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'

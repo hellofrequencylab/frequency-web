@@ -21,7 +21,7 @@
 // design's "212 people checked in at a Circle near you last week" has no public figure
 // behind it; the stat shows the network's active Circle count instead, and drops out if that read fails.
 
-import '@/app/themes/frequency/site-pages-a.css'
+import '@/app/themes/active/site-pages-a'
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'

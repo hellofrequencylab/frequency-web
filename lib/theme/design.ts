@@ -20,7 +20,8 @@
 // LOCAL PREVIEW. `?design=frequency` (or `?design=dawn`) on any URL stores a preview in localStorage and
 // the pre-paint script stamps it on <html> (lib/theme/mode.ts). It swaps the TOKENS only: the server-side
 // switches (skins off, Space font sets off) still follow SITE_DESIGN, so a true check of a design is a
-// local run with the env var set.
+// local run with the env var set. A design's sheets load per design (app/themes/active/, written by
+// scripts/write-design-assets.mjs), so the preview has nothing to show in a build that wears another one.
 
 /**
  * Every design system the platform can wear. Add one = a CSS file in app/themes/, an entry here, a

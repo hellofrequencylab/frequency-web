@@ -7,8 +7,8 @@
 // The text is each page's own, unchanged. The DAWN render of every page lives in components/legal and is
 // untouched; these are only reached when SITE_DESIGN is 'frequency'.
 import Link from 'next/link'
-import '@/app/themes/frequency/site-pages-b.css'
-import '@/app/themes/frequency/site-pages-legal.css'
+import '@/app/themes/active/site-pages-b'
+import '@/app/themes/active/site-pages-legal'
 
 /** A legal page: crumbs, the title, the "Last updated" line, then the reading column. */
 export function FrequencyLegalReading({

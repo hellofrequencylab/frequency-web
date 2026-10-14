@@ -17,13 +17,14 @@ import {
   IBM_Plex_Mono,
 } from "next/font/google";
 import "./globals.css";
-// The design systems beside DAWN (ADR-1737). Each is scoped to <html data-design="<id>">, so it costs
-// nothing until the attribute names it; lib/theme/design.ts is the switch.
-import "./themes/frequency/core.css";
-import "./themes/frequency.css";
-// The shared primitives' Frequency classes (templates, ui, cards), plus their fallback for a Frequency
-// page inside no product kit (sign-in, onboarding). Scoped to [data-design="frequency"].
-import "./themes/frequency/members-ui.css";
+// The ACTIVE design's sheets (ADR-1737). Each is a stub in app/themes/active/ that
+// scripts/write-design-assets.mjs points at the build's design (scripts/lib/design-styles.mjs): under
+// Frequency, its generated core, then its alias layer, then the shared primitives' Frequency classes
+// (templates, ui, cards, and their fallback for a page inside no product kit); under DAWN, nothing, so a
+// DAWN deploy ships none of Frequency's CSS. Never import app/themes/<id>/*.css directly.
+import "./themes/active/core";
+import "./themes/active/alias";
+import "./themes/active/members-ui";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
 import { SITE_DESIGN } from '@/lib/theme/design'

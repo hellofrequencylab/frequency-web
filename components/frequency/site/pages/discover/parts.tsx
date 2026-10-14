@@ -9,7 +9,7 @@
 // Privacy is the readers' contract and nothing here widens it: an event carries a CITY, never a venue
 // (ADR-186, ADR-1743/1744), so a card says the town and the RSVP page says the rest.
 
-import '@/app/themes/frequency/site-discover.css'
+import '@/app/themes/active/site-discover'
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'

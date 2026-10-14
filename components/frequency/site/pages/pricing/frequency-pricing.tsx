@@ -21,7 +21,7 @@
 // processing" in its own sentence (LIVE-913).
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
-import '@/app/themes/frequency/site-pages-b.css'
+import '@/app/themes/active/site-pages-b'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import type { FeatureGrid, Offering } from '@/lib/pricing/pricing-grid'
 

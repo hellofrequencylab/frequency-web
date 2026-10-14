@@ -28,8 +28,8 @@ import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock } from './vera-dock'
 import { FQ_EDITOR, k, on } from './skin'
 import './editor.css'
-import '@/app/themes/frequency/kit-editor.css'
-import '@/app/themes/frequency/editor-shell.css'
+import '@/app/themes/active/kit-editor'
+import '@/app/themes/active/editor-shell'
 
 type Panel = 'inspect' | 'comments' | 'seo' | 'header' | 'footer' | 'page'
 /** The Frequency inspector's tabs (the design's Content / Design / Advanced / Notes). Notes is the comments

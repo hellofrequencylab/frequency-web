@@ -10,7 +10,7 @@
 // Cards here are NOT `.pop` cards: the kit holds a `.pop` at opacity 0 until the FX island reveals it,
 // and a directory of two hundred Circles should be readable the moment it paints.
 
-import '@/app/themes/frequency/site-discover.css'
+import '@/app/themes/active/site-discover'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'

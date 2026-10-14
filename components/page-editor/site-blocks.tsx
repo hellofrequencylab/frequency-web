@@ -1,4 +1,4 @@
-import '@/app/themes/frequency/site-blocks.css'
+import '@/app/themes/active/site-blocks'
 
 // THE FREQUENCY WEBSITE SCOPE OVER A BLOCK DOCUMENT (ADR-1737). Under SITE_DESIGN 'frequency' the block
 // config's root render (lib/page-editor/config.tsx) wraps every non-Space document in this, so the blocks

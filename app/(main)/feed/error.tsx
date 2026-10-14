@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SITE_DESIGN } from '@/lib/theme/design'
-import '@/app/themes/frequency/members-a.css'
+import '@/app/themes/active/members-a'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {

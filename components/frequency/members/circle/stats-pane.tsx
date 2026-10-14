@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import '@/app/themes/frequency/members-b.css'
+import '@/app/themes/active/members-b'
 import { getCircleMomentum } from '@/lib/connections/metrics'
 import { loadCircleBoard, type CircleBoardMember } from '@/lib/circles/effort-board'
 import { MIN_BOARD_CONTRIBUTORS } from '@/lib/quest/effort'

@@ -5,13 +5,18 @@
 // content on the page canvas, then the "Still stuck? Write to us." band pointing at the front page's
 // contact form.
 //
+// SURFACE. Every page here sits on COMMONS, the light reading room (lib/frequency/site-pages.ts, the help
+// row's `innerSurface`; owner 2026-10-14, "light for articles"): only the front page (/help) is Stage. The
+// reading column is the one the legal pages already wear on Commons (legal-reading.tsx), and SiteShell's
+// Commons rules turn the side colour deep for links, list markers and the quote rule (site-shell.css).
+//
 // READING IDIOM. An article is the help center's long read, so its body is the kit's reading column:
 // `.hp-prose` (site-pages-b.css) dresses the plain elements HelpMarkdown renders in `bare` mode,
 // with the kit's display face for headings, body colour and measure for paragraphs, the side colour
 // for links, and the `.mx` table's lines for GFM tables. The routes, the article ids, the JSON-LD and
 // the markdown source are unchanged.
 import Link from 'next/link'
-import '@/app/themes/frequency/site-pages-b.css'
+import '@/app/themes/active/site-pages-b'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
@@ -36,9 +41,9 @@ function HelpHero({
 }) {
   return (
     <section className={`hp-hero hp-inner${size === 'm' ? ' hp-m' : ''}`} data-energy="still" data-screen-label="01 Help">
-      <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
-      <div className="fq-grain" />
-      <span className="rings" aria-hidden="true" />
+      {/* Commons: the aura low and nothing else (site-themes: "Hero areas only, low opacity"); the rings
+          and the grain are Stage's, drawn in light lines that vanish on the sand canvas. */}
+      <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.18 })} />
       <div className="wrap">
         <nav className="crumbs" aria-label="Breadcrumb">
           {crumbs.map((c, i) => (

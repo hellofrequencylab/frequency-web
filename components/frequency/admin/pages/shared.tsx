@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import '@/app/themes/frequency/admin-pages.css'
+import '@/app/themes/active/admin-pages'
 import { barHeights } from './checkin-stats'
 
 // THE MEMBER ADMIN PAGE KIT (Frequency, ADR-1740). The pieces every admin page body repeats, written once:

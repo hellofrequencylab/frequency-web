@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import '@/app/themes/frequency/kit-members.css'
-import '@/app/themes/frequency/space-page.css'
+import '@/app/themes/active/kit-members'
+import '@/app/themes/active/space-page'
 
 // THE SPACE PAGE, FREQUENCY CHROME (ADR-1737). Space pages have no design reference, so this is the
 // entity grammar of templates/members/Circle.html and Event.html applied to a Space: a cover CARD with
