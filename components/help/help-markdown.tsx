@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Link from 'next/link'
 import { isValidElement, type ReactNode } from 'react'
+import { helpHeadingSlug } from '@/lib/help/toc'
 
 // Renders help-article Markdown with DAWN-token styling. Server component (no
 // client JS) so help pages stay static and fast. Each handler takes only the
@@ -18,15 +19,10 @@ function headingText(node: ReactNode): string {
 }
 
 /** A URL-safe id for a heading, so a support reply, a sitelink or an answer engine can point at
- *  one section instead of the whole page (SCAN-805). "What if I miss a week?" -> what-if-i-miss-a-week. */
+ *  one section instead of the whole page (SCAN-805). The slug lives in lib/help/toc.ts, which the
+ *  Frequency help center's "On this page" list reads too, so its links land on these ids. */
 function headingId(children: ReactNode): string | undefined {
-  const slug = headingText(children)
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-  return slug || undefined
+  return helpHeadingSlug(headingText(children))
 }
 
 /**

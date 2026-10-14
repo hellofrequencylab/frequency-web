@@ -113,9 +113,15 @@
   }
 
   /* The fixed bar is transparent over a Stage hero by design. Over a light page it needs its own night,
-     so on Commons it is solid from the first paint. */
+     so on Commons it is solid from the first paint, scrolled or not, menu open or not.
+     `!important` because the kit's header v4 paints the bar with `!important` (kit-site.css: a 55%
+     void gradient fading to nothing at rest, a 78% void when scrolled). Without it this rule lost on
+     every Commons route and the bar was that gradient over sand: a pale grey band with the Stage
+     header's pale links and inverted wordmark on it, barely readable (owner, 2026-10-13, /help
+     articles). Same layer, higher specificity, both important: this one wins. */
   [data-design="frequency"] [data-kit="site"][data-surface="commons"] .fq-stage-band header.nav {
-    background: var(--fq-bg-canvas);
+    background: var(--fq-bg-canvas) !important;
+    border-bottom-color: var(--fq-border-hair) !important;
   }
 
   /* The kit's few Stage literals that a Commons body meets: crumbs, and the focus ring. */
