@@ -314,7 +314,7 @@ describe('the mode changes nothing else about the sale', () => {
     stripeFake.checkout.sessions.create.mockResolvedValue({ id: 'cs_1', url: null, client_secret: 'cs_secret_1' })
     await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1', ui: 'elements' })
     // LIVE-343: timed inventory takes instant money, in either UI.
-    expect(created().payment_method_types).toEqual(['card', 'link'])
+    expect(created().allowed_payment_method_types).toEqual(['card', 'link'])
     expect(typeof created().expires_at).toBe('number')
   })
 
