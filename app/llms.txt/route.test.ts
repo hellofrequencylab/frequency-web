@@ -112,6 +112,19 @@ describe('it publishes counts, and only counts', () => {
     expect(out).not.toContain('## Cities')
   })
 
+  it('leads with quick answers in the owner-ruled words (GEO)', async () => {
+    const out = await body()
+    expect(out).toContain('## Quick answers')
+    expect(out).toContain('### What is Frequency?')
+    expect(out).toContain('### Where is Frequency available?')
+    expect(out).toContain('Tips only, with no platform fee, plus card processing')
+    expect(out).toContain(`[What's happening](${SITE_URL}/discover/events)`)
+    expect(out).toContain('Two themes, Default and Bold')
+    expect(out).not.toContain('Frequency and Bold')
+    expect(out).not.toMatch(/every week|each week/i)
+    expect(out).not.toContain('—')
+  })
+
   it('emits not one character of the rows those queries returned', async () => {
     const out = await body()
     for (const leak of POISON_STRINGS) expect(out, leak).not.toContain(leak)

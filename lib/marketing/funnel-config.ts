@@ -75,7 +75,7 @@ export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
-  /** The right-hand descriptor, e.g. "Host free, with tips at 0% plus card processing", "AI that works
+  /** The right-hand descriptor, e.g. "Host free, and tips carry no platform fee, plus card processing", "AI that works
    *  for you". Rates come from the shared RATE map, never typed here. */
   detail: string
   /** Featured row (the one the niche is steered toward). */
@@ -195,7 +195,7 @@ const RATE = {
   business: formatBps(networkTakeRateBpsForPlan('business', rates)),
 }
 /** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no platform fee, plus card processing. */
-const FREE_ROW_DETAIL = 'Host free, with tips at 0% plus card processing'
+const FREE_ROW_DETAIL = 'Host free, and tips carry no platform fee, plus card processing'
 /** The business row's descriptor: selling opens here, with the introduction fee beside it. */
 const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
 /** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */

@@ -212,9 +212,9 @@ function pricedOffering(
   }
 }
 
-/** The fee line on a column that takes tips only. "0%" is the honest number: a tip carries no fee on
+/** The fee line on a column that takes tips only, in the owner's words: a tip carries no platform fee on
  *  any tier. */
-const TIPS_ONLY_LINE = `Tips only, at 0% ${PLAN_STORY.plusProcessing}`
+const TIPS_ONLY_LINE = `Tips only, no platform fee (0%), ${PLAN_STORY.plusProcessing}`
 
 /** The fee line on a column that sells: the promise first, then the introduction fee. */
 function sellingRateLine(bps: number): string {
@@ -669,7 +669,7 @@ const SPACE_GROUPS: GroupDef[] = [
         key: 'tips',
         label: 'Tips',
         detail: 'Anyone can leave a tip, on every plan, and we take nothing from it.',
-        source: { from: 'always', text: `Included, 0% ${PLAN_STORY.plusProcessing}` },
+        source: { from: 'always', text: `Included, no platform fee, ${PLAN_STORY.plusProcessing}` },
       },
       {
         key: 'space_shop_listings',
@@ -956,7 +956,7 @@ const MEMBER_GROUPS: GroupDef[] = [
         key: 'tips',
         label: 'Tips',
         detail: 'People can tip you for what you host, and we take nothing from it. Add a payout account once.',
-        source: { from: 'always', text: `Included, 0% ${PLAN_STORY.plusProcessing}` },
+        source: { from: 'always', text: `Included, no platform fee, ${PLAN_STORY.plusProcessing}` },
       },
       {
         key: 'payments',
