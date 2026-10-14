@@ -130,7 +130,7 @@ export async function getPublishedData(slug: string, spaceId?: string | null): P
 /** The live document PLUS the row's real timestamps, for a route that publishes Article dates.
  *  `published_at` is the last Publish from /edit/<slug>; `updated_at` moves on every draft save, so
  *  it is NOT a publish signal. Null when nothing is published (the route falls to its template). */
-export interface PublishedPage {
+interface PublishedPage {
   doc: Data
   published_at: string | null
   updated_at: string | null

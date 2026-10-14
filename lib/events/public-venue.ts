@@ -52,7 +52,7 @@ export function venueFromRow(row: {
  *  error reads as unknown, which publishes the city-level Place exactly as before. */
 export async function getPublicEventVenue(slug: string): Promise<PublicEventVenue> {
   try {
-    const { data } = await createAdminClient()
+    const { data, error } = await createAdminClient()
       .from('events')
       .select('hide_address, venue_name, street, postal_code, geog')
       .eq('slug', slug)
@@ -61,8 +61,10 @@ export async function getPublicEventVenue(slug: string): Promise<PublicEventVenu
       .is('removed_at', null)
       .limit(1)
       .maybeSingle()
+    if (error) throw error
     return venueFromRow((data as Parameters<typeof venueFromRow>[0]) ?? null)
-  } catch {
+  } catch (e) {
+    console.error('[public-venue] read failed; the event schema falls back to the city-level Place:', e instanceof Error ? e.message : e)
     return { hide_address: null, venue: null }
   }
 }

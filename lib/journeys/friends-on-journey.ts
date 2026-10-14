@@ -19,7 +19,7 @@ export interface JourneyFriend {
 export async function listFriendsOnJourney(viewerId: string, planId: string, limit = 6): Promise<JourneyFriend[]> {
   try {
     const admin = createAdminClient()
-    const [{ data: pairs }, { data: blocks }] = await Promise.all([
+    const [{ data: pairs, error: pairsError }, { data: blocks, error: blocksError }] = await Promise.all([
       admin
         .from('friendships')
         .select('user_a_id, user_b_id')
@@ -30,6 +30,9 @@ export async function listFriendsOnJourney(viewerId: string, planId: string, lim
         .select('blocker_id, blocked_id')
         .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`),
     ])
+    // A refused blocks read must never surface a blocked person: any read error drops the whole list.
+    if (pairsError) throw pairsError
+    if (blocksError) throw blocksError
     const blocked = new Set<string>()
     for (const b of blocks ?? []) blocked.add(b.blocker_id === viewerId ? b.blocked_id : b.blocker_id)
     const friendIds = (pairs ?? [])
@@ -37,23 +40,25 @@ export async function listFriendsOnJourney(viewerId: string, planId: string, lim
       .filter((id) => !blocked.has(id))
     if (friendIds.length === 0) return []
 
-    const { data: rows } = await admin
+    const { data: rows, error: rowsError } = await admin
       .from('journey_enrollments')
       .select('profile_id, completed_at')
       .eq('plan_id', planId)
       .in('profile_id', friendIds)
+    if (rowsError) throw rowsError
     const finishedBy = new Map<string, boolean>()
     for (const r of (rows ?? []) as { profile_id: string; completed_at: string | null }[]) {
       finishedBy.set(r.profile_id, (finishedBy.get(r.profile_id) ?? false) || !!r.completed_at)
     }
     if (finishedBy.size === 0) return []
 
-    const { data: profiles } = await admin
+    const { data: profiles, error: profilesError } = await admin
       .from('profiles')
       .select('id, display_name, handle, avatar_url')
       .in('id', [...finishedBy.keys()])
       .eq('is_active', true)
       .limit(limit)
+    if (profilesError) throw profilesError
     return ((profiles ?? []) as { id: string; display_name: string; handle: string | null; avatar_url: string | null }[]).map((p) => ({
       id: p.id,
       name: p.display_name,
@@ -61,7 +66,8 @@ export async function listFriendsOnJourney(viewerId: string, planId: string, lim
       avatarUrl: p.avatar_url,
       finished: finishedBy.get(p.id) ?? false,
     }))
-  } catch {
+  } catch (e) {
+    console.error('[friends-on-journey] read failed; the panel falls back to the plain count:', e instanceof Error ? e.message : e)
     return []
   }
 }

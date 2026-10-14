@@ -299,19 +299,36 @@ export interface ZapRow {
   zaps: number
 }
 
+/** PostgREST's max_rows, and the most pages one season's breakdown reads (20,000 rows). */
+const ZAP_PAGE = 1000
+const ZAP_MAX_PAGES = 20
+
 /** The member's Zap ledger since the current season opened, folded into three sources. */
 export async function loadZapBreakdown(profileId: string): Promise<ZapRow[]> {
   const season = await getCurrentSeason()
   if (!season) return []
-  const { data, error } = await createAdminClient()
-    .from('zap_transactions')
-    .select('action_type, amount')
-    .eq('profile_id', profileId)
-    .gte('created_at', season.starts_at)
-    .limit(1000)
-  note('zap ledger', error)
+  // PAGED: PostgREST caps a response at max_rows (1000), so an active member's season read short
+  // without `.range()`. A short page is the end; a refused page logs and keeps what was read.
+  const admin = createAdminClient()
+  const ledger: { action_type: string | null; amount: number }[] = []
+  for (let page = 0; page < ZAP_MAX_PAGES; page += 1) {
+    const { data, error } = await admin
+      .from('zap_transactions')
+      .select('action_type, amount')
+      .eq('profile_id', profileId)
+      .gte('created_at', season.starts_at)
+      .order('id', { ascending: true })
+      .range(page * ZAP_PAGE, page * ZAP_PAGE + ZAP_PAGE - 1)
+    if (error) {
+      note('zap ledger', error)
+      break
+    }
+    const rows = (data ?? []) as { action_type: string | null; amount: number }[]
+    ledger.push(...rows)
+    if (rows.length < ZAP_PAGE) break
+  }
   const sums = { checkins: 0, practices: 0, other: 0 }
-  for (const t of (data ?? []) as { action_type: string | null; amount: number }[]) {
+  for (const t of ledger) {
     const a = t.action_type ?? ''
     if (a === 'event_attend') sums.checkins += t.amount
     else if (a.startsWith('practice_')) sums.practices += t.amount
