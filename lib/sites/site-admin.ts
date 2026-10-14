@@ -37,7 +37,7 @@ export async function siteAdminAllowed(token: string | undefined, host: string, 
   // Platform staff (janitor / admin) operate any Space's content: the console mints them a full pass
   // (getSpaceCapabilities grants STAFF_CAPABILITIES), so the site honours the same rule, read fresh.
   // Without this the two gates disagreed and a staff member who was not on the team looped between the
-  // console handoff and /admin (LIVE-909).
+  // console handoff and /admin (LIVE-921).
   return isStaff(await readProfileWebRole(pass.profileId))
 }
 

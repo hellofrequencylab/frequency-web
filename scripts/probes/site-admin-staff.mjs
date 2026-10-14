@@ -1,4 +1,4 @@
-// LIVE-909: the website's admin gate agrees with the console's on platform staff. The console handoff
+// LIVE-921: the website's admin gate agrees with the console's on platform staff. The console handoff
 // (app/(main)/spaces/[slug]/manage/leadership/open) mints a full pass to anyone getSpaceCapabilities lets
 // edit, which includes platform staff on any Space; the site gate (lib/sites/site-admin.ts) must accept the
 // same people, or a staff member who is not on the team loops between the two until the browser gives up.

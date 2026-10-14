@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// LIVE-909: the website's admin gate agrees with the console's. The console (getSpaceCapabilities) gives
+// LIVE-921: the website's admin gate agrees with the console's. The console (getSpaceCapabilities) gives
 // platform staff full operator rights over any Space and mints them a full pass; if the site refused that
 // pass, the person looped between the console handoff and /admin until the browser gave up.
 
