@@ -47,8 +47,14 @@ function noiseTile(): string | null {
     cv.width = cv.height = 180
     const cx = cv.getContext('2d')!
     const im = cx.createImageData(180, 180)
+    // A fixed-seed generator, not Math.random: grain needs no entropy, and a tile that differs on
+    // every load makes two honest captures of the same page differ across its whole surface.
+    let s = 0x9e3779b9
     for (let q = 0; q < im.data.length; q += 4) {
-      const v = (Math.random() * 255) | 0
+      s ^= s << 13
+      s ^= s >>> 17
+      s ^= s << 5
+      const v = (s >>> 0) % 256
       im.data[q] = im.data[q + 1] = im.data[q + 2] = v
       im.data[q + 3] = 255
     }
@@ -421,7 +427,7 @@ function run(root: HTMLElement): () => void {
     host.insertBefore(s, after ? after.nextSibling : null)
     added.push(s)
     const z = host.closest<HTMLElement>('[data-energy]')
-    const l: Line = { p1, p2, e: SIG[(z?.dataset.energy as Energy) || 'flow'] ?? SIG.flow, ph: Math.random() * 10, vis: false }
+    const l: Line = { p1, p2, e: SIG[(z?.dataset.energy as Energy) || 'flow'] ?? SIG.flow, ph: rnd() * 10, vis: false }
     s.__l = l
     lines.push(l)
     sio.observe(s)

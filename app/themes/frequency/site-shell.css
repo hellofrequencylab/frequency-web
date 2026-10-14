@@ -165,4 +165,36 @@
   [data-design="frequency"] [data-kit="site"] main.fq-main.fq-bare {
     padding-top: 0;
   }
+
+  /* The narrow floor (320px, ADR-1035): the 38px wordmark, search and Menu summed to 352px, so Menu
+     sat 32px off the screen. Below 360 the wordmark steps down and the bar's gaps close, so the three
+     fit with room to spare; 360 and up are unchanged. */
+  @media (max-width: 359px) {
+    [data-design="frequency"] [data-kit="site"] .nav {
+      gap: 10px !important;
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+    [data-design="frequency"] [data-kit="site"] .nav .logo,
+    [data-design="frequency"] [data-kit="site"] .nav.is-scrolled .logo {
+      height: 28px !important;
+    }
+    [data-design="frequency"] [data-kit="site"] .acct {
+      gap: 6px;
+    }
+    [data-design="frequency"] [data-kit="site"] .mm-menu {
+      padding: 0 14px !important;
+    }
+  }
+}
+
+/* Reduced motion for the kit loops kit-site.css (generated, do not edit) leaves running: the meter
+   fill, and the iridescent rims on the mega-menu panel, the next-step card and the mobile sheet. */
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit="site"] .meter i,
+  [data-design="frequency"] [data-kit="site"] .mm-panel::before,
+  [data-design="frequency"] [data-kit="site"] .next2::before,
+  [data-design="frequency"] [data-kit="site"] .fqm::before {
+    animation: none;
+  }
 }

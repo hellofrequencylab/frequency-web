@@ -272,7 +272,7 @@ export function FqHeader({
             })}
           </nav>
           <span className="ap-sp" />
-          <Link href={SEARCH_HREF} className="ap-search" title="Search ⌘K">
+          <Link href={SEARCH_HREF} className="ap-search" title="Search ⌘K" aria-label="Search">
             <FqIcon name="search" />
             <span>Search</span>
             <kbd>⌘K</kbd>
@@ -287,9 +287,9 @@ export function FqHeader({
             {messagesUnread > 0 && <i />}
           </Link>
           <BellButton unreadCount={unreadCount} open={open === 'bell'} onToggle={() => toggle('bell')} />
-          <button type="button" className="btn pa ap-zap" aria-expanded={open === 'zap'} aria-controls="fqm-zap" onClick={() => toggle('zap')}>
+          <button type="button" className="btn pa ap-zap" aria-expanded={open === 'zap'} aria-controls="fqm-zap" onClick={() => toggle('zap')} aria-label="Zap">
             <FqIcon name="zap" />
-            Zap
+            <span className="ap-zap-l">Zap</span>
           </button>
         </div>
         <div className="ap-hdr-r">

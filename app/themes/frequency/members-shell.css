@@ -498,3 +498,26 @@
 [data-design="frequency"] [data-kit="members"] .fa-quick a svg { width: 18px; height: 18px; flex: none; color: var(--fq-text-muted) }
 [data-design="frequency"] [data-kit="members"] .fa-quick a span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 @media (max-width: 720px) { [data-design="frequency"] [data-kit="members"] .fa-quick { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* THE NARROW FLOOR (go-live overflow gate, ADR-1035). Three boxes ran off a phone:
+   - the Zap button, 39px past a 320px screen: under 480px it keeps its icon and its name (aria-label)
+     and drops the caption, so the header row fits;
+   - the Zap, Notifications and account sheets, a fixed 340px anchored 24px from the right, 4px past a
+     360px screen: they now cap at the screen less a 12px gutter each side;
+   - the two-column pages (.ap-cols, Settings) collapse to `1fr`, whose floor is its content's
+     min-content, so one wide row widened the whole column past the screen; minmax(0,1fr) holds it. */
+@layer components {
+  @media (max-width: 1000px) {
+    [data-design="frequency"] [data-kit="members"] .ap-cols,
+    [data-design="frequency"] [data-kit="members"] .ap-cols.l { grid-template-columns: minmax(0, 1fr) }
+    [data-design="frequency"] [data-kit="members"] .ap-cols > * { min-width: 0 }
+  }
+  @media (max-width: 720px) {
+    [data-design="frequency"] [data-kit="members"] .ap-sheets { right: 12px }
+    [data-design="frequency"] [data-kit="members"] .ap-sheet { width: min(340px, calc(100vw - 24px)) }
+  }
+  @media (max-width: 480px) {
+    [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap { width: 40px; height: 40px; padding: 0 }
+    [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-zap-l { display: none }
+  }
+}

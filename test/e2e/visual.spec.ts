@@ -123,6 +123,15 @@ async function capture(
 ): Promise<void> {
   assertBaselineEnvironment()
   await applyRenderState(page, state)
+  // REDUCED MOTION, BEFORE THE PAGE LOADS. `animations: 'disabled'` (playwright.config.ts) stops CSS
+  // animations at the shutter; it cannot stop JS motion, and the Frequency site runs plenty of it:
+  // rAF signal lines on the live strip, staggered setTimeout pop reveals, the hero/fold scroll story
+  // and a count-up (components/frequency/site/shell/site-fx.tsx, .../pages/home/home-motion.tsx).
+  // Each of those already renders its still, final state under `prefers-reduced-motion: reduce`, and
+  // reads the query once at mount, so it has to be emulated before `goto`. Without it home--*-light
+  // never held two identical frames and timed out at the shutter. Scoped to this spec: a11y and
+  // overflow share applyRenderState and keep the default motion.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto(surface.path, { waitUntil: 'load' })
   // A full-page capture on a touch project drops the touch emulation after its first shot and
   // never gets it back, so the first capture and the second photograph two layouts (LIVE-492;

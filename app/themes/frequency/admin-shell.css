@@ -83,3 +83,18 @@
 [data-design="frequency"] [data-kit="admin"] .ad-top{gap:var(--fq-space-4);padding:0 18px}
 [data-design="frequency"] [data-kit="admin"] .ad-main{padding:28px 18px 80px}}
 }
+
+/* THE NARROW FLOOR (go-live overflow gate, ADR-1035). Under 960px the console's sidebar folds into a
+   wrapping row above the page, but the kit collapses the grid to `1fr`, whose floor is the row's
+   min-content: the sidebar (and the page beside it) grew to 822px on a 320px phone. minmax(0,1fr) holds
+   both to the screen, and the section nav keeps its own sideways scroll. The Space switcher's menu was
+   placed absolutely at the switcher's left edge, 240px wide, so it hung 106px off a 320px screen; on a
+   phone it opens in flow under the switcher, as wide as the row. */
+@layer components {
+  @media (max-width: 960px) {
+    [data-design="frequency"] [data-kit="admin"] .ad { grid-template-columns: minmax(0, 1fr) }
+    [data-design="frequency"] [data-kit="admin"] .ad > *,
+    [data-design="frequency"] [data-kit="admin"] .ad-side > * { min-width: 0; max-width: 100% }
+    [data-design="frequency"] [data-kit="admin"] .ad-switch-menu { position: static; min-width: 0; margin-top: 6px }
+  }
+}

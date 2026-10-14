@@ -156,6 +156,9 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-svg path.flow{stroke-dasharray:4 8;animation:wvflow 1.6s linear infinite}
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-svg path.on{opacity:1;stroke-width:2.2}
 @keyframes wvflow{to{stroke-dashoffset:-24}}
+/* Reduced motion: the Home loops the kit sheet does not already stop (the marquee mark, the ring breath,
+   the live figure sweep, the weave threads). */
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pa-home .h-sig-run .fq-logo-icon, [data-design="frequency"] [data-kit="site"] .pa-home .rings::after, [data-design="frequency"] [data-kit="site"] .pa-home .lv-stat b, [data-design="frequency"] [data-kit="site"] .pa-home .wv-svg path.flow{animation:none}}
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-loop{position:absolute;z-index:2;left:50%;transform:translate(-50%,-50%);font:600 var(--fq-text-meta)/1.2 var(--fq-font-sans);padding:8px 14px;border-radius:var(--fq-radius-orb);background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--fq-lc);color:var(--fq-text-strong);white-space:nowrap}
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-loop.top{--fq-lc:var(--fq-x-aqua-neon);top:0}
 [data-design="frequency"] [data-kit="site"] .pa-home .wv-loop.bot{--fq-lc:var(--fq-x-sun-neon);bottom:-36px;transform:translate(-50%,0)}

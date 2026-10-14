@@ -126,7 +126,14 @@ async function overflowing(page: Page, viewport: number): Promise<Offender[]> {
         // running past the edge BY DESIGN and carrying no information a reader needs. Named
         // explicitly rather than inferred from its clip, so it cannot become a loophole the way
         // "any clipper" did.
-        if (node.querySelector(':scope > .animate-marquee') || node.classList.contains('animate-marquee')) {
+        // Frequency draws its two marquees with its own classes: the home signature strip
+        // (`.h-sig-track`, aria-hidden, the sentence read once from its wrapper's label) and the
+        // live-events ticker (`.lv-track`, whose events the "What's on" list above it carries in
+        // full). Same pattern, named the same way.
+        if (
+          node.querySelector(':scope > :is(.animate-marquee, .h-sig-track, .lv-track)') ||
+          node.matches('.animate-marquee, .h-sig-track, .lv-track')
+        ) {
           return true
         }
         node = node.parentElement

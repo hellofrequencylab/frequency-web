@@ -531,7 +531,7 @@ export function PracticesTable({
                     <Link
                       href={`/practices/${p.id}/edit`}
                       title={`Edit ${p.title}`}
-                      className="block truncate text-body-sm font-medium text-text hover:underline"
+                      className="-my-0.5 block min-w-6 truncate py-0.5 text-body-sm font-medium text-text hover:underline"
                     >
                       {p.title}
                     </Link>

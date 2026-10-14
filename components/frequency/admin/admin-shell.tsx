@@ -159,7 +159,7 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
               </Suspense>
               <span className="ap-sp" />
               <TopLinks links={links} />
-              <Link href={search.href} className="ap-search" style={{ flex: '0 1 260px' }}>
+              <Link href={search.href} className="ap-search" aria-label={search.label} style={{ flex: '0 1 260px' }}>
                 <FqIcon name="search" size={17} />
                 <span>{search.label}</span>
               </Link>

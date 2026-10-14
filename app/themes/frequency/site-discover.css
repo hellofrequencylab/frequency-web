@@ -89,7 +89,11 @@
 [data-design="frequency"] [data-kit="site"] .dx-posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
 [data-design="frequency"] [data-kit="site"] .dx-post{display:flex;flex-direction:column;gap:12px;padding:22px;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="site"] .dx-post p{margin:0;font-size:var(--fq-text-body-size);line-height:1.55;color:var(--fq-text-body);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-[data-design="frequency"] [data-kit="site"] .dx-post footer{display:flex;gap:8px;flex-wrap:wrap;font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
+/* The kit paints every <footer> as the site footer (kit-site: ink band, 56px padding); a post's byline
+   footer is not that band, so it drops the fill and the padding and reads on its own card. */
+[data-design="frequency"] [data-kit="site"] .dx-post footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:var(--fq-text-meta);color:var(--fq-text-muted);background:none;padding:0}
+/* The byline link is a 24px target (WCAG 2.5.8), padded, not drawn bigger. */
+[data-design="frequency"] [data-kit="site"] .dx-post footer a{display:inline-block;padding:5px 0;margin:-5px 0}
 [data-design="frequency"] [data-kit="site"] .dx-post footer b{color:var(--fq-text-strong);font-weight:600}
 [data-design="frequency"] [data-kit="site"] .dx-past .dx-ev{opacity:.78}
 @media (max-width:560px){
