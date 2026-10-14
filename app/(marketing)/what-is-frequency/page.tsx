@@ -28,7 +28,7 @@ const TITLE = 'What is Frequency and how does it work?'
 const META_DESCRIPTION =
   'Local groups that keep meeting. Frequency is small local Circles and nearby Events. What it is, how it works, and what it costs.'
 const DESCRIPTION =
-  'Local groups that keep meeting. Frequency is small local Circles and nearby Events, plus the tools creators and businesses need to grow together. You keep 100% of your own bookings. Here is what it is, how it works, and what it costs.'
+  'Local groups that keep meeting. Frequency is small local Circles and nearby Events, plus the tools creators and businesses need to grow together. You keep 100% of your own bookings, after card processing. Here is what it is, how it works, and what it costs.'
 
 // The hero photo, fed to the Article schema for richer-result eligibility. The coded
 // page passed this ONE image (the closing media beat's photo was never in the node),

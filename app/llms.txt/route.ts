@@ -90,7 +90,7 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
         { path: '/vision', label: 'Vision', desc: 'For partners, investors, civic leaders and press: the plan for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.' },
       ]
     : []),
-  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
+  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings after card processing, pay only on the business the network sends you. A Collective Space also gets a public network page: its member Spaces and one shared calendar of their events.' },
   { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). Two themes, Default and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
@@ -282,7 +282,7 @@ export async function GET() {
     '',
     ...help,
     ...cities,
-    '## Pricing for Spaces (a Community Collective, not a tax on your work)',
+    '## Pricing for Spaces (not a tax on your work)',
     `The core promise: people join free, businesses host free, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
     takeRateStory(input, offerings),

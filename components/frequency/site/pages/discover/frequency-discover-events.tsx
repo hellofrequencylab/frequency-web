@@ -54,7 +54,7 @@ export function FrequencyDiscoverEvents({
       >
         <div className="ctas">
           <a className="btn fq-iri-btn" href="#calendar">
-            See what’s on
+            See what’s happening
           </a>
           <Link className="btn btn-ghost fq-iri-rim" href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL}

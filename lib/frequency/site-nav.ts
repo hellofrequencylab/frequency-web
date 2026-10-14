@@ -185,7 +185,7 @@ export const WING_MENUS: WingMenu[] = [
       {
         heading: 'Start',
         links: [
-          { href: ROUTES.people, label: 'Find your people', hint: 'How Frequency works for you', icon: 'circle' },
+          { href: ROUTES.people, label: 'Find your Circle', hint: 'How Frequency works for you', icon: 'circle' },
           { href: FIRST_NIGHT, label: 'Your first night', hint: 'What to expect, start to finish', icon: 'checkin' },
           { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
         ],
@@ -256,7 +256,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.join, label: 'Get started', hint: 'Join as a person or open a Space', icon: 'host' },
   { href: ROUTES.help, label: 'Help', hint: 'Questions, policies, contact', icon: 'search' },
   { href: ROUTES.home, label: 'Home', hint: 'Gather like it matters', icon: 'circle' },
-  { href: ROUTES.people, label: 'For people', hint: 'Find your people', icon: 'circle' },
+  { href: ROUTES.people, label: 'For people', hint: 'Find your Circle', icon: 'circle' },
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
@@ -294,7 +294,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
   {
     heading: 'For people',
     links: [
-      { href: ROUTES.people, label: 'Find your people' },
+      { href: ROUTES.people, label: 'Find your Circle' },
       { href: FIRST_NIGHT, label: 'Your first night' },
       { href: ROUTES.happening, label: 'What’s happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },

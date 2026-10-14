@@ -94,7 +94,7 @@ export default async function DiscoverCitiesIndexPage() {
             Where Frequency is <span className="text-primary-strong">taking root</span>
           </>
         }
-        subtitle="These are the cities with real momentum: Circles meeting and events happening near you. Pick yours to see what is on this week, then show up in person."
+        subtitle="These are the cities with real momentum: Circles meeting and events happening near you. Pick yours to see what's happening there, then show up in person."
       />
 
       <Section tone="canvas" role="cont">

@@ -757,7 +757,6 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
       rungs: [
         { name: 'Member', blurb: 'You show up to a Circle. That is the whole entry fee.' },
-        { name: 'Crew', blurb: 'You are in for the season, learning the format and lending a hand.' },
         { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
         { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
         { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },
@@ -882,7 +881,7 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       ],
       ctaLabel: BETA_CTA_LABEL,
       ctaHref: BETA_CTA_HREF,
-      secondaryNote: 'No money changes hands yet. Join the Beta and we will bring you in as the build takes shape.',
+      secondaryNote: 'No money changes hands yet. Join free now and we will bring you in as the build takes shape.',
       emphasis: emphasisDefault,
       // Default to the founding band's original look: bordered ink card, rounded-3xl.
       cardStyle: { style: 'border', radius: 'lg' } as CardStyleValue,

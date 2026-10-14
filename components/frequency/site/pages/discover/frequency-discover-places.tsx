@@ -37,7 +37,7 @@ export function FrequencyCitiesIndex({ cities, towns }: { cities: { city: string
             Where Frequency is <em className="fq-iri-text">taking root.</em>
           </>
         }
-        lede="The cities with real momentum: Circles meeting and events happening near you. Pick yours to see what’s on, then show up in person."
+        lede="The cities with real momentum: Circles meeting and events happening near you. Pick yours to see what’s happening, then show up in person."
       />
       <section className="dx-sec" data-screen-label="02 Cities">
         <div className="wrap">

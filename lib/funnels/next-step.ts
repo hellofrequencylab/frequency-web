@@ -124,6 +124,6 @@ export function nextStepFor(
     default:
       return moment === 'mindless'
         ? { label: "See this week's Events", href: '/events', body: 'Find something near you and say you are going.' }
-        : { label: 'Find a Circle that meets every week', href: '/circles', body: 'The same faces, week after week.' }
+        : { label: 'Find your Circle', href: '/circles', body: 'The same faces, again and again.' }
   }
 }

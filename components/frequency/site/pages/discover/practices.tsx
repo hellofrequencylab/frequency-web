@@ -96,7 +96,7 @@ export function FrequencyPractices({
         {practices.length === 0 ? (
           <DirEmpty
             title="The library’s still filling in."
-            body="New Practices land every week. Check back in a few days, or find a Circle doing one near you now."
+            body="New Practices land as the community writes them. Check back soon, or find a Circle doing one near you now."
           >
             <Link className="btn fq-iri-btn" href="/discover/circles">
               Browse Circles

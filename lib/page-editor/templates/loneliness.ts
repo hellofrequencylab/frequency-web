@@ -148,7 +148,7 @@ export const spec: ArticleSpec = {
         eyebrow: "What the feed can't fake",
         title: 'The feed gives you contact. It never gives you a room.',
         kicker: 'A thousand faces a day, and not one that notices when you are gone.',
-        body: 'The scroll hands you endless people and zero presence. You can watch a hundred lives go by and still close the app feeling like nobody clocked you were there. That is the trade the feed makes: contact without belonging.\n\nA room is the opposite. Show up to the same handful of people every week and your absence starts to leave a hole. That is the thing the scroll cannot copy, and the thing that finally makes the phone easy to put down.',
+        body: 'The scroll hands you endless people and zero presence. You can watch a hundred lives go by and still close the app feeling like nobody clocked you were there. That is the trade the feed makes: contact without belonging.\n\nA room is the opposite. Show up to the same handful of people again and again and your absence starts to leave a hole. That is the thing the scroll cannot copy, and the thing that finally makes the phone easy to put down.',
         side: 'right',
       },
     },
@@ -183,7 +183,7 @@ export const spec: ArticleSpec = {
           title: 'A few real people, a standing time',
           kicker:
             'The opposite of lonely is not a crowd. It is a standing plan with the same faces.',
-          body: 'Frequency is a Community Collective, built to help every community effort near you succeed. A Circle is a small group around something you care about that meets on a set rhythm, so the same handful of people keep ending up in the same room. A walk, a supper table, a book, a sit. That regular run-in is the thing that turns strangers into regulars, and it is a modern third place you do not have to own a building to have.\n\nYou do not have to be interesting or outgoing. You do not have to arrive with friends. You pick what you practice, find a few people near you, and come back. Joining is free, and Frequency never takes a cut of your own bookings; you can see exactly how that works on the [pricing page](/pricing).',
+          body: 'Frequency is built to help every community effort near you succeed. A Circle is a small group around something you care about that meets on a set rhythm, so the same handful of people keep ending up in the same room. A walk, a supper table, a book, a sit. That regular run-in is the thing that turns strangers into regulars, and it is a modern third place you do not have to own a building to have.\n\nYou do not have to be interesting or outgoing. You do not have to arrive with friends. You pick what you practice, find a few people near you, and come back. Joining is free, and Frequency never takes a cut of your own bookings; you can see exactly how that works on the [pricing page](/pricing).',
           side: 'left',
           ctaLabel: 'See how the community works',
           ctaHref: '/the-community',

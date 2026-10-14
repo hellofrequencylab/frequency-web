@@ -1654,7 +1654,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           forWho: 'Anyone who wants to find their people, go to things, and join Circles.',
           rate: '',
           featured: 'normal',
-          ctaLabel: 'Join free',
+          ctaLabel: 'Find your Circle',
           ctaHref: '/join',
         },
         {
@@ -1790,7 +1790,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         },
         {
           name: 'Pick a standing time',
-          text: 'Same day, same hour, every week. A standing time is what turns a plan into a habit.',
+          text: 'Same day, same hour, on repeat. A standing time is what turns a plan into a habit.',
           image: '',
           alt: '',
         },

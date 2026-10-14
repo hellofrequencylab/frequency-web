@@ -163,7 +163,7 @@ return {
   eyebrow: 'The short version',
   title: 'What is Frequency?',
   subtitle:
-    `${CATEGORY_LINE} Small Circles that meet on a rhythm, nearby Events, and the tools creators and businesses need to grow together. You keep 100% of your own bookings.`,
+    `${CATEGORY_LINE} Small Circles that meet on a rhythm, nearby Events, and the tools creators and businesses need to grow together. You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}.`,
   image: HERO_IMAGE,
   alt: 'A small group sitting together on a sunlit lawn, settled into easy conversation',
   heroCtaLabel: "See what's happening near you",
@@ -172,7 +172,7 @@ return {
   answer:
     `${CATEGORY_LINE} Frequency is built to rebuild the third place: the spaces that are not home and not work where you are known by name. It gives a neighborhood everything it needs to gather in one place.`,
   intro:
-    'The corner cafe, the town square, the standing table: we traded them for feeds and followers and lost the room. Frequency is the deliberate rebuild. You find a few people near you, join a small group that meets on a rhythm, and show up in person. The creators, coaches, and businesses who host those groups get the booking, payment, and community tools to grow together, and keep 100% of their own bookings while they do. The app is only the thread that gets everyone into the room.',
+    'The corner cafe, the town square, the standing table: we traded them for feeds and followers and lost the room. Frequency is the deliberate rebuild. You find a few people near you, join a small group that meets on a rhythm, and show up in person. The creators, coaches, and businesses who host those groups get the booking, payment, and community tools to grow together, and keep 100% of their own bookings, after card processing, while they do. The app is only the thread that gets everyone into the room.',
   openingBeat: {
     kind: 'statement',
     text: 'Not a following to perform for. A few people who expect you on Thursday.',
@@ -257,7 +257,7 @@ return {
       // The bullet form of the same answer is lib/marketing/who-its-for.ts (llms.txt reads it).
       answer:
         'People who want to calm down fast with a few minutes on the breathing timer. People who just moved and want friends nearby, or would rather start with a run club or a supper club than small talk. The ones who already bring others together and want to host one Circle, and members who back Frequency with Crew. And the teachers, practitioners, studio owners and organizers who run the rooms.',
-      body: 'That is the Community Collective idea. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: hosting is free, Business is what you take when you start selling, and a plan is never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
+      body: 'That is the idea under the name. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings, after card processing. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: hosting is free, Business is what you take when you start selling, and a plan is never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
       links: [{ label: 'See the plans and take-rates', href: '/pricing', variant: 'secondary' }],
     },
     {
@@ -365,8 +365,8 @@ return {
       a: `Only on the business the network introduces, never on the work you bring yourself. Your own bookings, clients, and classes are 0%, always, and so are tips. When the network sells your work to someone you would not have reached alone, we take a small slice: ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} The physical spaces are funded separately, through a community-owned vehicle, not skimmed off your margin.`,
     },
     {
-      q: 'What is the Community Collective?',
-      a: 'The Community Collective is the idea under the Frequency name: a network where independent creators, coaches, healers, and small businesses grow together, and eventually build real-world spaces together. You keep 100% of your own bookings and we earn only on what the network sends you. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
+      q: 'What does Community Collective mean?',
+      a: 'Community Collective is the line under the Frequency logo. It names the idea: a network where independent creators, coaches, healers, and small businesses grow together. You keep 100% of your own bookings, after card processing, and we earn only on what the network sends you. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
     },
     {
       q: 'Where is Frequency available?',

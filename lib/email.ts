@@ -1139,7 +1139,7 @@ export async function sendMadeItEmail(params: {
       <p style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:${palette.emailPrimaryStrong};">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
       <hr style="${dividerStyle}">
       <p style="${pStyle}">${escapeHtml(offer)}</p>
-      <a href="${joinUrl}" style="${btnStyle}">Join free &rarr;</a>` : ''}
+      <a href="${joinUrl}" style="${btnStyle}">Find your Circle &rarr;</a>` : ''}
       <hr style="${dividerStyle}">
       <p style="font-size:13px;color:${palette.emailSubtle};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>` : ''}</p>
     `),
@@ -1156,7 +1156,7 @@ ${friendLine}
 ${next.shareUrl}
 ` : ''}${offer ? `
 ${offer}
-Join free: ${joinUrl}
+Find your Circle: ${joinUrl}
 ` : ''}
 ${footer}${unsubscribeUrl ? `
 Unsubscribe from event emails: ${unsubscribeUrl}` : ''}

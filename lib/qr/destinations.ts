@@ -19,7 +19,7 @@ interface SiteDestination {
 
 export const SITE_DESTINATIONS: SiteDestination[] = [
   // ── Acquisition (public, no login) — best for ads, flyers, cold traffic ──────
-  { group: 'Acquisition', label: 'Join the Beta (sign in)', path: '/sign-in', value: 'The conversion path — turn a scan into a new member. Best end point for any outreach funnel.' },
+  { group: 'Acquisition', label: 'Sign in or join', path: '/sign-in', value: 'The conversion path — turn a scan into a new member. Best end point for any outreach funnel.' },
   { group: 'Acquisition', label: 'Discover (nearby)', path: '/discover', value: 'Public landing showing everything happening nearby. Great for cold traffic that doesn’t know Frequency yet.' },
   { group: 'Acquisition', label: 'Discover · Circles', path: '/discover/circles', value: 'Public circle browser. Point a poster here so people can find a group before signing up.' },
   { group: 'Acquisition', label: 'Discover · Events', path: '/discover/events', value: 'Public events list — drive RSVPs straight from a flyer or table tent.' },

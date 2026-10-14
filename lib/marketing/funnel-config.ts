@@ -73,7 +73,8 @@ export interface FunnelFeature {
  *  take-rate / value wording. `kind` selects which catalog figure the component reads. */
 export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
-  /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
+  /** The plan name shown, e.g. "Free", "Business", "+ Vera AI" (the add-on's public name; `kind`
+   *  stays `resonance`, the machinery's id, ADR-590). */
   name: string
   /** The right-hand descriptor, e.g. "Host free, and tips carry no platform fee, plus card processing", "AI that works
    *  for you". Rates come from the shared RATE map, never typed here. */
@@ -289,7 +290,7 @@ const COACHES_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the bookings you bring in yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
@@ -380,7 +381,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
@@ -471,7 +472,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
@@ -563,7 +564,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
@@ -658,7 +659,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption:
       'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
@@ -753,7 +754,7 @@ const TEACHERS_FUNNEL: FunnelConfig = {
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the workshops you sell yourself'),
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",

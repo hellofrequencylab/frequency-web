@@ -11,8 +11,11 @@ describe('tools-for-community-builders template copy (LIVE-912)', () => {
     expect(text).toContain('Frequency bundles the four jobs')
   })
 
-  it('points at The Lab as a plan, not a place to tour', () => {
+  // 2026-10-14: /the-lab merged into /vision, and the Lab stays out of the builder wing entirely
+  // (messaging.md: Labs are for the Vision page only), so this page no longer pitches or links it.
+  it('never offers to tour The Lab, and no longer pitches it in the builder wing', () => {
     expect(text).not.toContain('Tour The Lab')
-    expect(text).toMatch(/plan for The Lab[^"]*2028/)
+    expect(text).not.toContain('/the-lab')
+    expect(text).not.toMatch(/plan for The Lab/)
   })
 })

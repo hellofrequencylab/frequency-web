@@ -1,5 +1,6 @@
 import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/article'
 import { QUEST_HREF } from '@/lib/marketing/merged-routes'
+import { HOST_CTA_LABEL } from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW TO START A CIRCLE — the FIRST seeker article enrolled in the page editor
@@ -106,7 +107,7 @@ export const spec: ArticleSpec = {
       question: 'Why do most community groups fizzle out?',
       answer:
         'Because they lean on one person’s energy instead of a structure anyone can keep. Groups die from inconsistency and burnout, not from a quiet host.',
-      body: 'When the whole thing rides on the founder being on every week, it ends the first time they are tired, traveling, or having a hard month. A fixed time and a simple, repeatable format take the weight off any single person, so the Circle survives an off night. Build the rails first and the room can outlast your worst week.',
+      body: 'When the whole thing rides on the founder being on every single time, it ends the first time they are tired, traveling, or having a hard month. A fixed time and a simple, repeatable format take the weight off any single person, so the Circle survives an off night. Build the rails first and the room can outlast your worst week.',
       links: [{ label: 'See the path we hand new hosts', href: QUEST_HREF, variant: 'secondary' }],
       beat: {
         kind: 'media',
@@ -123,7 +124,7 @@ export const spec: ArticleSpec = {
     {
       question: 'What does it cost to start a Circle?',
       answer: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free.',
-      body: 'Frequency is a Community Collective, built to support every community effort and help everyone in it succeed. People join free and hosts host free, so you never pay to hold a Circle and we never take a cut of your own bookings. You pay when you start charging: if your Circle later grows into something you sell tickets or services through, that is when a Space on Business comes in, at one honest [price](/pricing), and you see exactly what the network earned you.',
+      body: 'Frequency is built to support every community effort and help everyone in it succeed. People join free and hosts host free, so you never pay to hold a Circle and we never take a cut of your own bookings. You pay when you start charging: if your Circle later grows into something you sell tickets or services through, that is when a Space on Business comes in, at one honest [price](/pricing), and you see exactly what the network earned you.',
     },
     {
       question: 'Where to start',
@@ -147,7 +148,7 @@ export const spec: ArticleSpec = {
       },
       {
         name: 'Set a standing time and keep it',
-        text: 'Pick a day and time and repeat it without asking. The same Tuesday, every week or every other week. A standing slot beats a perfect one because friendship runs on repeats, and a moving target gives you none.',
+        text: 'Pick a day and time and repeat it without asking. The same Tuesday, on a rhythm you can keep. A standing slot beats a perfect one because friendship runs on repeats, and a moving target gives you none.',
       },
       {
         name: 'Invite a few people, not everyone',
@@ -197,7 +198,9 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'The town you wish you lived in starts with one room you hold.',
-    body: 'Frequency hands you the format, the rhythm, and a place to gather a few people on repeat. Join free and start your Circle.',
+    body: 'Frequency hands you the format, the rhythm, and a place to gather a few people on repeat. Joining is free.',
+    // The host verb (owner ruling 2026-10-14): this guide's reader already wants to gather people.
+    ctaLabel: HOST_CTA_LABEL,
   },
 }
 
