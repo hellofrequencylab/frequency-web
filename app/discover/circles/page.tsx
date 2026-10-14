@@ -122,8 +122,7 @@ export default async function DiscoverCirclesPage() {
             <p className="mt-5 text-body-lg text-muted leading-relaxed">
               Every Circle here is real and forming in North County San Diego. Read the rooms,
               the practices, the standing times. Find one that sounds like your people, or a
-              reason to gather your own. The first night is the hardest. After that, you&apos;re
-              a regular.
+              reason to gather your own. Drop in once and see how it feels. Come back if it fits.
             </p>
           </div>
           {circles.length === 0 ? (
