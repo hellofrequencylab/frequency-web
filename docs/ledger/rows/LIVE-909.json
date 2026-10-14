@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-909",
+  "title": "A platform staff member opens a Space's website editor without looping",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-14",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/site-admin-staff.mjs"
+  },
+  "detail": "Owner report 2026-10-14: The Group's website editor would not load (ERR_TOO_MANY_REDIRECTS on /spaces/the-group/manage/leadership/open?to=editor). Cause: two gates disagreed. The console handoff mints a full pass to anyone getSpaceCapabilities lets edit, and that grants platform staff (janitor / admin) STAFF_CAPABILITIES on any Space; the website's gate (siteAdminAllowed) only admitted the owner or an active editor-or-above member. A janitor who is not on The Group's team got a pass the site refused, so /admin/editor sent them back to the handoff, which minted the same pass. Fixed: siteAdminAllowed admits platform staff, read fresh from profiles.web_role on every view, the same rule as the console. Regression test lib/sites/site-admin.test.ts.",
+  "wave": "W7"
+}
