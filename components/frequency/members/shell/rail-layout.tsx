@@ -301,6 +301,10 @@ export function FqRailLayout({
         </div>
       </EntityLayoutMount>
       {!edge && footer}
+      {/* A console route has no rails, so the right rail's foot tab (the Vera orb + the Vault) rides
+          the bottom-right corner on its own (owner, 2026-10-13: "should always have the chat / vera
+          button attached"). */}
+      {!takeover && isConsoleRoute(pathname) && right && <div className="fqm-console-dock">{right.tab}</div>}
       {tip && (
         <div
           className="fqm-tip"

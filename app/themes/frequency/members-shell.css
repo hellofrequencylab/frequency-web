@@ -232,6 +232,11 @@
 [data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-rise{left:0;transform-origin:bottom left}
 [data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-rise{right:0;transform-origin:bottom right}
 [data-design="frequency"] [data-kit="members"] .fqm-rise[data-open]{opacity:1;transform:none;pointer-events:auto}
+/* The console's corner dock: the right rail's foot tab, fixed bottom-right while the rails are away. */
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock{position:fixed;right:24px;bottom:20px;z-index:45;width:248px}
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-micro{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-rise{right:0;transform-origin:bottom right}
+@media (max-width:767px){[data-design="frequency"] [data-kit="members"] .fqm-console-dock{display:none}}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card{max-height:calc(100vh - 220px);overflow-y:auto;width:300px;padding:20px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 40%,transparent),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 80%,transparent);display:flex;flex-direction:column;gap:18px}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault{position:relative;overflow:hidden}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault .fq-aura{opacity:.28}
