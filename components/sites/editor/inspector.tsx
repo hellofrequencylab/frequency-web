@@ -13,7 +13,9 @@ import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSe
 import { resolveWebsiteChrome, validWebsiteChrome, type WebsiteChrome, type Device, type SectionDisplay } from '@/lib/sites/editor/state'
 import { inspectorTarget, type FieldFocus } from '@/lib/sites/editor/field-sync'
 
-export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, focus, onFieldFocus, onChange, onDisplay }: {
+export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, focus, onFieldFocus, onChange, onDisplay, tab }: {
+  /** The Site Editor's inspector sub-tab. Without one, every group shows (the inspector stands alone). */
+  tab?: 'content' | 'design' | 'advanced'
   config: Config; block: ContentItem; doc: Data; device: Device; metadata?: Metadata; sourceSettingsHref?: string
   /** The field the canvas selection came from: the inspector opens it, scrolls to it and lights it. */
   focus?: Pick<FieldFocus, 'field' | 'path'> | null
@@ -88,34 +90,41 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
   const litField = lit ? (sub?.fields ?? fields)[lit] : undefined
   const litLabel = lit ? (litField && 'label' in litField && typeof litField.label === 'string' ? litField.label : lit) : null
   const display = sectionDeviceLayout(doc, block.props.id!, device)
+  const shows = (group: 'content' | 'design' | 'advanced') => !tab || tab === group
   const live = /^(SpaceEvents|LiveEvents|SpaceCommunity|CirclesGrid|SpacePractices|SpaceFAQ)$/.test(block.type) || liveFeatures
   return <div ref={root} className="we-inspector" data-lit={lit ?? undefined} onFocusCapture={(e) => reportFocus(e.target)}>
     {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--th-accent);background:color-mix(in srgb,var(--th-accent) 9%,transparent)}`}</style>}
     {litLabel && <div className="we-editing" role="status">Editing <strong>{litLabel}</strong>{sub && <span>in {sub.title}</span>}</div>}
+    {shows('content') && <>
     {block.type === 'FeatureGrid' && <label className="we-field">Content source<Select wrapperClassName="!contents [&>svg]:hidden" style={{ appearance: 'auto', minHeight: 0, boxShadow: 'none', transition: 'none' }} value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}
     {liveFeatures && sourceError && <p className="we-note" role="alert">{sourceError}</p>}
     {catalogOfferings && <div className="we-proposal"><strong>Live Space offerings</strong><p>These cards come from your Space’s services catalog. Edit titles, details and prices there; this section controls their presentation.</p><ul>{shownOfferings.map((item, index) => <li key={index}>{item.title || item.blurb}</li>)}</ul>{shownOfferings.length === 0 && <p>No listed offerings are visible.</p>}{sourceSettingsHref && <a className="we-row" href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit Space offerings</a>}</div>}
     {hasExternalSource && <div className="we-proposal"><strong>Connected content</strong><p>This content is managed in your Space. Website controls change its presentation.</p>{sourceSettingsHref && <a className="we-row" href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit source content</a>}</div>}
     {live && <div className="we-proposal"><strong>Live from your Space</strong><p>Published dates and listings update automatically. These fields control how they appear here.</p></div>}
     {sub && <button type="button" className="we-row" onClick={() => setScreens((s) => s.slice(0, -1))}><ChevronLeft size={16} />{sub.title}</button>}
-    <div className="we-caption">Content</div>
+    {!tab && <div className="we-caption">Content</div>}
     <FieldForm fields={sub?.fields ?? fields} value={sub ? (sub.path && nestedValue && typeof nestedValue === 'object' ? nestedValue as Record<string, unknown> : sub.value) : editableProps} onChange={sub ? changeNested : onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />
     {block.type === 'Zigzag' && <div className="we-field"><span>Layout</span><div className="we-actions">{(['left', 'right', 'stacked'] as const).map((preset) => <button type="button" className="we-action secondary" key={preset} aria-pressed={preset === 'stacked' ? display.columns === 1 : display.columns !== 1 && (editableProps.mediaSide ?? 'left') === preset} onClick={() => { const next = sectionLayoutPreset(editableProps, display, preset); onChange(next.props); onDisplay(next.display) }}>{preset === 'left' ? 'Photo left' : preset === 'right' ? 'Photo right' : 'Stacked'}</button>)}</div></div>}
-    <div className="we-caption">Section</div>
+    </>}
+    {shows('design') && <>
+    {!tab && <div className="we-caption">Section</div>}
     <details className="we-drawer" open><summary>Spacing</summary>
       <label className="we-field">Column gap <span>{display.gap === undefined ? 'Theme default' : `${display.gap}px`}</span><Input variant="seamless" aria-label="Column gap" type="range" min={0} max={96} step={4} value={display.gap ?? 0} onChange={(e) => onDisplay({ ...display, gap: Number(e.target.value) })} /></label>
       <label className="we-field">Space above and below <span>{display.padding === undefined ? 'Theme default' : `${display.padding}px`}</span><Input variant="seamless" aria-label="Section spacing" type="range" min={0} max={SECTION_SPACING_STEPS.length - 1} step={1} value={Math.max(0, SECTION_SPACING_STEPS.findIndex((step) => step === snapSectionSpacing(display.padding ?? 0)))} onChange={(e) => onDisplay({ ...display, padding: SECTION_SPACING_STEPS[Number(e.target.value)] })} /></label>
       <button type="button" className="we-row" onClick={() => onDisplay({ ...display, padding: undefined, gap: undefined })}>Use theme spacing</button>
     </details>
-    <details className="we-drawer"><summary>Breakpoints</summary><div className="we-note">{device === 'desktop' ? 'Desktop is the base layout. Tablet and phone inherit it.' : `You are editing ${device} only. Unchanged values inherit the desktop layout.`}</div>
+    <details className="we-drawer" open={tab === 'design' || undefined}><summary>Breakpoints</summary><div className="we-note">{device === 'desktop' ? 'Desktop is the base layout. Tablet and phone inherit it.' : `You are editing ${device} only. Unchanged values inherit the desktop layout.`}</div>
       <label className="we-field">Columns<Select wrapperClassName="!contents [&>svg]:hidden" style={{ appearance: 'auto', minHeight: 0, boxShadow: 'none', transition: 'none' }} value={display.columns ?? ''} onChange={(e) => onDisplay({ ...display, columns: e.target.value ? Number(e.target.value) : undefined })}><option value="">Theme default</option>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}</Select></label>
       <label className="we-field">Heading size <span>{display.textSize ?? 0}px · 0 uses theme</span><Input variant="seamless" aria-label="Heading size" type="range" min={0} max={120} step={2} value={display.textSize ?? 0} onChange={(e) => onDisplay({ ...display, textSize: Number(e.target.value) })} /></label>
       <label className="we-field">Text alignment<Select wrapperClassName="!contents [&>svg]:hidden" style={{ appearance: 'auto', minHeight: 0, boxShadow: 'none', transition: 'none' }} value={display.align ?? ''} onChange={(e) => onDisplay({ ...display, align: e.target.value ? e.target.value as 'left' | 'center' | 'right' : undefined })}><option value="">Theme default</option><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></Select></label>
       {device !== 'desktop'  && <button type="button" className="we-row" onClick={() => onDisplay(null)}>Reset {device} overrides</button>}
     </details>
-    <details className="we-drawer"><summary>Animation</summary><label className="we-field">Reveal on scroll<Select wrapperClassName="!contents [&>svg]:hidden" style={{ appearance: 'auto', minHeight: 0, boxShadow: 'none', transition: 'none' }} value={display.animation ?? 'none'} onChange={(e) => onDisplay({ ...display, animation: e.target.value as 'none' | 'fade' | 'rise' })}><option value="none">None</option><option value="fade">Fade in</option><option value="rise">Rise in</option></Select></label></details>
+    </>}
+    {shows('advanced') && <>
+    <details className="we-drawer" open={tab === 'advanced' || undefined}><summary>Animation</summary><label className="we-field">Reveal on scroll<Select wrapperClassName="!contents [&>svg]:hidden" style={{ appearance: 'auto', minHeight: 0, boxShadow: 'none', transition: 'none' }} value={display.animation ?? 'none'} onChange={(e) => onDisplay({ ...display, animation: e.target.value as 'none' | 'fade' | 'rise' })}><option value="none">None</option><option value="fade">Fade in</option><option value="rise">Rise in</option></Select></label></details>
     <details className="we-drawer"><summary>Custom code</summary><label className="we-field">Class name<Input variant="seamless" value={display.className ?? ''} onChange={(e) => onDisplay({ ...display, className: e.target.value })} placeholder="my-section" /></label><label className="we-field">Data attributes<Input variant="seamless" value={display.attributes ?? ''} onChange={(e) => onDisplay({ ...display, attributes: e.target.value })} placeholder="data-campaign=autumn" /></label><p className="we-note">Theme classes and data attributes apply to this section.</p></details>
-    <details className="we-drawer"><summary>Visibility</summary><label className="we-field"><span><Input variant="seamless" type="checkbox" style={{ width: 'auto' }} checked={display.hidden ?? false} onChange={(e) => onDisplay({ ...display, hidden: e.target.checked })} /> Hide on {device === 'desktop' ? 'all devices' : device}</span></label></details>
+    <details className="we-drawer" open={tab === 'advanced' || undefined}><summary>Visibility</summary><label className="we-field"><span><Input variant="seamless" type="checkbox" style={{ width: 'auto' }} checked={display.hidden ?? false} onChange={(e) => onDisplay({ ...display, hidden: e.target.checked })} /> Hide on {device === 'desktop' ? 'all devices' : device}</span></label></details>
+    </>}
   </div>
 }
 
