@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-855",
+  "title": "Every page preloads three DAWN fonts that the Frequency design does not draw",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/layout.tsx",
+    "ref": "Site scan 2026-10-14 (scan nine, thread 'Site scan'), against origin/main eb26a01 and production."
+  },
+  "detail": "FILED 2026-10-14. THE CONSEQUENCE: production HTML (/, /pricing, /discover/events, an event page) carries five <link rel=preload as=font>: Nunito, Geist Mono and Anton from app/layout.tsx plus Unbounded and Hanken Grotesk from lib/theme/design-fonts/frequency.ts. Only app/themes/frequency/space-page.css references a DAWN face. Three wasted woff2 downloads compete with the hero on every first paint on a phone. THE FIX: preload the three DAWN faces only when FONTS_DESIGN is 'dawn' (they still load on demand where space-page.css asks).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/layout.tsx','utf8');const b=s.slice(s.indexOf('const nunito'),s.indexOf('const playfair'));process.exit((b.match(/preload/g)||[]).length>=3?0:1)\""
+  },
+  "wave": "W7"
+}
