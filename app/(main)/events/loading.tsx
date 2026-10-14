@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqEventsLoading } from '@/components/frequency/members/events/events-loading'
 
 // Route-level loading UI for the Events index (PAGE-FRAMEWORK §5). See the note in
 // app/(main)/circles/loading.tsx: the retired `px-4 py-8 max-w-2xl mx-auto` shell double-padded
@@ -28,6 +30,8 @@ function EventCardSkeleton() {
 }
 
 export default function EventsLoading() {
+  // Under Frequency (build-time) the wait is the Events body's own frame (events-loading.tsx).
+  if (SITE_DESIGN === 'frequency') return <FqEventsLoading />
   return (
     <div>
       <Skeleton className="min-h-[15rem] w-full rounded-3xl sm:min-h-[24rem]" />
