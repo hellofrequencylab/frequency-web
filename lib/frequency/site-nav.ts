@@ -7,7 +7,7 @@
 // mapped to a route that exists in app/. site-nav.test.ts walks app/ and fails if one does not.
 //
 // EVERY DESIGN PAGE HAS A ROUTE. Features (/features) and Stories (/stories) shipped with the Frequency
-// rebuild, and the Help accessibility statement is the Help front page's `#accessibility` card, as in
+// rebuild (Stories is hidden until three real stories exist, owner ruling 2026-10-14), and the Help accessibility statement is the Help front page's `#accessibility` card, as in
 // Help.html; all are set in ROUTES below, so every menu, the search, the sheet and the footer link to them. A route set to null falls back (FEATURE_FALLBACK, for a build
 // where /features is not served) or is left out, so the header never links to a 404.
 //
@@ -25,8 +25,10 @@ export const ROUTES = {
   /** Features.html. Served under Frequency (app/(marketing)/features). Null falls back to FEATURE_FALLBACK. */
   features: '/features' as string | null,
   pricing: '/pricing',
-  /** Stories.html. Served under Frequency (app/(marketing)/stories). */
-  stories: '/stories' as string | null,
+  /** Stories.html. HIDDEN (owner ruling 2026-10-14): null until three real stories exist. The route
+   *  app/(marketing)/stories is kept, and next.config.ts sends /stories to /the-community with a
+   *  temporary 302 meanwhile. Set this back to '/stories' and drop that rule to bring it back. */
+  stories: null as string | null,
   /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
    *  Frequency-only route, app/(marketing)/vision, which points on to /the-lab, the full plan. */
   vision: '/vision',

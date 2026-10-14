@@ -641,6 +641,13 @@ const nextConfig: NextConfig = {
       { source: '/spaces/:slug/settings/enroll', destination: '/spaces/:slug/settings/offerings#enroll', permanent: false },
       // 🔴 EXACT, never :path* — services/new/page.tsx is a live sibling.
       { source: '/spaces/:slug/settings/services', destination: '/spaces/:slug/settings/shop', permanent: false },
+
+      // ── Public page cuts (owner rulings 2026-10-14) ───────────────────────────────────────────
+      // /stories is HIDDEN, not retired: the page is a stub until three real stories exist. A 302
+      // (statusCode, not `permanent: false`'s 307, because the ruling names a 302) keeps it out of
+      // every cache, and the route file stays so it can come back by deleting this one rule.
+      // lib/marketing/redirect-shadow.test.ts lists it as PARKED, the one shadow it allows.
+      { source: '/stories', destination: '/the-community', statusCode: 302 },
     ]
   },
   images: {

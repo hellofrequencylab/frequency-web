@@ -233,11 +233,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // is no longer advertised here as canonical.
     { url: `${SITE_URL}/start`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/the-lab`, changeFrequency: "monthly", priority: 0.8 },
-    // Frequency-only pages (ADR-1737): /stories and /vision exist in the Frequency design's site map
-    // and answer 404 under DAWN, so they are advertised only when the build wears Frequency.
+    // Frequency-only pages (ADR-1737): /vision exists in the Frequency design's site map and answers
+    // 404 under DAWN, so it is advertised only when the build wears Frequency. /stories is HIDDEN until
+    // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
     ...(SITE_DESIGN === "frequency"
       ? ([
-          { url: `${SITE_URL}/stories`, changeFrequency: "monthly", priority: 0.6 },
           { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
         ] satisfies MetadataRoute.Sitemap)
       : []),
