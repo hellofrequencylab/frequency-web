@@ -16,6 +16,7 @@ import { EventDetailTemplate } from '@/components/templates'
 import { PosterBand } from '@/components/media/poster-band'
 import { eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
 import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { formatEventDate } from '@/lib/utils'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
@@ -44,17 +45,22 @@ export async function generateMetadata({
   if (!event) return { title: 'Event not found' }
 
   const where = event.city ? ` in ${event.city}` : ''
-  const full =
-    event.description ??
-    `${event.title}: a Frequency community event${where}. RSVP here, no account needed.`
+  // One line: a host's description keeps its line breaks, which a snippet shows as run-on text.
+  const full = (event.description ?? `${event.title}: a Frequency community event${where}. RSVP here, no account needed.`)
+    .replace(/\s+/g, ' ')
+    .trim()
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
-  const ogTitle = `${event.title} · ${SITE_NAME}`
   const ended = hasEventEnded(event)
   const [facts, { indexedOccurrences }] = await Promise.all([seriesSeoFactsBySlug(event.slug), getSeriesDisplayConfig()])
+  // A recurring event's occurrences share one name, so each indexed date carries its day in the title
+  // (24 pages read "Circle Night · Frequency" on the live sitemap). The series anchor keeps the bare
+  // name: its stored start is the first meeting, not the next one.
+  const title = facts.isAnchor ? event.title : `${event.title} · ${formatEventDate(event.starts_at)}`
+  const ogTitle = `${title} · ${SITE_NAME}`
   const pastRobots = ended && !suppressPastNoindex(facts) ? ({ index: false, follow: true } as const) : undefined
   const robots = pastRobots ?? seriesRobots(facts, indexedOccurrences)
   return {
-    title: event.title,
+    title,
     description,
     alternates: { canonical: `/events/${event.slug}` },
     ...(robots ? { robots } : {}),
