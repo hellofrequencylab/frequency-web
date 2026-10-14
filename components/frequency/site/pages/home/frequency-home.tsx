@@ -6,8 +6,16 @@
 //   03 Story      four chapters per side (Find, Show up, Come back, Pass it on), with "Live this week"
 //   04 Features   six ways to be in the room / six things you can make
 //   05 Weave      how both sides' steps thread together (client island, ./weave.tsx)
+//   03y Beta      the beta announcement band: free until January 1, founding members, one Join the beta button
 //   06 Manifesto  "Sacred, not serious."
-//   Dock          the Browse / Host switch, pinned once the hero has gone
+//   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
+//
+// THE BETA (owner, 2026-10-14): "We're in beta until January 1, let's announce that and do clear calls to
+// action into our beta sign up. Each feature CTA leads to the same beta intake flow." So the hero carries
+// the beta pill and ONE primary (Join the beta), a band after the story says it again, and every feature
+// CTA on this page (the chapter Acts, the path doors, the "Live this week" host button, the closer, the
+// dock) goes to SITE.join, the three-step beta entry at /join. Anchors that only move down this page
+// ("See how it works") and "Browse this week" (it opens the real list) stay navigation.
 //
 // The owner's call (2026-10-13): under Frequency, `/` renders the design's content, not the published
 // page-editor document. DAWN still renders that document; app/page.tsx picks between them.
@@ -26,13 +34,19 @@ import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getActiveCircleCount, getRankedSpaces, getWhatsOn, type SiteEvent } from '../shared/data'
-import { feature, SITE } from '../shared/links'
+import { SITE } from '../shared/links'
 import { Acts, aura, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
 import { HomeMotion } from './home-motion'
 import { Weave } from './weave'
 import { WEAVE } from './weave-data'
 
 const SIG = 'Gather like it matters.'
+
+/** When the beta ends, as the page says it. No beta-end constant exists in lib/ (BETA_PRICING_ENDS_AT is
+ *  the pricing window that closed on 2026-08-17, a different thing), so the owner's date lives here,
+ *  once, for the pill, the band and the closer. */
+const BETA_UNTIL = 'January 1'
+const BETA_CTA = 'Join the beta'
 
 /** The fold's floating photos: [file, data-d depth, position + size]. Verbatim from the design. */
 const FOLD_PHOTOS: [string, number, CSSProperties][] = [
@@ -45,7 +59,7 @@ const FOLD_PHOTOS: [string, number, CSSProperties][] = [
 ]
 
 const FEATS: { icon: FqIconName; name: string; vp: string; ve: string; pp: string; pe: string }[] = [
-  { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one thing. The faces start to know yours.', pe: 'Your steady place. Members, a time, a door.' },
+  { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one thing, at the same time each week.', pe: 'Your steady place. Members, a time, a door.' },
   { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'One-off gatherings worth staying out for.', pe: 'Tickets, a guest list and refunds in one place.' },
   { icon: 'program', name: 'Program', vp: 'You move through', ve: 'You design', pp: 'A few weeks with the same group, start to finish.', pe: 'A path your Circle walks together, step by step.' },
   { icon: 'host', name: 'Experience', vp: 'You host', ve: 'You hand off', pp: 'Open your living room, garden or local park.', pe: 'Regulars running gatherings under your Space.' },
@@ -115,6 +129,12 @@ export async function FrequencyHome() {
             </div>
           </div>
           <div className="h-main">
+            <Link className="beta-pill" href={SITE.join}>
+              <i className="fq-breathe" aria-hidden="true" />
+              <span>
+                Free while in beta <em aria-hidden="true">·</em> through {BETA_UNTIL}
+              </span>
+            </Link>
             <h1 className="h-xl">
               <Sided
                 p={
@@ -142,17 +162,12 @@ export async function FrequencyHome() {
                   come back.
                 </p>
               </div>
+              {/* One primary for both sides: the beta entry is one door for people and Spaces. */}
               <div className="ctas">
-                <Link className="btn fq-iri-btn p-only" href={SITE.people}>
-                  Find your Circle
+                <Link className="btn fq-iri-btn" href={SITE.join}>
+                  {BETA_CTA}
                 </Link>
-                <a className="btn btn-ghost fq-iri-rim p-only" href="#weave">
-                  See how it works
-                </a>
-                <Link className="btn fq-iri-btn e-only" href={SITE.spaces}>
-                  Open your Space
-                </Link>
-                <a className="btn btn-ghost fq-iri-rim e-only" href="#weave">
+                <a className="btn btn-ghost fq-iri-rim" href="#weave">
                   See how it works
                 </a>
               </div>
@@ -197,7 +212,7 @@ export async function FrequencyHome() {
           </div>
           <div className="fl-txt" data-in=".38 .45" data-out=".5 .56">
             <p className="fl-big">
-              Frequency is how they find each other, and why they keep <em className="fq-iri-text">coming back.</em>
+              Frequency is how they find each other, and the rhythm that keeps them <em className="fq-iri-text">coming back.</em>
             </p>
           </div>
           <div className="fl-fork" data-in=".54 .62">
@@ -210,25 +225,25 @@ export async function FrequencyHome() {
             <div className="pds">
               <div className="pdw l">
                 <span className="pdg" />
-                <button type="button" className="pd l" data-set="p" data-go="story">
+                <Link className="pd l" href={SITE.join}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized by .pd img */}
                   <img loading="lazy" decoding="async" src={photo('day-parachute-play.jpg')} alt="" />
                   <span className="dk">Path one</span>
                   <b>I’m looking for an experience.</b>
-                  <span className="dp">Find a Circle, a night, a few weeks with the same people. Free, forever.</span>
-                  <span className="dg">Start here →</span>
-                </button>
+                  <span className="dp">Find people on your wavelength near you. A Circle, a night, a few weeks together. Free, forever.</span>
+                  <span className="dg">{BETA_CTA} →</span>
+                </Link>
               </div>
               <div className="pdw r">
                 <span className="pdg" />
-                <button type="button" className="pd r" data-set="e" data-go="story">
+                <Link className="pd r" href={SITE.join}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized by .pd img */}
                   <img loading="lazy" decoding="async" src={photo('gathering-07.jpg')} alt="" />
                   <span className="dk">Path two</span>
                   <b>I want to host an experience.</b>
-                  <span className="dp">Studios, cafés, clubs and hosts. Make the thing people come back for.</span>
-                  <span className="dg">Start here →</span>
-                </button>
+                  <span className="dp">Studios, cafés, clubs and hosts. Set the rhythm people come back for.</span>
+                  <span className="dg">{BETA_CTA} →</span>
+                </Link>
               </div>
             </div>
           </div>
@@ -263,17 +278,17 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: SITE.peopleNear, icon: 'pin', title: 'Set your town', sub: 'See what meets near you' },
-                { href: SITE.peopleNear, icon: 'event', title: 'Browse this week', sub: 'Circles, events, programs' },
-                { href: SITE.people, icon: 'circle', title: 'Pick a Circle', sub: 'Same people, same time' },
+                { href: SITE.join, icon: 'pin', title: 'Set your town', sub: 'See what meets near you' },
+                { href: SITE.join, icon: 'event', title: 'Browse this week', sub: 'Circles, events, programs' },
+                { href: SITE.join, icon: 'circle', title: 'Pick a Circle', sub: 'Same people, same time' },
               ]}
             />
             <Acts
               className="e-only"
               items={[
-                { href: SITE.spaces, icon: 'space', title: 'Open your Space', sub: 'Free, takes ten minutes' },
-                { href: feature('f-page'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
-                { href: feature('f-events-s'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
+                { href: SITE.join, icon: 'space', title: 'Open your Space', sub: 'Free, takes ten minutes' },
+                { href: SITE.join, icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
+                { href: SITE.join, icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
               ]}
             />
           </div>
@@ -319,17 +334,17 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: feature('f-events'), icon: 'ticket', title: 'RSVP to an event', sub: 'Or just turn up' },
-                { href: feature('f-checkin'), icon: 'checkin', title: 'Check in at the door', sub: '+25 Zaps for being there' },
-                { href: SITE.peopleFirstNight, icon: 'contacts', title: 'Meet your Circle', sub: 'See who else came' },
+                { href: SITE.join, icon: 'ticket', title: 'RSVP to an event', sub: 'Or just turn up' },
+                { href: SITE.join, icon: 'checkin', title: 'Check in at the door', sub: '+25 Zaps for being there' },
+                { href: SITE.join, icon: 'contacts', title: 'Meet your Circle', sub: 'See who else came' },
               ]}
             />
             <Acts
               className="e-only"
               items={[
-                { href: feature('f-doorqr'), icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
-                { href: feature('f-tickets'), icon: 'ticket', title: 'Run your guest list', sub: 'Tickets, refunds, walk-ins' },
-                { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re still in the room' },
+                { href: SITE.join, icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
+                { href: SITE.join, icon: 'ticket', title: 'Run your guest list', sub: 'Tickets, refunds, walk-ins' },
+                { href: SITE.join, icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re still in the room' },
               ]}
             />
           </div>
@@ -370,7 +385,7 @@ export async function FrequencyHome() {
               <Link className="btn fq-iri-btn p-only" href={SITE.peopleNear}>
                 Browse this week
               </Link>
-              <Link className="btn fq-iri-btn e-only" href={SITE.spaces}>
+              <Link className="btn fq-iri-btn e-only" href={SITE.join}>
                 Put yours on the calendar
               </Link>
             </div>
@@ -410,7 +425,8 @@ export async function FrequencyHome() {
               <Sided p="Same people, same time." e="Give them a rhythm." />
             </h2>
             <p className="body-l p-only">
-              Keep coming and the faces start to know yours. One week you’re new, a month later someone saves you a spot.
+              Show up at the same time, week after week, and the faces start to know yours. One week you’re new, a month
+              later someone saves you a spot.
             </p>
             <p className="body-l e-only">
               Ongoing Circles, programs people move through together, memberships that drop them straight into their
@@ -419,17 +435,17 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: SITE.people, icon: 'circle', title: 'Join a Circle', sub: 'A place to keep coming back' },
-                { href: feature('f-programs'), icon: 'program', title: 'Start a program', sub: 'Six weeks, same group' },
-                { href: feature('f-zaps'), icon: 'zap', title: 'Keep your streak', sub: 'Zaps for showing up again' },
+                { href: SITE.join, icon: 'circle', title: 'Join a Circle', sub: 'A place to keep coming back' },
+                { href: SITE.join, icon: 'program', title: 'Start a program', sub: 'Six weeks, same group' },
+                { href: SITE.join, icon: 'zap', title: 'Keep your streak', sub: 'Zaps for showing up again' },
               ]}
             />
             <Acts
               className="e-only"
               items={[
-                { href: feature('f-circles-s'), icon: 'circle', title: 'Run a Circle', sub: 'The heartbeat of a Space' },
-                { href: feature('f-programs-s'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
-                { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Members land in their Circle' },
+                { href: SITE.join, icon: 'circle', title: 'Run a Circle', sub: 'The heartbeat of a Space' },
+                { href: SITE.join, icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
+                { href: SITE.join, icon: 'membership', title: 'Sell memberships', sub: 'Members land in their Circle' },
               ]}
             />
           </div>
@@ -466,21 +482,58 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: feature('f-invites'), icon: 'message', title: 'Invite a friend', sub: 'Invites anyone can open' },
-                { href: feature('f-host'), icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
-                { href: feature('f-host'), icon: 'circle', title: 'Start a Circle', sub: 'Become somebody’s regular' },
+                { href: SITE.join, icon: 'message', title: 'Invite a friend', sub: 'Invites anyone can open' },
+                { href: SITE.join, icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
+                { href: SITE.join, icon: 'circle', title: 'Start a Circle', sub: 'Become somebody’s regular' },
               ]}
             />
             <Acts
               className="e-only"
               items={[
-                { href: feature('f-standing'), icon: 'standing', title: 'Watch your standing', sub: 'Earned, never bought' },
-                { href: feature('f-handoff'), icon: 'host', title: 'Hand a Circle to a regular', sub: 'Grow without burning out' },
-                { href: SITE.pricing, icon: 'gem', title: 'See how it pays', sub: '0% on your regulars, plus card processing' },
+                { href: SITE.join, icon: 'standing', title: 'Watch your standing', sub: 'Earned, never bought' },
+                { href: SITE.join, icon: 'host', title: 'Hand a Circle to a regular', sub: 'Grow without burning out' },
+                { href: SITE.join, icon: 'gem', title: 'See how it pays', sub: '0% on your regulars, plus card processing' },
               ]}
             />
           </div>
         </Chapter>
+      </section>
+
+      <section className="sec beta-band" id="beta" data-time="night" data-night="uv" data-energy="charge" data-screen-label="03y Beta">
+        <div className="fq-aura" style={aura(0.35)} />
+        <div className="fq-grain" />
+        <div className="wrap">
+          <div className="bb">
+            <div>
+              <span className="lv-live">
+                <i className="fq-breathe" />
+                Open beta
+              </span>
+              <h2 className="h-l">
+                Frequency is in beta. <em className="fq-iri-text">Help us build it.</em>
+              </h2>
+              <p className="body-l">
+                Free until {BETA_UNTIL}. Founding members set the rhythm here, and what we build next comes from the people
+                who show up.
+              </p>
+            </div>
+            <div className="bb-side">
+              <ul className="bb-facts">
+                <li>
+                  <b>$0</b>
+                  <span>until {BETA_UNTIL}</span>
+                </li>
+                <li>
+                  <b>3</b>
+                  <span>steps to get in</span>
+                </li>
+              </ul>
+              <Link className="btn fq-iri-btn" href={SITE.join}>
+                {BETA_CTA}
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="sec" id="features" data-screen-label="04 Every feature is an experience">
@@ -546,33 +599,36 @@ export async function FrequencyHome() {
             }}
           >
             The quiet morning and the loud night. The community table and the dance floor. Different communities, same
-            reason: being with your people, on purpose. We measure success by who showed up this week.
+            feeling when the room is right: being with your people, on purpose. We measure success by who showed up this
+            week.
           </p>
           <div className="ctas">
-            <Link className="btn fq-iri-btn" href={SITE.people}>
-              Find your Circle
-            </Link>
-            <Link className="btn btn-ghost fq-iri-rim" href={SITE.spaces}>
-              Open your Space
+            <Link className="btn fq-iri-btn" href={SITE.join}>
+              {BETA_CTA}
             </Link>
           </div>
+          <p className="closer-beta">Free while in beta, through {BETA_UNTIL}.</p>
         </div>
       </section>
 
-      {/* The dock: the Browse / Host switch, pinned to the bottom once the hero has scrolled away (the
-          shell's FX loop toggles `.on`). */}
+      {/* The dock: the Browse / Host switch and the beta button, pinned to the bottom once the hero has
+          scrolled away (the shell's FX loop toggles `.on`). Below 560px the switch drops "Community" so
+          the button fits a 375px phone. */}
       <div className="dock">
         <div className="sw" role="group" aria-label="Browse or host">
           <span className="thumb" />
           <button type="button" data-set="p" aria-pressed="true">
             <i />
-            Browse Community
+            Browse<span className="dk-w"> Community</span>
           </button>
           <button type="button" data-set="e" aria-pressed="false">
             <i />
-            Host Community
+            Host<span className="dk-w"> Community</span>
           </button>
         </div>
+        <Link className="btn fq-iri-btn" href={SITE.join}>
+          {BETA_CTA}
+        </Link>
       </div>
     </div>
   )
