@@ -13,10 +13,13 @@ import { useViewer } from '@/components/layout/viewer-chrome'
 export function ViewerHousingAddress({
   listingId,
   labelClassName,
+  valueClassName = 'mt-0.5 text-body-sm font-medium text-text',
 }: {
   listingId: string
   /** The page's own facts-label class, so this row matches its siblings in the <dl>. */
   labelClassName: string
+  /** The page's facts-value class (the Frequency kit passes its own). */
+  valueClassName?: string
 }) {
   const { signedIn } = useViewer()
   const [addressLine, setAddressLine] = useState<string | null>(null)
@@ -39,7 +42,7 @@ export function ViewerHousingAddress({
   return (
     <div>
       <dt className={labelClassName}>Address</dt>
-      <dd className="mt-0.5 text-body-sm font-medium text-text">{addressLine}</dd>
+      <dd className={valueClassName}>{addressLine}</dd>
     </div>
   )
 }

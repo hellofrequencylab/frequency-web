@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { DetailTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { JsonLd } from '@/components/json-ld'
@@ -10,6 +11,9 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SITE_URL } from '@/lib/site'
 import type { ShowFeed } from '@/lib/airwaves/shows'
 import type { Space } from '@/lib/spaces/types'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import '@/app/themes/frequency/members-b.css'
 
 // Shared Show page (SCAN-644). The sitemap URL lives under (public); signed-in
 // members of a private Space rewrite to /full. One view so the two routes cannot
@@ -118,14 +122,61 @@ export async function ShowPageView({
       series: { title: show.title, path: `/spaces/${slug}/podcasts/${showSlug}` },
     }),
   )
-  const hero = await resolveDetailHero(`/spaces/${slug}/podcasts/${showSlug}`)
-
-  return (
-    <div className="mx-auto max-w-3xl">
+  const structuredData = (
+    <>
       <JsonLd data={seriesJsonLd} />
       {episodeJsonLd.map((node, i) => (
         <JsonLd key={items[i].id} data={node} />
       ))}
+    </>
+  )
+
+  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency the Show is the kit's page: the split
+  // hero card (cover, the Space, the title, who makes it, Subscribe), then the episodes. Same feed,
+  // same players, same JSON-LD. DAWN below is unchanged.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <MembersBody>
+        {structuredData}
+        <Link className="meta fqm-back" href={`/spaces/${slug}`}>
+          ← Back to {spaceName}
+        </Link>
+        <section className="card fqm-ev">
+          <div className="ph fqm-ev-ph" style={coverUrl ? { backgroundImage: `url('${coverUrl}')` } : undefined}>
+            <span className="tag glass">Show</span>
+          </div>
+          <div className="fqm-ev-in">
+            <span className="k">{spaceName}</span>
+            <h1 className="h1">{show.title}</h1>
+            {show.author && <span className="t2">{show.author}</span>}
+            {show.description && <p className="body fqm-pre">{show.description}</p>}
+            <div className="fqm-ev-act">
+              <ShowSubscribe feedUrl={feedUrl} />
+            </div>
+          </div>
+        </section>
+        <section className="sec stack">
+          <h2 className="h2">
+            Episodes <span className="t2">{items.length}</span>
+          </h2>
+          {items.length > 0 ? (
+            <ShowEpisodes episodes={items} />
+          ) : (
+            <div className="empty stack">
+              <span className="h3">No episodes yet</span>
+              <span className="t2">New episodes land here the moment they publish. Subscribe above to catch the first one.</span>
+            </div>
+          )}
+        </section>
+      </MembersBody>
+    )
+  }
+
+  const hero = await resolveDetailHero(`/spaces/${slug}/podcasts/${showSlug}`)
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      {structuredData}
       <DetailTemplate
         {...hero}
         title={show.title}

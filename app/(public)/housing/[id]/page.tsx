@@ -20,6 +20,7 @@ import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { ViewerListingClaim } from '@/components/marketplace/listing-claim-box'
 import { ViewerHousingAddress } from '@/components/marketplace/housing-address'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Public housing detail, advertised in app/sitemap.ts. Auth during render is a dynamic API
 // and would void ISR. Owners still edit at /housing/[id]/edit. The save heart and a ?claim=
@@ -37,6 +38,27 @@ export async function generateStaticParams(): Promise<{ id: string }[]> {
 
 // The facts <dl> label, shared with the signed-in Address fact so the two read as one list.
 const FACT_LABEL = 'text-2xs font-semibold uppercase tracking-wide text-muted'
+
+// THE DESIGN SWITCH (ADR-1737, build-time). ListingDetailTemplate already draws the kit's listing page
+// under Frequency; the housing facts and tag rows it hands in follow it into the kit (`.list`, `.chips`,
+// `.tag`). Same facts, same address rule. DAWN's markup is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
+/** A labelled row of tags (amenities, accessibility, house rules) in the kit. */
+function FqTagRow({ label, items }: { label: string; items: string[] }) {
+  return (
+    <div className="stack fqm-gap-sm">
+      <span className="k">{label}</span>
+      <ul className="chips">
+        {items.map((t) => (
+          <li key={t} className="tag">
+            {t}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -178,6 +200,31 @@ export default async function HousingDetailPage({
           </div>
       }
     >
+      {FREQUENCY ? (
+        <>
+          {(facts.length > 0 || showsAddressToMembers) && (
+            <dl className="list">
+              {facts.map((f) => (
+                <div key={f.label}>
+                  <dt className="t2 grow">{f.label}</dt>
+                  <dd className="t1">{f.value}</dd>
+                </div>
+              ))}
+              {showsAddressToMembers && (
+                <ViewerHousingAddress listingId={listing.id} labelClassName="t2 grow" valueClassName="t1" />
+              )}
+            </dl>
+          )}
+          {detail && detail.amenities.length > 0 && (
+            <FqTagRow label="Amenities" items={detail.amenities.map(amenityLabel)} />
+          )}
+          {detail && detail.accessibility.length > 0 && (
+            <FqTagRow label="Accessibility" items={detail.accessibility.map(accessibilityLabel)} />
+          )}
+          {rules.length > 0 && <FqTagRow label="Good to know" items={rules} />}
+        </>
+      ) : (
+      <>
       {(facts.length > 0 || showsAddressToMembers) && (
         <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           {facts.map((f) => (
@@ -227,6 +274,8 @@ export default async function HousingDetailPage({
             ))}
           </ul>
         </div>
+      )}
+      </>
       )}
     </ListingDetailTemplate>
     </ViewerProvider>
