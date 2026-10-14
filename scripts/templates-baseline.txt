@@ -72,6 +72,7 @@ app/(main)/spaces/[slug]/edit-page/page.tsx
 app/(main)/spaces/[slug]/manage/page.tsx
 app/(main)/spaces/[slug]/settings/services/new/page.tsx
 app/(main)/spaces/[slug]/setup/page.tsx
+app/(public)/feed-preview/page.tsx
 app/discover/circles/page.tsx
 app/discover/cities/[citySlug]/page.tsx
 app/discover/cities/page.tsx
