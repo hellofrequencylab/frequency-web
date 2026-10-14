@@ -10,6 +10,8 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCircle } from '@/components/frequency/site/pages/discover/circles'
 
 export const revalidate = 3600
 
@@ -82,6 +84,26 @@ export default async function CirclePage({
   // DETAIL_HERO_DEFAULTS is the only thing that can give this page a band. An operator who sets a
   // header image on /discover/circles in Settings replaces it for every public Circle at once.
   const hero = await resolveDetailHero(`/discover/circles/${circle.slug ?? circle.id}`)
+  const schema = [
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Circles', path: '/discover/circles' },
+      { name: circle.name, path: `/discover/circles/${circle.slug ?? circle.id}` },
+    ]),
+    // A circle as schema.org/Organization (a small local group) — the tested
+    // helper so it stays consistent with every other /discover entity schema.
+    circleSchema(circle),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same Circle, drawn in the site kit. Build-time constant.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyCircle circle={circle} image={hero.coverImage} />
+      </>
+    )
+  }
 
   return (
     <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
@@ -90,18 +112,7 @@ export default async function CirclePage({
         aria-hidden
         className="pointer-events-none absolute -top-24 -right-24 w-[30rem] max-w-none text-primary opacity-[0.05]"
       />
-      <JsonLd
-        data={[
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Circles', path: '/discover/circles' },
-            { name: circle.name, path: `/discover/circles/${circle.slug ?? circle.id}` },
-          ]),
-          // A circle as schema.org/Organization (a small local group) — the tested
-          // helper so it stays consistent with every other /discover entity schema.
-          circleSchema(circle),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <Link
         href="/discover/circles"

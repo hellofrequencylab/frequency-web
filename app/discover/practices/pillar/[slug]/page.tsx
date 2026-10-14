@@ -10,6 +10,8 @@ import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPillarPractices } from '@/components/frequency/site/pages/discover/practices'
 
 export const revalidate = 3600
 
@@ -73,20 +75,35 @@ export default async function PillarPracticesPage({
   // The shared hero band (LIVE-117, ADR-1261): rung 1 reads the '/discover/practices' section key,
   // so the operator's library cover heads every pillar page without one being picked per pillar.
   const hero = await resolveIndexHero(`/discover/practices/pillar/${slug}`)
+  const schema = [
+    practiceListSchema(rows, title),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Practices', path: '/discover/practices' },
+      { name: pillar.name, path: `/discover/practices/pillar/${slug}` },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same Pillar read and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyPillarPractices
+          pillar={pillar}
+          description={pillarDescription(pillar.name, pillar.description)}
+          pillars={pillars}
+          rows={rows}
+          image={hero.heroImage}
+        />
+      </>
+    )
+  }
 
   return (
     <>
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <JsonLd
-          data={[
-            practiceListSchema(rows, title),
-            breadcrumbSchema([
-              { name: 'Discover', path: '/discover' },
-              { name: 'Practices', path: '/discover/practices' },
-              { name: pillar.name, path: `/discover/practices/pillar/${slug}` },
-            ]),
-          ]}
-        />
+        <JsonLd data={schema} />
 
         {/* Public SEO surface: no operator admin bar (that's a member-app control). A
             back-link returns to the full library, matching the breadcrumb trail. */}

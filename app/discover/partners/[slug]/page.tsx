@@ -10,6 +10,8 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { localBusinessSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPartner } from '@/components/frequency/site/pages/discover/partners'
 
 export const revalidate = 3600
 
@@ -54,19 +56,28 @@ export default async function PublicPartnerPage({
   // The standard entity cover (PROG-P5, ADR-1136): the public twin of /partners/<slug>, so the
   // same ladder — the operator's /discover/partners Settings image stands behind every partner.
   const hero = await resolveDetailHero(`/discover/partners/${slug}`)
+  const schema = [
+    localBusinessSchema(partner),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Partners', path: '/discover/partners' },
+      { name: partner.name, path: `/discover/partners/${partner.slug}` },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same partner, offers and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyPartner partner={partner} image={hero.coverImage} />
+      </>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-      <JsonLd
-        data={[
-          localBusinessSchema(partner),
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Partners', path: '/discover/partners' },
-            { name: partner.name, path: `/discover/partners/${partner.slug}` },
-          ]),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <Link
         href="/discover/partners"

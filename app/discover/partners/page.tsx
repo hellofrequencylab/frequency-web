@@ -9,6 +9,8 @@ import { partnerListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPartners } from '@/components/frequency/site/pages/discover/partners'
 
 export const revalidate = 3600
 
@@ -31,19 +33,28 @@ export default async function PublicPartnersPage() {
   const partners = await listActivePartners().catch(emptyUnlessTransient('partners page'))
 
   const hero = await resolveIndexHero('/discover/partners')
+  const schema = [
+    partnerListSchema(partners, TITLE),
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Partners', path: '/discover/partners' },
+    ]),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same directory and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyPartners title={TITLE} description={DESCRIPTION} partners={partners} image={hero.heroImage} />
+      </>
+    )
+  }
 
   return (
     <>
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <JsonLd
-          data={[
-            partnerListSchema(partners, TITLE),
-            breadcrumbSchema([
-              { name: 'Discover', path: '/discover' },
-              { name: 'Partners', path: '/discover/partners' },
-            ]),
-          ]}
-        />
+        <JsonLd data={schema} />
 
         {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
         <IndexTemplate

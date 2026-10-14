@@ -14,6 +14,8 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { circleListSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyTopic } from '@/components/frequency/site/pages/discover/topics'
 
 export const revalidate = 3600
 
@@ -74,6 +76,24 @@ export default async function TopicPage({
     getPublicCirclesByChannel(channel.slug),
     resolveDetailHero(`/discover/topics/${channel.slug}`, { entityImage: channel.cover_image }),
   ])
+  const schema = [
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Channels', path: '/discover/topics' },
+      { name: channel.name, path: `/discover/topics/${channel.slug}` },
+    ]),
+    circleListSchema(circles, `${channel.name} circles`),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same Channel, Circles and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyTopic channel={channel} circles={circles} image={hero.coverImage} />
+      </>
+    )
+  }
 
   return (
     <div className="relative overflow-hidden max-w-4xl mx-auto px-6 py-20 sm:py-24">
@@ -82,16 +102,7 @@ export default async function TopicPage({
         aria-hidden
         className="pointer-events-none absolute top-6 right-0 w-72 max-w-none text-primary opacity-[0.05]"
       />
-      <JsonLd
-        data={[
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Channels', path: '/discover/topics' },
-            { name: channel.name, path: `/discover/topics/${channel.slug}` },
-          ]),
-          circleListSchema(circles, `${channel.name} circles`),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <Link
         href="/discover/topics"
