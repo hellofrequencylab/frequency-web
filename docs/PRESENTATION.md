@@ -53,7 +53,9 @@ This applies to **every artifact an agent or routine creates** in this repo. Ski
 
 ## In-product UI
 - Follow the repo's design language (`docs/DESIGN-LANGUAGE.md` / `docs/DESIGN.md`). Use the
-  established tokens/components. **Never hardcode hex.** Match the surrounding density and
+  established tokens/components. **Never hardcode a colour, a font or a type size**: semantic
+  tokens and the named scale only, so the UI wears either design (rules and gate:
+  [THEME-PROTOCOL §3](THEME-PROTOCOL.md#3-style--the-token-cascade-parentchild-already-shipped)). Match the surrounding density and
   idiom; new UI should look like it always belonged. (Remember: this is the non-standard
   Next.js, read `node_modules/next/dist/docs/` before writing Next code.)
 

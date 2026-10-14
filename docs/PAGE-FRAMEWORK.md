@@ -439,9 +439,10 @@ purchase block), `ownerControls` and `claimToken` appear only when they apply. C
 **Form + control primitives (2026-06-06, ADR-147):** `Input`/`Textarea`/`Label` (+
 `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
 `Dialog` (the shared backdrop · ESC · scroll-lock overlay shell), and `cn()`
-(`lib/utils`). Type: use the named scale incl. `text-2xs` (11px) / `text-3xs` (10px).
-**Never** `text-[Npx]`; colors are DAWN tokens only (**no** raw palette like
-`indigo-600`).
+(`lib/utils`). Type: use the named scale incl. `text-2xs` / `text-3xs` (their px differ per design;
+[THEME.md §0](THEME.md#0-the-design-axis-above-the-four-adr-1737) is the one statement of the scale).
+**Never** `text-[Npx]`; colors are semantic tokens only (**no** raw palette like
+`indigo-600`, no `bg-white`). The full rule and its gate: [THEME-PROTOCOL §3](THEME-PROTOCOL.md#3-style--the-token-cascade-parentchild-already-shipped).
 
 ### 8.2 The chrome map: `lib/layout/page-chrome.ts`
 

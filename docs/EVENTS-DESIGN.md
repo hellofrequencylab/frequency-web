@@ -5,7 +5,7 @@
 > (`/events`, an Index of discoverable events) and **The Invite**
 > (`/events/[slug]`, a Detail page split into a wide left **Post area** and a
 > narrow sticky right **Join area**). Both **compose the existing kit**: no new
-> templates, no hand-rolled headers/cards/grids, DAWN tokens only.
+> templates, no hand-rolled headers/cards/grids, semantic tokens only.
 >
 > 🔴 ~~**The one chrome change** (the load-bearing decision): set `/events/[slug]` to rail
 > **`'none'`** so the page interior owns BOTH columns, like Luma/Partiful.~~
@@ -354,7 +354,7 @@ de-facto third column, so a 3-up card grid would crowd. Cards stay 2-up.
 ## 4. Gamification & badge treatment — the token catalogue (both pages)
 
 One table so badges read identically on a card, the band, and the aside. **No hex,
-no `text-[Npx]`** — semantic DAWN tokens + `text-2xs`/`text-3xs` only.
+no `text-[Npx]`** — semantic tokens + `text-2xs`/`text-3xs` only.
 
 | Badge / chip | Tokens | Rule |
 |---|---|---|

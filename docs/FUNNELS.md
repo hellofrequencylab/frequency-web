@@ -200,7 +200,7 @@ rule is `selectRecoveryLeads` in `lib/crm/signup-lead-recovery.ts`; the note is
 The "vector renders" of each section are **inline SVG components**, not commissioned art:
 `components/onboarding/renders/{feed,circles,events}-render.tsx`.
 
-- DAWN tokens only (`fill="var(--brand)"`, `text-primary`, …): theme + brand-color for free, no hex.
+- Semantic tokens only (`fill="var(--brand)"`, `text-primary`, …): theme + brand-color for free, no hex.
 - Animated with the existing `slideUp` keyframe + CSS transitions; **respect `prefers-reduced-motion`**.
 - **Only the core triad** (Feed/Circles/Events): showing all 18 nav areas would violate "quick."
 - Cheap to replace: swapped in the same PR as the flow when the design changes.

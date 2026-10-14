@@ -222,7 +222,7 @@ A **global disable wins on every scope** ([ADR-1664](DECISIONS.md), LIVE-686). E
 
 Phases 1–5 touch the coupled core (`settings-panel`, `admin-bar`, `app-shell`, `for-scope`) and run **sequentially**, green at each step. Phase 7 fans out per entity. Every phase is behavior-preserving until Phase 4 intentionally flips presence to always-on.
 
-**Guardrails (unchanged):** capabilities are UX on the client, law on the server (every App action re-checks its gate); DAWN tokens only, no hex, no `text-[Npx]`; labels pass NAMING.md + CONTENT-VOICE.md §10 (no em dashes); no CLS.
+**Guardrails (unchanged):** capabilities are UX on the client, law on the server (every App action re-checks its gate); semantic tokens only, no hex, no `text-[Npx]`; labels pass NAMING.md + CONTENT-VOICE.md §10 (no em dashes); no CLS.
 
 ---
 
