@@ -7,30 +7,21 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { SITE_DESIGN } from '@/lib/theme/design'
-import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 import { FrequencyVision } from '@/components/frequency/site/pages/vision/frequency-vision'
 
 export const revalidate = 3600
 
-const TITLE = 'Vision: when a community is ready, it earns a home'
-const DESCRIPTION =
-  'For partners, investors, civic leaders and press: the vision for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.'
-
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: { canonical: '/vision' },
-  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: TITLE, description: DESCRIPTION, url: '/vision', type: 'website' },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
-}
+// Title, description, canonical and share card from the one table (lib/seo/frequency-pages.ts),
+// unchanged from what this route shipped with.
+export const metadata: Metadata = frequencyPageMetadata(FREQUENCY_PAGE_SEO.vision)
 
 export default function VisionPage() {
   if (SITE_DESIGN !== 'frequency') notFound()
   return (
     <>
-      <JsonLd data={breadcrumbSchema([{ name: 'Vision', path: '/vision' }])} />
+      <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.vision)} />
       <FrequencyVision />
     </>
   )

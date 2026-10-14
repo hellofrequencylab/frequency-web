@@ -51,7 +51,7 @@ export async function generateMetadata({
         hub.circles.length === 1 ? 'Circle' : 'Circles'
       } and ${hub.events.length} upcoming ${
         hub.events.length === 1 ? 'event' : 'events'
-      } near you. Free to join, always. Show up in person.`
+      } near you. Free to join. Show up in person.`
     : `Local Circles and real-world events in ${city} on Frequency.`
   const canonical = `/discover/cities/${citySlug}`
   return {

@@ -190,8 +190,13 @@ export default async function PublicSpacePage({
           priceRange: spaceProfile.priceRange,
           openingHours: parseOpeningHours(spaceProfile.hours),
         }),
+        // Under Frequency the trail is the one the page shows: its back link reads "Spaces" and opens the
+        // directory (/discover/spaces), while /spaces is the "For spaces" page for owners, not this
+        // Space's parent. DAWN keeps its trail unchanged.
         breadcrumbSchema([
-          { name: 'Spaces', path: '/spaces' },
+          SITE_DESIGN === 'frequency'
+            ? { name: 'Spaces', path: '/discover/spaces' }
+            : { name: 'Spaces', path: '/spaces' },
           { name: brandName, path: `/spaces/${space.slug}` },
         ]),
       ]}

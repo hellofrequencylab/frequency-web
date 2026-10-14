@@ -199,7 +199,17 @@ export default async function PricingPage() {
     const faq = pricingFaq(input)
     return (
       <>
-        <JsonLd data={[breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), faqSchema(faq), ...priceSchema]} />
+        {/* The breadcrumb is the trail the design's hero shows: Home / For spaces / Pricing. */}
+        <JsonLd
+          data={[
+            breadcrumbSchema([
+              { name: 'For spaces', path: '/spaces' },
+              { name: 'Pricing', path: '/pricing' },
+            ]),
+            faqSchema(faq),
+            ...priceSchema,
+          ]}
+        />
         <FrequencyPricing members={members} spaces={spaces} grid={spaceFeatureGrid(input)} faq={faq} />
       </>
     )

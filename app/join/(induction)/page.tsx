@@ -17,15 +17,24 @@ import FeatureFunnel from './feature-funnel'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // Under Frequency /join is the website's Get started page (Join.html's title and description), so it
 // names itself; DAWN's /join keeps the root defaults it always had. /join stays out of the index
 // (app/robots.ts), so no canonical is declared.
+const JOIN_TITLE = 'Get started'
+const JOIN_DESCRIPTION = 'Free for people, free to host. Tell us where you are and we’ll show you what’s happening.'
+
 export async function generateMetadata(): Promise<Metadata> {
   if (SITE_DESIGN !== 'frequency') return {}
+  // The share card is this page's own: /join is the link every CTA and every invite sends, and the
+  // root card it inherited said url "/" with the home title. Metadata merges per top-level key, so
+  // the image is restated (ROOT_OG_IMAGES) or the card ships without one.
   return {
-    title: 'Get started',
-    description: 'Free for people, free to host. Tell us where you are and we’ll show you what’s happening.',
+    title: JOIN_TITLE,
+    description: JOIN_DESCRIPTION,
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: `${JOIN_TITLE} · Frequency`, description: JOIN_DESCRIPTION, url: '/join', type: 'website' },
+    twitter: { card: 'summary_large_image', title: `${JOIN_TITLE} · Frequency`, description: JOIN_DESCRIPTION },
   }
 }
 
