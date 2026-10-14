@@ -28,7 +28,7 @@ it('tags the selected section with its type and draws the design toolbar from th
   const frame = container.querySelector('iframe')!.contentDocument!
   const section = frame.querySelector('.we-section[data-block-id="faq"]')!
   expect(section.getAttribute('data-hidden')).toBe('true')
-  expect(section.querySelector('.we-section-label')?.textContent).toBe('FAQ · Hidden on this device')
+  expect(section.querySelector('.we-section-label')?.textContent).toBe('FAQ · Hidden on tablet')
   expect(section.querySelector('.we-section-label use')?.getAttribute('href')).toBe('/brand/frequency/frequency-icons.svg#help')
   const toolbar = section.querySelector('[role=toolbar]')!
   expect(Array.from(toolbar.children).map((child) => child.getAttribute('aria-label') ?? child.className)).toEqual(['Move up', 'Move down', 'Duplicate', 'we-micro-div', 'Comment', 'Show on tablet', 'Delete'])

@@ -285,7 +285,7 @@ it('lists the session change log in the publish modal and clears it on publish',
 it('maps the Theme and Site tabs onto the real site settings', () => {
   const { node } = mount({ start: clean })
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Theme') as HTMLButtonElement).click())
-  expect(Array.from(node.querySelectorAll('.rail .theme b')).map((b) => b.textContent)).toEqual(['Default', 'Bold', 'Wildheart'])
+  expect(Array.from(node.querySelectorAll('.rail .theme b')).map((b) => b.textContent)).toEqual(['Default', 'Bold', 'Wildheart', 'Network'])
   expect(node.querySelector('.rail .theme[aria-pressed=true] b')?.textContent).toBe('Bold')
   expect(node.querySelector('.rail .type-aa + .t small')?.textContent).toBe('Comes with the Bold theme')
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Site') as HTMLButtonElement).click())
