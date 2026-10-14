@@ -63,6 +63,59 @@ export function weekPlanCount(week: readonly WeekDay[]): number {
   return week.reduce((n, d) => n + d.items.length, 0)
 }
 
+/** Only the days that carry a plan, for the compact week. Empty means the panel stays away. */
+export function plannedDays(week: readonly WeekDay[]): WeekDay[] {
+  return week.filter((d) => d.items.length > 0)
+}
+
+// ── Stats and streaks ────────────────────────────────────────────────────────
+
+/** The streak headline and today's state, from the count and the seven-day run (oldest first, the
+ *  last entry being the member's today). A freeze or rest window is not a log, so only `done` today
+ *  counts as logged. */
+export function streakReading(streak: number, last7: readonly ('done' | 'missed' | 'frozen')[]): { loggedToday: boolean; line: string } {
+  const loggedToday = last7.length > 0 && last7[last7.length - 1] === 'done'
+  const days = `${streak} ${streak === 1 ? 'day' : 'days'}`
+  const line = loggedToday
+    ? streak > 0
+      ? `Logged today · ${days} safe`
+      : 'Logged today'
+    : streak > 0
+      ? `Log today to make it ${streak + 1}`
+      : 'Log a practice to start one'
+  return { loggedToday, line }
+}
+
+export interface SparkBar {
+  key: string
+  label: string
+  minutes: number
+  /** 0..100, the bar's height against the busiest period shown. An active period with no timed
+   *  minutes gets a floor so a plain log still shows. */
+  h: number
+  active: boolean
+}
+
+/** The last `n` periods of the member's practice activity (lib/practice-activity.ts) as a compact
+ *  bar run. Null when none of them was active: no flat line of zeros drawn as if it said something. */
+export function activitySpark(
+  periods: readonly { key: string; label: string; minutes: number; active: boolean }[],
+  n = 8,
+): { bars: SparkBar[]; activeCount: number; latestMinutes: number } | null {
+  const run = periods.slice(-n)
+  const activeCount = run.filter((p) => p.active).length
+  if (activeCount === 0) return null
+  const max = Math.max(1, ...run.map((p) => p.minutes))
+  const bars = run.map((p) => ({
+    key: p.key,
+    label: p.label,
+    minutes: p.minutes,
+    active: p.active,
+    h: p.minutes > 0 ? Math.max(12, Math.round((p.minutes / max) * 100)) : p.active ? 12 : 0,
+  }))
+  return { bars, activeCount, latestMinutes: run[run.length - 1]?.minutes ?? 0 }
+}
+
 // ── Today's goals ────────────────────────────────────────────────────────────
 
 export interface Goal {

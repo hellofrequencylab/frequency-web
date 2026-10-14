@@ -5,15 +5,21 @@
 // real features the design lacks are kept and restyled, never dropped).
 //
 //   Get started      lib/onboarding/status.ts (replaces DAWN's "Your Quest" next-step card)
-//   Your week        the member's own Going / waitlist RSVPs for the seven days from their today
+//   Stats & streaks  rail-stats.tsx: streak and today's state, the seven-day strip, Zaps, Gems,
+//                    rank, practices today, an eight-week activity sparkline (owner, 2026-10-14)
 //   Today's goals    adopted practices vs logged today, the Journey lesson or the streak, a plan
+//   Your week        the member's own Going / waitlist RSVPs for the seven days from their today.
+//                    Only when there is a plan, and only the days that carry one: an empty
+//                    seven-row calendar up top was the owner's complaint (2026-10-14)
 //   Your Circles     season Zaps among Circle-mates, cooperative, opt-out honoured
 //   People to know   lib/people-suggestions.ts
 //   ── the platform's own panels, restyled (.fqm-legacy) ──
-//   demo notice · Your activity · the route's page panels (railFor) · Frequency Signature
+//   demo notice · the route's page panels (railFor) · Frequency Signature
+//   (DAWN's "Your activity" chart is not repeated here: the stats box carries its weekly series as
+//   a sparkline and links to /practices, where the full chart lives)
 //   Invite a friend · Report a bug
 //
-// SITE-WIDE, all five, on purpose. A layout does not re-render on client navigation, so a panel
+// SITE-WIDE, all six, on purpose. A layout does not re-render on client navigation, so a panel
 // keyed to /feed would vanish for anyone who landed elsewhere first and stay for anyone who left the
 // Feed: the rail would answer for the page the member first loaded, not the one they are on. The
 // design's panels are about the member, not the page, so they ride on every route; the page panels
@@ -27,13 +33,14 @@ import { Suspense } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { DockData } from '@/components/sidebar/game-stats-dock'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
-import { ActivityPanel, InvitePanel, PagePanels, SignaturePanel, type CommunityRole } from '@/components/sidebar/right-sidebar'
-import { buildGoals, weekPlanCount } from '@/lib/feed/frequency-rail-core'
+import { InvitePanel, PagePanels, SignaturePanel, type CommunityRole } from '@/components/sidebar/right-sidebar'
+import { buildGoals, plannedDays, weekPlanCount } from '@/lib/feed/frequency-rail-core'
 import { loadLocalBoard, loadPeopleToKnow, loadRailOnboarding, loadYourWeek } from '@/lib/feed/frequency-rail'
 import { getInitials } from '@/lib/utils'
 import { AddToggle } from '../shared/toggles'
 import { avatarBg } from './avatar'
 import { GetStarted } from './get-started'
+import { RailStats } from './rail-stats'
 import { ReportBugButton } from './report-bug-button'
 
 type Stats = Promise<DockData | null>
@@ -66,42 +73,34 @@ async function GetStartedPanel({ profileId }: { profileId: string }) {
 
 async function YourWeekPanel({ profileId, stats }: { profileId: string; stats: Stats }) {
   const d = await stats
-  const week = await loadYourWeek(profileId, d?.today ?? null)
-  const count = weekPlanCount(week)
+  const days = plannedDays(await loadYourWeek(profileId, d?.today ?? null))
+  if (days.length === 0) return null // nothing planned: no panel, not seven empty rows
+  const count = days.reduce((c, day) => c + day.items.length, 0)
   return (
     <section className="fqm-rp" aria-label="Your week" data-visual-mask="rail-panel">
       <div className="fqm-rp-h">
         <b>Your week</b>
-        <span>{count === 0 ? 'Nothing planned' : count === 1 ? '1 plan' : `${count} plans`}</span>
+        <span>{count === 1 ? '1 plan' : `${count} plans`}</span>
       </div>
       <div className="fqm-week">
-        {week.map((day) => (
+        {days.map((day) => (
           <div key={day.date} className="fqm-day">
             <span className="fqm-day-d">
               <small>{day.dow}</small>
               <b>{day.d}</b>
             </span>
             <span className="fqm-day-items">
-              {day.items.length === 0 ? (
-                <i className="fqm-day-empty" aria-hidden />
-              ) : (
-                day.items.map((it) => (
-                  <Link key={it.eventId} href={it.href}>
-                    <i aria-hidden />
-                    <span>{it.name}</span>
-                    <small>{it.time}</small>
-                  </Link>
-                ))
-              )}
+              {day.items.map((it) => (
+                <Link key={it.eventId} href={it.href}>
+                  <i aria-hidden />
+                  <span>{it.name}</span>
+                  <small>{it.time}</small>
+                </Link>
+              ))}
             </span>
           </div>
         ))}
       </div>
-      {count === 0 && (
-        <Link href="/events" className="fqm-rp-more">
-          Find something this week
-        </Link>
-      )}
     </section>
   )
 }
@@ -215,10 +214,13 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
         <GetStartedPanel profileId={profileId} />
       </Suspense>
       <Suspense fallback={null}>
-        <YourWeekPanel profileId={profileId} stats={stats} />
+        <RailStats profileId={profileId} stats={stats} withActivity={pathname !== '/practices'} />
       </Suspense>
       <Suspense fallback={null}>
         <GoalsPanel profileId={profileId} stats={stats} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <YourWeekPanel profileId={profileId} stats={stats} />
       </Suspense>
       <Suspense fallback={null}>
         <BoardPanel profileId={profileId} />
@@ -229,11 +231,6 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
       {/* The platform's own panels, kept and restyled (.fqm-legacy in members-shell.css). The page
           panels keep the DAWN rail's one stable boundary (see the note in PagePanels). */}
       <div className="fqm-legacy">
-        {pathname !== '/practices' && (
-          <Suspense fallback={null}>
-            <ActivityPanel profileId={profileId} />
-          </Suspense>
-        )}
         <Suspense fallback={null}>
           <PagePanels profileId={profileId} role={role} pathname={pathname} />
         </Suspense>
@@ -273,9 +270,18 @@ async function MicroGetStarted({ profileId }: { profileId: string }) {
   return <MicroItem icon="compass" value={`${done}/${steps.length}`} tip="Get started" sub={`${left} left`} />
 }
 
+async function MicroStats({ stats }: { stats: Stats }) {
+  const d = await stats
+  if (!d) return null
+  const logged = d.last7.length > 0 && d.last7[d.last7.length - 1] === 'done'
+  const sub = [logged ? 'Logged today' : 'Not yet today', d.zaps > 0 ? `⚡ ${n(d.zaps)}` : null].filter(Boolean).join(' · ')
+  return <MicroItem icon="streak" value={n(d.streak)} tip="Stats and streaks" sub={sub} />
+}
+
 async function MicroWeek({ profileId, stats }: { profileId: string; stats: Stats }) {
   const d = await stats
   const count = weekPlanCount(await loadYourWeek(profileId, d?.today ?? null))
+  if (count === 0) return null // the panel is gone when nothing is planned, so is its button
   return <MicroItem icon="event" value={String(count)} tip="Your week" sub={count === 1 ? '1 plan' : `${count} plans`} />
 }
 
@@ -314,10 +320,13 @@ export function FrequencyRightMicro({ profileId, stats }: Pick<FrequencyRightRai
         <MicroGetStarted profileId={profileId} />
       </Suspense>
       <Suspense fallback={null}>
-        <MicroWeek profileId={profileId} stats={stats} />
+        <MicroStats stats={stats} />
       </Suspense>
       <Suspense fallback={null}>
         <MicroGoals profileId={profileId} stats={stats} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <MicroWeek profileId={profileId} stats={stats} />
       </Suspense>
       <Suspense fallback={null}>
         <MicroBoard profileId={profileId} />
