@@ -15,6 +15,8 @@ import { FrequencyArcs, OrganicBlob } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, journeyListSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyJourneys } from '@/components/frequency/site/pages/discover/journeys'
 
 export const metadata: Metadata = {
   title: 'Journeys',
@@ -41,18 +43,27 @@ export const revalidate = 3600
 
 export default async function DiscoverJourneysPage() {
   const journeys = await listPublicJourneys()
+  const schema = [
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Journeys', path: '/discover/journeys' },
+    ]),
+    journeyListSchema(journeys, 'Journeys on Frequency'),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): the same library and JSON-LD, drawn in the site kit.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyJourneys journeys={journeys} />
+      </>
+    )
+  }
 
   return (
     <>
-      <JsonLd
-        data={[
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Journeys', path: '/discover/journeys' },
-          ]),
-          journeyListSchema(journeys, 'Journeys on Frequency'),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <PhotoHero
         image="/images/site/yoga-in-the-grass.jpg"

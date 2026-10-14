@@ -105,3 +105,91 @@
 [data-design="frequency"] [data-kit="site"] .dx-ev:hover, [data-design="frequency"] [data-kit="site"] .dx-cards .dx-card:hover{transform:none}
 }
 }
+
+/* ── Discover directories (circles, journeys, practices, partners, spaces, topics) ── */
+/* SITE DISCOVER DIRECTORIES (Circles, Journeys, Practices, Partners, Spaces, Channels, index + detail):
+   the few styles the public directories need that the "site" kit does not carry. Everything else on
+   those pages is the kit's own markup (.phero, .crumbs, .sh, .g3 > .pc, .subnav, .qa, .panel, .tools,
+   .feats, .band) so they read as the same site as People, Spaces and Features.
+   Scoped exactly like kit-site.css, so it matches nothing under DAWN. --fq- variables only. */
+@layer components {
+/* A directory hero is a shelf, not a splash: shorter than the persuasion pages' .phero. */
+[data-design="frequency"] [data-kit="site"] .phero.dd-hero{min-height:min(64vh,620px)}
+[data-design="frequency"] [data-kit="site"] .phero.dd-hero .wrap{padding-bottom:clamp(40px,6vw,64px)}
+[data-design="frequency"] [data-kit="site"] .phero .dd-facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin:18px 0 0;font-size:var(--fq-text-body-size)}
+[data-design="frequency"] [data-kit="site"] .dd-facts span{display:inline-flex;align-items:center;gap:8px}
+[data-design="frequency"] [data-kit="site"] .dd-facts .fq-icon{width:18px;height:18px}
+[data-design="frequency"] [data-kit="site"] .dd-facts a{text-decoration:underline;text-underline-offset:3px}
+
+/* Sections run tighter than a persuasion page's .sec: a directory is read, not scrolled through. */
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec{padding:clamp(48px,7vw,88px) 0}
+[data-design="frequency"] [data-kit="site"] .sec.dd-sec+.sec.dd-sec{padding-top:0}
+[data-design="frequency"] [data-kit="site"] .dd-sec .sh{margin-bottom:28px}
+[data-design="frequency"] [data-kit="site"] .dd-sec .sh .body-l{margin:0}
+
+/* Filters: the kit's .subnav pills, scrolling sideways on a phone rather than wrapping into a wall. */
+[data-design="frequency"] [data-kit="site"] .subnav.dd-chips{margin:0 0 28px}
+@media (max-width:640px){[data-design="frequency"] [data-kit="site"] .subnav.dd-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+[data-design="frequency"] [data-kit="site"] .subnav.dd-chips a{flex:none}}
+[data-design="frequency"] [data-kit="site"] .dd-tools{display:flex;flex-direction:column;gap:14px;margin:0 0 28px}
+[data-design="frequency"] [data-kit="site"] .dd-tools .subnav.dd-chips{margin:0}
+[data-design="frequency"] [data-kit="site"] .dd-tools .label{margin-top:4px}
+
+/* Cards: the kit's .pc, as a link (or an article holding links), with no pop-in so a long list shows
+   at once with or without the FX island. */
+[data-design="frequency"] [data-kit="site"] .pc.dd-card{text-decoration:none;color:inherit;position:relative}
+[data-design="frequency"] [data-kit="site"] a.pc.dd-card:hover, [data-design="frequency"] [data-kit="site"] .pc.dd-card:has(h3 a:hover){transform:translateY(-3px);box-shadow:inset 0 0 0 1px var(--fq-border-strong),var(--fq-shadow-1)}
+[data-design="frequency"] [data-kit="site"] a.pc.dd-card:focus-visible, [data-design="frequency"] [data-kit="site"] .dd-card h3 a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .dd-card h3 a{color:inherit;text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .dd-card h3 a::after{content:"";position:absolute;inset:0;border-radius:inherit}
+[data-design="frequency"] [data-kit="site"] .dd-card .ic img{width:28px;height:28px;object-fit:contain;border-radius:var(--fq-radius-s)}
+[data-design="frequency"] [data-kit="site"] .dd-card .ph{background:var(--fq-bg-sunken)}
+[data-design="frequency"] [data-kit="site"] .dd-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="site"] .dd-meta{margin-top:auto;padding-top:4px;display:flex;flex-wrap:wrap;gap:4px 14px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-act{position:relative;z-index:2;align-self:flex-start;font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-pc,var(--fq-side));text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .dd-act:hover{text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .dd-grid{list-style:none;margin:0;padding:0}
+[data-design="frequency"] [data-kit="site"] .dd-grid>li{display:block;min-width:0}
+@media (min-width:561px) and (max-width:860px){[data-design="frequency"] [data-kit="site"] .g3.dd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* A group of cards under its own heading (Channels under a Pillar). */
+[data-design="frequency"] [data-kit="site"] .dd-group+.dd-group{margin-top:56px}
+[data-design="frequency"] [data-kit="site"] .dd-group>h3{margin:0 0 8px;font:600 var(--fq-text-h3)/var(--fq-lh-h3) var(--fq-font-display);letter-spacing:var(--fq-track-h3);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-group>p{margin:0 0 20px;max-width:64ch;color:var(--fq-text-body)}
+
+/* The honest empty state, and the pager under a long list. */
+[data-design="frequency"] [data-kit="site"] .dd-empty{border-radius:var(--fq-radius-xl);padding:clamp(28px,4vw,48px);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);display:flex;flex-direction:column;gap:14px;max-width:760px}
+[data-design="frequency"] [data-kit="site"] .dd-empty h3{margin:0;font:600 clamp(24px,2.6vw,34px)/1.05 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-empty p{margin:0;line-height:1.55;color:var(--fq-text-body);max-width:58ch}
+[data-design="frequency"] [data-kit="site"] .dd-empty .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+[data-design="frequency"] [data-kit="site"] .dd-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:32px;padding-top:20px;border-top:1px solid var(--fq-border-hair);font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-pager .subnav{margin:0}
+
+/* Detail pages: a reading column beside a sticky side panel, collapsing to one column on a phone. */
+[data-design="frequency"] [data-kit="site"] .split.dd-split{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .split.dd-split{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="site"] .dd-split .stack{position:static}}
+[data-design="frequency"] [data-kit="site"] .dd-main{display:flex;flex-direction:column;gap:44px;min-width:0}
+[data-design="frequency"] [data-kit="site"] .dd-main>section>h2{margin:0 0 16px;font:600 var(--fq-text-h3)/var(--fq-lh-h3) var(--fq-font-display);letter-spacing:var(--fq-track-h3);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-prose{margin:0;white-space:pre-line;font-size:var(--fq-text-body-l);line-height:1.65;color:var(--fq-text-body);max-width:64ch}
+[data-design="frequency"] [data-kit="site"] .dd-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+[data-design="frequency"] [data-kit="site"] .dd-list li{display:flex;gap:12px;line-height:1.5;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dd-list li::before{content:"";flex:none;width:6px;height:6px;margin-top:9px;border-radius:50%;background:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .dd-list li small{margin-left:auto;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .qa.dd-qa summary small{display:block;margin-top:6px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .qa.dd-qa .dd-list{padding:0 0 20px}
+[data-design="frequency"] [data-kit="site"] .tools.dd-offers{margin-top:0}
+[data-design="frequency"] [data-kit="site"] .dd-offers .tool p{margin:0;color:var(--fq-text-body);line-height:1.5}
+[data-design="frequency"] [data-kit="site"] .panel.dd-panel{display:flex;flex-direction:column;gap:14px;padding:24px}
+[data-design="frequency"] [data-kit="site"] .dd-panel h2{margin:0;font:600 var(--fq-text-h4)/var(--fq-lh-h4) var(--fq-font-display);letter-spacing:var(--fq-track-h4);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-panel p{margin:0;line-height:1.55;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dd-panel .btn{width:100%}
+[data-design="frequency"] [data-kit="site"] .dd-panel .dd-price{font:600 var(--fq-text-h2)/1 var(--fq-font-display);letter-spacing:var(--fq-track-h2);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-panel .dd-fine{font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-panel dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font:var(--fq-type-meta)}
+[data-design="frequency"] [data-kit="site"] .dd-panel dt{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-panel dd{margin:0;color:var(--fq-text-strong);text-align:right}
+[data-design="frequency"] [data-kit="site"] .dd-guide{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
+[data-design="frequency"] [data-kit="site"] .dd-guide b{display:block;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-guide small{color:var(--fq-text-muted)}
+}

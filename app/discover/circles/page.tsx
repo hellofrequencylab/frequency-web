@@ -18,6 +18,8 @@ import {
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyCircles } from '@/components/frequency/site/pages/discover/circles'
 
 export const metadata: Metadata = {
   title: 'Local Circles',
@@ -46,18 +48,28 @@ export default async function DiscoverCirclesPage() {
     getPublicCounts(),
     getPublicEvents(50),
   ])
+  const schema = [
+    breadcrumbSchema([
+      { name: 'Discover', path: '/discover' },
+      { name: 'Circles', path: '/discover/circles' },
+    ]),
+    circleListSchema(circles, 'Local Circles on Frequency'),
+  ]
+
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the site kit's directory, over the same
+  // reads and the same JSON-LD. Build-time constant, so the route stays ISR.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={schema} />
+        <FrequencyCircles circles={circles} counts={counts} events={events.length} />
+      </>
+    )
+  }
 
   return (
     <>
-      <JsonLd
-        data={[
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Circles', path: '/discover/circles' },
-          ]),
-          circleListSchema(circles, 'Local Circles on Frequency'),
-        ]}
-      />
+      <JsonLd data={schema} />
 
       <PhotoHero
         image="/images/site/PHOTO-2020-10-07-14-38-04.jpeg"
