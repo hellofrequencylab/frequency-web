@@ -17,11 +17,11 @@
 // THE ONE BUTTON. `NEXT_PUBLIC_SITE_DESIGN` (Vercel env, or .env.local for a local build). Unset or
 // unknown reads as DAWN, so a missing variable can never ship a half-built system.
 //
-// LOCAL PREVIEW. `?design=frequency` (or `?design=dawn`) on any URL stores a preview in localStorage and
-// the pre-paint script stamps it on <html> (lib/theme/mode.ts). It swaps the TOKENS only: the server-side
-// switches (skins off, Space font sets off) still follow SITE_DESIGN, so a true check of a design is a
-// local run with the env var set. A design's sheets load per design (app/themes/active/, written by
-// scripts/write-design-assets.mjs), so the preview has nothing to show in a build that wears another one.
+// NO URL PREVIEW (SCAN-850). A `?design=` switch used to store a preview in localStorage and stamp it
+// on <html>. A design's sheets load per design (app/themes/active/, written by
+// scripts/write-design-assets.mjs), so on a Frequency build `?design=dawn` switched every Frequency rule
+// off and left the visitor on an unstyled site on every later visit. The pre-paint script now only
+// clears that stale key. To check a design, run it locally: `pnpm design:use <id>` and restart dev.
 
 /**
  * Every design system the platform can wear. Add one = a CSS file in app/themes/, an entry here and a
@@ -61,7 +61,7 @@ export const DESIGNS: readonly DesignDef[] = [
 
 export const DEFAULT_DESIGN: DesignId = 'dawn'
 
-/** The localStorage key the `?design=` preview writes and the pre-paint script reads. */
+/** The localStorage key the retired `?design=` preview wrote. The pre-paint script clears it (SCAN-850). */
 export const DESIGN_PREVIEW_KEY = 'freq-design'
 
 export function isDesignId(id: unknown): id is DesignId {
