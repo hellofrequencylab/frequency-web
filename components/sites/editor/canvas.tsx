@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type ComponentProps } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
+import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, Eye, EyeOff, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
 import { safeUrl, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import type { Config, Metadata, Data, ContentItem } from '@/lib/page-editor/types'
 import type { MwLive } from '@/lib/sites/menswork-data'
@@ -20,6 +20,7 @@ import { WebsiteDocument } from '../website-document'
 import { SiteChrome, siteHref } from '../site-chrome'
 import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
 import { NETWORK_BLOCK_CSS, docHasNetworkBlocks } from '../network-css'
+import { SectionIcon } from './section-icon'
 
 const CANVAS_CSS = `
 html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
@@ -53,13 +54,15 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100 }: {
+  /** The stage zoom, 50 to 100 percent (Site Editor handoff). */
+  zoom?: number
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
   title: string; brandName: string; logo?: string | null; brandAccent?: string | null
   nav: { slug: string; label: string }[]
   selectedId: string | null; preview: boolean; comments: SiteComment[]
   onSelect: (id: string) => void; onEdit: (id: string, field: string, value: unknown) => void
-  onAction: (id: string, action: 'up' | 'down' | 'copy' | 'comment' | 'delete') => void
+  onAction: (id: string, action: 'up' | 'down' | 'copy' | 'comment' | 'delete' | 'hide') => void
   people?: WebsitePresence[]; pageSlug?: string; onCursor?: (cursor: WebsitePresence['cursor']) => void
   onDisplay?: (id: string, value: SectionDisplay) => void
   onCommentPin?: (id: string, point: { x: number; y: number }) => void
@@ -269,7 +272,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
       for (const node of window.document.head.querySelectorAll('link[rel=stylesheet],style')) document.head.appendChild(node.cloneNode(true))
       document.documentElement.setAttribute('data-website-styles-loaded', 'true')
     }
-    const computed = getComputedStyle(window.document.documentElement)
+    // The theme faces (Network, Wildheart) are registered on the editor root, not on <html>: read them there.
+    const computed = getComputedStyle(frame.current?.closest<HTMLElement>('[data-editor-root]') ?? window.document.documentElement)
     for (const key of Array.from(computed)) if (key.startsWith('--font-')) document.documentElement.style.setProperty(key, computed.getPropertyValue(key))
     setMount(document.body)
   }, [])
@@ -287,6 +291,22 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     }, 50)
     return () => { iframe.removeEventListener('load', attach); window.clearInterval(retry) }
   }, [attach])
+  // The stage zoom scales the page inside the frame, so the frame keeps its width and the site its breakpoints.
+  useEffect(() => {
+    const root = mount?.ownerDocument.documentElement
+    if (root) root.style.zoom = zoom === 100 ? '' : String(zoom / 100)
+  }, [mount, zoom])
+  // Layers → canvas: a section picked in the rail (or added, or moved) scrolls into view when it is off screen.
+  useEffect(() => {
+    if (!mount || !selectedId) return
+    const section = mount.querySelector<HTMLElement>(`.we-section[data-block-id="${CSS.escape(selectedId)}"]`)
+    const view = mount.ownerDocument.defaultView
+    if (!section || !view) return
+    const box = section.getBoundingClientRect()
+    if (box.top >= 0 && box.top < view.innerHeight * 0.6) return
+    const smooth = !view.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    view.scrollTo({ top: Math.max(0, box.top + view.scrollY - 24), behavior: smooth ? 'smooth' : 'auto' })
+  }, [mount, selectedId])
   // Inspector → canvas: light every line the focused field draws, and bring the first into view.
   const focusKey = focusField ? JSON.stringify(focusField) : ''
   useEffect(() => {
@@ -392,10 +412,11 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     const id = block.props.id!
     const selected = id === selectedId
     const textSelectedHere = !!textTarget && textTarget.node.closest('.we-section')?.getAttribute('data-block-id') === id
-    const label = String(block.props.title || config.components[block.type]?.label || block.type).replace(/\*/g, '')
+    const label = String(config.components[block.type]?.label || block.type).replace(/\*/g, '')
+    const hiddenHere = sectionDeviceLayout(doc, id, device).hidden ?? false
     const pins = comments.filter((c) => indexes.some((i) => doc.content[i].props.id === c.blockId) && !c.resolved)
     return <div key={id}>
-      <button className="we-insert" type="button" aria-label={`Insert section before ${label}`} onClick={() => onInsert(indexes[0])}>+ Add section</button>
+      <div className="we-ins"><button className="we-insert" type="button" aria-label={`Insert section before ${label}`} onClick={() => onInsert(indexes[0])}>+ Add section</button></div>
       <section className="we-section" data-selected={selected} data-hidden={sectionDeviceLayout(doc, id, device).hidden ?? false} data-block-id={id} tabIndex={0} aria-label={label}
         onDragOver={(e) => { if (draggingSections.current.length && !draggingSections.current.includes(id)) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.dataset.dropTarget = 'true' } }}
         onDragLeave={(e) => { e.currentTarget.dataset.dropTarget = 'false' }}
@@ -409,12 +430,14 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
         onPointerLeave={() => onCursor?.(null)}
         onClick={(e) => { if (e.shiftKey && onCommentPin) { e.preventDefault(); const bounds = e.currentTarget.getBoundingClientRect(); onSelect(id); onCommentPin(id, { x: Math.min(1, Math.max(0, (e.clientX - bounds.left) / Math.max(1, bounds.width))), y: Math.min(1, Math.max(0, (e.clientY - bounds.top) / Math.max(1, bounds.height))) }); return } if ((e.target as HTMLElement).closest('a,button')) e.preventDefault(); onSelect(id); let picked = false; for (const index of indexes) if (editText(e, doc.content[index])) { picked = true; break } if (!picked && !editing.current) { selectedTextNode.current?.removeAttribute('data-site-text-selected'); selectedTextNode.current = null; beginSelectedEdit.current = null; setTextTarget(null); onTextSelect?.(null) } }}
         onKeyDown={(e) => { if ((e.target as HTMLElement).isContentEditable) return; if (textTarget && (e.target === textTarget.node || textTarget.node.contains(e.target as Node)) && (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey))) { beginSelectedEdit.current?.(); if (e.key === 'Enter') e.preventDefault(); return } if (e.key === 'Enter') onSelect(id); if (e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); onAction(id, e.key === 'ArrowUp' ? 'up' : 'down') } }}>
-        <button type="button" className="we-section-label" aria-label={`Drag ${label} to reorder sections`} draggable={!!onReorder} onClick={(e) => { e.stopPropagation(); onSelect(id) }} onDragStart={(e) => { draggingSections.current = indexes.map((index) => doc.content[index].props.id!); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', label) }} onDragEnd={() => { draggingSections.current = []; for (const target of mount?.querySelectorAll<HTMLElement>('[data-drop-target=true]') ?? []) target.dataset.dropTarget = 'false' }}><GripVertical size={12} aria-hidden />{label}{sectionDeviceLayout(doc, id, device).hidden && ' · Hidden on this device'}</button>
+        <button type="button" className="we-section-label" aria-label={`Drag ${label} to reorder sections`} draggable={!!onReorder} onClick={(e) => { e.stopPropagation(); onSelect(id) }} onDragStart={(e) => { draggingSections.current = indexes.map((index) => doc.content[index].props.id!); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', label) }} onDragEnd={() => { draggingSections.current = []; for (const target of mount?.querySelectorAll<HTMLElement>('[data-drop-target=true]') ?? []) target.dataset.dropTarget = 'false' }}><SectionIcon type={block.type} size={14} />{label}{hiddenHere && ` · Hidden on ${device}`}</button>
         {selected && !textSelectedHere && <div className="we-micro" role="toolbar" aria-label={`${label} section controls`} onClick={(e) => e.stopPropagation()}>
           <button type="button" title="Move up" aria-label="Move up" disabled={indexes[0] === 0} onClick={() => onAction(id, 'up')}><ArrowUp size={15} /></button>
           <button type="button" title="Move down" aria-label="Move down" disabled={indexes.at(-1) === doc.content.length - 1} onClick={() => onAction(id, 'down')}><ArrowDown size={15} /></button>
           <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onAction(id, 'copy')}><Copy size={15} /></button>
+          <span className="we-micro-div" aria-hidden />
           <button type="button" title="Comment" aria-label="Comment" onClick={() => onCommentPin ? onCommentPin(id, { x: .5, y: .5 }) : onAction(id, 'comment')}><MessageSquare size={15} /></button>
+          <button type="button" title={hiddenHere ? `Show on ${device}` : `Hide on ${device}`} aria-label={hiddenHere ? `Show on ${device}` : `Hide on ${device}`} aria-pressed={hiddenHere} onClick={() => onAction(id, 'hide')}>{hiddenHere ? <EyeOff size={15} /> : <Eye size={15} />}</button>
           <button type="button" title="Delete" aria-label="Delete" onClick={() => onAction(id, 'delete')}><Trash2 size={15} /></button>
         </div>}
         {selected && textSelectedHere && !!textTarget && <div className="we-micro" role="toolbar" aria-label="Text controls" onMouseDown={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
@@ -439,7 +462,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
       <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
-        {!preview && <button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button>}
+        {!preview && <div className="we-addend"><button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button></div>}
       </SiteChrome>
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('footer') }}>Edit footer</button>}
     </div>, mount)}
