@@ -25,3 +25,15 @@
 [data-design="frequency"] [data-kit="admin"] .ad-sub{display:none}
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu{right:auto;min-width:240px}}
 }
+
+/* Owner, 2026-10-14: "the left menu doesn't scroll when open". The kit's sidebar is a sticky 100vh column
+   with no overflow, so an expanded section (Community has ~20 links) ran off the bottom. It now scrolls on
+   its own, quietly (no visible bar until used), and stops the page behind it scrolling at its ends. */
+@media (min-width: 961px) {
+  [data-design="frequency"] [data-kit="admin"] .ad-side {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--fq-text-strong) 18%, transparent) transparent;
+  }
+}
