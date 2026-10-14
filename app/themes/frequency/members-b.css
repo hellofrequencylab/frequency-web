@@ -90,7 +90,7 @@
 
 /* A segmented List / Map switch, the kit's chip track. */
 [data-design="frequency"] [data-kit="members"] .fqm-sort{display:inline-flex;gap:2px;padding:4px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-3)}
-[data-design="frequency"] [data-kit="members"] .fqm-sort button{height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:none;color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .fqm-sort button{height:40px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:none;color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);cursor:pointer}
 [data-design="frequency"] [data-kit="members"] .fqm-sort button .fq-icon{width:16px;height:16px}
 [data-design="frequency"] [data-kit="members"] .fqm-sort button.on{background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 1px 2px color-mix(in oklab,var(--fq-ink) 8%,transparent),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqm-map{height:460px;border-radius:var(--fq-radius-l);overflow:hidden;box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}

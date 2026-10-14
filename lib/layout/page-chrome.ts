@@ -42,6 +42,12 @@ const FULL_TAKEOVER_PREFIXES = [
   '/print', // print sheets (e.g. /print/qr) — a paper surface, no rail
 ]
 
+/** Whether `pathname` is a full takeover (the practice timer, the scanner, sign-in, print): no app
+ *  chrome at all. Pure + client-safe like railFor. */
+export function isFullTakeover(pathname: string): boolean {
+  return FULL_TAKEOVER_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
 // FOCUS surfaces — centered, no-rail single-task flows that compose <FocusTemplate>
 // (a form, a single decision). They keep the global LEFT menu but drop the member
 // RIGHT rail so the form reads centered.

@@ -189,7 +189,7 @@ export function FqRailLayout({
     const root = bodyRef.current?.closest<HTMLElement>('[data-kit]')
     if (!root) return
     const apply = () => {
-      if (!showL || window.innerWidth < 680) root.style.removeProperty('--fq-rail')
+      if (!showL || window.innerWidth < 768) root.style.removeProperty('--fq-rail')
       else root.style.setProperty('--fq-rail', `${Math.max(microNow('L') ? MICRO : (l ?? DEFAULT_W), 200)}px`)
     }
     apply()

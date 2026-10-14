@@ -131,6 +131,7 @@ export function FqItemGrid({
                   </span>
                   {(i.sub || km != null) && <span className="t2">{[i.sub, km != null ? miles(km) : null].filter(Boolean).join(' · ')}</span>}
                   <Link className="btn sm" href={i.href}>
+                    {i.cta.startsWith('Message') && <FqIcon name="message" />}
                     {i.cta}
                   </Link>
                 </div>

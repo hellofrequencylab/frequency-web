@@ -10,6 +10,8 @@ import { MONDAY_FIRST, type CalendarMonth } from './calendar-month'
 // focus: an ARIA grid with one roving tab stop. Arrows move a day or a week, Home / End go to the
 // ends of the week, Page Up / Page Down turn the month (a URL change, `?month=`), and Tab goes into
 // the focused day's events. A day with more than three shows "+N more", which opens the rest there.
+// On a phone a day's events are 6px marks too small to tap, so a tap picks the day and its events
+// list under the grid (`.ev-cal-day`, shown under 720px), the same rows the keyboard focus picks.
 
 const SHOWN = 3
 
@@ -37,6 +39,7 @@ export function FqEventsCalendar({
   const [focus, setFocus] = useState(start)
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const refs = useRef<(HTMLDivElement | null)[]>([])
+  const picked = cells[focus]
 
   function move(to: number) {
     const lo = days[0]
@@ -140,6 +143,10 @@ export function FqEventsCalendar({
                   onFocus={(e) => {
                     if (e.target === e.currentTarget) setFocus(i)
                   }}
+                  onClick={(e) => {
+                    if (!(e.target as HTMLElement).closest('a, button')) setFocus(i)
+                  }}
+                  data-picked={i === focus ? '' : undefined}
                 >
                   <span className="ev-cd" aria-hidden="true">
                     {c.day}
@@ -164,6 +171,22 @@ export function FqEventsCalendar({
           </div>
         ))}
       </div>
+      {picked?.key && (
+        <div className="ev-cal-day" aria-live="polite">
+          <span className="k">{picked.label}</span>
+          {picked.events.length === 0 ? (
+            <span className="t2">Nothing on this day.</span>
+          ) : (
+            picked.events.map((ev) => (
+              <Link key={ev.id} href={ev.href} className={ev.going ? 'ev-cal-row-ev going' : 'ev-cal-row-ev'}>
+                <b>{ev.time}</b>
+                <span>{ev.title}</span>
+                {ev.going && <span className="tag">Going</span>}
+              </Link>
+            ))
+          )}
+        </div>
+      )}
       <span className="t2">
         Every upcoming event that matches, by day. Subscribe once and the public calendar shows up in Google or Apple
         Calendar. Arrow keys move between days; Page Up and Page Down change the month.

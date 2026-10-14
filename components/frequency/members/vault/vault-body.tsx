@@ -374,6 +374,7 @@ export async function VaultBody() {
                 <span className="t2">The shelves are being stocked.</span>
               )}
               <a className="btn sm pa" href="#store">
+                <FqIcon name="vault" />
                 Open the Store
               </a>
               <span className="t2">Gift Gems to another member from the Store.</span>

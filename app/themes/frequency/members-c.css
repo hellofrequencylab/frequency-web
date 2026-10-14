@@ -41,7 +41,7 @@
 [data-design="frequency"] [data-kit="members"] .mc-center{align-items:center}
 [data-design="frequency"] [data-kit="members"] .mc-chips-center{justify-content:center}
 [data-design="frequency"] [data-kit="members"] .why.mc-why-l{font-size:22px}
-[data-design="frequency"] [data-kit="members"] .mc-orb-wrap{position:relative;width:280px;height:280px;display:flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .mc-orb-wrap{position:relative;width:min(280px,100%);aspect-ratio:1;display:flex;align-items:center;justify-content:center}
 [data-design="frequency"] [data-kit="members"] .mc-orb-glow{position:absolute;inset:0;border-radius:50%;background:var(--fq-pa-orb);filter:blur(30px);opacity:.75}
 [data-design="frequency"] [data-kit="members"] .mc-orb-core{position:relative;width:180px;height:180px;border-radius:50%;background:var(--fq-pa-orb);box-shadow:0 0 60px var(--fq-ig-halo),inset 0 0 0 1px var(--fq-border-hair)}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .mc-orb-wrap .fq-breathe{animation:none}}
@@ -132,4 +132,54 @@
 [data-design="frequency"] [data-kit="members"] .mc-gap-20{gap:20px}
 [data-design="frequency"] [data-kit="members"] .input[readonly]{color:var(--fq-text-muted);cursor:default}
 
+
+/* ── THE TEMPLATES' LIVING DETAILS (design-system audit, 2026-10-14) ─────────────────────────────────
+   What templates/members/*.html draw that the bodies had flattened: the iridescent sweep on every
+   progress ring (a solid violet before), the glow on today's node, live dots and the Mindless orb at the
+   template's strength, the practice pill's lift, and the phone layouts the templates leave implicit. */
+/* Rings: the --fq-pa sweep shows through a conic mask of the track, so the arc carries the gradient. */
+[data-design="frequency"] [data-kit="members"] .fa-ring-arc,[data-design="frequency"] [data-kit="members"] .fa-mini-ring{background:conic-gradient(from -90deg,transparent 0 var(--p),var(--fq-track) var(--p) 100%),var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .fa-run-ring{background:conic-gradient(transparent 0 var(--p),var(--fq-track) var(--p) 100%),var(--fq-pa)}
+/* Today in the streak chain: a white disc in a --pa ring with the halo (Members.dc.html). */
+[data-design="frequency"] [data-kit="members"] .fa-node.today>span{border:3px solid transparent;background:linear-gradient(var(--fq-surface-raised),var(--fq-surface-raised)) padding-box,var(--fq-pa) border-box;box-shadow:var(--fq-pa-glow),0 0 22px color-mix(in oklab,var(--fq-x-aqua-neon) 45%,transparent)}
+/* Live dots glow (Members.dc.html: 12px / 10px of the aqua halo). */
+[data-design="frequency"] [data-kit="members"] .fa-livedot{box-shadow:0 0 12px color-mix(in oklab,var(--fq-x-aqua-neon) 60%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fa-near .dot{box-shadow:0 0 10px color-mix(in oklab,var(--fq-x-aqua-neon) 60%,transparent)}
+/* The practice pill lifts 2px with a lilac glow and presses to .97. */
+[data-design="frequency"] [data-kit="members"] .fa-pchip{transition:transform var(--fq-dur-fast) var(--fq-ease-out),box-shadow var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fa-pchip:not(.done):hover{transform:translateY(-2px);box-shadow:0 18px 34px -16px color-mix(in oklab,var(--fq-x-violet-deep) 50%,transparent),inset 0 0 0 1px var(--fq-ig-halo)}
+[data-design="frequency"] [data-kit="members"] .fa-pchip:active{transform:scale(.97)}
+/* Near you: the intent chips at rest are white glass on a hairline, not the ink tint. */
+[data-design="frequency"] [data-kit="members"] .fa-intents .chip:not(.on){background:color-mix(in oklab,var(--fq-surface-raised) 50%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .fa-intents .chip:not(.on):hover{background:var(--fqm-white-75);color:var(--fq-text-strong)}
+/* A Circle's cover: a plain button on the photo is frosted white, so its ink reads on the scrim. */
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in .btn:not(.pa){background:color-mix(in oklab,var(--fq-surface-raised) 85%,transparent);box-shadow:none}
+/* The glows at the templates' strength: Journey's next lesson, the Mindless orb, the Vault's medals,
+   the profile photo's halo. */
+[data-design="frequency"] [data-kit="members"] .ic.mc-now{box-shadow:var(--fq-ig-glow),0 0 18px color-mix(in oklab,var(--fq-x-aqua-neon) 45%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mc-orb-core{box-shadow:0 0 60px color-mix(in oklab,var(--fq-x-violet-neon) 45%,transparent),inset 0 0 0 1px var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .mc-medal{box-shadow:0 12px 30px -12px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent),inset 0 0 0 4px var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .mc-photo{box-shadow:0 0 0 4px var(--fq-ig-hole),0 20px 50px -24px color-mix(in oklab,var(--fq-x-violet-neon) 40%,transparent)}
+/* Help's search pill is the raised white of Search's bar (Help.html: #fff). */
+[data-design="frequency"] [data-kit="members"] .mc-pill{background:var(--fq-surface-raised)}
+/* Search: a result row is a tappable row with the kit's list hover (Search.html rows are links). */
+[data-design="frequency"] [data-kit="members"] .fqm-search-cols .list>div{border-radius:14px;margin:0 -10px;padding-inline:10px;transition:background var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .fqm-search-cols .list>div:hover{background:var(--fqm-white-60)}
+@media (max-width:1000px){
+  /* Settings' section nav becomes a pill strip on a phone instead of eight stacked rows before the pane. */
+  [data-design="frequency"] [data-kit="members"] .ap-cols.l>.side .sel:has(.mc-navbtn){flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px;margin-inline:calc(-1 * var(--fq-gutter-mobile));padding:0 var(--fq-gutter-mobile) 4px}
+  [data-design="frequency"] [data-kit="members"] .mc-navbtn{flex:none;border-radius:var(--fq-radius-orb);padding:0 16px;white-space:nowrap}
+}
+@media (max-width:560px){
+  [data-design="frequency"] [data-kit="members"] .fa-searchbar{height:56px;padding:0 18px}
+  [data-design="frequency"] [data-kit="members"] .fa-searchbar input{font-size:17px}
+  [data-design="frequency"] [data-kit="members"] .fa-searchbar .meta{display:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-search-head>.chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:calc(-1 * var(--fq-gutter-mobile));padding-inline:var(--fq-gutter-mobile)}
+  /* Two up, not one tall column: the Vault's awards, the site map, Help's topics. */
+  [data-design="frequency"] [data-kit="members"] .mc-section .g4{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}
+  [data-design="frequency"] [data-kit="members"] .ap-main>.g4:has(.mc-maplink){grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 16px}
+  [data-design="frequency"] [data-kit="members"] .mc-maplink{display:flex;align-items:center;min-height:var(--fq-hit-min)}
+  [data-design="frequency"] [data-kit="members"] .mc-narrow .g3{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  [data-design="frequency"] [data-kit="members"] .mc-narrow .g3>.panel{padding:16px}
+}
 }

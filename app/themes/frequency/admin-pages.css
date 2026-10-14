@@ -17,7 +17,7 @@
 [data-design="frequency"] [data-kit="admin"] .adp .head .h1{font-size:38px}
 
 /* The two-column console layout: content, then a 360px rail (design: ap-cols with inline columns). */
-[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr) 360px;gap:40px}
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr) 360px;gap:var(--fq-space-8)}
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{top:92px}
 [data-design="frequency"] [data-kit="admin"] .adp .adp-gap{margin-top:var(--fq-space-10)}
 [data-design="frequency"] [data-kit="admin"] .adp .stack.adp-wide{gap:var(--fq-space-9)}
@@ -27,6 +27,8 @@
 
 /* A table sitting in a panel keeps a thin inset (design: padding 8px). */
 [data-design="frequency"] [data-kit="admin"] .adp .panel.tbl-wrap{padding:8px}
+/* A wide table is a tab stop so its sideways scroll works from the keyboard; it shows where focus is. */
+[data-design="frequency"] [data-kit="admin"] .adp .tbl-wrap:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
 [data-design="frequency"] [data-kit="admin"] .adp .t1.adp-block{display:block}
 [data-design="frequency"] [data-kit="admin"] .adp .tbl .t2{font-size:var(--fq-text-meta)}
 
@@ -130,6 +132,11 @@
 [data-design="frequency"] [data-kit="admin"] .adp .tbl-wrap>.tbl{min-width:560px}
 [data-design="frequency"] [data-kit="admin"] .adp .input.adp-search{max-width:none;flex:1 1 100%}
 [data-design="frequency"] [data-kit="admin"] .adp .head .h1{font-size:var(--fq-text-h2)}
+}
+
+/* PHONE KPIs: stacked two or one to a row, the 24px pad and the 136px floor left each card mostly air. */
+@media (max-width:720px){
+[data-design="frequency"] [data-kit="admin"] .adp .panel.kpi{padding:18px;min-height:0}
 }
 
 @media (max-width:1000px){

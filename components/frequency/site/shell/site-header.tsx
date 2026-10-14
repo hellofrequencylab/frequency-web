@@ -196,6 +196,8 @@ export function SiteHeader() {
   const navRef = useRef<HTMLElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const sheetTrigRef = useRef<HTMLButtonElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const menu = useOverlay(220, pathname)
@@ -301,13 +303,40 @@ export function SiteHeader() {
   useEffect(() => {
     if (search.mounted) inputRef.current?.focus()
   }, [search.mounted])
+  // The sheet is a modal dialog, so it behaves like one: focus lands on Close, Tab wraps inside it, and
+  // closing hands focus back to Menu (unless the sheet passed it on, as its Search row does).
   useEffect(() => {
     if (!sheet.mounted) return
     const html = document.documentElement
     const prev = html.style.overflow
     html.style.overflow = 'hidden'
+    const box = sheetRef.current
+    box?.querySelector<HTMLElement>('.mm-shtop button')?.focus()
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !box) return
+      // Links inside a closed accordion have no box, so they are skipped.
+      const all = [...box.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),summary')].filter(
+        (el) => el.getClientRects().length > 0,
+      )
+      if (!all.length) return
+      const first = all[0]
+      const last = all[all.length - 1]
+      const at = document.activeElement
+      if (e.shiftKey && (at === first || !box.contains(at))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (at === last || !box.contains(at))) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onTab)
+    const trig = sheetTrigRef.current
     return () => {
       html.style.overflow = prev
+      document.removeEventListener('keydown', onTab)
+      const at = document.activeElement
+      if (!at || at === document.body || box?.contains(at)) trig?.focus()
     }
   }, [sheet.mounted])
 
@@ -435,7 +464,14 @@ export function SiteHeader() {
               <span className="acct-cta">{ctaNode}</span>
             </>
           )}
-          <button type="button" className="mm-menu" aria-expanded={sheet.isOpen} aria-controls="fq-mm-sheet" onClick={sheet.show}>
+          <button
+            ref={sheetTrigRef}
+            type="button"
+            className="mm-menu"
+            aria-expanded={sheet.isOpen}
+            aria-controls="fq-mm-sheet"
+            onClick={sheet.show}
+          >
             Menu
           </button>
         </div>
@@ -499,6 +535,7 @@ export function SiteHeader() {
       </div>
 
       <div
+        ref={sheetRef}
         id="fq-mm-sheet"
         className={`mm-sheet${sheet.on ? ' on' : ''}`}
         hidden={!sheet.mounted}

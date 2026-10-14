@@ -20,11 +20,34 @@
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:18px;background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:12px;font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu a:hover{background:var(--fq-track)}
+/* The phone strip of the active section's pages (admin-nav.tsx): only under 960px, where the in-group
+   column steps aside. Sideways scroll like the nav row above it, no bar. */
+[data-design="frequency"] [data-kit="admin"] .ad-strip{display:none}
 @media (max-width:960px){
 [data-design="frequency"] [data-kit="admin"] .ad-nav-group{flex-direction:row}
 [data-design="frequency"] [data-kit="admin"] .ad-sub{display:none}
+[data-design="frequency"] [data-kit="admin"] .ad-strip{display:flex;flex:1 0 100%;gap:2px;margin:4px 0 0;overflow-x:auto;scrollbar-width:none}
+[data-design="frequency"] [data-kit="admin"] .ad-strip a{flex:none;min-height:40px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap}
+[data-design="frequency"] [data-kit="admin"] .ad-strip a:hover{background:var(--fq-track);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] .ad-strip a.on{background:var(--fq-pa-soft);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] .ad-strip a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:-2px}
+[data-design="frequency"] [data-kit="admin"] .ad-strip b{font:600 var(--fq-text-label)/1 var(--fq-font-sans);padding:4px 7px;border-radius:var(--fq-radius-orb);background:var(--fq-text-strong);color:var(--fq-surface-card)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu{right:auto;min-width:240px}}
 }
+
+/* The top bar's search (admin-shell.tsx): 260px on a wide screen; on a phone an icon-sized orb, so the
+   breadcrumb keeps the room and truncates rather than shoving the alerts and avatar off the bar. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"] .ad-top .ad-search{flex:0 1 260px}
+@media (max-width:960px){
+[data-design="frequency"] [data-kit="admin"] .ad-top .ad-search{flex:none;width:40px;padding:0;justify-content:center}
+[data-design="frequency"] [data-kit="admin"] .ad-top .crumb{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+}
+
+/* The console's own wash. members-shell.css hides every .fq-wash under a console kit root (the member
+   shell's wash steps aside there), which caught this one too. Unlayered, like that rule, and one level
+   more specific, so only the admin kit's direct child comes back. */
+[data-design="frequency"] [data-kit="members"][data-console] [data-kit="admin"]>.fq-wash{display:block}
 
 /* Owner, 2026-10-14: "the left menu doesn't scroll when open". The kit's sidebar is a sticky 100vh column
    with no overflow, so an expanded section (Community has ~20 links) ran off the bottom. It now scrolls on

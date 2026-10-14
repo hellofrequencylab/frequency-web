@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { isError } from '@/lib/action-result'
+import { FqIcon } from '@/components/frequency/icon'
 
 // THE "GO / GOING" SWAP, MADE REAL (Frequency member kit, templates/members/Events.html). The
 // reference toggles a label with `data-swap="Go|Going" data-cls="pa"`; here the press writes the
@@ -17,11 +18,15 @@ export function GoButton({
   eventId,
   slug,
   going,
+  size = 'sm',
 }: {
   eventId: string
   slug: string
   /** The viewer's real answer: true when their RSVP row says going. */
   going: boolean
+  /** `sm` in a card row; `md` where it is the panel's one action (Circle.html's Next meetup is a full
+   *  `btn pa`, the iridescent primary in both states). */
+  size?: 'sm' | 'md'
 }) {
   const router = useRouter()
   const [on, setOn] = useState(going)
@@ -48,12 +53,13 @@ export function GoButton({
   return (
     <button
       type="button"
-      className={on ? 'btn sm pa' : 'btn sm'}
+      className={size === 'md' ? 'btn pa' : on ? 'btn sm pa' : 'btn sm'}
       aria-pressed={on}
       disabled={pending}
       onClick={press}
       title={failed ? 'We could not save that. Try again.' : undefined}
     >
+      <FqIcon name={on ? 'check' : 'plus'} />
       {on ? 'Going' : 'Go'}
     </button>
   )

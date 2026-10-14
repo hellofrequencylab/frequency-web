@@ -133,7 +133,7 @@ export function FqClassifiedsBody({
       <FqMarketAreas active="market" />
       <FqHiddenAreaNote area="market" />
 
-      <nav className="chips fqm-chips" aria-label="Kind">
+      <nav className="chips fqm-chips lg" aria-label="Kind">
         <Link href="/classifieds" className={activeKind ? 'chip' : 'chip on'} aria-current={activeKind ? undefined : 'page'}>
           All
         </Link>

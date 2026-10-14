@@ -1,7 +1,7 @@
 {
   "id": "LIVE-922",
   "title": "Production wears the Frequency design, switched by NEXT_PUBLIC_SITE_DESIGN, while the committed tree stays DAWN so a roll back is one variable and a redeploy",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "S",
@@ -10,11 +10,12 @@
     "file": "docs/RUNBOOKS.md",
     "ref": "Section 8, Design switch. ADR-1737 (one setting, one design per deploy), ADR-1740 (the installed export), ADR-1747 (the merged pages). Owner 2026-10-14: one final clean-up pass, then the Frequency design goes live."
   },
-  "detail": "The go-live of the Frequency design rebuild. The code is in the tree behind the build-time switch (LIVE-909, LIVE-920): lib/theme/design.ts reads NEXT_PUBLIC_SITE_DESIGN, unset or unknown is DAWN, and scripts/write-design-assets.mjs rewrites the per-design stubs (app/themes/active/*.ts), the font module (lib/theme/design-fonts/active.ts) and the manifest colours at build. What is left is the owner's change-over, gated in docs/RUNBOOKS.md section 8: production green on DAWN after the merge; a Preview build with the variable set for Preview only, all six postbuild gates green (read check:shell-weight and check:build-budget first); a walk of the preview in light and dark; then the variable in Vercel Production and a Redeploy (a rebuild, because the value is inlined; a promote serves the old DAWN build). Roll back is Instant Rollback to the last DAWN-built deployment, then unsetting the variable; while Frequency was live, /the-quest and /the-lab answered permanent 308s to /features and /vision, which 404 under DAWN, so a lasting roll back adds temporary redirects for those two. The probe has two halves: the tree half (exit 1) fails when a stub, the font module or the manifest is committed in a Frequency state, when an unknown value stops reading as DAWN, or when the runbook section is gone; the production half fetches the live home page and passes only when its <html> carries data-design=\"frequency\" (a network failure or a page without the attribute is exit 79, could not look). .env.example lists the variable blank with its gate line.",
+  "detail": "The go-live of the Frequency design rebuild. The code is in the tree behind the build-time switch (LIVE-909, LIVE-920): lib/theme/design.ts reads NEXT_PUBLIC_SITE_DESIGN, unset or unknown is DAWN, and scripts/write-design-assets.mjs rewrites the per-design stubs (app/themes/active/*.ts), the font module (lib/theme/design-fonts/active.ts) and the manifest colours at build. What is left is the owner's change-over, gated in docs/RUNBOOKS.md section 8: production green on DAWN after the merge; a Preview build with the variable set for Preview only, all six postbuild gates green (read check:shell-weight and check:build-budget first); a walk of the preview in light and dark; then the variable in Vercel Production and a Redeploy (a rebuild, because the value is inlined; a promote serves the old DAWN build). Roll back is Instant Rollback to the last DAWN-built deployment, then unsetting the variable; while Frequency was live, /the-quest and /the-lab answered permanent 308s to /features and /vision, which 404 under DAWN, so a lasting roll back adds temporary redirects for those two. The probe has two halves: the tree half (exit 1) fails when a stub, the font module or the manifest is committed in a Frequency state, when an unknown value stops reading as DAWN, or when the runbook section is gone; the production half fetches the live home page and passes only when its <html> carries data-design=\"frequency\" (a network failure or a page without the attribute is exit 79, could not look). .env.example lists the variable blank with its gate line.\n\nProduction wears Frequency: the live home page carries data-design=\"frequency\" (CI's check:backlog ran the probe green on 2026-10-14), and the committed tree stays DAWN.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/frequency-go-live.mjs",
-    "note": "Fails today: production does not yet wear Frequency. Passes after the owner sets NEXT_PUBLIC_SITE_DESIGN=frequency in Vercel Production and redeploys, as long as the committed tree stays DAWN. Exit 79 when the live page cannot be read or carries no data-design (before the design work merges)."
+    "note": "Passes: production wears Frequency and the committed tree stays DAWN. Exit 79 when the live page cannot be read."
   },
+  "closed": "2026-10-14",
   "wave": "W7"
 }

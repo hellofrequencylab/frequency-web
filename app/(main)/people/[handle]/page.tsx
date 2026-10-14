@@ -542,7 +542,7 @@ export default async function ProfilePage({
     const fqBadges = (
       <>
         {cosmetics}
-        <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
+        <FoundingBadge founding={profile.is_founding_member} className="tag" />
         {isSupporter && <SupporterBadge />}
         {isDemo && <DemoBadge />}
       </>
@@ -552,7 +552,7 @@ export default async function ProfilePage({
         <OpenAdminBarButton
           scope={{ kind: 'profile', id: profileId }}
           label="Edit profile"
-          icon={<Pencil className="h-4 w-4" />}
+          icon={<FqIcon name="edit" />}
           className="btn"
         />
         <Link className="btn pa" href="/codes">
@@ -561,7 +561,7 @@ export default async function ProfilePage({
         </Link>
         {vcardEnabled && (
           <a className="btn" href={`${profilePath}/vcard`}>
-            <Contact className="h-3.5 w-3.5" />
+            <FqIcon name="contacts" />
             Save contact
           </a>
         )}
@@ -572,13 +572,13 @@ export default async function ProfilePage({
         {user && !isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
         {user && vcardEnabled && (
           <a className="btn" href={`${profilePath}/vcard`}>
-            <Contact className="h-3.5 w-3.5" />
+            <FqIcon name="contacts" />
             Save contact
           </a>
         )}
         {user && !isBlocked && friendState.kind === 'accepted' && (
           <MessageMemberButton profileId={profileId} threadTitle={firstName} className="btn">
-            <MessageSquare className="h-3.5 w-3.5" />
+            <FqIcon name="message" />
             Message
           </MessageMemberButton>
         )}

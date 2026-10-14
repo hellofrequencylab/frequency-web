@@ -49,6 +49,28 @@
 [data-design="frequency"] [data-energy="still"]{--fq-aura-1:var(--fq-sky-haze);--fq-aura-2:var(--fq-seaglass);--fq-aura-3:var(--fq-sand-200);--fq-aura-speed:18s;--fq-pulse:var(--fq-breath-still)}
 [data-design="frequency"] [data-energy="flow"]{--fq-aura-1:var(--fq-haze);--fq-aura-2:var(--fq-sage);--fq-aura-3:var(--fq-sun);--fq-aura-speed:10s;--fq-pulse:var(--fq-breath-flow)}
 [data-design="frequency"] [data-energy="charge"]{--fq-aura-1:var(--fq-terracotta);--fq-aura-2:var(--fq-sun);--fq-aura-3:#FF8FB1;--fq-aura-speed:5s;--fq-pulse:var(--fq-beat-charge)}
+[data-design="frequency"] [data-time="night"], [data-design="frequency"] [data-time="night"][data-night="uv"]{--fq-bg-canvas:var(--fq-uv-void);--fq-bg-sunken:#06030C;--fq-surface-card:var(--fq-uv-900);--fq-surface-raised:var(--fq-uv-800);--fq-surface-glass:rgba(30,18,50,.55);
+--fq-text-strong:#F6F0FF;--fq-text-body:#D9CFEA;--fq-text-muted:#A89BC2;--fq-text-faint:#7A6E93;--fq-text-on-accent:#0A0612;
+--fq-border-hair:rgba(246,240,255,.09);--fq-border-strong:rgba(246,240,255,.2);
+--fq-accent:var(--fq-uv-magenta);--fq-accent-soft:rgba(255,43,214,.16);--fq-accent-2:var(--fq-uv-cyan);
+--fq-action-primary:var(--fq-uv-magenta);--fq-action-primary-text:#0A0612;--fq-action-primary-hover:#FF5BE0;
+--fq-action-glow:0 0 24px rgba(255,43,214,.55),0 0 64px rgba(139,92,255,.35);
+--fq-focus-ring:var(--fq-uv-cyan);--fq-text-link:var(--fq-uv-cyan);--fq-text-link-hover:#FFFFFF;
+--fq-aura-1:var(--fq-uv-violet);--fq-aura-2:var(--fq-uv-magenta);--fq-aura-3:var(--fq-uv-cyan);--fq-aura-opacity:.7;--fq-glow-strength:1;--fq-logo-filter:invert(1);}
+[data-design="frequency"] [data-time="night"][data-energy="still"], [data-design="frequency"] [data-time="night"][data-night="uv"][data-energy="still"]{--fq-aura-1:#3B2A7A;--fq-aura-2:var(--fq-uv-violet);--fq-aura-3:#1F5C7A;--fq-aura-speed:20s;--fq-aura-opacity:.55;}
+[data-design="frequency"] [data-time="night"][data-energy="flow"], [data-design="frequency"] [data-time="night"][data-night="uv"][data-energy="flow"]{--fq-aura-1:var(--fq-uv-violet);--fq-aura-2:#C24BFF;--fq-aura-3:var(--fq-uv-cyan);--fq-aura-speed:11s;}
+[data-design="frequency"] [data-time="night"][data-energy="charge"], [data-design="frequency"] [data-time="night"][data-night="uv"][data-energy="charge"]{--fq-aura-1:var(--fq-uv-magenta);--fq-aura-2:var(--fq-uv-cyan);--fq-aura-3:var(--fq-uv-lime);--fq-aura-speed:4s;--fq-aura-opacity:.85;}
+[data-design="frequency"] [data-time="night"][data-night="thermal"]{--fq-bg-canvas:var(--fq-th-void);--fq-bg-sunken:#060504;--fq-surface-card:var(--fq-th-900);--fq-surface-raised:var(--fq-th-800);--fq-surface-glass:rgba(32,24,18,.55);
+--fq-text-strong:#FBF2E6;--fq-text-body:#E3D6C6;--fq-text-muted:#B3A391;--fq-text-faint:#857767;--fq-text-on-accent:#0B0907;
+--fq-border-hair:rgba(251,242,230,.09);--fq-border-strong:rgba(251,242,230,.2);
+--fq-accent:var(--fq-th-amber);--fq-accent-soft:rgba(255,163,58,.16);--fq-accent-2:var(--fq-th-teal);
+--fq-action-primary:var(--fq-th-amber);--fq-action-primary-text:#0B0907;--fq-action-primary-hover:#FFB75E;
+--fq-action-glow:0 0 24px rgba(255,163,58,.5),0 0 64px rgba(255,106,43,.3);
+--fq-focus-ring:var(--fq-th-teal);--fq-text-link:var(--fq-th-teal);--fq-text-link-hover:#FFFFFF;
+--fq-aura-1:var(--fq-th-ember);--fq-aura-2:var(--fq-th-amber);--fq-aura-3:var(--fq-th-teal);--fq-aura-opacity:.6;--fq-glow-strength:1;--fq-logo-filter:invert(1);}
+[data-design="frequency"] [data-time="night"][data-night="thermal"][data-energy="still"]{--fq-aura-1:#3A2414;--fq-aura-2:#8A4A1C;--fq-aura-3:#145A55;--fq-aura-speed:20s;--fq-aura-opacity:.6;}
+[data-design="frequency"] [data-time="night"][data-night="thermal"][data-energy="flow"]{--fq-aura-1:var(--fq-th-amber);--fq-aura-2:#B5541F;--fq-aura-3:var(--fq-th-teal);--fq-aura-speed:11s;}
+[data-design="frequency"] [data-time="night"][data-night="thermal"][data-energy="charge"]{--fq-aura-1:var(--fq-th-ember);--fq-aura-2:var(--fq-th-amber);--fq-aura-3:var(--fq-th-teal);--fq-aura-speed:4s;--fq-aura-opacity:.8;}
 
 /* ── tokens/themes.css ── */
 :root[data-design="frequency"]{--fq-x-violet-neon:#8B5CFF;--fq-x-violet-deep:#5B3FD0;

@@ -8,7 +8,7 @@
    2. Phone fixes for the Circle page: the tab strip scrolls inside its row instead of pushing the page
       sideways, and the cover's type gets the 720px padding the Event card already has. */
 @layer components {
-[data-design="frequency"] [data-kit="members"] .fqm-sk{display:block;border-radius:var(--fq-radius-s);animation:fqm-sk 1.6s var(--fq-ease-in-out) infinite}
+[data-design="frequency"] [data-kit="members"] .fqm-sk{display:block;border-radius:var(--fq-radius-s);animation:fqm-sk 1.6s var(--fq-ease-breath) infinite}
 [data-design="frequency"] [data-kit="members"] .fqm-sk-k{width:120px;height:14px}
 [data-design="frequency"] [data-kit="members"] .fqm-sk-h1{width:min(420px,80%);height:44px}
 [data-design="frequency"] [data-kit="members"] .fqm-sk-meta{width:min(320px,70%);height:16px}

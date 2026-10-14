@@ -64,9 +64,9 @@
 [data-design="frequency"] [data-kit="members"] .tag.mu-primary{background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-signal{background:var(--fq-presence-soft);color:var(--fq-presence);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-broadcast{background:var(--fq-live-soft);color:var(--fq-live);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-success{background:var(--color-success-bg);color:var(--fq-success);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-warning{background:var(--color-warning-bg);color:var(--fq-warning);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-danger{background:var(--color-danger-bg);color:var(--fq-danger);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-success{background:color-mix(in oklab,var(--fq-success) 14%,transparent);color:var(--fq-success);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-warning{background:color-mix(in oklab,var(--fq-warning) 14%,transparent);color:var(--fq-warning);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .tag.mu-danger{background:color-mix(in oklab,var(--fq-danger) 14%,transparent);color:var(--fq-danger);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-solid{background:var(--fq-text-strong);color:var(--fq-surface-card);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-primary{background:var(--fq-pa);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .tag.mu-solid.mu-signal{background:var(--fq-presence);color:var(--fq-text-on-accent)}
@@ -108,8 +108,8 @@
 /* EmptyState: the kit's `.empty`, given a soft room of its own so it reads as a state, not a gap. */
 [data-design="frequency"] [data-kit="members"] .empty.mu-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:44px 24px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-text-strong) 2.5%,transparent)}
 [data-design="frequency"] [data-kit="members"] .mu-empty .ic{width:48px;height:48px;border-radius:50%;background:var(--fq-pa-soft)}
-[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="error"] .ic{background:var(--color-danger-bg);color:var(--fq-danger)}
-[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="cleared"] .ic{background:var(--color-success-bg);color:var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="error"] .ic{background:color-mix(in oklab,var(--fq-danger) 14%,transparent);color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .mu-empty[data-tone="cleared"] .ic{background:color-mix(in oklab,var(--fq-success) 14%,transparent);color:var(--fq-success)}
 [data-design="frequency"] [data-kit="members"] .mu-empty .t2{max-width:42ch}
 [data-design="frequency"] [data-kit="members"] .mu-empty>.mu-act{margin-top:8px;display:flex;justify-content:center}
 /* The member status screens' row of ways back in (components/frequency/members/member-status.tsx). */
@@ -288,6 +288,23 @@
 [data-design="frequency"] [data-kit="members"] :is(h1,h2,h3,h4):is(.font-bold,.font-extrabold,.font-black){font-weight:500}
 [data-design="frequency"] [data-kit="members"] .eyebrow{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 
+/* The DAWN surfaces a member body still nests (the Profile side, the Vault's trophies and store, the
+   event page's original layout, Journey details, the Circle's menus), read as the kit's surfaces, the
+   way the admin kit answers them (admin-pages.css "Surfaces"). Design-system audit, 2026-10-14.
+     a bordered DAWN card       the kit's glass `.panel`; a card inside a card is a quiet well
+     inside a Settings pane     open space with a hairline (owner, 2026-10-14: the panes carry no boxes)
+     an accent wash             the kit's `.soft` (--fq-pa-soft), not a violet tint
+     a selected outline         the kit's pick ring
+     a hand-built secondary     the kit's outline `.btn` pill
+   A Space page or website inside the shell keeps its own theme. */
+[data-design="frequency"] [data-kit="members"] .fqm-center :is(.rounded-card, .rounded-2xl, .rounded-xl).border.bg-surface:not(:is([data-space-theme], [data-space-page]) *){background:var(--fq-glass-panel);border-color:transparent;border-radius:var(--fq-radius-l);box-shadow:var(--fq-glass-panel-shadow)}
+[data-design="frequency"] [data-kit="members"] .fqm-center :is(.rounded-card, .rounded-2xl, .rounded-xl).border.bg-surface :is(.rounded-card, .rounded-2xl, .rounded-xl).border:is(.bg-surface, .bg-surface-elevated):not(:is([data-space-theme], [data-space-page]) *){background:var(--fqm-ink-4);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqm-center .mc-pane :is(.rounded-card, .rounded-2xl, .rounded-xl).border:is(.bg-surface, .bg-surface-elevated):not(:is([data-space-theme], [data-space-page]) *){background:none;border-color:var(--fq-border-hair);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqm-center :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15):not(:is([data-space-theme], [data-space-page]) *){background:var(--fq-pa-soft)}
+[data-design="frequency"] [data-kit="members"] .fqm-center :is(.border-primary, .border-primary\/40, .border-primary\/50):not(:is([data-space-theme], [data-space-page]) *){border-color:color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-center :is(a, button).rounded-control.border.bg-surface:not(:is([data-space-theme], [data-space-page]) *){border-radius:var(--fq-radius-orb);border-color:transparent;background:transparent;box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-center .border-b.bg-surface-elevated:not(:is([data-space-theme], [data-space-page]) *){background:none;border-color:var(--fq-border-hair)}
+
 /* ── Loading placeholders, one look everywhere (owner, 2026-10-14) ───────────────────────────────────
    Several loading screens borrowed the kit's photo placeholder (`.ph`, warm sand by design) or rolled
    their own fill, so skeletons loaded in tan on the cool members canvas. Every skeleton class reads the
@@ -343,4 +360,13 @@
 [data-design="frequency"] [data-kit] [role="switch"][aria-checked="false"] > :is(.bg-border, .bg-surface-elevated) {
   background: var(--fq-track);
   border-color: transparent;
+}
+
+/* Reduced motion stops every loop (guidelines/cards/motion.html). The energy rules re-set
+   --fq-aura-speed to a literal under the root's zero, so the aura and the breath stop here directly. */
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] .fq-aura,
+  [data-design="frequency"] .fq-breathe {
+    animation: none;
+  }
 }

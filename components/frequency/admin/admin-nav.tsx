@@ -23,7 +23,9 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
   activeKey?: string | null
   activeLeafKey?: string | null
 }) {
+  const active = items.find((item) => item.key === activeKey && !item.external && !!item.children?.length)
   return (
+    <>
     <nav className="ad-nav" aria-label={label}>
       {items.map((item) => {
         const on = item.key === activeKey
@@ -56,6 +58,20 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
         )
       })}
     </nav>
+    {/* On a phone the nav is one sideways row, where the in-group .ad-sub column has no room (it widened the
+        active row across the strip), so the active section's pages get their own strip under it. CSS shows
+        exactly one of the two; the other is display:none, out of the tab order and the accessibility tree. */}
+    {active?.children && (
+      <nav className="ad-strip" aria-label={`${active.label} pages`}>
+        {active.children.map((leaf) => (
+          <Link key={leaf.key} href={leaf.href} className={leaf.key === activeLeafKey ? 'on' : undefined} aria-current={leaf.key === activeLeafKey ? 'page' : undefined}>
+            {leaf.label}
+            {!!leaf.badge && <b aria-label={`${leaf.badge} waiting`}>{leaf.badge}</b>}
+          </Link>
+        ))}
+      </nav>
+    )}
+    </>
   )
 }
 

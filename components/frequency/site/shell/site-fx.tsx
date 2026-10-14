@@ -298,6 +298,9 @@ function run(root: HTMLElement): () => void {
   const phw = ph?.querySelector<HTMLElement>(':scope>.wrap')
   const dock = root.querySelector<HTMLElement>('.dock')
   const foot = root.querySelector<HTMLElement>('footer')
+  // Home's dock steps aside once the closer reaches 60% up the screen (Home.html), so it never sits on
+  // the closer's own CTAs; a page with no closer keeps the footer rule.
+  const dockEnd = root.querySelector<HTMLElement>('.closer')
   const dockHero = root.querySelector<HTMLElement>('.phero,.hero')
 
   function frame() {
@@ -349,7 +352,9 @@ function run(root: HTMLElement): () => void {
       }
     }
     if (dock && dockHero) {
-      const on = dockHero.getBoundingClientRect().bottom < 80 && (!foot || foot.getBoundingClientRect().top > vh * 0.9)
+      const on =
+        dockHero.getBoundingClientRect().bottom < 80 &&
+        (dockEnd ? dockEnd.getBoundingClientRect().top >= vh * 0.6 : !foot || foot.getBoundingClientRect().top > vh * 0.9)
       w.push(() => dock.classList.toggle('on', on))
     }
     w.forEach((f) => f())

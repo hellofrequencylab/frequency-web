@@ -70,9 +70,12 @@ function savedAgo(at: number, now: number) {
   const minutes = Math.floor((now - at) / 60000)
   return minutes < 1 ? 'just now' : minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hr ago`
 }
-function readMobileViewport() { return window.matchMedia('(max-width:767px)').matches }
+/** The width where the rails become overlays over the canvas: 820px in the Frequency editor
+ *  (editor-shell.css, editor.css), DAWN's 767px otherwise. */
+const PHONE_QUERY = FQ_EDITOR ? '(max-width:820px)' : '(max-width:767px)'
+function readMobileViewport() { return window.matchMedia(PHONE_QUERY).matches }
 function subscribeViewport(callback: () => void) {
-  const query = window.matchMedia('(max-width:767px)')
+  const query = window.matchMedia(PHONE_QUERY)
   query.addEventListener('change', callback)
   return () => query.removeEventListener('change', callback)
 }
@@ -170,6 +173,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const left = leftChoice ?? !isMobile
   const right = rightChoice ?? !isMobile
   const device = deviceChoice ?? (isMobile ? 'phone' : 'desktop')
+  // On a Frequency phone both rails are overlays on the same canvas, so opening one folds the other.
+  const oneRail = FQ_EDITOR && isMobile
+  function openLeft() { setLeft(true); if (oneRail) setRight(false) }
+  function openRight() { setRight(true); if (oneRail) setLeft(false) }
   const [preview, setPreview] = useState(false)
   // The DAWN Site Editor (LIVE-907): the inspector's sub-tabs and the page menu in the top bar.
   const [inspTab, setInspTab] = useState<'content' | 'design' | 'advanced'>('content')
@@ -336,9 +343,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     window.addEventListener('beforeunload', guard)
     return () => window.removeEventListener('beforeunload', guard)
   }, [])
-  function select(id: string) { if (id !== selectedId) { setTextSelection(null); setFieldFocus(null) } setSelectedId(id); setPanel('inspect'); setRight(true) }
+  function select(id: string) { if (id !== selectedId) { setTextSelection(null); setFieldFocus(null) } setSelectedId(id); setPanel('inspect'); openRight() }
   // Frequency opens the rail's Add tab at that position (the design's insert points); DAWN opens its dialog.
-  function insert(index: number) { setInsertAt(index); setFilter(''); if (FQ_EDITOR) { setTab('Add'); setLeft(true); setPreview(false) } else setModal('insert') }
+  function insert(index: number) { setInsertAt(index); setFilter(''); if (FQ_EDITOR) { setTab('Add'); openLeft(); setPreview(false) } else setModal('insert') }
   function pickBlock(type: string) {
     const added = addBlock(page.doc, config, type)
     if (!added.id) return
@@ -349,7 +356,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     updateDoc(doc, { label: `Added ${config.components[type]?.label ?? type}` }); select(added.id); setModal(null); setInsertAt(null); if (FQ_EDITOR) { setTab('Layers'); say(`${config.components[type]?.label ?? type} added`) }
   }
   function action(id: string, kind: 'up' | 'down' | 'copy' | 'comment' | 'delete' | 'hide') {
-    if (kind === 'comment') { setSelectedId(id); setPanel('comments'); setRight(true); return }
+    if (kind === 'comment') { setSelectedId(id); setPanel('comments'); openRight(); return }
     if (kind === 'hide') { const display = sectionDeviceLayout(page.doc, id, device); updateDisplay(id, { ...display, hidden: !display.hidden }); return }
     if (kind === 'up' || kind === 'down') updateDoc(nudgeBlock(page.doc, config, id, kind === 'up' ? -1 : 1), { label: 'Reordered sections' })
     const name = config.components[findBlockDeep(page.doc, config, id)?.type ?? '']?.label ?? 'Section'
@@ -364,7 +371,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!moving.length || target < 0) return
     updateDoc({ ...page.doc, content: [...remaining.slice(0, target), ...moving, ...remaining.slice(target)] }, { label: 'Reordered sections' })
   }
-  function pickPage(slug: string) { setTextSelection(null); setFieldFocus(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia('(max-width:767px)').matches) setLeft(false) }
+  function pickPage(slug: string) { setTextSelection(null); setFieldFocus(null); setPageSlug(slug); setSelectedId(null); setPanel('inspect'); if (window.matchMedia(PHONE_QUERY).matches) setLeft(false) }
   function togglePreview(next = !preview) { setPreview(next); if (FQ_EDITOR) say(next ? 'Preview. Press Esc to keep editing.' : 'Back to editing') }
   function keys(e: KeyLike) {
     const target = e.target as HTMLElement
@@ -450,7 +457,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     commit({ ...draft, pages: draft.pages.map((p) => p.slug === target.slug ? { ...p, doc: updateBlockPropsDeep(p.doc, config, proposal.blockId, { [proposal.field]: replaceInlineField(block.props, { field: proposal.field, path: proposal.path, start: 0, end: proposal.before.length }, proposal.after) }) } : p) }, { label: `Edited ${config.components[block.type]?.label ?? block.type}` })
     setProposal(null); setVeraStatus('Applied to your draft. Undo is available above.')
   }
-  function openChrome(area: 'header' | 'footer') { setTextSelection(null); setSelectedId(null); setPanel(area); setRight(true) }
+  function openChrome(area: 'header' | 'footer') { setTextSelection(null); setSelectedId(null); setPanel(area); openRight() }
   function movePage(direction: -1 | 1) {
     const index = draft.pages.indexOf(page), target = index + direction
     if (page.slug === 'home' || target < 1 || target >= draft.pages.length) return
@@ -618,23 +625,23 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <button type="button" className={`save${status === 'saved' ? '' : ' dirty'}`} onClick={() => void save()} title="Save draft ⌘S" aria-label="Save draft" aria-describedby={`${uid}-save`}><i aria-hidden /><span id={`${uid}-save`} role="status">{fqSaveLabel}</span></button>
           <span className="sp" />
           {!!error && <button type="button" className="save-alert" role="alert" onClick={() => setRight(true)}>{error}</button>}
-          <Icon label={left ? 'Fold left rail' : 'Open left rail'} aria-pressed={!left} onClick={() => setLeft(!left)}><FqIcon name="fold-left" /></Icon>
+          <Icon label={left ? 'Fold left rail' : 'Open left rail'} aria-pressed={!left} onClick={() => (left ? setLeft(false) : openLeft())}><FqIcon name="fold-left" /></Icon>
           <div className="seg dev" role="group" aria-label="Device">{DEVICES.map(({ id, label }) => <button type="button" key={id} className={on(device === id).trim() || undefined} aria-label={label} title={label} aria-pressed={device === id} onClick={() => setDevice(id)}><FqIcon name={id} /></button>)}</div>
-          <Icon label={right ? 'Fold inspector' : 'Open inspector'} aria-pressed={!right} onClick={() => setRight(!right)}><FqIcon name="fold-right" /></Icon>
-          <Icon label="Undo" hint="Undo ⌘Z" aria-keyshortcuts="Meta+Z Control+Z" disabled={!historyCounts.past} onClick={() => travel(false)}><FqIcon name="undo" /></Icon>
-          <Icon label="Redo" hint="Redo ⇧⌘Z" aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z" disabled={!historyCounts.future} onClick={() => travel(true)}><FqIcon name="redo" /></Icon>
+          <Icon label={right ? 'Fold inspector' : 'Open inspector'} aria-pressed={!right} onClick={() => (right ? setRight(false) : openRight())}><FqIcon name="fold-right" /></Icon>
+          <Icon label="Undo" className="pe-wide" hint="Undo ⌘Z" aria-keyshortcuts="Meta+Z Control+Z" disabled={!historyCounts.past} onClick={() => travel(false)}><FqIcon name="undo" /></Icon>
+          <Icon label="Redo" className="pe-wide" hint="Redo ⇧⌘Z" aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z" disabled={!historyCounts.future} onClick={() => travel(true)}><FqIcon name="redo" /></Icon>
           <Icon label={preview ? 'Back to editor' : 'Preview'} hint={preview ? 'Back to editor · Esc' : 'Preview ⌘P'} aria-keyshortcuts="Meta+P Control+P" aria-pressed={preview} onClick={() => togglePreview()}><FqIcon name="eye" /></Icon>
           <span className="faces" role="img" aria-label={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')} title={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')}>{[{ key: 'me', name: author }, ...people.map((person) => ({ key: person.profileId, name: person.name }))].map((person) => <span key={person.key} aria-hidden>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</span>
-          <button type="button" className="btn sm" onClick={() => void share()}>Share</button>
+          <button type="button" className="btn sm pe-wide" onClick={() => void share()}>Share</button>
           <button type="button" className="btn pa" aria-label={pendingCount ? `Publish, ${pendingCount} ${pendingCount === 1 ? 'change' : 'changes'}` : 'Publish'} onClick={() => setModal('publish')}>Publish{pendingCount > 0 && <span className="pub-badge" aria-hidden>{pendingCount}</span>}</button>
         </header>
         <aside className="rail" aria-label="Website navigation">
-          <div className="tabs" role="tablist" aria-label="Website tools">{TABS.map(({ label }) => <button type="button" role="tab" key={label} aria-selected={tab === label} className={on(tab === label).trim() || undefined} title={label} onClick={() => { setTab(label); setLeft(true); if (label !== 'Add') setInsertAt(null) }}><FqIcon name={TAB_ICON[label]} /><span>{label}</span></button>)}</div>
+          <div className="tabs" role="tablist" aria-label="Website tools">{TABS.map(({ label }) => <button type="button" role="tab" key={label} aria-selected={tab === label} className={on(tab === label).trim() || undefined} title={label} onClick={() => { setTab(label); openLeft(); if (label !== 'Add') setInsertAt(null) }}><FqIcon name={TAB_ICON[label]} /><span>{label}</span></button>)}</div>
           <div className="body" role="tabpanel" aria-label={tab}>{railBody}</div>
           <div className="foot"><span className="lbl">Changes save as a draft</span><a className="btn sm txt" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
         </aside>
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
-          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && <div className="vera">
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is preparing a proposal…' : <><b>Vera</b>{proposal ? <> · {blockName(proposal.blockId, draft.pages.find((p) => p.slug === proposal.pageSlug)?.doc)}</> : null}{veraStatus && !proposal && <p>{veraStatus}</p>}</>}{proposal && <><p>{proposal.after}</p><div className="acts"><button type="button" className="btn sm pa" onClick={applyProposal}>Apply</button><button type="button" className="btn sm txt" onClick={() => { setProposal(null); setVeraStatus('') }}>Not now</button></div></>}</div>
@@ -716,7 +723,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-foot"><span className="we-foot-lbl">Changes save as a draft</span><a className="we-action txt sm" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
+      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
         {(asking || veraStatus || proposal) && <div className="we-thread">
