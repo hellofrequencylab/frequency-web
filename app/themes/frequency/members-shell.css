@@ -448,3 +448,8 @@
 @media (min-width: 1001px) {
   [data-design="frequency"] [data-kit="members"] .fqm-center { max-width: 1040px }
 }
+/* Owner, 2026-10-14: "move the page header onto the same row as the profile, top left". Inside the
+   member shell a page's `.ap-main` (components/frequency/members/shared/members-body.tsx) drops the
+   kit's 48px top pad: the body already starts 24px under the header, so the page heading now sits level
+   with the left rail's profile card (both start 8px into their columns). */
+[data-design="frequency"] [data-kit="members"] .fqm-center > .ap-main { padding-top: 8px }
