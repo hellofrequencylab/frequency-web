@@ -20,7 +20,7 @@
 --                  accent    "local community" -> "closer than you think" (an accent must stay a substring)
 --                  subtitle  "Start a Circle where you live, … You pay when you start charging, and never
 --                             for access to people."
---                         ->  "Small groups that meet every week, near you. Join free. Businesses host free."
+--                         ->  "Small groups that keep meeting, near you. Join free. Businesses host free."
 --   home-model     Event card "… Anyone can host one, sell tickets, and take donations from day one."
 --                         ->  "… Anyone can host one for free. Paid tickets and donations open at Business."
 --   home-cta-mid   body      "… selling tickets, and taking donations are free from day one. …"
@@ -38,7 +38,7 @@ declare
   v_rows       int;
   v_old_h1     text := 'Frequency is where your local community happens';
   v_new_h1     text := 'Your people are closer than you think.';
-  v_new_sub    text := 'Small groups that meet every week, near you. Join free. Businesses host free.';
+  v_new_sub    text := 'Small groups that keep meeting, near you. Join free. Businesses host free.';
   v_old_event  text := 'When the room is open. Anyone can host one, sell tickets, and take donations from day one.';
   v_new_event  text := 'When the room is open. Anyone can host one for free. Paid tickets and donations open at Business.';
   v_old_cta    text := 'Joining is free. Opening a Space is free. Hosting an Event, selling tickets, and taking donations are free from day one. A plan is what you take when money starts moving. We earn a share only of the business the network sends you, never of the people you bring in yourself.';
