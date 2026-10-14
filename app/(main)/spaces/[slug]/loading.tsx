@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqSpaceLoading } from '@/components/frequency/members/space/space-loading'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { COVER_HEIGHT_DEFAULT, coverHeightClass } from '@/lib/layout/cover-height'
 
@@ -47,6 +49,8 @@ import { COVER_HEIGHT_DEFAULT, coverHeightClass } from '@/lib/layout/cover-heigh
 // use it (matching BrandAnchor, which is also cover-shaped), and everything else here is shape-free —
 // so the skeleton still cannot drift from the hero it mirrors.
 export default function SpaceDetailLoading() {
+  // Under Frequency (build-time) the wait is the cover card the page paints (SCAN-856).
+  if (SITE_DESIGN === 'frequency') return <FqSpaceLoading />
   return (
     <div>
       {/* The HERO cover at the default height, with the identity overlaid on its bottom edge —

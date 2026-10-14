@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqSpaceLoading } from '@/components/frequency/members/space/space-loading'
 
 // Route-level loading UI for a member PROFILE (PAGE-FRAMEWORK §5).
 //
@@ -12,6 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 // tier is `standard` = min-h-[15rem] sm:min-h-[20rem] in lib/layout/header-sizes.ts), the compact
 // stats/bio band under it, then DetailTemplate's 2/3 content + 1/3 info-column body.
 export default function PersonDetailLoading() {
+  // Under Frequency (build-time) the wait is the cover card the page paints (SCAN-856).
+  if (SITE_DESIGN === 'frequency') return <FqSpaceLoading label="Loading profile" />
   return (
     <div>
       {/* Cover band: avatar + name + @handle overlaid, matching PageHero's `standard` min-height
