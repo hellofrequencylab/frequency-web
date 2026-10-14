@@ -14,6 +14,9 @@ import { readLayoutPreset, applyLayoutPreset } from '@/lib/spaces/layout-presets
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData, getSpaceSeriesRows } from '@/lib/spaces/content-data'
 import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
+import { readSiteStyle } from '@/lib/theme/site-style'
+import { docHasNetworkBlocks } from '@/components/sites/network-css'
+import { NetworkPageScope } from '@/components/spaces/network-page-scope'
 
 // The profile LAYOUT now owns the identity header (cover + logo + name + CTA) for every tab, so the
 // landing body must NEVER render a SpaceIdentityHeader block or it would duplicate the layout header.
@@ -53,6 +56,8 @@ export async function SpaceLanding({
   pageSlug = HOME_SLUG,
   anonymous = false,
   onlyIndexes,
+  site = false,
+  underHeader = false,
 }: {
   slug: string
   pageSlug?: string
@@ -62,6 +67,10 @@ export async function SpaceLanding({
   /** Render as a signed-out visitor (the external website, /sites/<slug>): the page never varies by
    *  who is looking, so a Private Space stays walled off and the site reads the same for everyone. */
   anonymous?: boolean
+  /** Rendered inside a website, which dresses its own sections; the Frequency page dresses them here. */
+  site?: boolean
+  /** Rendered under the Space's own header (its Home tab): a leading Network hero would repeat it. */
+  underHeader?: boolean
 }) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
   // Space so any dynamic block reads THIS tenant's rows.
@@ -84,7 +93,9 @@ export async function SpaceLanding({
   )
   const content = onlyIndexes
     ? { ...visible, content: (visible.content ?? []).filter((_, i) => onlyIndexes.includes(i)) }
-    : visible
+    : underHeader && visible.content?.[0]?.type === 'NetworkHero'
+      ? { ...visible, content: visible.content.slice(1) }
+      : visible
   // DISPLAY: arrange that same content for the page's chosen layout preset (pure transform; the stored
   // content is never mutated, so an external site could render the same content with a different
   // preset). stack/sections stay flat; main-rail wraps into a two-column region.
@@ -140,5 +151,13 @@ export async function SpaceLanding({
   spaceContent.teamPicks = teamPicks
   spaceContent.series = series
 
-  return <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
+  const body = <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
+  // LIVE-906: Network sections on the Frequency page wear their website's look (or, on a Space whose website
+  // wears another theme, their own sheet in its palette), never the bare markup.
+  if (site || !docHasNetworkBlocks(data)) return body
+  return (
+    <NetworkPageScope wearsNetwork={readSiteStyle(space.preferences).theme === 'network'} accent={space.brandAccent ?? null}>
+      {body}
+    </NetworkPageScope>
+  )
 }

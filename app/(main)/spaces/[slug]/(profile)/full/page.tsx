@@ -14,6 +14,8 @@ import { OwnerSpaceLayoutPreview } from '@/components/spaces/owner-space-layout-
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SpaceBodyPanel } from '@/components/spaces/workspace/space-body-panel'
 import { isPanelId } from '@/components/spaces/workspace/surface-panels'
+import { SpaceLanding } from '@/components/spaces/space-landing'
+import { wearsNetworkHome } from '@/components/spaces/network-page-scope'
 
 // Signed-in members land here via proxy rewrite (lib/nav/member-space-rewrite.ts).
 // The share URL stays /spaces/<slug>; this file is /spaces/<slug>/full so the
@@ -73,6 +75,9 @@ async function SpaceProfileBody({ slug, panel, area }: { slug: string; panel?: s
   // only a KNOWN panel id (isPanelId) branches, so an unknown / absent panel falls through to normal.
   // A visitor / non-owner never sees a panel (canSeeAsOwner is false).
   if (canSeeAsOwner && isPanelId(panel)) return <SpaceBodyPanel slug={space.slug} panel={panel} area={area} />
+
+  // LIVE-906: a Network website's Home IS this Space's Home, for its owner and its visitors alike.
+  if (wearsNetworkHome(prefs)) return <SpaceLanding slug={space.slug} underHeader />
 
   if (canSeeAsOwner) return <OwnerSpaceLayoutPreview slug={space.slug} />
 

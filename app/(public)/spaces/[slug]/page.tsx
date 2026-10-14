@@ -23,6 +23,8 @@ import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-vie
 import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
+import { SpaceLanding } from '@/components/spaces/space-landing'
+import { wearsNetworkHome } from '@/components/spaces/network-page-scope'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
@@ -210,7 +212,8 @@ export default async function PublicSpacePage({
         // lib/nav/member-space-rewrite.ts and never renders this page at all.
         stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} homeHref={`/spaces/${space.slug}`} />}
       >
-        <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+        {/* LIVE-906: a Network website's Home is this Space's Home too (components/spaces/network-page-scope.tsx). */}
+        {wearsNetworkHome(prefs) ? <SpaceLanding slug={space.slug} anonymous underHeader /> : <SpaceProfileModules space={toProfileContext(space)} grid={grid} />}
         {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.
             LIVE-500's probe fails if `<SpaceProfileModules` appears after `<SignInCta` in this
             file, because a sign-in card in front of the content is the exact defect ADR-1526
