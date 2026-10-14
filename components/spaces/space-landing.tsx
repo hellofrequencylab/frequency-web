@@ -57,7 +57,6 @@ export async function SpaceLanding({
   anonymous = false,
   onlyIndexes,
   site = false,
-  underHeader = false,
 }: {
   slug: string
   pageSlug?: string
@@ -69,8 +68,6 @@ export async function SpaceLanding({
   anonymous?: boolean
   /** Rendered inside a website, which dresses its own sections; the Frequency page dresses them here. */
   site?: boolean
-  /** Rendered under the Space's own header (its Home tab): a leading Network hero would repeat it. */
-  underHeader?: boolean
 }) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
   // Space so any dynamic block reads THIS tenant's rows.
@@ -93,9 +90,7 @@ export async function SpaceLanding({
   )
   const content = onlyIndexes
     ? { ...visible, content: (visible.content ?? []).filter((_, i) => onlyIndexes.includes(i)) }
-    : underHeader && visible.content?.[0]?.type === 'NetworkHero'
-      ? { ...visible, content: visible.content.slice(1) }
-      : visible
+    : visible
   // DISPLAY: arrange that same content for the page's chosen layout preset (pure transform; the stored
   // content is never mutated, so an external site could render the same content with a different
   // preset). stack/sections stay flat; main-rail wraps into a two-column region.

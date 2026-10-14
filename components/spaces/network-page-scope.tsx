@@ -1,8 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { NETWORK_CSS, NETWORK_BLOCK_CSS } from '@/components/sites/network-css'
 import { networkAccentVars, networkScheme } from '@/lib/theme/network'
-import { readSiteStyle } from '@/lib/theme/site-style'
-import { readPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 
 // THE SPACE PAGE IN ITS WEBSITE'S LOOK (LIVE-906). A Space whose website wears Network shows the same sections
 // on its Frequency page, so the page body wears the website's paper, scheme, faces and section sheet instead
@@ -47,9 +45,3 @@ export function NetworkPageScope({ wearsNetwork, accent, children }: { wearsNetw
   )
 }
 
-/** A Space whose website wears Network and composes its Home from page sections shows that same Home on its
- *  Frequency page (the Home tab), under the Space's own header, instead of a second arrangement of modules:
- *  one Home, edited once in the Website builder. */
-export function wearsNetworkHome(preferences: unknown): boolean {
-  return readSiteStyle(preferences).theme === 'network' && readPageDoc(preferences, HOME_SLUG) !== null
-}
