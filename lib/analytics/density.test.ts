@@ -5,6 +5,7 @@ import {
   READY_SCORE,
   GROWING_SCORE,
   CRUNCH,
+  EVENTS_FULL,
   type DensityCityRow,
 } from './density'
 
@@ -68,6 +69,37 @@ describe('scorePlace', () => {
     )
     expect(p.score).toBeLessThanOrEqual(100)
     expect(p.score).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('scorePlace: upcoming public events', () => {
+  it('scores a city with only upcoming events above zero', () => {
+    expect(scorePlace(row({ upcoming_events: 1 })).score).toBeGreaterThan(0)
+  })
+
+  it('earns an events-only city the growing stage (a city page) at EVENTS_FULL events', () => {
+    expect(scorePlace(row({ upcoming_events: EVENTS_FULL - 1 })).score).toBeLessThan(GROWING_SCORE)
+    const p = scorePlace(row({ upcoming_events: EVENTS_FULL }))
+    expect(p.score).toBe(GROWING_SCORE)
+    expect(p.stage).toBe('growing')
+  })
+
+  it('never lets events alone reach ready: no circle members still caps at growing', () => {
+    const p = scorePlace(row({ residents: 200, new_residents_30d: 200, upcoming_events: 50 }))
+    expect(p.stage).toBe('growing')
+    expect(p.score).toBeLessThan(READY_SCORE)
+  })
+
+  it('reads a row without upcoming_events (RPC before the migration) as zero events', () => {
+    const { upcoming_events: _omit, ...legacy } = row({ residents: 10 })
+    expect(scorePlace(legacy).score).toBe(scorePlace(row({ residents: 10, upcoming_events: 0 })).score)
+  })
+
+  it('still clamps to 100 when events stack on a full city', () => {
+    const p = scorePlace(
+      row({ circle_members: 500, capacity: 100, residents: 9999, new_residents_30d: 9999, upcoming_events: 99 }),
+    )
+    expect(p.score).toBe(100)
   })
 })
 

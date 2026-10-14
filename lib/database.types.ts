@@ -18309,6 +18309,7 @@ export type Database = {
           listings: number
           new_residents_30d: number
           residents: number
+          upcoming_events: number
         }[]
       }
       disablelongtransactions: { Args: never; Returns: string }
