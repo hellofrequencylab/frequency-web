@@ -12,8 +12,11 @@
 //                             parked the moment it is picked).
 //   2. Where are you?         optional town: "Turn on location" (the browser's own prompt), a typed
 //                             town as the fallback; Skip.
-//   3. Check your email to activate   the link activates the account; the consent line (Terms, Privacy)
-//                             sits under it; Send it again / Use a different email.
+//   3. Confirm and activate   the consent line (Terms, Privacy), then "Confirm and send my link" sends
+//                             the one activation email; then Send it again / Use a different email.
+//                             (SCAN-906) Nothing is mailed before this confirm: the email field only saves
+//                             the draft and checks the address. An address that already has an account
+//                             gets "You already have an account. Log in" inline and no email.
 //
 // The save is NOT fired on a typing pause: a pause inside "sam@gmail.co" is a valid-looking address and
 // would mail a stranger. Blur, Enter, or Continue saves it. Focus: the name takes focus on arrival;
@@ -44,7 +47,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useSiteSide } from '@/components/frequency/site/shell/site-root'
 import '@/app/themes/active/site-pages-b'
-import { stashPendingInduction } from '@/app/join/(induction)/actions'
+import { joinEmailHasAccount, stashPendingInduction } from '@/app/join/(induction)/actions'
 import { captureLead, updateLead } from '@/app/join/(induction)/lead-actions'
 import { sendSignupLink } from '@/app/sign-in/actions'
 import { Input } from '@/components/ui/field'
@@ -66,7 +69,7 @@ const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 const STEPS = [
   { id: 'join', q: 'Join the beta' },
   { id: 'place', q: 'Where are you?' },
-  { id: 'sent', q: 'Check your email to activate' },
+  { id: 'sent', q: 'Confirm and activate' },
 ] as const
 const PLACE = 1
 const LAST = STEPS.length - 1
@@ -147,6 +150,10 @@ export function FrequencyJoin({
   const [announce, setAnnounce] = useState('')
   const [pending, startTransition] = useTransition()
   const [resent, setResent] = useState(false)
+  // SCAN-906: the address belongs to a member already (no email goes out; they log in instead).
+  const [hasAccount, setHasAccount] = useState('')
+  // SCAN-906: the activation email goes out only on the last step's confirm, never on the email field.
+  const [sentTo, setSentTo] = useState('')
 
   // Photo
   const [photo, setPhoto] = useState<string | null>(null)
@@ -232,6 +239,7 @@ export function FrequencyJoin({
   function onEmail(value: string) {
     setEmail(value)
     if (error) setError('')
+    if (hasAccount && value.trim() !== hasAccount) setHasAccount('')
     // A different address is a new save; the old one's "Saved" no longer describes this field.
     if (value.trim() !== savedTo && save.state !== 'saving') setSave({ state: 'idle' })
   }
@@ -255,11 +263,14 @@ export function FrequencyJoin({
         await bounded(
           captureLead({ email: address, step: 1, source: 'beta_induction', displayName, handle: h, payload: { entry: 'beta' } }),
         )
-        const res = await send(address)
-        if (!res.ok) {
-          setSave({ state: 'error', error: res.error })
+        // No mail here (SCAN-906): the draft is saved, the activation link waits for the confirm.
+        const { exists } = await joinEmailHasAccount(address).catch(() => ({ exists: false }))
+        if (exists) {
+          setHasAccount(address)
+          setSave({ state: 'idle' })
           return false
         }
+        setHasAccount('')
         setSavedTo(address)
         setSave({ state: 'saved' })
         setPhotoShown(true)
@@ -287,8 +298,8 @@ export function FrequencyJoin({
       document.getElementById('jb-name')?.focus()
       return
     }
-    const skipEmail = resumed && !address
-    if (!skipEmail && !EMAIL_RE.test(address)) {
+    // SCAN-906: a parked draft no longer means a link went out, so the email is always asked for.
+    if (!EMAIL_RE.test(address)) {
       setError('That email doesn’t look right. Check it and try again.')
       document.getElementById('jb-email')?.focus()
       return
@@ -296,7 +307,7 @@ export function FrequencyJoin({
     setError('')
     startTransition(async () => {
       try {
-        if (!skipEmail && !(await saveEmail())) return
+        if (!(await saveEmail())) return
         if (displayName !== parkedName && handle) {
           await park({ displayName, handle, place, beat: 1 })
           setParkedName(displayName)
@@ -393,9 +404,12 @@ export function FrequencyJoin({
     setError('')
     setResent(false)
     startTransition(async () => {
-      const res = await send(email.trim())
-      if (res.ok) setResent(true)
-      else setError(res.error)
+      const address = email.trim()
+      const res = await send(address)
+      if (!res.ok) return setError(res.error)
+      if (sentTo === address) setResent(true)
+      else setAnnounce('Sent. Check your email to activate.')
+      setSentTo(address)
     })
   }
 
@@ -463,7 +477,7 @@ export function FrequencyJoin({
           </p>
 
           <section key={current.id} className="jb-slide" aria-labelledby={headingId}>
-            <h1 id={headingId}>{current.q}</h1>
+            <h1 id={headingId}>{current.id === 'sent' && sentTo ? 'Check your email to activate' : current.q}</h1>
 
             {current.id === 'join' && (
               <form className="jx-f" noValidate onSubmit={onContinue}>
@@ -556,7 +570,11 @@ export function FrequencyJoin({
                           aria-describedby="jb-email-note"
                           aria-invalid={save.state === 'error' || undefined}
                         />
-                        {save.state === 'error' ? (
+                        {hasAccount && hasAccount === email.trim() ? (
+                          <p className="jx-err jb-note" id="jb-email-note" role="alert">
+                            You already have an account. <Link href="/sign-in">Log in</Link>
+                          </p>
+                        ) : save.state === 'error' ? (
                           <p className="jx-err jb-note" id="jb-email-note" role="alert">
                             {save.error}{' '}
                             <button className="jb-retry" type="button" onClick={() => void saveEmail()}>
@@ -565,9 +583,7 @@ export function FrequencyJoin({
                           </p>
                         ) : (
                           <p className="jx-fine jb-note" id="jb-email-note">
-                            {resumed && !email.trim()
-                              ? 'Your link already went out. Add your email only to send a new one.'
-                              : 'Saves as soon as you finish. We email a link, no password.'}
+                            Saves as soon as you finish. Nothing is emailed until you confirm.
                           </p>
                         )}
                       </div>
@@ -666,9 +682,14 @@ export function FrequencyJoin({
             {current.id === 'sent' && (
               <div className="jx-f">
                 <p className="jb-sub">
-                  {email ? (
+                  {sentTo ? (
                     <>
-                      We sent a link to <b>{email}</b>. Opening it activates your account and signs you in.
+                      We sent a link to <b>{sentTo}</b>. Opening it activates your account and signs you in.
+                    </>
+                  ) : email ? (
+                    <>
+                      We’ll send an activation link to <b>{email}</b>. Opening it activates your account and signs
+                      you in.
                     </>
                   ) : (
                     <>Open the link we sent you. It activates your account and signs you in.</>
@@ -678,7 +699,7 @@ export function FrequencyJoin({
                   By activating you agree to the <Link href="/terms">Terms</Link> and{' '}
                   <Link href="/privacy">Privacy Policy</Link>.
                 </p>
-                <p className="jx-fine jb-left">It can take a minute. Check spam if it hasn’t arrived.</p>
+                {sentTo && <p className="jx-fine jb-left">It can take a minute. Check spam if it hasn’t arrived.</p>}
                 {err}
                 {resent && (
                   <p className="jb-place" role="status">
@@ -688,7 +709,11 @@ export function FrequencyJoin({
                 )}
                 <div className="jb-act">
                   {back}
-                  {email ? (
+                  {email && !sentTo ? (
+                    <button id="jb-confirm" className="btn fq-iri-btn" type="button" onClick={onResend} disabled={pending}>
+                      {pending ? 'Sending…' : 'Confirm and send my link'}
+                    </button>
+                  ) : email ? (
                     <button
                       id="jb-resend"
                       className="btn btn-ghost fq-iri-rim"
@@ -706,6 +731,7 @@ export function FrequencyJoin({
                   type="button"
                   onClick={() => {
                     setSavedTo('')
+                    setSentTo('')
                     setSave({ state: 'idle' })
                     setEmailShown(true)
                     focusNext.current = 'jb-email'

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-906",
+  "title": "The /join entry mails nothing until the visitor confirms, and an address that already has an account is sent to log in instead",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/site/pages/join/frequency-join.tsx",
+    "ref": "Owner 2026-10-14: an email already in the system was sent a sign-in link from /join, and the email should not trigger until they are ready to confirm. Follows SCAN-888 and SCAN-894."
+  },
+  "detail": "The email field on /join now only saves the draft (stashPendingInduction park and the captureLead row) and asks the new joinEmailHasAccount server action whether the address already belongs to a member (admin listUsers lookup, throttled per IP under join:email-check). An existing address gets an inline 'You already have an account. Log in' note linking /sign-in, no email, and Continue stays put. sendSignupLink is called only from the last step, renamed Confirm and activate, by a Confirm and send my link button under the Terms and Privacy consent line; after it the step reads Check your email with Send it again and Use a different email. A parked draft no longer implies a sent link, so a resumed browser is asked for the email again. Tradeoff noted: the inline note tells a visitor whether an address has an account, the same thing the sign-in page already reveals, throttled per IP.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const j=r('components/frequency/site/pages/join/frequency-join.tsx');const a=r('app/join/(induction)/actions.ts');const bad=[];if(!a.includes('export async function joinEmailHasAccount'))bad.push('no existing-account check');if(!j.includes('You already have an account.'))bad.push('no inline log-in note');if(!j.includes('Confirm and send my link'))bad.push('no confirm button');const s=j.slice(j.indexOf('function saveEmail'),j.indexOf('function onContinue'));if(!s||s.includes('send('))bad.push('the email field still mails a link');if(bad.length){console.error('SCAN-906: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
