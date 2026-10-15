@@ -6,10 +6,10 @@
 //      what switches site-pages-a.css from the static (no-JS, reduced-motion) layout to the pinned one.
 //   2. the hero lifts and fades as it scrolls away, its backdrop scaling up.
 //   3. the "Live this week" figure counts up once when it comes into view.
-//   4. a path door (`[data-go]`) scrolls to the story once the shell has switched side.
 // `[data-px]` parallax (chapter rings and photos, `.rings.big` kept centred) and the dock are the shell's
 // FX loop (components/frequency/site/shell/site-fx.tsx), so they are not run twice here.
-// Renders nothing; all of it is skipped under prefers-reduced-motion except the door scroll.
+// Renders nothing; all of it is skipped under prefers-reduced-motion. The path doors are links to the beta entry
+// (/join) since SCAN-885, so the old door-to-story scroll is gone.
 //
 // NOT PORTED: the design's "gate" (body.gated), which hid everything below the fold until a door was
 // chosen. A server-rendered page that hides its own content until a click hides it from crawlers and
@@ -29,19 +29,6 @@ export function HomeMotion() {
     const cleanups: (() => void)[] = []
 
     const fold = scope.querySelector<HTMLElement>('#fold')
-    const onGo = (e: Event) => {
-      const d = (e.target as HTMLElement).closest<HTMLElement>('[data-go]')
-      if (!d?.dataset.go) return
-      const target = document.getElementById(d.dataset.go)
-      if (!target) return
-      window.setTimeout(
-        () => window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 40, behavior: rm ? 'auto' : 'smooth' }),
-        60,
-      )
-    }
-    fold?.addEventListener('click', onGo)
-    cleanups.push(() => fold?.removeEventListener('click', onGo))
-
     if (!rm) {
       const hero = scope.querySelector<HTMLElement>('.hero')
       const hw = hero?.querySelector<HTMLElement>(':scope > .wrap') ?? null

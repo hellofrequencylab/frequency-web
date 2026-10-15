@@ -66,7 +66,25 @@
 [data-design="frequency"] [data-kit="members"] .mc-bar.short{width:35%}
 
 /* Profile. */
-[data-design="frequency"] [data-kit="members"] .mc-identity{gap:32px;align-items:center}
+/* The header (SCAN-882): the cover, then ONE identity row under it. The photo rises onto the cover's
+   foot; the name holds one line; the meta and chips sit under it; the actions keep right on the same
+   row and wrap inside their own column before they ever squeeze the name. A phone stacks the actions
+   under the identity. */
+[data-design="frequency"] [data-kit="members"] .mc-cover{height:clamp(160px,24vw,280px);border-radius:var(--fq-radius-xl);background-size:cover;background-position:center}
+[data-design="frequency"] [data-kit="members"] .mc-identity{display:grid;grid-template-columns:auto minmax(min-content,1fr) auto;align-items:end;gap:var(--fq-space-5) var(--fq-space-8);padding:0 var(--fq-space-7)}
+[data-design="frequency"] [data-kit="members"] .mc-id-photo{margin-top:calc(var(--fq-space-11) * -1)}
+[data-design="frequency"] [data-kit="members"] .mc-id-text{gap:var(--fq-space-3);min-width:0;padding-bottom:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="members"] .h1.mc-name{white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .mc-id-acts{justify-content:flex-end;padding-bottom:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="members"] .mc-id-about{margin-top:var(--fq-space-7);padding:0 var(--fq-space-7)}
+[data-design="frequency"] [data-kit="members"] .mc-id-about:empty{display:none}
+@media (max-width:720px){
+  [data-design="frequency"] [data-kit="members"] .mc-identity{grid-template-columns:auto minmax(0,1fr);padding:0 var(--fq-space-4)}
+  [data-design="frequency"] [data-kit="members"] .mc-id-photo{margin-top:calc(var(--fq-space-10) * -1)}
+  [data-design="frequency"] [data-kit="members"] .h1.mc-name{white-space:normal}
+  [data-design="frequency"] [data-kit="members"] .mc-id-acts{grid-column:1/-1;justify-content:flex-start}
+  [data-design="frequency"] [data-kit="members"] .mc-id-about{padding:0 var(--fq-space-4)}
+}
 [data-design="frequency"] [data-kit="members"] .mc-photo{box-shadow:0 0 0 4px var(--fq-ig-hole),0 20px 50px -24px var(--fq-ig-halo)}
 [data-design="frequency"] [data-kit="members"] .mc-initials{display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);font:500 40px/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .g4.mc-stats{margin-top:44px}

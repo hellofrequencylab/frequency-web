@@ -74,6 +74,7 @@ import {
 import { FqIcon } from '@/components/frequency/icon'
 import { getInPersonCounts, getCircleTenure, getPracticeCounts, sinceLabel } from '@/lib/profile/in-person'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
+import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
 
 export default async function ProfilePage({
   params,
@@ -532,7 +533,15 @@ export default async function ProfilePage({
     const base = `/people/${profile.handle as string}`
     // The reference's four numbers are in-person counts (check-ins, people met), read from the host's
     // attendance marks; the Circles and Practice tabs read only what their tab shows.
-    const [inPerson, tenure, myJourneys, practiceCounts] = await Promise.all([
+    // The header photo (SCAN-882) through the same ladder the DAWN band reads: the member's own photo
+    // and focal point, the operator's /people image behind it, then a brand photo picked from the
+    // member's id, so the cover is never missing.
+    const [fqHero, inPerson, tenure, myJourneys, practiceCounts] = await Promise.all([
+      resolveIdentityHero(`/people/${profile.handle as string}`, {
+        entityImage: headerImageUrl,
+        entityFocus: headerFocus,
+        fallbackImage: fqPlaceholderArt(profileId),
+      }),
       getInPersonCounts(profileId),
       fqTab === 'circles' ? getCircleTenure(profileId, circles.map((c) => c.id)) : Promise.resolve(new Map()),
       fqTab === 'practice' && isOwner ? getMemberJourneyProgress(profileId) : Promise.resolve([]),
@@ -691,6 +700,7 @@ export default async function ProfilePage({
               </div>
             ) : null
           }
+          cover={{ image: fqHero.coverImage ?? fqPlaceholderArt(profileId), focus: fqHero.coverFocus }}
           avatar={
             <CosmeticBorder value={equippedBorder}>
               <ProfilePhoto src={profile.avatar_url} initials={initials} name={profile.display_name} />

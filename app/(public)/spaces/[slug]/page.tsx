@@ -26,6 +26,8 @@ import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
+import { FqSpaceFacts } from '@/components/frequency/members/space/space-facts'
+import { readPublicSpaceFacts } from '@/lib/spaces/public-facts'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
 // render is a dynamic API and would void ISR; signed-in members rewrite to
@@ -252,7 +254,13 @@ export default async function PublicSpacePage({
   // THE FREQUENCY CHROME (ADR-1737): the member profile's cover card and kit tab row, opened in its own
   // kit scope because this page sits outside the member shell. Same reads, same menu, same body; the
   // cover carries no viewer actions because this tree has no viewer (markAnonymousRender above).
+  //
+  // THE PUBLIC FRAME (SCAN-883): `public` opens the centred container the site shell does not give this
+  // page, and `aside` is the key-facts column (where, when, contact, follow or book, coming up). The
+  // facts are read with no viewer (lib/spaces/public-facts.ts), so this document stays cacheable.
   if (SITE_DESIGN === 'frequency') {
+    const facts = await readPublicSpaceFacts(space, { tagline })
+    const calendarHref = tabs.find((t) => t.href === `/spaces/${space.slug}/calendar`)?.href ?? null
     return (
       <>
         {structuredData}
@@ -264,6 +272,15 @@ export default async function PublicSpacePage({
           name={brandName}
           tagline={tagline ? <p className="fqs-tagline">{tagline}</p> : null}
           nav={menu}
+          aside={
+            <FqSpaceFacts
+              facts={facts}
+              brandName={brandName}
+              joinHref={BETA_CTA_HREF}
+              joinLabel={BETA_CTA_LABEL}
+              calendarHref={calendarHref}
+            />
+          }
         >
           {body}
         </FqSpaceChrome>

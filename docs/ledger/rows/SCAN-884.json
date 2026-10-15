@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-884",
+  "title": "My orders lists the event tickets a member bought, which it never showed because ticket sales are not commerce orders, and drops its photo header under Frequency",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/orders/page.tsx",
+    "ref": "Owner 2026-10-14: My orders says No orders yet, but I bought one of the Hypnotic Sound baths from House of Fates a couple of weeks ago; and this page does not need a header."
+  },
+  "detail": "/orders read listOrdersForBuyer (commerce_orders) only. An event ticket sale writes event_tickets through settle_ticket_atomic and never commerce_orders (the same gap LIVE-375 closed on the seller's earnings), so the owner's succeeded $44.00 ticket for Hypnotic Sound by HOUSE OF FATES (2026-09-16) never appeared and the page read No orders yet. lib/events/my-tickets.ts listMyEventTickets reads the caller's paid tickets (succeeded_at set, newest first) through the session client, which the read own or hosted tickets policy already scopes to the caller, and the page shows them as an Event tickets section above the Market orders, with the event, its date, the seats, the amount and a refunded mark. The empty state now shows only when there are neither tickets nor orders. Under Frequency the page also renders the template's plain header instead of the hero photo.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p='app/(main)/orders/page.tsx';const s=fs.readFileSync(p,'utf8');const bad=[];if(!fs.existsSync('lib/events/my-tickets.ts')||!s.includes('listMyEventTickets(profileId)'))bad.push('My orders still ignores event tickets');if(!s.includes(\\\"SITE_DESIGN === 'frequency' ? {} : await resolveIndexHero\\\"))bad.push('My orders still draws a photo header');if(bad.length){console.error('SCAN-884: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
