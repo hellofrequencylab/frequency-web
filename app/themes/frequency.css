@@ -362,16 +362,18 @@
    brand still reads as Frequency. */
 :root[data-design="frequency"] {
   --fq-iridescent-sweep: linear-gradient(100deg, #8FE9FF 0%, #A3D4FF 20%, #C4B8FF 34%, #8FE9FF 52%, #A3E8D4 72%, #A3D4FF 88%, #8FE9FF 100%); /* export sweep stops #8FE9FF aqua, #A3D4FF sky, #C4B8FF violet; seaglass #A3E8D4 */
-  --fq-iridescent-sweep-deep: linear-gradient(100deg, #17788A 0%, #1F5FB8 26%, #5B3FD0 40%, #17788A 60%, #1F7A66 80%, #17788A 100%); /* export deep stops --fq-x-aqua-deep #17788A, --fq-x-violet-deep #5B3FD0 */
+  --fq-iridescent-sweep-deep: linear-gradient(100deg, #2C93A3 0%, #5A9FD0 26%, #8F84D6 44%, #2C93A3 64%, #3C9C8C 82%, #2C93A3 100%); /* export deep stops --fq-x-aqua-deep #17788A, --fq-x-violet-deep #5B3FD0 */
   --fq-iridescent: conic-gradient(from 200deg, #8FE9FF, #A3D4FF, #C4B8FF, #A3E8D4, #8FE9FF); /* export conic stops, pink dropped */
   --fq-pa: linear-gradient(120deg, #A3D4FF 0%, #8FE9FF 60%, #A3E8D4 100%); /* export --fq-pa stops #A3D4FF, #8FE9FF */
   --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #CFE6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* export --fq-pa-orb, periwinkle centre */
   --fq-pa-soft: linear-gradient(120deg, rgba(163, 212, 255, .24), rgba(143, 233, 255, .2) 50%, rgba(163, 232, 212, .2)); /* export --fq-pa-soft at sky and aqua */
   --fq-wash: radial-gradient(60% 50% at 6% 0%, rgba(163, 212, 255, .24), transparent 70%), radial-gradient(50% 50% at 98% 14%, rgba(143, 233, 255, .26), transparent 70%), radial-gradient(55% 50% at 70% 100%, rgba(163, 232, 212, .16), transparent 70%); /* export --fq-wash lobes in sky, aqua, seaglass */
-  --fq-accent: #1F6FA8; /* export deep sky / aqua neon */
-  --fq-accent-soft: #E3F0FA; /* export accent-soft in sky */
+  --fq-accent: #3A8C99; /* export aqua deep, softened toward seaglass (owner: no harsh blue) */
+  --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
   --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
   --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
+  --fq-orb-soft: linear-gradient(135deg, #C2EEF3 0%, #CFDDFB 55%, #DED3FB 100%); /* SCAN-913 feature orb: export aqua, periwinkle, lavender at their airy steps */
+  --fq-orb-ink: #2C6F7A; /* SCAN-913 orb glyph: export aqua deep, softened */
 }
 [data-design="frequency"] [data-energy="flow"] {
   --fq-aura-3: #CFE6F5; /* export sky haze, lighter */
