@@ -29,6 +29,7 @@ import { AmplitudeCelebration } from '@/components/progress/amplitude-celebratio
 import { getAmplitudeCelebration } from '@/lib/amplitude-celebration'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyFeed } from '@/components/frequency/members/feed/feed-body'
+import { FrequencyAnonFeed } from '@/components/frequency/members/feed/anon-feed-body'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -54,6 +55,12 @@ export default async function FeedPage({
   // already bounced a signed-in viewer with no row to /onboarding, so a null here is the
   // signed-out visitor the public feed still serves.
   const profile = await getCachedViewerProfile()
+
+  // THE FEED AS ANONYMOUS (SCAN-889). Under Frequency a signed-out visitor reaches this page inside the
+  // member shell (app/(main)/layout.tsx, lib/nav/anon-feed.ts) and reads the same Feed body with public
+  // data only: public posts and public events through lib/discover's cookieless RPCs. It returns before
+  // the admin client below is even created, so no read here can see a member-only row.
+  if (SITE_DESIGN === 'frequency' && !profile) return <FrequencyAnonFeed sort={sort} />
 
   const admin = createAdminClient()
   let myProfileId: string | null = null

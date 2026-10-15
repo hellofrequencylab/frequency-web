@@ -51,6 +51,7 @@ import type { AvailableContext } from '@/lib/context/operator-context'
 import { meetsAccess } from '@/lib/nav-areas'
 import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 import { avatarBg } from './avatar'
+import { BETA_CTA_HREF } from '@/lib/site'
 
 type Stats = Promise<DockData | null>
 
@@ -80,6 +81,9 @@ interface FrequencyMembersShellProps {
   availableContexts: AvailableContext[]
   /** The member's skin (Settings, Appearance), for the account menu's theme control. */
   skin: string
+  /** A signed-out visitor reading the Feed as the "Anonymous" stand-in (SCAN-889, lib/nav/anon-feed.ts):
+   *  no profile page to link, no handle, no Settings. The layout passes a stand-in profile and no stats. */
+  anonymous?: boolean
   children: React.ReactNode
 }
 
@@ -176,7 +180,9 @@ function DrawerHead({ d }: { d: DockData }) {
 
 export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   const { profile, crew, stats, navAccess, myFrequency } = props
-  const profileHref = `/people/${profile.handle}`
+  // The Anonymous stand-in has no profile page: its "you" links point at joining (and the join overlay
+  // intercepts them before they navigate, components/frequency/members/feed/anon-join-gate.tsx).
+  const profileHref = props.anonymous ? BETA_CTA_HREF : `/people/${profile.handle}`
   const role = (profile.community_role ?? 'member') as CommunityRole
   const gateRole: CommunityRole | null = props.previewVisitor ? null : role
   const circles = myFrequency?.circles ?? []
@@ -311,7 +317,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
                 {' · '}
               </>
             )}
-            @{profile.handle}
+            {props.anonymous ? 'Not signed in' : `@${profile.handle}`}
           </small>
         </span>
       </Link>
@@ -441,7 +447,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
       <span>Frequency · Community Collective</span>
       <span className="ap-sp" />
       <Link href="/help">Help</Link>
-      <Link href="/settings">Settings</Link>
+      {!props.anonymous && <Link href="/settings">Settings</Link>}
     </footer>
   )
 

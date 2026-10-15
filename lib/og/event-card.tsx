@@ -72,7 +72,7 @@ function chipElement(input: EventCardInput) {
         fontWeight: 700,
         letterSpacing: '0.04em',
         color: input.isCancelled ? '#fca5a5' : palette.ogAccentSoft,
-        backgroundColor: input.isCancelled ? 'rgba(248,113,113,0.16)' : 'rgba(99,102,241,0.22)',
+        backgroundColor: input.isCancelled ? 'rgba(248,113,113,0.16)' : `${palette.ogAccent}38`,
       }}
     >
       {input.chip}

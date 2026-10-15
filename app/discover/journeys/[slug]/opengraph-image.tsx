@@ -54,7 +54,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               fontWeight: 700,
               letterSpacing: '0.04em',
               color: palette.ogAccentSoft,
-              backgroundColor: 'rgba(99,102,241,0.22)',
+              backgroundColor: `${palette.ogAccent}38`,
             }}
           >
             Journey

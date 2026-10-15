@@ -1790,6 +1790,9 @@ export type GuestConfirmOutcome =
     }
   | { ok: false; reason: 'expired' | 'invalid' }
 
+/** The website Confirm button's state: nothing yet, or the outcome with its time written out (SCAN-858). */
+export type GuestConfirmFormState = { outcome: GuestConfirmOutcome; when: string | null } | null
+
 /**
  * The click on a website guest's confirmation link (SCAN-834). Server-only; the caller passes the token
  * from the link. A live, unexpired hold flips to confirmed with a COMPARE-AND-SET scoped to
@@ -1797,7 +1800,7 @@ export type GuestConfirmOutcome =
  * (guest + owner, with .ics), schedules the reminder, and records the guest in the Space CRM with the
  * opt-in they ticked, none of which happened before this click. An expired hold is released on the spot.
  */
-export async function confirmGuestBooking(rawToken: unknown): Promise<GuestConfirmOutcome> {
+export async function confirmGuestBooking(rawToken: unknown, expectedSpaceId?: string): Promise<GuestConfirmOutcome> {
   const token = typeof rawToken === 'string' ? rawToken.trim() : ''
   if (!token || token.length > 64 || !/^[A-Za-z0-9_-]+$/.test(token)) return { ok: false, reason: 'invalid' }
 
@@ -1813,6 +1816,9 @@ export async function confirmGuestBooking(rawToken: unknown): Promise<GuestConfi
 
   const space = await getSpaceById(row.space_id)
   if (!space) return { ok: false, reason: 'invalid' }
+  // A link opened on another Space's website names a booking that is not this site's (SCAN-858): refuse it
+  // before anything is written, rather than confirming under the wrong Space's branding.
+  if (expectedSpaceId && space.id !== expectedSpaceId) return { ok: false, reason: 'invalid' }
   const serviceName = row.service_type_id ? ((await resolveService(space.id, row.service_type_id))?.name ?? null) : null
   const summary = {
     spaceId: space.id,

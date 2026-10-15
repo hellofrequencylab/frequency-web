@@ -171,10 +171,21 @@ export async function journeysOfferedBySpace(
 ): Promise<{ id: string; slug: string; title: string; summary: string | null; emoji: string | null }[]> {
   if (!spaceId) return []
   try {
-    const { data } = await createAdminClient()
+    const db = createAdminClient()
+    // A Journey co-hosted with this Space (an ACCEPTED journey_plan_space_shares row, lib/journeys/space-shares)
+    // is offered here too (SCAN-892): the owner's Hearts on Fire Journeys are shared to his own Space, and its
+    // Circles page read "0 Journeys offered". The Journey's own visibility still applies.
+    const { data: shares } = await db
+      .from('journey_plan_space_shares')
+      .select('plan_id')
+      .eq('space_id', spaceId)
+      .eq('status', 'accepted')
+    const sharedIds = (shares ?? []).map((r) => r.plan_id as string).filter(Boolean)
+    const scope = sharedIds.length > 0 ? `space_id.eq.${spaceId},id.in.(${sharedIds.join(',')})` : `space_id.eq.${spaceId}`
+    const { data } = await db
       .from('journey_plans')
       .select('id, slug, title, summary, emoji, visibility, status')
-      .eq('space_id', spaceId)
+      .or(scope)
       .neq('visibility', 'private')
       .order('updated_at', { ascending: false })
       .limit(100)
