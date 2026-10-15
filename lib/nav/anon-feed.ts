@@ -13,7 +13,7 @@
 
 import type { DesignId } from '@/lib/theme/design'
 
-export const ANON_FEED_PATH = '/feed'
+const ANON_FEED_PATH = '/feed'
 
 /** Does this design render the signed-out Feed in the member shell (rather than the public preview)? */
 export function anonFeedInShell(design: DesignId): boolean {

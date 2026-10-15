@@ -59,10 +59,12 @@ describe('the live tiers all clear the floor', () => {
   })
 })
 
-describe('the file says plainly that the write is not yet wired', () => {
-  it('carries the unwired notice, so nobody reads the floor as enforced', () => {
+describe('the floor is wired into the write (SCAN-854)', () => {
+  it('setMembershipTiers calls membershipTierPriceError, and the file says so', () => {
     const src = readFileSync(join(__dirname, 'membership-tier-price.ts'), 'utf8')
-    expect(src).toContain('NOT YET WIRED INTO THE WRITE')
-    expect(src).toContain('setMembershipTiers')
+    const write = readFileSync(join(__dirname, '../spaces/memberships.ts'), 'utf8')
+    expect(src).toContain('WIRED (SCAN-854)')
+    expect(src).not.toContain('NOT YET WIRED INTO THE WRITE')
+    expect(write).toContain('membershipTierPriceError(')
   })
 })
