@@ -372,8 +372,6 @@
   --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
   --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
   --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
-  --fq-orb-soft: linear-gradient(135deg, #C2EEF3 0%, #CFDDFB 55%, #DED3FB 100%); /* SCAN-913 feature orb: export aqua, periwinkle, lavender at their airy steps */
-  --fq-orb-ink: #2C6F7A; /* SCAN-913 orb glyph: export aqua deep, softened */
 }
 [data-design="frequency"] [data-energy="flow"] {
   --fq-aura-3: #CFE6F5; /* export sky haze, lighter */
