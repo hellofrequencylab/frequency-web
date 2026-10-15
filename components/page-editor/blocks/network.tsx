@@ -7,6 +7,8 @@ import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
 import { InlineText } from '@/components/sites/inline-text'
 import { NetworkCountdown } from '@/components/sites/network-countdown'
+import { NetworkEventsExplorer } from '@/components/sites/network-events-explorer'
+import { networkChapterLabel } from '@/lib/sites/network-events'
 import { loomImageField } from '@/lib/page-editor/loom-image-field'
 import { countdownParts, wallClockInstant } from '@/lib/time/wall-clock'
 import {
@@ -54,7 +56,7 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (raw.startsWith('#')) return raw
   const links = metadata?.links as SiteLinkMap | undefined
   // A Space path the website has no page for (Memberships, Shop, Calendar) opens on Frequency itself.
-  if (links) return siteLocalHref(raw, links)?.href ?? (/^\/spaces\//.test(raw) ? `${links.origin}${raw}` : null)
+  if (links) return siteLocalHref(raw, links)?.href ?? (/^\/(?:spaces|circles|events|market)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(raw) ? `${links.origin}${raw}` : null)
   return safeUrl(raw) || (raw.startsWith('/') ? raw : null)
 }
 const external = (href: string) => /^https?:\/\//.test(href)
@@ -123,6 +125,7 @@ interface EventRow {
   description?: string | null
   priceLabel?: string | null
   isCancelled?: boolean
+  hostingSpaceId?: string | null
 }
 const isRow = (e: unknown): e is EventRow => !!e && typeof (e as EventRow).id === 'string' && typeof (e as EventRow).title === 'string' && typeof (e as EventRow).startsAt === 'string'
 const dayOf = (iso: string) => iso.slice(0, 10)
@@ -150,7 +153,6 @@ function eventHref(e: EventRow, metadata: Props | undefined): string | null {
 }
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const utc = (iso: string) => new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)))
 
 /** The date tile: the weekday over the day of the month, in the sand counterpoint. */
@@ -184,14 +186,8 @@ function relDay(iso: string, today: string): string {
   return dateLabel(iso).day.replace(' ', ', ')
 }
 
-/** Which chapter an event belongs to: the first chapter whose words appear in its title or place. */
-function chapterOf(e: EventRow, chapters: { label: string; match: string[] }[]): string | null {
-  // The title names a chapter's own meeting ("Veteran Community Conversation" in Oceanside is Veterans), so
-  // it is read first; the place decides the rest.
-  const title = e.title.toLowerCase()
-  const place = (e.location ?? '').toLowerCase()
-  return (chapters.find((c) => c.match.some((m) => m && title.includes(m))) ?? chapters.find((c) => c.match.some((m) => m && place.includes(m))))?.label ?? null
-}
+/** The declared hosting Space, with a unique title/place match for legacy documents. */
+const chapterOf = networkChapterLabel
 
 /** A tag's color: the hero color first, then the theme's five tag colors. */
 const tone = (i: number) => (i <= 0 ? 'var(--color-primary)' : `var(--nw-tag-${((i - 1) % 5) + 1})`)
@@ -353,140 +349,41 @@ export function NetworkBandBlock({ p, metadata, now = new Date(), pad, vis }: { 
   )
 }
 
-// 5. Events: the upcoming list by day beside the "Up next" countdown and the month.
-function MonthGrid({ today, days, list }: { today: string; days: Set<string>; list?: ReactNode }) {
-  const first = utc(`${today.slice(0, 7)}-01`)
-  const start = new Date(first.getTime() - first.getUTCDay() * 864e5)
-  const cells = Array.from({ length: 42 }, (_, i) => new Date(start.getTime() + i * 864e5).toISOString().slice(0, 10))
-  const rows = cells.slice(35).every((d) => d.slice(5, 7) !== today.slice(5, 7)) ? cells.slice(0, 35) : cells
-  return (
-    <div className="nw-month">
-      <b className="nw-month-name">{MONTH[first.getUTCMonth()]} {first.getUTCFullYear()}</b>
-      <div className="nw-month-grid" role="grid" aria-label={`${MONTH[first.getUTCMonth()]} ${first.getUTCFullYear()}`}>
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={`h${i}`} className="nw-month-dow" aria-hidden>{d}</span>)}
-        {rows.map((d) => (
-          <span key={d} className="nw-month-day" data-out={d.slice(5, 7) !== today.slice(5, 7) || undefined} data-today={d === today || undefined} data-has={days.has(d) || undefined}>
-            {+d.slice(8, 10)}
-          </span>
-        ))}
-      </div>
-      {list}
-    </div>
-  )
-}
-
+// 5. Events: live public cards, chapter/date filters, and a calendar beside the next matching event.
 export function NetworkEventsBlock({ p, metadata, now = new Date(), pad, vis }: { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }) {
   const rows = upcoming(metadata, now)
   const max = Math.max(1, Math.min(24, Number(p.max) || 6))
-  const chapters = arr(p.chapters).map((c) => ({ label: str(c.label), match: str(c.match).toLowerCase().split('|').map((s) => s.trim()) })).filter((c) => c.label)
-  const shown = rows.slice(0, max)
+  const chapters = arr(p.chapters).map((c) => ({ label: str(c.label), spaceId: str(c.spaceId), match: str(c.match).toLowerCase().split('|').map((s) => s.trim()) })).filter((c) => c.label)
   const today = todayIn(now, rows[0]?.timeZone || ZONE)
-  const next = rows[0] ?? null
-  const nextTarget = next ? wallClockInstant(next.startsAt, next.timeZone || ZONE) : Number.NaN
-  const groups: { day: string; rows: EventRow[] }[] = []
-  for (const e of shown) {
-    const day = dayOf(e.startsAt)
-    if (groups.at(-1)?.day === day) groups.at(-1)!.rows.push(e)
-    else groups.push({ day, rows: [e] })
-  }
-  const more = hrefOf(str(p.moreHref), metadata)
-  return (
-    <Section name="events" pad={pad} vis={vis} id={str(p.anchor)}>
-      <Head eyebrow={str(p.eyebrow)} title={str(p.title)} lead={str(p.lead)} action={str(p.actionLabel)} actionHref={str(p.actionHref)} metadata={metadata} />
-      {rows.length === 0 ? (
-        <p className="nw-empty">{str(p.empty) || 'Nothing on the calendar yet. Check back soon.'}</p>
-      ) : (
-        <div className="nw-events">
-          <div className="nw-events-list">
-            {chapters.length > 0 && (
-              <ul className="nw-chiprow" aria-label="Chapters">
-                <li data-all="">{str(p.allLabel) || 'All chapters'}</li>
-                {chapters.map((c) => (
-                  <li key={c.label} style={{ ['--c' as string]: toneOf(c.label, chapters) }}>
-                    <i aria-hidden />
-                    {c.label}
-                    <small>{rows.filter((e) => chapterOf(e, chapters) === c.label).length}</small>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="nw-count">{rows.length} upcoming</p>
-            {groups.map((g) => (
-              <div key={g.day} className="nw-day">
-                <h3 className="nw-day-h">{relDay(g.day, today)}</h3>
-                <ol>
-                  {g.rows.map((e) => {
-                    const href = eventHref(e, metadata)
-                    const chapter = chapterOf(e, chapters)
-                    return (
-                      <li key={e.id} className="nw-erow" style={{ ['--c' as string]: toneOf(chapter, chapters) }}>
-                        <DateTile iso={e.startsAt} />
-                        <span className="nw-erow-text">
-                          <b>{e.title}</b>
-                          <small>
-                            <span><Icon name="clock" />{timeRange(e)}</span>
-                            {e.location && <span><Icon name="pin" />{e.location}</span>}
-                          </small>
-                          {(chapter || e.priceLabel) && (
-                            <span className="nw-tags">
-                              {chapter && <span className="nw-tag nw-tag-ch"><i aria-hidden />{chapter}</span>}
-                              {e.priceLabel && <span className="nw-tag nw-tag-quiet">{e.priceLabel}</span>}
-                            </span>
-                          )}
-                        </span>
-                        {href && <a className="hs-btn hs-btn-primary nw-erow-btn" href={href} aria-label={`RSVP to ${e.title}`}>RSVP</a>}
-                      </li>
-                    )
-                  })}
-                </ol>
-              </div>
-            ))}
-            {more && rows.length > shown.length && (
-              <a className="nw-more" href={more}>
-                <span>{str(p.moreLabel) || 'See more events'}</span>
-                <small>{rows.length - shown.length} more</small>
-              </a>
-            )}
-          </div>
-          <aside className="nw-events-side">
-            {next && (
-              <div className="nw-upnext">
-                <span className="nw-upnext-k">Up next</span>
-                <b>{next.title}</b>
-                <small>{[relDay(dayOf(next.startsAt), today), timeRange(next).split('–')[0], chapterOf(next, chapters)].filter(Boolean).join(' · ')}</small>
-                {Number.isFinite(nextTarget) && <NetworkCountdown startsAt={next.startsAt} timeZone={next.timeZone || ZONE} initial={countdownParts(nextTarget, now.getTime())} label={`Time until ${next.title}`} />}
-                {eventHref(next, metadata) && <a className="hs-btn hs-btn-primary" href={eventHref(next, metadata)!}>I&apos;m coming</a>}
-              </div>
-            )}
-            <MonthGrid
-              today={today}
-              days={new Set(rows.map((e) => dayOf(e.startsAt)))}
-              list={(() => {
-                const day = rows.filter((e) => dayOf(e.startsAt) === today).slice(0, 4)
-                if (day.length === 0) return null
-                return (
-                  <div className="nw-month-list">
-                    <h4>Today</h4>
-                    {day.map((e) => {
-                      const href = eventHref(e, metadata)
-                      return (
-                        <a key={e.id} href={href ?? '#events'} style={{ ['--c' as string]: toneOf(chapterOf(e, chapters), chapters) }}>
-                          <span>
-                            <b>{e.title}</b>
-                            <small>{[timeRange(e).split('–')[0], chapterOf(e, chapters)].filter(Boolean).join(' · ')}</small>
-                          </span>
-                        </a>
-                      )
-                    })}
-                  </div>
-                )
-              })()}
-            />
-          </aside>
-        </div>
-      )}
-    </Section>
-  )
+  const items = rows.map((e) => {
+    const href = eventHref(e, metadata)
+    const chapter = chapterOf(e, chapters)
+    const target = wallClockInstant(e.startsAt, e.timeZone || ZONE)
+    const end = e.endsAt ? wallClockInstant(e.endsAt, e.timeZone || ZONE) : Number.NaN
+    return {
+      id: e.id, day: dayOf(e.startsAt), chapter, title: e.title, time: timeRange(e), href,
+      startsAt: e.startsAt, timeZone: e.timeZone || ZONE,
+      startsAtInstant: Number.isFinite(target) ? target : null, endsAtInstant: Number.isFinite(end) ? end : null,
+      countdown: Number.isFinite(target) ? countdownParts(target, now.getTime()) : null,
+      card: <li key={e.id} className="nw-erow" style={{ ['--c' as string]: toneOf(chapter, chapters) }}>
+        <DateTile iso={e.startsAt} />
+        <span className="nw-erow-text">
+          <b>{e.title}</b>
+          <small><span><Icon name="clock" />{timeRange(e)}</span>{e.location && <span><Icon name="pin" />{e.location}</span>}</small>
+          {(chapter || e.priceLabel) && <span className="nw-tags">{chapter && <span className="nw-tag nw-tag-ch"><i aria-hidden />{chapter}</span>}{e.priceLabel && <span className="nw-tag nw-tag-quiet">{e.priceLabel}</span>}</span>}
+        </span>
+        {href && <a className="hs-btn hs-btn-primary nw-erow-btn" href={href} aria-label={`RSVP to ${e.title}`}>RSVP</a>}
+      </li>,
+    }
+  })
+  return <Section name="events" pad={pad} vis={vis} id={str(p.anchor)}>
+    <Head eyebrow={str(p.eyebrow)} title={str(p.title)} lead={str(p.lead)} action={str(p.actionLabel)} actionHref={str(p.actionHref)} metadata={metadata} />
+    {rows.length === 0 ? <p className="nw-empty">{str(p.empty) || 'Nothing on the calendar yet. Check back soon.'}</p> : <NetworkEventsExplorer
+      items={items} chapters={chapters.map((c) => ({ label: c.label, tone: toneOf(c.label, chapters) }))} today={today} initialNow={now.getTime()} max={max}
+      allLabel={str(p.allLabel) || 'All chapters'} empty={str(p.empty) || 'Nothing scheduled for these filters. Try another day or chapter.'}
+      moreHref={hrefOf(str(p.moreHref), metadata)} moreLabel={str(p.moreLabel) || 'See more events'}
+    />}
+  </Section>
 }
 
 // 6. Steps: numbered cards, the last may carry a button.
@@ -577,12 +474,19 @@ const CIRCLE_TONES = ['var(--color-primary)', 'var(--nw-pop)', 'var(--nw-pop2)',
 // 8. Circles: member-led groups as cards, each with its next date from the Space's own events.
 export function NetworkCirclesBlock({ p, metadata, now = new Date(), pad, vis }: { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }) {
   const rows = upcoming(metadata, now)
+  const community = arr((metadata?.space as Props | undefined)?.community)
+  const origin = (metadata?.links as SiteLinkMap | undefined)?.origin ?? ''
   const today = todayIn(now, rows[0]?.timeZone || ZONE)
   const cards = arr(p.circles).map((c) => {
     const title = str(c.title)
     const match = (str(c.match) || title).toLowerCase()
     const next = rows.find((e) => e.title.toLowerCase().includes(match)) ?? null
-    return { icon: str(c.icon), title, body: str(c.body), when: str(c.when), where: str(c.where), next, href: next ? eventHref(next, metadata) : null }
+    // The public community bag is capped and covers this Space, not every chapter. An authored
+    // slug therefore remains a valid door when its circle is absent from that partial list.
+    // Old documents can still resolve an exact name against the public rows already loaded.
+    const circleSlug = str(c.circleSlug) || str(community.find((circle) => str(circle.name).toLowerCase() === title.toLowerCase())?.slug)
+    const circleHref = circleSlug ? `${origin}/circles/${encodeURIComponent(circleSlug)}` : null
+    return { icon: str(c.icon), title, body: str(c.body), when: str(c.when), where: str(c.where), next, href: next ? eventHref(next, metadata) : null, circleHref }
   }).filter((c) => c.title)
   if (cards.length === 0) return null
   return (
@@ -596,6 +500,7 @@ export function NetworkCirclesBlock({ p, metadata, now = new Date(), pad, vis }:
             {c.body && <p>{c.body}</p>}
             {c.when && <small>{c.when}</small>}
             {c.where && <small>{c.where}</small>}
+            {c.circleHref && <a className="nw-next" href={c.circleHref}>View circle<ArrowRight className="nw-arr" strokeWidth={2} aria-hidden /></a>}
             {c.next && c.href ? (
               <a className="nw-next" href={c.href}>Next: {relDay(dayOf(c.next.startsAt), today)}<ArrowRight className="nw-arr" strokeWidth={2} aria-hidden /></a>
             ) : null}
@@ -933,7 +838,7 @@ export const networkComponents: Record<string, ComponentConfig> = {
   }, { anchor: '', eyebrow: '', title: '', body: '', countdownTo: '', timeZone: 'America/Los_Angeles', countdownLabel: '', image: '', alt: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '' }, NetworkBandBlock),
   NetworkEvents: block('Events list and calendar (live)', {
     anchor, ...head, ...action, max: { type: 'number', label: 'How many to list', min: 1, max: 24 },
-    chapters: { type: 'array', label: 'Chapter filters', hint: 'Each becomes a filter chip over the list.', arrayFields: { label: text('Chapter'), match: text('Matches events containing', 'Words in the title or place, separated by |, like north park|maya moon.') } },
+    chapters: { type: 'array', label: 'Chapter filters', hint: 'Each becomes a filter chip over the list.', arrayFields: { label: text('Chapter'), spaceId: text('Hosting Space ID', 'Optional. Matches the event’s declared hosting Space before any title or place words.'), match: text('Matches events containing', 'Legacy match when no hosting Space mapping is available. Words in the title or place, separated by |.') } },
     moreLabel: text('More events link'), moreHref: text('More events link: where it goes'), empty: text('Message when nothing is scheduled'),
   }, { anchor: '', eyebrow: 'Events', title: 'Find a group. *Or fill one.*', lead: '', actionLabel: '', actionHref: '', max: 6, chapters: [], moreLabel: 'See more events', moreHref: '', empty: '' }, NetworkEventsBlock),
   NetworkSteps: block('Numbered steps', { anchor, ...head, steps: { type: 'array', label: 'Steps', arrayFields: { title: text('Title'), body: area('Body text'), ctaLabel: text('Button', 'Optional.'), ctaHref: text('Button link') } } }, { anchor: '', eyebrow: 'Your first visit', title: '', lead: '', steps: [] }, NetworkStepsBlock),
@@ -945,7 +850,7 @@ export const networkComponents: Record<string, ComponentConfig> = {
   }, { anchor: '', eyebrow: 'Chapters', title: '', lead: '', chips: [], cards: [], notes: [] }, NetworkChaptersBlock),
   NetworkCircles: block('Circles (next dates live)', {
     anchor, ...head, ...action,
-    circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Body text'), when: text('When'), where: text('Where'), match: text('Matches events titled', 'Optional. Defaults to the circle name.') } },
+    circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Body text'), when: text('When'), where: text('Where'), circleSlug: text('Circle slug', 'The last part of its Frequency circle URL. Opens the circle even when no event is scheduled.'), match: text('Matches events titled', 'Optional. Defaults to the circle name.') } },
   }, { anchor: '', eyebrow: 'Circles', title: '', lead: '', actionLabel: '', actionHref: '', circles: [] }, NetworkCirclesBlock),
   NetworkFounder: block('Founder', {
     anchor, eyebrow: head.eyebrow, quote: area('Quote', VOICE_HINT), body: area('Body text', 'Each new line starts a paragraph.'), image, alt: text('Photo description', 'For screen readers.'),

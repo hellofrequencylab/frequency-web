@@ -56,6 +56,7 @@ const PITCH_SIGNUP = 'https://www.thegroupcoastal.com/pitchfest2026'
 const PITCH_PARTY = 'https://partiful.com/e/9B3VudHuElBPDiShN2Tj'
 const SPEAKER_FORM = 'https://www.thegroupcoastal.com/featuredspeaker-1'
 const EVENT_SUBMIT = 'https://www.thegroupcoastal.com/events-and-workshop-submission'
+const START_CIRCLE = '/sign-in?next=%2Fcircles%2Fnew'
 const PODCAST = 'https://www.youtube.com/@heartofthematterpod'
 // TODO [confirm]: the podcast channel URL is not in the handoff (it names YouTube and Spotify only). The
 // episode cards link each video by id, which the handoff does carry; this channel link is the one guess
@@ -325,12 +326,11 @@ const PILLARS = [
 ]
 const BRENE = { quote: '“True belonging is not passive. It’s not the belonging that comes with just joining a group.”', by: 'Dr. Brené Brown' }
 const CHAPTER_TAGS = [
-  { label: 'Encinitas', match: 'encinitas|leucadia|fox point|solana beach|cardiff|la costa|escondido|swami' },
-  { label: 'La Jolla', match: 'parakeet|general atomics|la jolla|motivation monday' },
-  { label: 'North Park', match: 'maya moon|adams ave|north park|team up tuesday' },
-  { label: 'Oceanside', match: 'oceanside|ocean st|garfield' },
-  { label: 'Veterans', match: 'veteran' },
-  { label: 'North County', match: 'coaches club|house party|break free' },
+  { label: 'Encinitas', spaceId: SPACE_ID, match: 'encinitas|leucadia|fox point|solana beach|cardiff|la costa|escondido|swami' },
+  ...(['la-jolla', 'north-park', 'oceanside', 'veterans', 'north-county'] as const).map((key) => {
+    const c = CHAPTERS.find((chapter) => chapter.key === key)!
+    return { label: c.short, spaceId: chapterId(c), match: ({ 'la-jolla': 'parakeet|general atomics|la jolla|motivation monday', 'north-park': 'maya moon|adams ave|north park|team up tuesday', oceanside: 'oceanside|ocean st|garfield', veterans: 'veteran', 'north-county': 'coaches club|house party|break free' })[key] }
+  }),
 ]
 const CHAPTER_CHIPS = [
   { icon: 'sun', name: 'Encinitas', line: 'Feel Good Friday · Fox Point Farms', when: 'Fri · 9 AM', href: PAGE('fridays'), on: true },
@@ -355,8 +355,8 @@ const POSTS = [
   { image: '', caption: 'For Nick Esayian, football gave him confidence and a sense of belonging.' },
   { image: '', caption: 'The right people show up at the right time.' },
 ]
-const PRODUCTS = MERCH.map((m) => ({ image: m.image, title: m.short, note: m.note, price: `$${m.priceCents / 100}`, href: PAGE('shop') }))
-const CIRCLE_CARDS = CIRCLES.map((c) => ({ icon: c.icon, title: c.name, body: c.body, when: c.when, where: c.where, match: c.match }))
+const PRODUCTS = MERCH.map((m) => ({ image: m.image, title: m.short, note: m.note, price: `$${m.priceCents / 100}`, href: `/market/${merchId(m.key)}` }))
+const CIRCLE_CARDS = CIRCLES.map((c) => ({ icon: c.icon, title: c.name, body: c.body, when: c.when, where: c.where, circleSlug: `tg-${c.key}`, match: c.match }))
 
 const coffee = (anchor = 'contact'): Block => ({
   type: 'NetworkCoffee',
@@ -399,14 +399,14 @@ export function buildWebsiteDocs(): Record<string, unknown> {
       { image: PHOTO('patio-coffee'), alt: 'Members talking over coffee on a patio', icon: 'mic', kicker: 'Group Services', title: 'Incubator Studios', body: 'A full-service podcast and content studio in Encinitas, from $200/hour.', href: PAGE('studio') },
       { image: PHOTO('rooftop-gathering'), alt: 'A large group of members on a rooftop', icon: 'star', kicker: 'Events', title: 'PitchFest 2026', body: 'Sign up to pitch, then celebrate at the PitchFest Party on Oct 21.', href: PITCH_SIGNUP },
     ], notes: NOTES, layout: desktop } },
-    { type: 'NetworkCircles', props: { id: 'tg-home-circles', anchor: 'circles', eyebrow: 'Circles', title: 'Find the people *who get it.*', lead: "Member-led circles meet between Fridays: women's groups, coaches, new moms, breathwork on the beach and dance. Tap any circle to see its next dates.", actionLabel: 'Start a circle', actionHref: EVENT_SUBMIT, circles: CIRCLE_CARDS, layout: desktop } },
+    { type: 'NetworkCircles', props: { id: 'tg-home-circles', anchor: 'circles', eyebrow: 'Circles', title: 'Find the people *who get it.*', lead: "Member-led circles meet between Fridays: women's groups, coaches, new moms, breathwork on the beach and dance. Tap any circle to see its next dates.", actionLabel: 'Start a circle', actionHref: START_CIRCLE, circles: CIRCLE_CARDS, layout: desktop } },
     { type: 'NetworkFounder', props: { id: 'tg-home-june', anchor: 'june', eyebrow: 'Meet June An, founder', quote: '"The goal is to build up the community with inspiration and a sense of support. *Make the group what you want for you.*"', body: 'June founded The Group from the triumphs and trials of his own entrepreneurial journey, with one mission: to empower people to overcome obstacles and pursue their dreams with renewed hope and determination.', image: PHOTO('founder-june-an'), alt: 'June An, founder of The Group', hosts: HOSTS, ctaLabel: 'Get coffee with June', ctaHref: CALENDLY, layout: desktop } },
     { type: 'NetworkTeam', props: { id: 'tg-home-team', eyebrow: 'The core team', title: 'June, Carol *and Dr. Lisel.*', lead: 'The three people who hold it together every week. June founded The Group, Carol brings her grounding presence as a wellness leader and clinical hypnotherapist, and Dr. Lisel co-hosts Heart of the Matter with June.', note: 'Amie Barsky hosts Motivation Mondays in La Jolla.', image: PHOTO('core-team'), alt: 'June, Carol and Dr. Lisel together', pillars: PILLARS, quote: BRENE.quote, quoteBy: BRENE.by, layout: desktop } },
     { type: 'NetworkTiers', props: { id: 'tg-home-membership', anchor: 'membership', eyebrow: 'Membership', title: 'Your journey *starts here.*', lead: 'A heart-centered network of entrepreneurs, professionals, and changemakers who genuinely support each other in business and in life.', tiers: TIER_CARDS, footnote: '', layout: desktop } },
     { type: 'NetworkOfferings', props: { id: 'tg-home-studio', anchor: 'studio', eyebrow: 'Incubator Studios', title: 'Your story deserves a studio *that takes it seriously.*', lead: 'A full-service, concierge-style podcast and content studio in Encinitas. Heart of the Matter is shot here.', items: STUDIO_CARDS, layout: desktop } },
     { type: 'NetworkMedia', props: { id: 'tg-home-podcast', anchor: 'podcast', eyebrow: 'Heart of the Matter', title: 'The podcast.', lead: '', actionLabel: 'View all episodes', actionHref: PODCAST, items: EPISODES, layout: desktop } },
     { type: 'NetworkSocial', props: { id: 'tg-home-instagram', anchor: 'instagram', eyebrow: '@thegroupsd', title: 'Connect with us *and spread the love.*', lead: '', actionLabel: 'Follow on Instagram', actionHref: INSTAGRAM, posts: POSTS, layout: desktop } },
-    { type: 'NetworkMerch', props: { id: 'tg-home-merch', anchor: 'merch', eyebrow: 'Feel Good Merch', title: 'Made with local *San Diego makers.*', lead: '', actionLabel: 'Shop all', actionHref: PAGE('shop'), buyLabel: 'Add to cart', products: PRODUCTS, layout: desktop } },
+    { type: 'NetworkMerch', props: { id: 'tg-home-merch', anchor: 'merch', eyebrow: 'Feel Good Merch', title: 'Made with local *San Diego makers.*', lead: '', actionLabel: 'Shop all', actionHref: PAGE('shop'), buyLabel: 'View product', products: PRODUCTS, layout: desktop } },
     coffee(),
   ])
 
@@ -430,7 +430,7 @@ export function buildWebsiteDocs(): Record<string, unknown> {
     { type: 'NetworkSplit', props: { id: 'tg-chapters-lj', eyebrow: 'La Jolla Chapter', title: 'The Group is growing: *Motivation Mondays.*', body: `${lj.about}\nWhether you cannot always make it to Feel Good Fridays in Encinitas or you are ready to double down on connection by joining both, Motivation Monday was created for you. It is a place where authentic conversations spark new opportunities, where encouragement turns into action, and where people come together to lift each other higher both personally and professionally.`, image: PHOTO('june-harvest'), alt: 'June An with members in La Jolla', mediaSide: 'left', facts: [{ icon: 'pin', label: 'Where', value: 'Parakeet Cafe, Nautilus', note: '3535 General Atomics Ct, SD, CA 92121' }, { icon: 'clock', label: 'When', value: 'Every Monday', note: '9am to 10:10am' }], quote: '“The goal is to build up the community with inspiration and a sense of support. Make the group what you want for you.”', quoteBy: 'June An', primaryLabel: 'Visit the La Jolla chapter', primaryHref: `/spaces/${chapterSlug(lj)}`, secondaryLabel: '', secondaryHref: '', layout: desktop } },
     { type: 'NetworkFounder', props: { id: 'tg-chapters-amie', eyebrow: 'Motivation Monday host', quote: 'Empowering high-achievers to break free from burnout and *reconnect with their authentic selves.*', body: 'Amie Barsky is a trauma-informed coach specializing in Nervous System Regulation and Somatic Processing, helping professionals transform overwhelm into sustainable success. Her approach integrates neuroscience with holistic healing methods, drawing from her personal journey of overcoming people pleasing, perfectionism and trauma.', image: '', alt: '', hosts: [{ image: '', name: 'Amie Barsky', role: 'Host · Motivation Mondays' }], ctaLabel: '', ctaHref: '', layout: desktop } },
     eventsBlock('tg-chapters-events', { title: 'Every chapter, *every week.*', max: 10 }),
-    { type: 'NetworkCircles', props: { id: 'tg-chapters-circles', eyebrow: 'Circles', title: 'Find the people *who get it.*', lead: "Member-led circles meet between Fridays: women's groups, coaches, new moms, breathwork on the beach and dance.", actionLabel: 'Start a circle', actionHref: EVENT_SUBMIT, circles: CIRCLE_CARDS, layout: desktop } },
+    { type: 'NetworkCircles', props: { id: 'tg-chapters-circles', eyebrow: 'Circles', title: 'Find the people *who get it.*', lead: "Member-led circles meet between Fridays: women's groups, coaches, new moms, breathwork on the beach and dance.", actionLabel: 'Start a circle', actionHref: START_CIRCLE, circles: CIRCLE_CARDS, layout: desktop } },
   ])
 
   const membership = doc([
@@ -523,7 +523,7 @@ export function buildSpaceTabDocs(): Record<string, unknown> {
     sky('tg-chapters-hero', {
       image: PHOTO('rooftop-gathering'), alt: 'A large group of members on a rooftop', eyebrow: 'Chapters', ...accent('Pockets of community *across San Diego.*'),
       subtitle: 'Our vision is to create spaces throughout San Diego where everyone feels they belong, where ideas become reality, and where community becomes the foundation for growth.',
-      actionPrimaryLabel: "See every chapter's calendar", actionPrimaryHref: `/spaces/${SLUG}/calendar`, actionSecondaryLabel: 'Start a circle', actionSecondaryHref: EVENT_SUBMIT,
+      actionPrimaryLabel: "See every chapter's calendar", actionPrimaryHref: `/spaces/${SLUG}/calendar`, actionSecondaryLabel: 'Start a circle', actionSecondaryHref: START_CIRCLE,
     }),
     grid('tg-chapters-mornings', {
       eyebrow: 'Find your morning', ...accent('One community, *six rooms.*'),

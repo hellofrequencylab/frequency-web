@@ -46,6 +46,17 @@ describe('the site cache seam', () => {
     expect(updateTag).toHaveBeenCalledWith('site:danieltyack')
     expect(revalidatePath).toHaveBeenCalledWith('/sites/danieltyack', 'layout')
   })
+
+  it('keeps the canonical cached Space unchanged even when local projection configuration exists', async () => {
+    const space = { id: 'db42cbea-3229-9813-e691-cb0e05272808', slug: 'the-group', preferences: { websitePublished: true } }
+    vi.stubEnv('VERCEL_ENV', 'development')
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000')
+    vi.stubEnv('LOCAL_SITE_CONTENT_PROJECTION', '/does-not-exist/local-review.json')
+    try {
+      getPublicSpaceBySlugOrThrow.mockResolvedValue(space)
+      expect(await getSiteSpace('the-group')).toBe(space)
+    } finally { vi.unstubAllEnvs() }
+  })
 })
 
 describe('the site routes are cached, not rendered per visit', () => {
@@ -67,6 +78,10 @@ describe('the site routes are cached, not rendered per visit', () => {
     expect(src('components/sites/site-page.tsx')).toMatch(/getSiteSpace\(slug\)/)
     expect(src('components/sites/site-page.tsx')).not.toMatch(/getVisibleSpaceBySlug/)
     expect(src('lib/sites/hosted.ts')).not.toMatch(/headers\(/)
+    expect(src('components/sites/site-page.tsx')).toMatch(/projectLocalSiteSpace\(await getSiteSpace\(slug\)\)/)
+    expect(src('lib/sites/site-cache.ts')).not.toContain('projectLocalSiteSpace')
+    expect(src('app/hosted/[host]/admin/[view]/page.tsx')).not.toContain('projectLocalSiteSpace')
+    expect(src('lib/sites/editor/actions.ts')).not.toContain('projectLocalSiteSpace')
   })
 })
 

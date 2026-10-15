@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-928",
+  "title": "The Group's website circle cards open the actual Frequency circle without needing an upcoming event",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-15",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/cohesion-release-probes.mjs LIVE-928"
+  },
+  "detail": "Frequency Control cohesion review: NetworkCircles cards only offered a title-matched upcoming event, leaving no door to the actual circle or its membership when no matching event was scheduled. The block now accepts an explicit circleSlug and renders View circle alongside the existing next-event link. Each of The Group's twelve authored website cards carries the same tg-<key> slug inserted by its seed. Older stored cards can resolve an exact name from the already-public metadata.space.community bag; absence from that capped own-Space bag never removes an authored card or its explicit chapter-circle link. Circle navigation uses the same /circles/<slug> route as CircleCard, with the slug encoded as one path segment, and retains the route's existing visibility checks. Focused render tests cover external site origin, chapter cards without events, legacy names, no guessed links, encoded segments and seed coverage. The change does not apply the generated SQL, republish stored website documents, or verify live records; existing stored chapter-circle cards need their slug field saved/published before their new explicit door appears. The real WebsiteDocument seam also now injects its canonical link map into block metadata: previously event detail links resolved as /events/<slug> on the custom website host instead of on Frequency. A failing-before/passing-after real-render test covers both circle and event origins; existing website document/editing suites cover the shared seam. The legacy external-site renderer also passes the same site link map from site-page into SpaceLanding and then BlockRender. A real async component render regression covers canonical event/circle origins on websites and unchanged relative routes inside the Frequency application. Backlog verification now executes fast, read-only consequences without launching a nested test runner. The full behavioral suites remain independently enforced by required CI; source guard, missing/incorrect behavior and deliberately broken controls fail rather than being waived.",
+  "wave": "W7"
+}

@@ -322,7 +322,11 @@ ${N} .nw-chiprow li{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px
 ${N} .nw-chiprow li[data-all]{background:color-mix(in srgb,var(--color-primary) 14%,var(--nw-surface));box-shadow:inset 0 0 0 1.5px var(--color-primary);color:var(--nw-ink);font-weight:500}
 ${N} .nw-chiprow li i{width:9px;height:9px;border-radius:50%;background:var(--c)}
 ${N} .nw-chiprow small{padding:1px 7px;border-radius:999px;background:var(--nw-fill);font-size:12px;font-weight:600;color:var(--nw-muted)}
+${N} .nw-chiprow li:has(button){padding:0}
+${N} .nw-chiprow button{display:inline-flex;align-items:center;gap:8px;height:100%;padding:0 16px;border:0;border-radius:inherit;background:transparent;color:inherit;font:inherit;cursor:pointer}
+${N} .nw-chiprow button:focus-visible,${N} .nw-month button:focus-visible,${N} .nw-count button:focus-visible{outline:2px solid var(--color-primary);outline-offset:3px}
 ${N} .nw-count{margin:-6px 4px 12px;font-size:14px;color:var(--nw-muted)}
+${N} .nw-count button{margin-left:12px;border:0;background:transparent;color:var(--color-primary-strong);font:inherit;text-decoration:underline;cursor:pointer}
 ${N} .nw-day ol{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
 ${N} .nw-day-h{margin:14px 4px 6px;font-family:var(--nw-body);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-primary-strong)}
 ${N} .nw-day:first-of-type .nw-day-h{margin-top:0}
@@ -354,6 +358,12 @@ ${N} .nw-upnext .nw-cd span{color:var(--nw-on-ink-muted);opacity:1}
 ${N} .nw-upnext .hs-btn{width:100%;min-height:48px}
 ${N} .nw-month{padding:18px;border-radius:24px;background:var(--nw-sand);box-shadow:inset 0 0 0 1px var(--nw-sand-line)}
 ${N} .nw-month-name{display:block;margin-bottom:10px;${DISPLAY};font-size:20px;letter-spacing:-.02em;text-align:center}
+${N} .nw-month-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+${N} .nw-month-controls .nw-month-name{margin-bottom:0}
+${N} .nw-month-controls button{display:grid;place-items:center;min-width:36px;min-height:36px;border:0;border-radius:12px;background:transparent;color:var(--nw-ink);cursor:pointer}
+${N} button.nw-month-day{border:0;background:transparent;font-family:inherit;cursor:pointer}
+${N} button.nw-month-day:disabled{cursor:default;opacity:.4}
+${N} button.nw-month-day[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--color-primary)}
 ${N} .nw-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
 ${N} .nw-month-dow{padding:4px 0;text-align:center;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--nw-muted)}
 ${N} .nw-month-day{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:14.5px;font-weight:500;color:var(--nw-ink)}
