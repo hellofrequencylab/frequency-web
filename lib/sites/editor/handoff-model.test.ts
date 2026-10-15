@@ -62,6 +62,17 @@ describe('block presentation comes from the registry, not a second registry', ()
     expect(groups.map((g) => [g.title, g.items.map((i) => i.type)])).toEqual([['Sections', ['Hero']], ['Content', ['Spacer', 'Text']], ['Live', ['SpaceFAQ']], ['Media', ['Gallery']]])
     expect(groups[0].items[0]).toMatchObject({ disabled: true, reason: 'One per page' })
   })
+  it('identifies only Network sections with live Space bindings as live', () => {
+    for (const type of ['NetworkHero', 'NetworkEvents', 'NetworkCircles']) {
+      expect(editorBlockMeta(config, type)).toMatchObject({ group: 'Live', live: true })
+    }
+    expect(editorBlockMeta(config, 'NetworkCircles').icon).toBe('host')
+    for (const type of ['NetworkStats', 'NetworkSplit', 'NetworkTeam', 'NetworkOfferings']) {
+      expect(editorBlockMeta(config, type).live).toBe(false)
+    }
+    const groups = editorPickerGroups(config, [{ items: [{ type: 'NetworkEvents' }, { type: 'NetworkSplit' }] }])
+    expect(groups.map((group) => [group.title, group.items.map((item) => item.type)])).toEqual([['Sections', ['NetworkSplit']], ['Live', ['NetworkEvents']]])
+  })
   it('offers only rewrite suggestions, each naming the fields it prefers', () => {
     for (const set of Object.values(VERA_SUGGESTIONS)) for (const chip of set) expect(chip.fields.length).toBeGreaterThan(0)
   })

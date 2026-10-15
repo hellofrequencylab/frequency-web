@@ -31,14 +31,14 @@ const GROUP_OF_CATEGORY: Record<string, EditorBlockGroup> = {
 }
 
 /** Blocks whose rows come from the Space at render time (the design's `live: 1`). */
-const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
+const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
 
 /** Type-name patterns → the design's icon for the same kind of block, first match wins. */
 const ICONS: [RegExp, FqIconName | FqEditorIconName][] = [
   [/Hero|Cover|IdentityHeader/, 'photo'],
   [/Event|Calendar|Year|Season|Timeline|NowLine|FirstNight/, 'event'],
   [/Moon|Sky/, 'moon'],
-  [/Community|Team|Host|Roles?Pick|RolesPath/, 'host'],
+  [/Community|NetworkCircles|Team|Host|Roles?Pick|RolesPath/, 'host'],
   [/Gallery|Photo|Image|Media|Marquee|Showcase/, 'camera'],
   [/Tier|Plan|Membership|Offering|Booking|Pricing/, 'membership'],
   [/Stat/, 'chart'],
