@@ -370,3 +370,22 @@
     animation: none;
   }
 }
+
+/* ── Map chrome (SCAN-904) ───────────────────────────────────────────────────────────────────────
+   Every map is the one seam (components/maps/map-canvas.tsx): Google with the browsable key, MapLibre
+   without. The basemap and the pins take the kit's palette in code (lib/maps/basemap-look.ts,
+   lib/maps/pin-kinds.ts). This is the chrome around them, the same on both engines: the popup card in
+   the kit's surface and radius, rounded controls. Google's logo, attribution and terms are never
+   touched (their terms forbid it); only the InfoWindow card we fill is. Global on purpose: a map can
+   sit in the members kit, the site kit, the admin kit or no kit at all. */
+[data-design="frequency"] .maplibregl-popup-content{background:var(--fq-surface-card);color:var(--fq-text-body);border-radius:var(--fq-radius-m);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);font-family:var(--fq-font-sans);padding:12px 14px}
+[data-design="frequency"] .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip{border-top-color:var(--fq-surface-card)}
+[data-design="frequency"] .maplibregl-popup-anchor-top .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-top-right .maplibregl-popup-tip{border-bottom-color:var(--fq-surface-card)}
+[data-design="frequency"] .maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--fq-surface-card)}
+[data-design="frequency"] .maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--fq-surface-card)}
+[data-design="frequency"] .maplibregl-ctrl-group{border-radius:var(--fq-radius-s);overflow:hidden;box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .maplibregl-ctrl-attrib{font-family:var(--fq-font-sans)}
+[data-design="frequency"] .frequency-map-pin:focus-visible,[data-design="frequency"] .frequency-map-cluster:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px}
+[data-design="frequency"] .gm-style .gm-style-iw-c{background:var(--fq-surface-card);border-radius:var(--fq-radius-m);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .gm-style .gm-style-iw-d{color:var(--fq-text-body);font-family:var(--fq-font-sans)}
+[data-design="frequency"] .gm-style .gm-style-iw-tc::after{background:var(--fq-surface-card)}

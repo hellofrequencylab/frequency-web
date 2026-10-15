@@ -130,3 +130,31 @@ export function formatCountdown(remainingMs: number): string {
   if (days > 0) return `${days}d ${pad(hours)}:${pad(minutes)}`
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
 }
+
+/**
+ * The same reading as `formatCountdown`, as labelled units for a display that sets each number on its
+ * own (the Frequency countdown, SCAN-903). Days, hours and minutes while a day or more is left; hours,
+ * minutes and seconds inside the last day. Same clamp, same rounding, so the two never disagree.
+ */
+export function countdownParts(remainingMs: number): { readonly value: string; readonly label: string }[] {
+  const ms = Math.max(0, Math.floor(remainingMs))
+  const total = Math.floor(ms / 1000)
+  const days = Math.floor(total / 86_400)
+  const hours = Math.floor((total % 86_400) / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  if (days > 0) {
+    return [
+      { value: String(days), label: days === 1 ? 'day' : 'days' },
+      { value: pad(hours), label: 'hrs' },
+      { value: pad(minutes), label: 'min' },
+    ]
+  }
+  return [
+    { value: pad(hours), label: 'hrs' },
+    { value: pad(minutes), label: 'min' },
+    { value: pad(seconds), label: 'sec' },
+  ]
+}

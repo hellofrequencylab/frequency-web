@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-899",
+  "title": "Around You on the Frequency design opens on the plain member header, with the map as a kit card above the Dispatches instead of a header band",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/nearby/page.tsx",
+    "ref": "Owner 2026-10-14 (about /nearby Around You signed in under the Frequency design): this page does not need a header; move the map down above dispatches and style it with the design system."
+  },
+  "detail": "Under SITE_DESIGN=frequency /nearby no longer renders the PageHero map band. StreamTemplate runs in its plain mode, so the page opens on the members kit .head (Community kicker, the operator-editable Around You h1, the description as meta) with the Events, Circles, Members, Dispatches counts on the divider row. The map moved into the body after the operator intro and directly above the Dispatches (the Latest Dispatch highlight and the Latest Dispatches column) as NearbyMapCard in components/nearby/nearby-map-header.tsx: the same MapCanvas seam, inert backdrop and View the map button opening the seam's fullscreen popup, plus the layer legend and the honesty lines. It is a kit panel styled in app/themes/frequency/members-community.css: --fq-radius-l corners, the glass panel surface and shadow with a hairline, 320px tall and 240px at or under 720px. Pins and legend swatches already paint in the kit's colours (frequency.css maps --color-primary, -signal and -broadcast to --fq-action-primary, --fq-presence and --fq-live). Still streamed: the Suspense fallback is NearbyMapCard with pins null, the same frame at the same height with an empty legend row, so nothing below moves when the pins land. DAWN is unchanged (same header band, same body).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const pg=r('app/(main)/nearby/page.tsx');const c=r('components/nearby/nearby-map-header.tsx');const css=r('app/themes/frequency/members-community.css');const bad=[];const i=pg.indexOf(String.fromCharCode(39)+'frequency'+String.fromCharCode(39)+') {');const fq=i<0?'':pg.slice(i,pg.indexOf('return (',pg.indexOf('return (',i)+8));if(!fq)bad.push('no Frequency branch on /nearby');if(fq.includes('hero='))bad.push('the Frequency page still opens on a header band');if(!fq.includes('title={title}'))bad.push('the Frequency page lost its plain heading');if(!fq.includes('<NearbyMapCard pins={null} />'))bad.push('the map card is not streamed behind a same-shape fallback');const m=fq.indexOf('<NearbyMapCardSection'),d=fq.indexOf('{dispatchesAndRail}');if(m<0||d<0||m>d)bad.push('the map is not above the Dispatches');if(!c.includes('export function NearbyMapCard')||!c.includes('setExpanded(true)'))bad.push('no map card with the View the map control');if(!/\\.fq-nearby-map-frame\\{[^}]*height:320px[^}]*var\\(--fq-radius-l\\)[^}]*--fq-glass-panel-shadow/.test(css)||!/fq-nearby-map-frame\\{height:240px\\}/.test(css))bad.push('the map card is not styled as a kit panel');if(bad.length){console.error('SCAN-899: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

@@ -34,4 +34,22 @@
 [data-design="frequency"] [data-kit="members"] .fqm-search-cols{margin-top:40px}
 [data-design="frequency"] [data-kit="members"] .fqm-more{margin-top:16px}
 [data-design="frequency"] [data-kit="members"] .fqm-row-center{justify-content:center}
+
+/* 3. Around You's map card (components/nearby/nearby-map-header.tsx NearbyMapCard, SCAN-899). The page
+   has no header band under Frequency: the map sits in the body above the Dispatches as a kit panel.
+   320px tall, 240px on a phone; the streamed placeholder is the same frame at the same height, so
+   nothing below moves when the pins land. The pins and legend swatches already paint from the kit
+   (--color-primary / -signal / -broadcast resolve to --fq-action-primary / --fq-presence / --fq-live
+   in frequency.css). */
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map{margin-bottom:var(--fq-space-8)}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map-frame{position:relative;height:320px;overflow:hidden;border-radius:var(--fq-radius-l);background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map[aria-busy="true"] .fq-nearby-map-frame{animation:fqm-sk 1.6s var(--fq-ease-breath) infinite}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map-canvas{position:absolute;inset:0;pointer-events:none}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map-canvas>*{height:100%!important;width:100%!important;border:none!important;border-radius:0!important}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map-open{position:absolute;right:var(--fq-space-4);bottom:var(--fq-space-4);z-index:2;background:var(--fq-surface-raised);box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map-open svg{width:15px;height:15px}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-map-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;padding:var(--fq-space-6);text-align:center;font:400 var(--fq-text-body-s)/var(--fq-lh-body-s) var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-legend{min-height:24px;margin-top:var(--fq-space-3);font:400 var(--fq-text-meta)/var(--fq-lh-meta) var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fq-nearby-legend :is(li,p){font:inherit;color:inherit}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fq-nearby-map-frame{height:240px}}
 }

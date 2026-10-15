@@ -340,3 +340,41 @@ describe('every module that builds a MapLibre map installs the worker first', ()
     expect(src).toContain("from '@/lib/maps/provider'")
   })
 })
+
+describe('under Frequency every map wears the kit, and Google only loads when seen (SCAN-904)', () => {
+  const src = (p: string) => sourceWithoutComments(p)
+
+  it('no Frequency surface renders a hand-rolled MapLibre map: they all compose the seam', () => {
+    const fq = FILES.filter((f) => f.path.replaceAll('\\', '/').startsWith('components/frequency/'))
+    expect(fq.length).toBeGreaterThan(50)
+    const offenders = fq
+      .filter((f) =>
+        PENDING_MIGRATION.some((p) => {
+          const mod = p.replace(/\.tsx$/, '').replace(/^components\//, '@/components/')
+          // A dynamic import or a value import mounts the engine; `import type` does not.
+          return f.src.includes(`import('${mod}')`) || new RegExp(`^import (?!type )[^\\n]*'${mod}'`, 'm').test(f.src)
+        }),
+      )
+      .map((f) => f.path)
+    expect(offenders).toEqual([])
+    expect(src('components/frequency/members/circles/circles-map.tsx')).toContain('<MapCanvas')
+  })
+
+  it('every MapLibre builder takes the design basemap, so the fallback is never bare grey', () => {
+    for (const p of ['components/maps/maplibre-canvas.tsx', ...PENDING_MIGRATION.filter((p) => !p.includes('discover'))]) {
+      expect(src(p), p).toMatch(/applyDesignBasemap\(map, container\)/)
+    }
+  })
+
+  it('both engines draw the round white-ringed Frequency pin', () => {
+    expect(src('components/maps/google-canvas.tsx')).toContain('FREQUENCY_PIN_RING')
+    expect(src('components/maps/maplibre-canvas.tsx')).toContain('buildRoundPin(paint, FREQUENCY_PIN_RING)')
+  })
+
+  it('the Google map is built only once its box nears the viewport', () => {
+    const g = src('components/maps/google-canvas.tsx')
+    expect(g).toContain('useNearViewport(containerRef)')
+    expect(g).toMatch(/if \(!container \|\| !near\) return/)
+    expect(src('components/maps/use-near-viewport.ts')).toContain('new IntersectionObserver(')
+  })
+})

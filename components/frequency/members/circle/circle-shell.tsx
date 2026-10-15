@@ -121,9 +121,12 @@ export function FqCircleShell({
   const open = Math.max(0, memberCap - memberCount)
   return (
     <>
-      <Link className="meta fqm-back" href="/circles">
-        ← Circles
-      </Link>
+      {/* Under its Space's header the Space's own tabs are the way back (SCAN-910): no "Circles" crumb. */}
+      {!inSpace && (
+        <Link className="meta fqm-back" href="/circles">
+          ← Circles
+        </Link>
+      )}
       <div className="fqm-notices">{notices}</div>
 
       {/* Under its Space's header the Space cover is the page's one photo (SCAN-900), so the Circle's band is

@@ -9,3 +9,10 @@ const CONSOLE = /^\/(admin(\/|$)|spaces\/[^/]+\/(manage|crm|settings)(\/|$))/
 export function isConsoleRoute(path: string | null | undefined): boolean {
   return !!path && CONSOLE.test(path)
 }
+
+/** True on a Space profile opened as the owner's in-place console (`/spaces/<slug>?panel=manage`,
+ *  SCAN-909). Not a console route (the member shell keeps its rails), but the right rail drops the
+ *  viewer's own stats and goals there: they answer "how am I doing", not "how is my Space doing". */
+export function isSpaceOwnerConsole(path: string | null | undefined, panel: string | null | undefined): boolean {
+  return panel === 'manage' && !!path && /^\/spaces\/[^/]+\/?$/.test(path)
+}

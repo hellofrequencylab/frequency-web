@@ -9,11 +9,18 @@ import {
   shouldRecluster,
   zoomIntoCluster,
 } from '@/lib/maps/cluster'
-import { googleMapStyles, readBasemapPalette } from '@/lib/maps/basemap-look'
+import { googleMapStyles, isDesignMap, readBasemapPalette } from '@/lib/maps/basemap-look'
 import { loadGoogleMaps, onGoogleMapsAuthFailure } from '@/lib/maps/google-loader'
-import { MAP_CLUSTER_PAINT, MAP_PIN_KINDS, resolvePinPaint } from '@/lib/maps/pin-kinds'
+import {
+  FREQUENCY_PIN,
+  FREQUENCY_PIN_RING,
+  MAP_CLUSTER_PAINT,
+  MAP_PIN_KINDS,
+  resolvePinPaint,
+} from '@/lib/maps/pin-kinds'
 import { googleMapsMapId } from '@/lib/maps/provider'
 import { buildPopupContent } from './popup-content'
+import { useNearViewport } from './use-near-viewport'
 import type {
   GoogleCircle,
   GoogleInfoWindow,
@@ -80,6 +87,8 @@ export default function GoogleCanvas({
   // move from a re-render. See its note.
   const appliedRef = useRef<string | null>(null)
   const [failed, setFailed] = useState(false)
+  // Under Frequency nothing loads or bills until this box nears the viewport (SCAN-904).
+  const near = useNearViewport(containerRef)
 
   const onMoveRef = useRef(onMove)
   useEffect(() => {
@@ -127,7 +136,7 @@ export default function GoogleCanvas({
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return
+    if (!container || !near) return
 
     let cancelled = false
     let map: GoogleMap | null = null
@@ -159,9 +168,13 @@ export default function GoogleCanvas({
         mapRef.current = map
         const live = map
 
-        // Read from the token, not pinned to white: on a dark theme --color-surface is dark,
-        // so the pin ring follows the palette instead of burning a white halo into the map.
-        const stroke = tokenColor('--color-surface', PIN_STROKE_FALLBACK)
+        // DAWN reads the ring from the token, not pinned to white: on a dark theme --color-surface is
+        // dark, so the ring follows the palette. Frequency's pin is the kit's round dot with a WHITE
+        // ring in every mode (SCAN-904, lib/maps/pin-kinds.ts FREQUENCY_PIN_RING).
+        const designPins = isDesignMap(container)
+        const stroke = designPins ? FREQUENCY_PIN_RING : tokenColor('--color-surface', PIN_STROKE_FALLBACK)
+        const pinScale = designPins ? FREQUENCY_PIN.diameterPx / 2 : 8
+        const pinStrokeWeight = designPins ? FREQUENCY_PIN.ringPx : 2
         info = new maps.InfoWindow()
 
         // Clustering never applies in picker mode: there is exactly one pin and the member is
@@ -184,11 +197,11 @@ export default function GoogleCanvas({
             ...(label ? { title: label } : {}),
             icon: {
               path: maps.SymbolPath.CIRCLE,
-              scale: 8,
+              scale: pinScale,
               fillColor: tokenColor(paint.token, paint.fallback),
               fillOpacity: 1,
               strokeColor: stroke,
-              strokeWeight: 2,
+              strokeWeight: pinStrokeWeight,
             },
           })
           markers.push(marker)
@@ -237,7 +250,9 @@ export default function GoogleCanvas({
               scale: clusterDiameterPx(count) / 2,
               fillColor: tokenColor(MAP_CLUSTER_PAINT.token, MAP_CLUSTER_PAINT.fallback),
               fillOpacity: 1,
-              strokeColor: tokenColor(MAP_CLUSTER_PAINT.ringToken, MAP_CLUSTER_PAINT.ringFallback),
+              strokeColor: designPins
+                ? FREQUENCY_PIN_RING
+                : tokenColor(MAP_CLUSTER_PAINT.ringToken, MAP_CLUSTER_PAINT.ringFallback),
               strokeWeight: 2,
             },
             label: {
@@ -392,7 +407,7 @@ export default function GoogleCanvas({
       map = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initKey, draggable])
+  }, [initKey, draggable, near])
 
   // Picker: follow the parent when it moves the pin (an autocomplete pick).
   //

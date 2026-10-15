@@ -2,7 +2,7 @@
 // from /events/<slug> to /events/<slug>/full (lib/nav/member-event-rewrite.ts).
 // The public ISR body lives in ./page.tsx.
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
@@ -96,9 +96,23 @@ import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqEventBody } from '@/components/frequency/members/event/event-body'
+import {
+  FQ_EVENT_JOIN_ID,
+  FqEventActionRow,
+  FqEventCover,
+  FqEventFact,
+  fqEventPrimaryAction,
+} from '@/components/frequency/members/event/event-header'
+import { FqEventCountdown } from '@/components/frequency/members/event/event-countdown'
+import { FqIcon } from '@/components/frequency/icon'
+import { CATEGORY_OPTIONS } from '@/lib/events/options'
 
 /** The Event.html kit anatomy for the event page under Frequency. Off by owner ruling (2026-10-14). */
 const FQ_EVENT_KIT_LAYOUT = false
+
+/** The design this build wears. Under Frequency the original layout above keeps its slots and fills
+ *  them with the kit's header pieces (SCAN-903); under DAWN every slot is exactly as it was. */
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -366,6 +380,8 @@ export default async function EventDetailPage({
     // ADR-826: how people join — 'auto' derives from pricing; 'rsvp' = first come first served
     // (prices informational); 'tickets' = buying is attending (no RSVP switch).
     join_mode: 'auto' | 'rsvp' | 'tickets' | null
+    /** What the event is (lib/events/options.ts CATEGORY_OPTIONS). The Frequency header's kicker. */
+    category: string | null
   }
 
   // ONE events read (ADR-1237). This page used to select the typed header columns here and then
@@ -381,7 +397,7 @@ export default async function EventDetailPage({
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, removed_at, host:profiles!host_id ( id, display_name, handle, avatar_url )',
+      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, category, rsvp_requires_approval, removed_at, host:profiles!host_id ( id, display_name, handle, avatar_url )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -1471,7 +1487,8 @@ export default async function EventDetailPage({
        branch renders is decided several ternaries down. A free event mounts it and no door ever
        registers, which is exactly the null case the context is built to survive. */
     <JoinIntentProvider>
-    <div className="space-y-4">
+    {/* Under Frequency the header's primary action jumps here (SCAN-903). DAWN keeps no id. */}
+    <div className="space-y-4" id={FREQUENCY ? FQ_EVENT_JOIN_ID : undefined}>
       <div className="space-y-4 rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-primary" aria-hidden />
@@ -2288,7 +2305,70 @@ export default async function EventDetailPage({
     )
   }
 
-  return (
+  // The host line under Frequency is one row of the facts list; DAWN keeps the bare line.
+  const fqHostFact = (line: ReactNode) => (FREQUENCY && line ? <FqEventFact icon="host">{line}</FqEventFact> : line)
+
+  // ── THE FREQUENCY HEADER (SCAN-903) ────────────────────────────────────────────────────────────
+  // Owner, 2026-10-14: "I feel like we can do better on the event listing header and title area.
+  // Also, the countdown timers don't seem like they are a part of the theme." The layout stays the
+  // original one (FQ_EVENT_KIT_LAYOUT above); only what fills its slots changes, reading top to bottom:
+  // the cover shown whole, a kicker (category · Circle), the title at the kit's heading size, one
+  // facts list (when, where with Directions, who), the countdown card beside it, then ONE action row
+  // with the RSVP / ticket action first. Every value below is one the DAWN header already reads.
+  const checkInGates = {
+    eventId: event.id,
+    cancelled: !!event.is_cancelled,
+    checkInEnabled,
+    startsAtMs: eventInstant(event.starts_at, eventTz)?.getTime() ?? null,
+    windowOpen: checkInWindow,
+    signedIn: !!myProfileId,
+    // The gate the surface names `isGoing` is "holds a seat", and a succeeded ticket is one
+    // (LIVE-317) — the same admission `canCheckIn` above and `checkInEvent` apply.
+    isGoing: isGoing || ownsTicket,
+    alreadyCheckedIn,
+    zaps: ZAP_AMOUNTS.event_attend,
+    doorNote: readEventSpecialInstructions(extra?.details),
+  }
+  const fqKicker =
+    [CATEGORY_OPTIONS.find((o) => o.value === extra?.category)?.label, scopeName].filter(Boolean).join(' · ') ||
+    'Event'
+  const fqTimeLine = `${formatTime(event.starts_at)}${event.ends_at ? ` to ${formatTime(event.ends_at)}` : ''} ${zoneAbbrev(
+    event.starts_at,
+    eventTz,
+  )}`.trim()
+  // The place as two lines: the venue, then its address (or the city and the RSVP note when hidden).
+  const fqPlace = addressHidden
+    ? { name: headerLocation, sub: 'Exact address shared after you RSVP' }
+    : venueName && addressLine
+      ? { name: venueName, sub: addressLine }
+      : { name: headerLocation, sub: null }
+  const fqPrimary = fqEventPrimaryAction({
+    cancelled: !!event.is_cancelled,
+    ended: hasEnded,
+    ticketsMode,
+    ownsTicket,
+    soldOut: allTiersSoldOut,
+    going: isGoing,
+    waitlisted: isWaitlisted,
+    full: capacityInfo.isFull,
+  })
+  const shareButton = (
+    <EventShareButton
+      slug={event.slug}
+      title={event.title}
+      sharerProfileId={myProfileId}
+      // "Send to host": only the SEEDER (the poster) of an unclaimed event gets the claim link, so
+      // they can hand it to its real organizer. Everyone else gets null (no block shown).
+      hostClaimUrl={
+        isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
+          ? `${SITE_URL}/events/claim/${extra.claim_token}`
+          : null
+      }
+      className={FREQUENCY ? 'btn' : undefined}
+    />
+  )
+
+  const eventPage = (
     <EventDetailTemplate
       structuredData={
         <JsonLd
@@ -2341,7 +2421,17 @@ export default async function EventDetailPage({
       // [A1] header image — the one big visual win. Uploaded cover, else the scanned
       // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
       cover={
-        heroUrl ? (
+        FREQUENCY ? (
+          <FqEventCover
+            src={heroUrl}
+            alt={event.title}
+            focus={coverFocus}
+            aspect={coverAspect}
+            unoptimized={!heroIsPublic}
+            dateDay={new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
+            dateMonth={new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
+          />
+        ) : heroUrl ? (
           /* A full-bleed crop at the host's focal point, at EVERY width (owner, 2026-09-10:
              "It should be full bleed and cropped to the selected area"). The band takes the
              poster's own shape when it knows it and the height tier is the ceiling, so a cover
@@ -2421,6 +2511,7 @@ export default async function EventDetailPage({
       // The event title renders at the DISPLAY scale (a step up from the default Detail h1) —
       // this is the page's marquee fact, so it leads at destination-page stature.
       titleScale="display"
+      kicker={FREQUENCY ? fqKicker : undefined}
       title={
         canManage ? (
           /* 🔴 The size here MIRRORS DetailTemplate's `titleScale="display"` h1, so the input
@@ -2461,20 +2552,10 @@ export default async function EventDetailPage({
       // this lockup, beside the info lines. There it sits at its natural width and costs the title
       // nothing. Do not move it back into this slot to "keep it near the buttons".
       actions={
+        FREQUENCY ? undefined : (
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <EventShareButton
-            slug={event.slug}
-            title={event.title}
-            sharerProfileId={myProfileId}
-            // "Send to host": only the SEEDER (the poster) of an unclaimed event gets the claim link, so
-            // they can hand it to its real organizer. Everyone else gets null (no block shown).
-            hostClaimUrl={
-              isUnclaimedPosted && myProfileId && myProfileId === postedById && extra?.claim_token
-                ? `${SITE_URL}/events/claim/${extra.claim_token}`
-                : null
-            }
-          />
+          {shareButton}
           {canManage && (
             <>
               <Link
@@ -2498,12 +2579,46 @@ export default async function EventDetailPage({
         </div>
 
         </div>
+        )
+      }
+      // THE ONE ACTION ROW (SCAN-903), under the facts rather than beside the title: the RSVP or
+      // ticket action first, then Share, then a manager's Manage and Edit as quiet kit buttons.
+      actionRow={
+        FREQUENCY ? (
+          <FqEventActionRow
+            primary={fqPrimary}
+            share={shareButton}
+            manage={
+              canManage ? (
+                <>
+                  <Link className="btn txt" href={`/events/${event.slug}/manage`}>
+                    <FqIcon name="chart" />
+                    Manage
+                  </Link>
+                  <OpenAdminBarButton
+                    scope={{ kind: 'event', id: event.id }}
+                    caps={Array.from(eventCaps)}
+                    label="Edit"
+                    icon={<FqIcon name="edit" />}
+                    className="btn txt"
+                  />
+                </>
+              ) : null
+            }
+          />
+        ) : undefined
       }
       // [A2] attendance-mode pill.
       badges={
-        <span className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-semibold ${mode.cls}`}>
-          <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
-        </span>
+        FREQUENCY ? (
+          <span className="tag glass">
+            <FqIcon name={isOnline ? 'globe' : 'pin'} /> {mode.label}
+          </span>
+        ) : (
+          <span className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-semibold ${mode.cls}`}>
+            <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
+          </span>
+        )
       }
       identity={{
         // THE CHECK-IN SURFACE (ADR-1315) — one box that counts down to the doors and then
@@ -2520,32 +2635,46 @@ export default async function EventDetailPage({
         // 🔴 `startsAtMs` GOES THROUGH `eventInstant`. `starts_at` carries the host's wall clock in
         // UTC parts, so `new Date(starts_at)` counts down to the wrong moment by the zone's whole
         // offset (ADR-1150).
-        aside: (
-          <EventCheckInSurface
-            eventId={event.id}
-            cancelled={!!event.is_cancelled}
-            checkInEnabled={checkInEnabled}
-            startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
-            windowOpen={checkInWindow}
-            signedIn={!!myProfileId}
-            // The gate the surface names `isGoing` is "holds a seat", and a succeeded ticket is one
-            // (LIVE-317) — the same admission `canCheckIn` above and `checkInEvent` apply.
-            isGoing={isGoing || ownsTicket}
-            alreadyCheckedIn={alreadyCheckedIn}
-            zaps={ZAP_AMOUNTS.event_attend}
-            doorNote={readEventSpecialInstructions(extra?.details)}
-          />
+        aside: FREQUENCY ? (
+          <FqEventCountdown {...checkInGates} />
+        ) : (
+          <EventCheckInSurface {...checkInGates} />
         ),
         // The when-line is the key fact under the title — it renders a step stronger
         // (size, weight, and full text color) than the rest of the subtitle stack.
-        when: (
+        when: FREQUENCY ? (
+          <FqEventFact icon="event" sub={fqTimeLine}>
+            {formatFull(event.starts_at)}
+          </FqEventFact>
+        ) : (
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
             <span className="text-body font-semibold text-text">{whenLine}</span>
           </div>
         ),
 
-        where: headerLocation && !isOnline && (
+        where: FREQUENCY ? (
+          isOnline ? (
+            <FqEventFact icon="globe">Online</FqEventFact>
+          ) : (
+            fqPlace.name && (
+              <FqEventFact
+                icon="pin"
+                sub={fqPlace.sub}
+                action={
+                  mapsHref ? (
+                    <a className="btn txt sm fqm-evh-dir" href={mapsHref} target="_blank" rel="noopener noreferrer">
+                      <FqIcon name="map" />
+                      Directions
+                    </a>
+                  ) : undefined
+                }
+              >
+                {fqPlace.name}
+              </FqEventFact>
+            )
+          )
+        ) : headerLocation && !isOnline && (
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-subtle shrink-0" />
             {/* Venue name leads, then the address (item 4). The line deep-links into Maps
@@ -2571,7 +2700,18 @@ export default async function EventDetailPage({
         // The cadence line reads the RULE, not the coarse column (ADR-1299), so a series that lands
         // every other Wednesday says so instead of "Repeats weekly". A row with no rule falls back
         // to what its legacy cadence means, resolved against its own start.
-        cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (
+        cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (FREQUENCY ? (
+          <FqEventFact
+            icon="streak"
+            sub={
+              event.recurrence_until
+                ? `Until ${new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                : undefined
+            }
+          >
+            {recurrenceLineFor(event) ?? 'Part of a recurring series'}
+          </FqEventFact>
+        ) : (
           <div className="flex items-center gap-2">
             <span aria-hidden className="text-body leading-none">🔁</span>
             <span>
@@ -2583,11 +2723,18 @@ export default async function EventDetailPage({
               )}
             </span>
           </div>
-        ),
+        )),
 
         // Recurring anchor whose date has passed: surface the next upcoming date so the
         // series never reads as a one-off that already happened.
-        nextDate: nextRecurrence && (
+        nextDate: nextRecurrence && (FREQUENCY ? (
+          <FqEventFact icon="event">
+            Next:{' '}
+            {nextRecurrence.toLocaleDateString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+            })}
+          </FqEventFact>
+        ) : (
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
             <span>
@@ -2597,7 +2744,7 @@ export default async function EventDetailPage({
               })}
             </span>
           </div>
-        ),
+        )),
 
         // WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
         // This replaces the bare unlabeled Circle name that used to sit here, which said
@@ -2616,38 +2763,40 @@ export default async function EventDetailPage({
           </Suspense>
         ),
 
-        hostedBy: spaceHost ? (
-          // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
-          // person in host_id stays the organizer, shown as a subtle secondary credit so they're still
-          // visible without being the headline host. Collaborating Spaces (accepted shares, ADR-834)
-          // get a minimal "with …" mention here; their featured credit is the Collaborators box.
-          <p>
-            Hosted by{' '}
-            <Link href={`/spaces/${spaceHost.slug}`} className="font-semibold hover:underline">
-              {spaceHost.name}
-            </Link>
-            {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
-            <VenueCredit venue={venueSpace} />
-            {showsOrganizerCredit(event.host) ? (
-              <span className="text-subtle"> · organized by {event.host!.display_name}</span>
-            ) : null}
-          </p>
-        ) : event.host ? (
-          // In-network host: bold, clickable, with a hover/focus profile-preview popover
-          // (items 2 + 3). An out-of-network organizer stays plain text below.
-          // The venue rides here too: a PERSON can host at a Space's venue, and before ADR-911 that
-          // combination silently dropped the Space (the belonging strip resolved the host axis).
-          <p>
-            Hosted by <HostHovercard host={event.host} />
-            {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
-            <VenueCredit venue={venueSpace} />
-          </p>
-        ) : isPostedEvent ? (
-          <p className="text-subtle">
-            {extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}
-            Organizer not on Frequency yet
-          </p>
-        ) : null,
+        hostedBy: fqHostFact(
+          spaceHost ? (
+            // Space-hosted event: the Space is the attribution — its brand links to the Space page. The
+            // person in host_id stays the organizer, shown as a subtle secondary credit so they're still
+            // visible without being the headline host. Collaborating Spaces (accepted shares, ADR-834)
+            // get a minimal "with …" mention here; their featured credit is the Collaborators box.
+            <p>
+              Hosted by{' '}
+              <Link href={`/spaces/${spaceHost.slug}`} className="font-semibold hover:underline">
+                {spaceHost.name}
+              </Link>
+              {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
+              <VenueCredit venue={venueSpace} />
+              {showsOrganizerCredit(event.host) ? (
+                <span className="text-subtle"> · organized by {event.host!.display_name}</span>
+              ) : null}
+            </p>
+          ) : event.host ? (
+            // In-network host: bold, clickable, with a hover/focus profile-preview popover
+            // (items 2 + 3). An out-of-network organizer stays plain text below.
+            // The venue rides here too: a PERSON can host at a Space's venue, and before ADR-911 that
+            // combination silently dropped the Space (the belonging strip resolved the host axis).
+            <p>
+              Hosted by <HostHovercard host={event.host} />
+              {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
+              <VenueCredit venue={venueSpace} />
+            </p>
+          ) : isPostedEvent ? (
+            <p className="text-subtle">
+              {extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}
+              Organizer not on Frequency yet
+            </p>
+          ) : null,
+        ),
 
         credit:
           postedBy &&
@@ -2761,4 +2910,8 @@ export default async function EventDetailPage({
       // event page to say the same thing twice (owner, 2026-08-31).
     />
   )
+
+  // `fqm-evh` scopes the Frequency header rules (members-b.css): the title size, the facts list, the
+  // countdown card. DAWN renders the template bare, exactly as before.
+  return FREQUENCY ? <div className="fqm-evh">{eventPage}</div> : eventPage
 }

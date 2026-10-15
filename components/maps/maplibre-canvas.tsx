@@ -10,10 +10,11 @@ import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { clusterPoints, shouldRecluster, zoomIntoCluster } from '@/lib/maps/cluster'
 import { mapDiag } from '@/lib/maps/diagnostics'
-import { resolvePinPaint } from '@/lib/maps/pin-kinds'
+import { FREQUENCY_PIN_RING, resolvePinPaint } from '@/lib/maps/pin-kinds'
 import { MAPLIBRE_STYLE, MAPLIBRE_WORKER_URL, WARM_FILTER } from '@/lib/maps/provider'
+import { buildClusterMarker, buildRoundPin, makeMarkerActivatable, onMarkerActivate } from './cluster-marker'
+import { applyDesignBasemap } from './maplibre-basemap'
 import { maplibreTileFilter, readBasemapPalette } from '@/lib/maps/basemap-look'
-import { buildClusterMarker, makeMarkerActivatable, onMarkerActivate } from './cluster-marker'
 import { configureMaplibreWorker } from './maplibre-worker'
 import { buildPopupContent } from './popup-content'
 import type { MapImplProps, MapPin } from './types'
@@ -122,13 +123,15 @@ export default function MapLibreCanvas({
       attributionControl: { compact: true },
     })
     mapRef.current = map
-    // The design's basemap (lib/maps/basemap-look.ts): under Frequency the TILE CANVAS takes the
-    // design's treatment and the container drops DAWN's warm filter, so pins keep their token colour.
+    // The design's basemap (lib/maps/basemap-look.ts, SCAN-904): under Frequency the kit's palette is
+    // painted into the vector style itself and the container drops DAWN's warm filter, so the fallback
+    // reads as the same map Google draws and the pins keep their token colour. Under Frequency the pins
+    // are the kit's round dot with a white ring, the shape Google draws, instead of DAWN's teardrop.
+    // The first frame wears the design's tile filter (LIVE-927); applyDesignBasemap then repaints the
+    // style itself in the palette and drops the filter once the layers carry the colours.
     const palette = readBasemapPalette(container)
-    if (palette) {
-      container.style.filter = 'none'
-      map.getCanvas().style.filter = maplibreTileFilter(palette)
-    }
+    if (palette) map.getCanvas().style.filter = maplibreTileFilter(palette)
+    const designPins = applyDesignBasemap(map, container)
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     }
@@ -197,10 +200,11 @@ export default function MapLibreCanvas({
 
     const addPin = (pin: MapPin, isDraggablePin: boolean) => {
       const paint = resolvePinPaint(pin)
-      const marker = new maplibregl.Marker({
-        color: tokenColor(paint.token) ?? paint.fallback,
-        draggable: isDraggablePin,
-      })
+      const marker = new maplibregl.Marker(
+        designPins
+          ? { element: buildRoundPin(paint, FREQUENCY_PIN_RING), draggable: isDraggablePin }
+          : { color: tokenColor(paint.token) ?? paint.fallback, draggable: isDraggablePin },
+      )
         .setLngLat([pin.lng, pin.lat])
         .addTo(map)
       markers.push(marker)
@@ -238,7 +242,7 @@ export default function MapLibreCanvas({
     }
 
     const addCluster = (lat: number, lng: number, count: number, plus: boolean, only: MapPin | null) => {
-      const el = buildClusterMarker(count, plus)
+      const el = buildClusterMarker(count, plus, designPins ? FREQUENCY_PIN_RING : null)
       const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
       markers.push(marker)
 

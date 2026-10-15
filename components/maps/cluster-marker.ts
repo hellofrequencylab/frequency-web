@@ -1,5 +1,5 @@
 import { clusterAccessibleLabel, clusterDiameterPx, clusterLabel } from '@/lib/maps/cluster'
-import { MAP_CLUSTER_PAINT } from '@/lib/maps/pin-kinds'
+import { FREQUENCY_PIN, MAP_CLUSTER_PAINT } from '@/lib/maps/pin-kinds'
 
 // The cluster bubble as REAL DOM, for the engine that draws markers as DOM (MapLibre).
 //
@@ -22,7 +22,7 @@ import { MAP_CLUSTER_PAINT } from '@/lib/maps/pin-kinds'
  *  `plus` is the "and more behind this" flag from lib/maps/cluster.ts, which turns the label into
  *  `1+` for a repeating event folded to one pin. It only ever reaches the two shared functions
  *  below, so the fallback engine cannot label a bubble differently from Google. */
-export function buildClusterMarker(count: number, plus = false): HTMLElement {
+export function buildClusterMarker(count: number, plus = false, ring: string | null = null): HTMLElement {
   const size = clusterDiameterPx(count)
   const el = document.createElement('div')
   el.className = 'frequency-map-cluster'
@@ -37,7 +37,8 @@ export function buildClusterMarker(count: number, plus = false): HTMLElement {
     `color:var(${MAP_CLUSTER_PAINT.textToken})`,
     // color-mix, not an rgba() literal: the drop shadow stays on the token layer, so it
     // darkens with the ink token instead of pinning a raw black to every theme.
-    `box-shadow:0 0 0 2px var(${MAP_CLUSTER_PAINT.ringToken}), 0 1px 3px color-mix(in srgb, var(--color-ink) 28%, transparent)`,
+    // `ring` is the Frequency pin's white ring (SCAN-904); DAWN passes none and keeps its surface ring.
+    `box-shadow:0 0 0 2px ${ring ?? `var(${MAP_CLUSTER_PAINT.ringToken})`}, 0 1px 3px color-mix(in srgb, var(--color-ink) 28%, transparent)`,
     'font-weight:600',
     'font-size:13px',
     'line-height:1',
@@ -46,6 +47,24 @@ export function buildClusterMarker(count: number, plus = false): HTMLElement {
   ].join(';')
   el.textContent = clusterLabel(count, plus)
   makeMarkerActivatable(el, clusterAccessibleLabel(count, plus))
+  return el
+}
+
+/** THE FREQUENCY PIN on the keyless engine (SCAN-904): a round dot in the pin's kind colour with a
+ *  white ring, the same shape and size Google draws from FREQUENCY_PIN. Centre-anchored, so the dot
+ *  sits ON the point (DAWN's teardrop points at it from above). */
+export function buildRoundPin(paint: { token: string; fallback: string }, ring: string): HTMLElement {
+  const size = FREQUENCY_PIN.diameterPx
+  const el = document.createElement('div')
+  el.className = 'frequency-map-pin'
+  el.style.cssText = [
+    `width:${size}px`,
+    `height:${size}px`,
+    'border-radius:9999px',
+    `background:var(${paint.token}, ${paint.fallback})`,
+    `box-shadow:0 0 0 ${FREQUENCY_PIN.ringPx}px ${ring}, 0 2px 6px color-mix(in srgb, var(--color-ink) 35%, transparent)`,
+    'cursor:pointer',
+  ].join(';')
   return el
 }
 

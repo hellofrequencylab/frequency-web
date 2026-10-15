@@ -6,6 +6,8 @@ import { MapCanvas } from '@/components/maps/map-canvas'
 import { PageHero, HERO_ACTION_CLASS, type PageHeroSize, type PageHeroVariant } from '@/components/templates/page-hero'
 import type { MapPin } from '@/components/maps/types'
 import { MAP_PIN_KINDS, MAP_PIN_LAYERS, type MapPinKind } from '@/lib/maps/pin-kinds'
+// Frequency's community sheet, for NearbyMapCard below. Generated stub: DAWN loads nothing.
+import '@/app/themes/active/members-community'
 
 // ── THE AROUND YOU HEADER: THE MAP IS THE BAND ──────────────────────────────────────────────────
 //
@@ -70,7 +72,7 @@ const VIEW_MAP_LABEL = 'View the map'
  *  the person who tapped that one dot. Everyone else sees precise-looking dots, some of which are
  *  not precise, and would be right to plan around them. This line is the cheapest place to keep that
  *  honest, and it moved down here WITH the map rather than being dropped when the band took over. */
-function MapLegend({ pins }: { pins: MapPin[] }) {
+function MapLegend({ pins, className = 'mt-3' }: { pins: MapPin[]; className?: string }) {
   // Which layers are actually represented, so the legend describes THIS map rather than the
   // vocabulary in general. A legend row for a layer with no pins reads as a broken filter.
   const present = new Set(pins.map((p) => p.kind ?? 'place'))
@@ -79,7 +81,7 @@ function MapLegend({ pins }: { pins: MapPin[] }) {
   const anyRepeating = pins.some((p) => (p.moreCount ?? 0) > 0)
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+    <div className={`${className} flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
       {legend.length > 0 && (
         <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
           {legend.map((kind) => (
@@ -208,5 +210,59 @@ export function NearbyMapHeader({
         </p>
       )}
     </div>
+  )
+}
+
+// ── FREQUENCY: THE MAP IS A CARD IN THE BODY, NOT THE HEADER ────────────────────────────────────
+//
+// Owner instruction 2026-10-14 (SCAN-899): under the Frequency design Around You has no header band.
+// The page opens on the plain member `.head` (PageHeading), and the map moves down into the body,
+// directly above the Dispatches, as a kit panel: rounded, the glass panel surface and shadow, a
+// modest height (app/themes/frequency/members-community.css). Same seam, same inert backdrop, same
+// "View the map" button opening the seam's fullscreen popup, same legend. DAWN still opens on
+// NearbyMapHeader above.
+//
+// `pins === null` is the streamed placeholder: the SAME frame at the SAME height with an empty legend
+// row, so the page's Suspense fallback and the landed card occupy identical space and nothing below
+// moves when the pin read resolves.
+export function NearbyMapCard({ pins }: { pins: MapPin[] | null }) {
+  const [expanded, setExpanded] = useState(false)
+  const pending = pins === null
+  const hasMap = !!pins && pins.length > 0
+
+  return (
+    <section className="fq-nearby-map" aria-label="Map of what is around you" aria-busy={pending || undefined}>
+      <div className="fq-nearby-map-frame">
+        {hasMap ? (
+          <>
+            <div className="fq-nearby-map-canvas" inert>
+              <MapCanvas
+                pins={pins}
+                center={[pins[0].lng, pins[0].lat]}
+                zoom={11}
+                fit={{ padding: 40, maxZoom: 13, singleZoom: 12 }}
+                cluster={{}}
+                interactive={false}
+                expandable
+                expandControl={false}
+                expanded={expanded}
+                onExpandedChange={setExpanded}
+                expandLabel={VIEW_MAP_LABEL}
+                className="h-full w-full"
+              />
+            </div>
+            <button type="button" onClick={() => setExpanded(true)} className="btn sm fq-nearby-map-open">
+              <MapIcon aria-hidden="true" />
+              {VIEW_MAP_LABEL}
+            </button>
+          </>
+        ) : pending ? null : (
+          <p className="fq-nearby-map-empty">
+            Nothing on the map yet. Events, Circles and Spaces show up here once they have a location.
+          </p>
+        )}
+      </div>
+      {hasMap ? <MapLegend pins={pins} className="fq-nearby-legend" /> : <div className="fq-nearby-legend" aria-hidden />}
+    </section>
   )
 }

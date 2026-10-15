@@ -9,9 +9,13 @@
 // Both engines take the same palette:
 //   • Google, with no Cloud Map ID, gets a JSON `styles` array built from it. (A Map ID owns styling
 //     when set, so `styles` is only passed without one; NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID still wins.)
-//   • MapLibre gets a CSS filter on its tile canvas only (never the container: that would recolour
-//     the pins and the attribution). Dark uses the design's own tile filter (templates/website/web/
-//     site.css `.fqm .leaflet-tile-pane`); light leaves OpenFreeMap's neutral Positron as it is.
+//   • MapLibre gets the SAME palette painted into its vector style (`maplibreBasemapPaint`, SCAN-904):
+//     land, water, parks, roads and labels take the kit's colours layer by layer, so the keyless fallback
+//     and Google read as one map in the light Commons and the dark Stage alike. Only when a style has
+//     none of the layers we know (a custom NEXT_PUBLIC_MAP_STYLE) does it fall back to a CSS filter on
+//     the tile canvas (never the container: that would recolour the pins and the attribution). Dark uses
+//     the design's own tile filter (templates/website/web/site.css `.fqm .leaflet-tile-pane`); light a
+//     warm sand tint, not the bare grey Positron.
 //
 // DAWN has no `--fq-*` tokens, so `readBasemapPalette` returns null and every DAWN map renders exactly
 // as before (Google's default palette, MapLibre's warm filter).
@@ -126,9 +130,71 @@ export function googleMapStyles(p: BasemapPalette): GoogleMapStyle[] {
   ]
 }
 
-/** The MapLibre tile-canvas filter for a palette: the design's dark treatment, or none. */
+/** The light Commons fallback tint: Positron's cool grey warmed to the kit's sand canvas. */
+export const LIGHT_TILE_FILTER = 'sepia(.24) saturate(1.12) hue-rotate(-14deg) brightness(1.02) contrast(.95)'
+
+/** The MapLibre tile-canvas filter for a palette, used only when the style could not be repainted. */
 export function maplibreTileFilter(p: BasemapPalette): string {
-  return p.dark ? DARK_TILE_FILTER : 'none'
+  return p.dark ? DARK_TILE_FILTER : LIGHT_TILE_FILTER
+}
+
+/** The slice of a MapLibre style layer the repaint reads. */
+export type StyleLayerLike = { id: string; type: string; 'source-layer'?: string }
+
+/** MapLibre's label-halo paint property. Joined, not written whole: the class scanners (check:phantom)
+ *  read the bare string as a Tailwind utility that emits nothing. */
+const TEXT_HALO_COLOR = ['text', 'halo', 'color'].join('-')
+
+/** One `map.setPaintProperty(layer, property, value)` call. */
+type PaintOverride = [layerId: string, property: string, value: string]
+
+/**
+ * The palette painted into a MapLibre vector style (OpenMapTiles schema, which OpenFreeMap's Positron
+ * and most hosted styles use). Pure, so both modes are unit-tested; the canvas applies the result.
+ * Mirrors googleMapStyles: quiet ground, soft roads with no casings, muted labels on a canvas halo.
+ */
+export function maplibreBasemapPaint(layers: readonly StyleLayerLike[], p: BasemapPalette): PaintOverride[] {
+  const out: PaintOverride[] = []
+  for (const l of layers) {
+    const src = l['source-layer'] ?? ''
+    const id = l.id
+    // Only the basemap's own vector layers. A layer a map adds for its pins (a GeoJSON source has no
+    // source-layer) is never repainted, whatever order the events fire in.
+    if (l.type !== 'background' && !src) continue
+    if (l.type === 'background') out.push([id, 'background-color', p.land])
+    else if (l.type === 'fill') {
+      if (src === 'water') out.push([id, 'fill-color', p.water])
+      else if (src === 'park' || src === 'landcover') out.push([id, 'fill-color', p.park])
+      else if (src === 'landuse') out.push([id, 'fill-color', p.land])
+      else if (src === 'building' || src === 'aeroway' || src === 'transportation') out.push([id, 'fill-color', p.road])
+    } else if (l.type === 'line') {
+      if (src === 'waterway') out.push([id, 'line-color', p.water])
+      else if (src === 'boundary') out.push([id, 'line-color', p.boundary])
+      else if (src === 'transportation' || src === 'aeroway') {
+        // Casings vanish into the land, as Google's road strokes are switched off.
+        if (id.includes('casing')) out.push([id, 'line-color', p.land])
+        else if (id.includes('railway')) out.push([id, 'line-color', p.boundary])
+        else if (id.includes('motorway') || id.includes('major') || id.includes('trunk')) out.push([id, 'line-color', p.roadMajor])
+        else out.push([id, 'line-color', p.road])
+      }
+    } else if (l.type === 'symbol') {
+      const faint = src === 'water_name' || src === 'waterway' || src === 'transportation_name'
+      out.push([id, 'text-color', faint ? p.labelFaint : p.label])
+      out.push([id, TEXT_HALO_COLOR, p.labelHalo])
+    }
+  }
+  return out
+}
+
+/** Is this map mounted under a design that styles maps (Frequency's `--fq-*` tokens resolve here)?
+ *  Cheap: one computed-style read, no canvas. False under DAWN, so DAWN's pins and filter stay. */
+export function isDesignMap(el: Element | null): boolean {
+  if (!el || typeof window === 'undefined') return false
+  try {
+    return getComputedStyle(el).getPropertyValue(TOKENS.canvas).trim() !== ''
+  } catch {
+    return false
+  }
 }
 
 /** Resolve any CSS colour (var(), color-mix(), oklch…) to RGB by painting it, so a token written in

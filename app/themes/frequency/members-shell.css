@@ -794,3 +794,31 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] .fqm-join-acts{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
 [data-design="frequency"] [data-kit="members"] .fqm-join-acts .btn{width:100%}
 }
+
+/* THE SETTINGS PANEL BESIDE THE RAILS (SCAN-909). The AdminBar (components/layout/admin-bar) opens on the
+   right of `.fqm-body` on every page that has something to manage: a Space's `?panel=manage` console, a
+   Circle, an event, a practice, a profile. It was painted 32px WIDER than its box and 32px past the right
+   edge (DAWN's lg:px-8 buffer, which this shell does not have), so its fields and close button sat off
+   screen and the page scrolled sideways; and it slid OVER the centre column, which kept its full width.
+   Now the panel is flush inside its box, and while it is open the body reserves its width on the right:
+   the right rail stands down (the panel takes its place) and the centre column shrinks to fit. Desktop
+   only; under 1024px the panel is a full-screen sheet and nothing reflows. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-adminbar>aside{right:0!important;width:100%!important;max-width:100%}
+@media (min-width:1024px){
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-panel]{padding-right:calc(var(--fqm-panel, 288px) + var(--fq-space-8))}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-panel][data-edge]{padding-right:var(--fqm-panel, 288px)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-panel] .fqm-rail-r{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-panel][data-has="lr"]{grid-template-columns:var(--fqm-lw) minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-panel][data-has="r"]{grid-template-columns:minmax(0,1fr)}
+}
+/* Every column of the rail grid may shrink below its content; nothing inside sets the page's width. */
+[data-design="frequency"] [data-kit="members"] .fqm-body>*{min-width:0}
+
+/* THE OWNER CONSOLE'S RIGHT RAIL (SCAN-909). On a Space profile opened as the owner's console
+   (`?panel=manage`), the viewer's own streak, Zaps and goals have no place: rail-layout.tsx stamps
+   `data-owner-console` and the `data-rail-member` box (right-rail.tsx) stands down, full and micro. The box
+   is display:contents everywhere else, so the rail stack's gap is unchanged. */
+[data-design="frequency"] [data-kit="members"] [data-rail-member]{display:contents}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-owner-console] [data-rail-member]{display:none}
+}
