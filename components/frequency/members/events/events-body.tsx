@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Radio } from '@/components/ui/radio'
 import { Suspense, type ReactNode } from 'react'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-events'
@@ -502,11 +503,19 @@ function SheetChoices({
       {options.length > 0 && (
         <div className="evf-opts">
           {options.map((o) => (
-            <label key={o.value || 'any'} className="chip evf-opt">
-              <input type="radio" name={name} value={o.value} defaultChecked={o.value === value} />
-              {o.label}
-              {counts && counts[o.value] != null && <span className="ev-n-tag">{counts[o.value]}</span>}
-            </label>
+            <Radio
+              key={o.value || 'any'}
+              name={name}
+              value={o.value}
+              defaultChecked={o.value === value}
+              wrapperClassName="chip evf-opt"
+              label={
+                <>
+                  {o.label}
+                  {counts && counts[o.value] != null && <span className="ev-n-tag">{counts[o.value]}</span>}
+                </>
+              }
+            />
           ))}
         </div>
       )}
