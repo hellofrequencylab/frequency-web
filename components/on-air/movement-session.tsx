@@ -1303,7 +1303,7 @@ export function MovementSession({
                 type="button"
                 onClick={leave}
                 aria-label="Close"
-                className="absolute -right-2 -top-1 rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                className="absolute -right-2 -top-1 tap-target rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1636,7 +1636,7 @@ function Chip({
       type="button"
       onClick={onClick}
       title={title}
-      className={`rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
+      className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
         active
           ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'

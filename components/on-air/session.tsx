@@ -1447,7 +1447,7 @@ export function OnAirSession({
             <LotusIcon className="h-4.5 w-4.5" /> Mindless
           </p>
 
-          <div className="flex flex-col items-center gap-5">
+          <div className="flex w-full min-w-0 flex-col items-center gap-5">
             {/* ONE countdown (ADR-566): during the shared warm-up the pre-roll IS the big timer —
                 the session clock / breath visualizer is suppressed so there is never a second
                 competing number. Once the run begins the same clock runs the session. */}
@@ -1491,7 +1491,7 @@ export function OnAirSession({
                       type="button"
                       onClick={() => setShowInstructions(true)}
                       aria-label={`How to do ${pattern.name}`}
-                      className="flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                      className="flex min-h-11 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
                     >
                       <Info className="h-3.5 w-3.5" aria-hidden /> Details
                     </button>
@@ -1621,7 +1621,7 @@ export function OnAirSession({
               type="button"
               onClick={leave}
               aria-label="Close"
-              className="absolute -right-2 -top-1 rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="absolute -right-2 -top-1 tap-target rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1709,7 +1709,7 @@ export function OnAirSession({
                   type="button"
                   onClick={() => setPatternSlug(p.slug)}
                   title={p.blurb}
-                  className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
+                  className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                     p.slug === patternSlug
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1722,7 +1722,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setPatternSlug('custom')}
                 title="Your counts. Set each phase to what fits."
-                className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
+                className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                   patternSlug === 'custom'
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -1737,7 +1737,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setShowInstructions(true)}
                 aria-label={`How to do ${pattern.name}`}
-                className="flex shrink-0 items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                className="flex min-h-11 shrink-0 items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
               >
                 <Info className="h-3.5 w-3.5" aria-hidden /> Details
               </button>
@@ -1775,7 +1775,7 @@ export function OnAirSession({
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
+                  className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
                     m === minutes
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1845,7 +1845,7 @@ export function OnAirSession({
                     type="button"
                     aria-pressed={w === warmupSec}
                     onClick={() => setWarmupSec(w)}
-                    className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
+                    className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                       w === warmupSec
                         ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                         : 'border-border text-muted hover:bg-surface-elevated'
@@ -1866,7 +1866,7 @@ export function OnAirSession({
                     <button
                       type="button"
                       onClick={() => selectAmbient(null)}
-                      className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                      className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                         ambientSlug === null
                           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1879,7 +1879,7 @@ export function OnAirSession({
                         key={t.slug}
                         type="button"
                         onClick={() => selectAmbient(t.slug)}
-                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                        className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           ambientSlug === t.slug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1931,7 +1931,7 @@ export function OnAirSession({
                             // preview is a nicety
                           }
                         }}
-                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                        className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           t.slug === bellToneSlug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1983,7 +1983,7 @@ export function OnAirSession({
                           key={iv.value}
                           type="button"
                           onClick={() => setBellEveryMin(iv.value)}
-                          className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
+                          className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                             iv.value === bellEveryMin
                               ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                               : 'border-border text-muted hover:bg-surface-elevated'
@@ -2278,7 +2278,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
+      className={`min-h-11 flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'

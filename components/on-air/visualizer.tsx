@@ -88,11 +88,11 @@ export function BreathVisualizer({
   }, [pattern, startedAt])
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="relative">
+    <div className="flex w-full min-w-0 flex-col items-center gap-6">
+      <div className="relative w-full max-w-72 sm:max-w-80">
         <svg
           viewBox="0 0 200 200"
-          className="h-72 w-72 text-primary sm:h-80 sm:w-80"
+          className="block aspect-square h-auto w-full text-primary"
           aria-hidden
         >
           <g
