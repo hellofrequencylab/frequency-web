@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-907",
+  "title": "The Frequency palette leads with aqua, sky and teal, with violet as a short accent and pink gone from the sweep, wash and chips",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/themes/frequency.css",
+    "ref": "Owner 2026-10-14 on /feed after SCAN-905: still too purple and pink, feels too feminine, balance it out."
+  },
+  "detail": "SCAN-905 moved only the members aura and --fq-pa. The hand-kept alias layer now re-points the roots: --fq-iridescent-sweep (every .fq-iri-btn, .fq-iri-text, .fq-iri-rim: Create, Zap, streak numerals, active pills) leads #8FE9FF and #A3D4FF with one short #C4B8FF violet stop and no #FF9BD8 pink; the deep sweep, the conic --fq-iridescent, --fq-pa, --fq-pa-orb and --fq-pa-soft (icon chips) follow; the light wash drops its lavender lobe for sky, aqua and seaglass; the accent (streak ring arc, links) is a deep teal-blue in light and the export aqua neon on the Stage; neutrals cool a step (sand canvas to #F4F6F7, Stage purple-black to blue-black); the iridescent button glow loses its pink halo. Generated core.css untouched.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('app/themes/frequency.css','utf8');const i=c.indexOf('SCAN-907');const b=i<0?'':c.slice(i);const bad=[];if(!b)bad.push('no SCAN-907 block');for(const k of ['--fq-iridescent-sweep:','--fq-pa-soft:','--fq-wash:','--fq-accent:','--fq-bg-canvas:'])if(!b.includes(k))bad.push('the block does not re-point '+k);if(/FF9BD8|EEC1EC/i.test(b))bad.push('the block still carries a pink stop');if(bad.length){console.error('SCAN-907: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
