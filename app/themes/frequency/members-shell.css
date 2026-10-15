@@ -908,3 +908,19 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
   box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);
 }
 }
+
+/* SCAN-948: menu material is nearly solid; text and page cards keep their own roles.
+   Re-declare at room boundaries so Stage/skin variables resolve in their own room.
+   Browsers without backdrop blur retain the opaque card fallback. */
+[data-design="frequency"],
+[data-design="frequency"] [data-surface],
+[data-design="frequency"] [data-skin] {
+  --fq-menu-surface: var(--fq-surface-card);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (background: color-mix(in oklab, currentColor, transparent)) {
+  [data-design="frequency"],
+  [data-design="frequency"] [data-surface],
+  [data-design="frequency"] [data-skin] {
+    --fq-menu-surface: color-mix(in oklab, var(--fq-surface-card) 96%, transparent);
+  }
+}
