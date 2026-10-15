@@ -68,10 +68,20 @@ it('splits the inspector into Content, Design, Advanced and Notes over the same 
 })
 
 it('duplicates from the inspector footer and saves through the same draft', async () => {
-  const { click, onSave } = mount()
+  const start = structuredClone(initial)
+  start.draft.pages[0].doc.root = { props: { websiteLayout: { cards: { desktop: { padding: 64, anchor: 'original' }, phone: { hidden: true } } } } }
+  const { click, onSave } = mount({ start })
   click('Duplicate')
   await act(async () => { click('Save draft'); await Promise.resolve() })
-  expect(onSave.mock.calls.at(-1)?.[1].pages[0].doc.content).toHaveLength(2)
+  const doc = onSave.mock.calls.at(-1)![1].pages[0].doc
+  expect(doc.content).toHaveLength(2)
+  expect(doc.root.props!.websiteLayout[doc.content[1].props.id!]).toEqual({ desktop: { padding: 64 }, phone: { hidden: true } })
+  click('Undo')
+  await act(async () => { click('Save draft'); await Promise.resolve() })
+  expect(onSave.mock.calls.at(-1)![1].pages[0].doc).toEqual(start.draft.pages[0].doc)
+  click('Redo')
+  await act(async () => { click('Save draft'); await Promise.resolve() })
+  expect(onSave.mock.calls.at(-1)![1].pages[0].doc).toEqual(doc)
 })
 
 it('opens the publish modal with the change list and the now / schedule switch', () => {

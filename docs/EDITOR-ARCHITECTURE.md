@@ -873,6 +873,15 @@ editing; a staff preview pass does not authorize edits. Nested block IDs partici
 in comment validation, so a thread pinned inside a registered content slot remains
 saveable; duplicate IDs and malformed retained snapshots are rejected.
 
+Duplicating a website section copies both its content and its separately keyed
+responsive display settings, including registered nested blocks. The copy receives
+fresh block IDs; explicit section anchors and review comments stay with the original.
+This is one undoable draft change. The website-only duplication adapter stays off the
+public render path. On touch screens, canvas insertion controls remain visible without
+hover, and section tools and layout handles provide 44-pixel targets. Network hero,
+event and circle blocks identify their live Space bindings in the editor; authored
+Network stat tiles, team and offering cards retain their authored-content labels.
+
 Scheduled publishing captures the reviewed snapshot at scheduling time. Later draft
 edits cannot change that scheduled content. The existing publish-scheduled cron
 activates due snapshots atomically, increments the revision, records the version,

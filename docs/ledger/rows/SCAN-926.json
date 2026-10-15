@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-926",
+  "title": "Duplicating a website section preserves its authored responsive design",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "components/sites/editor/shell.tsx",
+    "ref": "Block editor maturity audit 2026-10-15; generic duplication re-identifies blocks without copying websiteLayout"
+  },
+  "detail": "Website section duplication previously retained content but lost spacing, widths, tone, typography, element positions and device visibility because display settings remained keyed only to the original IDs. An editor-only wrapper now copies sparse layout entries to the new IDs for the whole registered subtree. Explicit anchors remain unique to the originals. Existing section duplication, undo, redo and save use the same document boundary; review comments remain on their original blocks. A consequence regression reproduced the missing duplicate layout before the fix. Public rendering and stored identifiers are unchanged. Authenticated browser mutation and production publication remain unverified. Backlog verification now executes fast, read-only consequences without launching a nested test runner. The full behavioral suites remain independently enforced by required CI; source guard, missing/incorrect behavior and deliberately broken controls fail rather than being waived.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/cohesion-release-probes.mjs SCAN-926"
+  },
+  "wave": "W7"
+}
