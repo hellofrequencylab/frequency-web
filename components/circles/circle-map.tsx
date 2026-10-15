@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { LocateFixed } from 'lucide-react'
 import { MapCanvas } from '@/components/maps/map-canvas'
+import { IconButton } from '@/components/ui/icon-button'
 import { distanceKm } from '@/lib/distance'
 import type { MapPin } from '@/components/maps/types'
 
@@ -100,9 +101,8 @@ export default function CircleMap({
         className="h-full w-full"
       />
       {interactive && (
-        <button
-          type="button"
-          aria-label={locating ? 'Stop following your location' : 'Show your location'}
+        <IconButton
+          label={locating ? 'Stop following your location' : 'Show your location'}
           aria-pressed={locating}
           onClick={() => {
             if (!navigator.geolocation) {
@@ -111,10 +111,10 @@ export default function CircleMap({
             }
             setLocating((active) => !active)
           }}
-          className="absolute left-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-control bg-surface text-text shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="absolute left-3 top-3 z-10 min-h-11 min-w-11 bg-surface text-text lift-1"
         >
           <LocateFixed className="h-5 w-5" aria-hidden="true" />
-        </button>
+        </IconButton>
       )}
       {locationError && <p role="status" className="absolute bottom-8 left-3 right-3 rounded-control bg-surface p-2 text-body-sm text-text">{locationError}</p>}
     </div>
