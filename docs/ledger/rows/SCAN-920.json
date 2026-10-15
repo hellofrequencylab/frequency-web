@@ -13,6 +13,6 @@
   "detail": "Sunday used the next Saturday to compute its end date, returning eight days. The date window now ends on the current Sunday. Regression coverage includes Sunday and surrounding days in the home timezone.",
   "verify": {
     "kind": "cmd",
-    "cmd": "pnpm exec vitest run 'app/(main)/events/index-data.test.ts' --maxWorkers=1"
+    "cmd": "node node_modules/vitest/vitest.mjs run 'app/(main)/events/index-data.test.ts' --maxWorkers=1"
   }
 }

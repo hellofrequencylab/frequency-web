@@ -13,6 +13,6 @@
   "detail": "The debounce survived Clear search and unmount, so it restored the cleared query or navigated after leaving. Clear and URL-effect cleanup now cancel it. Two consequence tests failed before the fix and pass after.",
   "verify": {
     "kind": "cmd",
-    "cmd": "pnpm exec vitest run components/ui/directory-search.test.tsx --maxWorkers=1"
+    "cmd": "node node_modules/vitest/vitest.mjs run components/ui/directory-search.test.tsx --maxWorkers=1"
   }
 }
