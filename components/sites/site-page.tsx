@@ -61,6 +61,7 @@ import { WebsiteDocument } from '@/components/sites/website-document'
 import { siteEntitySchema } from '@/lib/jsonld'
 import { resolveSiteHeaderBrand } from '@/lib/sites/site-brand'
 import { SiteMemberBadge } from '@/components/sites/site-member-badge'
+import { isLocalSiteProjection, projectLocalSiteSpace } from '@/lib/sites/local-site-projection'
 import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
@@ -100,8 +101,9 @@ import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
 // guest-mode picker (components/sites/site-booking.tsx), and is never sent to Frequency.
 
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
-  const space = await getSiteSpace(slug)
+  const space = await projectLocalSiteSpace(await getSiteSpace(slug))
   if (!space) return { title: 'Site', robots: { index: false } }
+  if (isLocalSiteProjection(space)) return { title: { absolute: 'The Group · Local draft preview' }, robots: { index: false, follow: false } }
   // The Space's brand, with the published website's own name over it (lib/sites/site-brand.ts, LIVE-699).
   const brandName = resolveSiteHeaderBrand(space, readWebsitePublished(space.preferences) ? publishedWebsiteSnapshot(space.preferences) : null).name
   if (!readWebsitePublished(space.preferences)) {
@@ -150,7 +152,8 @@ export async function SitePage({
 }) {
   // FIRST, before any read: the site is cached and served to everyone, so it has no viewer.
   markAnonymousRender()
-  const space = await getSiteSpace(slug)
+  // Public rendering only: raw cache, hosted resolution, editor and action reads remain canonical.
+  const space = await projectLocalSiteSpace(await getSiteSpace(slug))
   if (!space) notFound()
 
   const website = publishedWebsiteSnapshot(space.preferences)
@@ -316,6 +319,7 @@ export async function SitePage({
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
     // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
+      {isLocalSiteProjection(space) && <div role="status" className="border-b border-border bg-surface-elevated px-4 py-2 text-center text-body-sm text-text">Local draft preview. These changes have not been published.</div>}
       <JsonLd data={entity} />
       {/* A Bold or Wildheart site wears the editor's tokens; a Frequency site keeps the house tokens its sheets read. */}
       <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={siteFontClass}>
