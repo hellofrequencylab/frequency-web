@@ -339,7 +339,7 @@ function Explore() {
   )
 }
 
-export async function CrewBody({ ctx, headerImage }: { ctx: CrewContext; headerImage: string | null }) {
+export async function CrewBody({ ctx }: { ctx: CrewContext; headerImage?: string | null }) {
   const order = await visibleModuleOrder('/crew')
   const shows = new Set(order)
   const left = weeksLeft(ctx.season)
@@ -376,10 +376,6 @@ export async function CrewBody({ ctx, headerImage }: { ctx: CrewContext; headerI
 
   return (
     <MembersBody>
-      {headerImage && (
-        // eslint-disable-next-line @next/next/no-img-element -- the operator's banner, scaled whole like the DAWN page
-        <img className="mc-banner" src={headerImage} alt="" />
-      )}
       <div className="head">
         <div>
           <span className="k">The Quest</span>

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-891",
+  "title": "A Space website's own editor (/admin on the site's host) keeps the Frequency design; the website reset to DAWN had left it with no styles",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/sites/site-design-reset.tsx",
+    "ref": "Owner 2026-10-14 (danieltyack.com/admin/editor screenshot): the editor page on the Daniel Tyack Space is broken; plain stacked text, no panels or canvas."
+  },
+  "detail": "SCAN-874 put every page under app/hosted/[host] back on data-design=\"dawn\" so a website's house theme renders, but app/hosted/[host]/admin/* is the platform's site editor, drawn in the Frequency editor kit scoped to [data-design=\"frequency\"] [data-kit=\"editor\"], so on a custom domain the editor lost all of its styles. The inline reset now skips /admin (by the address the visitor sees, since the proxy rewrites to /hosted/<host>), and SiteDesignFollow, a small client component, sets the root back to the platform design on /admin and to DAWN on the site's pages after a client-side move. Websites keep their DAWN-based themes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('components/sites/site-design-reset.tsx','utf8');const bad=[];if(!r.includes('admin(')||!r.includes('SiteDesignFollow'))bad.push('the website reset still applies to the site editor');if(!fs.existsSync('components/sites/site-design-follow.tsx'))bad.push('no follow-up for client-side moves');if(bad.length){console.error('SCAN-891: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

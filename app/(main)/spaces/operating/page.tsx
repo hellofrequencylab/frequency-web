@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { buttonClasses } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -198,7 +199,9 @@ export default async function SpacesOperatingPage() {
   // Gate: signed in. The list is naturally scoped to the Spaces the caller operates.
   const profileId = await getMyProfileId()
 
-  const hero = await resolveIndexHero('/spaces/operating')
+  // Under Frequency a list of the Spaces you run needs no photo band (owner, 2026-10-14, SCAN-878): the plain
+  // title, the one-line meta and Create a space. DAWN keeps its hero.
+  const hero = SITE_DESIGN === 'frequency' ? {} : await resolveIndexHero('/spaces/operating')
 
   return (
     <IndexTemplate

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-880",
+  "title": "The signed-in Circles hub sits in the Frequency members page frame, and Starter Circles have their own titled section where every card carries art",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/members/circles/circles-body.tsx",
+    "ref": "Owner 2026-10-14: /circles shows a DAWN-theme background; every starter Circle has art and the starter Circles sit in their own section."
+  },
+  "detail": "FqCirclesBody drew bare in the member shell, outside the kit's page frame, with DAWN's MapZone as its outermost wrapper, and Starter Circles were mixed into Near you, most of them on the empty tan placeholder. The hub now renders inside MembersBody (the data-kit members scope and the kit's .ap-main column, the frame the profile, Crew, Journeys, Vault and Settings bodies wear), with the map zone inside it. Starter Circles leave Near you for their own Starter Circles section above it, and each card shows its own image or, when it has none, a brand photo from public/brand/frequency/photos picked from its slug (lib/frequency/placeholder-art.ts, stable per slug). Under DAWN nothing changes: the index data and the DAWN block layout are untouched.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const b=r('components/frequency/members/circles/circles-body.tsx');const bad=[];if(!b.includes('<MembersBody>'))bad.push('hub not in the members page frame');if(!b.includes('Starter Circles'))bad.push('no Starter Circles section');if(!b.includes('!c.isStarter && !mine.has(c.id)'))bad.push('starters still mixed into Near you');if(!b.includes('fqPlaceholderArt(c.slug)'))bad.push('a starter without an image has no art');if(!r('lib/frequency/placeholder-art.ts').includes('export function fqPlaceholderArt'))bad.push('placeholder art helper missing');if(bad.length){console.error('SCAN-880: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

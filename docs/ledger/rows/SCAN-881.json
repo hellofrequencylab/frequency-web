@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-881",
+  "title": "A Circle that belongs to a Space opens under that Space's own header, with the Circle's title, tabs and actions below it",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/circles/[slug]/(circle)/layout.tsx",
+    "ref": "Owner 2026-10-14: every Circle that belongs to a Space shows that Space's header on its Circle page, the same header the Space page uses."
+  },
+  "detail": "Under Frequency a Circle page drew only its own cover, so a Space's Circle read as a stray page with a small Hosted by line. The Circle layout's Frequency branch now resolves the Circle's owning Space from its space_id with the platform root excluded (lib/circles/owning-space.ts over loadRootSpaceId, the guard lib/events/host-space.ts puts on events) and, when there is one, renders FqCircleSpaceHeader around the Circle shell. That component feeds the unchanged FqSpaceChrome exactly as the Space's (profile) layout does (cover and focal point, logo chip, eyebrow, name, Founding and Boosted marks, tagline, Share, the owner's Edit, the primary CTA, the Space's tab row with Follow and Boost, the private-Space notice) inside the Space's AccentScope, with the viewer's own Space visibility: a Space the viewer cannot see yields no header. The Circle's cover, title (now an h2 under the Space's h1), tabs and actions follow as the header's body. A personal Circle and every DAWN render are unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const l=r('app/(main)/circles/[slug]/(circle)/layout.tsx');const h=r('components/frequency/members/space/circle-space-header.tsx');const o=r('lib/circles/owning-space.ts');const bad=[];if(!l.includes('<FqCircleSpaceHeader spaceSlug={owner}>'))bad.push('Circle layout does not render the Space header');if(!l.includes('owningSpaceSlug(circle, rootSpaceId)'))bad.push('owning Space not resolved from space_id with the root excluded');if(!h.includes('<FqSpaceChrome'))bad.push('the header is not the Space page FqSpaceChrome');if(!o.includes('id === rootSpaceId'))bad.push('root Space not excluded');if(!r('components/frequency/members/circle/circle-shell.tsx').includes('inSpace ?'))bad.push('Circle title still an h1 under the Space h1');if(bad.length){console.error('SCAN-881: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

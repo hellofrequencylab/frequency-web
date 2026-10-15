@@ -268,4 +268,26 @@
 /* The kit sets .fqm{height:auto!important} under 900px, which collapsed the story's What's on panel to 0px
    (its list is absolutely placed), so a phone saw an empty dark box. Inside the chapter frame it fills the frame. */
 [data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static{height:100%!important}}
+/* ── Home: the beta (SCAN-885, owner 2026-10-14). The hero pill, the band after the story, the closer's line
+   and the dock's button. Side-coloured, so each reads aqua on Browse and sun on Host. ── */
+[data-design="frequency"] [data-kit="site"] .pa-home .beta-pill{display:inline-flex;align-items:center;gap:10px;height:34px;padding:0 14px 0 12px;margin-bottom:22px;border-radius:var(--fq-radius-orb);text-decoration:none;font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-uv-void) 55%,transparent);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-side) 45%,transparent);transition:box-shadow var(--fq-dur-base)}
+[data-design="frequency"] [data-kit="site"] .pa-home .beta-pill i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--fq-side);box-shadow:0 0 12px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .pa-home .beta-pill em{font-style:normal;color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .pa-home .beta-pill:hover{box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 32px -12px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .pa-home .beta-band{position:relative;overflow:hidden;background:var(--fq-bg-sunken);border-block:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .pa-home .beta-band>.wrap{position:relative;z-index:1}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px 56px;align-items:center;padding:clamp(28px,4vw,52px);border-radius:var(--fq-radius-xl);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-side) 35%,transparent),0 0 90px -40px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb .h-l{margin:16px 0 18px;max-width:16ch}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb .body-l{margin:0;max-width:46ch}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb-side{display:flex;flex-direction:column;align-items:flex-start;gap:24px}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb-facts{display:flex;gap:32px;margin:0;padding:0;list-style:none}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb-facts b{display:block;font:600 clamp(44px,4.6vw,64px)/.9 var(--fq-font-display);letter-spacing:-0.05em;background:var(--fq-iridescent-sweep);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+[data-design="frequency"] [data-kit="site"] .pa-home .bb-facts span{display:block;margin-top:8px;font-size:var(--fq-text-body-s);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .pa-home .closer .closer-beta{margin:18px 0 0;font-size:var(--fq-text-body-s);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .pa-home .dock .btn{height:40px;padding:0 18px;font-size:14px;white-space:nowrap}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .pa-home .bb{grid-template-columns:1fr}}
+@media (max-width:560px){[data-design="frequency"] [data-kit="site"] .pa-home .dock{padding-left:6px;gap:8px}
+[data-design="frequency"] [data-kit="site"] .pa-home .dock .sw button{padding:0 12px}
+[data-design="frequency"] [data-kit="site"] .pa-home .dock .dk-w{display:none}
+[data-design="frequency"] [data-kit="site"] .pa-home .dock .btn{padding:0 14px}}
 }

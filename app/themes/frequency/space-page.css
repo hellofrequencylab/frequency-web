@@ -278,7 +278,38 @@
 
 /* ══ 5. THE CHROME: cover card, identity, actions, tab row (members kit) ════════════════════════ */
 @layer components {
-[data-design="frequency"] [data-kit="members"].fqs-public{background:transparent}
+/* SIGNED OUT (SCAN-883). The public site shell gives this page no column, so it opens its own: the site
+   kit's centred `.wrap` (1200px, fluid gutters) on the members ground the signed-in page reads on, not
+   the Commons sand under it. Inside it the cover and the tab row are the member chrome, unchanged. */
+[data-design="frequency"] [data-kit="members"].fqs-public{background:var(--fq-surface-card);color:var(--fq-text-body);font-family:var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"].fqs-public>.fqs-wrap{padding-top:var(--fq-space-5);padding-bottom:var(--fq-space-8)}
+/* The body beside its key-facts column; one column below a laptop, the facts after the body. */
+[data-design="frequency"] [data-kit="members"] .fqs-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:48px;align-items:start;margin-top:36px}
+[data-design="frequency"] [data-kit="members"] .fqs-cols>.fqs-pane{margin-top:0}
+[data-design="frequency"] [data-kit="members"] .fqs-aside{display:flex;flex-direction:column;gap:16px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqs-card{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:var(--fq-radius-l);background:var(--fq-surface-raised);box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqs-card.fqs-join{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqs-card-k{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-card-t{margin:0;font:500 var(--fq-text-h4)/var(--fq-lh-h4) var(--fq-font-display);letter-spacing:var(--fq-track-h4);color:var(--fq-text-strong);overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqs-card-p{margin:0;font:400 var(--fq-text-body-s)/1.5 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqs-card-l{font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-card-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+[data-design="frequency"] [data-kit="members"] .fqs-addr{display:flex;flex-direction:column;font-style:normal}
+[data-design="frequency"] [data-kit="members"] .fqs-hours{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+[data-design="frequency"] [data-kit="members"] .fqs-pre{white-space:pre-line}
+[data-design="frequency"] [data-kit="members"] .fqs-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font:500 var(--fq-text-body-s)/1.4 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqs-list a{color:var(--fq-text-strong);overflow-wrap:anywhere;text-decoration:underline;text-decoration-color:var(--fq-border-strong);text-underline-offset:3px}
+[data-design="frequency"] [data-kit="members"] .fqs-socials{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+[data-design="frequency"] [data-kit="members"] .fqs-events{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqs-event{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}
+[data-design="frequency"] [data-kit="members"] .fqs-date{flex:none;width:48px;height:52px;border-radius:var(--fq-radius-m);background:var(--fq-pa-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:600 var(--fq-text-label)/1 var(--fq-font-sans);letter-spacing:.08em;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-date b{font:500 20px/1 var(--fq-font-display);letter-spacing:-0.04em;color:var(--fq-text-strong) /* token-ok: the kit's date-chip numeral size */}
+[data-design="frequency"] [data-kit="members"] .fqs-event-tx{display:flex;flex-direction:column;gap:3px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqs-event-t{font:600 var(--fq-text-body-s)/1.3 var(--fq-font-sans);color:var(--fq-text-strong);overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqs-event:hover .fqs-event-t{text-decoration:underline}
+[data-design="frequency"] [data-kit="members"] .fqs-more{align-self:flex-start;margin-top:4px}
+@media (max-width:1000px){
+[data-design="frequency"] [data-kit="members"] .fqs-cols{grid-template-columns:minmax(0,1fr);gap:40px}}
 [data-design="frequency"] [data-kit="members"] .fqs-notices{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
 [data-design="frequency"] [data-kit="members"] .fqs-notices:empty{display:none}
 [data-design="frequency"] [data-kit="members"] .fqs-hero{position:relative;border-radius:28px;overflow:hidden;min-height:320px;display:flex;align-items:flex-end;background-size:cover}

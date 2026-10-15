@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-882",
+  "title": "A member profile under Frequency has its cover photo back and one clean identity row, and the member shell's left rail no longer opens with an avatar and name block",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/members/profile/profile-body.tsx",
+    "ref": "Owner 2026-10-14: the profile page is broken: the cover image is missing, the handle and location sit above the name in a narrow column, the name wraps and the buttons float mid-row. Also remove the avatar and name block (Daniel Tyack / Initiate / Crew) at the top of the left sidebar; keep the You card."
+  },
+  "detail": "ProfileBody drew no cover at all, and its one wrapping row put the photo, a stack (meta, name, chips, bio, Block and Act as) and up to six action buttons side by side, so the text column was squeezed: the @handle and region line sat above the name, the name broke over two lines and the buttons hung in the middle of the row. The Frequency branch of /people/<handle> now resolves the header photo through resolveIdentityHero (the member's own photo and focal point, the operator's /people image, then a brand photo picked from the member's id by lib/frequency/placeholder-art.ts) and ProfileBody draws it as a cover band, then one identity row on a grid: the photo rising onto the cover's foot, the name on one line with the @handle, region and member-since meta and the chips under it, and the actions right-aligned on the same row, wrapping inside their own column. The bio and the Block and Act as controls sit full width below. A phone stacks the actions under the identity. In the member shell the left rail's open face no longer starts with the avatar, name, rank and Crew block (nor its folded face with the avatar); the You card at the foot keeps all of it. DAWN is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const b=r('components/frequency/members/profile/profile-body.tsx');const pg=r('app/(main)/people/[handle]/page.tsx');const sh=r('components/frequency/members/shell/members-shell.tsx');const css=r('app/themes/frequency/members-c.css');const bad=[];if(!b.includes('mc-cover'))bad.push('profile has no cover');if(!pg.includes('cover={{ image: fqHero.coverImage'))bad.push('the page passes no cover photo');if(!b.includes('mc-id-acts'))bad.push('actions not on the identity row');if(b.indexOf('mc-name')>b.indexOf('{metaLine}'))bad.push('meta still above the name');if(!css.includes('.h1.mc-name{white-space:nowrap}'))bad.push('the name may wrap');if(sh.includes('className=\\\"fqm-me-row\\\"'))bad.push('left rail still opens with the avatar and name block');if(!sh.includes('fqm-you-head'))bad.push('You card missing');if(bad.length){console.error('SCAN-882: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

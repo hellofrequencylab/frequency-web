@@ -8,8 +8,10 @@ import { MembersBody, SerifTail } from '@/components/frequency/members/shared/me
 // the composer, the Spotlight grid, associations, awards) and passes them here already built and
 // already gated; this body only places them on the reference:
 //
-//   identity row   the photo, "region · member since", the name, rank / Crew / status chips, the bio,
-//                  the actions
+//   cover          the member's header photo (the operator's /people image, then a brand photo, behind it)
+//   identity row   the photo, the name on one line, "@handle · region · member since", rank / Crew /
+//                  status chips, and the actions right-aligned on the same row (SCAN-882)
+//   about          the bio and the low-weight controls (Block, Act as), full width under the row
 //   four numbers   real counts only (see the page for what each one reads)
 //   columns        Story · Posts · Circles · Practice tabs (?tab=, server-rendered)  |  what they run,
 //                  standing, achievements, awards, the Crew card
@@ -27,6 +29,7 @@ interface ProfileTabLink {
 
 export function ProfileBody({
   notice,
+  cover,
   avatar,
   metaLine,
   name,
@@ -42,6 +45,8 @@ export function ProfileBody({
   side,
 }: {
   notice: React.ReactNode
+  /** The header photo and the owner's focal point (an object-position value). */
+  cover: { image: string; focus?: string | null }
   avatar: React.ReactNode
   metaLine: React.ReactNode
   name: string
@@ -61,19 +66,26 @@ export function ProfileBody({
   return (
     <MembersBody>
       {notice}
-      <section className="row wrap mc-identity">
-        {avatar}
-        <div className="stack grow mc-gap-12">
-          <span className="meta">{metaLine}</span>
-          <h1 className="h1">
+      <div
+        className="ph mc-cover"
+        style={{ backgroundImage: `url(${JSON.stringify(cover.image)})`, backgroundPosition: cover.focus ?? undefined }}
+        aria-hidden
+      />
+      <section className="mc-identity" aria-label="Profile">
+        <div className="mc-id-photo">{avatar}</div>
+        <div className="stack mc-id-text">
+          <h1 className="h1 mc-name">
             <SerifTail text={name} />
           </h1>
+          <span className="meta">{metaLine}</span>
           {chips}
-          {bio}
-          {secondary}
         </div>
-        <div className="row wrap">{actions}</div>
+        <div className="row wrap mc-id-acts">{actions}</div>
       </section>
+      <div className="stack mc-gap-12 mc-id-about">
+        {bio}
+        {secondary}
+      </div>
 
       <div className="g4 sec mc-stats">
         {stats.map((s) => (

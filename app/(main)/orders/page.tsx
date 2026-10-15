@@ -4,11 +4,14 @@ import Link from 'next/link'
 import { Receipt, ShoppingBag, Truck } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { recordCommerceOrderFromSessionId } from '@/lib/commerce/checkout'
+import { listMyEventTickets, type MyTicket } from '@/lib/events/my-tickets'
+import { formatEventDate } from '@/lib/utils'
 import { listOrdersForBuyer, sellerNames, sellerNameKey, type CommerceOrder } from '@/lib/commerce/orders'
 import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
 import { DisputeButton } from '@/components/marketplace/dispute-button'
@@ -165,19 +168,22 @@ export default async function OrdersPage({
     }
   }
   const orders = await listOrdersForBuyer(profileId)
-  const [disputes, names] = await Promise.all([
+  const [disputes, names, tickets] = await Promise.all([
     disputesForOrders(orders.map((o) => o.id)),
     // Seller names only for split orders, the one card that labels its lines by seller.
     sellerNames(orders.filter((o) => o.fundsFlow === 'separate').flatMap((o) => o.items.flatMap((it) => (it.seller ? [it.seller] : [])))),
+    // Event tickets live in event_tickets, not commerce_orders (SCAN-884), so they are read beside them.
+    listMyEventTickets(profileId),
   ])
 
-  const hero = await resolveIndexHero('/orders')
+  // Under Frequency a list of your orders needs no photo band (owner, 2026-10-14): the plain title and meta.
+  const hero = SITE_DESIGN === 'frequency' ? {} : await resolveIndexHero('/orders')
 
   return (
     <IndexTemplate
       {...hero}
       title="My orders"
-      description="Everything you've bought from the Market and the Frequency Store."
+      description="Everything you've bought: event tickets, the Market and the Frequency Store."
     >
       {(justPaid || justBooked) && (
         <div
@@ -187,7 +193,17 @@ export default async function OrdersPage({
           {justBooked ? 'You’re booked. Your booking is below.' : 'Payment received. Your order is below.'}
         </div>
       )}
-      {orders.length === 0 ? (
+      {tickets.length > 0 && (
+        <section className="mb-6 space-y-3" aria-labelledby="orders-tickets">
+          <h2 id="orders-tickets" className="text-body-lg font-semibold text-text">
+            Event tickets
+          </h2>
+          {tickets.map((t) => (
+            <TicketCard key={t.id} ticket={t} />
+          ))}
+        </section>
+      )}
+      {orders.length === 0 && tickets.length > 0 ? null : orders.length === 0 ? (
         <EmptyState
           icon={Receipt}
           variant="first-use"
@@ -208,5 +224,30 @@ export default async function OrdersPage({
         </div>
       )}
     </IndexTemplate>
+  )
+}
+
+/** One paid event ticket: the event, its date, the seats and what it cost (SCAN-884). */
+function TicketCard({ ticket }: { ticket: MyTicket }) {
+  const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: ticket.currency }).format(ticket.amountCents / 100)
+  return (
+    <div className="rounded-card border border-border bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        {ticket.event ? (
+          <Link href={`/events/${ticket.event.slug}`} className="text-body font-semibold text-text hover:underline">
+            {ticket.event.title}
+          </Link>
+        ) : (
+          <span className="text-body font-semibold text-text">Event ticket</span>
+        )}
+        <span className="text-body-sm font-semibold text-text">{amount}</span>
+      </div>
+      <p className="mt-1 text-body-sm text-muted">
+        {ticket.event ? formatEventDate(ticket.event.startsAt) : null}
+        {ticket.event ? ' · ' : null}
+        {ticket.qty} {ticket.qty === 1 ? 'ticket' : 'tickets'}
+        {ticket.refunded ? ' · Refunded' : null}
+      </p>
+    </div>
   )
 }
