@@ -203,7 +203,9 @@ export default async function MainLayout({
       return (
         <ViewerProvider>
           <SiteShell surface="commons">
-            <div data-kit="members" data-theme="commons" data-energy="flow">
+            {/* `.fqm-public-view` (members-shell.css) is the page: the container, the clearance under the
+                fixed site header, the site canvas, and the site kit's class meanings put back (SCAN-912). */}
+            <div data-kit="members" data-theme="commons" data-energy="flow" className="fqm-public-view">
               {children}
             </div>
           </SiteShell>

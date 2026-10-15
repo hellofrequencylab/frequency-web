@@ -184,10 +184,7 @@ export function FqEventsBody({
                 New Event
               </Link>
             )}
-            <Link className="btn glass" href={hrefWith(base, params, { view: 'calendar' })}>
-              <FqIcon name="event" />
-              Calendar
-            </Link>
+            {/* No Calendar button here: the List / Map / Calendar switch below is the one way in (SCAN-912). */}
             <CalendarSubscribe buttonClassName="btn glass" />
             {content.ctaLabel && content.ctaHref && (
               <a className="btn glass" href={content.ctaHref}>

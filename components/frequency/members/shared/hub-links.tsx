@@ -33,7 +33,9 @@ function navAccessFor(hats: Hats): Record<string, string> {
 /** The shell's viewer, rebuilt for a hub body (request-cached reads the layout already made). */
 async function hubViewer(): Promise<FqMenuViewer> {
   const profile = await getCachedViewerProfile()
-  if (!profile) return { navAccess: navAccessFor({ loggedIn: false }), operatesSpaces: false, host: false }
+  // Signed out (the public /events index, SCAN-912): the visitor column of the matrix, and no create,
+  // drafts or own-records row (the `member` gate).
+  if (!profile) return { navAccess: navAccessFor({ loggedIn: false }), operatesSpaces: false, host: false, signedIn: false }
   const realRole = (profile.community_role ?? 'member') as CommunityRole
   const [effectiveRole, previewVisitor, realHats, staffMember, operatesRaw, areas] = await Promise.all([
     applyViewAs(realRole),
@@ -60,6 +62,7 @@ async function hubViewer(): Promise<FqMenuViewer> {
     navAccess,
     operatesSpaces: previewingDown ? false : operatesRaw,
     host: meetsAccess('host', previewVisitor ? null : effectiveRole),
+    signedIn: !previewVisitor,
   }
 }
 

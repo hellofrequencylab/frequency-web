@@ -196,6 +196,9 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     operatesSpaces: props.operatesSpaces,
     // DAWN's `minAccess: 'host'` rows, on the view-as role.
     host: meetsAccess('host', gateRole),
+    // The Anonymous Feed stand-in and a visitor preview gate as a signed-out visitor: no create or
+    // drafts rows (SCAN-912).
+    signedIn: !props.anonymous && !props.previewVisitor,
   }
   const accountGroups = groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref)
   // Bottom left: each Space the member runs, straight into its console, then the work rows.

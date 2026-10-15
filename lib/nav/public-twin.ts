@@ -128,3 +128,20 @@ export function matchPublicTwin(pathname: string | null): TwinMatch | null {
 export function hasPublicTwin(pathname: string | null): boolean {
   return matchPublicTwin(pathname) !== null
 }
+
+/**
+ * A member INDEX path whose public listing a signed-out visitor is sent to (SCAN-912). The member
+ * /circles is protected, and a signed-out visitor used to get a sign-in wall for what /discover/circles
+ * already shows in public. proxy.ts redirects there before its sign-in redirect, so the public listing
+ * stays a static (ISR) page and nothing under (main) reads the request for it. Signed in, /circles is
+ * unchanged: this is only consulted when there is no session.
+ */
+export const PUBLIC_INDEX_TWINS: Readonly<Record<string, string>> = {
+  '/circles': '/discover/circles',
+}
+
+/** The public listing for a member index path, or null when it has none. */
+export function publicIndexTwin(pathname: string | null): string | null {
+  if (!pathname) return null
+  return PUBLIC_INDEX_TWINS[pathname] ?? null
+}

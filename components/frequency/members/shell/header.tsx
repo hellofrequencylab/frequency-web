@@ -327,6 +327,11 @@ export function FqHeader({
         aria-label={shown?.label ?? 'Menu'}
         aria-hidden={!megaOn}
         inert={!megaOn}
+        onClick={(e) => {
+          // A row to the page you are on (Events from /events, a #hash) changes no route, so the
+          // pathname reset above never fires: the click closes the menu itself (SCAN-912).
+          if ((e.target as HTMLElement).closest('a')) setOpen(null)
+        }}
       >
         {shown && <MegaMenu section={shown} navAccess={navAccess} profileHref={profileHref} streak={streak} />}
       </div>

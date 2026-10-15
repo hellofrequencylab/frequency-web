@@ -220,6 +220,8 @@ type FqMenuGate =
   | 'operatesSpaces'
   /** Host or above on the trust ladder (DAWN's `minAccess: 'host'`). */
   | 'host'
+  /** Signed in. A create, drafts or own-records row a signed-out visitor must never see (SCAN-912). */
+  | 'member'
 
 /** A row in the avatar or work menu. An `action` row is a button that opens a global sheet. */
 export interface FqMenuRow {
@@ -237,6 +239,9 @@ export interface FqMenuViewer {
   navAccess?: Record<string, string>
   operatesSpaces: boolean
   host: boolean
+  /** False for a signed-out visitor (a public hub page, the anonymous Feed shell). Absent means signed
+   *  in: every other caller builds this viewer from a member's own session. */
+  signedIn?: boolean
 }
 
 /** Is this row visible to the viewer? Its NAV_AREAS key first, then its gate. */
@@ -247,6 +252,8 @@ export function menuGateOpen(row: { navKey?: string; gate?: FqMenuGate }, v: FqM
       return v.operatesSpaces
     case 'host':
       return v.host
+    case 'member':
+      return v.signedIn !== false
     default:
       return true
   }
@@ -257,9 +264,9 @@ export function menuGateOpen(row: { navKey?: string; gate?: FqMenuGate }, v: FqM
  *  drawn above "All your Spaces". */
 export const FQ_WORK_MENU: readonly FqMenuRow[] = [
   { group: 'Your Spaces', label: 'All your Spaces', href: '/spaces/operating', icon: 'space', gate: 'operatesSpaces' },
-  { group: 'Create', label: 'New event', href: '/events/new', icon: 'event', navKey: 'events' },
-  { group: 'Create', label: 'New Circle', href: '/circles/new', icon: 'circle', navKey: 'circles' },
-  { group: 'Create', label: 'List a product', href: '/market/sell', icon: 'tag', navKey: 'maker' },
+  { group: 'Create', label: 'New event', href: '/events/new', icon: 'event', navKey: 'events', gate: 'member' },
+  { group: 'Create', label: 'New Circle', href: '/circles/new', icon: 'circle', navKey: 'circles', gate: 'member' },
+  { group: 'Create', label: 'List a product', href: '/market/sell', icon: 'tag', navKey: 'maker', gate: 'member' },
   { group: 'Leadership', label: 'Leadership', href: '/lead', icon: 'standing', navKey: 'lead' },
   { group: 'Admin console', label: 'Admin console', href: '/admin', icon: 'shield', navKey: 'admin-home' },
 ]
@@ -317,18 +324,18 @@ export const HUB_LINKS: Readonly<Record<string, readonly FqHubLink[]>> = {
     { label: 'Housing', href: '/housing', navKey: 'housing' },
     { label: 'Frequency Store', href: '/store', navKey: 'shop' },
     { label: 'My storefront', href: '/market/manage', gate: 'host' },
-    { label: 'Post a listing', href: '/classifieds/new', navKey: 'market' },
-    { label: 'List a product', href: '/market/sell', navKey: 'maker' },
-    { label: 'My orders', href: '/orders' },
+    { label: 'Post a listing', href: '/classifieds/new', navKey: 'market', gate: 'member' },
+    { label: 'List a product', href: '/market/sell', navKey: 'maker', gate: 'member' },
+    { label: 'My orders', href: '/orders', gate: 'member' },
   ],
   '/circles': [
-    { label: 'Start a Circle', href: '/circles/new', navKey: 'circles' },
+    { label: 'Start a Circle', href: '/circles/new', navKey: 'circles', gate: 'member' },
     { label: 'Starter Circles', href: '/circles/templates', navKey: 'circles' },
     { label: 'Channels', href: '/channels', navKey: 'channels' },
   ],
   '/events': [
-    { label: 'New event', href: '/events/new', navKey: 'events' },
-    { label: 'Drafts', href: '/drafts' },
+    { label: 'New event', href: '/events/new', navKey: 'events', gate: 'member' },
+    { label: 'Drafts', href: '/drafts', gate: 'member' },
     { label: "What's happening", href: '/events/calendar', navKey: 'events' },
   ],
   '/crew': [

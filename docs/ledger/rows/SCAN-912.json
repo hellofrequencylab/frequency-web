@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-912",
+  "title": "Signed-out public listings sit in a real page container on the site canvas, members-only controls stay hidden, and the menus close on every link",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/layout.tsx",
+    "ref": "Owner 2026-10-14: double check all the styles for public listing pages, we messed this up; the menu does not seem to be working right, check them all. Same day: /circles should have a public version for signed-out visitors."
+  },
+  "detail": "Shared cause: under Frequency, app/(main)/layout.tsx publicChrome (the signed-out /events index, /events/calendar and a Space's public tabs) wrapped a members-kit body in a bare data-kit=members div inside the public SiteShell, with no .fqm-center column. So the body ran edge to edge, sat flush under the fixed site header, painted the members card ground instead of the site canvas, and the site kit's own meanings for shared class names leaked in (kit-site.css loads later): .side became a promo tile and .stack went sticky at 100px (the floating empty rail), .panel .k shrank, .chip went uppercase display type, .btn grew to 52px, .block (Tailwind) boxed the DAWN breadcrumbs. The wrapper is now .fqm-public-view, and one block in members-shell.css makes it the page: centred, 1200px max, the site's side padding, clear of the header by --fq-site-nav-rest, transparent on the canvas, with the leaked class meanings put back (btn and chip at specificity 0,3,1 so members variants still win). A new 'member' menu gate (nav.ts) hides New event, Drafts, Start a Circle, Post a listing, List a product, My orders and the work menu's create rows from a signed-out viewer, the anonymous Feed shell and a visitor preview; HubLinks passes signedIn false with no session. The Events hero drops its Calendar button (the List / Map / Calendar switch is the one way in). Signed-out /circles redirects in proxy.ts to the public /discover/circles listing (lib/nav/public-twin.ts PUBLIC_INDEX_TWINS), so the listing stays static; signed in, /circles is unchanged. Menus: every href in the site header, footer, member header, rails, tab bar and account menu resolves to an app route; the site header already closed on outside click, Escape, route change and same-page links; the member mega menu did not close on a same-page row and now does.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.readFileSync(f,'utf8');const l=r('app/(main)/layout.tsx');const c=r('app/themes/frequency/members-shell.css');const n=r('components/frequency/members/shell/nav.ts');const b=r('components/frequency/members/events/events-body.tsx');const t=r('lib/nav/public-twin.ts');const p=r('proxy.ts');const h=r('components/frequency/members/shell/header.tsx');const bad=[];if(!l.includes('className=\\\"fqm-public-view\\\"'))bad.push('the signed-out public view has no page container');if(!c.includes('.fqm-public-view{background:transparent')||!c.includes('var(--fq-site-nav-rest)'))bad.push('the public view does not clear the site header on the canvas');if(!/href: '\\/events\\/new', navKey: 'events', gate: 'member'/.test(n)||!/href: '\\/drafts', gate: 'member'/.test(n))bad.push('New event and Drafts reach signed-out visitors');if(b.includes('className=\\\"btn glass\\\" href={hrefWith(base, params, { view: '))bad.push('a Calendar button duplicates the view switch');if(!/'\\/circles': '\\/discover\\/circles'/.test(t)||!p.includes('publicIndexTwin(pathname)'))bad.push('signed-out /circles is a sign-in wall');const i=h.indexOf('id=\\\"fqm-menu\\\"');if(i<0||!h.slice(i,i+600).includes('closest(\\'a\\')'))bad.push('a same-page mega menu row leaves the menu open');if(bad.length){console.error('SCAN-912: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
