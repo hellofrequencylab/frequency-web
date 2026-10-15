@@ -41,7 +41,11 @@ it('finds the reported event with case differences and words in either order', a
 it('keeps hidden and ghost people out before applying a result window', async () => {
   const base = { display_name: 'Daniel Tyack', handle: 'daniel', is_active: true, directory_visible: true, ghost_mode: false }
   state.tables.profiles = [{ ...base, id: 'hidden', directory_visible: false }, { ...base, id: 'ghost', ghost_mode: true }, { ...base, id: 'public' }]
-  expect((await searchPeople('Daniel', 1)).rows.map((r) => r.id)).toEqual(['public'])
+  const visible = await searchPeople('Daniel', 1)
+  expect(visible.rows.map((r) => r.id)).toEqual(['public'])
+  expect(visible.truncated).toBe(false)
+  state.tables.profiles.push({ ...base, id: 'second-public' })
+  expect((await searchPeople('Daniel', 1)).truncated).toBe(true)
 })
 it('discovers network Spaces without leaking independent, inactive or root Spaces', async () => {
   const base = { id: 'public', name: 'The Group', visibility: 'network', network_connected: true, status: 'active', type: 'organization' }
@@ -60,4 +64,17 @@ it('does not advertise unlisted circles', async () => {
 it('does not report a broken provider as an empty result', async () => {
   state.errors.add('events')
   await expect(searchEvents('thrive')).rejects.toThrow('unavailable')
+})
+
+it('folds repeating search dates around the floor without starving sibling events', async () => {
+  const base = { title: 'Weekly gathering', status: 'published', visibility: 'public', is_cancelled: false, recurrence_type: 'weekly', parent_event_id: 'series-root' }
+  state.tables.events = [
+    { ...base, id: 'old-date', starts_at: '1999-01-01T09:00:00Z' },
+    { ...base, id: 'next-date', starts_at: '2098-01-01T09:00:00Z' },
+    { ...base, id: 'later-date', starts_at: '2099-01-01T09:00:00Z' },
+    { ...base, id: 'one-off', parent_event_id: null, recurrence_type: 'none', starts_at: '2097-01-01T09:00:00Z' },
+  ]
+  const result = await searchEvents('gathering', 2)
+  expect(result.rows.map((r) => r.id).sort()).toEqual(['next-date', 'one-off'])
+  expect(result.truncated).toBe(false)
 })
