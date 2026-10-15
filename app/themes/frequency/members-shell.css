@@ -880,3 +880,22 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 @media (display-mode: standalone){
   :root[data-design="frequency"] body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:env(safe-area-inset-bottom,0px);background:var(--fq-th-void);z-index:2147483000;pointer-events:none}
 }
+
+/* SCAN-938: one compact phone header and a five-slot bar with an in-flow primary action. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-header-avatar{display:none;width:100%;height:100%;border-radius:inherit;background:var(--fq-pa-orb) center/cover no-repeat}
+@media (max-width:767px){
+  [data-design="frequency"] [data-kit="members"] .fqm-header-avatar{display:block}
+  [data-design="frequency"] [data-kit="members"] .fqm-header-initials{display:none}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr{padding-inline:max(12px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right));gap:4px}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-l{flex:0 1 144px;min-width:0;width:auto}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-logo{width:144px;max-width:100%}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-c{flex:0 0 auto;gap:0;padding:0;margin-left:auto}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-r{flex:0 0 auto;padding:0;width:auto}
+  [data-design="frequency"] [data-kit="members"] :is(.ap-hdr .ap-ic,.ap-hdr .ap-me,.ap-hdr .ap-search){width:44px;height:44px;min-width:44px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tabbar{height:68px;border-radius:var(--fq-radius-l)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap{justify-content:center;padding:0;gap:4px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb{position:static;width:44px;height:32px;margin:0;border-radius:var(--fq-radius-orb);box-shadow:inset 0 0 0 1px var(--fqm-white-75)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:hover .fqm-tb-orb{box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
+}
+}

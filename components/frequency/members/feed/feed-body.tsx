@@ -114,7 +114,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
             <ContextLine eventsP={eventsP} />
           </Suspense>
         </div>
-        <CreateButton />
+        <div className="fa-create-desktop"><CreateButton /></div>
       </div>
 
       {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
@@ -126,6 +126,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       {/* Hidden on desktop while the right rail shows its full Stats & streaks box (members-shell.css). */}
       <div className="fa-standing">
         <Standing
+          afterStats={<div className="fa-create-mobile"><CreateButton /></div>}
           streak={p.standing.streak}
           loggedToday={p.standing.loggedToday}
           atRisk={p.standing.atRisk}

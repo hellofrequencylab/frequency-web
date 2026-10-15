@@ -92,7 +92,7 @@ function useCountUp(target: number): number {
   return Math.round(target * t)
 }
 
-export function Standing(props: StandingProps) {
+export function Standing(props: StandingProps & { afterStats?: React.ReactNode }) {
   const [stat, setStat] = useState<Stat>('streak')
   const boxOpen = useSyncExternalStore(subscribeBox, readBox, () => true)
   const streak = useCountUp(props.streak)
@@ -149,6 +149,7 @@ export function Standing(props: StandingProps) {
           </button>
         ))}
       </div>
+      {props.afterStats}
       <div className="fa-glass" data-open={boxOpen ? '' : undefined}>
         <button
           type="button"

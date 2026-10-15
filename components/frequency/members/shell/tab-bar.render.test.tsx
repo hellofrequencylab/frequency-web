@@ -57,6 +57,7 @@ describe('FqTabBar', () => {
     const zap = host.querySelector<HTMLButtonElement>('button[aria-controls="fqm-zap"]')!
     expect(zap.getAttribute('aria-expanded')).toBe('true')
     expect(menu.getAttribute('aria-expanded')).toBe('false')
+    expect(menu.querySelector('path')?.getAttribute('d')).toBe('M4 6h16M4 12h16M4 18h16')
     act(() => menu.click())
     act(() => zap.click())
     expect(onMenu).toHaveBeenCalledOnce()

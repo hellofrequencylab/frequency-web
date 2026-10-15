@@ -71,7 +71,7 @@ export const FqTabBar = forwardRef<HTMLButtonElement, FqTabBarProps>(function Fq
         onClick={onMenu}
       >
         <span className="fqm-tb-ic">
-          <FqIcon name={menuOpen ? 'close' : 'more'} />
+          {menuOpen ? <FqIcon name="close" /> : <svg className="fq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>}
           {menuCount > 0 && !menuOpen && <i aria-hidden />}
         </span>
         <span className="fqm-tb-l">Menu</span>

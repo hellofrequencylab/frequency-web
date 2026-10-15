@@ -307,3 +307,22 @@
 [data-design="frequency"] [data-kit="members"] .fa-badge.is-inline{position:static;height:22px;margin-left:10px;padding:0 9px;vertical-align:middle}
 /* SCAN-911: Vera's join notice is a micro-notice: a short muted line, not a post-sized row. */
 [data-design="frequency"] [data-kit="members"] .fa-join{padding:10px 0;font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
+
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fa-create-mobile{display:none}
+@media (max-width:767px){
+  [data-design="frequency"] [data-kit="members"] .fa-create-desktop{display:none}
+  [data-design="frequency"] [data-kit="members"] .fa-create-mobile{display:flex;justify-content:flex-end;margin-top:14px}
+  [data-design="frequency"] [data-kit="members"] .fa-standing .fa-glass{padding:16px;margin-top:14px}
+  [data-design="frequency"] [data-kit="members"] .fa-streak{flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:14px}
+  [data-design="frequency"] [data-kit="members"] .fa-ring{width:56px;height:56px;margin:0}
+  [data-design="frequency"] [data-kit="members"] .fa-ring>.fq-breathe{inset:-4px;filter:blur(12px)}
+  [data-design="frequency"] [data-kit="members"] .fa-ring>.fa-ring-in{inset:4px;gap:3px}
+  [data-design="frequency"] [data-kit="members"] .fa-ring-in b{font-size:var(--fq-text-h3)}
+  [data-design="frequency"] [data-kit="members"] .fa-ring-in i{font-size:var(--fq-text-label)}
+  [data-design="frequency"] [data-kit="members"] .fa-streak-r{flex:1 1 180px;min-width:0}
+  [data-design="frequency"] [data-kit="members"] .fa-folded{gap:12px}
+  [data-design="frequency"] [data-kit="members"] .fa-folded-t{flex-basis:120px}
+  [data-design="frequency"] [data-kit="members"] .fa-chain{margin-top:12px}
+}
+}
