@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { FqIcon } from '@/components/frequency/icon'
+import { JoinPrompt } from '../join-prompt'
 
 // THE EVENT CHAT, SIGNED OUT (owner, 2026-10-14: "chat box (pop up to join)"). The member page has the
 // event's thread; a visitor sees that it exists and where to say hi, and the first tap on the box asks them
@@ -10,15 +11,9 @@ import { FqIcon } from '@/components/frequency/icon'
 // bubbles are a shape, not content.
 
 export function PublicEventChat({ title, joinHref, going }: { title: string; joinHref: string; going: number | null }) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const dialog = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const d = dialog.current
-    if (!d) return
-    if (open && !d.open) d.showModal()
-    if (!open && d.open) d.close()
-  }, [open])
 
   return (
     <section className="panel stack fqm-pe-chat" aria-label="Event chat">
@@ -43,27 +38,21 @@ export function PublicEventChat({ title, joinHref, going }: { title: string; joi
         <FqIcon name="arrow" />
       </button>
 
-      <dialog ref={dialog} className="fqm-pe-dialog" aria-label="Join to chat" onClose={() => setOpen(false)}>
-        <div className="stack">
-          <span className="k">Join the conversation</span>
-          <span className="h3">Chat with everyone going to {title}</span>
-          <span className="t2">
-            Make a free Frequency account to post in the event chat, see who is coming and get a nudge before it
-            starts. It takes about 30 seconds.
-          </span>
-          <div className="row wrap">
-            <Link href={joinHref} className="btn pa">
-              Join free
-            </Link>
-            <a href="#rsvp" className="btn" onClick={() => setOpen(false)}>
-              RSVP as a guest
-            </a>
-          </div>
-          <button type="button" className="btn txt fqm-pe-x" onClick={() => setOpen(false)}>
-            Not now
-          </button>
-        </div>
-      </dialog>
+      <JoinPrompt
+        open={open}
+        dialogRef={dialog}
+        dismissible
+        onDismiss={() => setOpen(false)}
+        title={<>Join the <span className="serif">conversation.</span></>}
+        joinHref={joinHref}
+        joinLabel="Join free"
+        loginHref={`/sign-in?next=${encodeURIComponent(pathname ?? '/events')}`}
+        secondary={<a href="#rsvp" className="btn lg" onClick={() => setOpen(false)}>RSVP as a guest</a>}
+        footer={<button type="button" className="btn txt sm" onClick={() => setOpen(false)}>Not now</button>}
+      >
+        Chat with everyone going to {title}. Make a free Frequency account to post, see who is coming and get a
+        nudge before it starts.
+      </JoinPrompt>
     </section>
   )
 }

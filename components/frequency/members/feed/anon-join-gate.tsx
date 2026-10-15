@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { BETA_CTA_HREF } from '@/lib/site'
 import { FEED_PREVIEW_MS, anonFeedHrefAllowed } from '@/lib/feed/join-gate'
+import { JoinPrompt } from '../join-prompt'
 
 // THE JOIN OVERLAY ON THE ANONYMOUS FEED (SCAN-889; owner, 2026-10-14: "The pop up is a full screen
 // overlay with the Join box in the middle"). Mounted by app/(main)/layout.tsx around the real member
@@ -19,8 +20,6 @@ import { FEED_PREVIEW_MS, anonFeedHrefAllowed } from '@/lib/feed/join-gate'
 // Full screen: a modal <dialog> sized to the viewport, the Feed behind it dimmed and blurred and inert,
 // the Join box centred. It does not close on Escape or a backdrop click; the ways on are Join free, Log
 // in, or Back to Home.
-
-const TITLE_ID = 'fqm-join-title'
 
 /** Clickable things a visitor could act through. A link is judged by its href; the rest are account-only. */
 const ACTIONABLE = 'a[href],button,[role="button"],[role="menuitem"],[role="tab"],input,select,textarea,label,summary'
@@ -81,50 +80,19 @@ export function AnonJoinGate() {
     }
   }, [show])
 
-  useEffect(() => {
-    const d = dialog.current
-    if (open && d && !d.open) d.showModal()
-  }, [open])
-
   return (
-    <dialog
-      ref={dialog}
-      className="fqm-join"
-      aria-labelledby={TITLE_ID}
-      onCancel={(e) => e.preventDefault()}
-      onClose={() => {
-        // A browser may force-close a modal on a repeated Escape; the anonymous read has still ended.
-        if (open) dialog.current?.showModal()
-      }}
+    <JoinPrompt
+      open={open}
+      dialogRef={dialog}
+      title={<>Join the <span className="serif">movement.</span></>}
+      joinHref={BETA_CTA_HREF}
+      joinLabel="Join the movement"
+      secondary={<Link href="/about" className="btn lg">Find out more</Link>}
+      loginHref="/sign-in?next=%2Ffeed"
+      footer={<Link href="/" className="btn txt sm fqm-join-home">Back to Home</Link>}
     >
-      <div className="fqm-join-box">
-        <div className="fq-aura" aria-hidden />
-        <div className="fqm-join-in">
-          <span className="k">Frequency Community Collective</span>
-          {/* SCAN-911: a warm pitch, not a status line (owner: "a mood of join the movement"). */}
-          <h2 id={TITLE_ID} className="h2 fqm-join-h">
-            Join the <span className="serif">movement.</span>
-          </h2>
-          <p className="fqm-join-p">
-            Real-life community is growing across North County: local Circles, events and daily practices with people
-            who show up. Join free while we’re in beta.
-          </p>
-          <div className="fqm-join-acts">
-            <Link href={BETA_CTA_HREF} className="btn pa lg">
-              Join the movement
-            </Link>
-            <Link href="/about" className="btn lg">
-              Find out more
-            </Link>
-          </div>
-          <p className="fqm-join-login">
-            Already a member? <Link href="/sign-in?next=%2Ffeed">Log in</Link>
-          </p>
-          <Link href="/" className="btn txt sm fqm-join-home">
-            Back to Home
-          </Link>
-        </div>
-      </div>
-    </dialog>
+      Real-life community is growing across North County: local Circles, events and daily practices with people
+      who show up. Join free while we’re in beta.
+    </JoinPrompt>
   )
 }
