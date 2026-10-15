@@ -1,19 +1,26 @@
 'use client'
 
-// The /join BETA ENTRY on the Frequency design (SCAN-879, re-laid as a progressive slide in SCAN-888):
-// the stock way in, one question at a time in a single centered card over a soft backdrop photo.
-// Each answer drops into a chip above the next question, so the card visibly builds as they go.
+// The /join BETA ENTRY on the Frequency design (SCAN-879; a progressive slide in SCAN-888; one short
+// card that grows in place in SCAN-894): the stock way in, as a compact card centered in the space
+// under the site header, over a soft backdrop photo. Three steps:
 //
-//   1. What should we call you?        name
-//   2. Where should we send your link? email. On Continue the answers are parked (the induction
-//                                       cookie and the lead row) and the sign-in email goes out.
-//   3. Add a face                       optional photo, saved the moment it is picked
-//   4. Where are you?                   optional town: "Turn on location" (the browser's own prompt),
-//                                       a typed town as the fallback
-//   5. Check your email                 Send it again / Use a different email
+//   1. Join the beta          Name first. The moment the name has a character, the Email field slides
+//                             in under it. A valid address saves itself on blur or Enter (the induction
+//                             cookie, the lead row, and the sign-in email, once per address), with a
+//                             "Saving… / Saved ✓" indicator beside the field and a Retry if it fails.
+//                             Once saved, a round "Add a photo" target opens above the name (optional,
+//                             parked the moment it is picked).
+//   2. Where are you?         optional town: "Turn on location" (the browser's own prompt), a typed
+//                             town as the fallback; Skip.
+//   3. Check your email to activate   the link activates the account; the consent line (Terms, Privacy)
+//                             sits under it; Send it again / Use a different email.
 //
-// Back on every slide after the first, Enter advances, focus lands on each new slide's input, and the
-// step change is announced. Under prefers-reduced-motion the slides swap without moving (the CSS).
+// The save is NOT fired on a typing pause: a pause inside "sam@gmail.co" is a valid-looking address and
+// would mail a stranger. Blur, Enter, or Continue saves it. Focus: the name takes focus on arrival;
+// Enter in the name (or Tab) moves to the email; the email never grabs focus mid-word, and the photo
+// target appears without taking focus. Each new step's first control takes focus, and an aria-live
+// line announces the email field, the photo target and each step. Under prefers-reduced-motion the
+// reveals and the step swap happen without moving (the CSS).
 //
 // 🔴 NO NEW AUTH PATH AND NO NEW DATA. Everything runs through actions that already exist:
 //   · stashPendingInduction parks the answers in the cookie /join/complete's finalizer reads after sign-in
@@ -55,19 +62,19 @@ const COMPLETE_PATH = '/join/complete'
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 
-/** The five slides, in order. Each is one question; the progress bar and the live region read this. */
-const SLIDES = [
-  { id: 'name', q: 'What should we call you?' },
-  { id: 'email', q: 'Where should we send your link?' },
-  { id: 'photo', q: 'Add a face' },
+/** The three steps, in order. The progress indicator and the live region read this. */
+const STEPS = [
+  { id: 'join', q: 'Join the beta' },
   { id: 'place', q: 'Where are you?' },
-  { id: 'sent', q: 'Check your email' },
+  { id: 'sent', q: 'Check your email to activate' },
 ] as const
-const LAST = SLIDES.length - 1
-const PHOTO_SLIDE = 2
-const PLACE_SLIDE = 3
+const PLACE = 1
+const LAST = STEPS.length - 1
+/** The control each step hands focus to when it arrives. */
+const FIRST_CONTROL = ['jb-name', 'jb-city', 'jb-resend'] as const
 
 type Place = { label: string; lat: number | null; lng: number | null }
+type Save = { state: 'idle' | 'saving' | 'saved' | 'error'; error?: string }
 
 /** The induction's suggestion rule ("Daniel Tyack" -> "danieltyack"), padded to the three-letter floor. */
 function baseHandle(name: string): string {
@@ -113,21 +120,31 @@ export function FrequencyJoin({
   initialHandle = '',
   initialPlace = '',
 }: {
-  /** RESUME: 2 = this browser already sent its name and email, so it reopens on the photo slide. */
+  /** RESUME: 2 = this browser already parked its name and sent a link, so step 1 reopens saved. */
   initialStep?: 1 | 2
   initialName?: string
   initialHandle?: string
   initialPlace?: string
 }) {
+  const resumed = initialStep === 2
   const [side] = useSiteSide()
-  const [slide, setSlide] = useState(initialStep === 2 ? PHOTO_SLIDE : 0)
-  const [dir, setDir] = useState<'fwd' | 'back'>('fwd')
+  const [step, setStep] = useState(0)
   const [name, setName] = useState(initialName)
   const [email, setEmail] = useState('')
-  /** The address the last link went to, so stepping back and forward does not send it twice. */
-  const [sentTo, setSentTo] = useState('')
+  /** Latched: once the email field has slid in it stays, even if the name is cleared. */
+  const [emailShown, setEmailShown] = useState(!!initialName)
   const [handle, setHandle] = useState(initialHandle)
+  /** The address the last link went to: one save (park, lead, send) per address. */
+  const [savedTo, setSavedTo] = useState('')
+  /** The name the induction cookie holds, so Continue re-parks only when it changed. */
+  const [parkedName, setParkedName] = useState(resumed ? initialName : '')
+  const [save, setSave] = useState<Save>({ state: 'idle' })
+  /** Latched: the photo target opens on the first save and stays (Use a different email keeps it). */
+  const [photoShown, setPhotoShown] = useState(resumed)
+  /** The save in flight, so a blur and a Continue click on the same address share one save. */
+  const inflight = useRef<{ address: string; done: Promise<boolean> } | null>(null)
   const [error, setError] = useState('')
+  const [announce, setAnnounce] = useState('')
   const [pending, startTransition] = useTransition()
   const [resent, setResent] = useState(false)
 
@@ -144,18 +161,20 @@ export function FrequencyJoin({
   const [results, setResults] = useState<PlaceSuggestion[]>([])
   const [active, setActive] = useState(-1)
 
-  // Each slide hands its first control to this ref; focus moves there when the slide arrives.
-  const focusRef = useRef<HTMLElement | null>(null)
-  const setFocus = (el: HTMLElement | null) => {
-    focusRef.current = el
-  }
+  // Each step's first control takes focus when the step arrives; a one-off target overrides it (Use a
+  // different email lands on the email field). The very first paint focuses the name unless resumed.
+  const focusNext = useRef<string | null>(null)
   const firstPaint = useRef(true)
   useEffect(() => {
-    // The first question takes focus on arrival too (the page's only job); a resume does not.
-    const resumed = firstPaint.current && initialStep === 2
+    const first = firstPaint.current
     firstPaint.current = false
-    if (!resumed) focusRef.current?.focus({ preventScroll: true })
-  }, [slide, initialStep])
+    if (first && resumed) return
+    const id = focusNext.current ?? FIRST_CONTROL[step]
+    focusNext.current = null
+    const el = document.getElementById(id) ?? document.getElementById('jb-other')
+    el?.focus({ preventScroll: true })
+    if (el instanceof HTMLInputElement && id === 'jb-email') el.select()
+  }, [step, resumed])
 
   // Town typeahead (Photon, the same source the induction's city field uses).
   useEffect(() => {
@@ -173,10 +192,11 @@ export function FrequencyJoin({
   }, [query, place])
 
   function go(to: number) {
+    const next = Math.max(0, Math.min(LAST, to))
     setError('')
     setResent(false)
-    setDir(to < slide ? 'back' : 'fwd')
-    setSlide(Math.max(0, Math.min(LAST, to)))
+    setAnnounce(`Step ${next + 1} of ${STEPS.length}: ${STEPS[next].q}`)
+    setStep(next)
   }
 
   function park(fields: { displayName: string; handle: string; place: Place | null; beat: number }) {
@@ -194,42 +214,94 @@ export function FrequencyJoin({
     })
   }
 
-  async function send(address: string): Promise<boolean> {
+  function send(address: string) {
     const fd = new FormData()
     fd.set('email', address)
     fd.set('next', COMPLETE_PATH)
-    const res = await sendSignupLink(fd)
-    if (!res.ok) setError(res.error)
-    else setSentTo(address)
-    return res.ok
+    return sendSignupLink(fd)
   }
 
-  // Name -> email: nothing is saved yet; the name rides along with the email.
-  function onName(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!name.trim()) return setError('Add your name so people know who they’re meeting.')
-    go(1)
+  function onName(value: string) {
+    setName(value)
+    if (value.trim() && !emailShown) {
+      setEmailShown(true)
+      setAnnounce('Email field added below your name.')
+    }
   }
 
-  // Email -> photo: saved the moment they continue, and the link goes out.
-  function onEmail(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  function onEmail(value: string) {
+    setEmail(value)
+    if (error) setError('')
+    // A different address is a new save; the old one's "Saved" no longer describes this field.
+    if (value.trim() !== savedTo && save.state !== 'saving') setSave({ state: 'idle' })
+  }
+
+  /** THE SAVE: what the old email step did on "Send my link", now fired by the field itself (blur,
+   *  Enter, Continue). Once per address: the same address never parks or mails twice. */
+  function saveEmail(): Promise<boolean> {
     const displayName = name.trim()
     const address = email.trim()
-    if (!displayName) return go(0)
-    if (!EMAIL_RE.test(address)) return setError('That email doesn’t look right. Check it and try again.')
-    if (address === sentTo) return go(PHOTO_SLIDE)
-    setError('')
-    startTransition(async () => {
+    if (!displayName || !EMAIL_RE.test(address)) return Promise.resolve(false)
+    if (address === savedTo) return Promise.resolve(true)
+    if (inflight.current?.address === address) return inflight.current.done
+    const done = (async () => {
+      setSave({ state: 'saving' })
       try {
         const h = handle || (await pickHandle(displayName))
         setHandle(h)
         // Saved first: the answers outlive a failed send, a closed tab, or a link opened tomorrow.
         await park({ displayName, handle: h, place, beat: 1 })
+        setParkedName(displayName)
         await bounded(
           captureLead({ email: address, step: 1, source: 'beta_induction', displayName, handle: h, payload: { entry: 'beta' } }),
         )
-        if (await send(address)) go(PHOTO_SLIDE)
+        const res = await send(address)
+        if (!res.ok) {
+          setSave({ state: 'error', error: res.error })
+          return false
+        }
+        setSavedTo(address)
+        setSave({ state: 'saved' })
+        setPhotoShown(true)
+        if (!resumed) setAnnounce('Saved. A photo upload is now above your name.')
+        return true
+      } catch {
+        setSave({ state: 'error', error: 'That didn’t save. Check your connection.' })
+        return false
+      } finally {
+        inflight.current = null
+      }
+    })()
+    inflight.current = { address, done }
+    return done
+  }
+
+  // Continue on step 1: save if it has not (the click blurs the field too; the in-flight guard keeps
+  // that to one save), re-park a renamed name, then on to the town.
+  function onContinue(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const displayName = name.trim()
+    const address = email.trim()
+    if (!displayName) {
+      setError('Add your name so people know who they’re meeting.')
+      document.getElementById('jb-name')?.focus()
+      return
+    }
+    const skipEmail = resumed && !address
+    if (!skipEmail && !EMAIL_RE.test(address)) {
+      setError('That email doesn’t look right. Check it and try again.')
+      document.getElementById('jb-email')?.focus()
+      return
+    }
+    setError('')
+    startTransition(async () => {
+      try {
+        if (!skipEmail && !(await saveEmail())) return
+        if (displayName !== parkedName && handle) {
+          await park({ displayName, handle, place, beat: 1 })
+          setParkedName(displayName)
+        }
+        go(PLACE)
       } catch {
         setError('Something went wrong on our side. Try again in a moment.')
       }
@@ -252,6 +324,7 @@ export function FrequencyJoin({
       })
       localStorage.setItem(PENDING_AVATAR_KEY, dataUrl)
       setPhoto(URL.createObjectURL(small))
+      setAnnounce('Photo added.')
     } catch {
       setPhotoError('That photo would not save here. You can add one later from your profile.')
     }
@@ -271,14 +344,14 @@ export function FrequencyJoin({
     if (!pos) {
       setLocating(false)
       setLocNote('Location is off for this site. Type your town instead.')
-      focusRef.current?.focus()
+      document.getElementById('jb-city')?.focus()
       return
     }
     const found = await reversePlace(pos.lat, pos.lng)
     setLocating(false)
     if (!found) {
       setLocNote('We found you but not your town’s name. Type it instead.')
-      focusRef.current?.focus()
+      document.getElementById('jb-city')?.focus()
       return
     }
     choose(found)
@@ -289,8 +362,8 @@ export function FrequencyJoin({
     if (!results.length) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
-      const step = e.key === 'ArrowDown' ? 1 : -1
-      setActive((i) => (i + step + results.length) % results.length)
+      const dir = e.key === 'ArrowDown' ? 1 : -1
+      setActive((i) => (i + dir + results.length) % results.length)
     } else if (e.key === 'Enter') {
       e.preventDefault()
       choose(results[Math.max(0, active)])
@@ -320,22 +393,18 @@ export function FrequencyJoin({
     setError('')
     setResent(false)
     startTransition(async () => {
-      if (await send(email.trim())) setResent(true)
+      const res = await send(email.trim())
+      if (res.ok) setResent(true)
+      else setError(res.error)
     })
   }
 
   const looking = side === 'p'
-  const current = SLIDES[slide]
+  const current = STEPS[step]
   const photoSrc = safeUploadPreviewSrc(photo)
   const headingId = `jb-q-${current.id}`
-
-  // The answers so far, shown as chips over the question; each one steps back to its slide.
-  const chips: { key: string; label: string; value: string; to: number; avatar?: string }[] = []
-  if (slide > 0 && name.trim()) chips.push({ key: 'name', label: 'Name', value: name.trim(), to: 0 })
-  if (slide > 1 && email.trim()) chips.push({ key: 'email', label: 'Email', value: email.trim(), to: 1 })
-  if (slide > PHOTO_SLIDE && photoSrc)
-    chips.push({ key: 'photo', label: 'Photo', value: 'Photo added', to: PHOTO_SLIDE, avatar: photoSrc })
-  if (slide > PLACE_SLIDE && place) chips.push({ key: 'place', label: 'Town', value: place.label, to: PLACE_SLIDE })
+  const showPhoto = photoShown
+  const busy = pending || save.state === 'saving'
 
   const err = error ? (
     <p className="jx-err" role="alert">
@@ -344,14 +413,14 @@ export function FrequencyJoin({
   ) : null
 
   const back =
-    slide > 0 ? (
-      <button className="jb-back" type="button" onClick={() => go(slide - 1)} disabled={pending}>
+    step > 0 ? (
+      <button className="jb-back" type="button" onClick={() => go(step - 1)} disabled={pending}>
         <span aria-hidden="true">←</span> Back
       </button>
     ) : null
 
   return (
-    <div className="jb" data-screen-label={`0${slide + 1} ${current.q}`}>
+    <div className="jb" data-screen-label={`0${step + 1} ${current.q}`}>
       <div className="jb-bg" aria-hidden="true">
         <Image
           src={looking ? '/brand/frequency/photos/day-meditation-circle.jpg' : '/brand/frequency/photos/gathering-09.jpg'}
@@ -367,141 +436,149 @@ export function FrequencyJoin({
           <div className="jb-top">
             <span className="jb-k">
               <i className="fq-breathe" aria-hidden="true" />
-              Beta launch · free, no card
+              Beta · free, no card
             </span>
-            <span className="jb-count" aria-hidden="true">
-              {slide + 1} / {SLIDES.length}
+            <span className="jb-prog">
+              <span className="jb-count" aria-hidden="true">
+                {step + 1}/{STEPS.length}
+              </span>
+              <span
+                className="jb-steps"
+                role="progressbar"
+                aria-label="Joining"
+                aria-valuemin={1}
+                aria-valuemax={STEPS.length}
+                aria-valuenow={step + 1}
+                aria-valuetext={`Step ${step + 1} of ${STEPS.length}: ${current.q}`}
+              >
+                {STEPS.map((s, i) => (
+                  <i key={s.id} data-on={i <= step ? '' : undefined} />
+                ))}
+              </span>
             </span>
           </div>
-          <div
-            className="jb-bar"
-            data-step={slide + 1}
-            role="progressbar"
-            aria-label="Joining"
-            aria-valuemin={1}
-            aria-valuemax={SLIDES.length}
-            aria-valuenow={slide + 1}
-            aria-valuetext={`Step ${slide + 1} of ${SLIDES.length}`}
-          >
-            <i />
-          </div>
-
-          {chips.length > 0 && (
-            <ul className="jb-chips" aria-label="Your answers so far">
-              {chips.map((c) => (
-                <li key={c.key} className="jb-chip">
-                  <button
-                    type="button"
-                    onClick={() => go(c.to)}
-                    disabled={pending}
-                    aria-label={`${c.label}: ${c.value}. Change`}
-                  >
-                    {c.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- a blob: preview this browser minted
-                      <img src={c.avatar} alt="" />
-                    ) : (
-                      <small>{c.label}</small>
-                    )}
-                    <span>{c.value}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
 
           <p className="sr-only" aria-live="polite" aria-atomic="true">
-            {`Step ${slide + 1} of ${SLIDES.length}: ${current.q}`}
+            {announce}
           </p>
 
-          <section key={current.id} className="jb-slide" data-dir={dir} aria-labelledby={headingId}>
+          <section key={current.id} className="jb-slide" aria-labelledby={headingId}>
             <h1 id={headingId}>{current.q}</h1>
 
-            {current.id === 'name' && (
-              <form className="jx-f" noValidate onSubmit={onName}>
-                <p className="jb-sub">The name people see when they meet you. First name is fine.</p>
-                <label className="sr-only" htmlFor="jb-name">
-                  Your name
-                </label>
-                <Input
-                  id="jb-name"
-                  ref={setFocus}
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Sam Rivera"
-                  autoComplete="name"
-                  enterKeyHint="next"
-                />
-                {err}
-                <div className="jb-act">
-                  <button className="btn fq-iri-btn" type="submit">
-                    Continue
-                  </button>
-                </div>
-                <p className="jx-fine">Press Enter to continue.</p>
-              </form>
-            )}
+            {current.id === 'join' && (
+              <form className="jx-f" noValidate onSubmit={onContinue}>
+                {showPhoto && (
+                  <div className="jb-reveal">
+                    <div>
+                      <div className="jb-photo">
+                        <button type="button" onClick={() => fileRef.current?.click()}>
+                          {photoSrc ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- a blob: preview this browser minted
+                            <img src={photoSrc} alt="Your photo" className="jb-av" />
+                          ) : (
+                            <span className="jb-av" aria-hidden="true">
+                              {getInitials(name) || '+'}
+                            </span>
+                          )}
+                          <span>
+                            {photoSrc ? 'Change photo' : 'Add a photo'}
+                            <small>Optional. Helps people say yes.</small>
+                          </span>
+                        </button>
+                        <input
+                          ref={fileRef}
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          aria-label="Profile photo"
+                          onChange={onPhoto}
+                        />
+                      </div>
+                      {photoError && <p className="jx-err">{photoError}</p>}
+                    </div>
+                  </div>
+                )}
 
-            {current.id === 'email' && (
-              <form className="jx-f" noValidate onSubmit={onEmail}>
-                <p className="jb-sub">We’ll email a link that signs you in. No password, no spam.</p>
-                <label className="sr-only" htmlFor="jb-email">
-                  Email
-                </label>
-                <Input
-                  id="jb-email"
-                  ref={setFocus}
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  enterKeyHint="send"
-                />
-                {err}
-                <div className="jb-act">
-                  {back}
-                  <button className="btn fq-iri-btn" type="submit" disabled={pending}>
-                    {pending ? 'One sec…' : 'Send my link'}
-                  </button>
+                <div className="jb-field">
+                  <label htmlFor="jb-name">Your name</label>
+                  <Input
+                    id="jb-name"
+                    name="name"
+                    value={name}
+                    onChange={(e) => onName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      if (name.trim()) document.getElementById('jb-email')?.focus()
+                    }}
+                    required
+                    placeholder="Sam Rivera"
+                    autoComplete="name"
+                    enterKeyHint="next"
+                  />
                 </div>
-                <p className="jx-fine">Saved as soon as you continue.</p>
-              </form>
-            )}
 
-            {current.id === 'photo' && (
-              <form
-                className="jx-f"
-                noValidate
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  go(PLACE_SLIDE)
-                }}
-              >
-                <p className="jb-sub">Your link is on its way. While it travels: a photo helps people say yes. Optional.</p>
-                <div className="jb-photo">
-                  <button type="button" ref={setFocus} onClick={() => fileRef.current?.click()}>
-                    {photoSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- a blob: preview this browser minted
-                      <img src={photoSrc} alt="Your photo" className="jb-av" />
-                    ) : (
-                      <span className="jb-av" aria-hidden="true">
-                        {getInitials(name) || '?'}
-                      </span>
-                    )}
-                    <span>{photoSrc ? 'Change photo' : 'Add a photo'}</span>
-                  </button>
-                  <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPhoto} />
-                </div>
-                {photoError && <p className="jx-err">{photoError}</p>}
+                {emailShown && (
+                  <div className="jb-reveal">
+                    <div>
+                      <div className="jb-field">
+                        <div className="jb-lab">
+                          <label htmlFor="jb-email">Email</label>
+                          <span className="jb-save" data-state={save.state} role="status">
+                            {save.state === 'saving' && 'Saving…'}
+                            {save.state === 'saved' && (
+                              <>
+                                Saved <span aria-hidden="true">✓</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        <Input
+                          id="jb-email"
+                          name="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => onEmail(e.target.value)}
+                          onBlur={() => void saveEmail()}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return
+                            // Enter saves; once this address is saved, Enter moves on like Continue.
+                            const address = email.trim()
+                            if (address && address === savedTo) return
+                            e.preventDefault()
+                            if (EMAIL_RE.test(address)) void saveEmail()
+                            else if (address) setError('That email doesn’t look right. Check it and try again.')
+                          }}
+                          required
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                          enterKeyHint="done"
+                          aria-describedby="jb-email-note"
+                          aria-invalid={save.state === 'error' || undefined}
+                        />
+                        {save.state === 'error' ? (
+                          <p className="jx-err jb-note" id="jb-email-note" role="alert">
+                            {save.error}{' '}
+                            <button className="jb-retry" type="button" onClick={() => void saveEmail()}>
+                              Retry
+                            </button>
+                          </p>
+                        ) : (
+                          <p className="jx-fine jb-note" id="jb-email-note">
+                            {resumed && !email.trim()
+                              ? 'Your link already went out. Add your email only to send a new one.'
+                              : 'Saves as soon as you finish. We email a link, no password.'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {err}
                 <div className="jb-act">
-                  {back}
-                  <button className="btn fq-iri-btn" type="submit">
-                    {photoSrc ? 'Continue' : 'Skip for now'}
+                  <button className="btn fq-iri-btn" type="submit" disabled={busy}>
+                    {busy ? 'One sec…' : 'Continue'}
                   </button>
                 </div>
               </form>
@@ -530,45 +607,46 @@ export function FrequencyJoin({
                     {locNote}
                   </p>
                 )}
-                <label htmlFor="jb-city">Or type your town</label>
-                <span className="jb-city">
-                  <Input
-                    id="jb-city"
-                    ref={setFocus}
-                    type="text"
-                    role="combobox"
-                    aria-expanded={results.length > 0}
-                    aria-controls="jb-city-list"
-                    aria-autocomplete="list"
-                    aria-activedescendant={active >= 0 ? `jb-city-${active}` : undefined}
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value)
-                      setPlace(null)
-                      if (e.target.value.trim().length < 2) setResults([])
-                    }}
-                    onKeyDown={onCityKey}
-                    placeholder="San Diego"
-                    autoComplete="off"
-                    enterKeyHint="next"
-                  />
-                  {results.length > 0 && (
-                    <ul id="jb-city-list" role="listbox" aria-label="Town suggestions" className="jb-list">
-                      {results.map((r, i) => (
-                        <li
-                          key={`${r.label}-${r.lat}`}
-                          id={`jb-city-${i}`}
-                          role="option"
-                          aria-selected={i === active || place?.label === r.label}
-                        >
-                          <button type="button" tabIndex={-1} onMouseDown={() => choose(r)}>
-                            {r.label}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </span>
+                <div className="jb-field">
+                  <label htmlFor="jb-city">Or type your town</label>
+                  <span className="jb-city">
+                    <Input
+                      id="jb-city"
+                      type="text"
+                      role="combobox"
+                      aria-expanded={results.length > 0}
+                      aria-controls="jb-city-list"
+                      aria-autocomplete="list"
+                      aria-activedescendant={active >= 0 ? `jb-city-${active}` : undefined}
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value)
+                        setPlace(null)
+                        if (e.target.value.trim().length < 2) setResults([])
+                      }}
+                      onKeyDown={onCityKey}
+                      placeholder="San Diego"
+                      autoComplete="off"
+                      enterKeyHint="next"
+                    />
+                    {results.length > 0 && (
+                      <ul id="jb-city-list" role="listbox" aria-label="Town suggestions" className="jb-list">
+                        {results.map((r, i) => (
+                          <li
+                            key={`${r.label}-${r.lat}`}
+                            id={`jb-city-${i}`}
+                            role="option"
+                            aria-selected={i === active || place?.label === r.label}
+                          >
+                            <button type="button" tabIndex={-1} onMouseDown={() => choose(r)}>
+                              {r.label}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </span>
+                </div>
                 {place && (
                   <p className="jb-place" role="status">
                     <i className="fq-breathe" aria-hidden="true" />
@@ -579,7 +657,7 @@ export function FrequencyJoin({
                 <div className="jb-act">
                   {back}
                   <button className="btn fq-iri-btn" type="submit" disabled={pending}>
-                    {pending ? 'One sec…' : place ? 'Continue' : 'Skip for now'}
+                    {pending ? 'One sec…' : place ? 'Continue' : 'Skip'}
                   </button>
                 </div>
               </form>
@@ -590,11 +668,15 @@ export function FrequencyJoin({
                 <p className="jb-sub">
                   {email ? (
                     <>
-                      We sent a sign-in link to <b>{email}</b>. Open it on this device and you’re in.
+                      We sent a link to <b>{email}</b>. Opening it activates your account and signs you in.
                     </>
                   ) : (
-                    <>Open the sign-in link we sent you, on this device, and you’re in.</>
+                    <>Open the link we sent you. It activates your account and signs you in.</>
                   )}
+                </p>
+                <p className="jb-consent">
+                  By activating you agree to the <Link href="/terms">Terms</Link> and{' '}
+                  <Link href="/privacy">Privacy Policy</Link>.
                 </p>
                 <p className="jx-fine jb-left">It can take a minute. Check spam if it hasn’t arrived.</p>
                 {err}
@@ -608,7 +690,7 @@ export function FrequencyJoin({
                   {back}
                   {email ? (
                     <button
-                      ref={setFocus}
+                      id="jb-resend"
                       className="btn btn-ghost fq-iri-rim"
                       type="button"
                       onClick={onResend}
@@ -619,12 +701,15 @@ export function FrequencyJoin({
                   ) : null}
                 </div>
                 <button
-                  ref={email ? undefined : setFocus}
+                  id="jb-other"
                   className="jb-skip"
                   type="button"
                   onClick={() => {
-                    setSentTo('')
-                    go(1)
+                    setSavedTo('')
+                    setSave({ state: 'idle' })
+                    setEmailShown(true)
+                    focusNext.current = 'jb-email'
+                    go(0)
                   }}
                 >
                   Use a different email
