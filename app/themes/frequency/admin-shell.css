@@ -129,3 +129,14 @@
   /* Closed means out of layout, whatever display the menu's own rule gives it. */
   [data-design="frequency"] [data-kit="admin"] .ad-more:not([open]) > .ad-more-menu { display: none }
 }
+
+/* THE TOP BAR KEEPS ITS OWN ROOM (SCAN-915; owner, 2026-10-14 on Theme Studio: the sticky top bar sat over
+   the "Community feel" heading and its helper text). The document scrolls, not the kit root, and the
+   members shell's scroll-padding (members-shell.css) is not loaded on a console page, so anything scrolled
+   into view (a section, a focused field, an in-page find, the router landing on a page) came to rest at
+   the very top, under the kit's 68px sticky .ad-top. The console's document now keeps the bar's height
+   plus one step of air clear, the same 92px the kit's sticky side columns already hang from. 68px is the
+   kit's own bar height, which the export has no token for (token-ok). */
+@layer components {
+html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top:calc(68px + var(--fq-space-7))}
+}

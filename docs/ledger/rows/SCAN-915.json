@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-915",
+  "title": "Theme Studio says the platform wears Frequency, labels the skins as DAWN's, and keeps sections clear of the sticky top bar",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/admin/appearance/page.tsx",
+    "ref": "Owner 2026-10-14 on /admin/appearance Theme Studio: This is not right (Dawn shows Active and Default, no Frequency, Solstice a draft, the top bar over Community feel)."
+  },
+  "detail": "The look is chosen by SITE_DESIGN (build time); the themes table only feeds the DAWN-era axes, which app/(main)/layout.tsx and lib/theme/server/resolve.ts read only when LEGACY_THEME_AXES is true, and Space websites never read it. Under Frequency Theme Studio now leads with a read-only Active design: Frequency card built from designDef(SITE_DESIGN), titles the lists DAWN skins and DAWN occasions with Used by the DAWN design descriptions, shows an active row as Active under DAWN (neutral, not the live green) and the default as DAWN default, and marks Community feel as DAWN's. Under DAWN the page is unchanged. Solstice is a draft in the data (themes.status = draft), not a label bug, so it is left alone. The console document had no scroll-padding (the members shell's rule is not loaded on console pages), so a section scrolled into view rested at y 0 under the 68px sticky .ad-top; admin-shell.css now gives the console's html scroll-padding-top of 68px plus --fq-space-7 (92px, the kit's existing side-column offset). Measured on a static copy of the console with the production CSS: Community feel heading from 0 to 92px, below the bar's 68px bottom.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/admin/appearance/page.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/admin-shell.css','utf8');const bad=[];if(!/Active design: \\{label\\}/.test(p))bad.push('Theme Studio does not lead with the active design');if(!/Used by the DAWN design/.test(p))bad.push('the DAWN skins are not labelled as the DAWN design');if(!/Active under DAWN/.test(p))bad.push('an active DAWN skin still reads as Active for the site');if(!/:has\\(\\[data-kit=.admin.\\] \\.ad-top\\)\\{scroll-padding-top:calc\\(68px/.test(c))bad.push('the console document leaves no room under the sticky top bar');if(bad.length){console.error('SCAN-915: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
