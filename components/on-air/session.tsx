@@ -28,6 +28,7 @@ import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
+import { createScreenWakeLock } from '@/lib/on-air/screen-wake-lock'
 import { chime, endChime, countBeep } from '@/lib/timer-audio'
 import {
   AMBIENT_TRACKS,
@@ -477,7 +478,7 @@ export function OnAirSession({
   const confirmationsRef = useRef<number[]>([])
   const [runOverPrompt, setRunOverPrompt] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
-  const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
+  const wakeLock = useMemo(() => createScreenWakeLock(), [])
   const finishing = useRef(false)
   // The exact args of the last completeSession attempt, so the error screen's "Try again" REPLAYS
   // them (the real seconds + started_at) instead of recomputing a fresh 0-anchored claim with a
@@ -547,13 +548,7 @@ export function OnAirSession({
   // --- takeover plumbing ----------------------------------------------------
 
   async function acquireQuiet() {
-    try {
-      wakeLock.current = await (navigator as Navigator & {
-        wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> }
-      }).wakeLock?.request('screen') ?? null
-    } catch {
-      // wake lock is progressive enhancement
-    }
+    await wakeLock.acquire()
     // True fullscreen on every device now, not just mobile (C.1-3): the live sit
     // owns the whole screen. Best-effort — iOS Safari no-ops and the dvh takeover
     // is the fallback. Gesture-gated, so this only lands when acquireQuiet runs
@@ -562,25 +557,20 @@ export function OnAirSession({
   }
 
   async function releaseQuiet() {
-    try {
-      await wakeLock.current?.release()
-    } catch {
-      /* released already */
-    }
-    wakeLock.current = null
+    await wakeLock.release()
     await exitAppFullscreen()
   }
 
   // Re-acquire the wake lock when the tab comes back (the OS drops it on blur).
   useEffect(() => {
     const onVisible = () => {
-      if (stage === 'live' && document.visibilityState === 'visible' && !wakeLock.current) {
-        void acquireQuiet()
+      if (stage === 'live' && document.visibilityState === 'visible') {
+        void wakeLock.acquire()
       }
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [stage])
+  }, [stage, wakeLock])
 
   // Fullscreen is requested from the click that OPENS this surface — the launcher's
   // open gesture (Mindless overlay / Capture) and, once a sit goes live, acquireQuiet
@@ -680,14 +670,13 @@ export function OnAirSession({
       }
       ctx.current = null
       try {
-        void lock.current?.release()
+        void lock.release()
       } catch {
         // already released
       }
-      lock.current = null
       void exitAppFullscreen()
     }
-  }, [])
+  }, [wakeLock])
 
   // --- ambient loop (lib/on-air-ambient) ------------------------------------
   // An optional soft background that loops seamlessly for the whole sit, sharing
@@ -1458,7 +1447,7 @@ export function OnAirSession({
             <LotusIcon className="h-4.5 w-4.5" /> Mindless
           </p>
 
-          <div className="flex flex-col items-center gap-5">
+          <div className="flex w-full min-w-0 flex-col items-center gap-5">
             {/* ONE countdown (ADR-566): during the shared warm-up the pre-roll IS the big timer —
                 the session clock / breath visualizer is suppressed so there is never a second
                 competing number. Once the run begins the same clock runs the session. */}
@@ -1502,7 +1491,7 @@ export function OnAirSession({
                       type="button"
                       onClick={() => setShowInstructions(true)}
                       aria-label={`How to do ${pattern.name}`}
-                      className="flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                      className="flex min-h-11 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
                     >
                       <Info className="h-3.5 w-3.5" aria-hidden /> Details
                     </button>
@@ -1632,7 +1621,7 @@ export function OnAirSession({
               type="button"
               onClick={leave}
               aria-label="Close"
-              className="absolute -right-2 -top-1 rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="absolute -right-2 -top-1 tap-target rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1720,7 +1709,7 @@ export function OnAirSession({
                   type="button"
                   onClick={() => setPatternSlug(p.slug)}
                   title={p.blurb}
-                  className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
+                  className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                     p.slug === patternSlug
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1733,7 +1722,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setPatternSlug('custom')}
                 title="Your counts. Set each phase to what fits."
-                className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
+                className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                   patternSlug === 'custom'
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -1748,7 +1737,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setShowInstructions(true)}
                 aria-label={`How to do ${pattern.name}`}
-                className="flex shrink-0 items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                className="flex min-h-11 shrink-0 items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
               >
                 <Info className="h-3.5 w-3.5" aria-hidden /> Details
               </button>
@@ -1786,7 +1775,7 @@ export function OnAirSession({
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
+                  className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
                     m === minutes
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1856,7 +1845,7 @@ export function OnAirSession({
                     type="button"
                     aria-pressed={w === warmupSec}
                     onClick={() => setWarmupSec(w)}
-                    className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
+                    className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                       w === warmupSec
                         ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                         : 'border-border text-muted hover:bg-surface-elevated'
@@ -1877,7 +1866,7 @@ export function OnAirSession({
                     <button
                       type="button"
                       onClick={() => selectAmbient(null)}
-                      className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                      className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                         ambientSlug === null
                           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1890,7 +1879,7 @@ export function OnAirSession({
                         key={t.slug}
                         type="button"
                         onClick={() => selectAmbient(t.slug)}
-                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                        className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           ambientSlug === t.slug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1942,7 +1931,7 @@ export function OnAirSession({
                             // preview is a nicety
                           }
                         }}
-                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                        className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           t.slug === bellToneSlug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1994,7 +1983,7 @@ export function OnAirSession({
                           key={iv.value}
                           type="button"
                           onClick={() => setBellEveryMin(iv.value)}
-                          className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
+                          className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                             iv.value === bellEveryMin
                               ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                               : 'border-border text-muted hover:bg-surface-elevated'
@@ -2289,7 +2278,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
+      className={`min-h-11 flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
