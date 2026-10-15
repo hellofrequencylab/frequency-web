@@ -124,7 +124,7 @@
    member's stored choice); a collapsed rail is the 76px micro rail.
    `data-l` / `data-r` are the member's choice (full | micro) or `auto`, which follows the viewport
    (README: right auto-micro under 1240, left under 960, both hidden under 768, where the phone tab bar takes over). */
-[data-design="frequency"] [data-kit="members"] .fqm-body{--fqm-l:248px;--fqm-r:248px;--fqm-lw:var(--fqm-l);--fqm-rw:var(--fqm-r);position:relative;z-index:1;flex:1;width:100%;padding:24px 40px 160px;display:grid;gap:56px;align-items:start;grid-template-columns:var(--fqm-lw) minmax(0,1fr) var(--fqm-rw);transition:grid-template-columns 300ms var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-body{--fqm-l:248px;--fqm-r:288px;--fqm-lw:var(--fqm-l);--fqm-rw:var(--fqm-r);position:relative;z-index:1;flex:1;width:100%;padding:24px 40px 160px;display:grid;gap:56px;align-items:start;grid-template-columns:var(--fqm-lw) minmax(0,1fr) var(--fqm-rw);transition:grid-template-columns 300ms var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-drag]{transition:none;user-select:none}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-has="l"]{grid-template-columns:var(--fqm-lw) minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-has="r"]{grid-template-columns:minmax(0,1fr) var(--fqm-rw)}

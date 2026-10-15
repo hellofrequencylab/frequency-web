@@ -47,6 +47,9 @@ const MICRO = 76
 const MIN_W = 220
 const MAX_W = 320
 const DEFAULT_W = 248
+/** The right rail starts wider than the left (owner, 2026-10-14, SCAN-897): its panels carry more, and at an even
+ *  248/248 split the Feed read lopsided. Mirrors --fqm-r in members-shell.css. */
+const DEFAULT_R = 288
 
 type Side = 'L' | 'R'
 type Tip = { text: string; sub: string; side: Side; y: number; x: number } | null
@@ -158,7 +161,7 @@ export function FqRailLayout({
     const x0 = e.clientX
     const wk = side === 'L' ? 'l' : 'r'
     const ck = side === 'L' ? 'lc' : 'rc'
-    const w0 = cur[wk] ?? DEFAULT_W
+    const w0 = cur[wk] ?? (side === 'L' ? DEFAULT_W : DEFAULT_R)
     let live: Rails = cur
     setDrag(true)
     const move = (ev: PointerEvent) => {
