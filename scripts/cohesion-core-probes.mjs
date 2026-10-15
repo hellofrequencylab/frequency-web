@@ -83,7 +83,36 @@ async function hub() {
   const down = await hubViewer(); assert.equal(down.navAccess.shop, 'none'); assert.equal(down.operatesSpaces, false)
   role = 'host'; const operator = await hubViewer(); assert.equal(operator.navAccess.shop, 'full'); assert.equal(operator.operatesSpaces, true)
 }
-const probes = { 'SCAN-920': weekend, 'SCAN-921': directory, 'SCAN-922': composition, 'SCAN-929': hub }
+async function searchPrivacy() {
+  const privacy = evaluate(read('lib/connections/directory-visibility.ts'))
+  let rows = [
+    { id: 'hidden', directory_visible: false, ghost_mode: false, is_active: true },
+    { id: 'ghost', directory_visible: true, ghost_mode: true, is_active: true },
+    { id: 'inactive', directory_visible: true, ghost_mode: false, is_active: false },
+    { id: 'public', directory_visible: true, ghost_mode: false, is_active: true },
+  ]
+  const query = { from: () => query, select: () => query,
+    eq: (key, value) => { rows = rows.filter((row) => row[key] === value); return query },
+    order: () => query, limit: (limit) => { rows = rows.slice(0, limit); return query },
+    then: (resolve) => Promise.resolve({ data: rows, error: null }).then(resolve) }
+  const { searchPeople } = evaluate(functions('app/(main)/search/search-data.ts', ['searchPeople']), {
+    ...privacy, PEOPLE_RESULTS: 24, createAdminClient: () => query,
+    applySearchTerms: (query) => query, searchRows: (result) => result.data,
+  })
+  const result = await searchPeople('Daniel', 1)
+  assert.deepEqual(Array.from(result.rows, (row) => row.id), ['public'])
+  assert.equal(result.truncated, false)
+  const api = read('app/api/search/route.ts')
+  assert.match(api, /import\s*\{[^}]*searchPeople[^}]*\}\s*from ['"]@\/app\/\(main\)\/search\/search-data['"]/)
+  assert.match(api, /searchPeople\(q, 6\)/)
+  for (const path of ['app/(main)/network/page.tsx', 'app/(main)/search/search-data.ts', 'components/sidebar/rail-panels.tsx']) {
+    assert.match(read(path), /isListableInDirectory/)
+  }
+  const migration = read('supabase/migrations/20270344000100_members_near_honours_target_radius_and_connections.sql')
+  assert.match(migration, /c\.d <= c\.discovery_radius_m/)
+  assert.match(migration, /discoverable_by = 'connections'/)
+}
+const probes = { 'SCAN-546': searchPrivacy, 'SCAN-920': weekend, 'SCAN-921': directory, 'SCAN-922': composition, 'SCAN-929': hub }
 const probe = probes[process.argv[2]]
 if (!probe) throw new Error('Expected a supported SCAN ID')
 await probe()
