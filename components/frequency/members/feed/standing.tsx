@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import Link from 'next/link'
+import { AdoptedPracticeStart } from '@/components/practice/adopted-practice-start'
 import { FqIcon } from '@/components/frequency/icon'
 import type { ZapRow } from '@/lib/feed/frequency-home'
 
@@ -172,10 +173,10 @@ export function Standing(props: StandingProps & { afterStats?: React.ReactNode }
               <small>{hint}</small>
             </span>
             {next && (
-              <Link href={next.href} className="fa-tuneout">
+              <AdoptedPracticeStart practiceId={next.id} title={next.title} className="fa-tuneout">
                 <span className="fq-breathe" aria-hidden />
                 Start {next.title}
-              </Link>
+              </AdoptedPracticeStart>
             )}
           </div>
         )}
@@ -217,15 +218,15 @@ export function Standing(props: StandingProps & { afterStats?: React.ReactNode }
                   </div>
                   <div className="fa-pgrid">
                     {props.practices.map((p) => (
-                      <Link key={p.id} href={p.href} className={p.done ? 'fa-pchip done' : 'fa-pchip'} title={p.done ? `${p.title}, done today` : `Start ${p.title}`}>
+                      <AdoptedPracticeStart key={p.id} practiceId={p.id} title={p.title} className={p.done ? 'fa-pchip done' : 'fa-pchip'}>
                         <span className="fa-pchip-ic" aria-hidden>
                           <FqIcon name={p.done ? 'check' : 'practice'} />
                         </span>
                         <span className="fa-pchip-t">
                           <b>{p.title}</b>
-                          <small>{p.done ? 'Done today' : p.meta || 'Start'}</small>
+                          <small>{[p.meta, p.done ? 'Done today · Start again' : null].filter(Boolean).join(' · ') || 'Start'}</small>
                         </span>
-                      </Link>
+                      </AdoptedPracticeStart>
                     ))}
                   </div>
                   <div className="row wrap">

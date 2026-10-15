@@ -326,3 +326,17 @@
   [data-design="frequency"] [data-kit="members"] .fa-chain{margin-top:12px}
 }
 }
+
+/* Adopted practices launch their authored timer directly; compact rows remain full touch targets. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] button.fa-pchip{border:0;text-align:left;cursor:pointer;width:100%;min-width:0}
+[data-design="frequency"] [data-kit="members"] button.fa-tuneout{border:0;cursor:pointer;font-family:var(--fq-font-sans)}
+@media (max-width:767px){
+  [data-design="frequency"] [data-kit="members"] .fa-pgrid{grid-template-columns:minmax(0,1fr);gap:6px}
+  [data-design="frequency"] [data-kit="members"] .fa-pchip{min-height:44px;height:auto;padding:7px 10px;gap:10px;border-radius:var(--fq-radius-m)}
+  [data-design="frequency"] [data-kit="members"] .fa-pchip-ic{width:24px;height:24px;background:none}
+  [data-design="frequency"] [data-kit="members"] .fa-pchip-ic svg{width:18px;height:18px}
+  [data-design="frequency"] [data-kit="members"] .fa-pchip-t{min-width:0}
+  [data-design="frequency"] [data-kit="members"] .fa-pchip-t :is(b,small){white-space:normal;overflow-wrap:anywhere}
+}
+}
