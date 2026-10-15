@@ -17,6 +17,7 @@ import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
 import { readSiteStyle } from '@/lib/theme/site-style'
 import { docHasNetworkBlocks } from '@/components/sites/network-css'
 import { NetworkPageScope } from '@/components/spaces/network-page-scope'
+import type { SiteLinkMap } from '@/lib/sites/house-theme'
 
 // The profile LAYOUT now owns the identity header (cover + logo + name + CTA) for every tab, so the
 // landing body must NEVER render a SpaceIdentityHeader block or it would duplicate the layout header.
@@ -57,6 +58,7 @@ export async function SpaceLanding({
   anonymous = false,
   onlyIndexes,
   site = false,
+  siteLinks,
 }: {
   slug: string
   pageSlug?: string
@@ -68,6 +70,8 @@ export async function SpaceLanding({
   anonymous?: boolean
   /** Rendered inside a website, which dresses its own sections; the Frequency page dresses them here. */
   site?: boolean
+  /** The external website's canonical link map; absent on an in-app Space page. */
+  siteLinks?: SiteLinkMap
 }) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
   // Space so any dynamic block reads THIS tenant's rows.
@@ -146,7 +150,7 @@ export async function SpaceLanding({
   spaceContent.teamPicks = teamPicks
   spaceContent.series = series
 
-  const body = <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
+  const body = <BlockRender config={config} data={data} metadata={{ space: spaceContent, ...(siteLinks ? { links: siteLinks } : {}) }} />
   // LIVE-906: Network sections on the Frequency page wear their website's look (or, on a Space whose website
   // wears another theme, their own sheet in its palette), never the bare markup.
   if (site || !docHasNetworkBlocks(data)) return body

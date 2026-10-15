@@ -392,7 +392,7 @@ export async function SitePage({
             pageTitle={pages.find((p) => p.slug === pageSlug)?.label ?? brandName}
             renderOther={(b) => (
               <Suspense fallback={<ProfileBodySkeleton />}>
-                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site onlyIndexes={[mwBlocks.indexOf(b)]} />
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site siteLinks={siteLinks} onlyIndexes={[mwBlocks.indexOf(b)]} />
               </Suspense>
             )}
           />
@@ -402,7 +402,7 @@ export async function SitePage({
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
             <div className="mt-10">
               <Suspense fallback={<ProfileBodySkeleton />}>
-                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site />
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous site siteLinks={siteLinks} />
               </Suspense>
             </div>
           </div>
