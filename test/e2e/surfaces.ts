@@ -1283,6 +1283,18 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'The Frequency Feed post stream (ADR-1740): the same live posts, authors, avatars, counts and relative times as the DAWN stream. The empty pane is not masked.',
   },
   {
+    value: 'feed-greeting',
+    file: 'components/frequency/members/feed/anon-feed-body.tsx',
+    kind: 'live',
+    why: 'The signed-out Feed greeting row (SCAN-889): today’s date and the time-of-day greeting, read at render, as on the member Feed.',
+  },
+  {
+    value: 'feed-stream',
+    file: 'components/frequency/members/feed/anon-feed-body.tsx',
+    kind: 'live',
+    why: 'The signed-out Feed post stream (SCAN-889): the same live public posts, authors, avatars, counts and relative times as the member stream.',
+  },
+  {
     value: 'feed-practices',
     file: 'components/frequency/members/feed/standing.tsx',
     kind: 'live',

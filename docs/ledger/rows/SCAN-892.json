@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-892",
+  "title": "A Space's console Circles page counts and offers the Journeys co-hosted with it, and drops its photo header under Frequency",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "lib/journeys/run-gate.ts",
+    "ref": "Owner 2026-10-14: my Daniel Tyack Space should be tied with the Hearts on Fire journeys (its console Circles page read 0 Journeys offered); and this page does not need a header image."
+  },
+  "detail": "Both Hearts on Fire Journeys already carry ACCEPTED journey_plan_space_shares rows to the Daniel Tyack Space (LIVE-861), but journeysOfferedBySpace read only journey_plans.space_id, so /spaces/<slug>/manage/circles showed 0 Journeys offered and no Run could use them. It now also reads the Space's accepted shares and returns own plus co-hosted Journeys (de-duplicated by the single .or() read; the Journey's own visibility still applies). Under Frequency the page also renders IndexTemplate's plain header instead of the hero photo band.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('lib/journeys/run-gate.ts','utf8'),p=fs.readFileSync('app/(main)/spaces/[slug]/manage/circles/page.tsx','utf8');const bad=[];if(!g.includes('journey_plan_space_shares'))bad.push('Journeys offered still ignores co-hosted Journeys');if(!p.includes(\\\"SITE_DESIGN === 'frequency' ? {} : await resolveIndexHero\\\"))bad.push('the console Circles page still draws a photo header');if(bad.length){console.error('SCAN-892: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

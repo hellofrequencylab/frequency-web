@@ -32,7 +32,9 @@ import {
   listPublicOpenSlots,
   createGuestBooking as createGuestBookingImpl,
   confirmGuestBooking as confirmGuestBookingImpl,
+  getPublicSpaceBookingTimezone,
   type GuestConfirmOutcome,
+  type GuestConfirmFormState,
   type AvailabilityWindow,
   type ServiceTypeInput,
   type ScheduleInput,
@@ -184,6 +186,30 @@ export async function createGuestBookingAction(input: GuestBookingActionInput): 
  *  A live hold becomes the booking (confirmation mail, reminder, CRM lead with the guest's opt-in all
  *  happen here and only here); an expired or unknown token fails closed. A token is 24 random bytes, so
  *  no per-IP limit is needed to make guessing one pointless. */
-export async function confirmGuestBookingAction(token: string): Promise<GuestConfirmOutcome> {
-  return confirmGuestBookingImpl(token)
+export async function confirmGuestBookingAction(token: string, expectedSpaceId?: string): Promise<GuestConfirmOutcome> {
+  return confirmGuestBookingImpl(token, expectedSpaceId)
+}
+
+/** The website's Confirm button (SCAN-858). Confirming used to happen when the page rendered, so a mail
+ *  scanner that opened the link confirmed the booking; now only this POST does. The outcome comes back with
+ *  the time already written in the Space's booking timezone. */
+export async function confirmGuestBookingFormAction(
+  _prev: GuestConfirmFormState,
+  form: FormData,
+): Promise<GuestConfirmFormState> {
+  const token = String(form.get('token') ?? '')
+  const spaceId = String(form.get('spaceId') ?? '')
+  const outcome = await confirmGuestBookingImpl(token, spaceId || undefined)
+  if (!outcome.ok) return { outcome, when: null }
+  const timezone = await getPublicSpaceBookingTimezone(outcome.spaceId)
+  const when = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(new Date(outcome.startsAt))
+  return { outcome, when }
 }

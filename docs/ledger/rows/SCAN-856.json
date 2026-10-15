@@ -1,7 +1,7 @@
 {
   "id": "SCAN-856",
   "title": "The Space page and member profile flash a DAWN loading skeleton before the Frequency page",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -14,5 +14,6 @@
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['app/(main)/spaces/[slug]/loading.tsx'].map(r).join('\\n').search(/SITE_DESIGN/)>-1===true && ['app/(main)/people/[handle]/loading.tsx'].map(r).join('\\n').search(/SITE_DESIGN/)>-1===true)?0:1)\""
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-14"
 }

@@ -21,3 +21,36 @@ export function previewStartedAt(stored: string | null, now: number): number {
 export function previewRemainingMs(startedAt: number, now: number): number {
   return Math.max(0, startedAt + FEED_PREVIEW_MS - now)
 }
+
+// ── THE ANONYMOUS FEED (SCAN-889) ─────────────────────────────────────────────────────────────────
+// Under Frequency a signed-out /feed is the real member Feed with the viewer drawn as Anonymous
+// (lib/nav/anon-feed.ts). Anything that needs an account (post, like, reply, RSVP, a rail action, the
+// viewer's own profile, any member page) opens the join overlay instead of acting. The overlay
+// (components/frequency/members/feed/anon-join-gate.tsx) asks this one question of every link the visitor
+// clicks; every button, field and form is account-only by definition.
+
+/** Places a signed-out visitor can go from the Feed without an account: the public site, never a member page. */
+const ANON_OPEN_PATHS: RegExp[] = [
+  /^\/$/,
+  /^\/feed$/, // the Feed itself, and its sort lens (?sort=)
+  /^\/events$/,
+  /^\/events\/(?!new(?:\/|$))[^/]+$/, // an event's public page; never /events/new or a sub-route
+  /^\/discover(?:\/.*)?$/,
+  /^\/help(?:\/.*)?$/,
+  /^\/about(?:\/.*)?$/,
+]
+
+/** May a signed-out visitor on the anonymous Feed follow this href, or does it open the join overlay? */
+export function anonFeedHrefAllowed(href: string | null | undefined, origin = 'https://frequency.local'): boolean {
+  if (!href) return false
+  // An in-page anchor (the skip link) moves focus, it does not act.
+  if (href.startsWith('#')) return true
+  let url: URL
+  try {
+    url = new URL(href, origin)
+  } catch {
+    return false
+  }
+  if (url.origin !== origin) return false
+  return ANON_OPEN_PATHS.some((re) => re.test(url.pathname))
+}
