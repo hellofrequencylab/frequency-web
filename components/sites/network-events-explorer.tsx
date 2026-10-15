@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { filterNetworkEvents, networkDate, networkDayLabel, networkMonthDays, networkMonthOffset } from '@/lib/sites/network-events'
+import { filterNetworkEvents, networkDate, networkDayLabel, networkEventAvailability, networkMonthDays, networkMonthOffset } from '@/lib/sites/network-events'
 import { NetworkCountdown } from './network-countdown'
 
 export interface NetworkEventEntry {
@@ -14,15 +14,18 @@ export interface NetworkEventEntry {
   href: string | null
   startsAt: string
   timeZone: string
+  startsAtInstant: number | null
+  endsAtInstant: number | null
   countdown: [number, number, number, number] | null
   card: ReactNode
 }
 
 /** The server keeps event cards and visibility decisions; this island filters only those public rows. */
-export function NetworkEventsExplorer({ items, chapters, today, max, allLabel, empty, moreHref, moreLabel }: {
+export function NetworkEventsExplorer({ items, chapters, today, initialNow, max, allLabel, empty, moreHref, moreLabel }: {
   items: NetworkEventEntry[]
   chapters: { label: string; tone: string }[]
   today: string
+  initialNow: number
   max: number
   allLabel: string
   empty: string
@@ -32,10 +35,18 @@ export function NetworkEventsExplorer({ items, chapters, today, max, allLabel, e
   const [chapter, setChapter] = useState<string | null>(null)
   const [day, setDay] = useState<string | null>(null)
   const [month, setMonth] = useState(today.slice(0, 7))
+  const [now, setNow] = useState(initialNow)
+  useEffect(() => {
+    const tick = () => setNow(Date.now())
+    tick()
+    const timer = window.setInterval(tick, 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
   const byChapter = filterNetworkEvents(items, chapter, null)
   const filtered = filterNetworkEvents(byChapter, null, day)
   const shown = filtered.slice(0, max)
-  const next = filtered[0]
+  const next = filtered.find((item) => networkEventAvailability(item, now) !== 'ended')
+  const ongoing = next ? networkEventAvailability(next, now) === 'ongoing' : false
   const groups: { day: string; rows: NetworkEventEntry[] }[] = []
   for (const item of shown) {
     if (groups.at(-1)?.day === item.day) groups.at(-1)!.rows.push(item)
@@ -53,14 +64,14 @@ export function NetworkEventsExplorer({ items, chapters, today, max, allLabel, e
           <button type="button" aria-pressed={chapter === item.label} onClick={() => setChapter(item.label)}><i aria-hidden />{item.label}<small>{items.filter((e) => e.chapter === item.label).length}</small></button>
         </li>)}
       </ul>}
-      <p className="nw-count" role="status">{filtered.length} upcoming{day ? ` · ${networkDayLabel(day, today)}` : ''}{day && <button type="button" onClick={() => setDay(null)}>All dates</button>}</p>
+      <p className="nw-count" role="status">{filtered.length} events{day ? ` · ${networkDayLabel(day, today)}` : ''}{day && <button type="button" onClick={() => setDay(null)}>All dates</button>}</p>
       {groups.length === 0 && <p className="nw-empty">{empty}</p>}
       {groups.map((group) => <div key={group.day} className="nw-day"><h3 className="nw-day-h">{networkDayLabel(group.day, today)}</h3><ol>{group.rows.map((item) => item.card)}</ol></div>)}
       {moreHref && filtered.length > shown.length && <a className="nw-more" href={moreHref}><span>{moreLabel}</span><small>{filtered.length - shown.length} more</small></a>}
     </div>
     <aside className="nw-events-side">
-      {next && <div className="nw-upnext"><span className="nw-upnext-k">Up next</span><b>{next.title}</b><small>{[networkDayLabel(next.day, today), next.time.split('–')[0], next.chapter].filter(Boolean).join(' · ')}</small>
-        {next.countdown && <NetworkCountdown startsAt={next.startsAt} timeZone={next.timeZone} initial={next.countdown} label={`Time until ${next.title}`} />}
+      {next && <div className="nw-upnext"><span className="nw-upnext-k">{ongoing ? 'Happening now' : 'Up next'}</span><b>{next.title}</b><small>{[networkDayLabel(next.day, today), next.time.split('–')[0], next.chapter].filter(Boolean).join(' · ')}</small>
+        {!ongoing && next.countdown && <NetworkCountdown startsAt={next.startsAt} timeZone={next.timeZone} initial={next.countdown} label={`Time until ${next.title}`} />}
         {next.href && <a className="hs-btn hs-btn-primary" href={next.href}>I&apos;m coming</a>}
       </div>}
       <div className="nw-month">

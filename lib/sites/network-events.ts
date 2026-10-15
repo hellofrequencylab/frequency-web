@@ -37,3 +37,12 @@ export function networkChapterLabel(event: { title: string; location?: string | 
   const placeMatches = chapters.filter((chapter) => chapter.match.some((match) => match && location.includes(match)))
   return placeMatches.length === 1 ? placeMatches[0].label : null
 }
+
+/** Calendar cards stay available all day; the next-event panel only promises a current/future event. */
+export function networkEventAvailability(event: { startsAtInstant: number | null; endsAtInstant: number | null }, now: number): 'future' | 'ongoing' | 'ended' {
+  const start = event.startsAtInstant
+  if (start == null || !Number.isFinite(start)) return 'ended'
+  if (start > now) return 'future'
+  const end = event.endsAtInstant
+  return end != null && Number.isFinite(end) && end > start && end > now ? 'ongoing' : 'ended'
+}

@@ -56,7 +56,7 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (raw.startsWith('#')) return raw
   const links = metadata?.links as SiteLinkMap | undefined
   // A Space path the website has no page for (Memberships, Shop, Calendar) opens on Frequency itself.
-  if (links) return siteLocalHref(raw, links)?.href ?? (/^\/spaces\//.test(raw) ? `${links.origin}${raw}` : null)
+  if (links) return siteLocalHref(raw, links)?.href ?? (/^\/(?:spaces|circles|events)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(raw) ? `${links.origin}${raw}` : null)
   return safeUrl(raw) || (raw.startsWith('/') ? raw : null)
 }
 const external = (href: string) => /^https?:\/\//.test(href)
@@ -359,9 +359,11 @@ export function NetworkEventsBlock({ p, metadata, now = new Date(), pad, vis }: 
     const href = eventHref(e, metadata)
     const chapter = chapterOf(e, chapters)
     const target = wallClockInstant(e.startsAt, e.timeZone || ZONE)
+    const end = e.endsAt ? wallClockInstant(e.endsAt, e.timeZone || ZONE) : Number.NaN
     return {
       id: e.id, day: dayOf(e.startsAt), chapter, title: e.title, time: timeRange(e), href,
       startsAt: e.startsAt, timeZone: e.timeZone || ZONE,
+      startsAtInstant: Number.isFinite(target) ? target : null, endsAtInstant: Number.isFinite(end) ? end : null,
       countdown: Number.isFinite(target) ? countdownParts(target, now.getTime()) : null,
       card: <li key={e.id} className="nw-erow" style={{ ['--c' as string]: toneOf(chapter, chapters) }}>
         <DateTile iso={e.startsAt} />
@@ -377,7 +379,7 @@ export function NetworkEventsBlock({ p, metadata, now = new Date(), pad, vis }: 
   return <Section name="events" pad={pad} vis={vis} id={str(p.anchor)}>
     <Head eyebrow={str(p.eyebrow)} title={str(p.title)} lead={str(p.lead)} action={str(p.actionLabel)} actionHref={str(p.actionHref)} metadata={metadata} />
     {rows.length === 0 ? <p className="nw-empty">{str(p.empty) || 'Nothing on the calendar yet. Check back soon.'}</p> : <NetworkEventsExplorer
-      items={items} chapters={chapters.map((c) => ({ label: c.label, tone: toneOf(c.label, chapters) }))} today={today} max={max}
+      items={items} chapters={chapters.map((c) => ({ label: c.label, tone: toneOf(c.label, chapters) }))} today={today} initialNow={now.getTime()} max={max}
       allLabel={str(p.allLabel) || 'All chapters'} empty={str(p.empty) || 'Nothing scheduled for these filters. Try another day or chapter.'}
       moreHref={hrefOf(str(p.moreHref), metadata)} moreLabel={str(p.moreLabel) || 'See more events'}
     />}

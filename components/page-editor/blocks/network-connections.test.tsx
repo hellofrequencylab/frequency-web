@@ -67,4 +67,27 @@ describe('Network circle connections', () => {
     expect(html).toContain('nw-tag-ch"><i aria-hidden="true"></i>Veterans</span>')
     expect(html).not.toContain('nw-tag-ch"><i aria-hidden="true"></i>Oceanside</span>')
   })
+
+  it('keeps today’s ended card available but advertises the ongoing event using its actual zone', () => {
+    const html = renderToStaticMarkup(<NetworkEventsBlock p={{}} now={new Date('2026-10-15T21:00:00Z')}
+      metadata={{ space: { events: [
+        { id: 'ended', slug: 'morning', title: 'Morning', startsAt: '2026-10-15T09:00:00Z', endsAt: '2026-10-15T10:00:00Z', timeZone: 'America/Los_Angeles' },
+        { id: 'ongoing', slug: 'afternoon', title: 'Afternoon', startsAt: '2026-10-15T13:30:00Z', endsAt: '2026-10-15T14:30:00Z', timeZone: 'America/Los_Angeles' },
+      ] } }} />)
+    const panel = html.slice(html.indexOf('class="nw-upnext"'), html.indexOf('class="nw-month"'))
+    expect(html).toContain('RSVP to Morning')
+    expect(panel).toContain('Happening now')
+    expect(panel).toContain('/events/afternoon')
+    expect(panel).not.toContain('/events/morning')
+    expect(panel).not.toContain('role="timer"')
+  })
+
+  it('opens the native circle creation sign-in flow on Frequency from the website', () => {
+    const doc = buildWebsiteDocs() as Record<string, { content: { type: string; props: Record<string, unknown> }[] }>
+    const p = doc.home.content.find((block) => block.type === 'NetworkCircles')!.props
+    expect(p.actionHref).toBe('/sign-in?next=%2Fcircles%2Fnew')
+    const html = renderToStaticMarkup(<NetworkCirclesBlock p={p} metadata={{ links: { origin: 'https://frequency.example' } }} />)
+    expect(html).toContain('href="https://frequency.example/sign-in?next=%2Fcircles%2Fnew"')
+    expect(html).not.toContain('events-and-workshop-submission')
+  })
 })

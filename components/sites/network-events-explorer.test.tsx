@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { afterAll, beforeAll, expect, it, vi } from 'vitest'
 import { NetworkEventsExplorer, type NetworkEventEntry } from './network-events-explorer'
 
-vi.mock('./network-countdown', () => ({ NetworkCountdown: () => null }))
+vi.mock('./network-countdown', () => ({ NetworkCountdown: () => <div role="timer" /> }))
 beforeAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }) })
 afterAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: false }) })
 
@@ -16,11 +16,12 @@ it('filters the actual cards and next-event door by chapter and calendar day, th
     { id: 'friday', title: 'Feel Good Friday', day: '2026-10-16', chapter: 'Encinitas' },
     { id: 'tuesday', title: 'Team Up Tuesday', day: '2026-10-20', chapter: 'North Park' },
     { id: 'coffee', title: 'Coffee', day: '2026-10-20', chapter: 'Encinitas' },
-  ].map((row) => ({ ...row, time: '9 AM', href: `https://frequency.example/events/${row.id}`, startsAt: `${row.day}T09:00:00Z`, timeZone: 'America/Los_Angeles', countdown: null, card: <li key={row.id} data-event={row.id}>{row.title}</li> }))
+  ].map((row) => ({ ...row, time: '9 AM', href: `https://frequency.example/events/${row.id}`, startsAt: `${row.day}T09:00:00Z`, timeZone: 'America/Los_Angeles', startsAtInstant: Date.parse(`${row.day}T16:00:00Z`), endsAtInstant: Date.parse(`${row.day}T17:00:00Z`), countdown: null, card: <li key={row.id} data-event={row.id}>{row.title}</li> }))
   const click = (selector: string) => act(() => (container.querySelector(selector) as HTMLButtonElement).click())
   const cards = () => [...container.querySelectorAll('[data-event]')].map((node) => node.getAttribute('data-event'))
   try {
-    act(() => root.render(<NetworkEventsExplorer items={items} chapters={[{ label: 'Encinitas', tone: 'var(--color-primary)' }, { label: 'North Park', tone: 'var(--nw-tag-1)' }]} today="2026-10-15" max={2} allLabel="All chapters" empty="No matching events" moreHref="https://frequency.example/spaces/the-group/calendar" moreLabel="See more events" />))
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-15T21:00:00Z'))
+    act(() => root.render(<NetworkEventsExplorer items={items} chapters={[{ label: 'Encinitas', tone: 'var(--color-primary)' }, { label: 'North Park', tone: 'var(--nw-tag-1)' }]} today="2026-10-15" initialNow={Date.parse('2026-10-15T21:00:00Z')} max={2} allLabel="All chapters" empty="No matching events" moreHref="https://frequency.example/spaces/the-group/calendar" moreLabel="See more events" />))
     expect(cards()).toEqual(['friday', 'tuesday'])
     expect(container.querySelector('.nw-more')).not.toBeNull()
     click('.nw-chiprow li:nth-child(3) button')
@@ -46,5 +47,33 @@ it('filters the actual cards and next-event door by chapter and calendar day, th
   } finally {
     act(() => root.unmount())
     container.remove()
+    vi.restoreAllMocks()
+  }
+})
+
+it('skips ended events while keeping an ongoing event, then advances a cached panel as time passes', () => {
+  vi.useFakeTimers()
+  const now = Date.parse('2026-10-15T21:00:00Z')
+  vi.setSystemTime(now)
+  const container = document.createElement('div')
+  const root = createRoot(container)
+  const items: NetworkEventEntry[] = [
+    { id: 'ended', start: now - 5 * 3600_000, end: now - 4 * 3600_000 },
+    { id: 'ongoing', start: now - 1800_000, end: now + 1800_000 },
+    { id: 'future', start: now + 3600_000, end: now + 7200_000 },
+  ].map((row) => ({ id: row.id, title: row.id, day: '2026-10-15', chapter: null, time: 'Today', href: `/events/${row.id}`, startsAt: '2026-10-15T15:00:00Z', timeZone: 'America/Los_Angeles', startsAtInstant: row.start, endsAtInstant: row.end, countdown: [0, 1, 0, 0], card: <li key={row.id} data-event={row.id}>{row.id}</li> }))
+  try {
+    act(() => root.render(<NetworkEventsExplorer items={items} chapters={[]} today="2026-10-15" initialNow={now} max={6} allLabel="All chapters" empty="No events" moreHref={null} moreLabel="More" />))
+    expect(container.querySelectorAll('[data-event]')).toHaveLength(3)
+    expect(container.querySelector('.nw-upnext-k')?.textContent).toBe('Happening now')
+    expect(container.querySelector('.nw-upnext a')?.getAttribute('href')).toBe('/events/ongoing')
+    expect(container.querySelector('[role="timer"]')).toBeNull()
+    act(() => { vi.setSystemTime(now + 31 * 60_000); vi.advanceTimersByTime(30_000) })
+    expect(container.querySelector('.nw-upnext-k')?.textContent).toBe('Up next')
+    expect(container.querySelector('.nw-upnext a')?.getAttribute('href')).toBe('/events/future')
+    expect(container.querySelector('[role="timer"]')).not.toBeNull()
+  } finally {
+    act(() => root.unmount())
+    vi.useRealTimers()
   }
 })
