@@ -37,6 +37,9 @@ import { InvitePanel, PagePanels, SignaturePanel, type CommunityRole } from '@/c
 import { buildGoals, plannedDays, weekPlanCount } from '@/lib/feed/frequency-rail-core'
 import { loadLocalBoard, loadPeopleToKnow, loadRailOnboarding, loadYourWeek } from '@/lib/feed/frequency-rail'
 import { getInitials } from '@/lib/utils'
+import { loadAnonPublicEvents } from '@/lib/feed/anon-feed'
+import { BETA_CTA_HREF } from '@/lib/site'
+import { HOME_TZ } from '@/lib/time/zone'
 import { AddToggle } from '../shared/toggles'
 import { avatarBg } from './avatar'
 import { GetStarted } from './get-started'
@@ -362,6 +365,79 @@ export function FrequencyRightMicro({ profileId, stats }: Pick<FrequencyRightRai
       </Suspense>
       <Suspense fallback={null}>
         <MicroPeople profileId={profileId} />
+      </Suspense>
+    </>
+  )
+}
+
+// ── The anonymous rail (SCAN-889) ───────────────────────────────────────────────────────────────
+// A signed-out visitor reading /feed as Anonymous (lib/nav/anon-feed.ts) gets the same rail in the same
+// idiom, with nothing a profile would key: Get started is the three ways in, and Coming up is the public
+// events (lib/feed/anon-feed.ts, the cookieless public_events read). No standing, no goals, no Circles,
+// no people. Every control on it is account-only and opens the join overlay (anon-join-gate.tsx).
+
+const ANON_STEPS = [
+  { key: 'join', label: 'Join Frequency', blurb: 'Free while we are in beta. Post, RSVP and keep a streak.', cta: 'Join free', href: BETA_CTA_HREF, done: false },
+  { key: 'circle', label: 'Find your Circle', blurb: 'Small groups near you, meeting around a practice.', cta: 'Browse Circles', href: '/discover/circles', done: false },
+  { key: 'event', label: 'Go to an event', blurb: 'Show up once. That is how most people start.', cta: 'See events', href: '/events', done: false },
+]
+
+async function AnonComingUp() {
+  const events = (await loadAnonPublicEvents().catch(() => [])).slice(0, 4)
+  if (events.length === 0) return null
+  return (
+    <section className="fqm-rp" aria-label="Coming up" data-visual-mask="rail-panel">
+      <div className="fqm-rp-h">
+        <b>Coming up</b>
+        <span>Public events</span>
+      </div>
+      <div className="fqm-week">
+        {events.map((e) => {
+          const at = new Date(e.starts_at)
+          return (
+            <div key={e.id} className="fqm-day">
+              <span className="fqm-day-d">
+                <small>{at.toLocaleDateString('en-US', { timeZone: HOME_TZ, weekday: 'short' })}</small>
+                <b>{at.toLocaleDateString('en-US', { timeZone: HOME_TZ, day: 'numeric' })}</b>
+              </span>
+              <span className="fqm-day-items">
+                <Link href={`/events/${e.slug}`}>
+                  <i aria-hidden />
+                  <span>{e.title}</span>
+                  <small>{at.toLocaleTimeString('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()}</small>
+                </Link>
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+export function FrequencyAnonRightRail() {
+  return (
+    <div className="fqm-r-stack">
+      <GetStarted steps={ANON_STEPS} />
+      <Suspense fallback={null}>
+        <AnonComingUp />
+      </Suspense>
+    </div>
+  )
+}
+
+async function MicroComingUp() {
+  const count = (await loadAnonPublicEvents().catch(() => [])).length
+  if (count === 0) return null
+  return <MicroItem icon="event" value={String(Math.min(count, 4))} tip="Coming up" sub="Public events" />
+}
+
+export function FrequencyAnonRightMicro() {
+  return (
+    <>
+      <MicroItem icon="compass" value={`0/${ANON_STEPS.length}`} tip="Get started" sub={`${ANON_STEPS.length} left`} />
+      <Suspense fallback={null}>
+        <MicroComingUp />
       </Suspense>
     </>
   )

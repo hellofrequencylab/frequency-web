@@ -13,6 +13,8 @@ import { memberEventRewrite } from '@/lib/nav/member-event-rewrite'
 import { memberSpaceRewrite } from '@/lib/nav/member-space-rewrite'
 import { shouldWriteMarker } from '@/lib/nav/marker-cookie'
 import { frontDoorRedirect } from '@/lib/nav/front-door'
+import { anonFeedInShell, anonFeedRoute } from '@/lib/nav/anon-feed'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
 import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase/env'
@@ -47,7 +49,7 @@ const REF_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 // soon is a member's dark mode silently reverting to light mid-use.
 const ACCOUNT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-// The member Feed, and where a signed-out visitor reads its public preview (the rewrite below).
+// The member Feed, and where a signed-out visitor reads its public preview under DAWN (the rewrite below).
 const FEED_PATH = '/feed'
 const FEED_PREVIEW_PATH = '/feed-preview'
 
@@ -366,19 +368,22 @@ export async function proxy(request: NextRequest) {
   // twin and redirects there. Only the DETAIL route matches: the index pages and every /manage,
   // /edit and /settings sub-route fall through and stay protected exactly as before.
   const isTwinRedirectable = hasPublicTwin(pathname)
+  // THE SIGNED-OUT FEED (owner, 2026-10-14; lib/nav/anon-feed.ts). The header's first item is Feed for
+  // everyone, so a signed-out visitor who opens the bare /feed is never sent to a sign-in wall. Under
+  // Frequency it is the REAL Feed in the member shell, with the viewer drawn as Anonymous: the request
+  // passes through to app/(main)/layout.tsx, which renders that shell for this one path with public reads
+  // only (SCAN-889). Under DAWN it is the public preview, an internal rewrite to app/(public)/feed-preview
+  // so the URL stays /feed. Only the bare path: every /feed/* stays protected below.
+  const anonFeedShell = anonFeedRoute({ pathname, signedIn: !!user, design: SITE_DESIGN }) === 'shell'
   const isProtected =
     !isShareableFeed &&
     !isPublicVcard &&
     !isPublicEventView &&
     !isTwinRedirectable &&
+    !anonFeedShell &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
-  // THE FEED PREVIEW (owner, 2026-10-14). The header's first item is Feed for everyone, so a signed-out
-  // visitor who opens /feed reads the public preview instead of a sign-in wall, with a free-membership
-  // prompt after 30 seconds. The rewrite is internal: the URL stays /feed (the header reads it and
-  // shows Home), and the preview lives in the public chrome at app/(public)/feed-preview. Only the
-  // bare path: every /feed/* stays protected below.
-  if (!user && pathname === FEED_PATH) {
+  if (!anonFeedInShell(SITE_DESIGN) && !user && pathname === FEED_PATH) {
     const previewUrl = request.nextUrl.clone()
     previewUrl.pathname = FEED_PREVIEW_PATH
     const rewriteResponse = NextResponse.rewrite(previewUrl, {
