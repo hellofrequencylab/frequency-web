@@ -212,9 +212,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-pe-say{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fq-hit-min);padding:0 16px;border:0;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-ink) 6%,transparent);font:400 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-say:hover{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-say svg{width:18px;height:18px}
-[data-design="frequency"] [data-kit="members"] .fqm-pe-dialog{width:min(440px,calc(100vw - 32px));padding:var(--fq-space-6);border:0;border-radius:var(--fq-radius-l);background:var(--fq-bg-canvas);box-shadow:var(--fq-shadow-float);color:var(--fq-text-body)}
-[data-design="frequency"] [data-kit="members"] .fqm-pe-dialog::backdrop{background:color-mix(in oklab,var(--fq-ink) 55%,transparent);backdrop-filter:blur(6px)}
-[data-design="frequency"] [data-kit="members"] .fqm-pe-x{align-self:flex-start}
 @media (max-width:860px){
   [data-design="frequency"] [data-kit="members"] .fqm-pe-hero{grid-template-columns:1fr;gap:var(--fq-space-6)}
   [data-design="frequency"] [data-kit="members"] .fqm-pe-poster{aspect-ratio:16/11}
