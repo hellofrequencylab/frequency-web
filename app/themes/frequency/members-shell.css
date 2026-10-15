@@ -339,6 +339,16 @@
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>small{flex:none;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
 
+/* Goals belong to the rail itself; keep the same full-width treatment in the mobile inline slot. */
+[data-design="frequency"] [data-kit="members"] .fqm-goals{padding:12px 0 20px;gap:20px;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-rp-h{flex-wrap:wrap;row-gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-goals h2{margin:0;font:500 var(--fq-text-h4)/1.3 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-rp-h>span{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-goal{min-height:44px;justify-content:center;gap:12px;padding:4px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-goal-t>span{min-width:0;overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-bar{height:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-goal-t svg{color:var(--fq-presence)}
+
 /* Today's goals: title and reading over a 4px bar; a finished goal is struck through with a check. */
 [data-design="frequency"] [data-kit="members"] .fqm-goal{display:flex;flex-direction:column;gap:9px;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-goal:hover{color:var(--fq-text-strong)}
