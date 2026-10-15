@@ -126,9 +126,10 @@ describe('the page table', () => {
   })
   it('writes the mood hues as kit variables, never raw colours', () => {
     expect(moodStyle(resolveSitePage('/'))).toEqual({
-      '--fq-m1': 'var(--fq-x-magenta-neon)',
-      '--fq-m2': 'var(--fq-x-aqua-neon)',
-      '--fq-m3': 'var(--fq-x-sun-neon)',
+      // Home leads with aqua and violet since the bluer balance (owner, 2026-10-14, SCAN-905).
+      '--fq-m1': 'var(--fq-x-aqua-neon)',
+      '--fq-m2': 'var(--fq-x-violet-neon)',
+      '--fq-m3': 'var(--fq-x-magenta-neon)',
     })
   })
 })
