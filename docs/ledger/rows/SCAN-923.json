@@ -1,1 +1,19 @@
-{"id":"SCAN-923","title":"Mindless keeps the screen awake after returning from a backgrounded phone in either timer mode","status":"done","priority":"P2","lane":"live","size":"S","closed":"2026-10-15","source":{"file":"components/on-air/session.tsx","ref":"Mobile audit 2026-10-15; both timer visibility handlers tested only whether a released sentinel existed"},"detail":"The OS releases screen wake locks on backgrounding but retains the sentinel object. Both Mindless engines checked only !wakeLock.current, so foreground return skipped reacquisition and the phone could sleep mid-session. Both now use one idempotent lifecycle controller that checks released, deduplicates simultaneous acquisition, releases acquisitions completing after close, and tolerates unavailable APIs. Foreground return reacquires only the wake lock, without requesting gesture-gated fullscreen. Local mocked lifecycle tests cover OS release/return, pending requests and close races; physical iOS/Android wake behavior and authenticated completion writes remain unverified.","verify":{"kind":"cmd","cmd":"pnpm exec vitest run lib/on-air/screen-wake-lock.test.ts"},"wave":"W7"}
+{
+  "id": "SCAN-923",
+  "title": "Mindless keeps the screen awake after returning from a backgrounded phone in either timer mode",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "components/on-air/session.tsx",
+    "ref": "Mobile audit 2026-10-15; both timer visibility handlers tested only whether a released sentinel existed"
+  },
+  "detail": "The OS releases screen wake locks on backgrounding but retains the sentinel object. Both Mindless engines checked only !wakeLock.current, so foreground return skipped reacquisition and the phone could sleep mid-session. Both now use one idempotent lifecycle controller that checks released, deduplicates simultaneous acquisition, releases acquisitions completing after close, and tolerates unavailable APIs. Foreground return reacquires only the wake lock, without requesting gesture-gated fullscreen. Local mocked lifecycle tests cover OS release/return, pending requests and close races; physical iOS/Android wake behavior and authenticated completion writes remain unverified.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node node_modules/vitest/vitest.mjs run lib/on-air/screen-wake-lock.test.ts"
+  },
+  "wave": "W7"
+}

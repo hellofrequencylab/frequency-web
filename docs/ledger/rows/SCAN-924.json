@@ -1,1 +1,19 @@
-{"id":"SCAN-924","title":"Dismissing an instruction popup with Escape does not tear down the Mindless timer","status":"done","priority":"P2","lane":"live","size":"S","closed":"2026-10-15","source":{"file":"components/on-air/mindless.tsx","ref":"Mobile and keyboard cohesion audit 2026-10-15"},"detail":"The provider's global Escape handler ran for all non-closed states, contradicting its loading/error/empty-only contract. Escape from the nested breathing instructions bubbled to window and removed the ready engine, losing its visible state and leaving recovery to resurrect it later. The global handler now owns only loading/error/empty states. A mocked React provider regression failed before repair; both sit and movement preserve their mounted engine after Escape, while outstanding loading remains dismissible. No production timer/session writes performed.","verify":{"kind":"cmd","cmd":"pnpm exec vitest run components/on-air/mindless.escape.test.tsx"},"wave":"W7"}
+{
+  "id": "SCAN-924",
+  "title": "Dismissing an instruction popup with Escape does not tear down the Mindless timer",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "components/on-air/mindless.tsx",
+    "ref": "Mobile and keyboard cohesion audit 2026-10-15"
+  },
+  "detail": "The provider's global Escape handler ran for all non-closed states, contradicting its loading/error/empty-only contract. Escape from the nested breathing instructions bubbled to window and removed the ready engine, losing its visible state and leaving recovery to resurrect it later. The global handler now owns only loading/error/empty states. A mocked React provider regression failed before repair; both sit and movement preserve their mounted engine after Escape, while outstanding loading remains dismissible. No production timer/session writes performed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node node_modules/vitest/vitest.mjs run components/on-air/mindless.escape.test.tsx"
+  },
+  "wave": "W7"
+}
