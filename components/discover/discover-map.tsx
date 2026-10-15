@@ -1,31 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-// Namespace import, NOT a default import: maplibre-gl declares no `export default` in its
-// .d.ts, so the default form is a compile error. (This note used to cite a "v5 pin" as the
-// reason — package.json has been ^6.x for this repo's whole history, and v6 is ESM with named
-// exports, which is what this form matches.) components/maps/maplibre-interop.test.ts is the one
-// test that imports the library for real and would catch the form drifting from the packaging.
-import * as maplibregl from 'maplibre-gl'
-// v6 no longer re-exports the GeoJSON type globals; import them explicitly.
-import type * as GeoJSON from 'geojson'
-import 'maplibre-gl/dist/maplibre-gl.css'
-import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
-import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
-import { mapColor } from '@/lib/maps/css-color'
-
-// Keyless vector tiles out of the box (same default as the circles map); override
-// with NEXT_PUBLIC_MAP_STYLE. PRIVACY: this map only ever receives city-level
-// centroids (see lib/discover.ts getPublicCityClusters) — never a circle/venue.
-// The style comes from lib/maps/provider (MAPLIBRE_STYLE), not a fourth copy of the same
-// env-or-default expression. Identical value; one place to change it.
-// 🔴 THE WORKER CONFIG IS LOAD-BEARING HERE. This module builds its own maplibregl.Map rather
-// than going through <MapCanvas>, so it does NOT inherit the setup in maplibre-canvas.tsx — which
-// is exactly why this map painted blank while event venue maps worked. maps-wiring.test.ts fails
-// the build if a map module drops this call. See docs/MAPS.md §4a.
-configureMaplibreWorker()
-
-const STYLE = MAPLIBRE_STYLE
+import { MapCanvas } from '@/components/maps/map-canvas'
 
 export type MapCity = {
   city: string
@@ -35,126 +10,34 @@ export type MapCity = {
   lng: number
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-// Loaded via next/dynamic({ ssr:false }) from the locator wrapper — maplibre must
-// never run on the server.
+/** Public discovery receives city centroids only, never private circle or venue coordinates. */
 export default function DiscoverMap({
   cities,
   center = null,
   className = 'h-full w-full overflow-hidden rounded-card border border-border',
 }: {
   cities: MapCity[]
-  /** [lng, lat] of the viewer (IP geo) — the map eases here when it arrives. */
   center?: [number, number] | null
   className?: string
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
-  const centerRef = useRef(center)
-
-  useEffect(() => {
-    centerRef.current = center
-    if (center && mapRef.current) {
-      mapRef.current.easeTo({ center, zoom: 9, duration: 800 })
-    }
-  }, [center])
-
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const map = new maplibregl.Map({
-      container,
-      style: STYLE,
-      center: [-117.28, 33.1], // North County San Diego (founding metro)
-      zoom: 8,
-      attributionControl: { compact: true },
-    })
-    mapRef.current = map
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-
-    map.on('load', () => {
-      const features: GeoJSON.Feature<GeoJSON.Point>[] = cities.map((c) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
-        properties: { city: c.city, circles: c.circles, events: c.events },
-      }))
-
-      map.addSource('cities', { type: 'geojson', data: { type: 'FeatureCollection', features } })
-
-      map.addLayer({
-        id: 'city-dot',
-        type: 'circle',
-        source: 'cities',
-        paint: {
-          'circle-color': mapColor('--design-map-pin'),
-          'circle-opacity': 0.85,
-          'circle-radius': ['interpolate', ['linear'], ['get', 'circles'], 1, 11, 10, 26],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': mapColor('--design-map-pin-ring'),
-        },
-      })
-      map.addLayer({
-        id: 'city-count',
-        type: 'symbol',
-        source: 'cities',
-        layout: {
-          'text-field': ['to-string', ['get', 'circles']],
-          'text-size': 12,
-          'text-font': ['Noto Sans Regular'],
-        },
-        paint: { 'text-color': mapColor('--design-map-count') },
-      })
-
-      if (centerRef.current) {
-        map.easeTo({ center: centerRef.current, zoom: 9, duration: 0 })
-      } else if (features.length > 0) {
-        const bounds = new maplibregl.LngLatBounds()
-        for (const f of features) bounds.extend(f.geometry.coordinates as [number, number])
-        map.fitBounds(bounds, { padding: 60, maxZoom: 11, duration: 0 })
-      }
-
-      map.on('click', 'city-dot', (e) => {
-        const f = e.features?.[0]
-        if (!f) return
-        const geom = f.geometry as GeoJSON.Point
-        const props = f.properties ?? {}
-        const city = escapeHtml(String(props.city ?? ''))
-        const cityParam = encodeURIComponent(String(props.city ?? ''))
-        const circles = Number(props.circles ?? 0)
-        new maplibregl.Popup({ offset: 12, closeButton: false })
-          .setLngLat(geom.coordinates as [number, number])
-          .setHTML(
-            `<div style="font-weight:600;color:var(--design-map-count)">${city}</div>` +
-              `<a href="/discover/circles?city=${cityParam}" style="font-size:13px;color:var(--design-map-link);text-decoration:none">${circles} ${circles === 1 ? 'circle' : 'circles'} →</a>`,
-          )
-          .addTo(map)
-      })
-
-      map.on('mouseenter', 'city-dot', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'city-dot', () => { map.getCanvas().style.cursor = '' })
-    })
-
-    return () => {
-      map.remove()
-      mapRef.current = null
-    }
-  }, [cities])
-
-  // Warm filter to match the cream palette (same treatment as the circles map).
   return (
-    <div
-      ref={containerRef}
+    <MapCanvas
+      center={center ?? [-117.28, 33.1]}
+      zoom={center ? 9 : 8}
+      pins={cities.map((city) => ({
+        id: city.city,
+        lat: city.lat,
+        lng: city.lng,
+        count: city.circles,
+        title: city.city,
+        subtitle: `${city.circles} ${city.circles === 1 ? 'circle' : 'circles'}`,
+        label: `${city.city}: ${city.circles} circles, ${city.events} events`,
+        href: `/discover/circles?city=${encodeURIComponent(city.city)}`,
+        hrefLabel: 'Explore circles',
+      }))}
+      fit={center ? null : { padding: 60, maxZoom: 11, singleZoom: 11 }}
+      recenterTo={center}
       className={className}
-      style={{ filter: 'sepia(0.22) saturate(1.08) hue-rotate(-8deg) brightness(1.02)' }}
     />
   )
 }

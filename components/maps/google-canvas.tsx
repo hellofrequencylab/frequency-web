@@ -216,14 +216,20 @@ export default function GoogleCanvas({
         const addPin = (pin: MapPin, isDraggablePin: boolean) => {
           const paint = resolvePinPaint(pin)
           const label = pin.label?.trim() || pin.title?.trim() || null
+          const counted = pin.count == null ? null : (designPins ? badge(pin.count) : null)
           const marker = new maps.Marker({
             map: live,
             position: { lat: pin.lat, lng: pin.lng },
             draggable: isDraggablePin,
             ...(label ? { title: label } : {}),
-            icon: {
+            ...(pin.count == null ? {} : { label: {
+              text: clusterLabel(pin.count),
+              color: designPins ? FREQUENCY_PIN_RING : tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
+              fontSize: counted?.fontSize ?? '13px', fontWeight: '700',
+            } }),
+            icon: counted?.icon ?? {
               path: maps.SymbolPath.CIRCLE,
-              scale: pinScale,
+              scale: pin.count == null ? pinScale : clusterDiameterPx(pin.count) / 2,
               fillColor: tokenColor(paint.token, paint.fallback),
               fillOpacity: 1,
               strokeColor: stroke,
@@ -369,7 +375,7 @@ export default function GoogleCanvas({
           if (!clustering) {
             // Under Frequency, pins on one exact coordinate become one area badge even with clustering
             // off (SCAN-918); every pin with a spot of its own stays exactly where it is.
-            if (designPins && !draggable) {
+            if (designPins && !draggable && !pins.some((pin) => pin.count != null)) {
               for (const group of clusterPoints(pins, live.getZoom() ?? zoom, { radiusPx: 0, coLocated: true })) {
                 if (group.type === 'cluster' && group.area) {
                   addCluster(group.lat, group.lng, group.count, group.plus, null, group.points)
@@ -382,7 +388,8 @@ export default function GoogleCanvas({
             pins.forEach((pin, index) => addPin(pin, draggable && index === 0))
             return
           }
-          for (const group of clusterPoints(pins, live.getZoom() ?? zoom, clustering)) {
+          pins.filter((pin) => pin.unclustered || pin.count != null).forEach((pin) => addPin(pin, false))
+          for (const group of clusterPoints(pins.filter((pin) => !pin.unclustered && pin.count == null), live.getZoom() ?? zoom, clustering)) {
             if (group.type === 'cluster') {
               addCluster(
                 group.lat,
@@ -440,15 +447,16 @@ export default function GoogleCanvas({
           })
         }
 
-        if (fit && pins.length > 1) {
+        const framePoints = fit?.points ?? pins
+        if (fit && framePoints.length > 1) {
           const bounds = new maps.LatLngBounds()
-          for (const p of pins) bounds.extend({ lat: p.lat, lng: p.lng })
+          for (const p of framePoints) bounds.extend({ lat: p.lat, lng: p.lng })
           live.fitBounds(bounds, fit.padding ?? 60)
           const cap = fit.maxZoom ?? 13
           const current = live.getZoom()
           if (current != null && current > cap) live.setZoom(cap)
-        } else if (fit && pins.length === 1 && fit.singleZoom != null) {
-          live.setCenter({ lat: pins[0].lat, lng: pins[0].lng })
+        } else if (fit && framePoints.length === 1 && fit.singleZoom != null) {
+          live.setCenter({ lat: framePoints[0].lat, lng: framePoints[0].lng })
           live.setZoom(fit.singleZoom)
         }
         // Framing moves the zoom, so the grouping the markers were built at is now stale.

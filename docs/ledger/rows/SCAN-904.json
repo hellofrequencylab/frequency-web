@@ -1,19 +1,19 @@
 {
   "id": "SCAN-904",
   "title": "Every Frequency map is Google in the kit's palette, and the MapLibre fallback wears the same palette and pins",
-  "status": "done",
+  "status": "open",
   "priority": "P2",
   "lane": "live",
   "size": "M",
-  "closed": "2026-10-14",
   "source": {
     "file": "components/maps/map-canvas.tsx",
     "ref": "Owner 2026-10-14: All maps should be Google with Frequency styles applied. There's another fallback map system; make sure they look good."
   },
   "detail": "Under SITE_DESIGN=frequency every map renders through the MapCanvas seam (ADR-901), which picks Google whenever NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY is set (the LIVE-927 gate, lib/maps/provider.ts) and MapLibre without it. The last Frequency surface that built its own MapLibre map, the members Circles map (components/frequency/members/circles/circles-map.tsx FqCirclesMapBanner), now composes MapCanvas with Circle pins in the presence colour and Starter pins in a new starter pin kind (--design-map-starter), clustered, framed on the viewer when their area is known. Pins: under Frequency both engines draw the kit's round dot in the pin's kind colour with a white ring (lib/maps/pin-kinds.ts FREQUENCY_PIN_RING, FREQUENCY_PIN; components/maps/cluster-marker.ts buildRoundPin), and cluster bubbles take the same white ring. DAWN keeps its teardrop and surface ring. Fallback look: lib/maps/basemap-look.ts maplibreBasemapPaint paints the same --fq-* palette Google's JSON style is built from into the MapLibre vector style layer by layer (land, water, parks, roads, casings, boundaries, labels and halos), applied by components/maps/maplibre-basemap.ts applyDesignBasemap in the seam's canvas, the DAWN Circles map (page-editor Circles block) and the admin QR scan map, so the keyless map matches Google on the light Commons and the dark Stage. A style with none of the known layers keeps a tile filter (dark: the design's; light: a warm sand tint, no longer none). Map chrome under Frequency (app/themes/frequency/members-ui.css): popups and Google InfoWindows in the kit's card surface and radius, rounded controls, focus rings on pins; Google's logo and attribution untouched. Cost: under Frequency a Google map is not built until its box is within 200px of the viewport (components/maps/use-near-viewport.ts, IntersectionObserver, latched), so maps below the fold and panes the layout hides never bill a dynamic map load. One memoised script loader (lib/maps/google-loader.ts) is shared; rebuilds stay keyed on serialised props. List and index views mount no map until the Map view or the Circles map is opened. DAWN is unchanged.",
   "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const bad=[];const fqc=r('components/frequency/members/circles/circles-map.tsx');if(!fqc.includes('<MapCanvas')||fqc.includes('import(\\'@/components/circles/circle-map\\')'))bad.push('the Frequency Circles map is not on the map seam');const g=r('components/maps/google-canvas.tsx');if(!g.includes('useNearViewport(containerRef)')||!g.includes('if (!container || !near) return'))bad.push('a Google map is built before it nears the viewport');if(!r('components/maps/use-near-viewport.ts').includes('new IntersectionObserver('))bad.push('no viewport gate');if(!g.includes('FREQUENCY_PIN_RING'))bad.push('Google pins lack the white ring');const m=r('components/maps/maplibre-canvas.tsx');if(!m.includes('applyDesignBasemap(map, container)')||!m.includes('buildRoundPin(paint, FREQUENCY_PIN_RING)'))bad.push('the MapLibre fallback does not wear the kit');const b=r('lib/maps/basemap-look.ts');if(!b.includes('export function maplibreBasemapPaint')||!/LIGHT_TILE_FILTER = .sepia/.test(b))bad.push('no Frequency palette for the MapLibre style');for(const p of ['components/circles/circle-map.tsx','app/(main)/admin/qr/scan-map.tsx'])if(!r(p).includes('applyDesignBasemap(map, container)'))bad.push(p+' keeps the grey basemap');if(bad.length){console.error('SCAN-904: '+bad.join('; '));process.exit(1)}\""
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "SCAN-935 migrated remaining geographic renderers to MapCanvas; 101 focused map tests passed. The old direct-basemap probe no longer measures those adapters. Google browser key is absent locally, so actual Google rendering and provider activation remain unverified; MapLibre fallback stays active. No provider configuration was changed."
   },
   "wave": "W7"
 }

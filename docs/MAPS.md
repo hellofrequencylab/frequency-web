@@ -3,7 +3,10 @@
 **One seam, two engines, two keys, one diagnostic.** Every map in the app renders through
 `components/maps/map-canvas.tsx`. It picks Google when a *browsable* key is set and MapLibre
 otherwise, and it falls back to MapLibre on any Google failure. A surface describes **what to
-plot**; it never touches a map library.
+plot**; it never touches a map library. City discovery, Circle browsing, and QR scan analytics
+also use this seam. Pre-aggregated city/scan markers carry `count` (not repeating-event
+`moreCount`), and `fit.points` frames a subset without dropping off-screen pins. Virtual starter
+pins use `unclustered` to retain their own layer.
 
 Decisions: [ADR-901](DECISIONS.md) (the seam) · [ADR-904](DECISIONS.md) (the loader handshake
 and the diagnostic) · [ADR-1022](DECISIONS.md) (pin click, clustering, fullscreen, pin kinds) ·
@@ -46,7 +49,7 @@ access is replaced (`node_modules/next/dist/docs/01-app/02-guides/environment-va
 
 | Var | Default | When to touch it |
 | --- | --- | --- |
-| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | unset | Optional Cloud-styled Map ID so the Google basemap matches the cream palette. |
+| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | unset | Optional Cloud-styled Map ID. Its published Cloud style overrides local Frequency JSON styling. Leave unset to use Frequency token-derived light/dark styling. |
 | `NEXT_PUBLIC_MAP_STYLE` | OpenFreeMap positron | Only to point MapLibre at a different style. A bad value blanks the basemap. |
 | `NEXT_PUBLIC_MAPLIBRE_WORKER_URL` | `/maplibre/maplibre-gl-worker.mjs` | 🔴 **Leave unset.** Empty now resolves to the self-hosted worker, which the basemap requires. Overriding it with a path that 404s blanks every MapLibre map. See §4a. |
 
