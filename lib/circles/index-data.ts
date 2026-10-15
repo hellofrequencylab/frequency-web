@@ -52,6 +52,8 @@ type CircleRow = CircleBase & {
   /** Every Channel the Circle carries (LIVE-666); position 1 is `topical_channel_id`. */
   circle_channels: CircleChannelLink[] | null
   channel: { name: string; pillar_id: string | null } | null
+  /** The Circle's Space, for its header image when the Circle has no cover of its own (SCAN-898). */
+  space?: { cover_image_url: string | null; type: string } | null
   hub: {
     id: string
     name: string
@@ -79,7 +81,7 @@ function toCardData(c: CircleRow): CircleCardData {
     member_cap: c.member_cap,
     status: c.status,
     context: contextFor(c),
-    imageUrl: c.image_url,
+    imageUrl: c.image_url ?? (c.space && c.space.type !== 'root' ? c.space.cover_image_url : null),
     isDemo: c.is_demo,
     isFeatured: !!c.featured_at,
   }
@@ -205,6 +207,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
            latitude, longitude, neighborhood, image_url, is_demo, unlisted, featured_at, topical_channel_id,
            circle_channels ( topical_channel_id, position ),
            channel:topical_channels!topical_channel_id ( name, pillar_id ),
+           space:spaces!space_id ( cover_image_url, type ),
            hub:hubs!hub_id (
              id, name, slug,
              nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )

@@ -239,7 +239,9 @@ export default async function CircleDetailLayout({
     // The host's stored height and their TOTAL None/Shade/Blend overlay choice (added to the
     // Circle admin rail 2026-08-12) ride in as entity values, so both keep beating the element.
     resolveIdentityHero(`/circles/${slug}`, {
-      entityImage: circle.image_url,
+      // A Space's Circle with no cover of its own wears its Space's page header (owner, 2026-10-14, SCAN-898),
+      // not the generic /circles image. The platform root is not a Space with a header to lend.
+      entityImage: circle.image_url ?? (circle.space && circle.space.type !== 'root' ? (circle.space.cover_image_url ?? null) : null),
       entityFocus: readCircleCoverFocus(theme),
       entitySize: hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : null,
       entityOverlayStyle: circleHeroOverlayStyle(theme),

@@ -331,7 +331,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
          latitude, longitude, neighborhood, city, sidebar_order, theme, access, space_id, host_id, unlisted,
          is_space_primary,
          host:profiles!host_id ( id, display_name, handle, avatar_url ),
-         space:spaces!space_id ( slug, name, brand_name, type ),
+         space:spaces!space_id ( slug, name, brand_name, type, cover_image_url ),
          hub:hubs!hub_id (
            id, name, slug,
            nexus:nexuses!nexus_id (
