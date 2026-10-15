@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-922",
+  "title": "Confirming IME composition does not send an unfinished chat message",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "components/ui/chat-composer.tsx",
+    "ref": "Frequency Control cohesion audit 2026-10-15"
+  },
+  "detail": "Enter during IME composition invoked onSend in both enter and mod-enter modes. The shared composer now ignores composing keydown and Safari IME keyCode 229. Both mode regressions failed before the fix and pass after.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "pnpm exec vitest run components/ui/chat-composer.test.tsx --maxWorkers=1"
+  }
+}
