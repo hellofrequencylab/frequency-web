@@ -47,9 +47,13 @@ vi.mock('@/lib/supabase/admin', () => ({
         if (table === 'circles') {
           return { eq: () => ({ maybeSingle: async () => ({ data: circleRow }) }) }
         }
-        // journey_plans: .eq().neq().order().limit() → { data }
+        // journey_plan_space_shares: .eq().eq() → { data } (no co-hosted Journeys in these scenarios)
+        if (table === 'journey_plan_space_shares') {
+          return { eq: () => ({ eq: async () => ({ data: [] }) }) }
+        }
+        // journey_plans: .or().neq().order().limit() → { data } (own plus co-hosted, SCAN-892)
         return {
-          eq: () => ({
+          or: () => ({
             neq: () => ({
               order: () => ({ limit: async () => ({ data: offeredPlans }) }),
             }),
