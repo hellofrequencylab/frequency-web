@@ -302,3 +302,8 @@
 [data-design="frequency"] [data-kit="members"] .fa-stat[aria-pressed="true"] .fa-stat-l{font-weight:400;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fa-rankpill{height:auto;padding:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans)}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fa-stats{gap:6px}}
+
+/* SCAN-911: an Up next event with no art has no photo pane, so its badge sits inline after the kicker. */
+[data-design="frequency"] [data-kit="members"] .fa-badge.is-inline{position:static;height:22px;margin-left:10px;padding:0 9px;vertical-align:middle}
+/* SCAN-911: Vera's join notice is a micro-notice: a short muted line, not a post-sized row. */
+[data-design="frequency"] [data-kit="members"] .fa-join{padding:10px 0;font-size:var(--fq-text-meta);color:var(--fq-text-muted)}

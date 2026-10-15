@@ -100,19 +100,26 @@ export function AnonJoinGate() {
       <div className="fqm-join-box">
         <div className="fq-aura" aria-hidden />
         <div className="fqm-join-in">
-          <span className="k">Frequency beta</span>
+          <span className="k">Frequency Community Collective</span>
+          {/* SCAN-911: a warm pitch, not a status line (owner: "a mood of join the movement"). */}
           <h2 id={TITLE_ID} className="h2 fqm-join-h">
-            You’re reading as <span className="serif">Anonymous.</span>
+            Join the <span className="serif">movement.</span>
           </h2>
-          <p className="fqm-join-p">Join free during the beta to post, RSVP and find your Circle.</p>
+          <p className="fqm-join-p">
+            Real-life community is growing across North County: local Circles, events and daily practices with people
+            who show up. Join free while we’re in beta.
+          </p>
           <div className="fqm-join-acts">
             <Link href={BETA_CTA_HREF} className="btn pa lg">
-              Join free
+              Join the movement
             </Link>
-            <Link href="/sign-in?next=%2Ffeed" className="btn lg">
-              Log in
+            <Link href="/about" className="btn lg">
+              Find out more
             </Link>
           </div>
+          <p className="fqm-join-login">
+            Already a member? <Link href="/sign-in?next=%2Ffeed">Log in</Link>
+          </p>
           <Link href="/" className="btn txt sm fqm-join-home">
             Back to Home
           </Link>

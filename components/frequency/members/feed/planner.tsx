@@ -117,12 +117,19 @@ export function FeedPlanner({
     <>
       {hero ? (
         <section className="fa-hero" aria-label="Up next for you">
-          <Link href={`/events/${hero.slug}`} className="fa-hero-ph ph" style={phStyle(hero.coverUrl)} aria-label={hero.title}>
-            {hero.badge && <span className="fa-badge">{hero.badge}</span>}
-          </Link>
+          {/* SCAN-911: an event with no art gets no photo pane (it painted an empty sand block); the
+              badge then rides beside the kicker. */}
+          {hero.coverUrl ? (
+            <Link href={`/events/${hero.slug}`} className="fa-hero-ph ph" style={phStyle(hero.coverUrl)} aria-label={hero.title}>
+              {hero.badge && <span className="fa-badge">{hero.badge}</span>}
+            </Link>
+          ) : null}
           <div className="fa-hero-body">
             <div className="fa-between">
-              <span className="k">Up next for you</span>
+              <span className="k">
+                Up next for you
+                {!hero.coverUrl && hero.badge && <span className="fa-badge is-inline">{hero.badge}</span>}
+              </span>
               {picks.length > 1 && <span className="fa-f13">{`${(pick % picks.length) + 1} of ${picks.length}`}</span>}
             </div>
             <Link href={`/events/${hero.slug}`} className="fa-hero-title">{hero.title}</Link>

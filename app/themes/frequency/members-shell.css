@@ -839,3 +839,9 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] .fa-quick-t{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%}
 [data-design="frequency"] [data-kit="members"] .fa-quick-t b{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-display);letter-spacing:-.01em;color:var(--fq-text-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fa-quick-t small{font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);color:var(--fq-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* SCAN-911: the gate's quiet log-in line under the pitch. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-join-login{margin:4px 0 0;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-join-login a{color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:3px}
+}
