@@ -878,3 +878,10 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .sec{padding:0}
 [data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .block{display:block;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
 }
+
+/* SCAN-916: in the installed app (display-mode standalone) on an edge-to-edge phone, the strip behind the
+   system navigation (back / home / recents) showed the canvas under the floating tab bar. Owner: black it
+   out. A fixed band exactly the height of the bottom safe area, in the darkest void, under everything. */
+@media (display-mode: standalone){
+  :root[data-design="frequency"] body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:env(safe-area-inset-bottom,0px);background:var(--fq-th-void);z-index:2147483000;pointer-events:none}
+}
