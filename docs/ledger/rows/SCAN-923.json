@@ -10,10 +10,10 @@
     "file": "components/on-air/session.tsx",
     "ref": "Mobile audit 2026-10-15; both timer visibility handlers tested only whether a released sentinel existed"
   },
-  "detail": "The OS releases screen wake locks on backgrounding but retains the sentinel object. Both Mindless engines checked only !wakeLock.current, so foreground return skipped reacquisition and the phone could sleep mid-session. Both now use one idempotent lifecycle controller that checks released, deduplicates simultaneous acquisition, releases acquisitions completing after close, and tolerates unavailable APIs. Foreground return reacquires only the wake lock, without requesting gesture-gated fullscreen. Local mocked lifecycle tests cover OS release/return, pending requests and close races; physical iOS/Android wake behavior and authenticated completion writes remain unverified.",
+  "detail": "The OS releases screen wake locks on backgrounding but retains the sentinel object. Both Mindless engines checked only !wakeLock.current, so foreground return skipped reacquisition and the phone could sleep mid-session. Both now use one idempotent lifecycle controller that checks released, deduplicates simultaneous acquisition, releases acquisitions completing after close, and tolerates unavailable APIs. Foreground return reacquires only the wake lock, without requesting gesture-gated fullscreen. Local mocked lifecycle tests cover OS release/return, pending requests and close races; physical iOS/Android wake behavior and authenticated completion writes remain unverified. Backlog verification now executes fast, read-only consequences without launching a nested test runner. The full behavioral suites remain independently enforced by required CI; source guard, missing/incorrect behavior and deliberately broken controls fail rather than being waived.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node node_modules/vitest/vitest.mjs run lib/on-air/screen-wake-lock.test.ts"
+    "cmd": "node scripts/cohesion-release-probes.mjs SCAN-923"
   },
   "wave": "W7"
 }
