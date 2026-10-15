@@ -56,7 +56,7 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (raw.startsWith('#')) return raw
   const links = metadata?.links as SiteLinkMap | undefined
   // A Space path the website has no page for (Memberships, Shop, Calendar) opens on Frequency itself.
-  if (links) return siteLocalHref(raw, links)?.href ?? (/^\/(?:spaces|circles|events)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(raw) ? `${links.origin}${raw}` : null)
+  if (links) return siteLocalHref(raw, links)?.href ?? (/^\/(?:spaces|circles|events|market)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(raw) ? `${links.origin}${raw}` : null)
   return safeUrl(raw) || (raw.startsWith('/') ? raw : null)
 }
 const external = (href: string) => /^https?:\/\//.test(href)

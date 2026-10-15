@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { NetworkCirclesBlock, NetworkEventsBlock, networkComponents } from './network'
+import { NetworkCirclesBlock, NetworkEventsBlock, NetworkMerchBlock, networkComponents } from './network'
 import { WebsiteDocument } from '@/components/sites/website-document'
-import { buildWebsiteDocs, CIRCLES } from '../../../scripts/seed-the-group.mts'
+import { buildWebsiteDocs, CIRCLES, MERCH, merchId } from '../../../scripts/seed-the-group.mts'
 
 const now = new Date('2026-10-15T12:00:00Z')
 const card = { title: 'The Coaches Club', circleSlug: 'tg-coaches-club', match: 'Coaches Club' }
@@ -89,5 +89,15 @@ describe('Network circle connections', () => {
     const html = renderToStaticMarkup(<NetworkCirclesBlock p={p} metadata={{ links: { origin: 'https://frequency.example' } }} />)
     expect(html).toContain('href="https://frequency.example/sign-in?next=%2Fcircles%2Fnew"')
     expect(html).not.toContain('events-and-workshop-submission')
+  })
+
+  it('opens each real seeded merchandise record rather than dropping every card on the shop overview', () => {
+    const doc = buildWebsiteDocs() as Record<string, { content: { type: string; props: Record<string, unknown> }[] }>
+    const p = doc.home.content.find((block) => block.type === 'NetworkMerch')!.props
+    const html = renderToStaticMarkup(<NetworkMerchBlock p={p} metadata={{ links: { origin: 'https://frequency.example', slug: 'the-group', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null } }} />)
+    for (const product of MERCH) expect(html).toContain(`href="https://frequency.example/market/${merchId(product.key)}"`)
+    expect(html).toContain('Shop all')
+    expect(html).toContain('View product')
+    expect(html).not.toContain('Add to cart')
   })
 })

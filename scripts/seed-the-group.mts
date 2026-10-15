@@ -355,7 +355,7 @@ const POSTS = [
   { image: '', caption: 'For Nick Esayian, football gave him confidence and a sense of belonging.' },
   { image: '', caption: 'The right people show up at the right time.' },
 ]
-const PRODUCTS = MERCH.map((m) => ({ image: m.image, title: m.short, note: m.note, price: `$${m.priceCents / 100}`, href: PAGE('shop') }))
+const PRODUCTS = MERCH.map((m) => ({ image: m.image, title: m.short, note: m.note, price: `$${m.priceCents / 100}`, href: `/market/${merchId(m.key)}` }))
 const CIRCLE_CARDS = CIRCLES.map((c) => ({ icon: c.icon, title: c.name, body: c.body, when: c.when, where: c.where, circleSlug: `tg-${c.key}`, match: c.match }))
 
 const coffee = (anchor = 'contact'): Block => ({
@@ -406,7 +406,7 @@ export function buildWebsiteDocs(): Record<string, unknown> {
     { type: 'NetworkOfferings', props: { id: 'tg-home-studio', anchor: 'studio', eyebrow: 'Incubator Studios', title: 'Your story deserves a studio *that takes it seriously.*', lead: 'A full-service, concierge-style podcast and content studio in Encinitas. Heart of the Matter is shot here.', items: STUDIO_CARDS, layout: desktop } },
     { type: 'NetworkMedia', props: { id: 'tg-home-podcast', anchor: 'podcast', eyebrow: 'Heart of the Matter', title: 'The podcast.', lead: '', actionLabel: 'View all episodes', actionHref: PODCAST, items: EPISODES, layout: desktop } },
     { type: 'NetworkSocial', props: { id: 'tg-home-instagram', anchor: 'instagram', eyebrow: '@thegroupsd', title: 'Connect with us *and spread the love.*', lead: '', actionLabel: 'Follow on Instagram', actionHref: INSTAGRAM, posts: POSTS, layout: desktop } },
-    { type: 'NetworkMerch', props: { id: 'tg-home-merch', anchor: 'merch', eyebrow: 'Feel Good Merch', title: 'Made with local *San Diego makers.*', lead: '', actionLabel: 'Shop all', actionHref: PAGE('shop'), buyLabel: 'Add to cart', products: PRODUCTS, layout: desktop } },
+    { type: 'NetworkMerch', props: { id: 'tg-home-merch', anchor: 'merch', eyebrow: 'Feel Good Merch', title: 'Made with local *San Diego makers.*', lead: '', actionLabel: 'Shop all', actionHref: PAGE('shop'), buyLabel: 'View product', products: PRODUCTS, layout: desktop } },
     coffee(),
   ])
 
