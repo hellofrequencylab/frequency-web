@@ -123,6 +123,9 @@ export function ChatComposer({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       onKeyDownExtra?.(e)
       if (e.defaultPrevented) return
+      // Enter confirms an IME candidate before it is a message-send shortcut.
+      // Safari can end composition before keydown but retains the IME key code.
+      if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
       const mod = e.metaKey || e.ctrlKey
       if (e.key !== 'Enter') return
       if (submitKey === 'enter' ? !e.shiftKey && !mod : mod) {

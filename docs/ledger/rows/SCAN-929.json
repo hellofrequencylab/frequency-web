@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-929",
+  "title": "Downgraded operator hub previews hide unpublished commerce",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "components/frequency/members/shared/hub-links.tsx",
+    "ref": "Frequency Control effective-viewer consequence test"
+  },
+  "detail": "HubLinks reused browsableAreas for the real operator while the shell correctly suppressed operator privilege in a downgraded preview. A hidden Store link therefore remained in the hub and sent the preview into a redirect. The hub now derives public areas from the existing cached visibility reader when previewing down, keeping ordinary operator navigation intact. A mock viewer test reproduced shop full before and requires none after; navigation/visibility regressions remain covered. The backlog probe executes the actual pure helper or component handlers with isolated dependencies, without launching a nested test runner. Full behavioral Vitest suites remain independently required by CI.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/cohesion-core-probes.mjs SCAN-929"
+  }
+}

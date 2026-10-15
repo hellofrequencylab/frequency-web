@@ -1,5 +1,25 @@
 import { describe, it, expect } from 'vitest'
-import { computeUserHasEvents, countFacetOptions, type FacetKey } from './index-data'
+import { computeUserHasEvents, countFacetOptions, dateRangeWindow, type FacetKey } from './index-data'
+
+describe('This weekend uses community wall-clock days', () => {
+  it.each([
+    ['Friday', '2026-10-16T19:00:00Z', '2026-10-17', '2026-10-18'],
+    ['Saturday', '2026-10-17T19:00:00Z', '2026-10-17', '2026-10-18'],
+    ['Sunday', '2026-10-18T19:00:00Z', '2026-10-18', '2026-10-18'],
+    ['Monday', '2026-10-19T19:00:00Z', '2026-10-24', '2026-10-25'],
+    // UTC has advanced to Monday; the community is still on Sunday evening.
+    ['Sunday evening', '2026-10-19T02:00:00Z', '2026-10-18', '2026-10-18'],
+    ['DST Sunday', '2026-11-02T03:00:00Z', '2026-11-01', '2026-11-01'],
+  ])('%s includes only the remaining weekend', (_label, now, from, to) => {
+    const window = dateRangeWindow('weekend', new Date(now))!
+    expect(window.from.toISOString()).toBe(`${from}T00:00:00.000Z`)
+    expect(window.to.toISOString()).toBe(`${to}T23:59:59.999Z`)
+    // Stored event timestamps carry the event's local wall-clock parts as UTC.
+    const nextMonday = new Date(`${to}T00:00:00Z`)
+    nextMonday.setUTCDate(nextMonday.getUTCDate() + 1)
+    expect(nextMonday.getTime()).toBeGreaterThan(window.to.getTime())
+  })
+})
 
 // The Manage + My drafts actions on the member's own /events home appear ONLY once the member has
 // added an event (owner rule). computeUserHasEvents is the pure gate over the head-count of events

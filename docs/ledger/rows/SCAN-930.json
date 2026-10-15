@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-930",
+  "title": "Strict route matching keeps public pages reachable beside the wizard closer",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "app/(main)/default.tsx",
+    "ref": "Installed Next16.4 route normalizer and built runtime"
+  },
+  "detail": "The wizard catchall participates in sibling route matches without a main children fallback, leaving85 pages incomplete under Next16.4 strict matching. An implicit children default preserves the wizard closer while making every page complete. Actual bundled normalizer test passes; built homepage/feed return200 and a new arbitrary URL404. Existing explicit catchall not-found segment remains intact. Backlog verification now executes fast, read-only consequences without launching a nested test runner. The full behavioral suites remain independently enforced by required CI; source guard, missing/incorrect behavior and deliberately broken controls fail rather than being waived.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/cohesion-release-probes.mjs SCAN-930"
+  }
+}

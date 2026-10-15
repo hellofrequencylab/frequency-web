@@ -7,7 +7,7 @@ import { getStaffMember } from '@/lib/staff'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo, type Hats, type Surface } from '@/lib/core/access-matrix'
 import { meetsAccess, NAV_AREAS } from '@/lib/nav-areas'
-import { AREA_NAV_KEY, MARKET_AREAS, browsableAreas } from '@/lib/marketplace/visibility'
+import { AREA_NAV_KEY, MARKET_AREAS, browsableAreas, marketplaceVisibility, visibleAreas } from '@/lib/marketplace/visibility'
 import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import type { CommunityRole } from '@/lib/core/roles'
 import type { FqHubLink, FqMenuViewer } from '@/components/frequency/members/shell/nav'
@@ -37,13 +37,14 @@ async function hubViewer(): Promise<FqMenuViewer> {
   // drafts or own-records row (the `member` gate).
   if (!profile) return { navAccess: navAccessFor({ loggedIn: false }), operatesSpaces: false, host: false, signedIn: false }
   const realRole = (profile.community_role ?? 'member') as CommunityRole
-  const [effectiveRole, previewVisitor, realHats, staffMember, operatesRaw, areas] = await Promise.all([
+  const [effectiveRole, previewVisitor, realHats, staffMember, operatesRaw, areas, visibility] = await Promise.all([
     applyViewAs(realRole),
     viewingAsVisitor(realRole),
     getViewerHats(),
     getStaffMember().catch(() => null),
     hasOperatedSpaces(profile.id),
     browsableAreas(),
+    marketplaceVisibility(),
   ])
   const previewingDown = previewVisitor || effectiveRole !== realRole
   const navAccess = navAccessFor(
@@ -57,7 +58,8 @@ async function hubViewer(): Promise<FqMenuViewer> {
           staff: previewingDown ? null : (staffMember?.role ?? null),
         },
   )
-  for (const area of MARKET_AREAS) if (!areas.includes(area)) navAccess[AREA_NAV_KEY[area]] = 'none'
+  const previewAreas = previewingDown ? visibleAreas(visibility, false) : areas
+  for (const area of MARKET_AREAS) if (!previewAreas.includes(area)) navAccess[AREA_NAV_KEY[area]] = 'none'
   return {
     navAccess,
     operatesSpaces: previewingDown ? false : operatesRaw,

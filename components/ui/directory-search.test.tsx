@@ -98,6 +98,29 @@ describe('DirectorySearch disabled', () => {
 })
 
 describe('DirectorySearch loading', () => {
+  it('clearing cancels the pending query instead of restoring it after the debounce', () => {
+    const c = mount()
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input(c), 'ada')
+      input(c).dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    act(() => (c.querySelector('[aria-label="Clear search"]') as HTMLButtonElement).click())
+    act(() => vi.advanceTimersByTime(300))
+    expect(replaceCalls).toEqual(['/people'])
+  })
+
+  it('unmounting cancels a pending query', () => {
+    const c = mount()
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input(c), 'ada')
+      input(c).dispatchEvent(new Event('input', { bubbles: true }))
+      root!.unmount()
+    })
+    root = null
+    act(() => vi.advanceTimersByTime(300))
+    expect(replaceCalls).toEqual([])
+  })
+
   it('marks the region busy once the query is actually in flight', () => {
     const c = mount()
     search(c, 'ada')

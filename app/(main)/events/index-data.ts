@@ -165,7 +165,7 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): num
 // on Vercel): from ~5pm PT, "today" meant tomorrow — tonight's events vanished from
 // ?date=today while tomorrow's passed with cards reading "Tomorrow at …", and the
 // week/weekend bands shifted a day the same way. UTC-parts day arithmetic is DST-free.
-function dateRangeWindow(value: string | undefined, now: Date): { from: Date; to: Date } | null {
+export function dateRangeWindow(value: string | undefined, now: Date): { from: Date; to: Date } | null {
   if (!value) return null
   const dayMs = 24 * 60 * 60 * 1000
   const startOfDay = new Date(`${dayInZone(now, HOME_TZ)}T00:00:00.000Z`)
@@ -182,7 +182,8 @@ function dateRangeWindow(value: string | undefined, now: Date): { from: Date; to
     // Saturday + Sunday of the current week.
     const dow = startOfDay.getUTCDay()
     const sat = shift(startOfDay, (6 - dow + 7) % 7)
-    const sun = shift(sat, 1)
+    // Sunday is the last day of this weekend, not the first day of an eight-day window.
+    const sun = dow === 0 ? startOfDay : shift(sat, 1)
     // If today is already the weekend, start from today, not next Saturday.
     const from = dow === 0 || dow === 6 ? startOfDay : sat
     return { from, to: endOfDay(sun) }

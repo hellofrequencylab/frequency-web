@@ -4,6 +4,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { ChatComposer } from './chat-composer'
 
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
 // Locks the behaviour every chat surface now shares, and each assertion here is a defect that
 // shipped in at least one of the six hand-rolled composers this primitive replaced:
 //   • the box GREW with the content (none of them did — all six were pinned at rows={1|2|3})
@@ -65,6 +67,15 @@ describe('ChatComposer auto-grow', () => {
 })
 
 describe('ChatComposer send keys', () => {
+  it.each(['enter', 'mod-enter'] as const)('IME confirmation never sends in %s mode', (submitKey) => {
+    const onSend = vi.fn()
+    mount(<ChatComposer value="入力中" onValueChange={() => {}} onSend={onSend} label="Message" submitKey={submitKey} />)
+    press('Enter', { isComposing: true, ctrlKey: submitKey === 'mod-enter' })
+    expect(onSend).not.toHaveBeenCalled()
+    press('Enter', { keyCode: 229, ctrlKey: submitKey === 'mod-enter' })
+    expect(onSend).not.toHaveBeenCalled()
+  })
+
   it('Enter sends, Shift+Enter does not', () => {
     const onSend = vi.fn()
     mount(<ChatComposer value="hello" onValueChange={() => {}} onSend={onSend} label="Message" />)
