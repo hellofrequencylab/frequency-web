@@ -67,6 +67,19 @@ export const FREQUENCY_PIN_RING = '#FFFFFF'
 /** Pixel size of the Frequency pin (diameter) and its ring. One pair, both engines. */
 export const FREQUENCY_PIN = { diameterPx: 16, ringPx: 2.5 } as const
 
+/** THE FREQUENCY CLUSTER BADGE (SCAN-918): a round badge in the kit's soft deep sweep (sky to aqua to
+ *  seaglass) with a white ring and a white bold count, on both engines. Literal stops because Google
+ *  draws the badge as an SVG image, which cannot read a custom property. Sizes step with the count
+ *  (lib/maps/cluster.ts clusterStepDiameterPx). DAWN keeps its flat token bubble. */
+export const FREQUENCY_CLUSTER = {
+  stops: [
+    '#5A9FD0', // token-ok: export deep sweep sky stop (--fq-iridescent-sweep-deep, app/themes/frequency.css)
+    '#2C93A3', // token-ok: export deep sweep aqua stop
+    '#3C9C8C', // token-ok: export deep sweep seaglass stop
+  ],
+  ringPx: 2.5,
+} as const
+
 /** The pre-ADR-1022 tone escape hatch, kept so no migrated surface changes colour. */
 const MAP_PIN_TONES: Record<MapPinTone, MapPinPaint> = {
   // token-ok: mirrors --color-primary

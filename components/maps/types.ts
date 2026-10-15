@@ -49,6 +49,10 @@ export type MapPin = {
    *  Drives the marker colour through lib/maps/pin-kinds.ts, so a page's legend and the map
    *  can never disagree. */
   kind?: MapPinKind
+  /** The town or neighbourhood this pin is in ("Encinitas"). Only read when several pins share one
+   *  exact coordinate (a city-centre fallback), to title their list: "93 events around Encinitas"
+   *  (SCAN-918). Omit and the list says "here". */
+  place?: string | null
   /** Accessible name and tooltip for the marker. Falls back to `title`. */
   label?: string | null
   /** How many MORE things this one pin already stands for, beyond itself.

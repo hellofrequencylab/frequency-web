@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
-import { buildPopupContent } from './popup-content'
+import { areaHeadline, buildAreaPopupContent, buildPopupContent } from './popup-content'
 
 // THE POPUP CARD. Two things are being guarded here and only one of them is about looks.
 //
@@ -182,5 +182,23 @@ describe('🔴 the image src is the one attribute that takes caller data', () =>
   it('a relative path passes, because that is how a same-origin cover arrives', () => {
     const el = buildPopupContent({ ...base, title: 'ok', imageUrl: '/covers/a.jpg' })!
     expect(el.querySelector('img')?.getAttribute('src')).toBe('/covers/a.jpg')
+  })
+})
+
+// SCAN-918: the list a "general area" badge opens.
+describe('the general area card', () => {
+  const pins = [
+    { id: 'a', lat: 1, lng: 1, kind: 'event' as const, place: 'Encinitas', title: 'Sound bath', href: '/events/a' },
+    { id: 'b', lat: 1, lng: 1, kind: 'event' as const, place: 'Encinitas', title: '<b>Beach yoga</b>', href: '/events/b' },
+  ]
+  it('names the count, the layer and the town', () => {
+    expect(areaHeadline(pins)).toBe('2 events around Encinitas')
+    expect(areaHeadline([{ kind: 'circle' }, { kind: 'event' }])).toBe('2 places here')
+  })
+  it('links every pin and never parses a title as HTML', () => {
+    const el = buildAreaPopupContent(pins)
+    expect(el.textContent).toContain('2 events around Encinitas')
+    expect([...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['/events/a', '/events/b'])
+    expect(el.querySelector('b')).toBeNull()
   })
 })

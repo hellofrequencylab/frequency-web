@@ -8,6 +8,7 @@ import {
   clusterDiameterPx,
   clusterLabel,
   clusterPoints,
+  clusterStepDiameterPx,
   shouldRecluster,
   zoomIntoCluster,
   type ClusterPoint,
@@ -156,5 +157,42 @@ describe('the bubble reads the same on both engines', () => {
     expect(label).toContain('12')
     expect(label).not.toContain('—')
     expect(label).not.toMatch(/[A-Z]{2,}/)
+  })
+})
+
+// SCAN-918: city-centre fallbacks put dozens of events on one exact point (93 in Encinitas).
+describe('co-located pins and badge spacing (SCAN-918)', () => {
+  const town = Array.from({ length: 93 }, () => ({ lat: 33.0369, lng: -117.2919 }))
+  const own = { lat: 33.05, lng: -117.26 }
+
+  it('holds pins on one exact coordinate as one area, even with clustering off', () => {
+    const groups = clusterPoints([...town, own], 16, { radiusPx: 0, coLocated: true })
+    expect(groups).toHaveLength(2)
+    const area = groups.find((g) => g.type === 'cluster')
+    expect(area && area.type === 'cluster' && area.area && area.count).toBe(93)
+    // A pin with a spot of its own never moves.
+    const pin = groups.find((g) => g.type === 'pin')
+    expect(pin && pin.lat === own.lat && pin.lng === own.lng).toBe(true)
+  })
+
+  it('leaves DAWN grouping alone without the option', () => {
+    expect(clusterPoints(town, 16)).toHaveLength(93)
+    for (const g of clusterPoints(town, 3)) if (g.type === 'cluster') expect(g.area).toBe(false)
+  })
+
+  it('merges badges that would overlap, deterministically', () => {
+    // Two clumps just over the radius apart at this zoom: greedy keeps both, spacing merges them.
+    const a = Array.from({ length: 60 }, () => ({ lat: 33.0, lng: -117.0 }))
+    const b = Array.from({ length: 6 }, (_, i) => ({ lat: 33.0, lng: -117.0 + 0.0064 + i * 1e-5 }))
+    const loose = clusterPoints([...a, ...b], 12, { radiusPx: 20, coLocated: true })
+    const spaced = clusterPoints([...a, ...b], 12, { radiusPx: 20, coLocated: true, minSpacingPx: 6 })
+    expect(loose.length).toBeGreaterThan(spaced.length)
+    expect(spaced).toEqual(clusterPoints([...a, ...b], 12, { radiusPx: 20, coLocated: true, minSpacingPx: 6 }))
+  })
+
+  it('steps the badge size small, medium, large', () => {
+    expect(clusterStepDiameterPx(9)).toBeLessThan(clusterStepDiameterPx(10))
+    expect(clusterStepDiameterPx(49)).toBeLessThan(clusterStepDiameterPx(50))
+    expect(clusterStepDiameterPx(10)).toBe(clusterStepDiameterPx(49))
   })
 })

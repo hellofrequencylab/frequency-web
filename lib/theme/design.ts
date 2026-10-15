@@ -53,8 +53,9 @@ export const DESIGNS: readonly DesignDef[] = [
   {
     id: 'frequency',
     label: 'Frequency',
-    // Commons canvas (sand) and Commons-at-night canvas (Thermal), from the installed export (ADR-1740).
-    chrome: { light: '#FAF4EA', dark: '#0E0B09' }, // token-ok: browser chrome; set before CSS applies
+    // The cooled Commons canvas (SCAN-907) and the Stage's blue-black, so an installed app's status bar
+    // and splash match the live palette instead of the old sand (SCAN-916).
+    chrome: { light: '#F4F6F7', dark: '#070B14' }, // token-ok: browser chrome; set before CSS applies
     legacyAxes: false,
   },
 ]

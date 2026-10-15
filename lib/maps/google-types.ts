@@ -34,6 +34,8 @@ export interface GoogleMap {
   panTo(c: GoogleLatLngLiteral): void
   fitBounds(bounds: GoogleLatLngBounds, padding?: number | GooglePadding): void
   addListener(event: string, handler: (e: GoogleMapMouseEvent) => void): GoogleListener
+  /** Swap options on a live map: the Frequency style when the members app flips light/dark (SCAN-918). */
+  setOptions(opts: Partial<GoogleMapOptions>): void
 }
 
 export interface GoogleMarker {
@@ -63,6 +65,13 @@ type GoogleMapOptions = {
   backgroundColor?: string
   disableDefaultUI?: boolean
   zoomControl?: boolean
+  /** Where the zoom buttons sit: a google.maps.ControlPosition value (SCAN-918 pins them bottom right,
+   *  clear of the full-screen map's "Close map" pill). */
+  zoomControlOptions?: { position?: number }
+  mapTypeControl?: boolean
+  streetViewControl?: boolean
+  fullscreenControl?: boolean
+  rotateControl?: boolean
   gestureHandling?: string
   clickableIcons?: boolean
   keyboardShortcuts?: boolean
@@ -70,6 +79,17 @@ type GoogleMapOptions = {
   scrollwheel?: boolean
   disableDoubleClickZoom?: boolean
 }
+
+/** An image icon: how the Frequency cluster badge is drawn (an SVG data URL, SCAN-918). */
+type GoogleIcon = {
+  url: string
+  scaledSize?: GoogleSize
+  anchor?: GooglePoint
+  labelOrigin?: GooglePoint
+}
+
+type GoogleSize = { width: number; height: number }
+type GooglePoint = { x: number; y: number }
 
 type GoogleSymbol = {
   path: number | string
@@ -88,6 +108,8 @@ type GoogleMarkerLabel = {
   color?: string
   fontSize?: string
   fontWeight?: string
+  /** A CSS class on the label, so the theme sheet can give the count its soft shadow (SCAN-918). */
+  className?: string
 }
 
 type GoogleMarkerOptions = {
@@ -95,7 +117,7 @@ type GoogleMarkerOptions = {
   position: GoogleLatLngLiteral
   title?: string
   draggable?: boolean
-  icon?: GoogleSymbol
+  icon?: GoogleSymbol | GoogleIcon
   label?: GoogleMarkerLabel
   zIndex?: number
 }
@@ -120,4 +142,7 @@ export type GoogleMapsApi = {
   LatLngBounds: new () => GoogleLatLngBounds
   Circle: new (opts: GoogleCircleOptions) => GoogleCircle
   SymbolPath: { CIRCLE: number }
+  Size: new (width: number, height: number) => GoogleSize
+  Point: new (x: number, y: number) => GooglePoint
+  ControlPosition: { RIGHT_BOTTOM: number }
 }

@@ -1,5 +1,5 @@
 import type { MapPin } from './types'
-import { resolvePinPaint } from '@/lib/maps/pin-kinds'
+import { MAP_PIN_KINDS, resolvePinPaint } from '@/lib/maps/pin-kinds'
 
 // THE CARD A PIN OPENS — real DOM nodes, shared by both providers (ADR-1027 extends ADR-901).
 //
@@ -47,8 +47,9 @@ const CARD_WIDTH_PX = 264
  *  own browse cards (components/cards/entity-card.tsx) so a map card reads as the same furniture. */
 const IMAGE_HEIGHT_PX = 148
 
-function line(text: string, style: string): HTMLDivElement {
+function line(text: string, style: string, className?: string): HTMLDivElement {
   const el = document.createElement('div')
+  if (className) el.className = className
   el.style.cssText = style
   el.textContent = text
   return el
@@ -110,6 +111,10 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
 
   const paint = resolvePinPaint(pin)
   const root = document.createElement('div')
+  // Class hooks for the Frequency card (SCAN-918, app/themes/frequency/members-ui.css): the cover runs
+  // edge to edge at the top under the close button, the body is padded, and every colour takes the
+  // kit's surface and text tokens in light and dark. DAWN has no rules for them and renders as before.
+  root.className = imageUrl ? 'fqm-card' : 'fqm-card fqm-card--plain'
   root.style.cssText = `width:${CARD_WIDTH_PX}px;max-width:100%`
 
   // ── Cover ───────────────────────────────────────────────────────────────────────────────────
@@ -123,6 +128,7 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
     // implementation, and the attribute is what both the browser and the test can see.
     img.setAttribute('loading', 'lazy')
     img.setAttribute('decoding', 'async')
+    img.className = 'fqm-card__cover'
     img.style.cssText = [
       'display:block',
       'width:100%',
@@ -135,18 +141,27 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
       'background:var(--color-surface-elevated)',
     ].join(';')
     // A cover that 404s should collapse the band, not leave a broken-image glyph in the card.
-    img.addEventListener('error', () => img.remove())
+    img.addEventListener('error', () => {
+      img.remove()
+      root.classList.add('fqm-card--plain')
+    })
     root.appendChild(img)
   }
 
+  // Everything under the cover. A wrapper with no style of its own, so DAWN's card is unchanged; the
+  // Frequency sheet pads it so the cover can run edge to edge.
+  const body = document.createElement('div')
+  body.className = 'fqm-card__body'
+  root.appendChild(body)
+
   if (title) {
-    root.appendChild(
-      line(title, 'font-weight:700;font-size:14px;color:var(--color-text);line-height:1.3'),
+    body.appendChild(
+      line(title, 'font-weight:700;font-size:14px;color:var(--color-text);line-height:1.3', 'fqm-card__title'),
     )
   }
   // WHEN, directly under the title, exactly where /events puts its time line.
   if (subtitle) {
-    root.appendChild(line(subtitle, 'font-size:12px;color:var(--color-text-muted);margin-top:3px'))
+    body.appendChild(line(subtitle, 'font-size:12px;color:var(--color-text-muted);margin-top:3px', 'fqm-card__meta'))
   }
 
   // ── Pill row ────────────────────────────────────────────────────────────────────────────────
@@ -156,11 +171,12 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
   pills.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:6px'
   pills.appendChild(pill(paint.noun, paint.token))
   if (notice) pills.appendChild(pill(notice))
-  root.appendChild(pills)
+  body.appendChild(pills)
 
   // WHERE, with the same pin glyph /events uses, so the two read as one family.
   if (detail) {
     const where = document.createElement('div')
+    where.className = 'fqm-card__meta'
     where.style.cssText =
       'display:flex;align-items:flex-start;gap:4px;font-size:12px;color:var(--color-text-muted);margin-top:6px'
     const glyph = document.createElement('span')
@@ -173,17 +189,104 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
     text.textContent = detail
     text.style.cssText = 'min-width:0;line-height:1.35'
     where.append(glyph, text)
-    root.appendChild(where)
+    body.appendChild(where)
   }
 
   if (href) {
     const a = document.createElement('a')
+    a.className = 'fqm-card__link'
     a.href = href
     a.textContent = pin.hrefLabel?.trim() || 'Open'
     a.style.cssText =
       'font-size:13px;font-weight:600;color:var(--color-primary-strong);text-decoration:none;display:inline-block;margin-top:8px'
-    root.appendChild(a)
+    body.appendChild(a)
   }
 
+  return root
+}
+
+/** The pin fields the area list reads. */
+type AreaPin = Pick<MapPin, 'kind' | 'place' | 'title' | 'label'>
+
+/**
+ * The heading of a "general area" list (SCAN-918): "93 events around Encinitas". Pins that share one
+ * exact coordinate are a city-centre fallback, so the honest thing to say is the town, not a spot.
+ * The noun is the layer's own plural when every pin is one kind, else "places"; the town is the one
+ * most of them name (first named wins a tie), else "here". Plain words, no em dash.
+ */
+export function areaHeadline(points: readonly AreaPin[]): string {
+  const n = points.length
+  const kinds = new Set(points.map((p) => p.kind ?? 'place'))
+  const only = kinds.size === 1 ? [...kinds][0]! : 'place'
+  const noun = n === 1 ? MAP_PIN_KINDS[only].noun.toLowerCase() : MAP_PIN_KINDS[only].legend.toLowerCase()
+  const tally = new Map<string, number>()
+  for (const p of points) {
+    const place = p.place?.trim()
+    if (place) tally.set(place, (tally.get(place) ?? 0) + 1)
+  }
+  let town: string | null = null
+  let best = 0
+  for (const [place, count] of tally) {
+    if (count > best) {
+      town = place
+      best = count
+    }
+  }
+  return town ? `${n} ${noun} around ${town}` : `${n} ${noun} here`
+}
+
+/** The accessible name of an area badge: the headline, and what a tap does. */
+export function areaAccessibleLabel(points: readonly AreaPin[]): string {
+  return `${areaHeadline(points)}. Open the list.`
+}
+
+/**
+ * The card a "general area" badge opens (SCAN-918): the headline, then one row per pin with its title
+ * and when, each linking to the pin's page. A caller that owns its card (`onPick`) gets buttons that
+ * hand it the pin instead. Nodes and `textContent` only, like the pin card above.
+ */
+export function buildAreaPopupContent(points: readonly MapPin[], onPick?: (pin: MapPin) => void): HTMLElement {
+  const root = document.createElement('div')
+  root.className = 'fqm-card fqm-card--plain fqm-card--area'
+  root.style.cssText = `width:${CARD_WIDTH_PX}px;max-width:100%`
+  const body = document.createElement('div')
+  body.className = 'fqm-card__body'
+  root.appendChild(body)
+  body.appendChild(
+    line(areaHeadline(points), 'font-weight:700;font-size:14px;color:var(--color-text);line-height:1.3', 'fqm-card__title'),
+  )
+  body.appendChild(
+    line(
+      'They share a town centre, not exact spots.',
+      'font-size:12px;color:var(--color-text-muted);margin-top:3px',
+      'fqm-card__meta',
+    ),
+  )
+
+  const list = document.createElement('ul')
+  list.className = 'fqm-card__list'
+  list.style.cssText = 'list-style:none;margin:8px 0 0;padding:0;max-height:240px;overflow-y:auto'
+  for (const pin of points) {
+    const title = pin.title?.trim() || pin.label?.trim()
+    if (!title) continue
+    const li = document.createElement('li')
+    const href = pin.href?.trim()
+    // A link to the pin's page; a button when the caller owns the card; plain text when there is neither.
+    const row = onPick ? document.createElement('button') : href ? document.createElement('a') : document.createElement('div')
+    row.className = 'fqm-card__row'
+    row.style.cssText =
+      'display:block;width:100%;text-align:left;padding:6px 0;border:0;background:none;color:inherit;text-decoration:none;cursor:pointer'
+    if (row instanceof HTMLAnchorElement) row.href = href!
+    else if (row instanceof HTMLButtonElement && onPick) {
+      row.type = 'button'
+      row.addEventListener('click', () => onPick(pin))
+    }
+    row.appendChild(line(title, 'font-weight:600;font-size:13px;color:var(--color-text);line-height:1.3', 'fqm-card__row-title'))
+    const when = pin.subtitle?.trim()
+    if (when) row.appendChild(line(when, 'font-size:12px;color:var(--color-text-muted)', 'fqm-card__meta'))
+    li.appendChild(row)
+    list.appendChild(li)
+  }
+  body.appendChild(list)
   return root
 }

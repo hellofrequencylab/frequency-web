@@ -8,15 +8,21 @@ import { useEffect, useRef } from 'react'
 // library for real and would catch the import form drifting from the packaging again.
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { clusterPoints, shouldRecluster, zoomIntoCluster } from '@/lib/maps/cluster'
+import { clusterPoints, FREQUENCY_CLUSTER_OPTIONS, shouldRecluster, zoomIntoCluster } from '@/lib/maps/cluster'
 import { mapDiag } from '@/lib/maps/diagnostics'
 import { FREQUENCY_PIN_RING, resolvePinPaint } from '@/lib/maps/pin-kinds'
 import { MAPLIBRE_STYLE, MAPLIBRE_WORKER_URL, WARM_FILTER } from '@/lib/maps/provider'
-import { buildClusterMarker, buildRoundPin, makeMarkerActivatable, onMarkerActivate } from './cluster-marker'
+import {
+  buildClusterMarker,
+  buildFrequencyBadge,
+  buildRoundPin,
+  makeMarkerActivatable,
+  onMarkerActivate,
+} from './cluster-marker'
 import { applyDesignBasemap } from './maplibre-basemap'
 import { maplibreTileFilter, readBasemapPalette } from '@/lib/maps/basemap-look'
 import { configureMaplibreWorker } from './maplibre-worker'
-import { buildPopupContent } from './popup-content'
+import { areaAccessibleLabel, buildAreaPopupContent, buildPopupContent } from './popup-content'
 import type { MapImplProps, MapPin } from './types'
 
 // THE MapLibre implementation of the map contract (ADR-901). Every keyless environment
@@ -189,7 +195,10 @@ export default function MapLibreCanvas({
     //
     // Clustering never applies in picker mode: there is exactly one pin and the member is
     // placing it. The Google canvas makes the same exclusion for the same reason.
-    const clustering = cluster && !draggable ? cluster : null
+    // Under Frequency: wider, spaced, co-located pins held as one area (SCAN-918), same as Google.
+    const clustering = cluster && !draggable ? (designPins ? { ...FREQUENCY_CLUSTER_OPTIONS, ...cluster } : cluster) : null
+    // Under Frequency the popup carries a close button over its cover, matching Google's (SCAN-918).
+    const popupOptions = { offset: 14, closeButton: designPins }
     const markers: maplibregl.Marker[] = []
     const teardowns: (() => void)[] = []
 
@@ -236,15 +245,36 @@ export default function MapLibreCanvas({
       const content = buildPopupContent(pin)
       if (content) {
         marker.setPopup(
-          new maplibregl.Popup({ offset: 14, closeButton: false }).setDOMContent(content),
+          new maplibregl.Popup(popupOptions).setDOMContent(content),
         )
       }
     }
 
-    const addCluster = (lat: number, lng: number, count: number, plus: boolean, only: MapPin | null) => {
-      const el = buildClusterMarker(count, plus, designPins ? FREQUENCY_PIN_RING : null)
+    const addCluster = (
+      lat: number,
+      lng: number,
+      count: number,
+      plus: boolean,
+      only: MapPin | null,
+      areaPins: MapPin[] | null = null,
+    ) => {
+      // Frequency's gradient badge (SCAN-918); DAWN keeps its flat token bubble.
+      const el = designPins
+        ? buildFrequencyBadge(count, plus, areaPins ? areaAccessibleLabel(areaPins) : null)
+        : buildClusterMarker(count, plus, null)
       const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
       markers.push(marker)
+
+      // A GENERAL AREA (SCAN-918): one exact coordinate no zoom can split opens its list instead.
+      if (areaPins) {
+        marker.setPopup(
+          new maplibregl.Popup(popupOptions).setDOMContent(
+            buildAreaPopupContent(areaPins, onPinClickRef.current ?? undefined),
+          ),
+        )
+        teardowns.push(onMarkerActivate(el, () => marker.togglePopup()))
+        return
+      }
 
       // 🔴 A BUBBLE OF ONE OPENS, IT DOES NOT ZOOM. That bubble is a repeating event folded to a
       // single pin, so there is nothing inside it to split: zooming would step in twice and leave
@@ -253,7 +283,7 @@ export default function MapLibreCanvas({
       if (only) {
         const content = buildPopupContent(only)
         const popup = content
-          ? new maplibregl.Popup({ offset: 14, closeButton: false }).setDOMContent(content)
+          ? new maplibregl.Popup(popupOptions).setDOMContent(content)
           : null
         if (popup) marker.setPopup(popup)
         teardowns.push(
@@ -276,6 +306,16 @@ export default function MapLibreCanvas({
     const renderMarkers = () => {
       clearMarkers()
       if (!clustering) {
+        // Same rule as Google (SCAN-918): under Frequency, co-located pins are one area badge.
+        if (designPins && !draggable) {
+          for (const group of clusterPoints(pins, map.getZoom(), { radiusPx: 0, coLocated: true })) {
+            if (group.type === 'cluster' && group.area) {
+              addCluster(group.lat, group.lng, group.count, group.plus, null, group.points)
+            } else if (group.type === 'cluster') addPin(group.points[0]!, false)
+            else addPin(group.point, false)
+          }
+          return
+        }
         // Picker mode's draggable pin is the FIRST one, by contract (see MapCanvasProps).
         pins.forEach((pin, index) => addPin(pin, draggable && index === 0))
         return
@@ -288,6 +328,7 @@ export default function MapLibreCanvas({
             group.count,
             group.plus,
             group.points.length === 1 ? group.points[0]! : null,
+            group.area ? group.points : null,
           )
         } else addPin(group.point, false)
       }

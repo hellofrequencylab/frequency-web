@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Suspense } from 'react'
+import { Radio } from '@/components/ui/radio'
+import { Suspense, type ReactNode } from 'react'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-events'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
@@ -12,6 +13,7 @@ import { FqClearLink, FqFacetMenu, hrefWith, type Params } from '@/components/fr
 import { FqEventCard } from './event-card'
 import { FqEventsMapPane } from './events-map-pane'
 import { FqEventsCalendar } from './events-calendar'
+import { FqEventsFilterSheet } from './events-filter-sheet'
 import { buildCalendarMonth, chipTime, resolveMonth } from './calendar-month'
 import { FqEventsForYou, FqPeopleToMeet } from './events-lanes'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
@@ -125,11 +127,41 @@ export function FqEventsBody({
         })
       : null
 
+  // THE SHEET'S STATE IS THE URL'S (SCAN-919). The facets the sheet stages, as the URL has them, and how many
+  // are set (the Filters badge). Sort is in the sheet but is not a filter, so it does not count.
+  const sheetKeys = ['category', ...otherFacets.map((f) => f.paramKey)]
+  const activeCount = sheetKeys.filter((k) => !!params[k]).length
+  const defaultSort = sortOptions[0]?.value
+  const sheetInitial: Record<string, string> = Object.fromEntries(sheetKeys.map((k) => [k, params[k] ?? '']))
+  if (sortOptions.length > 1) sheetInitial.sort = params.sort && params.sort !== defaultSort ? params.sort : ''
+  const facetBy = (k: string) => otherFacets.find((f) => f.paramKey === k)
+  const sheetOrder = ['date', 'price', 'format', 'energy', 'spots'].map(facetBy).filter((f): f is NonNullable<typeof f> => !!f)
+  const nearFacet = facetBy('near')
+  const homeLink = myProfileId ? (
+    <Link
+      className="evx-loc"
+      href="/settings/profile"
+      aria-label={
+        homeLabel || hasHome
+          ? `Home base: ${homeLabel ?? 'set'}. Change it in Settings.`
+          : 'Set your home base to see what is near you'
+      }
+    >
+      <FqIcon name="pin" />
+      <span className="ev-loc-t">{homeLabel || hasHome ? homeLabel ?? 'Your home base' : 'Set your home base'}</span>
+    </Link>
+  ) : null
+  // Quick picks on a phone: the common date bands, each a toggle link (SCAN-919).
+  const QUICK_DATES = ['today', 'week', 'weekend']
+  const dateFacet = facetBy('date')
+  const activeCat = tabs.find((t) => t.value && t.value === params.category)
+
   return (
     <>
       {/* The shared member header (owner, 2026-10-14: one uniform header, no photo on a hub page): the
-          kicker, title and meta, then the search and this area's buttons. ev-hero.is-plain in
-          members-events.css drops the photo band; the editable copy (content.*) still feeds it. */}
+          kicker, title and meta. ev-hero.is-plain in members-events.css drops the photo band; the editable
+          copy (content.*) still feeds it. The search, filters, view and host actions sit in the toolbar
+          under it (SCAN-919). */}
       <section className="ev-hero is-plain" aria-labelledby="ev-title">
         <div className="ev-hero-in">
           <span className="k">What&apos;s happening</span>
@@ -146,66 +178,154 @@ export function FqEventsBody({
             {content.body ||
               'Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket.'}
           </p>
-          <form method="GET" action={base} className="ev-search" role="search">
-            <FqIcon name="search" />
-            <Input
-              variant="seamless"
-              type="search"
-              name="q"
-              defaultValue={params.q ?? ''}
-              placeholder="Search events"
-              aria-label="Search events"
-              autoComplete="off"
-            />
-            {keep.map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
-            {myProfileId &&
-              (homeLabel || hasHome ? (
-                <Link
-                  className="evx-loc"
-                  href="/settings/profile"
-                  aria-label={`Home base: ${homeLabel ?? 'set'}. Change it in Settings.`}
-                >
-                  <FqIcon name="pin" />
-                  <span className="ev-loc-t">{homeLabel ?? 'Your home base'}</span>
-                </Link>
-              ) : (
-                <Link className="evx-loc" href="/settings/profile" aria-label="Set your home base to see what is near you">
-                  <FqIcon name="pin" />
-                  <span className="ev-loc-t">Set your home base</span>
-                </Link>
-              ))}
-          </form>
-          <div className="ev-actions">
-            {myProfileId && (
-              <Link className="btn pa" href="/events/new">
-                <FqIcon name="plus" />
-                New Event
-              </Link>
-            )}
-            {/* No Calendar button here: the List / Map / Calendar switch below is the one way in (SCAN-912). */}
-            <CalendarSubscribe buttonClassName="btn glass" />
-            {content.ctaLabel && content.ctaHref && (
-              <a className="btn glass" href={content.ctaHref}>
+          {content.ctaLabel && content.ctaHref && (
+            <div className="ev-actions">
+              <a className="btn glass sm" href={content.ctaHref}>
                 {content.ctaLabel}
               </a>
-            )}
-            {myProfileId && userHasEvents && (
-              <>
-                <Link className="btn glass" href="/admin/events">
-                  <FqIcon name="settings" />
-                  Manage
-                </Link>
-                <Link className="btn glass" href="/drafts">
-                  <FqIcon name="edit" />
-                  Drafts
-                </Link>
-              </>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
+
+      {/* THE ONE TOOLBAR (SCAN-919): search, then Filters (a phone's bottom sheet), then the view switch,
+          then the host actions in one More menu. It sticks under the header so the controls stay one
+          thumb away while the list scrolls. */}
+      <div className="ev-tb">
+        <form method="GET" action={base} className="ev-search" role="search">
+          <FqIcon name="search" />
+          <Input
+            variant="seamless"
+            type="search"
+            name="q"
+            defaultValue={params.q ?? ''}
+            placeholder="Search"
+            aria-label="Search events"
+            autoComplete="off"
+          />
+          {keep.map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+          {homeLink}
+        </form>
+        <FqEventsFilterSheet
+          action={base}
+          active={activeCount}
+          initial={sheetInitial}
+          counts={facetCounts}
+          total={sortedEvents.length}
+          clearHref={hrefWith(base, keepView, {})}
+        >
+          {(['q', 'view', 'month'] as const).map((k) =>
+            params[k] ? <input key={k} type="hidden" name={k} value={params[k]} /> : null,
+          )}
+          <SheetChoices
+            legend="Category"
+            name="category"
+            value={params.category ?? ''}
+            options={tabs.map((t) => ({ value: t.value, label: t.label }))}
+            counts={catCounts}
+          />
+          {sheetOrder.map((f) => (
+            <SheetChoices
+              key={f.paramKey}
+              legend={f.label}
+              name={f.paramKey}
+              value={params[f.paramKey] ?? ''}
+              options={[{ value: '', label: 'Any' }, ...f.options]}
+              counts={facetCounts[f.paramKey]}
+            />
+          ))}
+          {(homeLink || nearFacet) && (
+            <SheetChoices
+              legend="Location"
+              name="near"
+              value={params.near ?? ''}
+              options={nearFacet ? [{ value: '', label: 'Any distance' }, ...nearFacet.options] : []}
+              counts={facetCounts.near}
+            >
+              {homeLink}
+            </SheetChoices>
+          )}
+          {sortOptions.length > 1 && (
+            <SheetChoices
+              legend="Sort"
+              name="sort"
+              value={sheetInitial.sort}
+              options={sortOptions.map((o, i) => ({ value: i === 0 ? '' : o.value, label: o.label }))}
+            />
+          )}
+        </FqEventsFilterSheet>
+        <nav className="evx-seg" aria-label="View">
+          {VIEWS.map((v) => (
+            <Link
+              key={v.key}
+              href={hrefWith(base, params, { view: v.key === 'list' ? null : v.key, month: v.key === 'calendar' ? params.month ?? null : null })}
+              className={view === v.key ? 'on' : undefined}
+              aria-current={view === v.key ? 'page' : undefined}
+            >
+              <FqIcon name={v.icon} />
+              <span className="evx-seg-t">{v.label}</span>
+            </Link>
+          ))}
+        </nav>
+        {/* Host actions, one More menu, members only (the SCAN-912 gating: New event for any member; Manage
+            and Drafts once they have added an event; Subscribe draws itself only for a signed-in member). No
+            Calendar button: the view switch is the one way in (SCAN-912). */}
+        {myProfileId && (
+          <details className="fqm-menu ev-more">
+            <summary className="ev-more-b" aria-label="More event actions">
+              <FqIcon name="more" />
+            </summary>
+            <div className="fqm-menu-p ev-more-p">
+              <Link href="/events/new">
+                <FqIcon name="plus" />
+                New event
+              </Link>
+              {userHasEvents && (
+                <>
+                  <Link href="/drafts">
+                    <FqIcon name="edit" />
+                    Drafts
+                  </Link>
+                  <Link href="/admin/events">
+                    <FqIcon name="settings" />
+                    Manage
+                  </Link>
+                </>
+              )}
+              <CalendarSubscribe buttonClassName="ev-more-sub" />
+            </div>
+          </details>
+        )}
+      </div>
+
+      {/* Quick picks on a phone (SCAN-919): the active category (tap to clear) and the common date bands. */}
+      <nav className="evf-quick" aria-label="Quick filters">
+        {activeCat && (
+          <Link className="chip on" href={hrefWith(base, params, { category: null })} aria-label={`${activeCat.label}, clear category`}>
+            {activeCat.label}
+            <FqIcon name="close" />
+          </Link>
+        )}
+        {dateFacet &&
+          dateFacet.options
+            .filter((o) => QUICK_DATES.includes(o.value))
+            .map((o) => {
+              const on = params.date === o.value
+              return (
+                <Link
+                  key={o.value}
+                  className={on ? 'chip on' : 'chip'}
+                  href={hrefWith(base, params, { date: on ? null : o.value })}
+                  aria-current={on ? 'true' : undefined}
+                >
+                  {o.label}
+                </Link>
+              )
+            })}
+        {anyFilter && <FqClearLink base={hrefWith(base, keepView, {})} active />}
+      </nav>
 
       <div className="ev-bar">
         <nav className="ev-tabs" aria-label="Categories">
@@ -226,19 +346,6 @@ export function FqEventsBody({
             )
           })}
         </nav>
-        <div className="evx-seg" role="group" aria-label="View">
-          {VIEWS.map((v) => (
-            <Link
-              key={v.key}
-              href={hrefWith(base, params, { view: v.key === 'list' ? null : v.key, month: v.key === 'calendar' ? params.month ?? null : null })}
-              className={view === v.key ? 'on' : undefined}
-              aria-current={view === v.key ? 'page' : undefined}
-            >
-              <FqIcon name={v.icon} />
-              {v.label}
-            </Link>
-          ))}
-        </div>
       </div>
 
       <div className="fqm-tools ev-facets">
@@ -370,5 +477,48 @@ export function FqEventsBody({
         </aside>
       </div>
     </>
+  )
+}
+
+/** One facet in the filter sheet: a row of radio chips under a legend, each with its real count. */
+function SheetChoices({
+  legend,
+  name,
+  value,
+  options,
+  counts,
+  children,
+}: {
+  legend: string
+  name: string
+  value: string
+  options: { value: string; label: string }[]
+  counts?: Record<string, number>
+  children?: ReactNode
+}) {
+  return (
+    <fieldset className="evf-set">
+      <legend className="k">{legend}</legend>
+      {children}
+      {options.length > 0 && (
+        <div className="evf-opts">
+          {options.map((o) => (
+            <Radio
+              key={o.value || 'any'}
+              name={name}
+              value={o.value}
+              defaultChecked={o.value === value}
+              wrapperClassName="chip evf-opt"
+              label={
+                <>
+                  {o.label}
+                  {counts && counts[o.value] != null && <span className="ev-n-tag">{counts[o.value]}</span>}
+                </>
+              }
+            />
+          ))}
+        </div>
+      )}
+    </fieldset>
   )
 }

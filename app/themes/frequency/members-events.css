@@ -199,3 +199,102 @@
 /* SCAN-902: the plain header keeps no dark photo base. .ev-hero carried background:var(--fq-ink) for the photo band,
    so with the photo gone the header was dark type on black. The plain header sits on the page like every other hub. */
 [data-design="frequency"] [data-kit="members"] .ev-hero.is-plain{background:none;isolation:auto}
+
+/* ── SCAN-919: one toolbar, a filter sheet on a phone (owner 2026-10-14 on Android: "Completely re think and
+   condense this sort menu. Do best practice for mobile."). Before, a phone stacked the search and home base,
+   four host buttons, the category tabs, six facet chips and the view switch before the first event. Now:
+   · .ev-tb, one toolbar that sticks under the header: the search, a Filters button (phone only) with a count
+     badge, the List / Map / Calendar switch (icons on a phone, named for a screen reader), and the host
+     actions in one More menu (members only);
+   · .evf-quick, one scrolling row of quick picks on a phone: the active category and Today / This week /
+     This weekend;
+   · .evf-sheet, the native <dialog> behind Filters: category, date, price, format, pace, spots, location and
+     sort as radio chips with real counts, Clear all and Show N events pinned at the foot.
+   The toolbar paints the solid canvas rather than a blur: a backdrop-filter would make it the containing
+   block for the Subscribe panel's fixed click-away layer.
+   From 768px the sheet and quick picks go and the category tabs and facet chips sit inline as before. Surface
+   and text tokens only, so the light canvas and the night room both read. */
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain{margin-bottom:20px}
+[data-design="frequency"] [data-kit="members"] .ev-tb{position:sticky;top:var(--fq-hdr);z-index:20;display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 0;background:var(--fq-bg-canvas)}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .ev-tb{top:var(--fq-site-nav-h,0px);transition:top var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .ev-tb .ev-search{flex:1 1 auto;min-width:0;max-width:none;height:48px;margin:0;box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .ev-tb .ev-search:focus-within{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="members"] .ev-tb .evx-seg{flex:none;margin:0}
+[data-design="frequency"] [data-kit="members"] .ev-more{flex:none}
+[data-design="frequency"] [data-kit="members"] .ev-more-b{width:var(--fq-hit-min);height:var(--fq-hit-min);display:grid;place-items:center;border-radius:50%;background:var(--fqm-ink-4);color:var(--fq-text-strong);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .ev-more-b:hover,[data-design="frequency"] [data-kit="members"] .ev-more[open]>.ev-more-b{background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .ev-more-b .fq-icon{width:20px;height:20px}
+[data-design="frequency"] [data-kit="members"] .ev-more-p{left:auto;right:0;top:52px;overflow:visible;max-height:none}
+[data-design="frequency"] [data-kit="members"] .ev-more-p a{gap:10px}
+[data-design="frequency"] [data-kit="members"] .ev-more-p .fq-icon,[data-design="frequency"] [data-kit="members"] .ev-more-sub svg{width:16px;height:16px;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .ev-more-sub{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 12px;border:none;border-radius:12px;background:none;font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-body);white-space:nowrap;cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .ev-more-sub:hover{background:var(--fqm-ink-5);color:var(--fq-text-strong)}
+/* Filters: the phone's one way into every facet. */
+[data-design="frequency"] [data-kit="members"] .evf-btn{position:relative;flex:none;height:var(--fq-hit-min);display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-4);color:var(--fq-text-strong);font:500 14px/1 var(--fq-font-sans);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .evf-btn:hover{background:var(--fqm-ink-8)}
+[data-design="frequency"] [data-kit="members"] .evf-btn .fq-icon{width:17px;height:17px}
+[data-design="frequency"] [data-kit="members"] .evf-badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--fq-text-strong);color:var(--fq-surface-card);font:600 12px/18px var(--fq-font-sans);text-align:center}
+[data-design="frequency"] [data-kit="members"] .evf-quick{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 0 16px;padding:2px 0}
+[data-design="frequency"] [data-kit="members"] .evf-quick::-webkit-scrollbar{display:none}
+[data-design="frequency"] [data-kit="members"] .evf-quick>*{flex:none}
+[data-design="frequency"] [data-kit="members"] .evf-quick .chip{height:36px;padding:0 14px}
+[data-design="frequency"] [data-kit="members"] .evf-quick .chip .fq-icon{width:14px;height:14px}
+/* The sheet: a native modal dialog pinned to the bottom edge, its foot always in reach. */
+[data-design="frequency"] [data-kit="members"] .evf-sheet{position:fixed;inset:auto 0 0 0;width:100%;max-width:100%;max-height:none;margin:0;padding:0;border:none;border-radius:24px 24px 0 0;overflow:hidden;background:var(--fq-surface-card);color:var(--fq-text-body);box-shadow:0 -24px 60px -30px color-mix(in oklab,var(--fq-th-void) 60%,transparent)}
+[data-design="frequency"] [data-kit="members"] .evf-sheet[open]{animation:evf-up var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .evf-sheet::backdrop{background:color-mix(in oklab,var(--fq-th-void) 45%,transparent)}
+[data-design="frequency"]:has([data-kit="members"] .evf-sheet[open]){overflow:hidden}
+@keyframes evf-up{from{transform:translateY(100%)}}
+[data-design="frequency"] [data-kit="members"] .evf-form{display:flex;flex-direction:column;max-height:min(88dvh,720px)}
+[data-design="frequency"] [data-kit="members"] .evf-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 12px;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .evf-head::before{content:"";position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .evf-head .h3{margin:0;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evf-x{width:40px;height:40px;display:grid;place-items:center;border:none;border-radius:50%;background:var(--fqm-ink-4);color:var(--fq-text-strong);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .evf-x .fq-icon{width:18px;height:18px}
+[data-design="frequency"] [data-kit="members"] .evf-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:20px;padding:16px 20px 20px}
+[data-design="frequency"] [data-kit="members"] .evf-set{display:flex;flex-direction:column;gap:10px;min-width:0;margin:0;padding:0;border:none}
+[data-design="frequency"] [data-kit="members"] .evf-set>legend{padding:0;margin-bottom:10px;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .evf-set .evx-loc{align-self:flex-start;max-width:100%}
+[data-design="frequency"] [data-kit="members"] .evf-opts{display:flex;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] [data-kit="members"] .evf-opt{position:relative}
+[data-design="frequency"] [data-kit="members"] .evf-opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .evf-opt .ev-n-tag{font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .evf-opt:has(input:checked){background:var(--fq-text-strong);color:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .evf-opt:has(input:checked) .ev-n-tag{color:inherit;opacity:.72}
+[data-design="frequency"] [data-kit="members"] .evf-opt:has(input:focus-visible){outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] [data-kit="members"] .evf-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--fq-border-hair);background:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .evf-apply{flex:1 1 auto}
+@media (max-width:767.98px){
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain{margin-bottom:12px}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .ev-hero-in{gap:8px}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .h1{font-size:var(--fq-text-h2)}
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .ev-tb{gap:6px;margin:0 -12px 8px;padding:8px 12px}
+[data-design="frequency"] [data-kit="members"] .ev-more-b{width:40px;height:40px}
+[data-design="frequency"] [data-kit="members"] .ev-more-p{top:48px}
+[data-design="frequency"] [data-kit="members"] .ev-tb .ev-search{height:44px;padding:0 12px;gap:6px}
+[data-design="frequency"] [data-kit="members"] .ev-tb .ev-search>.fq-icon{width:17px;height:17px}
+[data-design="frequency"] [data-kit="members"] .ev-tb .evx-loc{display:none}
+[data-design="frequency"] [data-kit="members"] .ev-tb .evx-seg{padding:2px}
+[data-design="frequency"] [data-kit="members"] .ev-tb .evx-seg a{height:40px;padding:0 8px}
+[data-design="frequency"] [data-kit="members"] .ev-tb .evx-seg a .fq-icon{width:17px;height:17px}
+[data-design="frequency"] [data-kit="members"] .evx-seg-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .ev-bar,[data-design="frequency"] [data-kit="members"] .ev-facets{display:none}
+}
+@media (max-width:420px){
+[data-design="frequency"] [data-kit="members"] .evf-btn{padding:0 10px}
+[data-design="frequency"] [data-kit="members"] .evf-btn-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+@media (min-width:768px){
+[data-design="frequency"] [data-kit="members"] .evf-btn,[data-design="frequency"] [data-kit="members"] .evf-quick{display:none}
+[data-design="frequency"] [data-kit="members"] .ev-facets{margin-bottom:24px}
+}
+@media (prefers-reduced-motion:reduce){
+[data-design="frequency"] [data-kit="members"] .evf-sheet[open]{animation:none}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .ev-tb{transition:none}
+}
+/* SCAN-919: the option chips use the Radio primitive; the chip itself is the visible control, so the
+   primitive's ring is kept for focus and state but taken out of the layout, and its label text follows the chip. */
+[data-design="frequency"] [data-kit="members"] .evf-opt>span:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .evf-opt .text-text,[data-design="frequency"] [data-kit="members"] .evf-opt .text-body-sm{color:inherit;font:inherit}
+[data-design="frequency"] [data-kit="members"] .evf-opt:has(input:focus-visible){outline:2px solid var(--fq-accent);outline-offset:2px}

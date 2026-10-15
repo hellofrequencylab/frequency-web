@@ -368,10 +368,22 @@
   --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #CFE6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* export --fq-pa-orb, periwinkle centre */
   --fq-pa-soft: linear-gradient(120deg, rgba(163, 212, 255, .24), rgba(143, 233, 255, .2) 50%, rgba(163, 232, 212, .2)); /* export --fq-pa-soft at sky and aqua */
   --fq-wash: radial-gradient(60% 50% at 6% 0%, rgba(163, 212, 255, .24), transparent 70%), radial-gradient(50% 50% at 98% 14%, rgba(143, 233, 255, .26), transparent 70%), radial-gradient(55% 50% at 70% 100%, rgba(163, 232, 212, .16), transparent 70%); /* export --fq-wash lobes in sky, aqua, seaglass */
+}
+/* The cooled canvas and accent are Commons by day only (owner, 2026-10-14, SCAN-917: "get this menu right in dark
+   mode", "the event cards look like shit on mobile dark theme"). Declared on the bare root they outranked the core's
+   own .dark values (same specificity, later sheet), so at night every surface that paints the canvas or the soft
+   accent (the phone Menu sheet, event card placeholders, accent tags and calendar chips) stayed light under night
+   text. Under .dark the core's night canvas and sunken stand, and the accent keeps SCAN-907's cool turn in the
+   Stage's own night aqua. */
+:root[data-design="frequency"]:not(.dark) {
   --fq-accent: #3A8C99; /* export aqua deep, softened toward seaglass (owner: no harsh blue) */
   --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
   --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
   --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
+}
+.dark[data-design="frequency"] {
+  --fq-accent: var(--fq-x-aqua-neon);
+  --fq-accent-soft: color-mix(in oklab, var(--fq-x-aqua-neon) 14%, transparent);
 }
 [data-design="frequency"] [data-energy="flow"] {
   --fq-aura-3: #CFE6F5; /* export sky haze, lighter */

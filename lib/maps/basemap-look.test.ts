@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   basemapPalette,
   DARK_TILE_FILTER,
+  FREQUENCY_BASEMAP,
   googleMapStyles,
   isDesignMap,
   LIGHT_TILE_FILTER,
@@ -126,3 +127,24 @@ describe('the MapLibre fallback wears the same palette as Google (SCAN-904)', ()
     })
   }
 })
+
+// SCAN-918: the full Frequency style, light and dark.
+describe('the Frequency basemap (SCAN-918)', () => {
+  for (const mode of ['light', 'dark'] as const) {
+    it(`${mode}: hex only, no road strokes, POIs and transit hidden, roads a breath off the land`, () => {
+      const p = FREQUENCY_BASEMAP[mode]
+      const rules = googleMapStyles(p)
+      for (const rule of rules) for (const s of rule.stylers) if ('color' in s) expect(s.color).toMatch(/^#[0-9a-f]{6}$/)
+      expect(rules).toContainEqual({ featureType: 'road', elementType: 'geometry.stroke', stylers: [{ visibility: 'off' }] })
+      expect(rules).toContainEqual({ featureType: 'poi', stylers: [{ visibility: 'off' }] })
+      expect(rules).toContainEqual({ featureType: 'transit', stylers: [{ visibility: 'off' }] })
+      // Contrast ratio between road and land: low on purpose, so roads never read as heavy lines.
+      const [hi, lo] = [luminance(hexOf(p.road)), luminance(hexOf(p.land))].sort((a, b) => b - a)
+      expect((hi! + 0.05) / (lo! + 0.05)).toBeLessThan(1.25)
+      expect(p.dark).toBe(mode === 'dark')
+    })
+  }
+})
+function hexOf(h: string): Rgb {
+  return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
+}
