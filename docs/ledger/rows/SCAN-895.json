@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-895",
+  "title": "The home page paints top down: the visitor's side is set before the first paint, the side fade plays only on a real switch, and the hero arrives pill, headline, lede, actions",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/site/shell/site-root.tsx",
+    "ref": "Owner 2026-10-14: on homepage load the headline is always last to appear and it feels broken; make it load in systematically."
+  },
+  "detail": "Every side-specific line (the hero h1's spans, the lede) wore kit-site.css's sideIn fade on the first paint, and the visitor's stored side (URL hash, else localStorage fq-home-side) was only read after hydration, so a returning Host visitor saw the People headline swap out and the Host one fade in after everything else. An inline script inside the kit root now sets data-side from the stored choice while the page parses (the root carries suppressHydrationWarning for it); site-shell.css turns sideIn off unless data-side-anim is set, which SiteRoot sets only when the visitor switches; and site-pages-a.css stages the hero on first load (pill, headline, lede, actions, 0 to 260ms), with none of it under reduced motion.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('components/frequency/site/shell/site-root.tsx','utf8'),c=fs.readFileSync('app/themes/frequency/site-shell.css','utf8'),h=fs.readFileSync('app/themes/frequency/site-pages-a.css','utf8');const bad=[];if(!r.includes('document.currentScript.parentElement')||!r.includes('data-side-anim'))bad.push('the stored side still arrives after hydration');if(!c.includes(':not([data-side-anim])'))bad.push('the side fade still plays on the first paint');if(!h.includes('@keyframes homeIn'))bad.push('the hero has no ordered entrance');if(bad.length){console.error('SCAN-895: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

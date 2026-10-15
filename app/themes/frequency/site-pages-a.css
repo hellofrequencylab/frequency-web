@@ -291,3 +291,15 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .dock .dk-w{display:none}
 [data-design="frequency"] [data-kit="site"] .pa-home .dock .btn{padding:0 14px}}
 }
+
+/* Home's hero arrives top down on first load (SCAN-895): the beta pill, the headline, the lede, then the
+   actions, each a short rise, so the page reads in order instead of the headline landing last. Reduced motion
+   gets the finished state at once. */
+@media (prefers-reduced-motion:no-preference){
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .h-main>:not(.h-foot),[data-design="frequency"] [data-kit="site"] .pa-home .hero .h-foot>*{animation:homeIn .6s var(--fq-ease-out) both}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .h-main>.beta-pill{animation-delay:0ms}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .h-main>.h-xl{animation-delay:80ms}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .h-foot>:nth-child(1){animation-delay:180ms}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .h-foot>:nth-child(2){animation-delay:260ms}
+@keyframes homeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+}
