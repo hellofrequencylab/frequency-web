@@ -7,13 +7,14 @@ import { Input, Textarea } from '@/components/ui/field'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
 import { ArrowRight, ChevronDown, ChevronLeft, Copy, Eye, FileText, Globe, Layers, Lock, MessageSquare, Minus, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Trash2, Smartphone, Tablet, Undo2, X } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
-import { addBlock, buildOutline, derivePickerGroups, duplicateBlockDeep, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
+import { addBlock, buildOutline, derivePickerGroups, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
 import { inlineFieldValue, replaceInlineField } from '@/lib/sites/editor/inline-edit'
 import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor/layout'
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
+import { duplicateWebsiteSection } from '@/lib/sites/editor/duplicate'
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
@@ -360,7 +361,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (kind === 'hide') { const display = sectionDeviceLayout(page.doc, id, device); updateDisplay(id, { ...display, hidden: !display.hidden }); return }
     if (kind === 'up' || kind === 'down') updateDoc(nudgeBlock(page.doc, config, id, kind === 'up' ? -1 : 1), { label: 'Reordered sections' })
     const name = config.components[findBlockDeep(page.doc, config, id)?.type ?? '']?.label ?? 'Section'
-    if (kind === 'copy') { const next = duplicateBlockDeep(page.doc, config, id); updateDoc(next.data, { label: `Added ${name}` }); if (next.id) select(next.id); say(`${name} duplicated`) }
+    if (kind === 'copy') { const next = duplicateWebsiteSection(page.doc, config, id); updateDoc(next.data, { label: `Added ${name}` }); if (next.id) select(next.id); say(`${name} duplicated`) }
     if (kind === 'delete') { const at = page.doc.content.findIndex((b) => b.props.id === id); updateDoc(removeBlockDeep(page.doc, config, id).data, { label: `Removed ${name}` }); setSelectedId(page.doc.content[at + 1]?.props.id ?? page.doc.content[at - 1]?.props.id ?? null); say(`${name} removed. Undo with ⌘Z.`) }
   }
   function reorderSections(ids: string[], targetId: string) {
