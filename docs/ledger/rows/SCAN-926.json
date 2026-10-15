@@ -6,8 +6,14 @@
   "lane": "live",
   "size": "S",
   "closed": "2026-10-15",
-  "source": { "file": "components/sites/editor/shell.tsx", "ref": "Block editor maturity audit 2026-10-15; generic duplication re-identifies blocks without copying websiteLayout" },
+  "source": {
+    "file": "components/sites/editor/shell.tsx",
+    "ref": "Block editor maturity audit 2026-10-15; generic duplication re-identifies blocks without copying websiteLayout"
+  },
   "detail": "Website section duplication previously retained content but lost spacing, widths, tone, typography, element positions and device visibility because display settings remained keyed only to the original IDs. An editor-only wrapper now copies sparse layout entries to the new IDs for the whole registered subtree. Explicit anchors remain unique to the originals. Existing section duplication, undo, redo and save use the same document boundary; review comments remain on their original blocks. A consequence regression reproduced the missing duplicate layout before the fix. Public rendering and stored identifiers are unchanged. Authenticated browser mutation and production publication remain unverified.",
-  "verify": { "kind": "cmd", "cmd": "pnpm exec vitest run lib/sites/editor/duplicate.test.ts components/sites/editor/shell.frequency.test.tsx" },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node node_modules/vitest/vitest.mjs run lib/sites/editor/duplicate.test.ts components/sites/editor/shell.frequency.test.tsx"
+  },
   "wave": "W7"
 }

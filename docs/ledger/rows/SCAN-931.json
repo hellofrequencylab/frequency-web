@@ -6,8 +6,14 @@
   "lane": "live",
   "size": "S",
   "closed": "2026-10-15",
-  "source": { "file": "components/sites/editor/canvas.tsx", "ref": "Block editor maturity audit 2026-10-15; hover-only insert labels and undersized touch handles; Network live metadata missing" },
+  "source": {
+    "file": "components/sites/editor/canvas.tsx",
+    "ref": "Block editor maturity audit 2026-10-15; hover-only insert labels and undersized touch handles; Network live metadata missing"
+  },
   "detail": "The Frequency canvas previously made insert labels transparent until hover or focus, leaving touch users without a visible insertion affordance. Coarse-pointer insertion now has a persistent theme-token treatment; typography, nested layout handles, section labels and chrome editing provide 44px touch targets, and spacing handles gain a transparent 44px hit region. NetworkHero, NetworkEvents and NetworkCircles read actual Space events/community but the editor previously called them Editable. They now join the Live group and expose the existing live-source guidance; authored Network blocks remain authored. Focused metadata/picker and iframe interaction regressions pass. Physical touch-device visual verification remains outstanding; no public renderer or global theme sheet changed.",
-  "verify": { "kind": "cmd", "cmd": "pnpm exec vitest run lib/sites/editor/handoff-model.test.ts components/sites/editor/canvas.frequency.test.tsx components/sites/editor/canvas.render.test.tsx" },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node node_modules/vitest/vitest.mjs run lib/sites/editor/handoff-model.test.ts components/sites/editor/canvas.frequency.test.tsx components/sites/editor/canvas.render.test.tsx"
+  },
   "wave": "W7"
 }
