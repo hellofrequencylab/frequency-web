@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-946",
+  "title": "Unify Frequency browse indexes under a compact shared header contract",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "components/templates/index-header.tsx",
+    "ref": "Owner all-index header ruling2026-10-15"
+  },
+  "detail": "Source-first route map found33 IndexTemplate page files,9 MarketHero render files,9 member bespoke collection headers, and11 public collection functions using DirHero/DxHero. One IndexHeader adapter composes canonical PageHeading with named Frequency type/spacing and action/secondary/toolbar slots; Frequency IndexTemplate/MarketHero suppress cover bands while keeping controls, navigation, settings and content. Member Circles/Events/Marketplace/Market/Journeys/SiteMap/Help/Search/Leaderboard adapt the same contract. Explicit public collection flags cover Discover, cities, events/type-city hubs, Spaces/type hubs, Circles, practices/pillars, journeys and topics. Default actual entity heroes, Home, dashboards, focus/wizards and split Inbox/nearby streams retain their contracts. Practices coded fallback becomes concise audience copy; operator content remains. Former on-ink header secondary buttons use canonical semantic secondary under Frequency and instant-search uses Input, preserving client filtering. DAWN photo headers remain. Source-backed390/960 fixture prepared, parent visual approval and integrated route acceptance pending. No auth/query/permission/schema or live writes.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "19 tests5 suites pass: compact index drops photo without losing actions/back/trail/settings/filter query/body; MarketHero retains search; explicit public collection adapters compact while default entity retains cover; direct PageHero remains rich; DAWN preserves photo bands; semantic search input still filters instantly; existing Frequency templates/SiteMap coverage pass. Scoped ESLint/token/adoption/phantom pass. Actual shared component fixture http://localhost:3010/__index uses FrequencyCSS/fonts at390x844 and960 desktop. Need parent geometry/readability approval then integrated authenticated/public route samples at390/desktop, permission-gated action checks, search tabs/query retention and public ISR acceptance. Public bodies/schema untouched; IndexHero resolver remains for DAWN compatibility."
+  },
+  "wave": "W7"
+}

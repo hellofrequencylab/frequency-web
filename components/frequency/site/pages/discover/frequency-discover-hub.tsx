@@ -46,7 +46,7 @@ export function FrequencyDiscoverHub({
   const proven = counts.members >= SOCIAL_PROOF_FLOOR
   return (
     <div className="dx-page">
-      <DxHero
+      <DxHero compact
         crumbs={[{ label: 'Discover' }]}
         photo={dxPhoto('day-meditation-circle.jpg')}
         energy="charge"

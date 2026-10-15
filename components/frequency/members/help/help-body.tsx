@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
@@ -55,13 +56,7 @@ export function HelpBody({
 
   return (
     <MembersBody className="mc-narrow">
-      <div className="stack mc-gap-16 mc-center mc-text-center">
-        <span className="k">Help</span>
-        <h1 className="h1">
-          How can we <span className="serif">help?</span>
-        </h1>
-        <HelpSearchPill index={index} />
-      </div>
+      <IndexHeader title={<>How can we <span className="serif">help?</span></>} eyebrow="Help" toolbar={<HelpSearchPill index={index} />} adminBar={false} />
 
       {categories.length === 0 ? (
         <div className="empty sec">

@@ -37,7 +37,7 @@ import {
 export function FrequencyJourneys({ journeys }: { journeys: JourneyPlan[] }) {
   return (
     <DirPage side="p">
-      <DirHero
+      <DirHero compact
         crumbs={[{ label: 'Discover', href: '/discover' }, { label: 'Journeys' }]}
         image={photo('day-park-yoga.jpg')}
         title={

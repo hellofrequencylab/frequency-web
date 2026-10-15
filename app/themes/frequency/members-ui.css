@@ -437,3 +437,26 @@
 [data-design="frequency"] .fq-map-cluster-count{text-shadow:0 1px 2px color-mix(in srgb,var(--fq-ink-2) 55%,transparent)}
 /* The full-screen map's "Close map" pill sits top left, clear of the zoom buttons (bottom right). */
 [data-design="frequency"] .fq-map-close{right:auto;left:12px}
+
+/* SCAN-946: the common index introduction, deliberately lighter than an entity cover. */
+@layer components {
+[data-design="frequency"] .fq-index-public{padding-block:24px 0}
+[data-design="frequency"] .fq-index-header{min-width:0;margin-bottom:20px}
+[data-design="frequency"] .fq-index-header .head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin:0 0 12px}
+[data-design="frequency"] .fq-index-header .head>div:first-child{flex:1 1 220px;min-width:0}
+[data-design="frequency"] .fq-index-header .head .h1{font:500 var(--fq-text-h2)/var(--fq-lh-h2) var(--fq-font-display);letter-spacing:var(--fq-track-h2);overflow-wrap:anywhere;margin:0}
+[data-design="frequency"] .fq-index-header .head .meta{display:block;max-width:64ch;margin:8px 0 0;font:400 var(--fq-text-body-s)/var(--fq-lh-body-s) var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] .fq-index-header .head .k{margin:0 0 8px}
+[data-design="frequency"] .fq-index-header .mu-actions,[data-design="frequency"] .fq-index-secondary{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] .fq-index-header .mu-actions>:is(.ctas,.row){display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] .fq-index-header :is(button,a.btn),[data-design="frequency"] .fq-index-header .mu-actions a,[data-design="frequency"] .fq-index-toolbar .chip{min-height:44px}
+[data-design="frequency"] .fq-index-secondary{margin:12px 0}
+[data-design="frequency"] .fq-index-toolbar{margin-top:12px;min-width:0}
+@media(max-width:767px){
+  [data-design="frequency"] .fq-index-header{margin-bottom:16px}
+  [data-design="frequency"] .fq-index-header .head .h1{font-size:var(--fq-text-h3);line-height:var(--fq-lh-h3);letter-spacing:var(--fq-track-h3)}
+  [data-design="frequency"] .fq-index-header .head>div:first-child{flex-basis:180px}
+  [data-design="frequency"] .fq-index-header .mu-actions{max-width:100%}
+  [data-design="frequency"] .fq-index-header .mu-actions>*{max-width:100%}
+}
+}

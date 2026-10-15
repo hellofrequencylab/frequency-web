@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 // THE DISCOVER DIRECTORIES under the Frequency design: the pieces every /discover index and detail body
 // shares (Circles, Journeys, Practices, Partners, Spaces, Channels). Written in the "site" kit's own
 // markup (.phero, .crumbs, .sh, .g3 > .pc, .subnav, .panel), plus the few directory-only styles in
@@ -34,6 +35,7 @@ export function DirPage({ side, children }: { side: 'p' | 'e'; children: ReactNo
 
 /** The directory hero: the kit's `.phero`, shorter, with the breadcrumb trail the JSON-LD names. */
 export function DirHero({
+  compact = false,
   crumbs,
   title,
   lede,
@@ -41,6 +43,7 @@ export function DirHero({
   facts,
   children,
 }: {
+  compact?: boolean
   crumbs: Crumb[]
   title: ReactNode
   lede?: ReactNode
@@ -51,6 +54,7 @@ export function DirHero({
   /** The hero actions (`.btn` links). */
   children?: ReactNode
 }) {
+  if (compact) return <section className="fq-index-public"><div className="wrap"><IndexHeader title={title} description={lede} trail={[{ href: '/', label: 'Home' }, ...crumbs.filter((c): c is Crumb & { href: string } => !!c.href)]} action={children} secondary={facts} adminBar={false} /></div></section>
   return (
     <section className="phero dd-hero" data-energy="flow" data-screen-label="01 Hero">
       {image && <div className="bg" style={{ backgroundImage: `url('${image}')` }} />}

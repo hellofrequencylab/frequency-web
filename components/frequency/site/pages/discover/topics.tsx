@@ -30,7 +30,7 @@ export function FrequencyTopics({
       : `Already happening in ${FOUNDING_PLACE}: ${count(counts.members, 'member', 'members')}, ${count(counts.circles, 'Circle', 'Circles')} and ${count(events, 'upcoming event', 'upcoming events')}.`
   return (
     <DirPage side="p">
-      <DirHero
+      <DirHero compact
         crumbs={[{ label: 'Discover', href: '/discover' }, { label: 'Channels' }]}
         image={photo('day-beach-hoop.jpg')}
         title={

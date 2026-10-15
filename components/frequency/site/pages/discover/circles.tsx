@@ -53,7 +53,7 @@ export function FrequencyCircles({
 
   return (
     <DirPage side="p">
-      <DirHero
+      <DirHero compact
         crumbs={[{ label: 'Discover', href: '/discover' }, { label: 'Circles' }]}
         image={photo('day-meditation-circle.jpg')}
         title={

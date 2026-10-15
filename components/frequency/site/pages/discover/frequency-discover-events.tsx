@@ -41,7 +41,7 @@ export function FrequencyDiscoverEvents({
 }) {
   return (
     <div className="dx-page">
-      <DxHero
+      <DxHero compact
         crumbs={[{ href: '/discover', label: 'Discover' }, { label: 'What’s happening' }]}
         photo={dxPhoto('day-parachute-play.jpg')}
         energy="charge"
@@ -164,7 +164,7 @@ export function FrequencyEventHub({
 }) {
   return (
     <div className="dx-page">
-      <DxHero
+      <DxHero compact
         crumbs={[
           { href: '/discover', label: 'Discover' },
           { href: '/discover/events', label: 'What’s happening' },

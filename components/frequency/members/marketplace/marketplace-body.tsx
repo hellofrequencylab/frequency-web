@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
@@ -114,21 +115,12 @@ export function FqClassifiedsBody({
 
   return (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community · Marketplace</span>
-          <h1 className="h1">
-            Swap it <span className="serif">locally.</span>
-          </h1>
-          <span className="meta">{meta}</span>
-        </div>
-        {signedIn && (
+      <IndexHeader title={<>Swap it <span className="serif">locally.</span></>} eyebrow="Community · Marketplace" description={meta} adminBar={false} action={signedIn && (
           <Link className="btn pa lg" href="/classifieds/new">
             <FqIcon name="tip" />
             Post a listing
           </Link>
-        )}
-      </div>
+        )} />
       <Intro {...intro} />
       <FqMarketAreas active="market" />
       <FqHiddenAreaNote area="market" />
@@ -218,17 +210,7 @@ export function FqMarketBody({
 
   return (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community · Market</span>
-          <h1 className="h1">
-            Buy from your <span className="serif">community.</span>
-          </h1>
-          <span className="meta">
-            Buy direct, the seller gets paid, the fee stays low · {counts.total} {counts.total === 1 ? 'listing' : 'listings'}
-          </span>
-        </div>
-        {signedIn && (
+      <IndexHeader title={<>Buy from your <span className="serif">community.</span></>} eyebrow="Community · Market" description={`Products and services from your community · ${counts.total} ${counts.total === 1 ? 'listing' : 'listings'}`} adminBar={false} action={signedIn && (
           <div className="row wrap">
             <Link className="btn pa lg" href="/market/sell">
               <FqIcon name="plus" />
@@ -238,8 +220,7 @@ export function FqMarketBody({
               My storefront
             </Link>
           </div>
-        )}
-      </div>
+        )} />
       <FqMarketAreas active="makers" />
       <FqHiddenAreaNote area="makers" />
 

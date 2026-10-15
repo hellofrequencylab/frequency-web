@@ -1,3 +1,6 @@
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { buttonClasses } from '@/components/ui/button'
+
 // Shared hero action-button classes for the unified surface headers (Events, Marketplace Events,
 // Business Spaces, Circles). Every hero's Primary + Secondary buttons render identically over the
 // dark MarketHero band, so the four browse surfaces read as one header. The on-ink/xx utilities are
@@ -11,5 +14,5 @@ export const HERO_PRIMARY_BTN =
   'inline-flex items-center gap-1.5 whitespace-nowrap rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-4 sm:text-body-sm'
 
 /** The secondary, on-ink action riding the dark hero image (Manage / My drafts). */
-export const HERO_SECONDARY_BTN =
+export const HERO_SECONDARY_BTN = SITE_DESIGN === 'frequency' ? buttonClasses('secondary', 'sm') :
   'inline-flex items-center gap-1.5 whitespace-nowrap rounded-control border border-on-ink/30 bg-on-ink/10 px-3 py-2 text-meta font-semibold text-on-ink transition-colors hover:bg-on-ink/20 sm:px-4 sm:text-body-sm'

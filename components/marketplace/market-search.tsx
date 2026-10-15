@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, Children, isValidElement, type ReactNode } from 'react'
 import { Search } from 'lucide-react'
+import { Input } from '@/components/ui/field'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // INSTANT marketplace search. The hero search bar writes to a client context and the grids read it,
 // so results filter on the very first keystroke with NO server round-trip and no debounce. Cards stay
@@ -36,15 +38,15 @@ export function MarketSearchBar({ placeholder = 'Search' }: { placeholder?: stri
   const { query, setQuery } = useContext(MarketSearchCtx)
   return (
     <div className="relative">
-      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/50" aria-hidden />
-      <input
+      <Search className={SITE_DESIGN === 'frequency' ? "pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" : "pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/50"} aria-hidden />
+      {SITE_DESIGN === 'frequency' ? <Input type="search" value={query} onChange={(e) => setQuery(e.target.value.trim().toLowerCase())} placeholder={placeholder} aria-label={placeholder} className="pl-11 pr-4" /> : <input
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value.trim().toLowerCase())}
         placeholder={placeholder}
         aria-label={placeholder}
         className="w-full rounded-pill border border-on-ink/40 bg-on-ink/95 py-3 pl-11 pr-4 text-body-sm text-ink lift-2 outline-none placeholder:text-ink/50 focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
-      />
+      />}
     </div>
   )
 }

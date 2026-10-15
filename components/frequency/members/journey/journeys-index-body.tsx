@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
@@ -119,15 +120,7 @@ export function JourneysIndexBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Journeys</span>
-          <h1 className="h1">
-            <SerifTail text={title} />
-          </h1>
-          {description && <span className="meta">{description}</span>}
-        </div>
-        <div className="row wrap">
+      <IndexHeader title={<SerifTail text={title} />} description={description} adminBar={false} action={<div className="row wrap">
           <NewJourneyButton canCreate={canBuild} className="btn pa" />
           <Link className="btn" href="/journeys/mine">
             Your journeys
@@ -137,8 +130,7 @@ export function JourneysIndexBody({
               {cta.label}
             </a>
           )}
-        </div>
-      </div>
+        </div>} />
       {intro && <div className="body mc-bottom-24">{intro}</div>}
 
       {active.length > 0 && (

@@ -81,7 +81,7 @@ export function FrequencyPractices({
 }) {
   return (
     <DirPage side="p">
-      <DirHero
+      <DirHero compact
         crumbs={[{ label: 'Discover', href: '/discover' }, { label: 'Practices' }]}
         image={image || photo('day-meditation-circle.jpg')}
         title={title}
@@ -130,7 +130,7 @@ export function FrequencyPillarPractices({
 }) {
   return (
     <DirPage side="p">
-      <DirHero
+      <DirHero compact
         crumbs={[
           { label: 'Discover', href: '/discover' },
           { label: 'Practices', href: '/discover/practices' },

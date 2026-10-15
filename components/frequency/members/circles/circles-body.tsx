@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
@@ -122,15 +123,7 @@ export function FqCirclesBody({
 
   const body = (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community</span>
-          <h1 className="h1">
-            Your <span className="serif">Circles.</span>
-          </h1>
-          <span className="meta">The groups you keep coming back to.</span>
-        </div>
-        {signedIn && (
+      <IndexHeader title={<>Your <span className="serif">Circles.</span></>} eyebrow="Community" description="The groups you keep coming back to." adminBar={false} action={signedIn && (
           <div className="row wrap">
             <NewCircleCompose interests={interests} buttonLabel="Start a Circle" canCreate={canCreate} buttonClass="btn pa lg" />
             {canCreate && (
@@ -144,8 +137,7 @@ export function FqCirclesBody({
               </a>
             )}
           </div>
-        )}
-      </div>
+        )} />
       {content.body && <p className="body fqm-intro">{content.body}</p>}
 
       <div className="fqm-tools">

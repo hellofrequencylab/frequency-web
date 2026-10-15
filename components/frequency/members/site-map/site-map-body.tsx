@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { FQ_SITE_LINKS } from '@/components/frequency/members/shell/nav'
@@ -177,14 +178,7 @@ export function siteMapFor(viewer: SiteMapViewer): SiteMapColumn[] {
 export function SiteMapBody({ columns, website }: { columns: SiteMapColumn[]; website: SiteMapLink[] }) {
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">Frequency</span>
-          <h1 className="h1">
-            Site <span className="serif">map.</span>
-          </h1>
-        </div>
-      </div>
+      <IndexHeader title={<>Site <span className="serif">map.</span></>} eyebrow="Frequency" adminBar={false} />
       <div className="g4">
         {columns.map((col) => (
           <nav key={col.area} className="stack mc-gap-4" aria-label={col.area}>

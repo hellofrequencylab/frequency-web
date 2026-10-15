@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 // THE DISCOVER PAGES' SHARED PIECES under the Frequency design (lane C: the /discover hub, What's happening,
 // the city x type hubs, the host pages, cities and places). Written in the "site" kit's idiom (`.phero`,
 // `.sec > .wrap`, `.sh > .label`, `.pc`, `.g3`, `.qa`, <KeepGoing/>) plus the few pieces the kit has no
@@ -32,6 +33,7 @@ export interface Crumb {
 /** The page hero: the kit's `.phero` (photo, aura, shade) with the breadcrumb trail the design's inner
  *  pages open on. The trail mirrors the BreadcrumbList JSON-LD each route already publishes. */
 export function DxHero({
+  compact = false,
   crumbs,
   photo,
   title,
@@ -40,6 +42,7 @@ export function DxHero({
   badge,
   children,
 }: {
+  compact?: boolean
   crumbs: Crumb[]
   photo: string
   /** Drawn above the title (a host's avatar). */
@@ -49,6 +52,7 @@ export function DxHero({
   energy?: 'still' | 'flow' | 'charge'
   children?: ReactNode
 }) {
+  if (compact) return <section className="fq-index-public"><div className="wrap"><IndexHeader title={title} description={lede} trail={[{ href: '/', label: 'Home' }, ...crumbs.filter((c): c is Crumb & { href: string } => !!c.href)]} action={children} secondary={badge} adminBar={false} /></div></section>
   return (
     <section className="phero" data-energy={energy} data-screen-label="01 Hero">
       <div className="bg" style={{ backgroundImage: `url('${photo}')` }} />

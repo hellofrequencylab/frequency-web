@@ -24,7 +24,7 @@ import { resolveIndexHero } from '@/lib/layout/index-hero'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Practices',
-  description: 'This is where the Zaps come from: a growing community library. Adopt or claim a practice, then log it every day to earn Zaps and keep your streak alive.',
+  description: 'Find a practice for your day. Adopt one to keep it close.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);

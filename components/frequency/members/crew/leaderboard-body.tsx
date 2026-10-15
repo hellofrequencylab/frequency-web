@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
@@ -51,23 +52,14 @@ export function LeaderboardBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Leaderboard</span>
-          <h1 className="h1">
-            Showing up, <span className="serif">together.</span>
-          </h1>
-          <span className="meta">One shared goal first. Where people stand sits below it, scoped to your Circle, and yours to opt out of.</span>
-        </div>
-        <div className="row wrap">
+      <IndexHeader title={<>Showing up, <span className="serif">together.</span></>} eyebrow="Leaderboard" description="Your community’s practice standings, scoped to your Circle." adminBar={false} action={<div className="row wrap">
           <Link className="btn sm" href="/crew">
             My Quest
           </Link>
           <Link className="btn sm" href="/crew/store">
             The Vault
           </Link>
-        </div>
-      </div>
+        </div>} />
 
       <section className="panel mc-hero" aria-label="The shared goal">
         <div className="fq-aura" aria-hidden />

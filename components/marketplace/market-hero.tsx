@@ -1,9 +1,11 @@
+import { IndexHeader } from '@/components/templates/index-header'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { PageHero } from '@/components/templates/page-hero'
 import type { PageHeroSize, PageHeroVariant } from '@/components/templates'
 
 // MARKET HERO — the commerce/browse section header (Classifieds / Market / Frequency Store / Housing,
 // and the browse indexes that adopted it). It is now a THIN wrapper over the canonical PageHero (the one
-// site-wide header band, THEME-PROTOCOL "structure" layer): the `center` + `large` variant with an
+// site-wide entity header band, THEME-PROTOCOL "structure" layer): the `center` + `large` variant with an
 // in-hero search. Keeping the same props means every caller is unchanged, but the header is now
 // single-sourced and TOKEN-CLEAN — the old inline `rgb(20 18 16 / …)` scrim + `text-white` are gone, so
 // these heroes theme + dark-mode correctly like the rest of the site. Voice-canon copy comes from the
@@ -36,6 +38,7 @@ export function MarketHero({
   /** Draw the ink overlay (scrim). Default on. */
   overlay?: boolean
 }) {
+  if (SITE_DESIGN === 'frequency') return <IndexHeader title={title} description={subtitle} eyebrow={eyebrow} action={action} toolbar={search} adminBar={false} />
   return (
     <PageHero
       coverImage={image}

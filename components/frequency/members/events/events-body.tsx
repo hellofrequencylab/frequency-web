@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import Link from 'next/link'
 import { Radio } from '@/components/ui/radio'
 import { Suspense, type ReactNode } from 'react'
@@ -162,31 +163,7 @@ export function FqEventsBody({
           kicker, title and meta. ev-hero.is-plain in members-events.css drops the photo band; the editable
           copy (content.*) still feeds it. The search, filters, view and host actions sit in the toolbar
           under it (SCAN-919). */}
-      <section className="ev-hero is-plain" aria-labelledby="ev-title">
-        <div className="ev-hero-in">
-          <span className="k">What&apos;s happening</span>
-          <h1 id="ev-title" className="h1">
-            {usingFallbackTitle ? (
-              <>
-                Events <span className="serif">near you.</span>
-              </>
-            ) : (
-              content.title
-            )}
-          </h1>
-          <p className="body">
-            {content.body ||
-              'Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket.'}
-          </p>
-          {content.ctaLabel && content.ctaHref && (
-            <div className="ev-actions">
-              <a className="btn glass sm" href={content.ctaHref}>
-                {content.ctaLabel}
-              </a>
-            </div>
-          )}
-        </div>
-      </section>
+      <IndexHeader title={usingFallbackTitle ? <>Events <span className="serif">near you.</span></> : content.title} eyebrow="What’s happening" description={content.body || 'Find local gatherings, classes, and experiences.'} adminBar={false} action={content.ctaLabel && content.ctaHref ? <a className="btn sm" href={content.ctaHref}>{content.ctaLabel}</a> : null} />
 
       {/* THE ONE TOOLBAR (SCAN-919): search, then Filters (a phone's bottom sheet), then the view switch,
           then the host actions in one More menu. It sticks under the header so the controls stay one

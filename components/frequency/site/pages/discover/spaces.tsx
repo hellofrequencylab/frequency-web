@@ -172,7 +172,7 @@ export function FrequencySpacesDirectory({
   const sort = query.sort ?? 'standing'
   return (
     <DirPage side="e">
-      <DirHero
+      <DirHero compact
         crumbs={[{ label: 'Discover', href: '/discover' }, { label: 'Business Spaces' }]}
         image={image || photo('gathering-04.jpg')}
         title="Find a business or nonprofit near you"
@@ -299,7 +299,7 @@ export function FrequencySpaceTypeHub({
 }) {
   return (
     <DirPage side="e">
-      <DirHero
+      <DirHero compact
         crumbs={[
           { label: 'Discover', href: '/discover' },
           { label: 'Spaces', href: '/spaces' },

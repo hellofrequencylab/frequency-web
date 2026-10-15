@@ -13,14 +13,15 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { PageHeading } from './page-heading'
+import { IndexHeader } from './index-header'
 import { PageHero, type PageHeroSize, type PageHeroVariant } from './page-hero'
 import { PageIntro } from './page-intro'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the header is PageHeading's kit `.head`; the banner is a borderless 24px photo
-// and the toolbar sits on the kit's 28px rhythm (`mu-toolbar`). Inlined at build; DAWN is unchanged.
+// FREQUENCY: browse pages use the compact IndexHeader contract; photographic bands belong to
+// individual entities. The original cover/overlay contract below remains available under DAWN.
 const FREQUENCY = SITE_DESIGN === 'frequency'
 
 /** One crumb in the standard index breadcrumb (`/network` -> this section). */
@@ -94,6 +95,14 @@ export function IndexTemplate({
   adminBar?: boolean
   children: React.ReactNode
 }) {
+  // Frequency browse pages lead with the shared compact introduction; covers belong to entities.
+  if (FREQUENCY) return <div>
+    <IndexHeader title={title} description={description} eyebrow={eyebrow} action={action} back={back} trail={trail} secondary={underHero} toolbar={toolbar} adminBar={adminBar} />
+    {banner}
+    <PageIntro text={intro} />
+    {children}
+  </div>
+
   // OVERLAY hero: one composed header band — image + bottom-heavy ink scrim + the page heading
   // grammar (eyebrow / h1 / description on-ink, the action bottom-right) anchored over it. The
   // standard PageHeading is suppressed (its h1 would double), but the admin-bar rule below stays.

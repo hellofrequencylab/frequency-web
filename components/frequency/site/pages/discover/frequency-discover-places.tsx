@@ -29,7 +29,7 @@ import { FrequencyPlacesFinder, type FinderTown } from './frequency-places-finde
 export function FrequencyCitiesIndex({ cities, towns }: { cities: { city: string; slug: string }[]; towns: FinderTown[] }) {
   return (
     <div className="dx-page">
-      <DxHero
+      <DxHero compact
         crumbs={[{ href: '/discover', label: 'Discover' }, { label: 'Cities' }]}
         photo={dxPhoto('gathering-03.jpg')}
         title={

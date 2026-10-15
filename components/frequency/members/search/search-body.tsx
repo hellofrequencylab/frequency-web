@@ -1,3 +1,4 @@
+import { IndexHeader } from '@/components/templates/index-header'
 import '@/app/themes/active/members-a'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-community'
@@ -147,8 +148,7 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
   return (
     <div>
       <FqToaster />
-      <div className="stack fqm-search-head">
-        <h1 className="k">Search</h1>
+      <IndexHeader title="Search" adminBar={false} toolbar={<div className="stack fqm-search-head">
         <form method="GET" action="/search" className="fa-searchbar" role="search">
           <FqIcon name="search" />
           <Input variant="seamless" name="q" defaultValue={query} placeholder="People, Spaces, events, practices…" aria-label="Search" autoComplete="off" autoFocus />
@@ -162,7 +162,7 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
             </Link>
           ))}
         </nav>
-      </div>
+      </div>} />
 
       <div className="ap-cols sec fqm-search-cols">
         <div>

@@ -646,6 +646,14 @@ half-wired module fails there.
 
 ## 8.5 The standard page (header + admin settings)
 
+> **Frequency index contract (owner ruling, 2026-10-15):** browse/list pages now use the compact
+> `components/templates/index-header.tsx` introduction: title, concise audience copy, primary actions,
+> then search/filters/tabs. `IndexTemplate` and `MarketHero` select this contract under Frequency;
+> public `DirHero` / `DxHero` collection call sites opt in with `compact`. Index cover photos are
+> suppressed, while actions, breadcrumbs, admin controls and URL-driven content remain. Entity
+> details keep `PageHero` / the default public hero; Home, dashboards, focus and wizard surfaces
+> are separate. The historical photo-band contracts below continue to describe DAWN.
+
 > **Update 2026-06-26 (ADR-411):** the standardized page header is now **first-class
 > template props**, not a per-page hand-roll (it had drifted into ~4 near-identical copies).
 > The canonical lockup, proven across Circles, Events, Practices, and Journeys, is
