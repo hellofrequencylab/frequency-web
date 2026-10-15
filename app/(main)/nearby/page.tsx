@@ -13,7 +13,8 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { StreamTemplate, PageIntro } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { Suspense } from 'react'
-import { NearbyMapHeader } from '@/components/nearby/nearby-map-header'
+import { NearbyMapHeader, NearbyMapCard } from '@/components/nearby/nearby-map-header'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { PageHero, type PageHeroSize, type PageHeroVariant } from '@/components/templates/page-hero'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import {
@@ -278,69 +279,30 @@ export default async function NearbyPage({
       </div>
     ) : undefined
 
-  return (
-    <StreamTemplate
-      // ── THE HEADER IS THE MAP ────────────────────────────────────────────────────────────
-      // The same header system Events and Circles open on (PageHero, sized and tuned by the
-      // `header` element), with the live map behind the scrim instead of a photograph, and one
-      // control: View the map, which opens the seam's fullscreen popup (ADR-1034).
-      //
-      // STREAMED, and that is load-bearing on THIS page. The pin read spans three tables and the
-      // header must not wait on it: the fallback is the SAME band at the SAME height with the same
-      // eyebrow, heading and subtitle, so the map arrives into a band that is already there and
-      // nothing below it moves.
-      hero={
-        <Suspense
-          fallback={
-            <PageHero
-              eyebrow={HERO_EYEBROW}
-              title={title}
-              subtitle={description}
-              coverImage={heroImage ?? null}
-              rawImg={!!heroImage}
-              variant={header.layout}
-              size={header.height}
-              overlay={header.scrim}
-            />
-          }
-        >
-          <NearbyMapHeaderSection
-            title={title}
-            subtitle={description}
-            coverImage={heroImage}
-            header={header}
-          />
-        </Suspense>
-      }
-      // ── AT A GLANCE, ON THE DIVIDER ROW ──────────────────────────────────────────────────
-      // Owner instruction 2026-08-13: this line sits "in line with the settings button" rather
-      // than on a line of its own beneath it. The header's rule then fills the gap between the
-      // two, so the row still reads as a divider carrying a label, not as a toolbar.
-      //
-      // ORDER: Events, Circles, Members, Dispatches. The three things a member came to find lead;
-      // the count of announcements, which is the page's own furniture, goes last.
-      // 🔴 FOUR LIVE TALLIES, so the camera paints over them (`data-visual-mask`, ADR-1277). Every
-      // number here is a database reading that moves without a deploy — this line is the most
-      // likely author of LIVE-301's six identical failures, because it renders the SAME glyphs at
-      // 1280, 390 and 320, which is what "1347 pixels in every context" looks like.
-      headingLead={
-        <p data-visual-mask="nearby-glance" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
-          <span><strong className="font-semibold text-text tabular-nums">{(upcomingEventTotal || upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
-          <span aria-hidden className="text-subtle">·</span>
-          <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
-          {newCirclesCount > 0 && <span className="text-subtle">({newCirclesCount} new)</span>}
-          <span aria-hidden className="text-subtle">·</span>
-          <span><strong className="font-semibold text-text tabular-nums">{(membersRes.count ?? 0).toLocaleString()}</strong> members</span>
-          <span aria-hidden className="text-subtle">·</span>
-          <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent Dispatches</span>
-          {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
-        </p>
-      }
-    >
-      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
-          this section sets none. */}
-      <PageIntro text={body} />
+  // ── AT A GLANCE ──────────────────────────────────────────────────────────────────────────────
+  // ORDER: Events, Circles, Members, Dispatches. The three things a member came to find lead;
+  // the count of announcements, which is the page's own furniture, goes last.
+  // 🔴 FOUR LIVE TALLIES, so the camera paints over them (`data-visual-mask`, ADR-1277). Every
+  // number here is a database reading that moves without a deploy — this line is the most
+  // likely author of LIVE-301's six identical failures, because it renders the SAME glyphs at
+  // 1280, 390 and 320, which is what "1347 pixels in every context" looks like.
+  const glance = (
+    <p data-visual-mask="nearby-glance" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
+      <span><strong className="font-semibold text-text tabular-nums">{(upcomingEventTotal || upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
+      <span aria-hidden className="text-subtle">·</span>
+      <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
+      {newCirclesCount > 0 && <span className="text-subtle">({newCirclesCount} new)</span>}
+      <span aria-hidden className="text-subtle">·</span>
+      <span><strong className="font-semibold text-text tabular-nums">{(membersRes.count ?? 0).toLocaleString()}</strong> members</span>
+      <span aria-hidden className="text-subtle">·</span>
+      <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent Dispatches</span>
+      {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
+    </p>
+  )
 
+  // Everything under the divider row except the map, which each design seats differently.
+  const dispatchesAndRail = (
+    <>
       {/* ── Highlight hero: the latest Dispatch ──────────────────────────────────────────────
               The "next event" FALLBACK that used to sit here is gone: the four Coming up cards
               beside the map now do that job, with four gatherings instead of one. Keeping both
@@ -464,6 +426,75 @@ export default async function NearbyPage({
           )}
         </div>
       </div>
+    </>
+  )
+
+  // ── FREQUENCY: NO HEADER BAND (owner, 2026-10-14, SCAN-899) ────────────────────────────────────
+  // The page opens on the plain member `.head` (PageHeading under Frequency: kicker, h1, meta), with
+  // the counts on the divider row beneath it. The map moves into the body, directly above the
+  // Dispatches, as a kit panel (NearbyMapCard). Still STREAMED: the fallback is the same card frame
+  // at the same height, so the pin read never holds the page and nothing below jumps when it lands.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <StreamTemplate eyebrow={HERO_EYEBROW} title={title} description={description} headingLead={glance}>
+        {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+            this section sets none. */}
+        <PageIntro text={body} />
+
+        <Suspense fallback={<NearbyMapCard pins={null} />}>
+          <NearbyMapCardSection />
+        </Suspense>
+
+        {dispatchesAndRail}
+      </StreamTemplate>
+    )
+  }
+
+  return (
+    <StreamTemplate
+      // ── THE HEADER IS THE MAP ────────────────────────────────────────────────────────────
+      // The same header system Events and Circles open on (PageHero, sized and tuned by the
+      // `header` element), with the live map behind the scrim instead of a photograph, and one
+      // control: View the map, which opens the seam's fullscreen popup (ADR-1034).
+      //
+      // STREAMED, and that is load-bearing on THIS page. The pin read spans three tables and the
+      // header must not wait on it: the fallback is the SAME band at the SAME height with the same
+      // eyebrow, heading and subtitle, so the map arrives into a band that is already there and
+      // nothing below it moves.
+      hero={
+        <Suspense
+          fallback={
+            <PageHero
+              eyebrow={HERO_EYEBROW}
+              title={title}
+              subtitle={description}
+              coverImage={heroImage ?? null}
+              rawImg={!!heroImage}
+              variant={header.layout}
+              size={header.height}
+              overlay={header.scrim}
+            />
+          }
+        >
+          <NearbyMapHeaderSection
+            title={title}
+            subtitle={description}
+            coverImage={heroImage}
+            header={header}
+          />
+        </Suspense>
+      }
+      // ── AT A GLANCE, ON THE DIVIDER ROW ──────────────────────────────────────────────────
+      // Owner instruction 2026-08-13: this line sits "in line with the settings button" rather
+      // than on a line of its own beneath it. The header's rule then fills the gap between the
+      // two, so the row still reads as a divider carrying a label, not as a toolbar.
+      headingLead={glance}
+    >
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={body} />
+
+      {dispatchesAndRail}
     </StreamTemplate>
   )
 }
@@ -545,4 +576,11 @@ async function NearbyMapHeaderSection({
       overlay={header.scrim}
     />
   )
+}
+
+/** Frequency's map card, behind its own Suspense boundary: the pin read is the only slow part, and
+ *  the fallback is the same card with no map in it (NearbyMapCard pins={null}). */
+async function NearbyMapCardSection() {
+  const pins = await loadNearbyMapPins()
+  return <NearbyMapCard pins={pins} />
 }
