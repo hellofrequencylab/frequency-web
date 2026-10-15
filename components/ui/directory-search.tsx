@@ -36,8 +36,10 @@ export function DirectorySearch({
 
   // Keep in sync if the URL changes elsewhere (e.g. back/forward, a facet nav).
   useEffect(() => {
+    if (timer.current) clearTimeout(timer.current)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(sp.get(paramKey) ?? '')
+    return () => { if (timer.current) clearTimeout(timer.current) }
   }, [sp, paramKey])
 
   function push(next: string) {
@@ -82,7 +84,7 @@ export function DirectorySearch({
       {value && (
         <button
           type="button"
-          onClick={() => { setValue(''); push('') }}
+          onClick={() => { if (timer.current) clearTimeout(timer.current); setValue(''); push('') }}
           aria-label="Clear search"
           disabled={disabled}
           // No `.press` here: the clear button is centered with `-translate-y-1/2`, and
