@@ -50,6 +50,7 @@ import type { TimerMode } from './mindless'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
+import { createScreenWakeLock } from '@/lib/on-air/screen-wake-lock'
 import { chime, endChime, countBeep } from '@/lib/timer-audio'
 import { bellToneBySlug, clampWarmupSec, resolveWarmupSec } from '@/lib/on-air'
 import { findFreeMove } from '@/lib/on-air/free-sit'
@@ -490,7 +491,7 @@ export function MovementSession({
   const gateTargetRef = useRef(0)
   const [runOverPrompt, setRunOverPrompt] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
-  const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
+  const wakeLock = useMemo(() => createScreenWakeLock(), [])
   const finishing = useRef(false)
   // The exact args of the last finish attempt, so the error screen's retry replays the SAME claim
   // (the seconds banked at Stop), never a recount that would add the time spent on the error
@@ -508,38 +509,26 @@ export function MovementSession({
 
   // --- takeover plumbing (shared shape with the Mindless sit) ---------------
   async function acquireQuiet() {
-    try {
-      wakeLock.current =
-        (await (navigator as Navigator & {
-          wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> }
-        }).wakeLock?.request('screen')) ?? null
-    } catch {
-      // wake lock is progressive enhancement
-    }
+    await wakeLock.acquire()
     // True fullscreen, gesture-gated, so this only lands from the Start tap.
     await requestAppFullscreen()
   }
 
   async function releaseQuiet() {
-    try {
-      await wakeLock.current?.release()
-    } catch {
-      /* released already */
-    }
-    wakeLock.current = null
+    await wakeLock.release()
     await exitAppFullscreen()
   }
 
   // Re-acquire the wake lock when the tab comes back (the OS drops it on blur).
   useEffect(() => {
     const onVisible = () => {
-      if (stage === 'live' && document.visibilityState === 'visible' && !wakeLock.current) {
-        void acquireQuiet()
+      if (stage === 'live' && document.visibilityState === 'visible') {
+        void wakeLock.acquire()
       }
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [stage])
+  }, [stage, wakeLock])
 
   // Release everything the takeover holds when the surface unmounts. finish()/leave() already run
   // releaseQuiet() on the normal exits; this is the backstop for an UNEXPECTED unmount (e.g. the
@@ -555,14 +544,13 @@ export function MovementSession({
       }
       ctx.current = null
       try {
-        void lock.current?.release()
+        void lock.release()
       } catch {
         // already released
       }
-      lock.current = null
       void exitAppFullscreen()
     }
-  }, [])
+  }, [wakeLock])
 
   // --- the clock ------------------------------------------------------------
   // One 250ms wall-clock tick walks `elapsed` against the plan via phaseAt, firing

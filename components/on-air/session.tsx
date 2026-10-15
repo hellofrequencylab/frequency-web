@@ -28,6 +28,7 @@ import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
+import { createScreenWakeLock } from '@/lib/on-air/screen-wake-lock'
 import { chime, endChime, countBeep } from '@/lib/timer-audio'
 import {
   AMBIENT_TRACKS,
@@ -477,7 +478,7 @@ export function OnAirSession({
   const confirmationsRef = useRef<number[]>([])
   const [runOverPrompt, setRunOverPrompt] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
-  const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
+  const wakeLock = useMemo(() => createScreenWakeLock(), [])
   const finishing = useRef(false)
   // The exact args of the last completeSession attempt, so the error screen's "Try again" REPLAYS
   // them (the real seconds + started_at) instead of recomputing a fresh 0-anchored claim with a
@@ -547,13 +548,7 @@ export function OnAirSession({
   // --- takeover plumbing ----------------------------------------------------
 
   async function acquireQuiet() {
-    try {
-      wakeLock.current = await (navigator as Navigator & {
-        wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> }
-      }).wakeLock?.request('screen') ?? null
-    } catch {
-      // wake lock is progressive enhancement
-    }
+    await wakeLock.acquire()
     // True fullscreen on every device now, not just mobile (C.1-3): the live sit
     // owns the whole screen. Best-effort — iOS Safari no-ops and the dvh takeover
     // is the fallback. Gesture-gated, so this only lands when acquireQuiet runs
@@ -562,25 +557,20 @@ export function OnAirSession({
   }
 
   async function releaseQuiet() {
-    try {
-      await wakeLock.current?.release()
-    } catch {
-      /* released already */
-    }
-    wakeLock.current = null
+    await wakeLock.release()
     await exitAppFullscreen()
   }
 
   // Re-acquire the wake lock when the tab comes back (the OS drops it on blur).
   useEffect(() => {
     const onVisible = () => {
-      if (stage === 'live' && document.visibilityState === 'visible' && !wakeLock.current) {
-        void acquireQuiet()
+      if (stage === 'live' && document.visibilityState === 'visible') {
+        void wakeLock.acquire()
       }
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [stage])
+  }, [stage, wakeLock])
 
   // Fullscreen is requested from the click that OPENS this surface — the launcher's
   // open gesture (Mindless overlay / Capture) and, once a sit goes live, acquireQuiet
@@ -680,14 +670,13 @@ export function OnAirSession({
       }
       ctx.current = null
       try {
-        void lock.current?.release()
+        void lock.release()
       } catch {
         // already released
       }
-      lock.current = null
       void exitAppFullscreen()
     }
-  }, [])
+  }, [wakeLock])
 
   // --- ambient loop (lib/on-air-ambient) ------------------------------------
   // An optional soft background that loops seamlessly for the whole sit, sharing
