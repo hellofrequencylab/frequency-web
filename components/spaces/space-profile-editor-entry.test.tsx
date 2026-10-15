@@ -9,7 +9,8 @@ vi.mock('@/components/admin/open-admin-bar', () => ({ openAdminBar: open }))
 import { SpaceProfileEditorEntry } from './space-profile-editor-entry'
 let cleanup: (() => void) | undefined
 beforeEach(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }); vi.useFakeTimers(); open.mockClear(); route.path = '/spaces/willow'; route.query = 'edit=page' })
-afterEach(() => { cleanup?.(); cleanup = undefined; vi.useRealTimers() })
+function unmount() { cleanup?.(); cleanup = undefined }
+afterEach(() => { unmount(); vi.useRealTimers() })
 function mount() {
   const node = document.createElement('div'); document.body.append(node); const root = createRoot(node)
   act(() => root.render(<SpaceProfileEditorEntry slug="willow" spaceId="server-space-id" spaceType="business" />))
@@ -27,7 +28,7 @@ it.each(['/spaces/other', '/spaces/willow/about', '/spaces/willow/manage'])('doe
 })
 it('does not open for an unsupported editor query or after navigation unmounts the entry', () => {
   route.query = 'edit=other'; mount(); act(() => vi.runAllTimers()); expect(open).not.toHaveBeenCalled()
-  cleanup?.(); cleanup = undefined
-  route.query = 'edit=page'; mount(); cleanup?.(); cleanup = undefined
+  unmount()
+  route.query = 'edit=page'; mount(); unmount()
   act(() => vi.runAllTimers()); expect(open).not.toHaveBeenCalled()
 })
