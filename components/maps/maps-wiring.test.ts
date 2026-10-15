@@ -33,18 +33,7 @@ const FILES = ROOTS.flatMap(walk).map((p) => ({ path: p, src: readFileSync(p, 'u
 // The seam itself, plus the one loader that is allowed to name Google's script host.
 const SEAM = ['components/maps/', 'lib/maps/']
 
-// NOT YET MIGRATED, on purpose. These three are the data-driven canvases (GeoJSON sources +
-// data-driven circle paint + symbol layers), which the four-primitive contract does not yet
-// express. They still render MapLibre and still work. Deleting a row here is how the debt
-// gets paid: the file must move onto <MapCanvas> instead.
-const PENDING_MIGRATION = [
-  'components/circles/circle-map.tsx',
-  'components/discover/discover-map.tsx',
-  'app/(main)/admin/qr/scan-map.tsx',
-]
-
 const isSeam = (p: string) => SEAM.some((s) => p.replaceAll('\\', '/').includes(s))
-const isPending = (p: string) => PENDING_MIGRATION.some((s) => p.replaceAll('\\', '/').endsWith(s))
 
 describe('the map seam is the only door to a map engine', () => {
   it('is non-trivial (guards a vacuous pass)', () => {
@@ -58,7 +47,6 @@ describe('the map seam is the only door to a map engine', () => {
     const offenders = FILES.filter(
       (f) =>
         !isSeam(f.path) &&
-        !isPending(f.path) &&
         !f.path.endsWith('maps-wiring.test.ts') &&
         /from\s+['"]maplibre-gl['"]/.test(f.src),
     ).map((f) => f.path)
@@ -98,6 +86,9 @@ describe('the map seam is the only door to a map engine', () => {
 
 describe('each migrated surface composes the template rather than hand-rolling a map', () => {
   const MIGRATED = [
+    'components/circles/circle-map.tsx',
+    'components/discover/discover-map.tsx',
+    'app/(main)/admin/qr/scan-map.tsx',
     'components/events/event-venue-map.tsx',
     'components/events/events-map.tsx',
     'components/events/event-location-picker.tsx',
@@ -308,7 +299,7 @@ describe('every module that builds a MapLibre map installs the worker first', ()
   it('finds the map builders, so this never passes by scanning nothing', () => {
     // Non-triviality first (house archetype). If a rename empties this list, the suite must fail
     // loudly rather than report a clean bill of health over zero files.
-    expect(BUILDERS.length).toBeGreaterThanOrEqual(4)
+    expect(BUILDERS.length).toBe(1)
   })
 
   it.each(FILES.filter(buildsAMap).map((f) => f.path))(
@@ -345,23 +336,11 @@ describe('under Frequency every map wears the kit, and Google only loads when se
   const src = (p: string) => sourceWithoutComments(p)
 
   it('no Frequency surface renders a hand-rolled MapLibre map: they all compose the seam', () => {
-    const fq = FILES.filter((f) => f.path.replaceAll('\\', '/').startsWith('components/frequency/'))
-    expect(fq.length).toBeGreaterThan(50)
-    const offenders = fq
-      .filter((f) =>
-        PENDING_MIGRATION.some((p) => {
-          const mod = p.replace(/\.tsx$/, '').replace(/^components\//, '@/components/')
-          // A dynamic import or a value import mounts the engine; `import type` does not.
-          return f.src.includes(`import('${mod}')`) || new RegExp(`^import (?!type )[^\\n]*'${mod}'`, 'm').test(f.src)
-        }),
-      )
-      .map((f) => f.path)
-    expect(offenders).toEqual([])
     expect(src('components/frequency/members/circles/circles-map.tsx')).toContain('<MapCanvas')
   })
 
   it('every MapLibre builder takes the design basemap, so the fallback is never bare grey', () => {
-    for (const p of ['components/maps/maplibre-canvas.tsx', ...PENDING_MIGRATION.filter((p) => !p.includes('discover'))]) {
+    for (const p of ['components/maps/maplibre-canvas.tsx']) {
       expect(src(p), p).toMatch(/applyDesignBasemap\(map, container\)/)
     }
   })

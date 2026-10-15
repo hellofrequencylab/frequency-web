@@ -43,6 +43,10 @@ export type MapPin = {
   /** Optional link at the foot of the popup. */
   href?: string | null
   hrefLabel?: string | null
+  /** A pre-aggregated city/statistic count. It opens this pin, never a zoom cluster. */
+  count?: number
+  /** Keep a distinct layer, such as virtual starter circles, out of browse clusters. */
+  unclustered?: boolean
   /** Explicit colour override. Predates `kind` and still wins over it. */
   tone?: MapPinTone
   /** Which layer this pin belongs to: Event, Circle, Space, or the neutral `place` default.
@@ -83,6 +87,8 @@ export type MapArea = {
 
 /** How to frame multiple pins. Omit to leave the view at `center` / `zoom`. */
 export type MapFit = {
+  /** Frame this subset (for example viewer plus nearest circles) while keeping all pins. */
+  points?: { lat: number; lng: number }[]
   padding?: number
   maxZoom?: number
   /** With exactly one pin, ease to this zoom instead of fitting to a degenerate bounds.

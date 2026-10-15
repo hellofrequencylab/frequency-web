@@ -209,8 +209,11 @@ export default function MapLibreCanvas({
 
     const addPin = (pin: MapPin, isDraggablePin: boolean) => {
       const paint = resolvePinPaint(pin)
+      const counted = pin.count == null ? null : (designPins
+        ? buildFrequencyBadge(pin.count, false, pin.label ?? pin.title ?? null)
+        : buildClusterMarker(pin.count))
       const marker = new maplibregl.Marker(
-        designPins
+        counted ? { element: counted, draggable: isDraggablePin } : designPins
           ? { element: buildRoundPin(paint, FREQUENCY_PIN_RING), draggable: isDraggablePin }
           : { color: tokenColor(paint.token) ?? paint.fallback, draggable: isDraggablePin },
       )
@@ -307,7 +310,7 @@ export default function MapLibreCanvas({
       clearMarkers()
       if (!clustering) {
         // Same rule as Google (SCAN-918): under Frequency, co-located pins are one area badge.
-        if (designPins && !draggable) {
+        if (designPins && !draggable && !pins.some((pin) => pin.count != null)) {
           for (const group of clusterPoints(pins, map.getZoom(), { radiusPx: 0, coLocated: true })) {
             if (group.type === 'cluster' && group.area) {
               addCluster(group.lat, group.lng, group.count, group.plus, null, group.points)
@@ -320,7 +323,8 @@ export default function MapLibreCanvas({
         pins.forEach((pin, index) => addPin(pin, draggable && index === 0))
         return
       }
-      for (const group of clusterPoints(pins, map.getZoom(), clustering)) {
+      pins.filter((pin) => pin.unclustered || pin.count != null).forEach((pin) => addPin(pin, false))
+      for (const group of clusterPoints(pins.filter((pin) => !pin.unclustered && pin.count == null), map.getZoom(), clustering)) {
         if (group.type === 'cluster') {
           addCluster(
             group.lat,
@@ -378,16 +382,17 @@ export default function MapLibreCanvas({
       }
 
       // ── Framing ───────────────────────────────────────────────────────────────
-      if (fit && pins.length > 1) {
+      const framePoints = fit?.points ?? pins
+      if (fit && framePoints.length > 1) {
         const bounds = new maplibregl.LngLatBounds()
-        for (const p of pins) bounds.extend([p.lng, p.lat])
+        for (const p of framePoints) bounds.extend([p.lng, p.lat])
         map.fitBounds(bounds, {
           padding: fit.padding ?? 60,
           maxZoom: fit.maxZoom ?? 13,
           duration: 0,
         })
-      } else if (fit && pins.length === 1 && fit.singleZoom != null) {
-        map.easeTo({ center: [pins[0].lng, pins[0].lat], zoom: fit.singleZoom, duration: 0 })
+      } else if (fit && framePoints.length === 1 && fit.singleZoom != null) {
+        map.easeTo({ center: [framePoints[0].lng, framePoints[0].lat], zoom: fit.singleZoom, duration: 0 })
       }
       // Framing moves the zoom, so the grouping the markers were built at is now stale.
       if (clustering) {
