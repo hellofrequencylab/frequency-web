@@ -52,6 +52,7 @@ import { ensureSpaceMemberContact } from '@/lib/crm/lead-capture'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 import { stripe } from '@/lib/billing/stripe'
+import { membershipTierPriceError } from '@/lib/billing/membership-tier-price'
 import { resolveBillingInterval, type BillingInterval } from '@/lib/spaces/membership-pricing'
 import { billingLive } from '@/lib/pricing/settings'
 import {
@@ -496,6 +497,15 @@ export async function setMembershipTiers(
     const { spacePaymentsVerdict } = await import('@/lib/pricing/payments-gate')
     const payments = await spacePaymentsVerdict(spaceId, { plan: space.plan ?? null, also: 'space_memberships' })
     if (!payments.ok) return fail(payments.refusal.message)
+  }
+
+  // THE PRICE FLOOR (SCAN-854, LIVE-223). A paid tier under the floor is mostly card fee and only switches
+  // Crew on, so it is refused with the floor's own sentence. Free stays free; an absent price is free.
+  for (const t of tiers) {
+    const priceError =
+      membershipTierPriceError(t.priceCents ?? 0) ??
+      ((t.annualPriceCents ?? 0) > 0 ? membershipTierPriceError(t.annualPriceCents) : null)
+    if (priceError) return fail(priceError)
   }
 
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.

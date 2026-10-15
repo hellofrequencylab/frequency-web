@@ -1,7 +1,7 @@
 {
   "id": "SCAN-858",
   "title": "Opening a website booking link confirms the booking, so mail scanners confirm bookings nobody made, and a link works on another Space's domain",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -14,5 +14,6 @@
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['app/hosted/[host]/confirm-booking/page.tsx'].map(r).join('\\n').search(/await confirmGuestBookingAction\\(token\\)/)>-1===false)?0:1)\""
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-14"
 }
