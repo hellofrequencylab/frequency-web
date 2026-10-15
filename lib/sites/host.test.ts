@@ -11,6 +11,7 @@ import {
   siteSlugFromSubdomain,
   siteSubdomainHost,
   spotlightHostDomain,
+  subdomainSiteRedirect,
 } from './host'
 
 describe('normalizeHost', () => {
@@ -277,5 +278,37 @@ describe('the Collective Spotlight host (LIVE-855)', () => {
       kind: 'rewrite',
       pathname: '/hosted/spotlight.frequencylocal.com',
     })
+  })
+})
+
+describe('subdomainSiteRedirect (SCAN-896)', () => {
+  const sub = `danieltyack.${SITE_BASE_DOMAIN}`
+
+  it('sends a subdomain page to the same page and query on the live custom domain', () => {
+    expect(subdomainSiteRedirect(sub, '/', '', 'danieltyack.com')).toBe('https://danieltyack.com/')
+    expect(subdomainSiteRedirect(sub, '/book', '?utm_source=ig&x=1', 'DanielTyack.com')).toBe(
+      'https://danieltyack.com/book?utm_source=ig&x=1',
+    )
+    expect(subdomainSiteRedirect(`${sub}:443`, '/about', 'a=b', 'danieltyack.com')).toBe('https://danieltyack.com/about?a=b')
+  })
+
+  it('never redirects the custom domain itself, or any host that is not a slug subdomain', () => {
+    expect(subdomainSiteRedirect('danieltyack.com', '/', '', 'danieltyack.com')).toBeNull()
+    expect(subdomainSiteRedirect('www.danieltyack.com', '/book', '', 'danieltyack.com')).toBeNull()
+    expect(subdomainSiteRedirect(SITE_BASE_DOMAIN, '/', '', 'danieltyack.com')).toBeNull()
+    expect(subdomainSiteRedirect(`www.${SITE_BASE_DOMAIN}`, '/', '', 'danieltyack.com')).toBeNull()
+  })
+
+  it('serves the subdomain when the Space has no live custom domain', () => {
+    expect(subdomainSiteRedirect(sub, '/', '', null)).toBeNull()
+    expect(subdomainSiteRedirect(sub, '/book', '?a=1', '')).toBeNull()
+    expect(subdomainSiteRedirect(sub, '/', '', sub)).toBeNull()
+    expect(subdomainSiteRedirect(sub, '/', '', `other.${SITE_BASE_DOMAIN}`)).toBeNull()
+  })
+
+  it("keeps the owner's editor, API routes, crawler files and one-time links on the subdomain", () => {
+    for (const path of ['/admin', '/admin/', '/admin/editor', '/admin/enter', '/api/anything', '/robots.txt', '/sitemap.xml', '/llms.txt', '/spotlight-click', '/confirm-booking', '/opengraph-image']) {
+      expect(subdomainSiteRedirect(sub, path, '?token=t', 'danieltyack.com')).toBeNull()
+    }
   })
 })

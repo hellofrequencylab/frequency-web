@@ -761,3 +761,26 @@ export async function finalizePendingInduction(
   const target = destinationUrl && isSafeInAppPath(destinationUrl) ? destinationUrl : fallback
   return { ok: true, merged, target }
 }
+
+// authz-ok: intentionally PUBLIC + anonymous: /join runs signed-out; it returns only a yes/no and is
+// throttled per IP (join:email-check), the same exposure the sign-in page already has.
+/** SCAN-906: does this address already have an account? /join asks before it mails anything, so an
+ *  existing member is pointed at sign-in instead of being sent a link from the signup flow. Throttled
+ *  per IP like the sign-in send, since a yes/no on an address is exactly what a list-walker wants. */
+export async function joinEmailHasAccount(email: string): Promise<{ exists: boolean }> {
+  const address = String(email ?? '').trim().toLowerCase()
+  if (!address || address.length > 320 || !address.includes('@')) return { exists: false }
+  const { headers } = await import('next/headers')
+  const { rateLimitOk } = await import('@/lib/rate-limit')
+  const h = await headers()
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
+  if (!(await rateLimitOk('join:email-check', ip, 30, '10 m', { whenUnconfigured: 'allow' }))) return { exists: false }
+  const admin = createAdminClient()
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error || !data) return { exists: false }
+    if (data.users.some((u) => (u.email ?? '').toLowerCase() === address)) return { exists: true }
+    if (data.users.length < 1000) break
+  }
+  return { exists: false }
+}

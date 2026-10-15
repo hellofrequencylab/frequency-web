@@ -24,7 +24,7 @@ export type CircleDetail = {
    *  host; `host` above stays the person who runs it behind the scenes. */
   is_space_primary?: boolean
   /** The owning Space, for the Space Circle's host line. Null on a personal (root) Circle. */
-  space?: { slug: string; name: string; brand_name: string | null; type: string } | null
+  space?: { slug: string; name: string; brand_name: string | null; type: string; cover_image_url?: string | null } | null
   /** `circles.space_id` (ADR-857). Already selected by `loadCircleShell`; typed here because the
    *  Space Circle's event arm reads it through `spaceCircleEventScope` (ADR-1393). Root on a
    *  personal Circle, which is exactly why that resolver refuses a root Space. */

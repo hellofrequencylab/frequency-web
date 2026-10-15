@@ -1,6 +1,8 @@
+import { permanentRedirect } from 'next/navigation'
 import { getSpaceByDomain } from '@/lib/spaces/store'
-import { normalizeHost, siteSlugFromSubdomain, spotlightHostDomain } from '@/lib/sites/host'
+import { normalizeHost, siteSlugFromSubdomain, spotlightHostDomain, subdomainSiteRedirect } from '@/lib/sites/host'
 import { getSiteSpace } from '@/lib/sites/site-cache'
+import { liveSiteDomain } from '@/lib/sites/site-domain'
 import type { Space } from '@/lib/spaces/types'
 
 // THE HOSTED SITE RESOLVE (PROG-E10 phase 2). proxy.ts rewrites a site host to /hosted/<host>[/<page>]
@@ -23,4 +25,18 @@ export async function resolveHostedSpace(hostParam: string): Promise<Space | nul
   if (slug) return getSiteSpace(slug)
   // `spotlight.<domain>` (LIVE-855) is the Space that holds <domain>, behind the same custom_domain gate.
   return getSpaceByDomain(spotlightHostDomain(host) ?? host)
+}
+
+/** ONE SITE, ONE ADDRESS (SCAN-896). On a Space's free subdomain whose website is live on its own
+ *  domain, a page 308s to the same page there (lib/sites/host.ts subdomainSiteRedirect decides). Called
+ *  from the site's page routes, where the host is a route param, so the pages stay ISR: the domain check
+ *  runs once per render, beside the same boundSiteDomain read siteMetadata already makes, and the
+ *  redirect is cached with the page. The `site:<slug>` tag the owner's domain change expires re-renders
+ *  it. The query string is not visible to a static page, so it is not carried. Not in the proxy: the
+ *  proxy has no cached host-to-Space read and runs on every request. */
+export async function redirectSubdomainToLiveDomain(hostParam: string, space: Space, pathname: string): Promise<void> {
+  const host = normalizeHost(decodeURIComponent(hostParam))
+  if (!siteSlugFromSubdomain(host)) return
+  const target = subdomainSiteRedirect(host, pathname, '', await liveSiteDomain(space))
+  if (target) permanentRedirect(target)
 }

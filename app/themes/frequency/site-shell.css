@@ -239,3 +239,9 @@
     animation: none;
   }
 }
+
+/* THE FIRST PAINT IS STILL (SCAN-895). kit-site.css fades every side-specific line in (sideIn) whenever the side
+   is set, which included the first paint, and the stored side used to arrive after hydration, so the headline
+   was the last thing to appear. The fade now plays only after the visitor switches sides (site-root.tsx sets
+   data-side-anim on a real switch). */
+[data-design="frequency"] [data-kit="site"][data-side]:not([data-side-anim]) :is(.p-only, .e-only){animation:none}

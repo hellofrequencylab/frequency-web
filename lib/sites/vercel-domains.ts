@@ -38,6 +38,9 @@ export interface DomainStatus {
   secure: boolean
   /** What the owner should set at their registrar. */
   records: DnsRecord[]
+  /** True when this environment has no hosting credentials (VERCEL_* unset, e.g. local development), so the
+   *  status was never checked: the flags above are unknown, not false (SCAN-893). */
+  unchecked?: boolean
   /** A plain-English problem to show, when something went wrong talking to Vercel. */
   problem?: string
   /** Who runs the domain's DNS, read from its nameservers, so the steps can name it. */
@@ -199,7 +202,8 @@ async function readStatus(domain: string): Promise<DomainStatus> {
       dnsReady: false,
       secure: false,
       records: recordsFor(domain),
-      problem: 'Hosting is not connected yet, so Frequency cannot add your domain on its own.',
+      unchecked: true,
+      problem: 'This environment cannot reach hosting, so the domain status was not checked here. The live site checks it normally.',
     }
   }
   try {

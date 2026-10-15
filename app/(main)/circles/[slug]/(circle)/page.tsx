@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getMyProfileId } from '@/lib/auth'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
@@ -136,6 +136,14 @@ export default async function CircleHomePage({
   const shell = await loadCircleShell(slug)
   if (!shell) notFound()
   const { circle, members } = shell
+
+  // A Space's DEFAULT Circle is that Space's conversation (owner, 2026-10-14, SCAN-901): it is listed like any
+  // Circle in the directory, but its home is the Space's community page, where the conversation leads
+  // (app/(main)/spaces/[slug]/(profile)/circles, #discussion). The Circle's other tabs (members, events) and its
+  // settings stay where they are; only the home tab forwards. The platform root lends no Space page.
+  if (circle.is_space_primary && circle.space && circle.space.type !== 'root') {
+    redirect(`/spaces/${circle.space.slug}/circles#discussion`)
+  }
 
   // Member ids — used below for the circle's engagement signals (only read for a viewer
   // who can see the health panel).

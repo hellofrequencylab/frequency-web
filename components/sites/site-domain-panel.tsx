@@ -191,7 +191,9 @@ export function SiteDomainPanel({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-text">{status.domain}</span>
-            {live ? (
+            {status.unchecked ? (
+              <Badge tone="neutral">Status not checked here</Badge>
+            ) : live ? (
               <Badge tone="success">Live</Badge>
             ) : securing ? (
               <Badge tone="warning">Securing your site</Badge>
@@ -200,12 +202,14 @@ export function SiteDomainPanel({
             )}
           </div>
 
+          {!status.unchecked && (
           <ul className="space-y-1 text-body-sm">
             <StatusLine done={status.attached} label="Connected to Frequency hosting" />
             <StatusLine done={status.verified} label="Ownership confirmed" />
             <StatusLine done={status.dnsReady} label="DNS points to your website" />
             <StatusLine done={status.secure} label="Secure connection (https) ready" />
           </ul>
+          )}
 
           {status.problem && <p className="text-body-sm text-warning">{status.problem}</p>}
 

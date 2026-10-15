@@ -101,9 +101,14 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
   // Commons keeps the aura to the hero, low (site-themes: "Hero areas only, low opacity").
   const quiet = page.quiet ?? (surface === 'commons' ? 2 : undefined)
 
+  // The side switch's fade (kit-site.css sideIn) is for a switch the visitor makes, never the first paint.
+  const [animateSide, setAnimateSide] = useState(false)
   const setSide = useCallback(
     (next: Side) => {
-      if (!page.locked) writeChosenSide(next)
+      if (!page.locked) {
+        setAnimateSide(true)
+        writeChosenSide(next)
+      }
     },
     [page.locked],
   )
@@ -141,6 +146,10 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
         data-surface={surface}
         data-kit="site"
         data-side={side}
+        data-side-anim={animateSide ? '' : undefined}
+        // The pre-paint script below may set data-side from the visitor's stored choice before React hydrates
+        // (SCAN-895), so this one element is exempt from the attribute diff.
+        suppressHydrationWarning
         data-lock={page.locked ? side : undefined}
         data-mood={page.mood}
         data-energy-page={page.energy}
@@ -148,6 +157,17 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
         className="fq-site"
         style={moodStyle(page) as React.CSSProperties}
       >
+        {!page.locked && (
+          // THE SIDE BEFORE THE FIRST PAINT (SCAN-895). The server renders the page's default side, and the stored
+          // choice (URL hash, else localStorage) used to arrive only after hydration, so a returning Host visitor
+          // watched the People headline vanish and the Host one fade in last. This sets the stored side on the
+          // kit root while the page is still parsing, so the right copy is the first thing painted.
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{var h=location.hash,s=h==='#people'?'p':(h==='#spaces'||h==='#experiences')?'e':localStorage.getItem(${JSON.stringify(SIDE_STORAGE_KEY)});if(s==='p'||s==='e'){var r=document.currentScript.parentElement;r.setAttribute('data-side',s);}}catch(e){}})()`,
+            }}
+          />
+        )}
         <NavProgress />
         {children}
       </div>

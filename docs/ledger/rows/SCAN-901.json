@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-901",
+  "title": "A Space's default Circle is that Space's conversation: listed like any Circle in the directory, its home opens the Space's community page where the conversation leads",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/(main)/circles/[slug]/(circle)/page.tsx",
+    "ref": "Owner 2026-10-14: make sure the default circle is really just the conversation forum for that space, deeply integrated in the space but shows up like a circle in the directory."
+  },
+  "detail": "A Space's primary Circle (is_space_primary) had its own Circle home page beside the Space's community page, which already leads with that Circle's conversation (spaces/[slug]/(profile)/circles, #discussion, LIVE-523). The Circle home tab now forwards to /spaces/<slug>/circles#discussion, so a directory card or a shared Circle link lands in the Space's conversation; the Circle stays listed in the directory, and its other tabs and settings are unchanged. The platform root's Circles are not forwarded.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/circles/[slug]/(circle)/page.tsx','utf8');if(!s.includes('circle.is_space_primary && circle.space')||!s.includes('/circles#discussion')){console.error('SCAN-901: a Space default Circle still has its own home instead of the Space conversation');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

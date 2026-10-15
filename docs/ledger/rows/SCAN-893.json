@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-893",
+  "title": "A Space's domain panel says the status was not checked in an environment without hosting credentials, instead of a false Waiting on DNS for a domain that is live",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "lib/sites/vercel-domains.ts",
+    "ref": "Owner 2026-10-14 (localhost Your domain panel): danieltyack.com is working fine, what's up with this Waiting on DNS / Hosting is not connected yet."
+  },
+  "detail": "Without VERCEL_API_TOKEN, VERCEL_PROJECT_ID and VERCEL_TEAM_ID (local development has none), readStatus returned every flag false with 'Hosting is not connected yet', so the panel showed Waiting on DNS and four unticked steps for a domain that is live. The status now carries unchecked: true in that case; the panel shows a neutral 'Status not checked here' badge, hides the four step lines and says the live site checks it normally. Production, which has the credentials, is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const v=fs.readFileSync('lib/sites/vercel-domains.ts','utf8'),p=fs.readFileSync('components/sites/site-domain-panel.tsx','utf8');if(!v.includes('unchecked: true')||!p.includes('status.unchecked')){console.error('SCAN-893: the domain panel still shows a false Waiting on DNS without hosting credentials');process.exit(1)}\""
+  },
+  "wave": "W7"
+}
