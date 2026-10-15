@@ -770,3 +770,10 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] .fa-quick a:hover { background: var(--fq-glass-panel); transform: translateY(-2px); box-shadow: var(--fq-glass-panel-shadow), 0 14px 30px -18px color-mix(in oklab, var(--fq-ink) 45%, transparent) }
 [data-design="frequency"] [data-kit="members"] .fa-quick a:hover svg { background-position: 100% 0 }
 @media (prefers-reduced-motion: reduce) { [data-design="frequency"] [data-kit="members"] .fa-quick a { transition: none } [data-design="frequency"] [data-kit="members"] .fa-quick a:hover { transform: none } }
+
+/* The rail's DAWN-drawn panels (Today's goals and the rest in .fqm-legacy) carry their own inner gutters
+   (px-* / mx-* utilities), so their rows and progress bars sat inset while the Frequency panels ran the full
+   rail width, and the page read off centre (owner, 2026-10-14). Inside the rail they span the full width too. */
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] .fqm-legacy section:not(section section) :is([class*="px-"], [class*="mx-"], [class*="pl-"], [class*="pr-"]){padding-left:0;padding-right:0;margin-left:0;margin-right:0}
+}

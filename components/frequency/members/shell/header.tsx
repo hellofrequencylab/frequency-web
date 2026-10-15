@@ -311,10 +311,11 @@ export function FqHeader({
             aria-haspopup="dialog"
             aria-expanded={meOn}
             aria-controls="fqm-me"
-            style={avatarBg(profile.avatar_url)}
             onClick={() => toggle('me')}
           >
-            {profile.avatar_url ? null : getInitials(profile.display_name)}
+            {/* Initials, never the photo (owner, 2026-10-14): the photo already sits in the rail's You card,
+                so the header showed the same face twice. */}
+            {getInitials(profile.display_name)}
           </button>
         </div>
       </header>
