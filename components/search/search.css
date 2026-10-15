@@ -1,0 +1,24 @@
+/* Search composition follows Frequency's Commons Search reference: glass, pill field,
+   dark active chips, display headings and compact entity rows. Current theme owns colour. */
+.fq-search-panel { background: var(--fq-glass-panel, var(--color-surface)); box-shadow: var(--fq-glass-panel-shadow, var(--design-shadow-lg)); backdrop-filter: blur(24px) saturate(1.2); border-radius: var(--radius-card); }
+.fq-search-intro { padding: 24px 24px 16px; background: var(--fq-wash, var(--color-surface-elevated)); }
+.fq-search-eyebrow { font-family: var(--design-font-display); font-size: var(--text-2xs); letter-spacing: .14em; text-transform: uppercase; color: var(--color-text-muted); }
+.fq-search-intro h2 { font-family: var(--design-font-display); font-size: var(--fq-text-h3); line-height: 1.3; letter-spacing: -.035em; margin: 12px 0 8px; color: var(--fq-text-strong); }
+.fq-search-intro em { font-family: var(--fq-font-serif); font-weight: normal; }
+.fq-search-intro p, .fq-search-start p { font-size: var(--text-body-sm); color: var(--color-text-muted); }
+.fq-search-input { margin: 0 20px; border-radius: var(--radius-pill, 999px); background: var(--color-surface, var(--color-surface)); box-shadow: var(--fq-glass-panel-shadow); min-height: 64px; border: 1px solid var(--fq-border-hair, var(--color-border)); }
+.fq-search-categories { display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0; padding: 16px 20px 8px; }
+.fq-search-categories button { min-height: 44px; padding: 0 16px; border-radius: var(--radius-pill, 999px); background: var(--color-surface-elevated); color: var(--color-text); font-size: var(--text-body-sm); white-space: nowrap; }
+.fq-search-categories button[aria-pressed=true] { background: var(--fq-text-strong); color: var(--color-surface, var(--color-surface)); }
+.fq-search-status { padding: 8px 24px 12px; color: var(--color-text-muted); font-size: var(--text-meta); }
+.fq-search-start { padding: 20px 24px 28px; }
+.fq-search-start > svg { color: var(--color-primary-strong); margin-bottom: 12px; }
+.fq-search-start h3 { font-family: var(--design-font-display); font-size: var(--text-card-title); margin-bottom: 8px; }
+.fq-search-start > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.fq-search-start a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--fq-border-hair, var(--color-border)); border-radius: var(--radius-pill, 999px); padding: 0 16px; font-size: var(--text-body-sm); }
+.fq-search-start a svg { width: 16px; height: 16px; }
+.fq-search-result { min-height: 64px; margin: 0 8px; border-radius: var(--radius-control); }
+.fq-search :focus-visible { outline: 2px solid var(--color-primary-strong); outline-offset: 2px; }
+@media (max-width: 640px) { .fq-search-panel { border-radius: 0; height: 100dvh; } .fq-search-intro { padding-top: max(20px, env(safe-area-inset-top)); } .fq-search-intro h2 { font-size: var(--fq-text-h4); } }
+
+.fq-search-retry { min-height: 44px; margin-top: 16px; padding: 0 20px; border-radius: var(--radius-pill); background: var(--color-primary-bg); color: var(--color-primary-strong); font-weight: 600; }

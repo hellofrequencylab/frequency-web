@@ -56,7 +56,15 @@ const BARE_EVENT_LIMIT = /\.order\(\s*['"]starts_at['"][\s\S]{0,120}?\.limit\(\s
 
 const FOLD_CALLS = ['collapseSeriesRows(', 'collapseSeries(', 'collapseSeriesAroundFloor(']
 
-const read = (path: string) => readFileSync(path, 'utf8')
+const read = (path: string): string => {
+  const source = readFileSync(path, 'utf8')
+  if (path !== 'app/api/search/route.ts') return source
+  // The overlay delegates its event window to the same provider as full Search. Prove that
+  // handoff before auditing the real query/fold, so a disconnected provider cannot satisfy it.
+  expect(source).toMatch(/import[\s\S]*searchEvents[\s\S]*from '@\/app\/\(main\)\/search\/search-data'/)
+  expect(source).toContain('searchEvents(q, 6)')
+  return source + '\n' + readFileSync('app/(main)/search/search-data.ts', 'utf8')
+}
 /** Comments name the traps these files avoid ("never `new Date()`"), so prose must never satisfy —
  *  or fail — an assertion about code. */
 const stripComments = (src: string) =>

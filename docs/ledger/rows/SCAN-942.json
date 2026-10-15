@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-942",
+  "title": "Universal search omits entity types and reports authentication or provider failures as no matches",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/api/search/route.ts",
+    "ref": "Owner global search failure screenshot and redesign request 2026-10-15"
+  },
+  "detail": "Global palette searched only people/posts/events/leads and silently converted non-200 or DB failures to no results. Share bounded visibility-gated people/events/posts/circles/spaces/practice reads with the full Frequency result page, default that page to All, surface HTTP/provider failures separately, AND normalized words over OR fields, abort and fence stale responses. Workshops remain canonical learning events. Read-only production SQL verified Thrive on Thursday published/public/noncancelled, Morning Movement public and Daniel Tyack directory visible; no production writes or schema changes. Exact localhost failure status and rebuilt browser positive must still be measured. Existing localhost GET /api/search?q=thrive%20on%20thursday measured429 rate_limited by integration owner. rate-limit.ts chooses VERCEL_ENV or NODE_ENV; a local next start without VERCEL_ENV and Redis is classified production and fails closed. Integration owner must set the local runtime environment explicitly to development/preview, without weakening production limits, then verify authenticated200. This is the measured local cause;401 was a separate untested candidate.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "97 focused tests across7 suites pass: provider execution fixtures for published/private/cancelled/removed events, network/independent/root Spaces, hidden/ghost profiles, public/private/demo/merged practices and listed/unlisted circles; React overlay checks401/error versus empty, real entity links, stale clear and partial provider failures; existing series/sanitizer/privacy regression coverage. Authz and token guards pass. Runtime API positive and permission checks pending integration owner."
+  },
+  "wave": "W7"
+}

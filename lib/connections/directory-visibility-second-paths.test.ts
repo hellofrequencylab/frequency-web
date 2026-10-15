@@ -15,11 +15,15 @@ const IMPORT = "from '@/lib/connections/directory-visibility'"
 
 describe('every member listing selects the privacy columns and filters through the predicate', () => {
   it('⌘K people search (app/api/search/route.ts) gates before the six-row trim', () => {
-    const src = read('app/api/search/route.ts')
+    const route = read('app/api/search/route.ts')
+    expect(route).toContain('searchPeople(q, 6)')
+    const src = read('app/(main)/search/search-data.ts')
     expect(src).toContain(IMPORT)
     expect(src).toContain(INTERP + '`)')
-    expect(src).toContain('.filter(isListableInDirectory).slice(0, 6)')
-    expect(src).not.toMatch(/select\('id, display_name, handle, avatar_url, community_role, is_demo'\)/)
+    expect(src).toContain('.filter(isListableInDirectory)')
+    expect(src).toContain(".eq('directory_visible', true)")
+    expect(src).toContain(".eq('ghost_mode', false)")
+
   })
 
   it('the four sidebar rails (components/sidebar/rail-panels.tsx) all gate', () => {

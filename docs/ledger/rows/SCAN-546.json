@@ -4,10 +4,10 @@
   "patch": {
     "verify": {
       "kind": "cmd",
-      "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const files=['app/(main)/network/page.tsx','app/(main)/search/search-data.ts','app/api/search/route.ts','components/sidebar/rail-panels.tsx'];const all=files.every(f=>r(f).includes('isListableInDirectory'));const m=r('supabase/migrations/20270344000100_members_near_honours_target_radius_and_connections.sql');process.exit(all&&m.includes('c.d <= c.discovery_radius_m')&&/discoverable_by = 'connections'/.test(m)?0:1)\""
+      "cmd": "node scripts/cohesion-core-probes.mjs SCAN-546"
     }
   },
   "append": {
-    "detail": "── PROBE RE-POINTED 2026-10-14 (overhaul, PR #3434). The /search people query moved verbatim out of app/(main)/search/page.tsx into app/(main)/search/search-data.ts (searchPeople, shared by the DAWN page and the Frequency search body), and isListableInDirectory moved with it. The probe now reads the module the query lives in; page.tsx imports searchPeople from it."
+    "detail": "\u2500\u2500 PROBE RE-POINTED 2026-10-14 (overhaul, PR #3434). The /search people query moved verbatim out of app/(main)/search/page.tsx into app/(main)/search/search-data.ts (searchPeople, shared by the DAWN page and the Frequency search body), and isListableInDirectory moved with it. The probe now reads the module the query lives in; page.tsx imports searchPeople from it. \u2500\u2500 2026-10-15 shared search: the overlay API now delegates to canonical searchPeople. The fast probe follows that import and call, executes the real provider against competing hidden/Ghost/inactive/public rows before a one-result window, verifies no hidden truncation leak, and retains the other listing seams plus target-radius/connections migration assertions. Full provider privacy regressions remain in CI."
   }
 }

@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass } from 'lucide-react'
+import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass, Building2, CircleDot, Flower2 } from 'lucide-react'
 import { getInitials, formatEventDate, eventDateBadge } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
 import { railIconFor } from '@/components/layout/nav-icons'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Input } from '@/components/ui/field'
+import './search.css'
 import { capsLabel } from '@/components/ui/caps-label'
 
 // Live, full-screen search overlay. Opens from the header search affordance (and
@@ -25,19 +26,27 @@ type Post = {
   id: string; body: string; created_at: string; is_demo: boolean
   author: { display_name: string; handle: string; avatar_url: string | null } | null
 }
-type EventHit = { id: string; title: string; slug: string; starts_at: string; location: string | null; is_cancelled: boolean; is_demo: boolean }
+type EventHit = { id: string; title: string; slug: string; category?: string; starts_at: string; location: string | null; is_cancelled: boolean; is_demo: boolean }
 // A non-member person the viewer is entitled to find (someone they captured).
 type Lead = { id: string; displayName: string; email: string | null; city: string | null; ownerName: string | null; href: string | null }
 // The live-search results from /api/search. The navigable-destinations group ("Go to")
 // is NOT fetched — the palette projects it from the registry client-side (see below).
-type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[] }
+type Entity = { id: string; name: string; slug: string; image_url?: string | null; brand_name?: string | null; brand_logo_url?: string | null; tagline?: string | null }
+type Practice = { id: string; title: string; slug: string | null; summary: string | null; duration_min: number | null }
+type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[]; circles: Entity[]; spaces: Entity[]; practices: Practice[]; unavailable?: string[] }
+const CATEGORIES = ['all', 'events', 'people', 'spaces', 'circles', 'practices', 'posts'] as const
+type Category = (typeof CATEGORIES)[number]
 
-const EMPTY: Results = { people: [], posts: [], events: [], leads: [] }
+const EMPTY: Results = { people: [], posts: [], events: [], leads: [], circles: [], spaces: [], practices: [] }
 
 export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer: NavViewer }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState<Results>(EMPTY)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [category, setCategory] = useState<Category>('all')
+  const requestRef = useRef<AbortController | null>(null)
+  const versionRef = useRef(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -70,24 +79,34 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
     }
   }, [onClose])
 
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    requestRef.current?.abort()
+  }, [])
+
   const runSearch = useCallback((query: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
+    requestRef.current?.abort()
+    const version = ++versionRef.current
     const trimmed = query.trim()
-    if (trimmed.length < 2) {
-      setResults(EMPTY)
-      setLoading(false)
-      return
-    }
+    setError(null)
+    setResults(EMPTY)
+    if (trimmed.length < 2) { setLoading(false); return }
     setLoading(true)
     debounceRef.current = setTimeout(async () => {
+      const controller = new AbortController()
+      requestRef.current = controller
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
-        const json = (await res.json()) as Results
-        setResults({ people: json.people ?? [], posts: json.posts ?? [], events: json.events ?? [], leads: json.leads ?? [] })
-      } catch {
-        setResults(EMPTY)
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, { signal: controller.signal })
+        const json = await res.json()
+        if (version !== versionRef.current) return
+        if (!res.ok) throw new Error(res.status === 401 ? 'Your session has ended. Sign in again to search.' : res.status === 429 ? 'Please wait a moment, then try again.' : 'Search is temporarily unavailable. Please try again.')
+        setResults({ ...EMPTY, ...json })
+      } catch (reason) {
+        if (version !== versionRef.current || controller.signal.aborted) return
+        setError(reason instanceof Error ? reason.message : 'Search is temporarily unavailable. Please try again.')
       } finally {
-        setLoading(false)
+        if (version === versionRef.current) setLoading(false)
       }
     }, 200)
   }, [])
@@ -112,10 +131,11 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
     [viewer, trimmed, hasQuery],
   )
 
-  const total = pages.length + results.people.length + results.posts.length + results.events.length + results.leads.length
+  const visible = (kind: Category) => category === 'all' || category === kind
+  const total = (category === 'all' ? pages.length + results.leads.length : 0) + CATEGORIES.filter((kind) => kind !== 'all' && visible(kind)).reduce((n, kind) => n + results[kind as Exclude<Category, 'all'>].length, 0)
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col sm:items-center sm:justify-start sm:p-6">
+    <div className="fq-search fixed inset-0 z-[60] flex flex-col sm:items-center sm:justify-start sm:p-6">
       {/* Backdrop */}
       <div onClick={onClose} className="absolute inset-0 bg-ink/40 backdrop-blur-sm" aria-hidden />
 
@@ -128,44 +148,59 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
         aria-modal="true"
         aria-label="Search"
         tabIndex={-1}
-        className="relative flex h-full w-full flex-col overflow-hidden bg-surface lift-3 outline-none sm:h-auto sm:max-h-[80vh] sm:w-full sm:max-w-xl sm:rounded-card sm:border sm:border-border"
+        onKeyDown={(event) => {
+          if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+          const links = [...(panelRef.current?.querySelectorAll<HTMLAnchorElement>('.fq-search-result') ?? [])]
+          if (!links.length) return
+          event.preventDefault()
+          const index = links.indexOf(document.activeElement as HTMLAnchorElement)
+          links[(index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length]?.focus()
+        }}
+        className="fq-search-panel relative flex h-full w-full flex-col overflow-hidden bg-surface lift-3 outline-none sm:h-auto sm:max-h-[80vh] sm:w-full sm:max-w-2xl sm:rounded-card sm:border sm:border-border"
       >
+        <div className="fq-search-intro"><span className="fq-search-eyebrow">Explore Frequency</span><h2>Find your <em>next connection.</em></h2><p>People, places and things worth showing up for.</p></div>
         {/* Search bar */}
-        <div
-          className="flex shrink-0 items-center gap-2 border-b border-border px-3"
+        <form action="/search" method="GET" role="search"
+          className="fq-search-input flex shrink-0 items-center gap-2 px-3"
           style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
         >
           <Search className="h-5 w-5 shrink-0 text-subtle" />
           <Input
             variant="seamless"
             ref={inputRef}
-            aria-label="Search people, posts and events"
+            aria-label="Search people, Spaces, events, Circles and practices"
+            name="q"
             value={q}
             onChange={handleChange}
-            placeholder="Search people, posts, events…"
+            placeholder="Search Frequency…"
             autoComplete="off"
             className="flex-1 py-3.5 text-body text-text"
           />
+          {category !== 'all' && <input type="hidden" name="tab" value={category} />}
           {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-subtle" />}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close search"
-            className="shrink-0 rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
+            className="shrink-0 rounded-control min-h-11 min-w-11 inline-flex items-center justify-center text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
-        </div>
+        </form>
 
+        <div className="fq-search-categories" aria-label="Search categories">{CATEGORIES.map((kind) => <button type="button" key={kind} aria-pressed={category === kind} onClick={() => setCategory(kind)}>{kind === 'all' ? 'All' : kind.charAt(0).toUpperCase() + kind.slice(1)}</button>)}</div>
+        <div role="status" aria-live="polite" className="fq-search-status">{loading ? 'Searching Frequency…' : error ? error : results.unavailable?.length ? `Some results are unavailable (${results.unavailable.join(', ')}). Try again.` : hasQuery ? `${total} results shown${category === 'all' ? '' : ` in ${category}`}` : 'One search across your community'}</div>
         {/* Results */}
         <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
           {!hasQuery ? (
-            <p className="px-4 py-12 text-center text-body-sm text-subtle">Type at least 2 characters to search.</p>
-          ) : !loading && total === 0 ? (
-            <p className="px-4 py-12 text-center text-body-sm text-subtle">No results for “{trimmed}”.</p>
+            <div className="fq-search-start"><Compass aria-hidden /><h3>A good place to start.</h3><p>Search for a name, an event or a practice. Workshops appear with events.</p><div>{[['Events', '/events'], ['Spaces', '/spaces'], ['Practices', '/practices']].map(([label, href]) => <Link href={href} onClick={onClose} key={href}>{label}<ArrowRight aria-hidden /></Link>)}</div></div>
+          ) : error ? (
+            <div className="fq-search-start"><h3>Let’s try that again.</h3><p>{error}</p><button type="button" className="fq-search-retry" onClick={() => runSearch(q)}>Search again</button></div>
+          ) : !loading && !error && !results.unavailable?.length && total === 0 ? (
+            <p className="px-4 py-12 text-center text-body-sm text-subtle">No matches for “{trimmed}”. Try a shorter name or another category.</p>
           ) : (
             <div className="py-2">
-              <ResultGroup label="Go to" icon={Compass} count={pages.length}>
+              <ResultGroup hidden={category !== 'all'} label="Go to" icon={Compass} count={pages.length}>
                 {pages.map((pg) => {
                   const Icon = railIconFor(pg.icon)
                   return (
@@ -197,7 +232,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
                 })}
               </ResultGroup>
 
-              <ResultGroup label="People" icon={Users} count={results.people.length}>
+              <ResultGroup hidden={!visible('people')} label="People" icon={Users} count={results.people.length}>
                 {results.people.map((p) => (
                   <ResultRow key={p.id} href={`/people/${p.handle}`} onNavigate={onClose}
                     avatar={p.avatar_url} fallback={p.display_name}
@@ -205,7 +240,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
                 ))}
               </ResultGroup>
 
-              <ResultGroup label="People you’ve met" icon={ScanLine} count={results.leads.length}>
+              <ResultGroup hidden={category !== 'all'} label="People you’ve met" icon={ScanLine} count={results.leads.length}>
                 {results.leads.map((l) => (
                   <ResultRow key={l.id} href={l.href ?? '#'} onNavigate={onClose}
                     fallback={l.displayName} title={l.displayName}
@@ -213,16 +248,26 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
                 ))}
               </ResultGroup>
 
-              <ResultGroup label="Events" icon={CalendarDays} count={results.events.length}>
+              <ResultGroup hidden={!visible('events')} label="Events" icon={CalendarDays} count={results.events.length}>
                 {results.events.map((e) => (
                   <ResultRow key={e.id} href={`/events/${e.slug}`} onNavigate={onClose}
                     dateIso={e.starts_at} title={e.title} dimmed={e.is_demo}
                     subtitle={[formatEventDate(e.starts_at), e.location].filter(Boolean).join(' · ')}
-                    badge={e.is_cancelled ? 'Cancelled' : undefined} />
+                    badge={e.is_cancelled ? 'Cancelled' : e.category === 'learning' ? 'Learning' : undefined} />
                 ))}
               </ResultGroup>
 
-              <ResultGroup label="Posts" icon={FileText} count={results.posts.length}>
+              <ResultGroup hidden={!visible('spaces')} label="Spaces" icon={Building2} count={results.spaces.length}>
+                {results.spaces.map((space) => <ResultRow key={space.id} href={`/spaces/${space.slug}`} onNavigate={onClose} title={space.brand_name ?? space.name} subtitle={space.tagline ?? 'Space'} avatar={space.brand_logo_url} fallback={space.name} />)}
+              </ResultGroup>
+              <ResultGroup hidden={!visible('circles')} label="Circles" icon={CircleDot} count={results.circles.length}>
+                {results.circles.map((circle) => <ResultRow key={circle.id} href={`/circles/${circle.slug}`} onNavigate={onClose} title={circle.name} subtitle="Circle" avatar={circle.image_url} fallback={circle.name} />)}
+              </ResultGroup>
+              <ResultGroup hidden={!visible('practices')} label="Practices" icon={Flower2} count={results.practices.length}>
+                {results.practices.map((practice) => <ResultRow key={practice.id} href={`/practices/${practice.slug ?? practice.id}`} onNavigate={onClose} title={practice.title} subtitle={[practice.duration_min ? `${practice.duration_min} min` : null, practice.summary].filter(Boolean).join(' · ')} fallback={practice.title} />)}
+              </ResultGroup>
+
+              <ResultGroup hidden={!visible('posts')} label="Posts" icon={FileText} count={results.posts.length}>
                 {results.posts.map((post) => (
                   <ResultRow key={post.id} href={post.author ? `/people/${post.author.handle}` : '/feed'} onNavigate={onClose}
                     avatar={post.author?.avatar_url ?? null} fallback={post.author?.display_name ?? '?'}
@@ -236,7 +281,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
         {/* See all */}
         {hasQuery && (
           <Link
-            href={`/search?q=${encodeURIComponent(trimmed)}`}
+            href={`/search?q=${encodeURIComponent(trimmed)}${category === 'all' ? '' : `&tab=${category}`}`}
             onClick={onClose}
             className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border py-3 text-body-sm font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
           >
@@ -249,8 +294,8 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   )
 }
 
-function ResultGroup({ label, icon: Icon, count, children }: { label: string; icon: typeof Users; count: number; children: React.ReactNode }) {
-  if (count === 0) return null
+function ResultGroup({ hidden = false, label, icon: Icon, count, children }: { hidden?: boolean; label: string; icon: typeof Users; count: number; children: React.ReactNode }) {
+  if (hidden || count === 0) return null
   return (
     <div className="mb-1">
       <p className={capsLabel('flex items-center gap-1.5 px-4 pb-1 pt-3 text-2xs font-semibold text-muted', 'wider')}>
@@ -280,7 +325,7 @@ function ResultRow({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-elevated ${dimmed ? 'opacity-70' : ''}`}
+      className={`fq-search-result flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-elevated ${dimmed ? 'opacity-70' : ''}`}
     >
       {dateIso ? (
         <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-bg text-primary-strong">

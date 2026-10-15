@@ -179,7 +179,7 @@ describe('/search?tab=people consults the predicate', () => {
   })
 
   it('filters BEFORE the +1 truncation probe, so a hidden row never advertises "more"', () => {
-    expect(PAGE).toMatch(/const rows = \(\(data \?\? \[\]\) as PersonRow\[\]\)\.filter\(isListableInDirectory\)\s*\n\s*return \{ rows: rows\.slice\(0, limit\), truncated: rows\.length > limit \}/)
+    expect(PAGE).toMatch(/const rows = \(searchRows\(result, 'people'\) as PersonRow\[\]\)\.filter\(isListableInDirectory\)\s*\n\s*return \{ rows: rows\.slice\(0, limit\), truncated: rows\.length > limit \}/)
   })
 })
 
