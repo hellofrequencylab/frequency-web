@@ -132,6 +132,8 @@ export interface EventDetailTemplateProps {
    *  (LIVE-132). Handed straight to DetailTemplate; see the prop's note there. */
   breadcrumb?: { href: string; label: string }[]
   title: ReactNode
+  /** A small label above the H1 ("Gathering · Breathwork Circle"). Handed to DetailTemplate. */
+  kicker?: ReactNode
   /** Status / mode chips (In person · Online · This event has ended).
    *
    *  These ride the TOP RIGHT OF THE COVER (owner, 2026-09-10: "Place the In Person / Online pill
@@ -140,8 +142,12 @@ export interface EventDetailTemplateProps {
    *  put them, so there they fall back to DetailTemplate's own slot beside the H1 and render
    *  exactly as they always did. That is a slot test, not a per-surface branch. */
   badges?: ReactNode
-  /** The compact header action row (Share · Manage · Edit). */
+  /** The compact header action row (Share · Manage · Edit), in the column beside the H1. */
   actions?: ReactNode
+  /** THE ACTION ROW UNDER THE FACTS (SCAN-903): one row after the identity region, for a surface
+   *  that wants title, facts, then actions in reading order instead of buttons beside the title.
+   *  Such a surface usually leaves `actions` empty. Absent, the `meta` region is the old markup. */
+  actionRow?: ReactNode
   /** An event page is a marquee destination, so the H1 leads at display scale by default. */
   titleScale?: 'default' | 'display'
 
@@ -187,8 +193,10 @@ export function EventDetailTemplate({
   back,
   breadcrumb,
   title,
+  kicker,
   badges,
   actions,
+  actionRow,
   titleScale = 'display',
   identity = {},
   bodyLead,
@@ -233,6 +241,36 @@ export function EventDetailTemplate({
     </>
   )
 
+  // The identity region: the info stack, and the countdown column beside it when there is one.
+  const identityRegion =
+    hasIdentity || filled(identity.aside) ? (
+      // 🔴 THE NO-ASIDE PATH IS THE OLD MARKUP, EXACTLY. Every other event surface (the
+      // discover card, the loading skeleton, the public page) passes no `aside`, and
+      // `event-detail-template.equivalence.test.tsx` compares this template's output against a
+      // byte-for-byte mirror of the markup the page produced before the extraction. Wrapping
+      // the stack in a row unconditionally broke that mirror for surfaces that gained nothing
+      // from it — an invisible change to every one of them to serve one. So the row only
+      // exists when there is a second column to put in it.
+      filled(identity.aside) ? (
+        // THE ROW: the info column, and the countdown beside it. `flex-col` on a small screen
+        // puts the info FIRST and the countdown UNDER it (owner, 2026-09-11: *"On mobile, or
+        // smaller screen, the countdown should be below the info area"*); `sm:flex-row` sets
+        // them side by side. `items-start` so the countdown aligns to the TOP of the info
+        // rather than drifting to its vertical centre as the info stack grows.
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          {/* `min-w-0` so a long address wraps inside this column instead of shoving the
+              countdown off the row. */}
+          <div className="min-w-0 flex-1 space-y-3 text-body-sm text-muted">{identityStack}</div>
+          <div className="w-full sm:w-auto sm:shrink-0">{identity.aside}</div>
+        </div>
+      ) : (
+        // `space-y-3` between groups against `space-y-1.5` inside one: the whole reorganisation
+        // is carried by that 2:1 ratio, which is what lets a reader see four things instead of
+        // nine lines without a single rule or heading.
+        <div className="space-y-3 text-body-sm text-muted">{identityStack}</div>
+      )
+    ) : undefined
+
   return (
     <div>
       {structuredData}
@@ -264,40 +302,20 @@ export function EventDetailTemplate({
         breadcrumb={breadcrumb}
         titleScale={titleScale}
         title={title}
+        kicker={kicker}
         badges={cover !== undefined && badges ? undefined : badges}
         actions={actions}
         // The identity region goes through `meta` (full width), NOT `subtitle` (the narrow column
-        // beside the actions). See EventIdentitySlots for the report that moved it.
-        // The identity region goes through `meta` (full width), NOT `subtitle` (the narrow column
         // beside the actions). See EventIdentitySlots for the two reports that settled its shape.
         meta={
-          hasIdentity || filled(identity.aside) ? (
-            // 🔴 THE NO-ASIDE PATH IS THE OLD MARKUP, EXACTLY. Every other event surface (the
-            // discover card, the loading skeleton, the public page) passes no `aside`, and
-            // `event-detail-template.equivalence.test.tsx` compares this template's output against a
-            // byte-for-byte mirror of the markup the page produced before the extraction. Wrapping
-            // the stack in a row unconditionally broke that mirror for surfaces that gained nothing
-            // from it — an invisible change to every one of them to serve one. So the row only
-            // exists when there is a second column to put in it.
-            filled(identity.aside) ? (
-              // THE ROW: the info column, and the countdown beside it. `flex-col` on a small screen
-              // puts the info FIRST and the countdown UNDER it (owner, 2026-09-11: *"On mobile, or
-              // smaller screen, the countdown should be below the info area"*); `sm:flex-row` sets
-              // them side by side. `items-start` so the countdown aligns to the TOP of the info
-              // rather than drifting to its vertical centre as the info stack grows.
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-                {/* `min-w-0` so a long address wraps inside this column instead of shoving the
-                    countdown off the row. */}
-                <div className="min-w-0 flex-1 space-y-3 text-body-sm text-muted">{identityStack}</div>
-                <div className="w-full sm:w-auto sm:shrink-0">{identity.aside}</div>
-              </div>
-            ) : (
-              // `space-y-3` between groups against `space-y-1.5` inside one: the whole reorganisation
-              // is carried by that 2:1 ratio, which is what lets a reader see four things instead of
-              // nine lines without a single rule or heading.
-              <div className="space-y-3 text-body-sm text-muted">{identityStack}</div>
-            )
-          ) : undefined
+          filled(actionRow) ? (
+            <>
+              {identityRegion}
+              <div className="mt-4">{actionRow}</div>
+            </>
+          ) : (
+            identityRegion
+          )
         }
       >
         {bodyLead}

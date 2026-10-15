@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { checkInSurfaceState, formatCountdown, type CheckInSurfaceInput } from './checkin-surface'
+import { checkInSurfaceState, countdownParts, formatCountdown, type CheckInSurfaceInput } from './checkin-surface'
 
 const HOUR = 3_600_000
 const NOW = Date.UTC(2026, 8, 10, 18, 0, 0)
@@ -90,6 +90,18 @@ describe('the header check-in surface resolves one state', () => {
 })
 
 describe('the countdown clock', () => {
+  it('splits into labelled units that read the same clock (the Frequency countdown)', () => {
+    const read = (ms: number) => countdownParts(ms).map((p) => `${p.value}${p.label}`).join(' ')
+    expect(read(24 * HOUR + 60_000)).toBe('1day 00hrs 01min')
+    expect(read(2 * 24 * HOUR + 4 * HOUR + 11 * 60_000)).toBe('2days 04hrs 11min')
+    expect(read(HOUR + 11 * 60_000 + 9000)).toBe('01hrs 11min 09sec')
+    expect(read(-5000)).toBe('00hrs 00min 00sec')
+    // The values are formatCountdown's own digits, so the two displays can never disagree.
+    for (const ms of [1000, HOUR, 26 * HOUR + 7 * 60_000]) {
+      expect(formatCountdown(ms).replace(/\D/g, '')).toBe(countdownParts(ms).map((p) => p.value).join(''))
+    }
+  })
+
   it('is the owner-asked 00:00:00 under a day', () => {
     expect(formatCountdown(0)).toBe('00:00:00')
     expect(formatCountdown(1000)).toBe('00:00:01')

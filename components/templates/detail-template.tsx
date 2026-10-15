@@ -42,6 +42,7 @@ export function DetailTemplate({
   coverSize,
   coverOverlayStyle,
   title,
+  kicker,
   subtitle,
   meta,
   badges,
@@ -72,6 +73,9 @@ export function DetailTemplate({
    *  into the page). Circles map their None/Shade/Blend setting onto this. */
   coverOverlayStyle?: HeroOverlayStyle
   title: React.ReactNode
+  /** A small label ABOVE the h1 (an event's "Category · Circle", SCAN-903). Absent, the lockup is
+   *  exactly as it was; every existing caller passes nothing. */
+  kicker?: React.ReactNode
   subtitle?: React.ReactNode
   /** FULL-WIDTH identity/meta region, rendered under the title lockup and across the whole header
    *  band — outside the flex column that `subtitle` lives in.
@@ -210,6 +214,7 @@ export function DetailTemplate({
         {band ?? (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0">
+              {kicker && <p className={FREQUENCY ? 'k mb-2' : 'eyebrow mb-1 text-subtle'}>{kicker}</p>}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* The `display` scale is now ONE role (ADR-947's "fourth decision"). It used to be the three-step
                     ramp `text-page-title sm:text-3xl lg:text-4xl` — 1.5 / 1.875 / 2.25rem in two

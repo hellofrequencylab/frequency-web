@@ -230,3 +230,66 @@
 [data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain .fqm-cl-in{padding:var(--fq-space-6)}
 [data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain .fqm-cl-in .h1{color:var(--fq-text-strong);font-size:var(--fq-text-h2)}
 [data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain .fqm-cl-sub{color:var(--fq-text-muted)}
+
+/* ── The member event header (SCAN-903; owner, 2026-10-14: "we can do better on the event listing header and
+   title area. Also, the countdown timers don't seem like they are a part of the theme.") ─────────────────────
+   app/(main)/events/[slug]/event-member-page.tsx under Frequency, wrapped in .fqm-evh; the pieces are
+   components/frequency/members/event/event-header.tsx and event-countdown.tsx. The original layout stays
+   (FQ_EVENT_KIT_LAYOUT is off): cover, kicker, title, the facts beside the countdown card, one action row.
+   Unlayered, like the public event rules above, so it outranks the template's own utilities on this page.
+   A literal is the design's own geometry with no token (a blur radius, the cover's height cap) (token-ok). */
+/* The cover, whole: the art contained over a blurred copy of itself, never cropped through its lettering. */
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover{position:relative;isolation:isolate;overflow:hidden;width:100%;height:clamp(240px,42vw,460px);border-radius:var(--fq-radius-xl);background:var(--fq-bg-sunken);box-shadow:var(--fq-shadow-2)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover.is-shaped{height:auto;max-height:clamp(240px,42vw,460px);margin-inline:auto}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-bg{z-index:-1;object-fit:cover;filter:blur(40px) saturate(1.3);transform:scale(1.25);opacity:.85}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-art{object-fit:contain}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover.is-empty{display:grid;place-items:center;height:clamp(180px,26vw,260px);background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-date{display:flex;flex-direction:column;align-items:center;gap:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-date b{font:500 var(--fq-text-h1)/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-date i{font:500 11px/1 var(--fq-font-display);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+/* The title: the kit's heading at h2 size (h3 on a phone), balanced; a manager's inline editor wears it too. */
+[data-design="frequency"] [data-kit="members"] .fqm-evh header .h1{font-size:clamp(var(--fq-text-h3),4.2vw,var(--fq-text-h2));line-height:1.08;letter-spacing:-.04em;text-wrap:balance}
+[data-design="frequency"] [data-kit="members"] .fqm-evh header .h1 input{font:inherit;letter-spacing:inherit;line-height:inherit}
+[data-design="frequency"] [data-kit="members"] .fqm-evh header .k{display:block}
+/* The facts list: an icon tile, the fact, a quieter second line, and Directions at the end of the place. */
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact{display:flex;align-items:center;gap:var(--fq-space-4);margin:0;padding:var(--fq-space-2) 0}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-ic{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:var(--fq-radius-s);background:var(--fq-pa-soft);color:var(--fq-accent);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-ic .fq-icon{width:18px;height:18px}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--fq-space-1)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b .t1 a{font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b .t1 a:hover{color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b .t1 p{margin:0}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{flex:none}
+/* The countdown, straight on the page (owner, 2026-10-14: no card, no border, no shadow): the numbers at the
+   display step in the display face with tabular figures and the iridescent sweep, the unit labels a step up
+   from the kit label, generous room between units and above and below the block, the live dot once the
+   doors are open. */
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd{display:flex;flex-direction:column;align-items:flex-start;gap:var(--fq-space-5);min-width:220px;padding:var(--fq-space-7) 0;background:none;border:0;box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-n{display:flex;align-items:flex-end;gap:var(--fq-space-8)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-u{display:flex;flex-direction:column;align-items:flex-start;gap:var(--fq-space-4)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-u b{font:500 clamp(var(--fq-text-h2),5vw,var(--fq-text-h1))/1 var(--fq-font-display);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-u i{font:500 var(--fq-text-meta)/1 var(--fq-font-display);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-live{display:inline-flex;align-items:center;gap:var(--fq-space-3);font:500 15px/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-live .dot{display:inline-block;background:var(--fq-live);box-shadow:0 0 0 4px color-mix(in oklab,var(--fq-live) 22%,transparent);animation:fq-breathe-dot 2.4s var(--fq-ease-out) infinite}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-live.is-done{color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-live .fq-icon{width:16px;height:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-facts{display:flex;flex-direction:column;gap:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-facts .t2{display:inline-flex;align-items:center;gap:var(--fq-space-3);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-facts .fq-icon{width:14px;height:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cd-note{display:flex;flex-direction:column;gap:var(--fq-space-2);width:100%;padding-top:var(--fq-space-4);border-top:1px solid var(--fq-border-hair);white-space:pre-line}
+@keyframes fq-breathe-dot{50%{box-shadow:0 0 0 7px color-mix(in oklab,var(--fq-live) 8%,transparent)}}
+/* The one action row: the RSVP / ticket action first, Share, then a manager's quiet tools. */
+[data-design="frequency"] [data-kit="members"] .fqm-evh-act{display:flex;flex-wrap:wrap;align-items:center;gap:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-tools{display:inline-flex;flex-wrap:wrap;gap:var(--fq-space-2);margin-left:auto}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-done{background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-act .btn svg:not(.fq-icon){width:16px;height:16px;color:currentColor}
+/* The Join box the primary action jumps to clears the sticky header. */
+[data-design="frequency"] [data-kit="members"] #event-join{scroll-margin-top:96px}
+@media (max-width:640px){
+  [data-design="frequency"] [data-kit="members"] .fqm-evh-cd{width:100%;min-width:0;padding:var(--fq-space-5) 0}
+  [data-design="frequency"] [data-kit="members"] .fqm-evh-cd-n{gap:var(--fq-space-7)}
+  [data-design="frequency"] [data-kit="members"] .fqm-evh-tools{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  [data-design="frequency"] [data-kit="members"] .fqm-evh-cd-live .dot{animation:none}
+}
