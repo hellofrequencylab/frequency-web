@@ -247,7 +247,7 @@ export async function FqOverviewBody({
         meta={meta}
         actions={
           <>
-            <Link className="btn" href={`/spaces/${slug}/edit-page`}>
+            <Link className="btn" href={`/spaces/${slug}?edit=page`}>
               <FqIcon name="edit" />
               Edit page
             </Link>

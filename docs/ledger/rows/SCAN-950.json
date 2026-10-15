@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-950",
+  "title": "Legacy Space Home editing opens the canonical profile sidebar without discarding custom-page documents",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": { "file": "app/(main)/spaces/[slug]/edit-page/page.tsx", "ref": "Owner-directed local Space editor consolidation 2026-10-15" },
+  "detail": "The legacy Home editor wrote pageDocs.home while the actual member profile arranged profileLayout, so edits could target an unused document. After the unchanged visibility, page identity and manage/staff-preview gates, Home now redirects to the canonical profile with edit=page. Only its server-authorized owner preview mounts the launcher, with the actual Space ID/type rather than query-supplied authority. Desktop and mobile sidebar bodies consume the typed appId by focusing the existing permitted Page node; unknown or hidden apps cannot create editors. The Frequency overview uses this canonical entry. Explicit custom ?page edits retain their original pageDocs identity and staff read-only previews. No stored content, underlying actions, block types or website editor was deleted. Full compatibility retirement remains conditional on a pageDocs sidebar adapter because custom pages and website fallbacks still consume those documents. Focused mocked gate/redirect/launch/focus tests pass; authenticated localhost browser behavior awaits the next integration build.",
+  "verify": { "kind": "cmd", "cmd": "pnpm exec vitest run 'app/(main)/spaces/[slug]/edit-page/page.test.tsx' components/spaces/space-profile-editor-entry.test.tsx components/spaces/owner-space-layout-preview.entry.test.tsx components/layout/admin-bar/admin-bar-entry.test.tsx" },
+  "wave": "W7"
+}

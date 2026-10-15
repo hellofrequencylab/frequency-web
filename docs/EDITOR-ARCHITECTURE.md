@@ -855,6 +855,21 @@ built until the design package lands and the owner starts it (ADR-1403).
 
 ## Website builder handoff seam
 
+Space profile Home uses the existing entity-layout sidebar (`SpacePageBuilder`),
+which edits `profileLayoutDraft` and publishes `profileLayout`. A legacy
+`/spaces/<slug>/edit-page` Home request first checks Space visibility, page identity
+and manage/staff-preview access, then redirects to the profile with `?edit=page`.
+Only the authorized owner preview mounts that entry trigger; its Space scope comes
+from the server. The typed `appId` selects and focuses an already permitted sidebar
+node, never adds an app or grants access.
+
+Explicit custom `?page=<slug>` requests remain compatibility editing for
+`preferences.pageDocs[slug]`, with staff preview read-only. Custom profile pages and
+website fallbacks still render those documents. Removing that compatibility editor
+requires a sidebar adapter for those documents first; neither their data, their block
+types, nor their publish/reset services are retired by the Home redirect. Website
+editing remains the separate host-authorized website editor described below.
+
 The Claude Design standalone v4 handoff defines the website administration shell,
 with Menswork / Hearts on Fire as its reference skin and DAWN and Midnight supplied
 by `lib/sites/editor/theme-contract.json`. The surrounding toolbar, rails, fields and
