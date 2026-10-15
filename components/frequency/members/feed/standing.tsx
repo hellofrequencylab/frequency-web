@@ -123,7 +123,7 @@ export function Standing(props: StandingProps & { afterStats?: React.ReactNode }
 
   return (
     <>
-      <div className="fa-stats">
+      <div className="fa-stats-composition"><div className="fa-stats">
         {stats.map((s) => (
           <button key={s.k} type="button" className="fa-stat" aria-pressed={stat === s.k} onClick={() => setStat(s.k)}>
             {s.k === 'rank' ? (
@@ -140,7 +140,7 @@ export function Standing(props: StandingProps & { afterStats?: React.ReactNode }
           </button>
         ))}
       </div>
-      {props.afterStats}
+      {props.afterStats}</div>
       <div className="fa-glass fa-standing-panel" data-open={boxOpen ? '' : undefined}>
         <button
           type="button"
