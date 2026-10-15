@@ -577,12 +577,19 @@ const CIRCLE_TONES = ['var(--color-primary)', 'var(--nw-pop)', 'var(--nw-pop2)',
 // 8. Circles: member-led groups as cards, each with its next date from the Space's own events.
 export function NetworkCirclesBlock({ p, metadata, now = new Date(), pad, vis }: { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }) {
   const rows = upcoming(metadata, now)
+  const community = arr((metadata?.space as Props | undefined)?.community)
+  const origin = (metadata?.links as SiteLinkMap | undefined)?.origin ?? ''
   const today = todayIn(now, rows[0]?.timeZone || ZONE)
   const cards = arr(p.circles).map((c) => {
     const title = str(c.title)
     const match = (str(c.match) || title).toLowerCase()
     const next = rows.find((e) => e.title.toLowerCase().includes(match)) ?? null
-    return { icon: str(c.icon), title, body: str(c.body), when: str(c.when), where: str(c.where), next, href: next ? eventHref(next, metadata) : null }
+    // The public community bag is capped and covers this Space, not every chapter. An authored
+    // slug therefore remains a valid door when its circle is absent from that partial list.
+    // Old documents can still resolve an exact name against the public rows already loaded.
+    const circleSlug = str(c.circleSlug) || str(community.find((circle) => str(circle.name).toLowerCase() === title.toLowerCase())?.slug)
+    const circleHref = circleSlug ? `${origin}/circles/${encodeURIComponent(circleSlug)}` : null
+    return { icon: str(c.icon), title, body: str(c.body), when: str(c.when), where: str(c.where), next, href: next ? eventHref(next, metadata) : null, circleHref }
   }).filter((c) => c.title)
   if (cards.length === 0) return null
   return (
@@ -596,6 +603,7 @@ export function NetworkCirclesBlock({ p, metadata, now = new Date(), pad, vis }:
             {c.body && <p>{c.body}</p>}
             {c.when && <small>{c.when}</small>}
             {c.where && <small>{c.where}</small>}
+            {c.circleHref && <a className="nw-next" href={c.circleHref}>View circle<ArrowRight className="nw-arr" strokeWidth={2} aria-hidden /></a>}
             {c.next && c.href ? (
               <a className="nw-next" href={c.href}>Next: {relDay(dayOf(c.next.startsAt), today)}<ArrowRight className="nw-arr" strokeWidth={2} aria-hidden /></a>
             ) : null}
@@ -945,7 +953,7 @@ export const networkComponents: Record<string, ComponentConfig> = {
   }, { anchor: '', eyebrow: 'Chapters', title: '', lead: '', chips: [], cards: [], notes: [] }, NetworkChaptersBlock),
   NetworkCircles: block('Circles (next dates live)', {
     anchor, ...head, ...action,
-    circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Body text'), when: text('When'), where: text('Where'), match: text('Matches events titled', 'Optional. Defaults to the circle name.') } },
+    circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Body text'), when: text('When'), where: text('Where'), circleSlug: text('Circle slug', 'The last part of its Frequency circle URL. Opens the circle even when no event is scheduled.'), match: text('Matches events titled', 'Optional. Defaults to the circle name.') } },
   }, { anchor: '', eyebrow: 'Circles', title: '', lead: '', actionLabel: '', actionHref: '', circles: [] }, NetworkCirclesBlock),
   NetworkFounder: block('Founder', {
     anchor, eyebrow: head.eyebrow, quote: area('Quote', VOICE_HINT), body: area('Body text', 'Each new line starts a paragraph.'), image, alt: text('Photo description', 'For screen readers.'),

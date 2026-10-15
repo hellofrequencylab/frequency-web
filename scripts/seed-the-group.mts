@@ -356,7 +356,7 @@ const POSTS = [
   { image: '', caption: 'The right people show up at the right time.' },
 ]
 const PRODUCTS = MERCH.map((m) => ({ image: m.image, title: m.short, note: m.note, price: `$${m.priceCents / 100}`, href: PAGE('shop') }))
-const CIRCLE_CARDS = CIRCLES.map((c) => ({ icon: c.icon, title: c.name, body: c.body, when: c.when, where: c.where, match: c.match }))
+const CIRCLE_CARDS = CIRCLES.map((c) => ({ icon: c.icon, title: c.name, body: c.body, when: c.when, where: c.where, circleSlug: `tg-${c.key}`, match: c.match }))
 
 const coffee = (anchor = 'contact'): Block => ({
   type: 'NetworkCoffee',
