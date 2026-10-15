@@ -118,7 +118,9 @@ export function MapCanvas({
       >
         <div className="relative h-full w-full overflow-hidden bg-surface sm:rounded-card sm:border sm:border-border">
           {engine({ ...engineProps, interactive: true, className: 'h-full w-full' })}
-          <button type="button" onClick={close} className={cn(CONTROL, 'right-3 top-3')}>
+          {/* `fq-map-close`: under Frequency the pill moves top LEFT (members-ui.css, SCAN-918), clear of
+              the map's own controls, which the Google canvas pins bottom right. DAWN keeps top right. */}
+          <button type="button" onClick={close} className={cn(CONTROL, 'fq-map-close right-3 top-3')}>
             <X className="h-4 w-4" aria-hidden="true" />
             {COLLAPSE_LABEL}
           </button>

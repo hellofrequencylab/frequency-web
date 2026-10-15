@@ -390,7 +390,7 @@
    the kit's surface and radius, rounded controls. Google's logo, attribution and terms are never
    touched (their terms forbid it); only the InfoWindow card we fill is. Global on purpose: a map can
    sit in the members kit, the site kit, the admin kit or no kit at all. */
-[data-design="frequency"] .maplibregl-popup-content{background:var(--fq-surface-card);color:var(--fq-text-body);border-radius:var(--fq-radius-m);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);font-family:var(--fq-font-sans);padding:12px 14px}
+[data-design="frequency"] .maplibregl-popup-content{background:var(--fq-surface-card);color:var(--fq-text-body);border-radius:var(--fq-radius-m);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);font-family:var(--fq-font-sans);padding:0;overflow:hidden}
 [data-design="frequency"] .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip{border-top-color:var(--fq-surface-card)}
 [data-design="frequency"] .maplibregl-popup-anchor-top .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,[data-design="frequency"] .maplibregl-popup-anchor-top-right .maplibregl-popup-tip{border-bottom-color:var(--fq-surface-card)}
 [data-design="frequency"] .maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--fq-surface-card)}
@@ -401,3 +401,39 @@
 [data-design="frequency"] .gm-style .gm-style-iw-c{background:var(--fq-surface-card);border-radius:var(--fq-radius-m);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] .gm-style .gm-style-iw-d{color:var(--fq-text-body);font-family:var(--fq-font-sans)}
 [data-design="frequency"] .gm-style .gm-style-iw-tc::after{background:var(--fq-surface-card)}
+
+/* ── Map cards, badges and the full-screen close (SCAN-918) ─────────────────────────────────────────
+   Owner 2026-10-14, the installed Android app in dark mode: Google's InfoWindow chrome showed through (a
+   white strip down the right and bottom), an empty header band sat above the cover with the close X in it,
+   the card clipped its last line and the text was faint. Under Frequency the InfoWindow keeps only our
+   card: no padding, no scroll clipping, no tail, the close button floats over the cover as a round chip,
+   and every colour is the kit's surface and text tokens, so it reads in light and in dark (.dark). The
+   MapLibre popup gets the same card and the same chip. The card's DOM is components/maps/popup-content.ts
+   (.fqm-card); its inline DAWN styles stay for DAWN, hence the !important here. Google's logo and
+   attribution are untouched. */
+[data-design="frequency"] .gm-style .gm-style-iw-c{padding:0!important;max-height:none!important;overflow:hidden!important;background:var(--fq-surface-card)}
+[data-design="frequency"] .gm-style .gm-style-iw-d{padding:0!important;max-height:none!important;overflow:visible!important;background:var(--fq-surface-card)}
+[data-design="frequency"] .gm-style .gm-style-iw-chr{position:absolute;top:0;right:0;z-index:2;display:block;padding:0;height:auto}
+[data-design="frequency"] .gm-style .gm-style-iw-ch{display:none}
+[data-design="frequency"] .gm-style .gm-style-iw-chr .gm-ui-hover-effect{width:32px!important;height:32px!important;margin:8px!important;padding:0!important;display:grid!important;place-items:center;opacity:1!important;border-radius:var(--fq-radius-orb);background:color-mix(in srgb,var(--fq-surface-card) 88%,transparent)!important;box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .gm-style .gm-style-iw-chr .gm-ui-hover-effect span{margin:0!important;width:16px!important;height:16px!important;background-color:var(--fq-text-strong)!important}
+[data-design="frequency"] .gm-style .gm-style-iw-chr .gm-ui-hover-effect:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] .gm-style .gm-style-iw-tc,[data-design="frequency"] .maplibregl-popup-tip{display:none}
+[data-design="frequency"] .maplibregl-popup-close-button{top:8px;right:8px;z-index:2;width:32px;height:32px;display:grid;place-items:center;padding:0;border-radius:var(--fq-radius-orb);background:color-mix(in srgb,var(--fq-surface-card) 88%,transparent);color:var(--fq-text-strong);font-size:20px;line-height:1;box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .maplibregl-popup-close-button:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] .fqm-card{font-family:var(--fq-font-sans);color:var(--fq-text-body);background:var(--fq-surface-card)}
+[data-design="frequency"] .fqm-card__cover{display:block;margin:0!important;border-radius:0!important;background:var(--fq-bg-sunken)!important}
+[data-design="frequency"] .fqm-card__body{padding:12px 14px 14px}
+[data-design="frequency"] .fqm-card--plain .fqm-card__body{padding-right:52px}
+[data-design="frequency"] .fqm-card__title{color:var(--fq-text-strong)!important;font-size:15px!important;line-height:1.3!important}
+[data-design="frequency"] .fqm-card__meta{color:var(--fq-text-muted)!important;font-size:13px!important}
+[data-design="frequency"] .fqm-card__link{color:var(--fq-text-link)!important;font-size:14px!important;margin-top:10px!important}
+[data-design="frequency"] .fqm-card__list{margin-top:10px!important;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] .fqm-card__row{padding:8px 0!important;border-bottom:1px solid var(--fq-border-hair)!important}
+[data-design="frequency"] .fqm-card__row-title{color:var(--fq-text-strong)!important;font-size:14px!important}
+[data-design="frequency"] a.fqm-card__row:hover .fqm-card__row-title,[data-design="frequency"] button.fqm-card__row:hover .fqm-card__row-title{color:var(--fq-text-link)!important}
+[data-design="frequency"] .fqm-card__row:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+/* The Google cluster badge's count (a Marker label): white bold on the gradient, with a soft shadow. */
+[data-design="frequency"] .fq-map-cluster-count{text-shadow:0 1px 2px color-mix(in srgb,var(--fq-ink-2) 55%,transparent)}
+/* The full-screen map's "Close map" pill sits top left, clear of the zoom buttons (bottom right). */
+[data-design="frequency"] .fq-map-close{right:auto;left:12px}

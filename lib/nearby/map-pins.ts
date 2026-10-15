@@ -305,6 +305,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         // owner screenshotted, and a card reads them as two different questions anyway.
         subtitle: [pinDate(row.starts_at), moreDatesLine(moreCount)].filter(Boolean).join(' · ') || null,
         detail: where,
+        place: row.city?.trim() || null,
         badge,
         imageUrl: eventCoverUrl(admin, row.cover_image_path),
         href: `/events/${row.slug}`,
@@ -330,6 +331,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         title: c.name,
         subtitle: memberCountLine(c.member_count ?? 0),
         detail: c.neighborhood ?? c.city ?? null,
+        place: c.city?.trim() || c.neighborhood?.trim() || null,
         imageUrl: c.image_url?.trim() || null,
         href: `/circles/${c.slug}`,
         hrefLabel: 'See the circle',
@@ -369,6 +371,7 @@ export const loadNearbyMapPins = cache(async (): Promise<MapPin[]> => {
         title: name,
         subtitle: s.tagline?.trim() || null,
         detail: where,
+        place: s.city?.trim() || null,
         badge,
         // The cover if the Space has one, else the brand logo. A logo on a transparent PNG sits on
         // the card's own surface token rather than the basemap (see popup-content.ts).

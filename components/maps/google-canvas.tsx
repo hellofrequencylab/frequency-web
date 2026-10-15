@@ -6,10 +6,12 @@ import {
   clusterDiameterPx,
   clusterLabel,
   clusterPoints,
+  clusterStepDiameterPx,
+  FREQUENCY_CLUSTER_OPTIONS,
   shouldRecluster,
   zoomIntoCluster,
 } from '@/lib/maps/cluster'
-import { googleMapStyles, isDesignMap, readBasemapPalette } from '@/lib/maps/basemap-look'
+import { googleMapStyles, isDesignMap, readBasemapPalette, watchColorMode } from '@/lib/maps/basemap-look'
 import { loadGoogleMaps, onGoogleMapsAuthFailure } from '@/lib/maps/google-loader'
 import {
   FREQUENCY_PIN,
@@ -19,7 +21,8 @@ import {
   resolvePinPaint,
 } from '@/lib/maps/pin-kinds'
 import { googleMapsMapId } from '@/lib/maps/provider'
-import { buildPopupContent } from './popup-content'
+import { frequencyBadgeSvg } from './cluster-marker'
+import { areaAccessibleLabel, buildAreaPopupContent, buildPopupContent } from './popup-content'
 import { useNearViewport } from './use-near-viewport'
 import type {
   GoogleCircle,
@@ -145,6 +148,7 @@ export default function GoogleCanvas({
     const listeners: GoogleListener[] = []
     let circle: GoogleCircle | null = null
     let info: GoogleInfoWindow | null = null
+    let stopWatchingMode: (() => void) | null = null
 
     loadGoogleMaps()
       .then((maps: GoogleMapsApi) => {
@@ -154,6 +158,7 @@ export default function GoogleCanvas({
         // The design's basemap (lib/maps/basemap-look.ts), read at this container so a dark band
         // gets a dark map. A Cloud Map ID owns styling when set; null under DAWN.
         const palette = mapId ? null : readBasemapPalette(container)
+        const designPins = isDesignMap(container)
         map = new maps.Map(container, {
           center: { lat: center[1], lng: center[0] },
           zoom,
@@ -161,6 +166,18 @@ export default function GoogleCanvas({
           ...(palette ? { styles: googleMapStyles(palette), backgroundColor: palette.land } : {}),
           disableDefaultUI: true,
           zoomControl: interactive,
+          // SCAN-918: only the zoom buttons, pinned bottom right, so nothing Google draws sits under the
+          // full-screen map's "Close map" pill (top left) or the expand control. Map type, Street View,
+          // fullscreen and rotate stay off explicitly, whatever disableDefaultUI does in a future API.
+          ...(designPins
+            ? {
+                ...(interactive ? { zoomControlOptions: { position: maps.ControlPosition.RIGHT_BOTTOM } } : {}),
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                rotateControl: false,
+              }
+            : {}),
           clickableIcons: false,
           gestureHandling: interactive ? 'cooperative' : 'none',
           keyboardShortcuts: interactive,
@@ -168,10 +185,17 @@ export default function GoogleCanvas({
         mapRef.current = map
         const live = map
 
+        // SCAN-918: the members app flips light/dark without a reload; the map swaps its style live.
+        if (palette) {
+          stopWatchingMode = watchColorMode(() => {
+            const next = readBasemapPalette(container)
+            if (next) live.setOptions({ styles: googleMapStyles(next), backgroundColor: next.land })
+          })
+        }
+
         // DAWN reads the ring from the token, not pinned to white: on a dark theme --color-surface is
         // dark, so the ring follows the palette. Frequency's pin is the kit's round dot with a WHITE
         // ring in every mode (SCAN-904, lib/maps/pin-kinds.ts FREQUENCY_PIN_RING).
-        const designPins = isDesignMap(container)
         const stroke = designPins ? FREQUENCY_PIN_RING : tokenColor('--color-surface', PIN_STROKE_FALLBACK)
         const pinScale = designPins ? FREQUENCY_PIN.diameterPx / 2 : 8
         const pinStrokeWeight = designPins ? FREQUENCY_PIN.ringPx : 2
@@ -179,7 +203,9 @@ export default function GoogleCanvas({
 
         // Clustering never applies in picker mode: there is exactly one pin and the member is
         // placing it. The MapLibre canvas makes the same exclusion for the same reason.
-        const clustering = cluster && !draggable ? cluster : null
+        // Under Frequency the badges cluster wider, keep a gap and hold co-located pins as one area
+        // (SCAN-918, lib/maps/cluster.ts FREQUENCY_CLUSTER_OPTIONS); a caller's own options still win.
+        const clustering = cluster && !draggable ? (designPins ? { ...FREQUENCY_CLUSTER_OPTIONS, ...cluster } : cluster) : null
 
         const clearMarkers = () => {
           for (const l of markerListeners.splice(0)) l.remove()
@@ -237,15 +263,39 @@ export default function GoogleCanvas({
           }
         }
 
-        const addCluster = (lat: number, lng: number, count: number, plus: boolean, only: MapPin | null) => {
+        // THE FREQUENCY BADGE (SCAN-918): the shared gradient disc as an SVG image, stepped in size, with
+        // a white bold count whose soft shadow comes from the theme sheet (.fq-map-cluster-count).
+        const badge = (count: number) => {
+          const d = clusterStepDiameterPx(count)
+          const { url, box } = frequencyBadgeSvg(d)
+          return {
+            icon: {
+              url,
+              scaledSize: new maps.Size(box, box),
+              anchor: new maps.Point(box / 2, box / 2),
+              labelOrigin: new maps.Point(box / 2, box / 2),
+            },
+            fontSize: d >= 50 ? '15px' : '13px',
+          }
+        }
+
+        const addCluster = (
+          lat: number,
+          lng: number,
+          count: number,
+          plus: boolean,
+          only: MapPin | null,
+          areaPins: MapPin[] | null = null,
+        ) => {
           // Same diameter curve and same label text as the MapLibre bubble, read from the same
           // two functions. `scale` on a CIRCLE symbol is a RADIUS, hence the halving.
+          const look = designPins ? badge(count) : null
           const marker = new maps.Marker({
             map: live,
             position: { lat, lng },
-            title: clusterAccessibleLabel(count, plus),
+            title: areaPins ? areaAccessibleLabel(areaPins) : clusterAccessibleLabel(count, plus),
             zIndex: 10,
-            icon: {
+            icon: look ? look.icon : {
               path: maps.SymbolPath.CIRCLE,
               scale: clusterDiameterPx(count) / 2,
               fillColor: tokenColor(MAP_CLUSTER_PAINT.token, MAP_CLUSTER_PAINT.fallback),
@@ -255,14 +305,35 @@ export default function GoogleCanvas({
                 : tokenColor(MAP_CLUSTER_PAINT.ringToken, MAP_CLUSTER_PAINT.ringFallback),
               strokeWeight: 2,
             },
-            label: {
-              text: clusterLabel(count, plus),
-              color: tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
-              fontSize: '13px',
-              fontWeight: '600',
-            },
+            label: look
+              ? {
+                  text: clusterLabel(count, plus),
+                  color: FREQUENCY_PIN_RING,
+                  fontSize: look.fontSize,
+                  fontWeight: '700',
+                  className: 'fq-map-cluster-count',
+                }
+              : {
+                  text: clusterLabel(count, plus),
+                  color: tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
+                  fontSize: '13px',
+                  fontWeight: '600',
+                },
           })
           markers.push(marker)
+
+          // A GENERAL AREA (SCAN-918): pins on one exact coordinate, which no zoom can split. The badge
+          // opens the list of what is there, "N events around Encinitas", instead of zooming forever.
+          if (areaPins) {
+            const content = buildAreaPopupContent(areaPins, onPinClickRef.current ?? undefined)
+            markerListeners.push(
+              marker.addListener('click', () => {
+                info?.setContent(content)
+                info?.open({ map: live, anchor: marker })
+              }),
+            )
+            return
+          }
 
           // 🔴 A BUBBLE OF ONE OPENS, IT DOES NOT ZOOM. That bubble is a repeating event folded to
           // a single pin, so there is nothing inside it to split: zooming would step in twice and
@@ -296,6 +367,17 @@ export default function GoogleCanvas({
         const renderMarkers = () => {
           clearMarkers()
           if (!clustering) {
+            // Under Frequency, pins on one exact coordinate become one area badge even with clustering
+            // off (SCAN-918); every pin with a spot of its own stays exactly where it is.
+            if (designPins && !draggable) {
+              for (const group of clusterPoints(pins, live.getZoom() ?? zoom, { radiusPx: 0, coLocated: true })) {
+                if (group.type === 'cluster' && group.area) {
+                  addCluster(group.lat, group.lng, group.count, group.plus, null, group.points)
+                } else if (group.type === 'cluster') addPin(group.points[0]!, false)
+                else addPin(group.point, false)
+              }
+              return
+            }
             // Picker mode's draggable pin is the FIRST one, by contract (see MapCanvasProps).
             pins.forEach((pin, index) => addPin(pin, draggable && index === 0))
             return
@@ -308,6 +390,7 @@ export default function GoogleCanvas({
                 group.count,
                 group.plus,
                 group.points.length === 1 ? group.points[0]! : null,
+                group.area ? group.points : null,
               )
             } else addPin(group.point, false)
           }
@@ -397,6 +480,7 @@ export default function GoogleCanvas({
 
     return () => {
       cancelled = true
+      stopWatchingMode?.()
       for (const l of markerListeners) l.remove()
       for (const l of listeners) l.remove()
       for (const m of markers) m.setMap(null)
