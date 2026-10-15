@@ -383,7 +383,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   // Esc closes the loading / error / empty states (the live session has its
   // own close affordances and shouldn't be torn out of a sit by a stray key).
   useEffect(() => {
-    if (state.phase === 'closed' || (state.phase === 'ready' && state.data.practices.length > 0)) return
+    if (state.phase === 'closed' || (state.phase === 'ready' && !state.setup && state.data.practices.length > 0)) return
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') close()
     }
