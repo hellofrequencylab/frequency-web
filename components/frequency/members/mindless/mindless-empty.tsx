@@ -11,7 +11,7 @@ export function MindlessEmpty() {
     <MembersBody>
       <div className="head">
         <div>
-          <span className="k">The Quest · Mindless</span>
+          <span className="k">Mindless</span>
           <h1 className="h1">
             Tune <span className="serif">out.</span>
           </h1>
