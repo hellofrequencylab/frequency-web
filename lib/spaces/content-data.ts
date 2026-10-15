@@ -82,6 +82,8 @@ export type SpaceEventItem = {
   slug: string
   title: string
   startsAt: string
+  /** The event's declared hosting Space, independent of the calendar tenant. */
+  hostingSpaceId?: string | null
   endsAt?: string | null
   /** The event's own IANA zone (events.time_zone) for server-side when-label formatting. */
   timeZone?: string | null
@@ -653,6 +655,7 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
         slug: e.slug,
         title: e.title,
         startsAt: e.starts_at,
+        hostingSpaceId: e.host_space_id ?? null,
         endsAt: e.ends_at ?? null,
         timeZone: e.time_zone ?? null,
         description: e.description ?? null,

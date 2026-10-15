@@ -325,12 +325,11 @@ const PILLARS = [
 ]
 const BRENE = { quote: '“True belonging is not passive. It’s not the belonging that comes with just joining a group.”', by: 'Dr. Brené Brown' }
 const CHAPTER_TAGS = [
-  { label: 'Encinitas', match: 'encinitas|leucadia|fox point|solana beach|cardiff|la costa|escondido|swami' },
-  { label: 'La Jolla', match: 'parakeet|general atomics|la jolla|motivation monday' },
-  { label: 'North Park', match: 'maya moon|adams ave|north park|team up tuesday' },
-  { label: 'Oceanside', match: 'oceanside|ocean st|garfield' },
-  { label: 'Veterans', match: 'veteran' },
-  { label: 'North County', match: 'coaches club|house party|break free' },
+  { label: 'Encinitas', spaceId: SPACE_ID, match: 'encinitas|leucadia|fox point|solana beach|cardiff|la costa|escondido|swami' },
+  ...(['la-jolla', 'north-park', 'oceanside', 'veterans', 'north-county'] as const).map((key) => {
+    const c = CHAPTERS.find((chapter) => chapter.key === key)!
+    return { label: c.short, spaceId: chapterId(c), match: ({ 'la-jolla': 'parakeet|general atomics|la jolla|motivation monday', 'north-park': 'maya moon|adams ave|north park|team up tuesday', oceanside: 'oceanside|ocean st|garfield', veterans: 'veteran', 'north-county': 'coaches club|house party|break free' })[key] }
+  }),
 ]
 const CHAPTER_CHIPS = [
   { icon: 'sun', name: 'Encinitas', line: 'Feel Good Friday · Fox Point Farms', when: 'Fri · 9 AM', href: PAGE('fridays'), on: true },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { NetworkCirclesBlock, networkComponents } from './network'
+import { NetworkCirclesBlock, NetworkEventsBlock, networkComponents } from './network'
 import { WebsiteDocument } from '@/components/sites/website-document'
 import { buildWebsiteDocs, CIRCLES } from '../../../scripts/seed-the-group.mts'
 
@@ -59,5 +59,12 @@ describe('Network circle connections', () => {
     expect(html).toContain('href="https://frequency.example/circles/tg-coaches-club"')
     expect(html).not.toContain('href="/circles/tg-coaches-club"')
     expect(html).toContain('href="https://frequency.example/events/future-coaches"')
+  })
+
+  it('labels an event by its declared hosting Space rather than a misleading title', () => {
+    const html = renderToStaticMarkup(<NetworkEventsBlock p={{ chapters: [{ label: 'Veterans', spaceId: 'veterans-space', match: 'veteran' }, { label: 'Oceanside', spaceId: 'oceanside-space', match: 'oceanside' }] }} now={now}
+      metadata={{ space: { events: [{ id: 'event', title: 'Oceanside meetup', slug: 'meeting', startsAt: '2026-10-20T09:00:00Z', hostingSpaceId: 'veterans-space' }] } }} />)
+    expect(html).toContain('nw-tag-ch"><i aria-hidden="true"></i>Veterans</span>')
+    expect(html).not.toContain('nw-tag-ch"><i aria-hidden="true"></i>Oceanside</span>')
   })
 })
