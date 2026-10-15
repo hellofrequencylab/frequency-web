@@ -58,6 +58,18 @@
 [data-design="frequency"] [data-kit="members"] .btn.mu-success-o,[data-design="frequency"] [data-kit="members"] .btn.mu-success-o:hover{color:var(--fq-success);box-shadow:inset 0 0 0 1px var(--fq-success)}
 [data-design="frequency"] [data-kit="members"] .btn:disabled,[data-design="frequency"] [data-kit="members"] .btn[aria-disabled="true"]{opacity:.4;cursor:not-allowed;transform:none}
 
+/* The kit's card furniture at night (SCAN-917, owner 2026-10-14: "the event cards look like shit on mobile dark
+   theme"). kit-members.css (generated) paints the plain .tag in literal white glass, a photo's placeholder in literal
+   sand and a chip and a hovered list row in literal day ink or white, none of which the night room re-tints: at night a
+   tag was a white pill under light type, a photo-less event card a sand block, a chip an invisible pill. Here they read
+   the flipping tokens instead. The plain .tag sits above the toned variants below so each tone still wins; the chip
+   rules weigh as little as the kit's, so the Feed's own intent chips (members-c.css) keep theirs. */
+.dark[data-design="frequency"] [data-kit="members"] .tag{background:var(--fqm-white-75)}
+.dark[data-design="frequency"] [data-kit="members"] .ph{background-color:var(--fq-bg-sunken)}
+.dark[data-design="frequency"] [data-kit="members"] .list>a:hover{background:var(--fqm-white-60)}
+:where(.dark)[data-design="frequency"] [data-kit="members"] .chip:not(.on){background:var(--fqm-ink-5)}
+:where(.dark)[data-design="frequency"] [data-kit="members"] .chip:not(.on):hover{background:var(--fqm-ink-8)}
+
 /* Badge: the kit's `.tag`, toned by meaning (violet act, magenta live, aqua presence). */
 [data-design="frequency"] [data-kit="members"] .tag svg{width:12px;height:12px;flex:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-sm{height:20px;padding:0 8px;font-size:12px /* token-ok: the kit .tag size; the export has no 12px step */}

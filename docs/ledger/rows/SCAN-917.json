@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-917",
+  "title": "In dark mode the phone Menu sheet, the event cards and the Feed cards sit on dark surfaces with readable text, and the active tab label shows",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/themes/frequency.css",
+    "ref": "Owner 2026-10-14, on Android in dark mode: Let's get this menu right in dark mode. Also: The event cards look like shit on mobile dark theme."
+  },
+  "detail": "SCAN-907 declared the cooled Commons canvas (#F4F6F7, sunken #E9EEF1) and the cooled accent (#3A8C99, accent-soft #E4F3F4) on the bare :root[data-design=frequency], at the same specificity as the core's .dark values and in a later sheet, so in dark mode those four tokens stayed day values while every text and surface token went dark. The phone Menu sheet (.ap-rail.fqm-drawer) paints the canvas, so the panel stayed light under night text: the name, tile labels and links washed out, the Keep learning card went muddy grey and the stat tiles became brown and purple boxes. Event cards and listings painted their photo placeholders on the light sunken and their accent tags and calendar chips on the pale accent-soft. The four day values are now scoped to :not(.dark); under .dark the core's night canvas and sunken stand and the accent keeps SCAN-907's cool turn as the export's aqua neon (soft at 14%). Light mode resolves exactly as before. The generated members kit also paints the plain .tag in literal white glass, the .ph placeholder in literal sand, a chip in literal day ink and a hovered list row in literal white; under .dark members-ui.css points them at the flipping tokens (the toned tag variants and the Feed intent chips keep theirs). The alias layer turns an active tab's text to ink at night for its --fq-pa chip, so the label under the chip went ink on the dark bar; the active label now keeps --fq-text-strong. At night the Menu sheet's stat tiles and icon chips take the export's neon tones. Map popups are untouched. DAWN is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const f=fs.readFileSync('app/themes/frequency.css','utf8');const m=fs.readFileSync('app/themes/frequency/members-shell.css','utf8');const u=fs.readFileSync('app/themes/frequency/members-ui.css','utf8');const bad=[];const dayOnly=(t)=>{const i=f.indexOf(t);if(i<0)return false;const o=f.lastIndexOf('{',i);return f.slice(f.lastIndexOf('}',o)+1,o).includes(':not(.dark)')};if(!dayOnly('--fq-bg-canvas: #F4F6F7'))bad.push('the cooled day canvas still overrides the night canvas, so the Menu sheet stays light in dark mode');if(!dayOnly('--fq-accent-soft: #E4F3F4'))bad.push('the pale day accent-soft still paints accent tags and calendar chips at night');if(!/\\.fqm-tb\\.on \\.fqm-tb-l\\{[^}]*color:var\\(--fq-text-strong\\)/.test(m))bad.push('the active tab label takes the dark ink meant for its chip');if(!/\\.dark\\[data-design=.frequency.\\][^{]*\\.fqm-drawer \\[data-tone=.violet.\\]\\{--fqm-tone:var\\(--fq-x-violet-neon\\)/.test(m))bad.push('the Menu sheet tiles keep the deep tones at night');if(!/\\.dark\\[data-design=.frequency.\\] \\[data-kit=.members.\\] \\.tag\\{background:var\\(--fqm-white-75\\)/.test(u))bad.push('the kit tag stays white glass at night');if(!/\\.dark\\[data-design=.frequency.\\] \\[data-kit=.members.\\] \\.ph\\{background-color:var\\(--fq-bg-sunken\\)/.test(u))bad.push('a photo-less card keeps the kit sand placeholder at night');if(bad.length){console.error('SCAN-917: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

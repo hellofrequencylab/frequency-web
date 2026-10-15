@@ -579,7 +579,9 @@
   /* The active tab wears the section pill's gradient and glow (.ap-nav button.on). */
   [data-design="frequency"] [data-kit="members"] .fqm-tb.on{color:var(--fq-text-strong)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-ic{background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-l{font-weight:600}
+  /* The word keeps the bar's strong text in every room (SCAN-917): at night the alias layer turns an active
+     tab's ink dark for the icon's --fq-pa chip, and the label below the chip sits on the dark bar, not on it. */
+  [data-design="frequency"] [data-kit="members"] .fqm-tb.on .fqm-tb-l{font-weight:600;color:var(--fq-text-strong)}
 
   /* Zap: DAWN's raised action, kept (owner: bring the old bar back), drawn as the kit's primary: the
      --fq-pa fill and glow of .btn.pa, seated in a ring of the bar's own glass. It does not breathe:
@@ -623,6 +625,12 @@
 [data-design="frequency"] [data-kit="members"] [data-tone="aqua"]{--fqm-tone:var(--fq-x-aqua-deep)}
 [data-design="frequency"] [data-kit="members"] [data-tone="sun"]{--fqm-tone:var(--fq-x-sun-deep)}
 [data-design="frequency"] [data-kit="members"] [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-deep)}
+/* At night the Menu sheet is the dark canvas (SCAN-917), where the deep tones sink: its stat tiles and icon
+   chips take the export's neon tones instead, so each glyph reads and its tinted ground stays a dark tile. */
+.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="violet"]{--fqm-tone:var(--fq-x-violet-neon)}
+.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="aqua"]{--fqm-tone:var(--fq-x-aqua-neon)}
+.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="sun"]{--fqm-tone:var(--fq-x-sun-neon)}
+.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-neon)}
 
 [data-design="frequency"] [data-kit="members"] .fqm-vera-card{width:100%;min-height:var(--fq-hit-min);display:flex;align-items:center;gap:12px;padding:12px 14px;border:none;cursor:pointer;text-align:left;border-radius:var(--fq-radius-l);background:var(--fq-pa-soft),var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fqm-white-90),var(--fq-pa-glow);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-vera-card .fqm-vera-orb{width:34px;height:34px;flex:none}
