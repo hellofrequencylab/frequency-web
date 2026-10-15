@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const { results, calls } = vi.hoisted(() => ({ results: {} as Record<string, unknown>, calls: [] as string[] }))
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (table: string) => {
+vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from: (table: string) => {
   const q = { select: () => q, eq: (field: string, value: string) => { calls.push(`${table}.${field}:${value}`); return q }, gte: () => q, lte: () => q, maybeSingle: () => Promise.resolve(results[table]), then: (resolve: (v: unknown) => void) => Promise.resolve(results[table]).then(resolve) }
   return q
 } }) }))
