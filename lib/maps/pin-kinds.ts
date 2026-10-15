@@ -16,7 +16,7 @@
 
 /** Which layer a pin belongs to. `place` is the neutral default every pre-existing caller
  *  (venue map, location picker, listing map) lands on, and it keeps their colour unchanged. */
-export type MapPinKind = 'event' | 'circle' | 'space' | 'place'
+export type MapPinKind = 'event' | 'circle' | 'space' | 'place' | 'starter'
 
 /** Which token drives a pin's colour when the caller wants to override its kind. Map DOM lives
  *  outside Tailwind, so the canvas resolves the CSS custom property at mount. */
@@ -50,7 +50,22 @@ export const MAP_PIN_KINDS: Record<MapPinKind, MapPinPaint> = {
   space: { token: '--color-broadcast', fallback: '#1EB6C5', legend: 'Spaces', noun: 'Space' },
   // token-ok: mirrors --color-primary; the pre-existing default, unchanged
   place: { token: '--color-primary', fallback: '#E2912F', legend: 'Places', noun: 'Place' },
+  // A Starter Circle waiting to be claimed (the Circles map's second layer). Same token the DAWN Circles
+  // map paints its starters in, so moving that map onto the seam changed no colour.
+  // token-ok: mirrors --design-map-starter
+  starter: { token: '--design-map-starter', fallback: '#7C5CD6', legend: 'Starters', noun: 'Starter Circle' },
 }
+
+/** THE FREQUENCY PIN (SCAN-904): a round dot in the kit's accent or side colour with a WHITE ring, on
+ *  both engines, on the light Commons and the dark Stage alike. White on purpose, not a surface token:
+ *  the kit's surface goes dark at night and on Stage, and a dark ring would sink the pin into the map.
+ *  Applied only where the `--fq-*` tokens resolve (lib/maps/basemap-look.ts `isDesignMap`), so DAWN's
+ *  pins keep their teardrop and their `--color-surface` ring. */
+// token-ok: the design's pin ring is white in every mode; a Google Symbol needs a concrete colour string
+export const FREQUENCY_PIN_RING = '#FFFFFF'
+
+/** Pixel size of the Frequency pin (diameter) and its ring. One pair, both engines. */
+export const FREQUENCY_PIN = { diameterPx: 16, ringPx: 2.5 } as const
 
 /** The pre-ADR-1022 tone escape hatch, kept so no migrated surface changes colour. */
 const MAP_PIN_TONES: Record<MapPinTone, MapPinPaint> = {

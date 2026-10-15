@@ -108,6 +108,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:12px}
 [data-design="frequency"] [data-kit="members"] .fqm-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--fq-pa);margin-right:6px}
 [data-design="frequency"] [data-kit="members"] .fqm-legend i.starter{background:var(--design-map-starter)}
+[data-design="frequency"] [data-kit="members"] .fqm-legend i.circle{background:var(--fq-presence)}
 [data-design="frequency"] [data-kit="members"] .fqm-block{display:block}
 [data-design="frequency"] [data-kit="members"] .fqm-lane{margin-bottom:44px}
 [data-design="frequency"] [data-kit="members"] .fqm-lane .why{font-size:15px}

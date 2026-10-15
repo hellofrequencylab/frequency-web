@@ -3,7 +3,10 @@ import {
   basemapPalette,
   DARK_TILE_FILTER,
   googleMapStyles,
+  isDesignMap,
+  LIGHT_TILE_FILTER,
   luminance,
+  maplibreBasemapPaint,
   maplibreTileFilter,
   mix,
   readBasemapPalette,
@@ -43,11 +46,12 @@ describe('basemap palette', () => {
     expect(maplibreTileFilter(p)).toBe(DARK_TILE_FILTER)
   })
 
-  it('reads Commons by day as light and leaves the MapLibre tiles alone', () => {
+  it('reads Commons by day as light and tints the fallback tiles warm, never bare grey', () => {
     const p = basemapPalette(COMMONS)
     expect(p.dark).toBe(false)
     expect(p.land).toBe('#faf4ea')
-    expect(maplibreTileFilter(p)).toBe('none')
+    expect(maplibreTileFilter(p)).toBe(LIGHT_TILE_FILTER)
+    expect(LIGHT_TILE_FILTER).not.toContain('invert')
   })
 
   it('emits only hex colours, which is all Google accepts', () => {
@@ -73,4 +77,52 @@ describe('basemap palette', () => {
     expect(readBasemapPalette(null)).toBeNull()
     if (typeof document !== 'undefined') expect(readBasemapPalette(document.body)).toBeNull()
   })
+
+  it('returns false for isDesignMap where no Frequency tokens exist', () => {
+    expect(isDesignMap(null)).toBe(false)
+    if (typeof document !== 'undefined') expect(isDesignMap(document.body)).toBe(false)
+  })
+})
+
+// A slice of OpenFreeMap's Positron (the keyless default), one layer of each kind the repaint handles.
+const POSITRON = [
+  { id: 'background', type: 'background' },
+  { id: 'park', type: 'fill', 'source-layer': 'park' },
+  { id: 'water', type: 'fill', 'source-layer': 'water' },
+  { id: 'landcover_wood', type: 'fill', 'source-layer': 'landcover' },
+  { id: 'waterway', type: 'line', 'source-layer': 'waterway' },
+  { id: 'highway_minor', type: 'line', 'source-layer': 'transportation' },
+  { id: 'highway_major_casing', type: 'line', 'source-layer': 'transportation' },
+  { id: 'highway_motorway_inner', type: 'line', 'source-layer': 'transportation' },
+  { id: 'boundary_2', type: 'line', 'source-layer': 'boundary' },
+  { id: 'water_name_point_label', type: 'symbol', 'source-layer': 'water_name' },
+  { id: 'label_city', type: 'symbol', 'source-layer': 'place' },
+  // A map's own pin layer (GeoJSON, no source-layer): never repainted.
+  { id: 'cluster-count', type: 'symbol' },
+]
+
+describe('the MapLibre fallback wears the same palette as Google (SCAN-904)', () => {
+  for (const [name, tokens] of [['Stage', STAGE], ['Commons', COMMONS]] as const) {
+    it(`paints ${name} into the vector style layer by layer`, () => {
+      const p = basemapPalette(tokens)
+      const paint = maplibreBasemapPaint(POSITRON, p)
+      // `prop` is matched by suffix, so a style property name never sits in the source as a bare
+      // string the class scanners would read as a utility.
+      const get = (id: string, prop: string) => paint.find(([l, k]) => l === id && k.endsWith(prop))?.[2]
+      expect(get('background', 'background-color')).toBe(p.land)
+      expect(get('water', 'fill-color')).toBe(p.water)
+      expect(get('park', 'fill-color')).toBe(p.park)
+      expect(get('landcover_wood', 'fill-color')).toBe(p.park)
+      expect(get('waterway', 'line-color')).toBe(p.water)
+      expect(get('highway_minor', 'line-color')).toBe(p.road)
+      expect(get('highway_major_casing', 'line-color')).toBe(p.land)
+      expect(get('highway_motorway_inner', 'line-color')).toBe(p.roadMajor)
+      expect(get('boundary_2', 'line-color')).toBe(p.boundary)
+      expect(get('water_name_point_label', 'text-color')).toBe(p.labelFaint)
+      expect(get('label_city', 'text-color')).toBe(p.label)
+      expect(get('label_city', 'halo-color')).toBe(p.labelHalo)
+      expect(paint.some(([l]) => l === 'cluster-count')).toBe(false)
+      for (const [, , v] of paint) expect(v).toMatch(/^#[0-9a-f]{6}$/)
+    })
+  }
 })

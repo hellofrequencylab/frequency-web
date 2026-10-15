@@ -12,6 +12,8 @@ import type * as GeoJSON from 'geojson'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
 import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
+import { applyDesignBasemap } from '@/components/maps/maplibre-basemap'
+import { FREQUENCY_PIN_RING } from '@/lib/maps/pin-kinds'
 import { distanceKm } from '@/lib/distance'
 import { mapColor } from '@/lib/maps/css-color'
 
@@ -127,6 +129,9 @@ export default function CircleMap({
       attributionControl: interactive ? { compact: true } : false,
     })
     mapRef.current = map
+    // Under Frequency the kit's basemap and the white pin ring (SCAN-904); a no-op under DAWN.
+    const design = applyDesignBasemap(map, container)
+    const ring = design ? FREQUENCY_PIN_RING : mapColor('--design-map-pin-ring')
 
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
@@ -188,7 +193,7 @@ export default function CircleMap({
           'circle-color': mapColor('--design-map-pin'),
           'circle-radius': 7,
           'circle-stroke-width': 2,
-          'circle-stroke-color': mapColor('--design-map-pin-ring'),
+          'circle-stroke-color': ring,
         },
       })
 
@@ -211,7 +216,7 @@ export default function CircleMap({
           'circle-color': mapColor('--design-map-starter'),
           'circle-radius': 7,
           'circle-stroke-width': 2,
-          'circle-stroke-color': mapColor('--design-map-pin-ring'),
+          'circle-stroke-color': ring,
         },
       })
 

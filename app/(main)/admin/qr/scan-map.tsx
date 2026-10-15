@@ -12,6 +12,8 @@ import type * as GeoJSON from 'geojson'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MAPLIBRE_STYLE } from '@/lib/maps/provider'
 import { configureMaplibreWorker } from '@/components/maps/maplibre-worker'
+import { applyDesignBasemap } from '@/components/maps/maplibre-basemap'
+import { FREQUENCY_PIN_RING } from '@/lib/maps/pin-kinds'
 import type { ScanLocation } from '@/lib/qr/analytics'
 import { mapColor } from '@/lib/maps/css-color'
 
@@ -50,6 +52,9 @@ export default function ScanMap({
       attributionControl: { compact: true },
     })
     mapRef.current = map
+    // Under Frequency the kit's basemap and the white pin ring (SCAN-904); a no-op under DAWN.
+    const design = applyDesignBasemap(map, container)
+    const ring = design ? FREQUENCY_PIN_RING : mapColor('--design-map-pin-ring')
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
     map.on('load', () => {
@@ -69,7 +74,7 @@ export default function ScanMap({
           'circle-opacity': 0.8,
           'circle-radius': ['interpolate', ['linear'], ['get', 'scans'], 1, 8, 50, 30],
           'circle-stroke-width': 2,
-          'circle-stroke-color': mapColor('--design-map-pin-ring'),
+          'circle-stroke-color': ring,
         },
       })
       map.addLayer({
