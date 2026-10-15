@@ -15,8 +15,8 @@
 // The rail CONTENT is server-rendered and passed in; this island owns only the geometry. Which rails a
 // route gets is the shell's existing decision (railFor / leftRailFor / chrome overrides), unchanged.
 
-import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   railFor,
   leftRailFor,
@@ -33,7 +33,7 @@ import type { Capability } from '@/lib/core/capabilities'
 import type { WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/staff'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
-import { isConsoleRoute } from '@/lib/nav/console-route'
+import { isConsoleRoute, isSpaceOwnerConsole } from '@/lib/nav/console-route'
 
 interface RailFaces {
   full: React.ReactNode
@@ -94,6 +94,18 @@ function setRails(next: Rails) {
   railSubs.forEach((f) => f())
 }
 
+// THE SPACE OWNER CONSOLE (SCAN-909). A Space profile at `?panel=manage` is the owner's in-place
+// console: the right rail's member panels (the viewer's own streak, Zaps and goals) have no place
+// beside it, so the rail stamps `data-owner-console` and members-shell.css stands those panels down
+// (right-rail.tsx marks them `data-rail-member`; the rule is lib/nav/console-route.ts). The query is
+// read in its own Suspense boundary, so a search-param read never bails a page out of its server render.
+function OwnerConsoleProbe({ pathname, onChange }: { pathname: string; onChange: (on: boolean) => void }) {
+  const panel = useSearchParams()?.get('panel') ?? null
+  const on = isSpaceOwnerConsole(pathname, panel)
+  useEffect(() => onChange(on), [on, onChange])
+  return null
+}
+
 function mode(v: boolean | null): 'auto' | 'micro' | 'full' {
   return v === null ? 'auto' : v ? 'micro' : 'full'
 }
@@ -125,6 +137,7 @@ export function FqRailLayout({
   const [drag, setDrag] = useState(false)
   const [tip, setTip] = useState<Tip>(null)
   const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
+  const [ownerConsole, setOwnerConsole] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
   const endDrag = useRef<(() => void) | null>(null)
 
@@ -255,10 +268,15 @@ export function FqRailLayout({
     </div>
   )
 
-  const style =
-    cur.l !== null || cur.r !== null
-      ? ({ ...(cur.l !== null && { '--fqm-l': `${cur.l}px` }), ...(cur.r !== null && { '--fqm-r': `${cur.r}px` }) } as React.CSSProperties)
-      : undefined
+  // The settings panel (AdminBar) is open: the body reserves its width on the right (members-shell.css
+  // `.fqm-body[data-panel]`), so the centre column shrinks to make room instead of sliding under it or
+  // pushing the page past the viewport (SCAN-909).
+  const panelOpen = settings.open && !isAdminRoute && !takeover
+  const vars: Record<string, string> = {}
+  if (cur.l !== null) vars['--fqm-l'] = `${cur.l}px`
+  if (cur.r !== null) vars['--fqm-r'] = `${cur.r}px`
+  if (panelOpen) vars['--fqm-panel'] = `${settings.width}px`
+  const style = Object.keys(vars).length > 0 ? (vars as React.CSSProperties) : undefined
 
   return (
     <PageAdminProvider value={{ role: admin.role, staffRole: admin.staffRole, webRole: admin.webRole, caps: new Set(admin.caps), appOverrides: admin.appOverrides }}>
@@ -271,8 +289,13 @@ export function FqRailLayout({
           data-r={mode(rc)}
           data-drag={drag ? '' : undefined}
           data-edge={edge ? '' : undefined}
+          data-panel={panelOpen ? '' : undefined}
+          data-owner-console={ownerConsole ? '' : undefined}
           style={style}
         >
+          <Suspense fallback={null}>
+            <OwnerConsoleProbe pathname={pathname} onChange={setOwnerConsole} />
+          </Suspense>
           {showL && (
             <aside data-rail-column className="fqm-rail fqm-rail-l" aria-label="Your shortcuts" onMouseOver={onOver('L')} onMouseOut={onOut}>
               <div className="fqm-rail-scroll">

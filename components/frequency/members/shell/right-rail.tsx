@@ -26,7 +26,10 @@
 // below keep the DAWN rail's own route handling.
 //
 // Every panel is its own Suspense boundary with a null fallback, and a panel with nothing real to
-// say renders nothing. No sample numbers, and no Zap rewards on goals or setup.
+// say renders nothing. The viewer's own stats and goals sit in a `data-rail-member` box (display:
+// contents, so the stack's rhythm is unchanged) that a Space's owner console (`?panel=manage`) stands
+// down: the rail layout stamps `data-owner-console` and members-shell.css hides the box (SCAN-909).
+// No sample numbers, and no Zap rewards on goals or setup.
 
 import Link from 'next/link'
 import { Suspense } from 'react'
@@ -216,15 +219,18 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
       <Suspense fallback={null}>
         <GetStartedPanel profileId={profileId} />
       </Suspense>
-      {/* The Feed leads with its own stats box (owner, 2026-10-13), so the rail's copy stands down there. */}
-      {pathname !== '/feed' && (
+      {/* The viewer's own standing: stood down on a Space's owner console (`data-rail-member`, SCAN-909).
+          The Feed leads with its own stats box (owner, 2026-10-13), so the rail's copy stands down there. */}
+      <div data-rail-member="">
+        {pathname !== '/feed' && (
+          <Suspense fallback={null}>
+            <RailStats profileId={profileId} stats={stats} withActivity={pathname !== '/practices'} />
+          </Suspense>
+        )}
         <Suspense fallback={null}>
-          <RailStats profileId={profileId} stats={stats} withActivity={pathname !== '/practices'} />
+          <GoalsPanel profileId={profileId} stats={stats} />
         </Suspense>
-      )}
-      <Suspense fallback={null}>
-        <GoalsPanel profileId={profileId} stats={stats} />
-      </Suspense>
+      </div>
       <Suspense fallback={null}>
         <YourWeekPanel profileId={profileId} stats={stats} />
       </Suspense>
@@ -351,12 +357,14 @@ export function FrequencyRightMicro({ profileId, stats }: Pick<FrequencyRightRai
       <Suspense fallback={null}>
         <MicroGetStarted profileId={profileId} />
       </Suspense>
-      <Suspense fallback={null}>
-        <MicroStats stats={stats} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <MicroGoals profileId={profileId} stats={stats} />
-      </Suspense>
+      <div data-rail-member="">
+        <Suspense fallback={null}>
+          <MicroStats stats={stats} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <MicroGoals profileId={profileId} stats={stats} />
+        </Suspense>
+      </div>
       <Suspense fallback={null}>
         <MicroWeek profileId={profileId} stats={stats} />
       </Suspense>

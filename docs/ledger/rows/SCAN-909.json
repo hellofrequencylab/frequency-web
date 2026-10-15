@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-909",
+  "title": "A Space owner's console on the profile overflows a laptop screen: the settings panel clips off the right edge, the tab row is cut off, the stat cards run inline and the rail shows the owner's own streak",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "components/frequency/members/shell/rail-layout.tsx",
+    "ref": "Owner 2026-10-14 (/spaces/heart-on-fire?panel=manage at 1280-1440px): the page overflows sideways with the settings panel open and closed, the panel's fields and close button are cut off, the Space tabs clip at P..., the stat cards read as one sentence, and the goals rail shows my own streak on an owner console."
+  },
+  "detail": "The AdminBar settings panel was painted 32px wider than its box and 32px past the viewport (a DAWN buffer the Frequency shell does not have) and slid over the centre column. In the Frequency member shell it is now flush inside its box, and while it is open the rail grid reserves its width on the right (.fqm-body[data-panel], --fqm-panel): the right rail stands down and the centre column shrinks, on every page that opens the panel. Every rail-grid child gets min-width:0. The Space tab rail is the one horizontal scroller in its row (no scrollbar, soft snap). The in-place console (.fqs-pane .adp, no admin-kit ancestor) gets the admin kit's structure: KPI cards stack label, tabular display numeral and caption; 4-up, 2-up under a 760px column and 1-up under 400px or on a phone (container query on the console column); tables scroll in their own box; the side column drops under 900px. On /spaces/<slug>?panel=manage the rail layout stamps data-owner-console (lib/nav/console-route.ts isSpaceOwnerConsole, read in a Suspense-wrapped useSearchParams probe) and the right rail's own stats and goals (full and micro, wrapped data-rail-member) stand down. Hand-kept members-shell.css, space-page.css and admin-pages.css; DAWN untouched.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.readFileSync(p,'utf8');const sh=r('app/themes/frequency/members-shell.css'),sp=r('app/themes/frequency/space-page.css'),ap=r('app/themes/frequency/admin-pages.css'),rr=r('components/frequency/members/shell/right-rail.tsx'),rl=r('components/frequency/members/shell/rail-layout.tsx'),cr=r('lib/nav/console-route.ts');const bad=[];if(!sh.includes('.fqm-adminbar>aside{right:0!important;width:100%!important'))bad.push('the settings panel still paints past the right edge');if(!sh.includes('.fqm-body[data-panel]{padding-right:calc(var(--fqm-panel')||!rl.includes('data-panel={panelOpen'))bad.push('the centre column does not shrink for the open settings panel');if(!/fqs-tabrow>\\[data-space-menu-rail\\]\\{[^}]*overflow-x:auto[^}]*scrollbar-width:none/.test(sp))bad.push('the Space tab row does not scroll inside its own box');if(!ap.includes('.fqs-pane .adp .panel.kpi{display:flex;flex-direction:column')||!ap.includes('@container fq-console (max-width:760px)'))bad.push('the in-place console stat cards still run inline and size to the viewport');if(!rr.includes('data-rail-member')||!rl.includes('data-owner-console')||!cr.includes('export function isSpaceOwnerConsole')||!sh.includes('[data-owner-console] [data-rail-member]{display:none}'))bad.push('the owner console rail still shows the member stats and goals');if(bad.length){console.error('SCAN-909: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

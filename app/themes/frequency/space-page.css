@@ -333,6 +333,17 @@
 /* The share page sits under the marketing header (app/(public)/layout.tsx pads its main by 4rem). */
 [data-design="frequency"] [data-kit="members"].fqs-public .fqs-tabrow{top:calc(4rem + env(safe-area-inset-top))}
 [data-design="frequency"] [data-kit="members"] .fqs-tabrow>[data-space-menu-rail] .tabs{border-bottom:none}
+/* THE TAB ROW NEVER WIDENS THE PAGE (SCAN-909). A Space with many tabs used to run its row past the centre
+   column (cut off at "P…" beside an open settings panel). The row is held to its column; the tab rail is
+   the ONE horizontal scroller inside it (the nav itself stops scrolling, so there are not two nested), with
+   no visible scrollbar and a soft snap to each tab. No edge mask: a mask would also clip the mega-menu
+   panel (space-menu-dropdown.tsx), which is fixed-positioned from inside this rail. */
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow{min-width:0;max-width:100%}
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow>[data-space-menu-rail]{flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-inline:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow>[data-space-menu-rail]::-webkit-scrollbar{display:none}
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow>[data-space-menu-rail] .tabs{width:max-content;min-width:100%;overflow:visible}
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow>[data-space-menu-rail] .tabs>*{scroll-snap-align:start}
+[data-design="frequency"] [data-kit="members"] .fqs-tabrow>.row{flex:none}
 [data-design="frequency"] [data-kit="members"] .fqs-tabrow>.btn{flex:none;margin-bottom:6px}
 [data-design="frequency"] [data-kit="members"] .fqs-editing{margin-top:12px}
 [data-design="frequency"] [data-kit="members"] .fqs-pane{margin-top:36px;display:flex;flex-direction:column;gap:56px}

@@ -408,3 +408,77 @@
 
 /* Contacts: the Workspace / Table switch sits between the health numbers and the view it picks. */
 [data-design="frequency"] [data-kit="admin"] .adp .chips.adp-views{margin:var(--fq-space-7) 0 20px}
+
+/* ══ THE IN-PLACE CONSOLE (SCAN-909) ══════════════════════════════════════════════════════════════════
+   A Space owner opens the console on the profile itself (`/spaces/<slug>?panel=manage`,
+   components/spaces/workspace/space-body-panel.tsx): the same `.adp` bodies, but inside the member shell's
+   centre column and the Space page pane (`.fqs-pane`), with NO `[data-kit="admin"]` ancestor. Every rule
+   above, and the generated admin kit (`.kpi`, `.tbl`, `.bars`, `.st`), is scoped to that ancestor, so here a
+   KPI card's label, numeral and caption ran inline as one sentence ("Check-ins, 30 days 0"), the tables
+   had no scroll box, and the 360px side column held its width at any column size. These rules give the
+   in-place console the same structure, sized to the COLUMN it sits in (a container query), not to the
+   viewport: beside two rails and an open settings panel a 1280px laptop leaves the column ~600px. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp{container:fq-console / inline-size;min-width:0;max-width:100%;background:transparent;margin:0}
+
+/* KPI cards: the label on top (small, muted), the numeral (display face, tabular), the caption under it. */
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .g4{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--fq-space-5)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .g4+.g4.adp-kpi-row{margin-top:var(--fq-space-5)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:var(--fq-space-3);min-width:0;padding:var(--fq-space-6)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi>*{display:block;max-width:100%;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi>.t2:first-child{font:500 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi>.num{font:500 var(--fq-text-h2)/1 var(--fq-font-display);letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--fq-text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi>.num~*{font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi>.num~.up{font-weight:500;color:var(--fq-success)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi>.num~.down{font-weight:500;color:var(--fq-danger)}
+
+/* The console's two columns, the head and the section rhythm. */
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp>.head{margin-bottom:var(--fq-space-8)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:var(--fq-space-8)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .ap-cols>*{min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .ap-cols>.side{top:calc(var(--fq-space-12) + var(--fq-space-9))}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .adp-gap{margin-top:var(--fq-space-9)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .stack.adp-wide{gap:var(--fq-space-8)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .stack.adp-tight{gap:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel>.sec-h{margin-bottom:var(--fq-space-5)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .t1.adp-block{display:block}
+
+/* Tables scroll sideways inside their own box; the page never does. */
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .tbl-wrap{max-width:100%;overflow-x:auto;border-radius:var(--fq-radius-l)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .tbl{width:100%;border-collapse:collapse;font:400 var(--fq-text-body-s)/1.35 var(--fq-font-sans);font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .tbl th{text-align:left;font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);padding:var(--fq-space-4) var(--fq-space-4);border-bottom:1px solid var(--fq-border-hair);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .tbl td{padding:var(--fq-space-4);border-bottom:1px solid var(--fq-border-hair);color:var(--fq-text-body);vertical-align:middle}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .tbl :is(td, th):last-child{text-align:right}
+
+/* Status pills and the weekly bars. */
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .st{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--fq-radius-orb);font:500 var(--fq-text-meta)/1 var(--fq-font-sans);white-space:nowrap;background:var(--fq-track);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .st.ok{background:var(--fq-presence-soft);color:var(--fq-presence)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .st.warn{background:var(--fq-reward-soft);color:var(--fq-reward)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .st.bad{background:color-mix(in oklab,var(--fq-danger) 14%,transparent);color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .bars{display:flex;align-items:flex-end;gap:6px;height:140px}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .bars i{flex:1;min-width:0;border-radius:8px 8px 3px 3px;background:var(--fq-pa);opacity:.85}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .bars i.lo{background:var(--fq-track);opacity:1}
+
+/* At a glance: label and basis on the left, the reading on the right. */
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp-glance dl{margin:0}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp-glance dt{min-width:0;display:flex;flex-direction:column;gap:var(--fq-space-1)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp-glance dd{margin:0;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp-glance .num.adp-glance-num{font-size:var(--fq-text-h3);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* THE COLUMN DECIDES. Narrow column (beside two rails, or with the settings panel open): the side column
+   drops under the main one and the KPIs go two to a row. A phone-width column: one to a row. */
+@container fq-console (max-width:900px){
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .ap-cols.adp-split>.side{position:static}
+}
+@container fq-console (max-width:760px){
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container fq-console (max-width:400px){
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .g4{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .g4{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi{padding:var(--fq-space-5)}
+}
+}
