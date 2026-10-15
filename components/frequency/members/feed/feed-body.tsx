@@ -152,7 +152,10 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         {quickLinks(operates).map((l) => (
           <Link key={l.href} href={l.href}>
             <FqIcon name={l.icon} />
-            <span>{l.label}</span>
+            <span className="fa-quick-t">
+              <b>{l.label}</b>
+              <small>{l.note}</small>
+            </span>
           </Link>
         ))}
       </nav>
@@ -198,14 +201,15 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
   )
 }
 
-function quickLinks(operatesSpaces: boolean): { label: string; href: string; icon: FqIconName }[] {
+// SCAN-913: each shortcut is a feature button with a one-line caption under its label.
+function quickLinks(operatesSpaces: boolean): { label: string; note: string; href: string; icon: FqIconName }[] {
   return [
     operatesSpaces
-      ? { label: 'Your Spaces', href: '/spaces/operating', icon: 'space' }
-      : { label: 'Your Circles', href: '/circles', icon: 'circle' },
-    { label: 'Events', href: '/events', icon: 'event' },
-    { label: 'Messages', href: '/messages', icon: 'message' },
-    { label: 'Practices', href: '/practices', icon: 'checkin' },
+      ? { label: 'Your Spaces', note: 'What you run', href: '/spaces/operating', icon: 'space' }
+      : { label: 'Your Circles', note: 'Your people', href: '/circles', icon: 'circle' },
+    { label: 'Events', note: 'What’s happening', href: '/events', icon: 'event' },
+    { label: 'Messages', note: 'Your conversations', href: '/messages', icon: 'message' },
+    { label: 'Practices', note: 'Keep your rhythm', href: '/practices', icon: 'checkin' },
   ]
 }
 

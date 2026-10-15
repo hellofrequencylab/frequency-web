@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-914",
+  "title": "The /join card sits centred in the screen under the header instead of low and past the fold",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/themes/frequency/site-pages-b.css",
+    "ref": "Owner 2026-10-14 on localhost /join: center this box vertically as well, on local and live."
+  },
+  "detail": "The site shell's main already pads the fixed header's height, and the join stage padded it again (nav height + 24px) while filling a full 100svh below it, so the card sat 84px low and the page ran 84px past the viewport. The stage and the .jb page now fill the viewport minus the header (calc(100svh - --fq-site-nav-rest)) with plain 24px padding (16px on a phone), so the card centres in the visible area under the nav. Measured on localhost at 768px tall: 188px above and below the card.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('app/themes/frequency/site-pages-b.css','utf8');const bad=[];if(/jb-stage\\{[^}]*padding:calc\\(var\\(--fq-site-nav-rest/.test(c)||/jb-stage\\{padding-top:calc\\(var\\(--fq-site-nav-rest/.test(c))bad.push('the stage still adds the header height on top of the shell');if(!/jb-stage\\{[^}]*min-height:calc\\(100svh - var\\(--fq-site-nav-rest/.test(c))bad.push('the stage does not fill the viewport below the header');if(bad.length){console.error('SCAN-914: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

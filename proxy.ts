@@ -8,7 +8,7 @@ import {
   encodeFirstTouch,
 } from '@/lib/attribution/first-touch'
 import { isProfileRef } from '@/lib/qr/public-url'
-import { hasPublicTwin } from '@/lib/nav/public-twin'
+import { hasPublicTwin, publicIndexTwin } from '@/lib/nav/public-twin'
 import { memberEventRewrite } from '@/lib/nav/member-event-rewrite'
 import { memberSpaceRewrite } from '@/lib/nav/member-space-rewrite'
 import { shouldWriteMarker } from '@/lib/nav/marker-cookie'
@@ -391,6 +391,17 @@ export async function proxy(request: NextRequest) {
     })
     supabaseResponse.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie))
     return rewriteResponse
+  }
+
+  // A member index with a public listing (SCAN-912: /circles to /discover/circles). Signed out, the
+  // visitor gets the public listing, not a sign-in wall; the query string rides along.
+  const indexTwin = user ? null : publicIndexTwin(pathname)
+  if (indexTwin) {
+    const twinUrl = request.nextUrl.clone()
+    twinUrl.pathname = indexTwin
+    const twinResponse = NextResponse.redirect(twinUrl)
+    supabaseResponse.cookies.getAll().forEach((cookie) => twinResponse.cookies.set(cookie))
+    return twinResponse
   }
 
   if (!user && isProtected) {

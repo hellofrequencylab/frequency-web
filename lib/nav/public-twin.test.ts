@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { sourceWithoutComments } from '@/test/source-shape'
-import { matchPublicTwin, hasPublicTwin, TWIN_RULES } from './public-twin'
+import { matchPublicTwin, hasPublicTwin, TWIN_RULES, publicIndexTwin } from './public-twin'
 
 // THE INVARIANT: a share link a member can press must not dead-end a signed-out recipient.
 //
@@ -95,5 +95,17 @@ describe('member detail routes redirect a signed-out visitor to their public twi
       // A pattern that allowed `/` inside its capture would swallow every sub-route beneath it.
       expect(rule.re.source, `${rule.re} must not allow a slash inside its capture`).toContain('[^/]+')
     }
+  })
+})
+
+describe('publicIndexTwin (SCAN-912)', () => {
+  it('sends a signed-out /circles to the public Circles listing', () => {
+    expect(publicIndexTwin('/circles')).toBe('/discover/circles')
+  })
+  it('leaves every other path alone, a Circle detail and the create flow included', () => {
+    expect(publicIndexTwin('/circles/new')).toBeNull()
+    expect(publicIndexTwin('/circles/some-circle')).toBeNull()
+    expect(publicIndexTwin('/events')).toBeNull()
+    expect(publicIndexTwin(null)).toBeNull()
   })
 })

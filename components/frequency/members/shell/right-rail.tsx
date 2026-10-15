@@ -42,7 +42,6 @@ import { loadLocalBoard, loadPeopleToKnow, loadRailOnboarding, loadYourWeek } fr
 import { getInitials } from '@/lib/utils'
 import { loadAnonPublicEvents } from '@/lib/feed/anon-feed'
 import { BETA_CTA_HREF } from '@/lib/site'
-import { HOME_TZ } from '@/lib/time/zone'
 import { AddToggle } from '../shared/toggles'
 import { avatarBg } from './avatar'
 import { GetStarted } from './get-started'
@@ -401,18 +400,20 @@ async function AnonComingUp() {
       </div>
       <div className="fqm-week">
         {events.map((e) => {
+          // Event times are stored as UTC wall-clock (formatEventDate), so they read in UTC; the home
+          // zone moved a 9am start to 2am (SCAN-911).
           const at = new Date(e.starts_at)
           return (
             <div key={e.id} className="fqm-day">
               <span className="fqm-day-d">
-                <small>{at.toLocaleDateString('en-US', { timeZone: HOME_TZ, weekday: 'short' })}</small>
-                <b>{at.toLocaleDateString('en-US', { timeZone: HOME_TZ, day: 'numeric' })}</b>
+                <small>{at.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short' })}</small>
+                <b>{at.toLocaleDateString('en-US', { timeZone: 'UTC', day: 'numeric' })}</b>
               </span>
               <span className="fqm-day-items">
                 <Link href={`/events/${e.slug}`}>
                   <i aria-hidden />
                   <span>{e.title}</span>
-                  <small>{at.toLocaleTimeString('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()}</small>
+                  <small>{at.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()}</small>
                 </Link>
               </span>
             </div>

@@ -336,3 +336,54 @@
   outline: revert-layer;
   box-shadow: revert-layer;
 }
+
+/* ── BLUER BALANCE (owner, 2026-10-14, SCAN-905: "the overall theme is a little too pink, bring in more blues") ──
+   Two moves, both from the export's own colours. The members room's living background (data-energy="flow") led with
+   the peach-pink haze; it now leads with the export's sky haze and seaglass, keeping the haze as the quiet third stop.
+   The primary-action gradient (--fq-pa, every iridescent button and active pill) dropped its opening orchid stop and
+   now runs violet to sky to aqua: the export's own --fq-pa stops #C4B8FF, #A3D4FF and #8FE9FF. */
+[data-design="frequency"] [data-energy="flow"] {
+  --fq-aura-1: var(--fq-sky-haze);
+  --fq-aura-2: var(--fq-seaglass);
+  --fq-aura-3: var(--fq-haze);
+}
+:root[data-design="frequency"],
+[data-design="frequency"] [data-surface="stage"] {
+  --fq-pa: linear-gradient(120deg, #C4B8FF 0%, #A3D4FF 48%, #8FE9FF 100%); /* the export --fq-pa without its #EEC1EC orchid stop */
+  --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #C9D6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* the export --fq-pa-orb, its #E6CDF4 orchid moved to #C9D6FF periwinkle */
+}
+
+/* ── COOLER BALANCE (owner, 2026-10-14, SCAN-907: "still too purple / pink, feels too feminine, balance it out") ──
+   SCAN-905 only moved the members aura and --fq-pa. This goes to the roots every surface reads: the iridescent sweep
+   (every .fq-iri-btn, .fq-iri-text and .fq-iri-rim: the Create and Zap buttons, the streak numerals, active pills)
+   now leads aqua and sky with violet as a short accent and no pink stop; the background wash, --fq-pa-soft (icon
+   chips) and the accent (the streak ring arc, links) go teal and blue; the neutrals cool a step (sand canvas to a
+   cool off-white, the Stage's purple-black to blue-black). The export's own aqua, sky and seaglass carry it, so the
+   brand still reads as Frequency. */
+:root[data-design="frequency"] {
+  --fq-iridescent-sweep: linear-gradient(100deg, #8FE9FF 0%, #A3D4FF 20%, #C4B8FF 34%, #8FE9FF 52%, #A3E8D4 72%, #A3D4FF 88%, #8FE9FF 100%); /* export sweep stops #8FE9FF aqua, #A3D4FF sky, #C4B8FF violet; seaglass #A3E8D4 */
+  --fq-iridescent-sweep-deep: linear-gradient(100deg, #2C93A3 0%, #5A9FD0 26%, #8F84D6 44%, #2C93A3 64%, #3C9C8C 82%, #2C93A3 100%); /* export deep stops --fq-x-aqua-deep #17788A, --fq-x-violet-deep #5B3FD0 */
+  --fq-iridescent: conic-gradient(from 200deg, #8FE9FF, #A3D4FF, #C4B8FF, #A3E8D4, #8FE9FF); /* export conic stops, pink dropped */
+  --fq-pa: linear-gradient(120deg, #A3D4FF 0%, #8FE9FF 60%, #A3E8D4 100%); /* export --fq-pa stops #A3D4FF, #8FE9FF */
+  --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #CFE6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* export --fq-pa-orb, periwinkle centre */
+  --fq-pa-soft: linear-gradient(120deg, rgba(163, 212, 255, .24), rgba(143, 233, 255, .2) 50%, rgba(163, 232, 212, .2)); /* export --fq-pa-soft at sky and aqua */
+  --fq-wash: radial-gradient(60% 50% at 6% 0%, rgba(163, 212, 255, .24), transparent 70%), radial-gradient(50% 50% at 98% 14%, rgba(143, 233, 255, .26), transparent 70%), radial-gradient(55% 50% at 70% 100%, rgba(163, 232, 212, .16), transparent 70%); /* export --fq-wash lobes in sky, aqua, seaglass */
+  --fq-accent: #3A8C99; /* export aqua deep, softened toward seaglass (owner: no harsh blue) */
+  --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
+  --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
+  --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
+}
+[data-design="frequency"] [data-energy="flow"] {
+  --fq-aura-3: #CFE6F5; /* export sky haze, lighter */
+}
+[data-design="frequency"] [data-surface="stage"] {
+  --fq-pa: linear-gradient(120deg, #A3D4FF 0%, #8FE9FF 60%, #A3E8D4 100%); /* export --fq-pa stops #A3D4FF, #8FE9FF */
+  --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #CFE6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* export --fq-pa-orb, periwinkle centre */
+  --fq-accent: var(--fq-x-aqua-neon);
+  --fq-bg-canvas: #070B14; /* export canvas, cooled */
+  --fq-surface-raised: #121C2E; /* export stage raised, blue-black */
+  --fq-text-muted: #98A6BC; /* export stage muted, cooled */
+}
+[data-design="frequency"] .fq-iri-btn {
+  box-shadow: 0 0 28px rgba(143, 233, 255, .4), 0 0 70px rgba(163, 212, 255, .22) !important; /* export iri glow in aqua and sky */
+}

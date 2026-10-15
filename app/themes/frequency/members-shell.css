@@ -822,3 +822,59 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] [data-rail-member]{display:contents}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-owner-console] [data-rail-member]{display:none}
 }
+
+/* SCAN-908: the rail's Stats & streaks box quiets with the Feed's standing row: the streak numeral drops from 34px
+   display to a 22px figure, its flame takes the accent instead of neon violet (SCAN-907), the tiles' figures step
+   down a size. */
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num b{font-size:22px;letter-spacing:-.03em}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num svg{width:18px;height:18px;color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b{font-size:15px}
+
+/* SCAN-913: the Feed's four shortcuts become feature buttons (owner: "beautiful feature buttons with elements
+   from the design system", no harsh blue). Glass surface, a soft sky-to-seaglass orb (--fq-pa) holding the glyph in the accent, the
+   label over a one-line caption, even heights, a gentle lift on hover. */
+[data-design="frequency"] [data-kit="members"] .fa-quick a{flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border-radius:var(--fq-radius-l)}
+[data-design="frequency"] [data-kit="members"] .fa-quick a svg{width:20px;height:20px;padding:10px;border-radius:50%;background:var(--fq-pa);color:var(--fq-accent);box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
+[data-design="frequency"] [data-kit="members"] .fa-quick a:hover svg{background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .fa-quick-t{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%}
+[data-design="frequency"] [data-kit="members"] .fa-quick-t b{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-display);letter-spacing:-.01em;color:var(--fq-text-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fa-quick-t small{font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);color:var(--fq-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* SCAN-911: the gate's quiet log-in line under the pitch. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-join-login{margin:4px 0 0;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-join-login a{color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:3px}
+}
+
+/* ── A SIGNED-OUT PUBLIC VIEW in (main) (SCAN-912) ──────────────────────────────────────────────────
+   The /events index, the events calendar and a Space's public tabs render for a signed-out visitor in
+   the public site shell (app/(main)/layout.tsx publicChrome), with no member rails and no .fqm-center
+   column. Their bodies are members-kit bodies, so the layout wraps them in one members-kit root,
+   `.fqm-public-view`, and this block is that root's page: a centred container with the site's side
+   padding and width, clear of the fixed site header by its own resting height, on the site canvas (no
+   members card ground of its own). It is ONE wrapper for every page in that branch, not a fix per page.
+
+   The members kit nests inside the site kit here, so the site kit's own meanings for a few shared class
+   names reach the members body (kit-site.css is generated and cannot be scoped away): `.side` (a promo
+   tile: padding, shadow, min height), `.stack` (sticky at 100px), `.panel` (a hairline border and a tint
+   over the glass), `.panel .k` (a small flex label), `.chip` (uppercase display type), `.btn` (the 52px
+   marketing button), `.sec` (a marketing
+   section's padding) and `.block` (a padded card, which hit Tailwind's `block` on DAWN-era breadcrumbs).
+   Each rule below puts back only what the site kit added; the members kit's own values still apply. */
+@layer components {
+[data-design="frequency"] [data-kit="site"] main.fq-main:has(> .fq-body > [data-kit="members"].fqm-public-view){padding-top:0}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view{background:transparent;box-sizing:border-box;width:100%;max-width:1200px;margin-inline:auto;padding:calc(var(--fq-site-nav-rest) + var(--fq-space-8)) clamp(18px,4vw,40px) var(--fq-space-11)}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .fqs-public>.fqs-wrap{max-width:none;padding-inline:0;padding-top:0}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .ap-cols>.side{overflow:visible;border-radius:0;padding:0;min-height:0;box-shadow:none;justify-content:flex-start}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .panel{border:0;background:var(--fq-glass-panel)}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .panel .k{display:block;font:var(--fq-type-label);letter-spacing:.14em}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .stack{position:static}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .chip{text-transform:none;letter-spacing:normal}
+/* `.btn` and `.chip` are both kits' base classes, and the site sheet loads later, so its sizes won. These
+   two put the members base back at (0,3,1): above the site base (0,3,0), below every members variant
+   (`.btn.sm`, `.btn.pa`, `.fa-intents .chip`, all 0,4,0), so a variant still wins as it does signed in. */
+:where([data-design="frequency"] [data-kit="site"]) [data-kit="members"].fqm-public-view :is(a,button,summary,span,label).btn{height:44px;padding:0 20px;font:500 15px/1 var(--fq-font-sans);background:transparent;color:var(--fq-text-strong);box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+:where([data-design="frequency"] [data-kit="site"]) [data-kit="members"].fqm-public-view :is(a,button,summary,span,label).chip{height:40px;padding:0 16px;font:500 14px/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .sec{padding:0}
+[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .block{display:block;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+}

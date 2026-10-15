@@ -89,3 +89,21 @@ describe('the avatar menu, the work menu and the hubs', () => {
     expect(rows.some((r) => r.action === 'bug')).toBe(true)
   })
 })
+
+describe('the member gate (SCAN-912)', () => {
+  const visitor = { navAccess: Object.fromEntries(NAV_AREAS.map((a) => [a.key, 'read'])), operatesSpaces: false, host: false }
+  it('keeps New event and Drafts off the Events hub for a signed-out visitor', () => {
+    const hrefs = hubLinks('/events', { ...visitor, signedIn: false }).map((l) => l.href)
+    expect(hrefs).not.toContain('/events/new')
+    expect(hrefs).not.toContain('/drafts')
+    expect(hrefs).toContain('/events/calendar')
+  })
+  it('still shows them to a member (signedIn absent or true)', () => {
+    expect(hubLinks('/events', visitor).map((l) => l.href)).toContain('/events/new')
+    expect(hubLinks('/events', { ...visitor, signedIn: true }).map((l) => l.href)).toContain('/drafts')
+  })
+  it('drops every create row from the work menu for a signed-out viewer', () => {
+    const rows = groupRows(FQ_WORK_MENU, { ...visitor, signedIn: false }, '/join').flatMap((g) => g.rows)
+    expect(rows.some((r) => r.href === '/events/new' || r.href === '/circles/new' || r.href === '/market/sell')).toBe(false)
+  })
+})
