@@ -46,7 +46,7 @@ export function CompactSetup({ practices, initialMode = 'still', initialPractice
         <div><MindlessMasthead mode={mode} onModeChange={(next) => { setMode(next); setPickedId(undefined); setCustom(null) }} onClose={onClose} /></div>
         <div className="flex items-center gap-5">
           <span className="fq-breathe h-16 w-16 shrink-0 rounded-full bg-primary-bg motion-reduce:animate-none" aria-hidden style={{ background: 'var(--fq-pa-orb)' }} />
-          <div><h1 className="text-heading-sm font-semibold text-text">{mode === 'move' ? 'Get Moving' : 'Tune out'}</h1><p className="mt-1 text-body-sm text-muted">Your practice. A little room to begin.</p></div>
+          <div><h1 className="text-display-card font-semibold text-text">{mode === 'move' ? 'Get Moving' : 'Tune out'}</h1><p className="mt-1 text-body-sm text-muted">Your practice. A little room to begin.</p></div>
         </div>
         <section aria-label="Your practices" className="space-y-2">
           <h2 className="text-body-sm font-semibold text-text">Quick start a practice</h2>
