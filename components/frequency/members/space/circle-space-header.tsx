@@ -101,6 +101,7 @@ export async function FqCircleSpaceHeader({ spaceSlug, children }: { spaceSlug: 
   const frost = 'btn fqs-frost'
 
   return (
+    <>
     <AccentScope vars={accentVars} theme={spacePageFonts(space.preferences)}>
       <FqSpaceChrome
         coverImage={coverSrc}
@@ -171,8 +172,14 @@ export async function FqCircleSpaceHeader({ spaceSlug, children }: { spaceSlug: 
         }
         notices={manage.canManage && !isNetwork ? <SpacePrivateNotice spaceId={space.id} /> : null}
       >
-        {children}
+        {null}
       </FqSpaceChrome>
     </AccentScope>
+    {/* The Circle renders BESIDE the Space header, not inside its body (SCAN-900): inside, it took the
+        Space page's data-space-page dress and the Space's own fonts (serif cards, a beige lower page,
+        overlapping stat labels), and its own cover stacked under the Space cover. Out here it is an
+        ordinary member page under the Space's header. */}
+    {children}
+    </>
   )
 }

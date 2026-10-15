@@ -126,7 +126,12 @@ export function FqCircleShell({
       </Link>
       <div className="fqm-notices">{notices}</div>
 
-      <section className="ph fqm-cl-hero" style={coverImage ? { backgroundImage: `url('${coverImage}')` } : undefined}>
+      {/* Under its Space's header the Space cover is the page's one photo (SCAN-900), so the Circle's band is
+          the plain kit card: no second image. */}
+      <section
+        className={inSpace ? 'fqm-cl-hero is-plain' : 'ph fqm-cl-hero'}
+        style={!inSpace && coverImage ? { backgroundImage: `url('${coverImage}')` } : undefined}
+      >
         <div className="fqm-cl-in">
           <div className="stack">
             <span className={live ? 'tag glass live' : 'tag glass'}>{statusLabel}</span>

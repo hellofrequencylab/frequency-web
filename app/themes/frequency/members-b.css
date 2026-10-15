@@ -222,3 +222,10 @@
 /* On the dark backdrop a glass panel lets the scrim through and its text goes faint: the event page's panels
    are solid cards, so the join box and the side notes read at full contrast wherever they sit. */
 [data-design="frequency"] [data-kit="members"].fqm-pe .panel{background:var(--fq-surface-card);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:var(--fq-shadow-2)}
+/* A Circle under its Space's header (SCAN-900): the Space cover is the page's one photo, so the Circle's band is a
+   plain kit card with dark type, no scrim and no 340px photo height. */
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain{min-height:0;margin-top:var(--fq-space-6);border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:var(--fq-shadow-1)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain::before{content:none}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain .fqm-cl-in{padding:var(--fq-space-6)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain .fqm-cl-in .h1{color:var(--fq-text-strong);font-size:var(--fq-text-h2)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero.is-plain .fqm-cl-sub{color:var(--fq-text-muted)}
