@@ -287,3 +287,18 @@
 }
 @keyframes fa-sk{50%{opacity:.55}}
 
+
+/* QUIETER STANDING (owner, 2026-10-14, SCAN-908: "minimize the streak stats, don't display them so boldly, clear
+   this header up"). The streak / Zaps / count / rank row under the greeting was four display-size numerals with a
+   40px rank pill. It is now one quiet line of small chips: each a number and its label side by side at the body
+   size, the rank a small outlined tag. The row still switches the standing box below it. */
+[data-design="frequency"] [data-kit="members"] .fa-stats{gap:8px;margin-top:16px}
+[data-design="frequency"] [data-kit="members"] .fa-stat{flex-direction:row;align-items:baseline;gap:6px;padding:6px 12px;border-radius:var(--fq-radius-orb);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fa-stat-n{height:auto;gap:3px}
+[data-design="frequency"] [data-kit="members"] .fa-stat-n .num{font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:0;font-variant-numeric:tabular-nums;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fa-stat-n i{font-size:var(--fq-text-meta)}
+[data-design="frequency"] [data-kit="members"] .fa-stat-l{padding-bottom:0;border-bottom:none}
+[data-design="frequency"] [data-kit="members"] .fa-stat[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .fa-stat[aria-pressed="true"] .fa-stat-l{font-weight:400;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fa-rankpill{height:auto;padding:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;font:500 var(--fq-text-body-s)/1 var(--fq-font-sans)}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fa-stats{gap:6px}}

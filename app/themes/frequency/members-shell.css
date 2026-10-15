@@ -822,3 +822,10 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] [data-rail-member]{display:contents}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-owner-console] [data-rail-member]{display:none}
 }
+
+/* SCAN-908: the rail's Stats & streaks box quiets with the Feed's standing row: the streak numeral drops from 34px
+   display to a 22px figure, its flame takes the accent instead of neon violet (SCAN-907), the tiles' figures step
+   down a size. */
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num b{font-size:22px;letter-spacing:-.03em}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num svg{width:18px;height:18px;color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-tile b{font-size:15px}
