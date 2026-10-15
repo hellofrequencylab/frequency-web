@@ -27,7 +27,7 @@
 // canvas token is scoped to light mode only, so the literals are read here, not off the CSS variable).
 // Light: the cool canvas, a soft aqua sea, faint seaglass parks, roads a breath darker than the land with
 // no casings, lavender-grey labels on a canvas halo. Dark (html.dark, or a band whose canvas is dark, like
-// the Stage): near-black blue land, deep teal water, dim roads, soft light labels. Every business POI,
+// the Stage): near black blue land, deep teal water, dim roads, soft light labels. Every business POI,
 // attraction and transit line is hidden, terrain is flat, and boundaries are faint.
 
 export type Rgb = [number, number, number]
@@ -121,7 +121,7 @@ export function basemapPalette(c: Record<TokenName, Rgb>): BasemapPalette {
  * THE FREQUENCY BASEMAP (SCAN-918), light and dark. Literal on purpose: Google's JSON style takes hex
  * only, and the canvas token no longer resolves in dark mode. Light is built on the SCAN-907 export
  * canvas #F4F6F7 (lib/theme/design.ts chrome.light) with the export aqua #8FE9FF, seaglass #A3E8D4 and
- * a lavender-grey ink; dark on the Stage blue-black #070B14 (chrome.dark), raised #121C2E and muted
+ * a lavender-grey ink; dark on the Stage blue black #070B14 (chrome.dark), raised #121C2E and muted
  * #98A6BC. Lowercase, because that is the form toHex emits and the style tests read.
  */
 export const FREQUENCY_BASEMAP: { light: BasemapPalette; dark: BasemapPalette } = {
@@ -140,7 +140,7 @@ export const FREQUENCY_BASEMAP: { light: BasemapPalette; dark: BasemapPalette } 
   },
   dark: {
     dark: true,
-    land: '#0b111c', // token-ok: Stage blue-black #070B14 lifted a step
+    land: '#0b111c', // token-ok: Stage blue black #070B14 lifted a step
     water: '#0d2830', // token-ok: deep teal
     park: '#0e1d20', // token-ok: land with a breath of teal
     road: '#151e2c', // token-ok: dim roads, a step above the land
