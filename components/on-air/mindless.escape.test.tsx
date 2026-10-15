@@ -18,7 +18,7 @@ let root: Root
 let container: HTMLDivElement
 function Open() {
   const timer = useMindless()
-  return <button onClick={() => timer.open({ practiceId: 'p' })}>Open timer</button>
+  return <button onClick={() => timer.open({ practiceId: 'p', autoStart: true })}>Open timer</button>
 }
 async function open() {
   await act(async () => root.render(<MindlessProvider><Open /></MindlessProvider>))
