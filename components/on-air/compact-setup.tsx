@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 import { MindlessMasthead } from './mode-toggle'
 import type { TimerMode } from './mindless'
 import type { OnAirPractice } from './session'
@@ -45,26 +47,26 @@ export function CompactSetup({ practices, initialMode = 'still', initialPractice
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div><MindlessMasthead mode={mode} onModeChange={(next) => { setMode(next); setPickedId(undefined); setCustom(null) }} onClose={onClose} /></div>
         <div className="flex items-center gap-5">
-          <span className="fq-breathe h-16 w-16 shrink-0 rounded-full bg-primary-bg motion-reduce:animate-none" aria-hidden style={{ background: 'var(--fq-pa-orb)' }} />
+          <span className="fq-breathe h-16 w-16 shrink-0 rounded-pill bg-primary-bg motion-reduce:animate-none" aria-hidden style={{ background: 'var(--fq-pa-orb)' }} />
           <div><h1 className="text-display-card font-semibold text-text">{mode === 'move' ? 'Get Moving' : 'Tune out'}</h1><p className="mt-1 text-body-sm text-muted">Your practice. A little room to begin.</p></div>
         </div>
         <section aria-label="Your practices" className="space-y-2">
           <h2 className="text-body-sm font-semibold text-text">Quick start a practice</h2>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {available.map((p) => <button key={p.id} type="button" aria-label={`Start ${p.title}`} aria-pressed={p.id === practice?.id} className={`min-h-11 shrink-0 rounded-control border px-3 py-2 text-left text-body-sm ${p.id === practice?.id ? 'border-primary bg-primary-bg text-text' : 'border-border text-muted'}`} onClick={() => onStart({ practiceId: p.id, mode })}><span className="block font-semibold">{p.title}</span><span className="block text-meta">{[p.durationMin ? `${p.durationMin} min` : null, p.loggedToday ? 'Done today · Start again' : null].filter(Boolean).join(' · ') || 'Start now'}</span></button>)}
+            {available.map((p) => <Button variant={p.id === practice?.id ? 'primarySoft' : 'secondary'} key={p.id} type="button" aria-label={`Start ${p.title}`} aria-pressed={p.id === practice?.id} className={`min-h-11 shrink-0 flex-col items-start rounded-control border px-3 py-2 text-left text-body-sm ${p.id === practice?.id ? 'border-primary text-text' : 'border-border text-muted'}`} onClick={() => onStart({ practiceId: p.id, mode })}><span className="block font-semibold">{p.title}</span><span className="block text-meta">{[p.durationMin ? `${p.durationMin} min` : null, p.loggedToday ? 'Done today · Start again' : null].filter(Boolean).join(' · ') || 'Start now'}</span></Button>)}
           </div>
         </section>
         <section className="space-y-3" aria-label="Custom timer">
           <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-body-sm font-semibold text-text">{practice?.title ?? 'Custom timer'}</h2><span className="text-meta text-muted">{logOnly ? 'Just Log' : structured ? 'Authored sequence' : locked ? 'Fixed duration' : 'Timer length'}</span></div>
           {!logOnly && !structured && <>
             <div className="grid grid-cols-4 gap-2">{[3, 5, 10, 20].map((m) => <button key={m} type="button" disabled={locked} aria-pressed={m === minutes} onClick={() => setCustom(m)} className="min-h-11 rounded-control border border-border px-2 text-body-sm text-text disabled:opacity-50">{m} min</button>)}</div>
-            <label className="flex items-center justify-between gap-3 text-body-sm text-text">Custom minutes<input type="number" inputMode="numeric" min={1} max={120} step={1} disabled={locked} value={Number.isFinite(minutes) ? minutes : ''} onChange={(e) => setCustom(e.target.value === '' ? NaN : Number(e.target.value))} className="min-h-11 w-24 rounded-control border border-border bg-surface px-3 text-body text-text" /></label>
+            <label className="flex items-center justify-between gap-3 text-body-sm text-text">Custom minutes<Input type="number" inputMode="numeric" min={1} max={120} step={1} disabled={locked} value={Number.isFinite(minutes) ? minutes : ''} onChange={(e) => setCustom(e.target.value === '' ? NaN : Number(e.target.value))} className="min-h-11 max-w-24 text-body" /></label>
             {!valid && <p role="alert" className="text-meta text-muted">Choose 1 to 120 minutes.</p>}
           </>}
           {(logOnly || structured) && <p className="text-body-sm text-muted">{logOnly ? 'Opens your practice note. Logging stays your choice.' : 'Keeps your practice’s rounds and intervals. Adjust them in More settings.'}</p>}
         </section>
         <div className="mt-auto space-y-2 pt-2">
-          <button type="button" disabled={!practice || (!locked && !valid)} className="min-h-11 w-full rounded-control bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary disabled:opacity-50" onClick={() => onStart(choice())}>{logOnly ? 'Open practice' : 'Start timer'}</button>
+          <Button type="button" disabled={!practice || (!locked && !valid)} className="min-h-11 w-full rounded-control px-4 py-3 text-body-sm font-semibold disabled:opacity-50" onClick={() => onStart(choice())}>{logOnly ? 'Open practice' : 'Start timer'}</Button>
           <button type="button" disabled={!practice} className="min-h-11 w-full rounded-control text-body-sm text-muted" onClick={() => onAdvanced(choice())}>More settings</button>
         </div>
       </div>
