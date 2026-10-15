@@ -42,11 +42,11 @@ describe('adopted practice direct launch', () => {
 
   it.each([0, 1])('standing practice index%s, including done today, remains a direct start button', async (index) => {
     load.mockImplementation(() => new Promise(() => {}))
-    await act(async () => root.render(<MindlessProvider><Standing streak={3} loggedToday atRisk={false} freezeTokens={0} nextMilestone={null} toNext={0} zaps={0} gems={0} rankLabel="Seed" ranks={[]} journeysFinished={0} nextRankLabel={null} journeysToNext={null} zapRows={[]} tuneOutHref="/practices" todayDow={4} practices={[{ id: 'a', title: 'Walk', href: '/practices/walk', meta: '17 min · daily', done: false }, { id: 'b', title: 'Reflect', href: '/practices/reflect', meta: 'daily', done: true }]} /></MindlessProvider>))
+    await act(async () => root.render(<MindlessProvider><Standing streak={3} loggedToday atRisk={false} freezeTokens={0} nextMilestone={null} toNext={0} zaps={0} gems={0} rankLabel="Seed" ranks={[]} journeysFinished={0} nextRankLabel={null} journeysToNext={null} zapRows={[]} tuneOutHref="/practices" practices={[{ id: 'a', title: 'Walk', href: '/practices/walk', meta: '17 min · daily', done: false }, { id: 'b', title: 'Reflect', href: '/practices/reflect', meta: 'daily', done: true }]} /></MindlessProvider>))
     const buttons = [...host.querySelectorAll<HTMLButtonElement>('button.fa-pchip')]
     expect(buttons).toHaveLength(2)
     expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Start Walk', 'Start Reflect'])
-    expect(buttons[1].textContent).toContain('Done today · Start again')
+    expect(buttons[1].classList.contains('done')).toBe(true)
     await act(async () => buttons[index].click())
     expect(load).toHaveBeenCalledWith(index === 0 ? 'a' : 'b')
   })
