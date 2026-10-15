@@ -9,6 +9,8 @@ import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
+import { SpaceProfileEditorEntry } from './space-profile-editor-entry'
+import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 
 // THE OWNER'S LIVE SPACE PAGE PREVIEW (ADR-516 Phase D — the space mirror of OwnerProfileLayoutPreview).
 // On a Space profile ROOT, for a viewer who can manage it, this renders the space's entity-grid layout
@@ -131,6 +133,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   // same width the visitor render does, so no content-less margin. `@container/profile` stays (grid queries).
   return (
     <div className="@container/profile">
+      <SpaceProfileEditorEntry slug={space.slug} spaceId={space.id} spaceType={space.type} moduleMenu={readModuleMenuPrefs(space.preferences)} />
       <LiveProfileGrid
         nodes={nodes}
         initialRows={rows}

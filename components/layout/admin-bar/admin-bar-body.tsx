@@ -58,15 +58,18 @@ export function AdminBarBody({
   model,
   query,
   onQueryChange,
+  focusAppId,
 }: {
   model: SettingsPanelModel
   /** The "Search settings" query, owned by the panel shell (rendered in the fixed top bar, ADR-516 Phase E). */
   query: string
   onQueryChange: (value: string) => void
+  /** A typed entry request, resolved only against nodes this viewer may see. */
+  focusAppId?: string
 }) {
   // Whether the "More" (extra-band) disclosure is open. Default CLOSED; a search reveal of an extra-band
   // app opens it before scrolling so the collapsed item is revealed.
-  const [moreOpen, setMoreOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(() => model.sections.some((section) => section.tier === 'extra' && section.nodes.some((node) => node.id === focusAppId)))
 
   const pathname = usePathname()
   const archetype = railArchetypeFor(pathname)
@@ -85,6 +88,8 @@ export function AdminBarBody({
   // Section elements by (tier:slot) key, so a search result can scroll to its section once the list
   // remounts (a slot can live in two bands, so the key carries the band).
   const sectionRefs = useRef(new Map<string, HTMLElement>())
+  const appRefs = useRef(new Map<string, HTMLElement>())
+  const enteredApp = useRef<string | null>(null)
   // The section a just-picked search result wants to reveal (consumed after the query clears).
   const pendingScrollRef = useRef<string | null>(null)
   // Whether the contextual-entry scroll has already run for this mount (so it lands ONCE on open).
@@ -148,6 +153,18 @@ export function AdminBarBody({
     }
   }, [q])
 
+  // A typed app request narrows navigation, not authority. Unknown or hidden apps
+  // never create a node; only the already gated model can supply the destination.
+  useEffect(() => {
+    if (q || !focusAppId || enteredApp.current === focusAppId) return
+    const target = appRefs.current.get(focusAppId)
+    if (!target) return
+    target.scrollIntoView({ block: 'start' })
+    target.focus({ preventScroll: true })
+    enteredApp.current = focusAppId
+    didEnterRef.current = true
+  }, [q, focusAppId, model.sections])
+
   // Contextual entry (ADR-516 Phase E): when the rail opens on a page, land it scrolled to the most
   // relevant section for the archetype (e.g. the profile builder lands on Layout). Runs ONCE per mount,
   // never while searching, and fails safe — an unknown archetype or a missing target leaves the top in view.
@@ -197,6 +214,9 @@ export function AdminBarBody({
           {section.nodes.map((item) => (
             <div
               key={`${key}-${item.id}`}
+              ref={(el) => { if (el) appRefs.current.set(item.id, el); else appRefs.current.delete(item.id) }}
+              data-admin-app={item.id}
+              tabIndex={-1}
               // A tool NESTED under its box (ADR-846) indents and takes a hairline rule, so the 12-box
               // catalog shape reads as boxes-with-tools instead of one flat list of equals. Depth 0 is
               // the box itself and keeps the section's own alignment.

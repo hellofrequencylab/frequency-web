@@ -149,6 +149,11 @@ export function AdminBar({
 
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const bodyScrollRef = useRef<HTMLDivElement>(null)
+  const requestedAppId = detail?.appId
+  const requestedApp = useCallback(() => {
+    if (!requestedAppId) return null
+    return Array.from(bodyScrollRef.current?.querySelectorAll<HTMLElement>('[data-admin-app]') ?? []).find((node) => node.dataset.adminApp === requestedAppId) ?? null
+  }, [requestedAppId])
 
   const pathname = usePathname()
   const isDesktop = useIsDesktop()
@@ -198,6 +203,7 @@ export function AdminBar({
       const d = (e as CustomEvent<OpenAdminBarDetail>).detail
       setDetail(d)
       setOpen(true)
+      setQuery('')
       // Remember this scoped open so a refresh can rebuild the rail (bug 1 + bug 3). Keyed by the path it
       // was opened on, so restore only fires when the same page reloads. Read the LIVE path (the []-scoped
       // listener's closure has none).
@@ -277,11 +283,11 @@ export function AdminBar({
     onStateChange?.({ open: open && hasContent, width, resizing })
   }, [open, width, resizing, hydrated, hasContent, onStateChange])
 
-  // Always START AT THE TOP when the bar opens or its scope changes (bug 3): a prior scroll position or a
-  // deep-linked section could leave the rail scrolled down on open. Reset the one scroll region to the top.
+  // Start at the top on a plain open or scope change. An explicit authorized app
+  // entry has already scrolled its node into view and must retain that position.
   useEffect(() => {
-    if (open) bodyScrollRef.current?.scrollTo?.({ top: 0 })
-  }, [open, resetKey])
+    if (open && !requestedApp()) bodyScrollRef.current?.scrollTo?.({ top: 0 })
+  }, [open, resetKey, requestedApp])
 
   // Desktop slide-in choreography: show on open (next frame), reset on close.
   useEffect(() => {
@@ -298,11 +304,15 @@ export function AdminBar({
   useEffect(() => {
     if (!isDesktop || !hydrated) return
     if (open) {
-      closeButtonRef.current?.focus()
+      // The body already focused an authorized typed app entry. Do not move
+      // focus straight back to Close after the child effect has selected Page.
+      const target = requestedApp()
+      if (target) target.focus({ preventScroll: true })
+      else closeButtonRef.current?.focus()
     } else {
       document.body?.focus?.()
     }
-  }, [open, hydrated, isDesktop])
+  }, [open, hydrated, isDesktop, requestedApp])
 
   // ── Resize handle (pointer): drag the LEFT edge. Dragging LEFT widens. ──
   const onHandlePointerDown = useCallback(
@@ -389,7 +399,7 @@ export function AdminBar({
 
           {/* Body — the ONLY scroll region, below the top bar. */}
           <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
-            <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
+            <AdminBarBody key={`${resetKey}:${detail?.appId ?? ''}`} model={model} query={query} onQueryChange={setQuery} focusAppId={detail?.appId} />
           </div>
         </div>
       </aside>
@@ -418,7 +428,7 @@ export function AdminBar({
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
         <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} unpublished={unpublished} />
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
+          <AdminBarBody key={`${resetKey}:${detail?.appId ?? ''}`} model={model} query={query} onQueryChange={setQuery} focusAppId={detail?.appId} />
         </div>
       </div>
     </div>

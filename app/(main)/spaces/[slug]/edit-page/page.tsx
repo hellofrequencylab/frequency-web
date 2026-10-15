@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { getCallerProfile } from '@/lib/auth'
@@ -16,19 +16,13 @@ import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 
-// THE SPACE PAGE EDITOR ROUTE (multi-page model). An owner / admin / editor edits ONE profile
-// page through Puck here; the page is chosen with `?page=<slug>` (default Home). The published
-// doc is stored to spaces.preferences.pageDocs[pageSlug] and the matching public route renders
-// it. A platform janitor previewing a Space they do not manage gets a READ-ONLY preview (no
-// editor runtime, no write affordances); everyone else 404s so the route never leaks. A `?page`
-// that is not a real page 404s too, so the editor never opens onto a page that does not exist.
-//
-// CHROME: this is an IN-PAGE editor surface with its own editor header, so the profile
-// layout escapes its hero + tab chrome for the `edit-page` segment. It is NOT a
-// full-viewport takeover: it keeps the GLOBAL community right rail like the rest of the
-// app (page-chrome.ts), and the in-house DesktopEditor lays out its palette + inspector
-// beside the rail. The editor runtime ships ONLY here; the public landing renders
-// <BlockRender> with no editor code.
+// COMPATIBILITY ENTRY for existing Space page links. Home opens the canonical
+// profile sidebar, which edits profileLayout. An explicit custom ?page= still
+// edits its pageDocs document here until that schema has sidebar parity. These
+// documents also feed website fallbacks, so retiring the old Home surface must
+// never delete them or silently send a custom-page edit to Home.
+// Resolve visibility, page identity and edit/staff-preview access BEFORE either
+// redirect or render. Staff custom-page previews remain read-only.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
@@ -66,6 +60,11 @@ export default async function SpaceEditLandingPage({
     caller?.webRole,
   )
   if (!canManage && !staffViewing) notFound()
+
+  // Home's actual profile uses the entity layout and its sidebar builder. The older
+  // document editor writes pageDocs.home, which does not arrange that profile.
+  // Keep the gated custom-page editor until those documents have sidebar parity.
+  if (pageSlug === HOME_SLUG) redirect(`/spaces/${space.slug}?edit=page`)
 
   const brandName = space.brandName?.trim() || space.name
   // The doc the editor loads: this page's stored doc when present + valid, else the universal
