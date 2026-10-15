@@ -196,3 +196,6 @@
 [data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .h1{color:var(--fq-text-strong);font-size:var(--fq-text-h1)}
 [data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .body{color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .ev-hero.is-plain .btn.glass{background:var(--fq-glass-panel);color:var(--fq-text-strong);box-shadow:var(--fq-glass-panel-shadow)}
+/* SCAN-902: the plain header keeps no dark photo base. .ev-hero carried background:var(--fq-ink) for the photo band,
+   so with the photo gone the header was dark type on black. The plain header sits on the page like every other hub. */
+[data-design="frequency"] [data-kit="members"] .ev-hero.is-plain{background:none;isolation:auto}
