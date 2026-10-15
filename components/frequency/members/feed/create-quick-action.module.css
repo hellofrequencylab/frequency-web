@@ -1,6 +1,6 @@
 .trigger{min-height:44px;gap:8px;background:var(--fq-pa);color:var(--fq-text-strong);box-shadow:var(--fq-pa-glow),inset 0 1px 0 var(--fq-border-hair)}
 .trigger svg{width:18px;height:18px}
-.dialog{box-sizing:border-box;width:100%;max-width:360px;max-height:var(--create-max-height,90dvh);overflow-y:auto;background:var(--fq-surface-card);color:var(--fq-text-strong);border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-l);box-shadow:0 24px 60px -24px color-mix(in oklab,var(--fq-ink) 30%,transparent)}
+.dialog{box-sizing:border-box;width:100%;max-width:360px;max-height:var(--create-max-height,90dvh);overflow-y:auto;background:var(--fq-menu-surface,var(--fq-surface-card));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--fq-text-strong);border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-l);box-shadow:0 24px 60px -24px color-mix(in oklab,var(--fq-ink) 30%,transparent)}
 .content{padding:16px}
 .heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--fq-border-hair)}
 .heading h2{margin:0;font:500 var(--fq-text-h4)/var(--fq-lh-h4) var(--fq-font-display);color:var(--fq-text-strong)}

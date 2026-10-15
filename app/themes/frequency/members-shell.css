@@ -896,3 +896,15 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
   [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:hover .fqm-tb-orb{box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
 }
 }
+
+/* SCAN-948: floating navigation shares a readable material, not whole-panel opacity.
+   Opening/closing opacity animations stay owned by the shell. Page cards stay glass. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] :is(.ap-mega,.ap-sheet,.fqm-menu-p,.mu-menu,.ap-rail.fqm-drawer),
+[data-design="frequency"] [data-kit="members"] #fqm-zap {
+  background:var(--fq-menu-surface,var(--fq-surface-card));
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);
+}
+}
