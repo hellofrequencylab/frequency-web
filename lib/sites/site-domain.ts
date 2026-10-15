@@ -1,6 +1,7 @@
 import { getSpaceByDomain } from '@/lib/spaces/store'
 import { briefError, log } from '@/lib/log'
 import { isAppHost, normalizeHost } from '@/lib/sites/host'
+import { readWebsitePublished } from '@/lib/spaces/website'
 import type { Space } from '@/lib/spaces/types'
 
 // IS THIS SPACE'S WEBSITE SERVED ON ITS OWN DOMAIN? (PROG-E10 phase 4, LIVE-783)
@@ -24,4 +25,12 @@ export async function boundSiteDomain(space: Pick<Space, 'id' | 'domain'>): Prom
     log.warn('site_domain_resolve_failed', { spaceId: space.id, message: briefError(err) })
     return null
   }
+}
+
+/** The custom domain a Space's website is LIVE on: bound (boundSiteDomain) and published, the same test
+ *  the Space profile's canonical uses (lib/spaces/profile-metadata.ts siteTwinCanonical). Null otherwise.
+ *  No database read unless spaces.domain is set. The free subdomain redirects here (SCAN-896). */
+export async function liveSiteDomain(space: Pick<Space, 'id' | 'domain' | 'preferences'>): Promise<string | null> {
+  if (!space.domain || !readWebsitePublished(space.preferences)) return null
+  return boundSiteDomain(space)
 }

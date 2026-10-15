@@ -237,3 +237,37 @@ export function sitePathForSpacePath(segments: string[]): string | null {
   if (page === undefined) return '/'
   return /^[a-z0-9][a-z0-9-]*$/.test(page) ? `/${page}` : null
 }
+
+/** The paths a Space's free subdomain keeps answering itself even once the site has moved to its own
+ *  domain (SCAN-896): the owner's editor and its handoff (`/admin`, `/admin/*`), API routes, the
+ *  booking-confirmation link a guest's email already carries, the Spotlight click beacon, the share
+ *  card, and the crawler files (which already name the bound domain as the site's one origin). */
+function subdomainKeepsPath(pathname: string): boolean {
+  const first = pathname.split('/').filter(Boolean)[0] ?? ''
+  if (first === SITE_ADMIN_SEGMENT || first === 'api') return true
+  if (first === 'confirm-booking' || first === 'opengraph-image') return true
+  return pathname === SPOTLIGHT_CLICK_PATH || SITE_CRAWLER_FILES.has(pathname)
+}
+
+/** ONE SITE, ONE ADDRESS (SCAN-896, owner 2026-10-14: "Once a user has established a custom domain, their
+ *  subdomain site should redirect to their main site."). Where a request on a Space's free subdomain
+ *  (`<slug>.frequencylocal.com`) should go permanently, given the domain its site is live on
+ *  (`boundDomain`: the Space's bound, published custom domain, lib/sites/site-domain.ts liveSiteDomain),
+ *  or null to serve it here. Null for any host that is not a slug subdomain (the custom domain itself
+ *  never redirects), for no bound domain, and for the paths subdomainKeepsPath names. Path and query
+ *  are kept. Pure, so it is unit-tested directly. */
+export function subdomainSiteRedirect(
+  host: string | null | undefined,
+  pathname: string,
+  search: string,
+  boundDomain: string | null | undefined,
+): string | null {
+  const h = normalizeHost(host)
+  const domain = normalizeHost(boundDomain)
+  if (!domain || domain === h || siteSlugFromSubdomain(h) === null) return null
+  if (siteSlugFromSubdomain(domain) !== null) return null
+  const path = pathname.startsWith('/') ? pathname : `/${pathname}`
+  if (subdomainKeepsPath(path)) return null
+  const query = search && !search.startsWith('?') ? `?${search}` : search
+  return `https://${domain}${path}${query}`
+}

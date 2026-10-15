@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { notFound } from 'next/navigation'
 import { SitePage, siteMetadata } from '@/components/sites/site-page'
-import { resolveHostedSpace } from '@/lib/sites/hosted'
+import { redirectSubdomainToLiveDomain, resolveHostedSpace } from '@/lib/sites/hosted'
 
 // A Space website's HOME page on the Space's own domain (PROG-E10 phase 2). proxy.ts rewrites
 // `https://<domain>/` here; the render is the same SitePage /sites/<slug> uses, with links off the
@@ -29,5 +29,7 @@ export default async function HostedSiteHome({ params }: { params: Promise<{ hos
   const { host } = await params
   const space = await resolveHostedSpace(host)
   if (!space) notFound()
+  // SCAN-896: a subdomain whose site lives on its own domain sends the visitor there.
+  await redirectSubdomainToLiveDomain(host, space, '/')
   return <SitePage slug={space.slug} base="" />
 }
