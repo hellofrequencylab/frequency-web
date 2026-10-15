@@ -10,9 +10,9 @@
     "file": "app/(main)/events/index-data.ts",
     "ref": "Frequency Control cohesion audit 2026-10-15"
   },
-  "detail": "Sunday used the next Saturday to compute its end date, returning eight days. The date window now ends on the current Sunday. Regression coverage includes Sunday and surrounding days in the home timezone.",
+  "detail": "Sunday used the next Saturday to compute its end date, returning eight days. The date window now ends on the current Sunday. Regression coverage includes Sunday and surrounding days in the home timezone. The backlog probe executes the actual pure helper or component handlers with isolated dependencies, without launching a nested test runner. Full behavioral Vitest suites remain independently required by CI.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node node_modules/vitest/vitest.mjs run 'app/(main)/events/index-data.test.ts' --maxWorkers=1"
+    "cmd": "node scripts/cohesion-core-probes.mjs SCAN-920"
   }
 }
