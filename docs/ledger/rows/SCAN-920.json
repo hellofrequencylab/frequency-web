@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-920",
+  "title": "This weekend on Sunday excludes the following week",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "app/(main)/events/index-data.ts",
+    "ref": "Frequency Control cohesion audit 2026-10-15"
+  },
+  "detail": "Sunday used the next Saturday to compute its end date, returning eight days. The date window now ends on the current Sunday. Regression coverage includes Sunday and surrounding days in the home timezone.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "pnpm exec vitest run 'app/(main)/events/index-data.test.ts' --maxWorkers=1"
+  }
+}
