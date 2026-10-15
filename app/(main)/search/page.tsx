@@ -87,7 +87,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string; tab?: string }>
 }) {
-  const { q = '', tab: rawTab = 'people' } = await searchParams
+  const { q = '', tab: rawTab = 'all' } = await searchParams
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : 'people'
   const query = q.trim()
   // Sanitize before interpolating into PostgREST filters — this runs on the RLS-bypassing
@@ -115,17 +115,17 @@ export default async function SearchPage({
       if (safe.length < 2) return empty
 
       if (tab === 'people') {
-        const { rows, truncated } = await searchPeople(safe)
+        const { rows, truncated } = await searchPeople(query)
         return { ...empty, people: rows, truncated }
       }
 
       if (tab === 'posts') {
-        const { rows, truncated } = await searchPosts(safe)
+        const { rows, truncated } = await searchPosts(query)
         return { ...empty, posts: rows, truncated }
       }
 
       // tab === 'events' (rawTab is validated to one of TABS at the top)
-      const { rows, truncated } = await searchEvents(safe)
+      const { rows, truncated } = await searchEvents(query)
       return { ...empty, events: rows, truncated }
     })()
 

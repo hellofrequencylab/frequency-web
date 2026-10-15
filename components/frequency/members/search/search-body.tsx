@@ -15,13 +15,16 @@ import {
   searchEvents,
   searchPeople,
   searchPosts,
+  searchPractices,
+  searchSpaces,
+  type SpaceRow,
+  type PracticeRow,
   type CircleRow,
   type EventRow,
   type PersonRow,
   type PostRow,
   type Window,
 } from '@/app/(main)/search/search-data'
-import { listNetworkedSpacesPage, type NetworkedSpace } from '@/lib/spaces/discovery'
 import { listListings, type MarketListingWithAuthor } from '@/lib/marketplace'
 import { browsableAreas } from '@/lib/marketplace/visibility'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
@@ -38,7 +41,7 @@ import { Input } from '@/components/ui/field'
 // Go and Add are the real RSVP and friend request.
 //
 // Every chip the design draws has a read behind it: People, Circles and Events from search-data.ts,
-// Spaces from the networked directory (listNetworkedSpacesPage, the /spaces directory's own read),
+// Spaces through the same active/network-connected/non-root visibility boundary as the directory,
 // Listings from active Classifieds (shown only while that area is browsable), plus Posts, which the
 // platform also searches. Event rows carry their cover, live dot and going count; a person carries
 // the Circles you share. "Recent" is this device's own search history (recent-searches.tsx), "Go
@@ -49,6 +52,8 @@ const KINDS = [
   ['people', 'People'],
   ['circles', 'Circles'],
   ['events', 'Events'],
+  ['workshops', 'Workshops & learning'],
+  ['practices', 'Practices'],
   ['spaces', 'Spaces'],
   ['listings', 'Listings'],
   ['posts', 'Posts'],
@@ -62,9 +67,9 @@ const TRY: [string, string][] = [
   ['Has open spots', '/events?spots=1'],
 ]
 
-export async function FrequencySearch({ query, safe, rawTab }: { query: string; safe: string; rawTab: string }) {
+export async function FrequencySearch({ query, rawTab }: { query: string; safe: string; rawTab: string }) {
   const kind: Kind = (KINDS.map((k) => k[0]) as string[]).includes(rawTab) ? (rawTab as Kind) : 'all'
-  const ready = safe.length >= 2
+  const ready = query.trim().length >= 2
   const want = (k: Kind) => ready && (kind === 'all' || kind === k)
   const all = kind === 'all'
   const none = <T,>(): Promise<Window<T>> => Promise.resolve({ rows: [], truncated: false })
@@ -73,23 +78,24 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
   const listingsOn = areas.includes('market')
   const spaceCap = all ? 4 : 24
   const listingCap = all ? 4 : 24
-  const [people, circles, events, posts, viewer, hats, spaces, listings] = await Promise.all([
-    want('people') ? searchPeople(safe, all ? 6 : undefined) : none<PersonRow>(),
-    want('circles') ? searchCircles(safe, all ? 4 : undefined) : none<CircleRow>(),
-    want('events') ? searchEvents(safe, all ? 5 : undefined) : none<EventRow>(),
-    want('posts') ? searchPosts(safe, all ? 4 : undefined) : none<PostRow>(),
+  const unavailable: string[] = []
+  const read = async <T,>(kind: string, promise: Promise<Window<T>>): Promise<Window<T>> => {
+    try { return await promise } catch { unavailable.push(kind); return { rows: [], truncated: false } }
+  }
+  const [people, circles, events, posts, viewer, hats, spaces, listings, practices] = await Promise.all([
+    want('people') ? read('people', searchPeople(query, all ? 6 : undefined)) : none<PersonRow>(),
+    want('circles') ? read('circles', searchCircles(query, all ? 4 : undefined)) : none<CircleRow>(),
+    (want('events') || want('workshops')) ? read('events', searchEvents(query, all ? 5 : undefined, kind === 'workshops' ? 'learning' : undefined)) : none<EventRow>(),
+    want('posts') ? read('posts', searchPosts(query, all ? 4 : undefined)) : none<PostRow>(),
     getCachedViewerProfile(),
     ready ? getViewerHats() : Promise.resolve(null),
-    want('spaces')
-      ? listNetworkedSpacesPage({ q: safe }, { limit: spaceCap })
-          .then((r): Window<NetworkedSpace> => ({ rows: r.spaces, truncated: r.total > spaceCap }))
-          .catch((): Window<NetworkedSpace> => ({ rows: [], truncated: false }))
-      : none<NetworkedSpace>(),
+    want('spaces') ? read('spaces', searchSpaces(query, spaceCap)) : none<SpaceRow>(),
     want('listings') && listingsOn
-      ? listListings({ q: safe, limit: listingCap + 1 })
+      ? listListings({ q: query, limit: listingCap + 1 })
           .then((rows): Window<MarketListingWithAuthor> => ({ rows: rows.slice(0, listingCap), truncated: rows.length > listingCap }))
-          .catch((): Window<MarketListingWithAuthor> => ({ rows: [], truncated: false }))
+          .catch((): Window<MarketListingWithAuthor> => { unavailable.push('listings'); return { rows: [], truncated: false } })
       : none<MarketListingWithAuthor>(),
+    want('practices') ? read('practices', searchPractices(query, all ? 6 : 24)) : none<PracticeRow>(),
   ])
 
   const me = viewer?.id ?? null
@@ -132,9 +138,9 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
         .slice(0, 5)
     : []
 
-  const total = people.rows.length + circles.rows.length + events.rows.length + posts.rows.length + spaces.rows.length + listings.rows.length
-  const anyTruncated = people.truncated || circles.truncated || events.truncated || posts.truncated || spaces.truncated || listings.truncated
-  const countLine = !ready ? '' : total === 0 ? 'No results' : `${anyTruncated ? 'More than ' : ''}${total} ${total === 1 ? 'result' : 'results'}`
+  const total = people.rows.length + circles.rows.length + events.rows.length + posts.rows.length + spaces.rows.length + listings.rows.length + practices.rows.length
+  const anyTruncated = people.truncated || circles.truncated || events.truncated || posts.truncated || spaces.truncated || listings.truncated || practices.truncated
+  const countLine = !ready ? '' : unavailable.length > 0 ? `${total} available results` : total === 0 ? 'No results' : `${anyTruncated ? 'More than ' : ''}${total} ${total === 1 ? 'result' : 'results'}`
   const href = (k: Kind) => `/search?q=${encodeURIComponent(query)}${k === 'all' ? '' : `&tab=${k}`}`
   const now = new Date()
 
@@ -145,7 +151,7 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
         <h1 className="k">Search</h1>
         <form method="GET" action="/search" className="fa-searchbar" role="search">
           <FqIcon name="search" />
-          <Input variant="seamless" name="q" defaultValue={query} placeholder="People, Circles, events, Spaces, listings" aria-label="Search" autoComplete="off" autoFocus />
+          <Input variant="seamless" name="q" defaultValue={query} placeholder="People, Spaces, events, practices…" aria-label="Search" autoComplete="off" autoFocus />
           {kind !== 'all' && <input type="hidden" name="tab" value={kind} />}
           {countLine && <span className="meta">{countLine}</span>}
         </form>
@@ -161,7 +167,8 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
       <div className="ap-cols sec fqm-search-cols">
         <div>
           {!ready && <p className="why">{query.length === 1 ? 'Keep typing.' : 'Type at least two letters to search.'}</p>}
-          {ready && total === 0 && <p className="why">Nothing matching “{query}” yet. Try another word.</p>}
+          {ready && unavailable.length > 0 && <p role="status" className="panel">Some results are temporarily unavailable ({unavailable.join(', ')}). Please try again.</p>}
+          {ready && total === 0 && unavailable.length === 0 && <p className="why">Nothing matching “{query}” yet. Try another word.</p>}
 
           {events.rows.length > 0 && (
             <section>
@@ -250,15 +257,23 @@ export async function FrequencySearch({ query, safe, rawTab }: { query: string; 
               <div className="g2">
                 {spaces.rows.map((sp) => (
                   <Link key={sp.id} className="card" href={`/spaces/${sp.slug}`}>
-                    <span className="ph fa-cardph" style={phStyle(sp.coverUrl ?? sp.logoUrl)} />
+                    <span className="ph fa-cardph" style={phStyle(sp.cover_image_url ?? sp.brand_logo_url)} />
                     <span className="fa-cardbody">
-                      <span className="h3">{sp.name}</span>
-                      <span className="t2">{[sp.kindLabel, sp.tagline].filter(Boolean).join(' · ')}</span>
+                      <span className="h3">{sp.brand_name ?? sp.name}</span>
+                      <span className="t2">{[sp.tagline].filter(Boolean).join(' · ')}</span>
                     </span>
                   </Link>
                 ))}
               </div>
               {!all && spaces.truncated && <More n={spaces.rows.length} noun="Spaces" />}
+            </section>
+          )}
+
+          {practices.rows.length > 0 && (
+            <section className="sec">
+              <div className="sec-h"><h2 className="h2">Practices</h2>{all && practices.truncated && <Link href={href('practices')} className="meta">See all</Link>}</div>
+              <div className="list">{practices.rows.map((practice) => <Link key={practice.id} href={`/practices/${practice.slug ?? practice.id}`}><span className="ic"><FqIcon name="practice" /></span><span className="grow"><span className="t1 fqm-block">{practice.title}</span><span className="t2">{practice.duration_min ? `${practice.duration_min} min · ` : ''}{practice.summary}</span></span><FqIcon name="arrow" /></Link>)}</div>
+              {!all && practices.truncated && <More n={practices.rows.length} noun="practices" />}
             </section>
           )}
 

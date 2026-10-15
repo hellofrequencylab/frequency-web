@@ -17,11 +17,12 @@ import {
 import { LISTABLE_CIRCLE_STATUS, isListedCircle } from '@/lib/circles/visibility'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
+import { applySearchTerms, searchRows } from '@/lib/search/query'
 
 // /search's reads, one function per result kind, shared by the DAWN page and the Frequency body
 // (components/frequency/members/search) so both answer a query from the same gated windows.
-// Every caller passes a term already through sanitizeOrTerm (ADR-274): these run on the
-// service-role client and interpolate into PostgREST filters.
+// Callers pass raw query text. applySearchTerms performs the shared bounded escaping
+// before every PostgREST expression; visibility gates are required on service-role reads.
 //
 // Each window over-fetches by one row so the page can tell "that is all of them" from "that is
 // the first N" (FINALIZE-PLAN §9.3).
@@ -48,6 +49,7 @@ export type EventRow = SeriesFields & {
   title: string
   slug: string
   starts_at: string
+  category?: string
   location: string | null
   is_cancelled: boolean
   is_demo: boolean
@@ -86,50 +88,56 @@ export async function searchPeople(safe: string, limit = PEOPLE_RESULTS): Promis
   // was still findable here by name and handle. The four privacy columns are selected and each row
   // goes through the shared /network predicate, BEFORE the truncation check, so a hidden row can
   // never be the "one more" that advertises results the reader will not be shown.
-  const { data } = await createAdminClient()
+  const result = await applySearchTerms(createAdminClient()
     .from('profiles')
     .select(`id, display_name, handle, avatar_url, community_role, is_demo, ${DIRECTORY_VISIBILITY_COLUMNS}`)
-    .or(`display_name.ilike.%${safe}%,handle.ilike.%${safe}%`)
+    , ['display_name', 'handle'], safe)
+    .eq('directory_visible', true)
+    .eq('ghost_mode', false)
     .eq('is_active', true)
     .order('display_name')
     .limit(limit + 1)
-  const rows = ((data ?? []) as PersonRow[]).filter(isListableInDirectory)
+  const rows = (searchRows(result, 'people') as PersonRow[]).filter(isListableInDirectory)
   return { rows: rows.slice(0, limit), truncated: rows.length > limit }
 }
 
 export async function searchPosts(safe: string, limit = POST_RESULTS): Promise<Window<PostRow>> {
-  const { data } = await createAdminClient()
+  const result = await applySearchTerms(createAdminClient()
     .from('posts')
     .select(
       `id, body, created_at, is_demo,
        author:profiles!author_id ( display_name, handle, avatar_url, community_role )`,
     )
-    .ilike('body', `%${safe}%`)
+    , ['body'], safe)
     .eq('visibility', 'public')
     .is('hidden_at', null)
     .order('created_at', { ascending: false })
     .limit(limit + 1)
-  const rows = (data ?? []) as unknown as PostRow[]
+  const rows = searchRows(result, 'posts') as unknown as PostRow[]
   return { rows: rows.slice(0, limit), truncated: rows.length > limit }
 }
 
-export async function searchEvents(safe: string, limit = EVENT_RESULTS): Promise<Window<EventRow>> {
+export async function searchEvents(safe: string, limit = EVENT_RESULTS, category?: string): Promise<Window<EventRow>> {
   // TWO READS, AROUND THE FLOOR. Splitting at today lets a running series lead with its NEXT date
   // while a finished one still answers with its LAST. A FACTORY, never one shared builder:
   // PostgrestFilterBuilder mutates `this`, so .gte() and .lt() on one instance fire one request
   // carrying both predicates, and it matches nothing.
   const admin = createAdminClient()
-  const eventsBase = () =>
-    admin
+  const eventsBase = () => {
+    let query = applySearchTerms(admin
       .from('events')
       .select(
-        `id, title, slug, starts_at, ends_at, location, is_cancelled, is_demo, cover_image_path, ${SERIES_COLUMNS},
+        `id, title, slug, starts_at, ends_at, category, location, is_cancelled, is_demo, cover_image_path, ${SERIES_COLUMNS},
          host:profiles!host_id ( display_name, handle )`,
       )
-      .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
+      , ['title', 'description'], safe)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
+      .is('removed_at', null)
+    if (category) query = query.eq('category', category)
+    return query
+  }
 
   const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
   const fetchLimit = seriesFetchLimit(limit + 1)
@@ -138,8 +146,8 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS): Promise
     eventsBase().lt('starts_at', floor).order('starts_at', { ascending: false }).limit(fetchLimit),
   ])
   const folded = collapseSeriesAroundFloor(
-    (upcoming.data ?? []) as unknown as EventRow[],
-    (past.data ?? []) as unknown as EventRow[],
+    searchRows(upcoming, 'events') as unknown as EventRow[],
+    searchRows(past, 'events') as unknown as EventRow[],
     limit + 1,
     { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES },
   )
@@ -150,15 +158,39 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS): Promise
  *  the viewer's session, the way the DAWN Circles index reads them (lib/circles/index-data.ts). */
 export async function searchCircles(safe: string, limit = CIRCLE_RESULTS): Promise<Window<CircleRow>> {
   const supabase = await createClient()
-  let q = supabase
+  let q = applySearchTerms(supabase
     .from('circles')
     .select('id, name, slug, member_count, image_url, neighborhood, unlisted, is_demo')
-    .ilike('name', `%${safe}%`)
+    , ['name'], safe)
     .in('status', [...LISTABLE_CIRCLE_STATUS])
     .order('member_count', { ascending: false, nullsFirst: false })
     .limit(limit + 1)
   if (!(await demoModeEnabled()) || (await viewerHidesDemo())) q = q.eq('is_demo', false)
-  const { data } = await q
-  const rows = ((data ?? []) as (CircleRow & { unlisted: boolean | null })[]).filter((c) => isListedCircle(c.unlisted))
+  const result = await q
+  const rows = (searchRows(result, 'circles') as (CircleRow & { unlisted: boolean | null })[]).filter((c) => isListedCircle(c.unlisted))
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit }
+}
+
+
+export type PracticeRow = { id: string; title: string; slug: string | null; summary: string | null; duration_min: number | null }
+export type SpaceRow = { id: string; name: string; slug: string; brand_name: string | null; brand_logo_url: string | null; cover_image_url: string | null; tagline: string | null; type: string }
+
+/** Public practice library only. Private drafts never enter universal discovery. */
+export async function searchPractices(query: string, limit = 20): Promise<Window<PracticeRow>> {
+  const result = await applySearchTerms(createAdminClient().from('practices')
+    .select('id, title, slug, summary, duration_min'), ['title', 'summary', 'description'], query)
+    .eq('is_public', true).is('merged_into', null).eq('is_demo', false)
+    .order('title').limit(limit + 1)
+  const rows = searchRows(result, 'practices')
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit }
+}
+
+/** The same network/active/non-root boundary as the canonical Space directory. */
+export async function searchSpaces(query: string, limit = 20): Promise<Window<SpaceRow>> {
+  const result = await applySearchTerms(createAdminClient().from('spaces')
+    .select('id, name, slug, brand_name, brand_logo_url, cover_image_url, tagline, type'), ['name', 'brand_name', 'slug'], query)
+    .eq('visibility', 'network').eq('network_connected', true).eq('status', 'active').neq('type', 'root')
+    .order('name').limit(limit + 1)
+  const rows = searchRows(result, 'spaces')
   return { rows: rows.slice(0, limit), truncated: rows.length > limit }
 }
