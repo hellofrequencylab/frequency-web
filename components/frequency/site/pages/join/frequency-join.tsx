@@ -143,7 +143,9 @@ export function FrequencyJoin({
   const [parkedName, setParkedName] = useState(resumed ? initialName : '')
   const [save, setSave] = useState<Save>({ state: 'idle' })
   /** Latched: the photo target opens on the first save and stays (Use a different email keeps it). */
-  const [photoShown, setPhotoShown] = useState(resumed)
+  // SCAN-906: the photo opens only once this window has saved an email; a restored draft (resumed)
+  // reopens on name and email alone, since a parked draft no longer means a link went out.
+  const [photoShown, setPhotoShown] = useState(false)
   /** The save in flight, so a blur and a Continue click on the same address share one save. */
   const inflight = useRef<{ address: string; done: Promise<boolean> } | null>(null)
   const [error, setError] = useState('')
@@ -274,7 +276,7 @@ export function FrequencyJoin({
         setSavedTo(address)
         setSave({ state: 'saved' })
         setPhotoShown(true)
-        if (!resumed) setAnnounce('Saved. A photo upload is now above your name.')
+        setAnnounce('Saved. A photo upload is now above your name.')
         return true
       } catch {
         setSave({ state: 'error', error: 'That didn’t save. Check your connection.' })
