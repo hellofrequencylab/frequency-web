@@ -126,6 +126,8 @@ export interface EventDetailContext {
   /** The Space that hosts the event (events.space_id), when posted from a Space. Present ⇒ the Space is the
    *  displayed host; the `host` profile above stays the operational organizer. Null for non-Space events. */
   spaceHost: SpaceHostLite | null
+  /** Distinct active placement Space; never the hosting Space. */
+  venueSpace?: { slug: string; name: string } | null
   /** Spaces co-hosting the event as COLLABORATORS (ADR-834): ACCEPTED event_space_shares only — a
    *  pending/declined/revoked share never renders publicly (the EC3 leak contract). Featured under
    *  the Host box; calendar visibility + credit only, never management access. */

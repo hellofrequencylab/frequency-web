@@ -129,24 +129,24 @@ async function hostedCount(hostId: string): Promise<number> {
 export async function FqEventHost() {
   const ctx = getEventContext()
   if (!ctx) return null
-  const { host, spaceHost, collaboratorSpaces, cohosts } = ctx
-  if (!host && !spaceHost && collaboratorSpaces.length === 0 && cohosts.length === 0) return null
+  const { host, spaceHost, venueSpace, collaboratorSpaces, cohosts } = ctx
+  if (!host && !spaceHost && !venueSpace && collaboratorSpaces.length === 0 && cohosts.length === 0) return null
   const times = host && !spaceHost ? await hostedCount(host.id).catch(() => 0) : 0
   const canMessage = !!ctx.myProfileId && !ctx.isHost
   const coCount = collaboratorSpaces.length + cohosts.length
   return (
-    <div className="panel stack">
-      <span className="k">{host || spaceHost ? (coCount > 0 ? 'Host and Co Hosts' : 'Host') : 'Co Hosts'}</span>
+    <div className="panel stack fqm-event-people">
+      <h2 className="k">Behind this event</h2>
       {spaceHost ? (
         <>
           <Link className="row" href={`/spaces/${spaceHost.slug}`}>
             <FqAvatar url={spaceHost.logoUrl} name={spaceHost.name} size="m" className="fqm-sq" />
             <span className="grow">
               <span className="t1 fqm-block">{spaceHost.name}</span>
-              <span className="t2">Hosting this event</span>
+              <span className="t2">Host</span>
             </span>
           </Link>
-          {showsOrganizerCredit(host) && <span className="t2">Organized by {host!.display_name}</span>}
+          {showsOrganizerCredit(host) && <Link className="t2" href={`/people/${host!.handle}`}>Organized by {host!.display_name}</Link>}
         </>
       ) : host ? (
         <>
@@ -154,7 +154,7 @@ export async function FqEventHost() {
             <FqAvatar url={host.avatar_url} name={host.display_name} size="m" />
             <span className="grow">
               <span className="t1 fqm-block">{host.display_name}</span>
-              <span className="t2">{times > 1 ? `Hosted ${times} times` : `@${host.handle}`}</span>
+              <span className="t2">{times > 1 ? `Host · ${times} events` : 'Host'}</span>
             </span>
           </Link>
           {canMessage ? (
@@ -166,13 +166,19 @@ export async function FqEventHost() {
           ) : null}
         </>
       ) : null}
+      {venueSpace && (
+        <Link className="row" href={`/spaces/${venueSpace.slug}`}>
+          <FqIcon name="pin" />
+          <span className="grow"><span className="t1 fqm-block">{venueSpace.name}</span><span className="t2">Venue</span></span>
+        </Link>
+      )}
       {coCount > 0 && (
         <div className="list">
           {collaboratorSpaces.map((s) => (
             <Link key={s.id} href={`/spaces/${s.slug}`}>
               <FqAvatar url={s.logoUrl} name={s.name} size="s" className="fqm-sq" />
               <span className="t1 grow">{s.name}</span>
-              <span className="t2">Co host</span>
+              <span className="t2">Collaborator</span>
             </Link>
           ))}
           {cohosts.map((c) => (
