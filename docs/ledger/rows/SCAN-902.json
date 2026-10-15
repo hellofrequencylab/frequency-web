@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-902",
+  "title": "The Events hub's plain header sits on the page background instead of a black box with unreadable dark type",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-14",
+  "source": {
+    "file": "app/themes/frequency/members-events.css",
+    "ref": "Owner 2026-10-14 (/events screenshot): bro wut? The Events header is a black box with dark text."
+  },
+  "detail": "SCAN-878 removed the photo element and gave .ev-hero.is-plain dark kit type, but the base .ev-hero rule still paints background:var(--fq-ink) for the photo band, so the header shipped as dark text on a black box. The plain variant now drops the background (and the band's isolation), so the title, search and buttons sit on the page like the other member hubs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/themes/frequency/members-events.css','utf8');if(!s.includes('.ev-hero.is-plain{background:none')){console.error('SCAN-902: the Events plain header still paints the dark photo base');process.exit(1)}\""
+  },
+  "wave": "W7"
+}
