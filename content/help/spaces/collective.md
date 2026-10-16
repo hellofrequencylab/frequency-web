@@ -4,14 +4,16 @@ description: What the Collective plan is for, what it includes beyond Business, 
 category: spaces
 order: 5
 published: 2026-10-06
-updated: 2026-10-12
+updated: 2026-10-16
 audience: member
 featureKeys: [billing, collective]
 status: published
 ---
 
-Collective is for groups of groups. If you run several communities that belong together, a network of
-studios, a set of chapters, a movement with local branches, Collective puts them under one account.
+Collective is for separate groups that work together. If you run a community and partner with others
+that run their own, Collective links you up while each group keeps its own Space, members and payouts.
+
+If one organization runs many chapters, that is [Network](/help/spaces/network) instead.
 
 It sits at the top of the Space ladder: members join, Crew hosts, a Space runs, Business sells, and
 Collective connects.

@@ -242,8 +242,10 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
       '$490',
       '$490/yr',
       'Free',
+      'from $5,990/yr', // Network (SCAN-961), quoted: the "from" year, two months free, and its month
+      'from $599/mo',
     ])
-    expect(cents).toEqual([0, 3900, 4900, 14900, 39000, 49000, 149000])
+    expect(cents).toEqual([0, 3900, 4900, 14900, 39000, 49000, 59900, 149000])
     // The founding amounts a GRANTED Space might be charged, absent from both sets when flat.
     for (const amount of ['$29/mo', '$290/yr', '$79/mo', '$790/yr', '$29', '$79']) {
       expect(labels, `${amount} is quoted on a public surface`).not.toContain(amount)
