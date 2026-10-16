@@ -54,8 +54,8 @@ const TILE_WATCHDOG_MS = 8_000
 
 /** Resolve a DAWN token to its computed colour. Map DOM sits outside Tailwind, so markers
  *  and paint layers read the custom property directly instead of hardcoding a value. */
-function tokenColor(name: string): string | undefined {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+function tokenColor(name: string, container: Element): string | undefined {
+  const v = getComputedStyle(container).getPropertyValue(name).trim()
   return v || undefined
 }
 
@@ -208,14 +208,14 @@ export default function MapLibreCanvas({
     }
 
     const addPin = (pin: MapPin, isDraggablePin: boolean) => {
-      const paint = resolvePinPaint(pin)
+      const paint = resolvePinPaint(pin, designPins)
       const counted = pin.count == null ? null : (designPins
         ? buildFrequencyBadge(pin.count, false, pin.label ?? pin.title ?? null)
         : buildClusterMarker(pin.count))
       const marker = new maplibregl.Marker(
         counted ? { element: counted, draggable: isDraggablePin } : designPins
           ? { element: buildRoundPin(paint, FREQUENCY_PIN_RING), draggable: isDraggablePin }
-          : { color: tokenColor(paint.token) ?? paint.fallback, draggable: isDraggablePin },
+          : { color: tokenColor(paint.token, container) ?? paint.fallback, draggable: isDraggablePin },
       )
         .setLngLat([pin.lng, pin.lat])
         .addTo(map)
@@ -245,7 +245,7 @@ export default function MapLibreCanvas({
         return
       }
 
-      const content = buildPopupContent(pin)
+      const content = buildPopupContent(pin, designPins)
       if (content) {
         marker.setPopup(
           new maplibregl.Popup(popupOptions).setDOMContent(content),
@@ -284,7 +284,7 @@ export default function MapLibreCanvas({
       // the same `1+` sitting there, which reads as a dead control. The Google canvas applies the
       // identical rule, from the same `points.length === 1` test.
       if (only) {
-        const content = buildPopupContent(only)
+        const content = buildPopupContent(only, designPins)
         const popup = content
           ? new maplibregl.Popup(popupOptions).setDOMContent(content)
           : null
@@ -355,7 +355,7 @@ export default function MapLibreCanvas({
     map.on('load', () => {
       // ── Area (the privacy circle) ─────────────────────────────────────────────
       if (area) {
-        const paint = tokenColor('--color-primary')
+        const paint = tokenColor(designPins ? '--design-map-pin' : '--color-primary', container)
         map.addSource('area', {
           type: 'geojson',
           data: {
@@ -446,7 +446,7 @@ export default function MapLibreCanvas({
   // Viewer geolocation arriving after mount.
   useEffect(() => {
     if (!recenterTo || !mapRef.current) return
-    mapRef.current.easeTo({ center: recenterTo, zoom: 9, duration: 800 })
+    mapRef.current.easeTo({ center: recenterTo, zoom: 9, duration: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 800 })
   }, [recenterTo])
 
   return <div ref={containerRef} className={className} style={{ filter: WARM_FILTER }} />

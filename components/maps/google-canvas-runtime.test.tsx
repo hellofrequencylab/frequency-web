@@ -4,11 +4,11 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import GoogleCanvas from './google-canvas'
 
-const state = vi.hoisted(() => ({ markers: [] as Record<string, unknown>[], frames: [] as unknown[][] }))
+const state = vi.hoisted(() => ({ markers: [] as Record<string, unknown>[], frames: [] as unknown[][], mode: null as (() => void) | null, circles: [] as Record<string, unknown>[], moves: [] as string[] }))
 vi.mock('./use-near-viewport', () => ({ useNearViewport: () => true }))
 vi.mock('@/lib/maps/basemap-look', () => ({
   readBasemapPalette: () => null, isDesignMap: () => true,
-  googleMapStyles: () => [], watchColorMode: () => () => {},
+  googleMapStyles: () => [], watchColorMode: (fn: () => void) => { state.mode = fn; return () => { state.mode = null } },
 }))
 vi.mock('@/lib/maps/provider', () => ({ googleMapsMapId: () => null }))
 vi.mock('@/lib/maps/google-loader', () => ({
@@ -17,16 +17,22 @@ vi.mock('@/lib/maps/google-loader', () => ({
     Map: class {
       getZoom() { return 8 }
       setZoom() {}
-      setCenter() {}
-      panTo() {}
+      setCenter() { state.moves.push('center') }
+      panTo() { state.moves.push('pan') }
       setOptions() {}
       addListener() { return { remove() {} } }
       fitBounds(bounds: { points: unknown[] }) { state.frames.push(bounds.points) }
     },
     Marker: class {
-      constructor(options: Record<string, unknown>) { state.markers.push(options) }
+      constructor(private options: Record<string, unknown>) { state.markers.push(options) }
+      setIcon(icon: unknown) { this.options.icon = icon }
       setMap() {}
       addListener() { return { remove() {} } }
+    },
+    Circle: class {
+      constructor(private options: Record<string, unknown>) { state.circles.push(options) }
+      setOptions(options: Record<string, unknown>) { Object.assign(this.options, options) }
+      setMap() {}
     },
     InfoWindow: class { close() {} },
     LatLngBounds: class { points: unknown[] = []; extend(point: unknown) { this.points.push(point); return this } },
@@ -36,7 +42,7 @@ vi.mock('@/lib/maps/google-loader', () => ({
   }),
 }))
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-afterEach(() => { state.markers.length = 0; state.frames.length = 0 })
+afterEach(() => { state.markers.length = 0; state.frames.length = 0; state.circles.length = 0; state.moves.length = 0; state.mode = null; vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 describe('Google rendering preserves aggregate and framing semantics', () => {
   it('draws city totals as count badges and opens the city instead of a fake series cluster', async () => {
@@ -65,4 +71,39 @@ describe('Google rendering preserves aggregate and framing semantics', () => {
     expect(state.markers.filter((marker) => (marker.position as { lat: number }).lat === 33).length).toBeGreaterThanOrEqual(2)
     await act(async () => root.unmount())
   })
+})
+
+
+it('uses the container map accent instead of the root action color and repaints without moving the pin', async () => {
+  let accent = '#3a8c99'
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => ({
+    getPropertyValue: (name: string) => element === document.documentElement ? '#5b3fd0' : name === '--design-map-pin' ? accent : '',
+  } as CSSStyleDeclaration))
+  const host = document.createElement('div')
+  const root = createRoot(host)
+  await act(async () => root.render(<GoogleCanvas center={[-117, 33]} zoom={14}
+    pins={[{ id: 'venue', lat: 33, lng: -117, kind: 'event' }]}
+    area={{ lat: 33, lng: -117, radiusM: 300 }} />))
+  expect(state.markers).toHaveLength(1)
+  expect(state.markers[0]?.icon).toMatchObject({ fillColor: '#3a8c99', strokeColor: '#FFFFFF' })
+  expect(state.circles[0]).toMatchObject({ fillColor: '#3a8c99', strokeColor: '#3a8c99' })
+  const position = state.markers[0]?.position
+  accent = '#8fe9ff'
+  await act(async () => state.mode?.())
+  expect(state.markers).toHaveLength(1)
+  expect(state.markers[0]?.position).toBe(position)
+  expect(state.markers[0]?.icon).toMatchObject({ fillColor: '#8fe9ff' })
+  expect(state.circles[0]).toMatchObject({ fillColor: '#8fe9ff', strokeColor: '#8fe9ff' })
+  await act(async () => root.unmount())
+  expect(state.mode).toBeNull()
+})
+
+
+it.each([true, false])('recenters without animation when reduced motion is %s', async (reduce) => {
+  vi.stubGlobal('matchMedia', () => ({ matches: reduce }))
+  const root = createRoot(document.createElement('div'))
+  await act(async () => root.render(<GoogleCanvas center={[-117, 33]} zoom={8} />))
+  await act(async () => root.render(<GoogleCanvas center={[-117, 33]} zoom={8} recenterTo={[-116, 34]} />))
+  expect(state.moves).toEqual([reduce ? 'center' : 'pan'])
+  await act(async () => root.unmount())
 })
