@@ -216,7 +216,7 @@ export default async function PricingPage() {
           spaces={spaces}
           grid={spaceFeatureGrid(input)}
           faq={faq}
-          yearlyNote={annualDiscountNote(values)}
+          yearlyNote={annualDiscountNote(input.values)}
         />
       </>
     )
