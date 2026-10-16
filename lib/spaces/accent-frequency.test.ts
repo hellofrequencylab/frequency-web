@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { frequencyAccentVars } from './accent'
 
-// SCAN-962: under the Frequency design a Space's own accent paints its buttons, active tab and highlights.
+// SCAN-979: under the Frequency design a Space's own accent paints its buttons, active tab and highlights.
 describe('the Frequency accent', () => {
   it('keeps the design fill when the Space picked no accent', () => {
     expect(frequencyAccentVars(null)).toBeNull()

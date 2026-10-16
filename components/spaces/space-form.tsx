@@ -187,7 +187,7 @@ export function AccentPicker({
   disabled?: boolean
 }) {
   // The native color input needs a valid hex to seed; it shows white when the stored accent is a legacy
-  // token or empty, so an unset accent never reads as a saved color (SCAN-962: an orange seed here read
+  // token or empty, so an unset accent never reads as a saved color (SCAN-979: an orange seed here read
   // as "the accent is set" while the page kept the design's fill).
   const currentHex = HEX_RE.test(value) ? value : null
   const [draft, setDraft] = useState(currentHex ?? '')

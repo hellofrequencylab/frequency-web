@@ -45,7 +45,7 @@ export function AccentScope({
   // signature for `--*`, so cast through the documented custom-property style shape.
   //
   // Under a design that overrides everything (Frequency, ADR-1737) the `--color-primary*` override does
-  // not apply: it re-points tokens the design owns. The Space's OWN accent still paints (SCAN-962, owner
+  // not apply: it re-points tokens the design owns. The Space's OWN accent still paints (SCAN-979, owner
   // 2026-10-16): it rides `fqAccent`, three `--space-accent*` names that app/themes/frequency/space-page.css
   // maps onto the design's fill under `data-space-accent`. Its FONT SET does too (owner ruling, 2026-10-13: a Space picks its primary
   // fonts in its theme, never per heading). It rides `data-space-fonts`, which only

@@ -34,7 +34,7 @@
 [data-design="frequency"] [data-space-fonts="modern"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-nunito); }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-font-display: var(--font-sofia-xc); --space-font-body: var(--font-barlow); }
 
-/* ══ 0b. THE SPACE'S ACCENT (SCAN-962) ═══════════════════════════════════════════════════════════
+/* ══ 0b. THE SPACE'S ACCENT (SCAN-979) ═══════════════════════════════════════════════════════════
    A Space that picked a brand color wears it where the design draws its iridescent fill: the buttons,
    the active tab, the soft washes and the in-body highlights. components/spaces/accent-scope.tsx stamps
    `data-space-accent` with three values from lib/spaces/accent.ts frequencyAccentVars: the fill, the
