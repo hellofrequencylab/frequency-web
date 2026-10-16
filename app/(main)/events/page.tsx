@@ -35,10 +35,13 @@ export default async function EventsPage({
     spots?: string
     near?: string
     sort?: string
-    /** The Frequency body's view (list | map | calendar) and the calendar's month (YYYY-MM).
+    /** The Frequency body's view (list | calendar; an old `map` opens the map lightbox) and the calendar's month (YYYY-MM).
      *  DAWN ignores both. */
     view?: string
     month?: string
+    /** The library's length (SCAN-975), and the map lightbox (`map=1`). DAWN ignores both. */
+    show?: string
+    map?: string
   }>
 }) {
   const sp = await searchParams

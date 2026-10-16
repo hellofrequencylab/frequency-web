@@ -155,10 +155,22 @@ const FROZEN_SYNCED_KEYS = [
   'independent_base_month_list',
   'independent_base_year',
   'independent_base_year_list',
+  'network_base_month',
+  'network_base_month_list',
+  'network_base_year',
+  'network_base_year_list',
+  'network_chapter_month',
+  'network_chapter_month_list',
+  'network_chapter_year',
+  'network_chapter_year_list',
   'nonprofit_collective_month',
   'nonprofit_collective_month_list',
   'nonprofit_collective_year',
   'nonprofit_collective_year_list',
+  'nonprofit_network_month',
+  'nonprofit_network_month_list',
+  'nonprofit_network_year',
+  'nonprofit_network_year_list',
   'nonprofit_seat_month',
   'nonprofit_seat_month_list',
   'nonprofit_seat_year',
@@ -297,8 +309,8 @@ describe('a re-sync is idempotent', () => {
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
     // 8 live items (ADR-1709 added three Collective items) plus the custom domain add-on (LIVE-821):
     // 9 standard products plus Collective's founding product ($99 Founding Collective, owner 2026-10-06), 36 price keys.
-    expect(store.products).toHaveLength(10)
-    expect(store.prices).toHaveLength(36)
+    expect(store.products).toHaveLength(13)
+    expect(store.prices).toHaveLength(48)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {
