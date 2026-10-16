@@ -1,9 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { execSync } from 'node:child_process'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { mensworkSign, mensworkSignStarting, MENSWORK_SIGNS } from '@/lib/theme/menswork'
 import { SiteChrome } from '@/components/sites/site-chrome'
 import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
+
+// SCAN-970: the admin links draw only once the site's check confirms the reader runs the Space. The server
+// markup is what every visitor gets, so `gate.admin` stands in for that client answer.
+const gate = vi.hoisted(() => ({ admin: true }))
+vi.mock('@/components/sites/site-admin-gate', () => ({
+  useSiteAdmin: () => gate.admin,
+  SiteAdminOnly: ({ children }: { children: React.ReactNode }) => (gate.admin ? children : null),
+}))
 import { toProfileContext } from './profile-modules'
 import type { Space } from './types'
 import {
@@ -149,6 +157,18 @@ describe('the website admin links', () => {
       </SiteChrome>,
     )
   const navOf = (html: string) => html.slice(html.indexOf('class="hs-nav"'), html.indexOf('</nav>', html.indexOf('class="hs-nav"')))
+  beforeEach(() => {
+    gate.admin = true
+  })
+
+  it('a visitor who is not the Space admin sees no admin links, in the menu or the footer (SCAN-970)', () => {
+    gate.admin = false
+    const html = chrome(true)
+    expect(html).not.toContain('class="hs-nav-admin"')
+    expect(html).not.toContain('class="hs-admin"')
+    expect(html).not.toContain('/admin/overview')
+    expect(html).not.toContain('Manage on Frequency')
+  })
 
   it('the one menu ends with the blue admin links, after the pages', () => {
     const nav = navOf(chrome(true))

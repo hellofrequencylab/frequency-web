@@ -20,6 +20,7 @@ function render() {
       spaces={spaceOfferings(input)}
       grid={spaceFeatureGrid(input)}
       faq={pricingFaq(input)}
+      yearlyNote="Yearly is two months free."
     />,
   )
 }
@@ -75,5 +76,16 @@ describe('the pricing sheet', () => {
   })
   it('clips pricing sections without making a scroll box (which would unstick the header)', () => {
     expect(css).toMatch(/\.pb-sec\{[^}]*overflow:clip/)
+  })
+
+  it('gives every paid plan a yearly price behind the Monthly / Yearly switch', () => {
+    const html = render()
+    expect(count(html, 'role="radiogroup"')).toBe(2)
+    expect(html).toContain('aria-label="Billing period"')
+    expect(html).toContain('data-period="month"')
+    for (const o of spaceOfferings(input).filter((x) => x.monthlyCents > 0)) {
+      expect(o.yearly, `${o.id} has no yearly price`).toBeTruthy()
+    }
+    expect(count(html, 'data-period-show="year"')).toBe(count(html, 'data-period-show="month"'))
   })
 })

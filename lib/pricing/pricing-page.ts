@@ -31,7 +31,7 @@ import {
   formatLoadoutCents,
   type LoadoutTotal,
 } from './loadout'
-import { ADDON_ENTITLEMENT_KEYS, SPACE_PLAN_LABEL, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
+import { ADDON_ENTITLEMENT_KEYS, NETWORK_PLAN, SPACE_PLAN_LABEL, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
 import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
@@ -44,6 +44,7 @@ import {
   type BillingInterval,
   type CatalogAmounts,
   type CatalogItemKey,
+  yearlyFromMonthly,
 } from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
@@ -147,7 +148,7 @@ interface TierAddonCell {
 export interface PricingTier {
   /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit`). Narrower than
    *  SpacePlan on purpose: this is the ADVERTISED ladder, and Independent is not on it (LIVE-227). */
-  id: 'free' | 'business' | 'collective' | 'nonprofit'
+  id: 'free' | 'business' | 'collective' | 'nonprofit' | 'network'
   /** The display name. */
   name: string
   /** The rung identity in a few words (the card's one-liner, e.g. "Own your audience."). */
@@ -215,7 +216,7 @@ export function offeringLadderLabel(offering: Offering): string {
 }
 
 /** The catalog item each SPACE tier is priced from. Free has none ($0 is not a Stripe price). PURE. */
-const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
+const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free' | 'network'>, CatalogItemKey> = {
   business: 'business_base',
   collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
@@ -230,7 +231,9 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
   business:
     'Selling opens: paid tickets, paid memberships, donations, shop checkout and booking deposits. The limits lift, and you get your own website, team seats, automations, Programs, and hosting Collaborator Spaces.',
   collective:
-    'Everything in Business for a group of groups: member Spaces under one account, each with the Business tools, more team seats, and Vera AI included.',
+    'Everything in Business for separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, more team seats, and Vera AI included. Each partner keeps its own members and payouts.',
+  network:
+    'Everything in Collective for one organization with chapters: chapter leaders, central admins, one membership in every chapter, one network calendar and home, and a roll-up report.',
   nonprofit:
     'Everything in Business for verified nonprofits, with donations built in and no network fee. Flat, never per seat.',
 }
@@ -241,6 +244,7 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   business: { label: 'Start with Business', href: '/spaces' },
   collective: { label: 'Start a Collective', href: '/spaces' },
   nonprofit: { label: 'Get verified', href: '/spaces' },
+  network: { label: 'Talk to us', href: '/networks' },
 }
 
 /** Build the public Space tier columns: Free Space FIRST (the first level of Space, where the core
@@ -291,18 +295,22 @@ export function pricingTiers(
 
   return offerings.map((o): PricingTier => {
     const id = o.id as PricingTier['id']
-    const item = id === 'free' ? null : cat[TIER_ITEM[id]]
+    // Network is quoted (SCAN-961): no catalog item, a "from" price read off NETWORK_PLAN, a year at the house rate (two months free).
+    const network = id === 'network'
+    const item = id === 'free' || id === 'network' ? null : cat[TIER_ITEM[id]]
+    const from: CatalogAmounts = { listCents: NETWORK_PLAN.monthlyCents, foundingCents: NETWORK_PLAN.monthlyCents }
+    const fromYear: CatalogAmounts = { listCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents), foundingCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents) }
     return {
       id,
       name: offeringLadderLabel(o),
       tagline: o.tagline,
-      priceKind: 'flat',
-      price: item ? { month: eff(item.month), year: eff(item.year) } : { month: zero, year: zero },
+      priceKind: network ? 'from' : 'flat',
+      price: network ? { month: from, year: fromYear } : item ? { month: eff(item.month), year: eff(item.year) } : { month: zero, year: zero },
       featured: o.featured,
       forWho: o.forWho,
       billing: o.billing,
       coreIncluded: TIER_CORE_INCLUDED[id],
-      addons: item ? tierAddons(id as SpacePlan) : [],
+      addons: item || network ? tierAddons(id as SpacePlan) : [],
       takeRate: o.takeRate,
       sells: o.sells,
       cta: TIER_CTA[id],

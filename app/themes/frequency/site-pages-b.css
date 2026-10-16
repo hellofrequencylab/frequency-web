@@ -41,6 +41,40 @@
 @container (min-width:1010px){
 [data-design="frequency"] [data-kit="site"] .pb-plans.n4{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+/* Five plans (SCAN-961, Network joins): two across with the last card full width, three across from
+   760px with the last two sharing the second row, five across only once each card gets about 240px. */
+@container (min-width:520px){
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>:last-child{grid-column:1/-1}
+}
+@container (min-width:760px){
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5{grid-template-columns:repeat(6,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>*{grid-column:span 2}
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>:nth-child(n+4){grid-column:span 3}
+}
+@container (min-width:1250px){
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5{grid-template-columns:repeat(5,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>*, [data-design="frequency"] [data-kit="site"] .pb-plans.n5>:nth-child(n+4){grid-column:auto}
+}
+
+/* The tier graphics (SCAN-961, components/frequency/site/pages/pricing/tier-graphics.tsx). Inline SVG in
+   currentColor: quiet strokes, one accented element, text in the kit's ink. Paired graphics sit side by
+   side on a wide row and stack on a phone. */
+[data-design="frequency"] [data-kit="site"] .tg{display:block;width:100%;height:auto;max-width:640px;margin-inline:auto}
+[data-design="frequency"] [data-kit="site"] .tg .tg-q{color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-a{color:var(--fq-x-aqua-neon)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-t{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-m{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-s13{font-size:13px}
+[data-design="frequency"] [data-kit="site"] .tg .tg-s14{font-size:14px}
+[data-design="frequency"] [data-kit="site"] .tg .tg-s15{font-size:15px}
+[data-design="frequency"] [data-kit="site"] .tg .tg-s16{font-size:16px}
+[data-design="frequency"] [data-kit="site"] .tg-row{container-type:inline-size;display:grid;grid-template-columns:minmax(0,1fr);gap:24px;margin-top:28px}
+[data-design="frequency"] [data-kit="site"] .tg-card{padding:clamp(18px,2.4vw,28px);border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-m);background:var(--fq-surface-card);min-width:0}
+[data-design="frequency"] [data-kit="site"] .tg-card h3{margin:0 0 6px}
+[data-design="frequency"] [data-kit="site"] .tg-card p{margin:0 0 16px;font-size:var(--fq-text-body-size);line-height:1.55;color:var(--fq-text-body)}
+@container (min-width:900px){
+[data-design="frequency"] [data-kit="site"] .tg-row.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 
 /* The plan card: the kit's `.pop > .pc`, in five rows (head, price, points, detail, CTA). Equal heights
    and a pinned CTA come from the flex column; where subgrid exists the five rows are shared across the
@@ -56,6 +90,15 @@
 [data-design="frequency"] [data-kit="site"] .pb-flag{font:600 11px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;padding:7px 10px;border-radius:999px;background:var(--fq-iridescent-sweep);background-size:220% 100%;color:var(--fq-ink);white-space:nowrap}
 [data-design="frequency"] [data-kit="site"] .pb-pc .pb-who{font-size:15px;line-height:1.45;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .pb-price{display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding-block:16px;border-block:1px solid var(--fq-border-hair);min-width:0}
+/* The Monthly / Yearly switch: each card carries both prices, and the scope's data-period shows one. */
+[data-design="frequency"] [data-kit="site"] [data-period-show="year"],[data-design="frequency"] [data-kit="site"] [data-period="year"] [data-period-show="month"]{display:none}
+[data-design="frequency"] [data-kit="site"] [data-period="year"] [data-period-show="year"]{display:flex}
+[data-design="frequency"] [data-kit="site"] .pb-period-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 auto 28px}
+[data-design="frequency"] [data-kit="site"] .pb-period{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--fq-border-hair);border-radius:999px;background:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="site"] .pb-period button{min-height:40px;padding:0 20px;border:none;border-radius:999px;background:transparent;color:var(--fq-text-body);font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);cursor:pointer}
+[data-design="frequency"] [data-kit="site"] .pb-period button.on{background:var(--fq-text-strong);color:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="site"] .pb-period button:focus-visible{outline:2px solid var(--fq-x-aqua-neon);outline-offset:2px}
+[data-design="frequency"] [data-kit="site"] .pb-period-note{margin:0;font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .pb-fig{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;min-width:0}
 [data-design="frequency"] [data-kit="site"] .pb-amt{font:600 clamp(34px,19cqi,58px)/1 var(--fq-font-display);letter-spacing:-0.04em;font-variant-numeric:tabular-nums;color:var(--fq-text-strong);overflow-wrap:anywhere}
 [data-design="frequency"] [data-kit="site"] .pb-price.is-text .pb-amt{font-size:clamp(24px,11cqi,32px);line-height:1.1;letter-spacing:-0.03em;overflow-wrap:normal}
