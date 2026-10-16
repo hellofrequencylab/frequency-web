@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-954",
+  "title": "Frequency map markers read the map accent in their own theme scope and update with color mode",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "components/maps/google-canvas.tsx",
+    "ref": "Owner report of recurring legacy purple map pins, 2026-10-15"
+  },
+  "detail": "Frequency --design-map-pin still pointed at action-primary while the current cool palette changed accent, leaving the legacy purple token on location dots. The dedicated map token now follows the scoped Frequency accent. Both engines use that semantic paint for event/place pins and primary-tone overrides while Circle, Space, starter and secondary meanings remain distinct; popup pills use the same paint. Event venue pins explicitly identify their event kind. Google resolves concrete colors at the map container rather than html, and updates marker icons and privacy-area paint in place on light/dark changes even when a Cloud Map ID owns the basemap. Repaint preserves map instance, zoom, picker position and popup state. Cloud styles, provider/key selection, billing and fallback behavior are unchanged. Existing controlled recenter effects honor reduced motion in both engines for the upcoming synchronized Events index. Tests cover a purple root versus teal container, live mode repaint without marker recreation, area repaint, watcher cleanup, recenter animation preference and kind/tone distinctions. No production configuration or data changes are performed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/map-marker-consequence.mjs"
+  },
+  "wave": "W7"
+}

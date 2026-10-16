@@ -17,7 +17,6 @@ import {
   FREQUENCY_PIN,
   FREQUENCY_PIN_RING,
   MAP_CLUSTER_PAINT,
-  MAP_PIN_KINDS,
   resolvePinPaint,
 } from '@/lib/maps/pin-kinds'
 import { googleMapsMapId } from '@/lib/maps/provider'
@@ -61,9 +60,9 @@ import type { MapImplProps, MapPin } from './types'
 // token-ok: mirrors --color-surface; Google Symbol requires a concrete colour string
 const PIN_STROKE_FALLBACK = '#FFFFFF'
 
-/** Resolve a DAWN token to its computed colour. Map DOM sits outside Tailwind. */
-function tokenColor(name: string, fallback: string): string {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+/** Resolve a token at the map, where website and dark-section palettes may override the root. */
+function tokenColor(container: Element, name: string, fallback: string): string {
+  const v = getComputedStyle(container).getPropertyValue(name).trim()
   return v || fallback
 }
 
@@ -145,6 +144,7 @@ export default function GoogleCanvas({
     let map: GoogleMap | null = null
     const markers: GoogleMarker[] = []
     const markerListeners: GoogleListener[] = []
+    const repaintPins: (() => void)[] = []
     const listeners: GoogleListener[] = []
     let circle: GoogleCircle | null = null
     let info: GoogleInfoWindow | null = null
@@ -185,18 +185,10 @@ export default function GoogleCanvas({
         mapRef.current = map
         const live = map
 
-        // SCAN-918: the members app flips light/dark without a reload; the map swaps its style live.
-        if (palette) {
-          stopWatchingMode = watchColorMode(() => {
-            const next = readBasemapPalette(container)
-            if (next) live.setOptions({ styles: googleMapStyles(next), backgroundColor: next.land })
-          })
-        }
-
         // DAWN reads the ring from the token, not pinned to white: on a dark theme --color-surface is
         // dark, so the ring follows the palette. Frequency's pin is the kit's round dot with a WHITE
         // ring in every mode (SCAN-904, lib/maps/pin-kinds.ts FREQUENCY_PIN_RING).
-        const stroke = designPins ? FREQUENCY_PIN_RING : tokenColor('--color-surface', PIN_STROKE_FALLBACK)
+        const stroke = () => designPins ? FREQUENCY_PIN_RING : tokenColor(container, '--color-surface', PIN_STROKE_FALLBACK)
         const pinScale = designPins ? FREQUENCY_PIN.diameterPx / 2 : 8
         const pinStrokeWeight = designPins ? FREQUENCY_PIN.ringPx : 2
         info = new maps.InfoWindow()
@@ -208,15 +200,24 @@ export default function GoogleCanvas({
         const clustering = cluster && !draggable ? (designPins ? { ...FREQUENCY_CLUSTER_OPTIONS, ...cluster } : cluster) : null
 
         const clearMarkers = () => {
+          repaintPins.length = 0
           for (const l of markerListeners.splice(0)) l.remove()
           for (const m of markers.splice(0)) m.setMap(null)
           info?.close()
         }
 
         const addPin = (pin: MapPin, isDraggablePin: boolean) => {
-          const paint = resolvePinPaint(pin)
+          const paint = resolvePinPaint(pin, designPins)
           const label = pin.label?.trim() || pin.title?.trim() || null
           const counted = pin.count == null ? null : (designPins ? badge(pin.count) : null)
+          const icon = () => (counted?.icon ?? {
+              path: maps.SymbolPath.CIRCLE,
+              scale: pin.count == null ? pinScale : clusterDiameterPx(pin.count) / 2,
+              fillColor: tokenColor(container, paint.token, paint.fallback),
+              fillOpacity: 1,
+              strokeColor: stroke(),
+              strokeWeight: pinStrokeWeight,
+            })
           const marker = new maps.Marker({
             map: live,
             position: { lat: pin.lat, lng: pin.lng },
@@ -224,19 +225,13 @@ export default function GoogleCanvas({
             ...(label ? { title: label } : {}),
             ...(pin.count == null ? {} : { label: {
               text: clusterLabel(pin.count),
-              color: designPins ? FREQUENCY_PIN_RING : tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
+              color: designPins ? FREQUENCY_PIN_RING : tokenColor(container, MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
               fontSize: counted?.fontSize ?? '13px', fontWeight: '700',
             } }),
-            icon: counted?.icon ?? {
-              path: maps.SymbolPath.CIRCLE,
-              scale: pin.count == null ? pinScale : clusterDiameterPx(pin.count) / 2,
-              fillColor: tokenColor(paint.token, paint.fallback),
-              fillOpacity: 1,
-              strokeColor: stroke,
-              strokeWeight: pinStrokeWeight,
-            },
+            icon: icon(),
           })
           markers.push(marker)
+          repaintPins.push(() => marker.setIcon(icon()))
 
           if (isDraggablePin) {
             pinRef.current = marker
@@ -258,7 +253,7 @@ export default function GoogleCanvas({
             return
           }
 
-          const content = buildPopupContent(pin)
+          const content = buildPopupContent(pin, designPins)
           if (content) {
             markerListeners.push(
               marker.addListener('click', () => {
@@ -304,11 +299,11 @@ export default function GoogleCanvas({
             icon: look ? look.icon : {
               path: maps.SymbolPath.CIRCLE,
               scale: clusterDiameterPx(count) / 2,
-              fillColor: tokenColor(MAP_CLUSTER_PAINT.token, MAP_CLUSTER_PAINT.fallback),
+              fillColor: tokenColor(container, MAP_CLUSTER_PAINT.token, MAP_CLUSTER_PAINT.fallback),
               fillOpacity: 1,
               strokeColor: designPins
                 ? FREQUENCY_PIN_RING
-                : tokenColor(MAP_CLUSTER_PAINT.ringToken, MAP_CLUSTER_PAINT.ringFallback),
+                : tokenColor(container, MAP_CLUSTER_PAINT.ringToken, MAP_CLUSTER_PAINT.ringFallback),
               strokeWeight: 2,
             },
             label: look
@@ -321,7 +316,7 @@ export default function GoogleCanvas({
                 }
               : {
                   text: clusterLabel(count, plus),
-                  color: tokenColor(MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
+                  color: tokenColor(container, MAP_CLUSTER_PAINT.textToken, MAP_CLUSTER_PAINT.textFallback),
                   fontSize: '13px',
                   fontWeight: '600',
                 },
@@ -346,7 +341,7 @@ export default function GoogleCanvas({
           // leave the same `1+` sitting there, which reads as a dead control. The MapLibre canvas
           // applies the identical rule, from the same `points.length === 1` test.
           if (only) {
-            const content = buildPopupContent(only)
+            const content = buildPopupContent(only, designPins)
             markerListeners.push(
               marker.addListener('click', () => {
                 if (onPinClickRef.current) {
@@ -432,8 +427,8 @@ export default function GoogleCanvas({
         }
 
         if (area) {
-          const place = MAP_PIN_KINDS.place
-          const paint = tokenColor(place.token, place.fallback)
+          const place = resolvePinPaint({ kind: 'place' }, designPins)
+          const paint = tokenColor(container, place.token, place.fallback)
           circle = new maps.Circle({
             map: live,
             center: { lat: area.lat, lng: area.lng },
@@ -446,6 +441,21 @@ export default function GoogleCanvas({
             clickable: false,
           })
         }
+
+        // Repaint symbols in place so mode changes keep picker position, map zoom and open popups.
+        // Cloud Map IDs own their basemap, but our marker tokens still need to follow the local mode.
+        stopWatchingMode = watchColorMode(() => {
+          if (!mapId) {
+            const next = readBasemapPalette(container)
+            if (next) live.setOptions({ styles: googleMapStyles(next), backgroundColor: next.land })
+          }
+          repaintPins.forEach((repaint) => repaint())
+          if (circle) {
+            const place = resolvePinPaint({ kind: 'place' }, designPins)
+            const paint = tokenColor(container, place.token, place.fallback)
+            circle.setOptions({ fillColor: paint, strokeColor: paint })
+          }
+        })
 
         const framePoints = fit?.points ?? pins
         if (fit && framePoints.length > 1) {
@@ -527,7 +537,9 @@ export default function GoogleCanvas({
   useEffect(() => {
     const map = mapRef.current
     if (!recenterTo || !map) return
-    map.panTo({ lat: recenterTo[1], lng: recenterTo[0] })
+    const position = { lat: recenterTo[1], lng: recenterTo[0] }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) map.setCenter(position)
+    else map.panTo(position)
     map.setZoom(9)
   }, [recenterTo])
 

@@ -157,7 +157,7 @@
   --design-fx-glow-iterations: 0;
 
   /* ── Map paint (the three MapLibre maps) ── */
-  --design-map-pin: var(--fq-action-primary);
+  --design-map-pin: var(--fq-accent);
   --design-map-pin-ring: var(--fq-surface-card);
   --design-map-count: var(--fq-action-primary-text);
   --design-map-link: var(--fq-text-link);
