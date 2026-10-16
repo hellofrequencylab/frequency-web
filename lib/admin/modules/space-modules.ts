@@ -304,6 +304,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // pays for anything, so every Space can see why. That is the point of the page, and gating it would
   // contradict it.
   { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', hub: 'marketing', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included', parent: 'space.reach' },
+  // Collective listings (SCAN-982): the door to settings/cross-listing, where a Space answers a Collective's
+  // partner invite and lists its Circles and Journeys with it. No gate: the invited partner is owned by
+  // someone else and may be on any plan, so every owner needs the door to say yes.
+  { id: 'space.listings', label: 'Collective listings', desc: 'Answer a Collective partner invite, and list your Circles and Journeys with another Space.', Icon: HeartHandshake, family: 'reach', hub: 'marketing', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/cross-listing`, order: 76.5, tier: 'primary', priority: 51.5, access: 'included', parent: 'space.reach' },
 
   { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', hub: 'marketing', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: emailCatalogNote(), parent: 'space.reach' },
   // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio

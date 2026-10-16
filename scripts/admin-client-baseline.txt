@@ -627,7 +627,6 @@ app/api/observe/route.ts
 app/api/qr/route.ts
 app/api/search-handles/route.ts
 app/api/search-scopes/route.ts
-app/api/search/route.ts
 app/api/vitals/route.ts
 app/api/wallet/google/route.ts
 app/api/webhooks/resend/route.ts
@@ -820,6 +819,9 @@ lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
 lib/collective/network-report.ts
 lib/collective/network-store.ts
+lib/collective/partners-actions.ts
+lib/collective/partners-live-store.ts
+lib/collective/partners-store.ts
 lib/collective/shared-membership.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts

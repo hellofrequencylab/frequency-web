@@ -51,6 +51,7 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'book', // the reserved action page (the single primary CTA's live transactional surface)
   'api',
   'network', // Collective network home (LIVE-764); a custom page cannot shadow it.
+  'partners', // the Collective Partners tab (SCAN-982). A custom page must not shadow it.
   'people', // the member directory (LIVE-420). A custom page must not shadow it.
   'discussion', // the Space Circle conversation (LIVE-421). A custom page must not shadow it.
   'contact', // the Contact tab (LIVE-502). A custom page must not shadow it.

@@ -288,6 +288,68 @@ export type Database = {
           },
         ]
       }
+      collective_partners: {
+        Row: {
+          created_at: string
+          hub_space_id: string
+          id: string
+          invited_by: string | null
+          partner_space_id: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          hub_space_id: string
+          id?: string
+          invited_by?: string | null
+          partner_space_id: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          hub_space_id?: string
+          id?: string
+          invited_by?: string | null
+          partner_space_id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collective_partners_hub_space_id_fkey"
+            columns: ["hub_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_partners_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_partners_partner_space_id_fkey"
+            columns: ["partner_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_partners_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_editor_presence: {
         Row: {
           space_id: string

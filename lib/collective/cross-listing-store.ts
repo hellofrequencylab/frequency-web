@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { crossListingVisible, type CrossListingKind, type CrossListingStatus } from './cross-listing'
+import { livePartnerSpaceIds } from './partners-live-store'
 
 // PostgREST applies a response ceiling even without a caller limit. Every listing
 // inventory is exhaustively paged; bulk lookups stay below URL/response ceilings.
@@ -39,9 +40,11 @@ export async function collectiveListingSpace(id: string): Promise<CrossListingSp
 export async function belongsToLiveCollective(space: CrossListingSpace): Promise<boolean> {
   if (space.status !== 'active' || space.type==='root') return false
   if ((space.plan === 'collective' || space.plan === 'nonprofit_collective') && space.parent_id===null) return true
-  if (!space.parent_id) return false
+  // A partner Space (SCAN-982) is owned by someone else and opted in; it lists like a member Space.
+  const livePartner = async () => space.visibility !== 'private' && (await livePartnerSpaceIds([space.id])).has(space.id)
+  if (!space.parent_id) return livePartner()
   const parent = await collectiveListingSpace(space.parent_id)
-  return !!parent && parent.status === 'active' && parent.type!=='root' && parent.parent_id===null && (parent.plan === 'collective' || parent.plan === 'nonprofit_collective') && parent.owner_profile_id === space.owner_profile_id
+  return (!!parent && parent.status === 'active' && parent.type!=='root' && parent.parent_id===null && (parent.plan === 'collective' || parent.plan === 'nonprofit_collective') && parent.owner_profile_id === space.owner_profile_id) || livePartner()
 }
 export async function crossListingSubject(kind: CrossListingKind, id: string): Promise<{space_id: string; label: string} | null> {
   const admin = listingAdmin()
@@ -75,9 +78,10 @@ export async function crossListingManagement(spaceId: string): Promise<{subjects
   const parentIds=[...new Set(candidates.flatMap(s=>s.parent_id?[s.parent_id]:[]))]
   const parents={data:await byIds<CrossListingSpace>('spaces','id,plan,status,owner_profile_id,parent_id,type',parentIds)}
   const byId=new Map(((parents.data ?? []) as CrossListingSpace[]).map(s=>[s.id,s]))
+  const partnerTargets=await livePartnerSpaceIds(candidates.filter(s=>s.type!=='root').map(s=>s.id))
   for (const space of candidates) {
     const parent=space.parent_id?byId.get(space.parent_id):null
-    if(space.type!=='root' && ((space.parent_id===null && (space.plan==='collective' || space.plan==='nonprofit_collective')) || parent && parent.type!=='root' && parent.parent_id===null && parent.status==='active' && parent.owner_profile_id===space.owner_profile_id && (parent.plan==='collective' || parent.plan==='nonprofit_collective'))) targets.push(space)
+    if(space.type!=='root' && ((space.parent_id===null && (space.plan==='collective' || space.plan==='nonprofit_collective')) || parent && parent.type!=='root' && parent.parent_id===null && parent.status==='active' && parent.owner_profile_id===space.owner_profile_id && (parent.plan==='collective' || parent.plan==='nonprofit_collective') || partnerTargets.has(space.id))) targets.push(space)
   }
   const js=(journeys.data ?? []) as Array<{id:string;title:string;visibility:string;status:string}>
   const cs=(circles.data ?? []) as Array<{id:string;name:string;is_space_primary:boolean}>
@@ -95,12 +99,13 @@ export async function crossListingManagement(spaceId: string): Promise<{subjects
   const relatedById=new Map(relatedSpaces.data.map(space=>[space.id,space]))
   const relatedParents=await byIds<CrossListingSpace>('spaces','id,plan,status,owner_profile_id,parent_id,type',[...new Set(relatedSpaces.data.flatMap(s=>s.parent_id?[s.parent_id]:[]))])
   const relatedParentById=new Map(relatedParents.map(s=>[s.id,s]))
+  const relatedPartners=await livePartnerSpaceIds(relatedSpaces.data.map(s=>s.id))
   const eligibleSources=new Set(relatedSpaces.data.filter(source=>{
     const parent=source.parent_id?relatedParentById.get(source.parent_id):null
     return source.status==='active' && source.type!=='root' && source.visibility!=='private' &&
       ((source.parent_id===null && (source.plan==='collective' || source.plan==='nonprofit_collective')) ||
        parent?.type!=='root' && parent?.parent_id===null && parent?.status==='active' && parent.owner_profile_id===source.owner_profile_id &&
-       (parent.plan==='collective' || parent.plan==='nonprofit_collective'))
+       (parent.plan==='collective' || parent.plan==='nonprofit_collective') || relatedPartners.has(source.id))
   }).map(source=>source.id))
   const names=new Map(((relatedSpaces.data ?? []) as Array<{id:string;name:string|null;slug:string}>).map(s=>[s.id,s.name ?? s.slug]))
   const incomingSubjects=new Map((await Promise.all([

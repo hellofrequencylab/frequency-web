@@ -138,12 +138,27 @@ describe('the menu the share URL mounts can survive a static prerender', () => {
 })
 
 // LIVE-764: adding the public Collective door must preserve the anonymous cache boundary.
+// SCAN-982: the plan decides ONE tab. A Collective (many owners) shows Partners; a Network (one owner's
+// chapters) shows Network. A Space never shows both.
 describe('Collective network navigation', () => {
-  it('shows the Network door only for an active connected Collective', async () => {
-    const collective = { plan: 'collective', status: 'active', networkConnected: true, ownerProfileId: 'owner' } as Partial<Space>
-    expect((await buildPublicSpaceProfileNav(space(collective))).tabs).toContainEqual({ key: 'feature:network', href: '/spaces/royaltemple/network', label: 'Network' })
+  it('shows the Network door only for an active connected Network', async () => {
+    const network = { plan: 'network', status: 'active', networkConnected: true, ownerProfileId: 'owner' } as Partial<Space>
+    const tabs = (await buildPublicSpaceProfileNav(space(network))).tabs
+    expect(tabs).toContainEqual({ key: 'feature:network', href: '/spaces/royaltemple/network', label: 'Network' })
+    expect(tabs.some(tab => tab.label === 'Partners')).toBe(false)
     for (const change of [{ plan: 'business' }, { status: 'suspended' }, { networkConnected: false }]) {
-      expect((await buildPublicSpaceProfileNav(space({ ...collective, ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Network')).toBe(false)
+      expect((await buildPublicSpaceProfileNav(space({ ...network, ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Network')).toBe(false)
+    }
+  })
+  it('shows the Partners door, never Network, for an active Collective', async () => {
+    for (const plan of ['collective', 'nonprofit_collective']) {
+      const collective = { plan, status: 'active', networkConnected: true, ownerProfileId: 'owner' } as Partial<Space>
+      const tabs = (await buildPublicSpaceProfileNav(space(collective))).tabs
+      expect(tabs).toContainEqual({ key: 'feature:partners', href: '/spaces/royaltemple/partners', label: 'Partners' })
+      expect(tabs.some(tab => tab.label === 'Network')).toBe(false)
+    }
+    for (const change of [{ plan: 'business' }, { status: 'suspended' }, { ownerProfileId: null }]) {
+      expect((await buildPublicSpaceProfileNav(space({ plan: 'collective', status: 'active', ownerProfileId: 'owner', ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Partners')).toBe(false)
     }
   })
 })
