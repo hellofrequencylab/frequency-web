@@ -36,6 +36,10 @@ import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
  *  Business, its checkout is live, and the owner ruled that public pages name it from this row on.
  *  NON PROFIT COLLECTIVE stays off the list: it is sold, but a reader meets it as a line under Non
  *  Profit rather than as a column of its own. */
+/** Plans shown on every public ladder AFTER the advertised ones, quoted rather than sold through
+ *  checkout: Network (SCAN-961), until its Stripe price exists. Their card reads "from" and talks. */
+export const QUOTED_SPACE_PLANS = ['network'] as const satisfies readonly SpacePlan[]
+
 export const ADVERTISED_SPACE_PLANS: readonly Exclude<SpacePlan, 'free' | 'network'>[] = [
   'business',
   'collective',

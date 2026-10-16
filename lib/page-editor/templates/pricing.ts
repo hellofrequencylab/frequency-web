@@ -87,10 +87,20 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
   collective: {
     inherits: true,
     features: [
-      'For groups of groups: member Spaces under one account',
-      'The Business tools in every member Space',
-      'Vera AI included',
+      'For separate groups that partner, each keeping its own members and payouts',
+      'Cross-listed Circles and Journeys and a shared calendar',
+      'Vera AI and a custom domain included',
       'More operator seats',
+    ],
+  },
+  // Network (SCAN-961): one organization running many chapters. Quote only until its Stripe price exists.
+  network: {
+    inherits: true,
+    features: [
+      'For one organization with chapters',
+      'Chapter leaders who see only their own chapter, and central admins who see them all',
+      'One membership in every chapter, one network calendar and a roll-up report',
+      'Talk to us to set it up',
     ],
   },
   nonprofit: {

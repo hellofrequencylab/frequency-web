@@ -41,6 +41,36 @@
 @container (min-width:1010px){
 [data-design="frequency"] [data-kit="site"] .pb-plans.n4{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+/* Five plans (SCAN-961, Network joins): two across with the last card full width, three across from
+   760px with the last two sharing the second row, five across only once each card gets about 240px. */
+@container (min-width:520px){
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>:last-child{grid-column:1/-1}
+}
+@container (min-width:760px){
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5{grid-template-columns:repeat(6,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>*{grid-column:span 2}
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>:nth-child(n+4){grid-column:span 3}
+}
+@container (min-width:1250px){
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5{grid-template-columns:repeat(5,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .pb-plans.n5>*, [data-design="frequency"] [data-kit="site"] .pb-plans.n5>:nth-child(n+4){grid-column:auto}
+}
+
+/* The tier graphics (SCAN-961, components/frequency/site/pages/pricing/tier-graphics.tsx). Inline SVG in
+   currentColor: quiet strokes, one accented element, text in the kit's ink. Paired graphics sit side by
+   side on a wide row and stack on a phone. */
+[data-design="frequency"] [data-kit="site"] .tg{display:block;width:100%;height:auto;max-width:640px;margin-inline:auto}
+[data-design="frequency"] [data-kit="site"] .tg .tg-q{color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-a{color:var(--fq-x-aqua-neon)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-t{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .tg .tg-m{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .tg-row{container-type:inline-size;display:grid;grid-template-columns:minmax(0,1fr);gap:24px;margin-top:28px}
+[data-design="frequency"] [data-kit="site"] .tg-card{padding:clamp(18px,2.4vw,28px);border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-m);background:var(--fq-surface-card);min-width:0}
+[data-design="frequency"] [data-kit="site"] .tg-card h3{margin:0 0 6px}
+[data-design="frequency"] [data-kit="site"] .tg-card p{margin:0 0 16px;font-size:var(--fq-text-body-size);line-height:1.55;color:var(--fq-text-body)}
+@container (min-width:900px){
+[data-design="frequency"] [data-kit="site"] .tg-row.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 
 /* The plan card: the kit's `.pop > .pc`, in five rows (head, price, points, detail, CTA). Equal heights
    and a pinned CTA come from the flex column; where subgrid exists the five rows are shared across the

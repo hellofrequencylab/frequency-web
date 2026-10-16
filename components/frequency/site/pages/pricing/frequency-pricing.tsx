@@ -24,6 +24,7 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import type { FeatureGrid, Offering } from '@/lib/pricing/pricing-grid'
+import { CollectiveOrNetwork, FeeBars, TierLadder, feeBars, ladderSteps } from './tier-graphics'
 
 type Faq = { q: string; a: string }[]
 
@@ -216,6 +217,44 @@ export function FrequencyPricing({
             </div>
           </div>
           <p className="pb-note">{PLAN_STORY.selling}</p>
+        </div>
+      </section>
+
+      <section className="sec pb-sec" id="collective-or-network" data-screen-label="02a Collective or Network">
+        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Which plan</b>One Space to a whole network
+            </div>
+            <h2 className="h-l">Run one Space, partner with others, or run a whole network.</h2>
+            <p className="pb-note">
+              Collective is for separate groups that partner: each keeps its own members, payouts and settings, and you
+              share a calendar and cross-list each other&apos;s Circles and Journeys. Network is for one organization with
+              chapters: one membership works in every chapter, central admins see the whole network, and each chapter
+              leader runs their own.
+            </p>
+          </div>
+          <div className="tg-row">
+            <div className="tg-card">
+              <TierLadder steps={ladderSteps(spaces)} />
+            </div>
+          </div>
+          <div className="tg-row two">
+            <div className="tg-card">
+              <h3>Collective or Network?</h3>
+              <p>Ask who owns the Spaces. Different owners working together is a Collective. One owner with chapters is a Network.</p>
+              <CollectiveOrNetwork />
+            </div>
+            <div className="tg-card">
+              <h3>What you pay on sales</h3>
+              <p>{`The fee is only on a customer Frequency introduces, charged once. Your own people are 0% on every plan, ${PLAN_STORY.plusProcessing}.`}</p>
+              <FeeBars bars={feeBars(spaces)} />
+            </div>
+          </div>
+          <p className="pb-note">
+            <Link href="/networks">See how a Network works</Link>
+          </p>
         </div>
       </section>
 

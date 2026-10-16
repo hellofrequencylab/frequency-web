@@ -4,7 +4,7 @@ description: What each Space plan is for, what it turns on, and how to pick the 
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-10-08
+updated: 2026-10-16
 audience: member
 featureKeys: [billing]
 status: published
@@ -72,9 +72,15 @@ either way.
 
 ## What Collective turns on
 
-**Collective is Business for a group of groups.** It includes everything Business does, plus member
-Spaces under one home, Vera AI included, five editable QR codes, higher allowances, and a lower
-network fee. See [Collective](/help/spaces/collective) for how member Spaces work.
+**Collective is Business for separate groups that partner.** It includes everything Business does,
+plus shared listings and a shared calendar with your partners, Vera AI included, five editable QR codes,
+higher allowances, and a lower network fee. See [Collective](/help/spaces/collective).
+
+## What Network turns on
+
+**Network is for one organization with chapters.** It includes everything Collective does, plus ten
+chapters, one membership across every chapter, central admins, a network calendar, a roll-up report,
+and the lowest network fee. It is set up with you. See [Network](/help/spaces/network).
 
 ## What Frequency takes
 

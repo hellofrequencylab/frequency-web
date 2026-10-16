@@ -64,6 +64,18 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
       ]
     : []
 
+  // Network (SCAN-961): one organization with chapters, quoted until its Stripe price exists. Every
+  // figure reads NETWORK_PLAN through the offering.
+  const network = spaces.find((s) => s.id === 'network')
+  const networkFaq = network
+    ? [
+        {
+          q: 'Collective or Network: which one is mine?',
+          a: `Ask who owns the Spaces. If separate groups own their own Spaces and want to work together, that is Collective: you share a calendar and cross-list each other's Circles and Journeys, and each group keeps its own members and payouts. If one organization runs many chapters, that is Network: ${network.forWho} Network is ${network.monthly}. ${network.billing} Its network fee is ${feeFigure(network)}. To set one up, talk to us from the Networks page.`,
+        },
+      ]
+    : []
+
   return [
     {
       q: 'How does Frequency pricing work?',
@@ -95,6 +107,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
       a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, ${PLAN_STORY.afterProcessing}, and we never take a share of a tip. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
     },
     ...collectiveFaq,
+    ...networkFaq,
     {
       q: 'What does Crew get me?',
       a: `${PLAN_STORY.crew} ${crew!.label} is ${crew!.monthly}, and it lives on your personal upgrade page. Crew does not take payments: selling runs through a Space on Business, which any member can open.`,
