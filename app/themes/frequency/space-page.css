@@ -33,6 +33,29 @@
 [data-design="frequency"] [data-space-fonts="accessible"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-atkinson); }
 [data-design="frequency"] [data-space-fonts="modern"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-nunito); }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-font-display: var(--font-sofia-xc); --space-font-body: var(--font-barlow); }
+
+/* ══ 0b. THE SPACE'S ACCENT (SCAN-979) ═══════════════════════════════════════════════════════════
+   A Space that picked a brand color wears it where the design draws its iridescent fill: the buttons,
+   the active tab, the soft washes and the in-body highlights. components/spaces/accent-scope.tsx stamps
+   `data-space-accent` with three values from lib/spaces/accent.ts frequencyAccentVars: the fill, the
+   label that reads on it, and a text shade that clears AA on the page ground. A Space with no accent
+   gets no attribute and keeps the design's fill. Unlayered, like the rest of this file. */
+[data-design="frequency"] [data-space-accent] {
+  --fq-pa: var(--space-accent);
+  --fq-pa-soft: color-mix(in oklab, var(--space-accent) 16%, transparent);
+  --fq-pa-glow: 0 12px 28px -14px color-mix(in oklab, var(--space-accent) 70%, transparent);
+}
+[data-design="frequency"] [data-space-accent] :is(.btn.pa, .ev-badge.feat, .ev-cal-chip.going, .rl-row.on),
+[data-design="frequency"] [data-space-accent] [data-space-page] :where(a, button).bg-primary.text-on-primary {
+  color: var(--space-accent-on);
+}
+[data-design="frequency"] [data-space-accent] .tabs :is(.on, summary.on) {
+  box-shadow: inset 0 -2px 0 var(--space-accent);
+}
+[data-design="frequency"] [data-space-accent] [data-space-page] :is(.font-eyebrow, .eyebrow).text-primary-strong,
+[data-design="frequency"] [data-space-accent] [data-space-page] .text-primary-strong {
+  color: var(--space-accent-strong);
+}
 [data-design="frequency"] [data-space-fonts] [data-space-page] {
   font-family: var(--space-font-body), var(--fq-font-sans);
 }

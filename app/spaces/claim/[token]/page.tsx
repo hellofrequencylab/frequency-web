@@ -12,7 +12,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
-import { resolveAccentVars } from '@/lib/spaces/accent'
+import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
@@ -257,7 +257,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   const spaceTheme = spacePageFonts(space.preferences)
 
   return (
-    <AccentScope vars={accentVars} theme={spaceTheme}>
+    <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
       {/* No bottom padding here: the room for the fixed claim bar is reserved by an exact invisible
           clone of it at the end of this column (see ClaimBarContent). */}
       <div className="min-h-screen bg-canvas px-safe">

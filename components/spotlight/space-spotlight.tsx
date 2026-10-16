@@ -5,7 +5,7 @@ import Link from 'next/link'
 import type { Space } from '@/lib/spaces/types'
 import { getInitials } from '@/lib/utils'
 import { AccentScope } from '@/components/spaces/accent-scope'
-import { resolveAccentVars } from '@/lib/spaces/accent'
+import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readSpaceSpotlight, spaceSpotlightGrid, spotlightSiteGrid } from '@/lib/spaces/spotlight'
@@ -24,6 +24,7 @@ export function SpotlightAccent({ space, children }: { space: Space; children: R
     <AccentScope
       vars={resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))}
       theme={spacePageFonts(space.preferences)}
+      fqAccent={frequencyAccentVars(space.brandAccent)}
     >
       {children}
     </AccentScope>

@@ -186,8 +186,9 @@ export function AccentPicker({
   onChange: (accent: string) => void
   disabled?: boolean
 }) {
-  // The native color input needs a valid hex to seed; fall back to the first swatch when the stored
-  // accent is a legacy token or empty (the widget shows a color, but nothing reads as selected).
+  // The native color input needs a valid hex to seed; it shows white when the stored accent is a legacy
+  // token or empty, so an unset accent never reads as a saved color (SCAN-979: an orange seed here read
+  // as "the accent is set" while the page kept the design's fill).
   const currentHex = HEX_RE.test(value) ? value : null
   const [draft, setDraft] = useState(currentHex ?? '')
   // Reflect an external change (a swatch tap, a fresh initial) back into the hex input, using React's
@@ -223,7 +224,7 @@ export function AccentPicker({
             <input
               type="color"
               aria-label="Pick a brand color"
-              value={currentHex ?? '#E2912F'}
+              value={currentHex ?? '#ffffff'}
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
               className="h-9 w-12 shrink-0 cursor-pointer rounded-control border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
@@ -234,7 +235,7 @@ export function AccentPicker({
               aria-label="Brand color hex"
               value={draft}
               disabled={disabled}
-              placeholder="#E2912F"
+              placeholder="Not set"
               maxLength={7}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={(e) => commitHex(e.target.value)}

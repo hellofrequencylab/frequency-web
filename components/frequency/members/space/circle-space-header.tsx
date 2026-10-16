@@ -13,7 +13,7 @@ import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { isFollowing } from '@/lib/spaces/follows'
-import { resolveAccentVars } from '@/lib/spaces/accent'
+import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
 import { activeBoostIds } from '@/lib/crew/boost'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
@@ -102,7 +102,7 @@ export async function FqCircleSpaceHeader({ spaceSlug, children }: { spaceSlug: 
 
   return (
     <>
-    <AccentScope vars={accentVars} theme={spacePageFonts(space.preferences)}>
+    <AccentScope vars={accentVars} theme={spacePageFonts(space.preferences)} fqAccent={frequencyAccentVars(space.brandAccent)}>
       <FqSpaceChrome
         coverImage={coverSrc}
         coverFocus={coverFocus}
