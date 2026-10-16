@@ -340,6 +340,7 @@ email_delivery_intents                internal
 space_email_domains authenticated
 space_email_identities authenticated
 collective_cross_listings             internal
+collective_partners                   internal
 space_email_reply_aliases             internal
 space_email_reply_quarantine          internal
 space_inbox_addresses                 internal
