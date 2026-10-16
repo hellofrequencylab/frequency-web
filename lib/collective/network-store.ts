@@ -6,6 +6,9 @@ import { spaceEventRowsToItems } from '@/lib/calendar/public-month'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import { collectiveNetworkOpen, publicMemberSpaces, type NetworkParent, type PublicMemberSpace, type MemberSpaceRow } from './network'
+import { networkEventShown } from './network-tools'
+import { isNetworkPlan } from './member-spaces'
+import { approvedNetworkEventIds } from './network-tools-store'
 
 const MEMBER_COLS = 'id, slug, name, brand_name, brand_logo_url, parent_id, owner_profile_id, status, visibility, network_connected, type'
 /** authz-delegated: page/action resolve the parent's visibility first. This public projection never
@@ -40,18 +43,23 @@ export async function loadCollectiveNetworkWindow(parent: NetworkParent, ownName
       events: await listSpaceCalendarEvents(source.id, { fromDay, toDay, exhaustive: true, paintCancelled: true }),
     }))))
   }
-  const byId = new Map<string, { row: SpaceCalendarEvent; names: Set<string> }>()
+  const byId = new Map<string, { row: SpaceCalendarEvent; names: Set<string>; fromParent: boolean }>()
   for (const { source, events } of rows) for (const row of events) {
     const day = eventDayKey(row.starts_at)
     if (!day || day < fromDay || day >= toDay) continue
     const prior = byId.get(row.id)
     if (prior) {
       prior.names.add(source.name)
+      if (source.id === parent.id) prior.fromParent = true
       // If cancellation changes during the parallel reads, the conservative view wins.
       if (row.is_cancelled) prior.row = row
-    } else byId.set(row.id, { row, names: new Set([source.name]) })
+    } else byId.set(row.id, { row, names: new Set([source.name]), fromParent: source.id === parent.id })
   }
-  const ordered = [...byId.values()].sort((a, b) => a.row.starts_at.localeCompare(b.row.starts_at) || a.row.id.localeCompare(b.row.id))
+  // A Network's chapter events wait for the owner or a central admin to approve them (SCAN-983). A
+  // Collective keeps showing every member Space event, as before.
+  const network = isNetworkPlan(parent.plan)
+  const approved = network ? await approvedNetworkEventIds(parent.id, [...byId.values()].filter(e => !e.fromParent).map(e => e.row.id)) : new Set<string>()
+  const ordered = [...byId.values()].filter(entry => networkEventShown({ network, fromParent: entry.fromParent, decision: approved.has(entry.row.id) ? 'approved' : null })).sort((a, b) => a.row.starts_at.localeCompare(b.row.starts_at) || a.row.id.localeCompare(b.row.id))
   const items = await spaceEventRowsToItems(ordered.map(entry => entry.row))
   return items.map((item, i) => ({ ...item, sourceLabel: [...ordered[i].names].join(' · ') }))
 }

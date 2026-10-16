@@ -16,6 +16,8 @@ import { collectiveNetworkOpen, liveNetworkUpcoming } from '@/lib/collective/net
 import { listPublicCollectiveMembers, loadCollectiveNetworkWindow } from '@/lib/collective/network-store'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { dayInZone } from '@/lib/time/zone'
+import { isNetworkPlan } from '@/lib/collective/member-spaces'
+import { networkToolsAccess } from '@/lib/collective/network-tools-store'
 import { loadCollectiveNetworkMonth } from './actions'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -37,8 +39,12 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
   ])
   const upcoming = liveNetworkUpcoming(events, dayInZone(now, parent.timeZone))
   // Owner management and the public projection are separate doors: never add private members to this page.
-  const management = caller?.id === parent.ownerProfileId
-    ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined
+  // A Network's owner and central admins run its Chapters area (SCAN-983); a Collective keeps its billing door.
+  const chapters = isNetworkPlan(parent.plan) && caller?.id ? await networkToolsAccess(parent.id, caller.id) : null
+  const management = chapters
+    ? <Link href={`/spaces/${slug}/settings/chapters`} className={buttonClasses('secondary', 'sm')}>Manage chapters</Link>
+    : caller?.id === parent.ownerProfileId
+      ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined
   return (
     <IndexTemplate {...hero} title={`${name} network`} description="Member Spaces and their events, together." action={management} adminBar={false}>
       <div className="space-y-10">

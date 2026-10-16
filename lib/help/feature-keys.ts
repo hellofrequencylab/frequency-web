@@ -128,10 +128,10 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // Dynamic segments are literal, as above. `website` covers the hosted site (and its /admin/editor view,
   // the website editor), the /sites/<slug> fallback address, and the Manage layout actions that publish
   // the site and connect its domain. `collective` covers the network home, the reach page that carries
-  // the private Collective report, and the cross-listing settings (LIVE-764, LIVE-765, LIVE-766).
+  // the private Collective report, the Partners tab, the cross-listing settings, and a Network's Chapters area (LIVE-764, LIVE-765, LIVE-766, SCAN-982, SCAN-983).
   // `space-email` is the Space Email surface, where the owner sets up a sender on their own domain.
   { key: 'website', label: 'Space website', area: 'operator', routes: ['/hosted/[host]', '/sites/[slug]', '/spaces/[slug]/manage/layout'], core: false },
-  { key: 'collective', label: 'Collective network', area: 'operator', routes: ['/spaces/[slug]/network', '/spaces/[slug]/partners', '/spaces/[slug]/settings/reach', '/spaces/[slug]/settings/cross-listing'], core: false },
+  { key: 'collective', label: 'Collective network', area: 'operator', routes: ['/spaces/[slug]/network', '/spaces/[slug]/partners', '/spaces/[slug]/settings/reach', '/spaces/[slug]/settings/cross-listing', '/spaces/[slug]/settings/chapters'], core: false },
   { key: 'space-email', label: 'Space email and sender domain', area: 'operator', routes: ['/spaces/[slug]/settings/email'], core: false },
 ]
 

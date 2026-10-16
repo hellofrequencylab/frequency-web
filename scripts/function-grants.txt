@@ -316,3 +316,5 @@ collective_listing_space_live internal
 read_collective_cross_listings internal
 invalidate_collective_partners internal
 validate_collective_partner internal
+add_network_central_admin internal
+clear_network_tools_on_space_change internal

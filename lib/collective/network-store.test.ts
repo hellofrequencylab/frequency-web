@@ -101,3 +101,18 @@ it('keeps the final day late timestamp and excludes600 following-month events at
   const result=await loadCollectiveNetworkWindow(parent,'Parent','2026-10-01','2026-11-01')
   expect(result.map(row=>row.slug)).toEqual(['last-day'])
 })
+
+describe('a Network calendar waits for approval (SCAN-983)', () => {
+  const network: NetworkParent = {...parent, plan:'network'}
+  it('hides a chapter event until it is approved, and never holds back the parent own events', async () => {
+    state.tables.events=[event('chapter-new','child'),event('chapter-ok','child'),event('chapter-no','child'),event('parent-own','parent')]
+    state.tables.network_event_approvals=[{parent_space_id:'parent',event_id:'chapter-ok',status:'approved'},{parent_space_id:'parent',event_id:'chapter-no',status:'declined'},{parent_space_id:'other',event_id:'chapter-new',status:'approved'}]
+    const result=await loadCollectiveNetworkWindow(network,'Parent','2026-10-01','2026-11-01')
+    expect(result.map(row=>row.slug).sort()).toEqual(['chapter-ok','parent-own'])
+  })
+  it('leaves a Collective calendar exactly as before', async () => {
+    state.tables.events=[event('chapter-new','child')]
+    expect((await loadCollectiveNetworkWindow(parent,'Parent','2026-10-01','2026-11-01')).map(row=>row.slug)).toEqual(['chapter-new'])
+    expect(state.calls.some(call=>call.table==='network_event_approvals')).toBe(false)
+  })
+})

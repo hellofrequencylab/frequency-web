@@ -1,12 +1,13 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
-const mocks=vi.hoisted(()=>({caller:vi.fn(),parent:vi.fn(),members:vi.fn(),events:vi.fn(),hero:vi.fn()}))
+const mocks=vi.hoisted(()=>({caller:vi.fn(),parent:vi.fn(),members:vi.fn(),events:vi.fn(),hero:vi.fn(),tools:vi.fn()}))
 vi.mock('@/lib/layout/index-hero',()=>({resolveIndexHero:mocks.hero}))
 vi.mock('@/lib/auth',()=>({getCallerProfile:mocks.caller}))
 vi.mock('@/lib/spaces/store',()=>({getVisibleSpaceBySlug:mocks.parent}))
 vi.mock('@/lib/spaces/profile-metadata',()=>({spaceProfileMetadata:vi.fn()}))
 vi.mock('@/lib/collective/network-store',()=>({listPublicCollectiveMembers:mocks.members,loadCollectiveNetworkWindow:mocks.events}))
+vi.mock('@/lib/collective/network-tools-store',()=>({networkToolsAccess:mocks.tools}))
 vi.mock('./actions',()=>({loadCollectiveNetworkMonth:vi.fn()}))
 vi.mock('next/navigation',()=>({notFound:()=>{throw new Error('NOT_FOUND')}}))
 vi.mock('@/components/templates',()=>({IndexTemplate:({children,action,heroOverlay}:{children:ReactNode;action?:ReactNode;heroOverlay?:boolean})=><main data-hero={heroOverlay}>{action}{children}</main>}))
@@ -38,4 +39,21 @@ it('does not read either public feed when the parent is invisible or no longer C
   }
   expect(mocks.members).not.toHaveBeenCalled()
   expect(mocks.events).not.toHaveBeenCalled()
+})
+it('sends a Network owner or central admin to the Chapters area, and nobody else (SCAN-983)',async()=>{
+  mocks.parent.mockResolvedValue({...parent,plan:'network'})
+  mocks.caller.mockResolvedValue({id:'central'})
+  mocks.tools.mockResolvedValue({parent:{id:'parent'},isOwner:false})
+  let markup=renderToStaticMarkup(await Page({params:Promise.resolve({slug:'network'})}))
+  expect(markup).toContain('/spaces/network/settings/chapters')
+  expect(mocks.tools).toHaveBeenCalledWith('parent','central')
+  mocks.caller.mockResolvedValue({id:'leader'})
+  mocks.tools.mockResolvedValue(null)
+  markup=renderToStaticMarkup(await Page({params:Promise.resolve({slug:'network'})}))
+  expect(markup).not.toContain('Manage chapters')
+})
+it('never asks the Network tools about a Collective',async()=>{
+  mocks.caller.mockResolvedValue({id:'owner'})
+  await Page({params:Promise.resolve({slug:'network'})})
+  expect(mocks.tools).not.toHaveBeenCalled()
 })

@@ -822,6 +822,7 @@ lib/collective/network-store.ts
 lib/collective/partners-actions.ts
 lib/collective/partners-live-store.ts
 lib/collective/partners-store.ts
+lib/collective/network-tools-store.ts
 lib/collective/shared-membership.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts
