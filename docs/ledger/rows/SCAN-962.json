@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-962",
+  "title": "A Space's brand color paints its buttons, active tab and highlights on the Frequency design",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-16",
+  "source": {
+    "file": "components/spaces/accent-scope.tsx",
+    "ref": "Owner 2026-10-16: The Group's Space page kept the Frequency fill while its settings showed an accent; use the yellow from its website and make every Space accent work."
+  },
+  "detail": "Under the Frequency design AccentScope dropped the Space's accent entirely, and space-page.css drew every button, chip and wash in the iridescent --fq-pa. AccentScope now takes fqAccent (lib/spaces/accent.ts frequencyAccentVars: the fill, the label that reads best on it, an AA text shade) for the Space's OWN brand_accent only and stamps data-space-accent; space-page.css maps it onto --fq-pa, --fq-pa-soft and --fq-pa-glow, sets the label on filled buttons and badges, underlines the active tab and colors in-body highlights. A Space with no accent keeps the design's fill. Every AccentScope call site (member and public layouts, the cover header, the claim preview, Spotlight) passes it. The brand color field no longer seeds an orange swatch and #E2912F placeholder when unset, which read as a saved accent. The Group's accent (#E9B949, its website's Marigold) is a data paste.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('components/spaces/accent-scope.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/space-page.css','utf8');const l=fs.readFileSync('app/(main)/spaces/[slug]/layout.tsx','utf8');const bad=[];if(!a.includes('data-space-accent'))bad.push('AccentScope drops the accent under Frequency');if(!/\\[data-space-accent\\]\\s*\\{[^}]*--fq-pa:\\s*var\\(--space-accent\\)/.test(c))bad.push('space-page.css does not paint the accent');if(!l.includes('fqAccent={frequencyAccentVars('))bad.push('the Space layout passes no accent');if(bad.length){console.error('SCAN-962: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

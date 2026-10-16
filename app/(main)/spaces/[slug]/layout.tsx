@@ -5,7 +5,7 @@ import { getVisibleSpaceForRequest } from '@/lib/spaces/visible-space-for-reques
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { spaceManageHref } from '@/lib/spaces/types'
-import { resolveAccentVars } from '@/lib/spaces/accent'
+import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceBreadcrumbs } from '@/components/spaces/space-breadcrumbs'
@@ -87,7 +87,7 @@ export default async function SpaceRootLayout({
   return (
     <>
       <SpaceBreadcrumbs slug={slug} brandName={brandName} manageHref={spaceManageHref(space.type, slug)} />
-      <AccentScope vars={accentVars} theme={spaceTheme}>
+      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
         {children}
       </AccentScope>
     </>

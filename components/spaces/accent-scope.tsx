@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { type AccentVars } from '@/lib/spaces/accent'
+import { type AccentVars, type FrequencyAccentVars } from '@/lib/spaces/accent'
 import { type SpaceThemeId } from '@/lib/theme/space-themes'
 import { LEGACY_THEME_AXES } from '@/lib/theme/design'
 
@@ -19,6 +19,7 @@ import { LEGACY_THEME_AXES } from '@/lib/theme/design'
 export function AccentScope({
   vars,
   theme,
+  fqAccent,
   className,
   children,
 }: {
@@ -34,20 +35,32 @@ export function AccentScope({
    *  Space's typography with nothing to notice. `parseSpaceTheme` already returns this union; taking it
    *  here is what makes the guarantee reach the DOM. */
   theme?: SpaceThemeId
+  /** The Space's own accent in the Frequency design's slots (lib/spaces/accent.ts frequencyAccentVars),
+   *  applied only when the design owns the `--color-primary*` family. Null keeps the iridescent fill. */
+  fqAccent?: FrequencyAccentVars | null
   className?: string
   children: ReactNode
 }) {
   // The AccentVars keys are CSS custom properties; React types CSSProperties without an index
   // signature for `--*`, so cast through the documented custom-property style shape.
   //
-  // Under a design that overrides everything (Frequency, ADR-1737) the Space's accent does not apply: it
-  // re-points tokens the design owns. Its FONT SET does (owner ruling, 2026-10-13: a Space picks its primary
+  // Under a design that overrides everything (Frequency, ADR-1737) the `--color-primary*` override does
+  // not apply: it re-points tokens the design owns. The Space's OWN accent still paints (SCAN-962, owner
+  // 2026-10-16): it rides `fqAccent`, three `--space-accent*` names that app/themes/frequency/space-page.css
+  // maps onto the design's fill under `data-space-accent`. Its FONT SET does too (owner ruling, 2026-10-13: a Space picks its primary
   // fonts in its theme, never per heading). It rides `data-space-fonts`, which only
   // app/themes/frequency/space-page.css reads, and only for a set other than the house default.
-  const style = (LEGACY_THEME_AXES ? (vars ?? undefined) : undefined) as CSSProperties | undefined
+  const fqVars = !LEGACY_THEME_AXES ? (fqAccent ?? undefined) : undefined
+  const style = (LEGACY_THEME_AXES ? (vars ?? undefined) : fqVars) as CSSProperties | undefined
   const fqFonts = !LEGACY_THEME_AXES && theme && theme !== 'frequency' ? theme : undefined
   return (
-    <div className={className} style={style} data-space-theme={LEGACY_THEME_AXES ? theme : undefined} data-space-fonts={fqFonts}>
+    <div
+      className={className}
+      style={style}
+      data-space-theme={LEGACY_THEME_AXES ? theme : undefined}
+      data-space-fonts={fqFonts}
+      data-space-accent={fqVars ? '' : undefined}
+    >
       {children}
     </div>
   )
