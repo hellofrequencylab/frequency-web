@@ -79,9 +79,9 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
 // ── NETWORK (owner ruling 2026-10-15, SCAN-956) ─────────────────────────────────────────────────────
 // The rule that splits the top tier: COLLECTIVE is many owners working together (a hub linking partner
 // Spaces); NETWORK is one owner running many groups, its chapters. These are the approved numbers.
-// No Stripe price exists for Network yet and none may be minted from here, so `stripePriceId` is null
-// and every surface shows "Talk to us" instead of a checkout (networkCheckoutOpen). Independent Network
-// is quote only and is not in the catalog at all.
+// The Stripe prices exist (owner "Create all six", 2026-10-16), so `stripePriceId` is the base monthly
+// price and every surface offers checkout (networkCheckoutOpen, SCAN-980). Set it back to null to return
+// to "Talk to us". Independent Network is quote only and is not in the catalog at all.
 
 /** The Network plan's catalog values. PURE data, the one place they are written down. */
 export const NETWORK_PLAN = {
@@ -101,8 +101,8 @@ export const NETWORK_PLAN = {
   centralAdmins: 10,
   /** Resonance matches a month, Vera AI's metered depth: five times Collective's 10,000. */
   veraMonthlyMatches: 50_000,
-  /** The Stripe price the plan checks out against. Null until Daniel creates it; null means quote only. */
-  stripePriceId: null as string | null,
+  /** The live Stripe price for the monthly base (network_base_month). Null means quote only. */
+  stripePriceId: 'price_1UREmtPhyalyRPP1cFZwkpf0' as string | null,
   /** What a surface says instead of a price button while there is no Stripe price. */
   quoteLabel: 'Talk to us',
 } as const

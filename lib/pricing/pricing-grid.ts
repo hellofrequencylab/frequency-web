@@ -354,8 +354,8 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
   ]
 }
 
-/** The Network card (SCAN-961). Quote only until its Stripe price exists (networkCheckoutOpen), so the
- *  price reads "from" and the button opens the Networks page, never checkout. Every figure is NETWORK_PLAN. */
+/** The Network card (SCAN-961). Once its Stripe price exists (networkCheckoutOpen, SCAN-980) the button
+ *  starts a Network; before that it opens the Networks page. The price reads "from". Every figure is NETWORK_PLAN. */
 function networkOffering(takeRate: string, networkRateBps: number): Offering {
   const from = formatCents(NETWORK_PLAN.monthlyCents)
   return {

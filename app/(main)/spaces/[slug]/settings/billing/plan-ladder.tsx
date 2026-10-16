@@ -1,4 +1,4 @@
-import { Check, ShieldCheck, Globe, Users } from 'lucide-react'
+import { Check, ShieldCheck, Globe, Users, Network } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
@@ -42,6 +42,11 @@ const RUNGS: Rung[] = [
     blurb: 'For groups of groups: member Spaces under one account, each with the Business tools, more seats, and Vera AI included.',
   },
   {
+    plan: 'network',
+    icon: Network,
+    blurb: 'One organization with chapters: ten chapters included, one membership that works in every chapter, central admins and a roll-up report.',
+  },
+  {
     plan: 'nonprofit',
     icon: ShieldCheck,
     blurb: 'Everything Business does, for verified 501(c)(3) organizations, with no network fee.',
@@ -83,6 +88,7 @@ function rungState(
   if (plan === currentPlan) return 'current'
   if (plan === 'business') return 'available'
   if (plan === 'collective') return sellable.collective ? 'available' : 'soon'
+  if (plan === 'network') return sellable.network ? 'available' : 'soon'
   if (plan === 'nonprofit') return 'verify'
   return 'soon'
 }
@@ -151,7 +157,10 @@ export function PlanLadder({
           // A FREE Space gets a one-click Choose on the one sellable higher flat rung (Collective).
           // Business keeps its richer CTA below; Non Profit routes through verification, not a direct
           // buy; Independent is sold by hand and is never offered here (LIVE-227).
-          const canChoose = isFree && !!slug && rung.plan === 'business' && !!sellable.business
+          // Network (SCAN-980) gets the same one-click Choose once it sells. Only a FREE Space: a paid
+          // Space already holds a subscription, and a second checkout would bill it twice.
+          const choosable = rung.plan === 'business' || rung.plan === 'network' ? rung.plan : null
+          const canChoose = isFree && !!slug && !!choosable && !!sellable[choosable]
           return (
             <li
               key={rung.plan}
@@ -173,7 +182,7 @@ export function PlanLadder({
               {canChoose ? (
                 <ChoosePlanButton
                   slug={slug}
-                  plan="business"
+                  plan={choosable ?? 'business'}
                   label={`Choose ${SPACE_PLAN_LABEL[rung.plan]}`}
                 />
               ) : (
