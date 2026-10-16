@@ -194,8 +194,18 @@ export async function FrequencyHome() {
         <div className="fold-stage">
           {FOLD_PHOTOS.map(([file, d, style]) => (
             <div className="fl-ph" data-d={d} style={style} key={file}>
+              {/* A fold photo is never wider than 300px, so it is served from photos/sm (640px, ~50KB) and the
+                  1600px original only to a screen that asks for more. Six full-size decodes were what made
+                  the pinned stage stutter and arrive late on a phone. */}
               {/* eslint-disable-next-line @next/next/no-img-element -- decorative, sized by .fl-ph img */}
-              <img loading="lazy" decoding="async" src={photo(file)} alt="" />
+              <img
+                loading="lazy"
+                decoding="async"
+                src={photo(`sm/${file}`)}
+                srcSet={`${photo(`sm/${file}`)} 640w, ${photo(file)} 1600w`}
+                sizes="(max-width:760px) 180px, 300px"
+                alt=""
+              />
             </div>
           ))}
           <div className="fl-shade" />

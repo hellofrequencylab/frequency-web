@@ -39,41 +39,54 @@ export function HomeMotion() {
       const doors = fold ? Array.from(fold.querySelectorAll<HTMLElement>('.pdw')) : []
       fold?.setAttribute('data-live', '')
 
+      const stage = fold?.querySelector<HTMLElement>('.fold-stage') ?? null
+      // PHONES (owner report 2026-10-16: the photo section stuttered and jammed). Three causes, fixed here:
+      //   • `innerHeight` changes while a phone's address bar slides away, so the stage's progress jumped
+      //     mid-scroll. The stage's own height (100vh, the large viewport) does not; it is re-read on resize.
+      //   • every frame wrote the fold's styles and then read the hero's box, forcing a second layout.
+      //     All reads now come first, then all writes.
+      //   • the fold and hero were rewritten every frame, even offscreen or unchanged. Now only on change.
+      let vh = stage?.offsetHeight || window.innerHeight
+      let lastP = -1
+      let lastK = -1
       const tick = () => {
-        const vh = window.innerHeight
-        if (fold) {
-          const r = fold.getBoundingClientRect()
-          const p = clamp(-r.top / (r.height - vh))
+        // Reads.
+        const fr = fold?.getBoundingClientRect()
+        const p = fr ? clamp(-fr.top / (fr.height - vh)) : -1
+        const y = hero ? Math.max(0, -hero.getBoundingClientRect().top) : 0
+        const k = hero ? clamp(y / (hero.offsetHeight * 0.55)) : -1
+        // Writes.
+        if (fold && p !== lastP) {
+          lastP = p
           for (const el of ph) {
             const d = Number(el.dataset.d)
-            el.style.transform = `translate3d(0,${(0.08 - p) * d * vh * 0.55}px,0) scale(${1 + p * d * 0.06})`
+            el.style.transform = `translate3d(0,${((0.08 - p) * d * vh * 0.55).toFixed(1)}px,0) scale(${(1 + p * d * 0.06).toFixed(4)})`
             el.style.opacity = String(1 - range(p, 0.55, 0.7) * 0.85)
           }
           for (const el of tx) {
             const [a, b] = (el.dataset.in ?? '0 1').split(' ').map(Number)
             let o = ease(range(p, a, b))
-            let y = (1 - o) * 40
+            let ty = (1 - o) * 40
             if (el.dataset.out) {
               const [c, d] = el.dataset.out.split(' ').map(Number)
               const q = range(p, c, d)
               o *= 1 - q
-              y -= q * 40
+              ty -= q * 40
             }
             el.style.opacity = String(o)
-            el.style.transform = `translate3d(0,${y}px,0)`
+            el.style.transform = `translate3d(0,${ty.toFixed(1)}px,0)`
           }
           doors.forEach((d, i) => {
             d.classList.toggle('in', p > (i ? 0.72 : 0.64))
-            d.style.translate = `0 ${(0.9 - p) * (i ? 190 : 110)}px`
+            d.style.translate = `0 ${((0.9 - p) * (i ? 190 : 110)).toFixed(1)}px`
           })
           fork?.classList.toggle('fl-on', p > 0.6)
         }
-        if (hero) {
-          const y = Math.max(0, -hero.getBoundingClientRect().top)
-          const k = clamp(y / (hero.offsetHeight * 0.55))
+        if (hero && k !== lastK) {
+          lastK = k
           if (hw) {
             hw.style.opacity = String(1 - k)
-            hw.style.transform = `translate3d(0,${-y * 0.35}px,0) scale(${1 - k * 0.06})`
+            hw.style.transform = `translate3d(0,${(-y * 0.35).toFixed(1)}px,0) scale(${1 - k * 0.06})`
           }
           hb.forEach((b) => (b.style.transform = `scale(${1 + k * 0.12})`))
         }
@@ -88,11 +101,17 @@ export function HomeMotion() {
         })
       }
       window.addEventListener('scroll', req, { passive: true })
-      window.addEventListener('resize', req, { passive: true })
+      const onResize = () => {
+        vh = stage?.offsetHeight || window.innerHeight
+        lastP = -1
+        lastK = -1
+        req()
+      }
+      window.addEventListener('resize', onResize, { passive: true })
       tick()
       cleanups.push(() => {
         window.removeEventListener('scroll', req)
-        window.removeEventListener('resize', req)
+        window.removeEventListener('resize', onResize)
         fold?.removeAttribute('data-live')
       })
 
