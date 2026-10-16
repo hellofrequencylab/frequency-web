@@ -79,15 +79,18 @@ export const FQ_NAV: readonly FqNavSection[] = [
       {
         h: 'People and places',
         items: [
+          // Business Spaces leads the column and carries no navKey (owner, 2026-10-16: "That directory
+          // should be prominent in any navigation"). A signed-out visitor is sent to its public twin,
+          // /discover/spaces, by the (main) layout.
+          { label: 'Business Spaces', sub: 'Studios, cafés, non profits', href: '/spaces/directory', icon: 'space' },
           { label: 'Members', sub: 'Friends, people, contacts', href: '/network', icon: 'contacts', navKey: 'people' },
-          { label: 'Business Spaces', sub: 'Studios, cafés, non profits', href: '/spaces/directory', icon: 'space', navKey: 'my-spaces' },
           { label: 'Marketplace', sub: 'Market, Classifieds, Housing, Store', href: '/marketplace', icon: 'ticket' },
         ],
       },
     ],
     cards: [
       { kicker: 'Forming now', title: 'Find your Circle', href: '/circles', photo: 'day-meditation-circle.jpg' },
-      { kicker: 'Coming up', title: 'Events near you', href: '/events', photo: 'gathering-03.jpg' },
+      { kicker: 'Business Spaces', title: 'Studios, cafés and non profits near you', href: '/spaces/directory', photo: 'gathering-03.jpg' },
     ],
     foot: 'Build circles, not walls.',
     footCta: 'Find your Circle',
@@ -201,11 +204,13 @@ export const FQ_SITE_LINKS: readonly { label: string; href: string }[] = [
  *  that rides on it. */
 export const FQ_SHORTCUTS: readonly (FqNavItem & { badge?: 'messages' | 'notifications' })[] = [
   { label: 'Around You', sub: '', href: '/nearby', icon: 'pin', navKey: 'nearby' },
-  { label: 'Messages', sub: '', href: '/messages', icon: 'message', navKey: 'messageBoards', badge: 'messages' },
+  // Business Spaces is a core shortcut for every viewer (owner, 2026-10-16). Journal gave up its slot:
+  // it stays in the You menu and on the profile hub.
+  { label: 'Business Spaces', sub: '', href: '/spaces/directory', icon: 'space' },
   { label: 'Events', sub: '', href: '/events', icon: 'event', navKey: 'events' },
+  { label: 'Messages', sub: '', href: '/messages', icon: 'message', navKey: 'messageBoards', badge: 'messages' },
   { label: 'Marketplace', sub: '', href: '/marketplace', icon: 'ticket' },
   { label: 'Members', sub: '', href: '/network', icon: 'contacts', navKey: 'people' },
-  { label: 'Journal', sub: '', href: '/journal', icon: 'tip', navKey: 'journal' },
 ]
 
 /** The You section's rows (kept as a name for the site map and its test, which read it). */

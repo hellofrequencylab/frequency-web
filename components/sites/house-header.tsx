@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { HouseMenu } from './house-menu'
 import type { SiteAdminNavLink } from './site-admin-bar'
+import { useSiteAdmin } from './site-admin-gate'
 
 // THE HOUSE WEBSITE HEADER (header handoff v5, "Daniel Tyack Site v5"). A frosted bar, sticky, 12px from the
 // top. Logo slot (name, round photo plus name, or an image logo), a one-line menu that scrolls sideways
@@ -41,7 +42,8 @@ export function HouseHeader({
   brandName,
   homeHref,
   links,
-  adminLinks,
+  adminLinks: adminLinksIn,
+  adminCheck = null,
   cta,
   logoUrl,
   logoMode,
@@ -54,6 +56,8 @@ export function HouseHeader({
   homeHref: string
   links: HouseHeaderLink[]
   adminLinks: SiteAdminNavLink[] | null
+  /** The site's admin check (site-admin-gate.tsx): the admin links show only once it confirms the reader. */
+  adminCheck?: string | null
   cta: { href: string; label: string; external: boolean } | null
   logoUrl: string | null
   logoMode: SiteLogoMode
@@ -67,6 +71,8 @@ export function HouseHeader({
    *  and the name. The server draws it; this island only places it. */
   brandMark?: ReactNode
 }) {
+  // SCAN-970: the admin links are the Space admin's alone; a visitor never sees them.
+  const adminLinks = useSiteAdmin(adminCheck) ? adminLinksIn : null
   const [mega, setMega] = useState<string | null>(null)
   const [hidden, setHidden] = useState(false)
   const ref = useRef<HTMLElement>(null)

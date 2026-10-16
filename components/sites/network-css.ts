@@ -96,6 +96,12 @@ ${N} .hs-footer-col{display:flex;flex-direction:column;align-items:flex-start}
 ${N} .hs-footer-col-title{margin:0 0 12px;font-family:var(--nw-body);font-weight:500;font-size:15px;letter-spacing:0;text-transform:none;color:var(--nw-on-ink-subtle)}
 ${N} .hs-footer-col a{display:block;font-size:16px;line-height:1.9;color:var(--nw-on-ink-muted);text-decoration:none}
 ${N} .hs-footer-col a:hover{color:var(--nw-on-ink)}
+${N} .hs-admin{max-width:none;margin:0;padding:0 max(var(--nw-gutter),calc((100% - 1240px) / 2 + var(--nw-gutter)));background:var(--nw-ink)}
+${N} .hs-admin-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;padding:14px 0;border-top:1px dashed color-mix(in srgb,var(--nw-pop) 45%,transparent);background:transparent}
+${N} .hs-admin-tag{font-family:var(--nw-body);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:var(--nw-r-pill);background:var(--nw-pop);color:var(--nw-ink)}
+${N} .hs-admin-nav{display:flex;flex-wrap:wrap;gap:8px 20px}
+${N} .hs-admin-nav a{font-size:15px;font-weight:600;color:var(--nw-pop);text-decoration:none}
+${N} .hs-admin-nav a:hover,${N} .hs-admin-nav a[aria-current="page"]{text-decoration:underline}
 ${N} .hs-footer{max-width:none;margin:0;padding:20px max(var(--nw-gutter),calc((100% - 1240px) / 2 + var(--nw-gutter))) 28px;background:var(--nw-ink);border-top:1px solid var(--nw-ink-border);font-size:14px;color:var(--nw-on-ink-subtle)}
 ${N} .hs-footer a{color:var(--nw-on-ink-subtle);font-weight:400}
 ${N} .hs-footer-line,${N} .hs-footer-note{color:var(--nw-on-ink-subtle)}

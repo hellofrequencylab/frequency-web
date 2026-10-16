@@ -2,6 +2,7 @@ import '@/app/themes/active/members-a'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-community'
 import Link from 'next/link'
+import { eventHostLabel } from '@/lib/events/platform-credit'
 import { FqIcon } from '@/components/frequency/icon'
 import { getCachedViewerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -188,7 +189,7 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
                         {live && <span className="dot fq-breathe" aria-label="Happening now" />}
                         {e.title}
                       </Link>
-                      <span className="t2">{[formatWhen(e.starts_at, now), e.location, e.host?.display_name, n > 0 ? `${n} going` : null].filter(Boolean).join(' · ')}</span>
+                      <span className="t2">{[formatWhen(e.starts_at, now), e.location, eventHostLabel(e.host, e.host_space), n > 0 ? `${n} going` : null].filter(Boolean).join(' · ')}</span>
                     </span>
                     {me && <GoToggle eventId={e.id} slug={e.slug} title={e.title} initial={going.has(e.id)} />}
                   </div>

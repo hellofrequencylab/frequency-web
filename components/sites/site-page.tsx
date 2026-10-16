@@ -534,20 +534,47 @@ export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], p
 export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null, theme?: 'wildheart' | 'network') {
   const page = (view: 'overview' | 'calendar' | 'editor') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
   return siteAdminNavLinks(
-    { overview: page('overview'), calendar: page('calendar'), editor: page('editor'), console: `${origin}/spaces/${slug}/manage/leadership` },
+    {
+      overview: page('overview'),
+      calendar: page('calendar'),
+      editor: page('editor'),
+      console: `${origin}/spaces/${slug}/manage/leadership`,
+      // SCAN-970: who may see these links. The site's own host asks its pass cookie; Frequency's host the session.
+      check: siteBase === '' ? '/admin/session' : `${origin}/api/sites/${slug}/admin-session`,
+    },
     current,
     theme,
   )
 }
 
 function siteCta(space: Space, links: SiteLinkMap): { label: string; href: string; external: boolean } | null {
-  const resolved = resolveHeaderCta(
-    readHeaderCtaPreference(space.preferences),
-    `/spaces/${space.slug}`,
-    defaultPrimaryCtaLabel(space.type),
-  )
+  const pref = readHeaderCtaPreference(space.preferences)
+  const resolved = resolveHeaderCta(pref, `/spaces/${space.slug}`, defaultPrimaryCtaLabel(space.type))
+  // SCAN-970 (owner 2026-10-16: "Make the membership button jump to the membership section of the site"):
+  // the default "Become a member" button, or a Join / Memberships button, lands on Home's membership
+  // section when Home has one, rather than the contact page or Frequency.
+  const anchor = !pref || (pref.kind === 'function' && (pref.function === 'join' || pref.function === 'memberships'))
+    ? siteMembershipAnchor(publishedWebsiteSnapshot(space.preferences)?.pages.find((p) => p.slug === HOME_SLUG)?.doc ?? readPageDoc(space.preferences, HOME_SLUG))
+    : null
+  if (anchor) return { label: resolved.label, href: `${links.siteBase}/#${anchor}`, external: false }
   const to = siteLocalHref(resolved.href, links)
   return to ? { label: resolved.label, ...to } : null
+}
+
+/** The anchor of Home's membership section (a section anchored `membership` or `memberships`, or the
+ *  Network tiers block), or null when Home has none. Pure. */
+export function siteMembershipAnchor(doc: unknown): string | null {
+  const content = doc && typeof doc === 'object' ? (doc as { content?: unknown }).content : null
+  if (!Array.isArray(content)) return null
+  let tiers: string | null = null
+  for (const block of content) {
+    const props = block && typeof block === 'object' ? (block as { props?: Record<string, unknown> }).props : null
+    const anchor = typeof props?.anchor === 'string' ? props.anchor.trim() : ''
+    if (!/^[a-z0-9][a-z0-9_-]*$/i.test(anchor)) continue
+    if (/^memberships?$/i.test(anchor)) return anchor
+    if (!tiers && (block as { type?: unknown }).type === 'NetworkTiers') tiers = anchor
+  }
+  return tiers
 }
 
 /** Whether the owner picked a page theme (preferences.theme). Unset, the site wears the house faces. */

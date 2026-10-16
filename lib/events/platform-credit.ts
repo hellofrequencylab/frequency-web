@@ -45,3 +45,27 @@ export function showsOrganizerCredit(
 ): boolean {
   return !!organizer && !isPlatformAccount(organizer.handle)
 }
+
+/** A hosting Space as an embed reads it: `host_space:spaces!host_space_id ( name, brand_name, status )`. */
+export type HostSpaceEmbed = { name: string | null; brand_name: string | null; status?: string | null } | null
+
+/**
+ * The ONE short host label a card or a share image prints.
+ *
+ * Owner, 2026-10-16: *"Attribute all event hosting from the group events to the appropriate group or
+ * subgroup. Right now it says Frequency is the host on all of them."* A seeded Space's events carry
+ * the house account as `host_id` and the chapter as `host_space_id`; the detail page already credits
+ * the Space, but the cards printed the person. So: an active hosting Space leads (its brand name
+ * first, as the detail page reads it), then the person host, and never the house account.
+ */
+export function eventHostLabel(
+  host: { display_name: string | null; handle?: string | null } | null | undefined,
+  hostSpace: HostSpaceEmbed | undefined,
+): string | null {
+  if (hostSpace && (hostSpace.status == null || hostSpace.status === 'active')) {
+    const name = (hostSpace.brand_name ?? hostSpace.name ?? '').trim()
+    if (name) return name
+  }
+  if (!host || isPlatformAccount(host.handle)) return null
+  return host.display_name?.trim() || null
+}
