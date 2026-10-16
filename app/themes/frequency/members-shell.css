@@ -339,6 +339,16 @@
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fqm-day-items a>small{flex:none;font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
 
+/* Goals belong to the rail itself; keep the same full-width treatment in the mobile inline slot. */
+[data-design="frequency"] [data-kit="members"] .fqm-goals{padding:12px 0 20px;gap:20px;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-rp-h{flex-wrap:wrap;row-gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-goals h2{margin:0;font:500 var(--fq-text-h4)/1.3 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-rp-h>span{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-goal{min-height:44px;justify-content:center;gap:12px;padding:4px 0}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-goal-t>span{min-width:0;overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-bar{height:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-goals .fqm-goal-t svg{color:var(--fq-presence)}
+
 /* Today's goals: title and reading over a 4px bar; a finished goal is struck through with a check. */
 [data-design="frequency"] [data-kit="members"] .fqm-goal{display:flex;flex-direction:column;gap:9px;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-goal:hover{color:var(--fq-text-strong)}
@@ -517,9 +527,6 @@
   @media (max-width: 720px) {
     [data-design="frequency"] [data-kit="members"] .ap-sheets { right: 12px }
     [data-design="frequency"] [data-kit="members"] .ap-sheet { width: min(340px, calc(100vw - 24px)) }
-    /* The feed's Create menu hung from the Create button's right edge, but on a phone that button
-       sits at the left, so the 280px menu opened 165px off the screen. It hangs from the left here. */
-    [data-design="frequency"] [data-kit="members"] .fa-menu { left: 0; right: auto; width: min(280px, calc(100vw - 36px)) }
     /* A text button longer than the row (Settings' "Handle, photo, links and your Spotlight page",
        318px on a 268px column) wraps instead of running off the screen; one line is unchanged. */
     [data-design="frequency"] [data-kit="members"] .btn.txt { max-width: 100%; height: auto; min-height: 44px; white-space: normal }
@@ -786,23 +793,6 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] .fqm-legacy section:not(section section) :is([class*="px-"], [class*="mx-"], [class*="pl-"], [class*="pr-"]){padding-left:0;padding-right:0;margin-left:0;margin-right:0}
 }
 
-/* THE JOIN OVERLAY ON THE ANONYMOUS FEED (SCAN-889: components/frequency/members/feed/anon-join-gate.tsx).
-   The dialog IS the full-screen layer: the viewport, dimmed and blurred over the Feed, with the Join box
-   centred in it. Its ::backdrop stays clear so the one blur is this layer's own. The box is the kit's glass
-   card with the iridescent primary (.btn.pa). */
-@layer components {
-[data-design="frequency"] [data-kit="members"] .fqm-join{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:var(--fq-space-4);border:0;background:color-mix(in oklab,var(--fq-ink) 45%,transparent);backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1);color:var(--fq-text-body);overflow:auto}
-[data-design="frequency"] [data-kit="members"] .fqm-join[open]{display:grid;place-items:center}
-[data-design="frequency"] [data-kit="members"] .fqm-join::backdrop{background:transparent}
-[data-design="frequency"] [data-kit="members"] .fqm-join-box{position:relative;width:min(460px,100%);border-radius:var(--fq-radius-l);overflow:hidden;background:color-mix(in oklab,var(--fq-surface-card) 92%,transparent);backdrop-filter:blur(24px) saturate(1.3);-webkit-backdrop-filter:blur(24px) saturate(1.3);box-shadow:var(--fq-shadow-float)}
-[data-design="frequency"] [data-kit="members"] .fqm-join-box>.fq-aura{opacity:.35}
-[data-design="frequency"] [data-kit="members"] .fqm-join-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:var(--fq-space-7) var(--fq-space-6) var(--fq-space-5);text-align:center}
-[data-design="frequency"] [data-kit="members"] .fqm-join-h{font-size:clamp(26px,4vw,32px);line-height:1.05}
-[data-design="frequency"] [data-kit="members"] .fqm-join-p{margin:0;max-width:34ch;font:400 15px/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
-[data-design="frequency"] [data-kit="members"] .fqm-join-acts{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
-[data-design="frequency"] [data-kit="members"] .fqm-join-acts .btn{width:100%}
-}
-
 /* THE SETTINGS PANEL BESIDE THE RAILS (SCAN-909). The AdminBar (components/layout/admin-bar) opens on the
    right of `.fqm-body` on every page that has something to manage: a Space's `?panel=manage` console, a
    Circle, an event, a practice, a profile. It was painted 32px WIDER than its box and 32px past the right
@@ -848,12 +838,6 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] .fa-quick-t b{font:500 var(--fq-text-body-s)/1.2 var(--fq-font-display);letter-spacing:-.01em;color:var(--fq-text-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .fa-quick-t small{font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);color:var(--fq-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* SCAN-911: the gate's quiet log-in line under the pitch. */
-@layer components {
-[data-design="frequency"] [data-kit="members"] .fqm-join-login{margin:4px 0 0;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-join-login a{color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:3px}
-}
-
 /* ── A SIGNED-OUT PUBLIC VIEW in (main) (SCAN-912) ──────────────────────────────────────────────────
    The /events index, the events calendar and a Space's public tabs render for a signed-out visitor in
    the public site shell (app/(main)/layout.tsx publicChrome), with no member rails and no .fqm-center
@@ -892,4 +876,51 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
    out. A fixed band exactly the height of the bottom safe area, in the darkest void, under everything. */
 @media (display-mode: standalone){
   :root[data-design="frequency"] body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:env(safe-area-inset-bottom,0px);background:var(--fq-th-void);z-index:2147483000;pointer-events:none}
+}
+
+/* SCAN-938: one compact phone header and a five-slot bar with an in-flow primary action. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .fqm-header-avatar{display:none;width:100%;height:100%;border-radius:inherit;background:var(--fq-pa-orb) center/cover no-repeat}
+@media (max-width:767px){
+  [data-design="frequency"] [data-kit="members"] .fqm-header-avatar{display:block}
+  [data-design="frequency"] [data-kit="members"] .fqm-header-initials{display:none}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr{padding-inline:max(12px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right));gap:4px}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-l{flex:0 1 144px;min-width:0;width:auto}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr .ap-logo{width:144px;max-width:100%}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-c{flex:0 0 auto;gap:0;padding:0;margin-left:auto}
+  [data-design="frequency"] [data-kit="members"] .ap-hdr-r{flex:0 0 auto;padding:0;width:auto}
+  [data-design="frequency"] [data-kit="members"] :is(.ap-hdr .ap-ic,.ap-hdr .ap-me,.ap-hdr .ap-search){width:44px;height:44px;min-width:44px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tabbar{height:68px;border-radius:var(--fq-radius-l)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap{justify-content:center;padding:0;gap:4px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb{position:static;width:44px;height:32px;margin:0;border-radius:var(--fq-radius-orb);box-shadow:inset 0 0 0 1px var(--fqm-white-75)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:hover .fqm-tb-orb{box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
+}
+}
+
+/* SCAN-948: floating navigation shares a readable material, not whole-panel opacity.
+   Opening/closing opacity animations stay owned by the shell. Page cards stay glass. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] :is(.ap-mega,.ap-sheet,.fqm-menu-p,.mu-menu,.ap-rail.fqm-drawer),
+[data-design="frequency"] [data-kit="members"] #fqm-zap {
+  background:var(--fq-menu-surface,var(--fq-surface-card));
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair);
+}
+}
+
+/* SCAN-948: menu material is nearly solid; text and page cards keep their own roles.
+   Re-declare at room boundaries so Stage/skin variables resolve in their own room.
+   Browsers without backdrop blur retain the opaque card fallback. */
+[data-design="frequency"],
+[data-design="frequency"] [data-surface],
+[data-design="frequency"] [data-skin] {
+  --fq-menu-surface: var(--fq-surface-card);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (background: color-mix(in oklab, currentColor, transparent)) {
+  [data-design="frequency"],
+  [data-design="frequency"] [data-surface],
+  [data-design="frequency"] [data-skin] {
+    --fq-menu-surface: color-mix(in oklab, var(--fq-surface-card) 96%, transparent);
+  }
 }

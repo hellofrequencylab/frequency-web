@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Zap, Map as MapIcon } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
@@ -17,6 +16,7 @@ import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { PracticeRowActions } from '@/components/practice/practice-row-actions'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { SectionHeader } from '@/components/ui/section-header'
+import { AdoptedPracticeStart } from '@/components/practice/adopted-practice-start'
 
 // The Pillar / cadence / reward chips under a "Your practices" card title. Kept to ONE row
 // (nowrap + overflow clipped): the category chip + reward stay fixed, and the length·cadence
@@ -96,13 +96,13 @@ function MineRow({
   const href = `/practices/${p.slug ?? p.id}`
   return (
     <li>
-      <div className="flex h-full flex-col rounded-card border border-border bg-surface p-4 lift-2 transition-colors hover:border-primary-bg motion-reduce:transition-none">
+      <div className="flex h-full flex-col rounded-card border border-border bg-surface p-3 transition-colors hover:border-primary-bg motion-reduce:transition-none">
         <div className="flex items-start justify-between gap-2">
-          <Link href={href} className="min-w-0 flex-1">
-            <h3 className="truncate text-body-sm font-bold leading-tight text-text transition-colors hover:text-primary-strong">
+          <h3 className="min-w-0 flex-1 text-body-sm font-bold leading-tight text-text">
+            <AdoptedPracticeStart practiceId={p.id} title={p.title} className="min-h-11 w-full text-left transition-colors hover:text-primary-strong">
               {p.title}
-            </h3>
-          </Link>
+            </AdoptedPracticeStart>
+          </h3>
           {p.domain_id && byId.has(p.domain_id) && (
             <div className="shrink-0">
               <PillarBadge name={byId.get(p.domain_id)!.name} />

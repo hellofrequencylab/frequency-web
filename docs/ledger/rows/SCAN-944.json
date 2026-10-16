@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-944",
+  "title": "Compose the mobile standing panel around real Monday\u2013Sunday practice activity",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/frequency/members/feed/standing.tsx",
+    "ref": "Owner standing panel visual review2026-10-15"
+  },
+  "detail": "Replace the rolling binary chain inferred from streak with a true Monday\u2013Sunday chart of actual incremental practice_sessions seconds, using member-local finish dates consistent with Airtime. Completed zero-duration practice_logs count separately only when no timed practice/date match, avoiding double representation. Cross-midnight sessions are explicitly attributed to local finish day rather than inventing paused interval allocation. Future days differ from true zero; read failures show unavailable. Mobile card is one clipped corner wash with streak header over it, a full-width week chart, and five direct adopted timer tiles plus Adopt/Show all in3x2 at390 and2columns at320. Desktop retains all adopted entries and its adoption link. Canonical direct-start behavior remains. Root reviewed actual390/320 SSR fixture with actualFrequency CSS/fonts and approved composition; final cool chartfill/13pxcaption refinement awaits final rendered acceptance. No DB writes or migrations.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "13 focused tests3 suites plus actual-component SSR fixture pass; ESLint/token/adoption/phantom checks pass. Date tests cover Sunday/Monday local boundary, DST repeated hours, finish-day attribution, incremental seconds/untimed correlation/future filtering. Loader tests scope every query to viewer and expose read failure. Existing adopted launch tests preserve done/undone direct selectedtimer. Parent fixture http://localhost:3009/__standing shows actualStanding+CSS+fonts in390x844/320x844 srcdocframes with explicitly representative data. Final integrated auth data/geometry and44px target acceptance remain pending parent final review; chart now uses cooled--fq-pa and13pxcaption/axis."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-939",
+  "title": "Compact adopted practices launch their selected canonical timer directly",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/practice/adopted-practice-start.tsx",
+    "ref": "Owner adopted practice mobile instruction 2026-10-15"
+  },
+  "detail": "Feed expanded adopted rows and folded next practice now invoke canonical Mindless.open with selected practiceId+autoStart instead of navigating to a detail page. PracticesMine adopted titles use same button, retaining separate existing row controls. The provider loads authored mode and duration, routes movement correctly and preserves Just Log semantics for non-timed practices; no invented breathing mode, auto-log or fake completion. Done today remains visible and launchable again. Mobile Feed rows compress icon/padding while retaining44px minimum height and duration/cadence. Parent browser unavailable to child; integrated visual and physical timer checks remain pending.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "Mocked provider/engine tests verify selected ID server load, autoStart,17min authored data unchanged across mindless/movement/none modes; done and undone standing button launches tested. Existing provider Escape regressions remain green. Parent must verify rebuilt390/320 layouts, folded next action, PracticesMine title+doneagain, actual loaded timer type/duration without allowing production session/log writes. JustLog has its correct existing note/log interface rather than a fabricated countdown."
+  },
+  "wave": "W7"
+}

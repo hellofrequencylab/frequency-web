@@ -3,7 +3,7 @@
 // THE RAIL GRID (Members.dc.html; README §Layout, "Rail resize and collapse").
 //
 //   <L> minmax(0,1fr) <R>, gap 56, padding 44/40/160. The 2026-10-14 export made each rail
-//   INDEPENDENT: its own width (default 248, 220-320), its own collapse state and its own scroll (the
+//   INDEPENDENT: its own width (left248/right288, 220-320), its own collapse state and its own scroll (the
 //   proportional scroll sync is gone; each scroll area contains its own overscroll). A collapsed rail
 //   is the 76px micro rail. Each rail has a 12px handle on its inner edge: a round chevron that
 //   toggles collapse, then a hairline you drag to resize (below 150px collapses, double-click
@@ -16,6 +16,7 @@
 // route gets is the shell's existing decision (railFor / leftRailFor / chrome overrides), unchanged.
 
 import { usePathname, useSearchParams } from 'next/navigation'
+import { decodeRailPreferences } from '@/lib/layout/rail-preferences'
 import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   railFor,
@@ -61,17 +62,9 @@ type Rails = { l: number | null; r: number | null; lc: boolean | null; rc: boole
 const AUTO: Rails = { l: null, r: null, lc: null, rc: null }
 let rails: Rails | null = null
 const railSubs = new Set<() => void>()
-const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(MIN_W, Math.min(MAX_W, v)) : null)
-const bool = (v: unknown) => (typeof v === 'boolean' ? v : null)
 function readRails(): Rails {
   try {
-    // The prototype's own migration: a v1 shared width `w` seeds both rails.
-    const s = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY) || 'null') as Record<string, unknown> | null
-    if (!s) return AUTO
-    // Both rails load at the left rail's width (owner, 2026-10-13: "the same width on both sides when it
-    // loads"); a right-rail drag holds for the visit and the next load mirrors the left again.
-    const l = num(s.l ?? s.w)
-    return { l, r: l ?? num(s.r ?? s.w), lc: bool(s.lc), rc: bool(s.rc) }
+    return decodeRailPreferences(localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY))
   } catch {
     return AUTO
   }

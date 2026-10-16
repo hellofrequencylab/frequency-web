@@ -313,9 +313,8 @@ export function FqHeader({
             aria-controls="fqm-me"
             onClick={() => toggle('me')}
           >
-            {/* Initials, never the photo (owner, 2026-10-14): the photo already sits in the rail's You card,
-                so the header showed the same face twice. */}
-            {getInitials(profile.display_name)}
+            <span className="fqm-header-avatar" style={avatarBg(profile.avatar_url)} aria-hidden />
+            <span className="fqm-header-initials" aria-hidden>{getInitials(profile.display_name)}</span>
           </button>
         </div>
       </header>
