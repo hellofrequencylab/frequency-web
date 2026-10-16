@@ -11,24 +11,26 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
 import { FqClearLink, FqFacetMenu, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
 import { FqEventCard } from './event-card'
-import { FqEventsMapPane } from './events-map-pane'
 import { FqEventsCalendar } from './events-calendar'
 import { FqEventsFilterSheet } from './events-filter-sheet'
-import { buildCalendarMonth, chipTime, resolveMonth } from './calendar-month'
-import { FqEventsForYou, FqPeopleToMeet } from './events-lanes'
-import { HubLinks } from '@/components/frequency/members/shared/hub-links'
-import { hubLinks } from '@/components/frequency/members/shell/nav'
+import { buildCalendarMonth, resolveMonth } from './calendar-month'
+import { FqPeopleToMeet } from './events-lanes'
+import { FqAroundYou, FqAroundYouFrame } from './around-you'
+import { ayMapItems } from './around-you-items'
+import { FqEventsMapLightbox, FqMapButton } from './events-map-lightbox'
 
 // EVENTS, FREQUENCY BODY (templates/members/Events.html + app/events.css + app/events.js, the
 // 2026-10-14 export). The shell owns the kit root, header and rails; this is the page body: the
-// photo hero with the search pill and the member's home base, the category tabs with real counts,
-// the List / Map / Calendar switch, the facet row, the For you lane and People to meet, the card
-// grid (with the sticky map in Map), the month grid in Calendar, and Your week down the side.
+// plain member header, the one sticky toolbar (search, Filters on a phone, List / Map / Calendar, More),
+// the Around you feature (SCAN-975: the member's next event or best pick, three balanced cards, the
+// pulse strip, the ticker and the map's door), People to meet, then the library: the category tabs and
+// facet row in one bar that sticks under the toolbar, and a truncated grid four wide that grows a page
+// at a time. Map is a lightbox over the page (events-map-lightbox.tsx), not a view of its own.
 //
 // EVERY CONTROL IS A URL. Search is a GET form, each tab / facet / sort / view / month is a link that
 // keeps the others (`hrefWith`), and the server read (getEventsIndexData) does the filtering, so any
-// view is shareable and the page stays a Server Component. Only two islands ship JS: the map (loaded
-// only in Map) and the calendar's keyboard focus.
+// view is shareable and the page stays a Server Component. The islands are small: the map lightbox (its
+// engine loads only once it opens), the ticker's clock, and the calendar's keyboard focus.
 //
 // THE HYBRID RULE. The design wins on layout, structure, visuals and copy; our real features stay,
 // restyled: the operator's intro and CTA (page_content), Subscribe, Manage and Drafts, the Format /
@@ -38,28 +40,26 @@ import { hubLinks } from '@/components/frequency/members/shell/nav'
 // invite chips on cards (the listing read carries neither), and browser geolocation (distance is
 // measured from the member's saved home base, server side).
 
-type ViewKey = 'list' | 'map' | 'calendar'
+type ViewKey = 'list' | 'calendar'
 const VIEWS: { key: ViewKey; label: string; icon: FqIconName }[] = [
   { key: 'list', label: 'List', icon: 'page' },
-  { key: 'map', label: 'Map', icon: 'map' },
   { key: 'calendar', label: 'Calendar', icon: 'event' },
 ]
 
+/** The old `?view=map` link draws the list, and the map lightbox opens over it. */
 function asView(raw: string | undefined): ViewKey {
-  return raw === 'map' || raw === 'calendar' ? raw : 'list'
+  return raw === 'calendar' ? raw : 'list'
 }
 
+/** The library's page: four across, three rows, then "Show more" adds a page, up to ROW_CAP. */
+const LIB_STEP = 12
 /** How many cards the grid draws before it hands off to the calendar. */
 const ROW_CAP = 60
-const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Whole days from today (home zone) to the event's stored wall-clock day. */
-function daysOut(startsAt: string, today: string): number {
-  return Math.round((Date.parse(`${startsAt.slice(0, 10)}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS)
-}
-function shortDay(iso: string, today: string): string {
-  if (daysOut(iso, today) === 0) return 'Today'
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+function libLimit(raw: string | undefined): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= LIB_STEP) return LIB_STEP
+  return Math.min(ROW_CAP, Math.ceil(n / LIB_STEP) * LIB_STEP)
 }
 
 export function FqEventsBody({
@@ -72,7 +72,7 @@ export function FqEventsBody({
 }) {
   const {
     sortedEvents,
-    goingEvents,
+    mapPins,
     myRsvps,
     nowDate,
     myProfileId,
@@ -80,8 +80,6 @@ export function FqEventsBody({
     facets,
     facetCounts,
     sortOptions,
-    mapPins,
-    showForYou,
     filtering,
     content,
     homeLabel,
@@ -106,17 +104,19 @@ export function FqEventsBody({
   ]
   const otherFacets = facets.filter((f) => f.show !== false && f.paramKey !== 'category')
 
-  const shown = sortedEvents.slice(0, ROW_CAP)
-  const myWeek = goingEvents.filter((e) => {
-    const d = daysOut(e.starts_at, today)
-    return d >= 0 && d < 7
-  })
+  const limit = libLimit(params.show)
+  const shown = sortedEvents.slice(0, limit)
+  const mapItems = ayMapItems(sortedEvents, mapPins, data)
+  // The feature leads only when the member is browsing: a search or a filter puts the results first.
+  const featured = view === 'list' && !filtering && sortedEvents.length > 0
 
   const usingFallbackTitle = !content.title || content.title === 'Events near you'
   const near = params.near ? ` within ${params.near} km` : ''
 
   // The search form carries every other param, so a search keeps the filters and the view.
-  const keep = Object.entries(params).filter(([k, v]) => k !== 'q' && k !== 'month' && !!v) as [string, string][]
+  const keep = Object.entries(params).filter(
+    ([k, v]) => k !== 'q' && k !== 'month' && k !== 'show' && k !== 'map' && !!v,
+  ) as [string, string][]
 
   const calendar =
     view === 'calendar'
@@ -260,7 +260,12 @@ export function FqEventsBody({
           {VIEWS.map((v) => (
             <Link
               key={v.key}
-              href={hrefWith(base, params, { view: v.key === 'list' ? null : v.key, month: v.key === 'calendar' ? params.month ?? null : null })}
+              href={hrefWith(base, params, {
+                view: v.key === 'list' ? null : v.key,
+                month: v.key === 'calendar' ? params.month ?? null : null,
+                show: null,
+                map: null,
+              })}
               className={view === v.key ? 'on' : undefined}
               aria-current={view === v.key ? 'page' : undefined}
             >
@@ -268,6 +273,7 @@ export function FqEventsBody({
               <span className="evx-seg-t">{v.label}</span>
             </Link>
           ))}
+          <FqMapButton />
         </nav>
         {/* Host actions, one More menu, members only (the SCAN-912 gating: New event for any member; Manage
             and Drafts once they have added an event; Subscribe draws itself only for a signed-in member). No
@@ -303,7 +309,7 @@ export function FqEventsBody({
       {/* Quick picks on a phone (SCAN-919): the active category (tap to clear) and the common date bands. */}
       <nav className="evf-quick" aria-label="Quick filters">
         {activeCat && (
-          <Link className="chip on" href={hrefWith(base, params, { category: null })} aria-label={`${activeCat.label}, clear category`}>
+          <Link className="chip on" href={hrefWith(base, params, { category: null, show: null })} aria-label={`${activeCat.label}, clear category`}>
             {activeCat.label}
             <FqIcon name="close" />
           </Link>
@@ -317,7 +323,7 @@ export function FqEventsBody({
                 <Link
                   key={o.value}
                   className={on ? 'chip on' : 'chip'}
-                  href={hrefWith(base, params, { date: on ? null : o.value })}
+                  href={hrefWith(base, params, { date: on ? null : o.value, show: null })}
                   aria-current={on ? 'true' : undefined}
                 >
                   {o.label}
@@ -327,155 +333,137 @@ export function FqEventsBody({
         {anyFilter && <FqClearLink base={hrefWith(base, keepView, {})} active />}
       </nav>
 
-      <div className="ev-bar">
-        <nav className="ev-tabs" aria-label="Categories">
-          {tabs.map((t) => {
-            const on = (params.category ?? '') === t.value
-            return (
-              <Link
-                key={t.value || 'all'}
-                href={hrefWith(base, params, { category: t.value || null })}
-                className={on ? 'on' : undefined}
-                aria-current={on ? 'page' : undefined}
-              >
-                {t.label}
-                <span className="ev-n-tag" aria-label={`${t.n} ${t.n === 1 ? 'event' : 'events'}`}>
-                  {t.n}
-                </span>
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
+      {featured && (
+        <Suspense fallback={<FqAroundYouFrame />}>
+          <FqAroundYou data={data} mapItems={mapItems} />
+        </Suspense>
+      )}
+      {featured && myProfileId && (
+        <Suspense fallback={null}>
+          <FqPeopleToMeet viewerProfileId={myProfileId} eventIds={sortedEvents.map((e) => e.id)} />
+        </Suspense>
+      )}
 
-      <div className="fqm-tools ev-facets">
-        {otherFacets.map((f) => (
-          <FqFacetMenu
-            key={f.paramKey}
-            label={f.label}
-            paramKey={f.paramKey}
-            options={f.options}
-            base={base}
-            current={params}
-            counts={facetCounts[f.paramKey]}
-          />
-        ))}
-        <span className="fqm-end" />
-        {anyFilter && <FqClearLink base={hrefWith(base, keepView, {})} active />}
-        {sortOptions.length > 1 && (
-          <FqFacetMenu
-            label="Sort"
-            paramKey="sort"
-            options={sortOptions}
-            base={base}
-            current={params.sort ? params : { ...params, sort: sortOptions[0].value }}
-            clearable={false}
-            icon="filter"
-          />
-        )}
-      </div>
-
-      <div className="ap-cols">
-        <div>
-          {view !== 'calendar' && showForYou && (
-            <Suspense fallback={null}>
-              <FqEventsForYou data={data} />
-            </Suspense>
-          )}
-          {view !== 'calendar' && showForYou && myProfileId && (
-            <Suspense fallback={null}>
-              <FqPeopleToMeet viewerProfileId={myProfileId} eventIds={sortedEvents.map((e) => e.id)} />
-            </Suspense>
-          )}
-
-          {calendar ? (
-            <FqEventsCalendar
-              key={calendar.param}
-              month={calendar}
-              prevHref={calendar.prev ? hrefWith(base, params, { view: 'calendar', month: calendar.prev }) : null}
-              nextHref={calendar.next ? hrefWith(base, params, { view: 'calendar', month: calendar.next }) : null}
-              emptyHref={hrefWith(base, params, { view: null, month: null })}
-              subscribe={<CalendarSubscribe buttonClassName="btn sm" />}
-            />
-          ) : (
-            <div className={view === 'map' ? 'ev-split' : 'ev-split solo'}>
-              <section aria-labelledby="ev-sum-h">
-                <div className="ev-sum">
-                  <h2 id="ev-sum-h" className="h2">
-                    {filtering ? 'Matching events' : 'Everything coming up'}
-                  </h2>
-                  <span className="t2">
-                    {sortedEvents.length} {sortedEvents.length === 1 ? 'event' : 'events'}
-                    {near}
-                    {params.q ? ` for “${params.q}”` : ''}
+      {/* THE LIBRARY BAR (SCAN-975): the category tabs and the facet and sort menus in one bar that sticks
+          under the toolbar while the library scrolls, so a sort is always one tap away. A phone keeps the
+          Filters sheet instead (SCAN-919), so the bar draws nothing there. */}
+      <div className="ev-libbar">
+        <div className="ev-bar">
+          <nav className="ev-tabs" aria-label="Categories">
+            {tabs.map((t) => {
+              const on = (params.category ?? '') === t.value
+              return (
+                <Link
+                  key={t.value || 'all'}
+                  href={hrefWith(base, params, { category: t.value || null, show: null })}
+                  className={on ? 'on' : undefined}
+                  aria-current={on ? 'page' : undefined}
+                >
+                  {t.label}
+                  <span className="ev-n-tag" aria-label={`${t.n} ${t.n === 1 ? 'event' : 'events'}`}>
+                    {t.n}
                   </span>
-                </div>
-                <div className="ev-list">
-                  {shown.length === 0 ? (
-                    <div className="ev-empty">
-                      <span className="ic">
-                        <FqIcon name="event" />
-                      </span>
-                      <span className="h3">{anyFilter ? 'No events match these filters' : 'Nothing coming up yet'}</span>
-                      <span className="t2">
-                        {anyFilter
-                          ? 'Try another category or clear the filters to see everything coming up.'
-                          : 'When a host near you posts a gathering, it lands here.'}
-                      </span>
-                      {anyFilter ? (
-                        <Link className="btn pa" href={hrefWith(base, keepView, {})}>
-                          Clear filters
-                        </Link>
-                      ) : myProfileId ? (
-                        <Link className="btn pa" href="/events/new">
-                          New Event
-                        </Link>
-                      ) : null}
-                    </div>
-                  ) : (
-                    shown.map((e) => <FqEventCard key={e.id} e={e} data={data} />)
-                  )}
-                </div>
-                {sortedEvents.length > ROW_CAP && (
-                  <div className="ev-more">
-                    <Link className="btn" href={hrefWith(base, params, { view: 'calendar' })}>
-                      See all {sortedEvents.length} on the calendar
-                    </Link>
-                  </div>
-                )}
-              </section>
-              {view === 'map' && <FqEventsMapPane pins={mapPins} homeLabel={homeLabel} />}
-            </div>
-          )}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
 
-        <aside className="side">
-          <div className="panel stack">
-            <span className="k">Your week</span>
-            {myWeek.length > 0 ? (
-              <div className="evx-yours">
-                {myWeek.map((e) => (
-                  <Link key={e.id} href={`/events/${e.slug}`}>
-                    <span className="t2 ev-wk">{shortDay(e.starts_at, today)}</span>
-                    <span className="dot" />
-                    <span className="t1 grow">{e.title}</span>
-                    <span className="t2">{chipTime(e.starts_at)}</span>
+        <div className="fqm-tools ev-facets">
+          {otherFacets.map((f) => (
+            <FqFacetMenu
+              key={f.paramKey}
+              label={f.label}
+              paramKey={f.paramKey}
+              options={f.options}
+              base={base}
+              current={params}
+              counts={facetCounts[f.paramKey]}
+            />
+          ))}
+          <span className="fqm-end" />
+          {anyFilter && <FqClearLink base={hrefWith(base, keepView, {})} active />}
+          {sortOptions.length > 1 && (
+            <FqFacetMenu
+              label="Sort"
+              paramKey="sort"
+              options={sortOptions}
+              base={base}
+              current={params.sort ? params : { ...params, sort: sortOptions[0].value }}
+              clearable={false}
+              icon="filter"
+            />
+          )}
+        </div>
+      </div>
+
+      {calendar ? (
+        <FqEventsCalendar
+          key={calendar.param}
+          month={calendar}
+          prevHref={calendar.prev ? hrefWith(base, params, { view: 'calendar', month: calendar.prev }) : null}
+          nextHref={calendar.next ? hrefWith(base, params, { view: 'calendar', month: calendar.next }) : null}
+          emptyHref={hrefWith(base, params, { view: null, month: null })}
+          subscribe={<CalendarSubscribe buttonClassName="btn sm" />}
+        />
+      ) : (
+        <section className="ev-lib" aria-labelledby="ev-sum-h">
+          <div className="ev-sum">
+            <h2 id="ev-sum-h" className="h2">
+              {filtering ? 'Matching events' : 'Everything coming up'}
+            </h2>
+            <span className="t2">
+              {shown.length < sortedEvents.length ? `${shown.length} of ` : ''}
+              {sortedEvents.length} {sortedEvents.length === 1 ? 'event' : 'events'}
+              {near}
+              {params.q ? ` for “${params.q}”` : ''}
+            </span>
+          </div>
+          <div className="ev-list ev-list4">
+            {shown.length === 0 ? (
+              <div className="ev-empty">
+                <span className="ic">
+                  <FqIcon name="event" />
+                </span>
+                <span className="h3">{anyFilter ? 'No events match these filters' : 'Nothing coming up yet'}</span>
+                <span className="t2">
+                  {anyFilter
+                    ? 'Try another category or clear the filters to see everything coming up.'
+                    : 'When a host near you posts a gathering, it lands here.'}
+                </span>
+                {anyFilter ? (
+                  <Link className="btn pa" href={hrefWith(base, keepView, {})}>
+                    Clear filters
                   </Link>
-                ))}
+                ) : myProfileId ? (
+                  <Link className="btn pa" href="/events/new">
+                    New Event
+                  </Link>
+                ) : null}
               </div>
             ) : (
-              <span className="t2">
-                {myProfileId
-                  ? 'Nothing yet. Tap Go on anything here and it shows up.'
-                  : 'Sign in and the things you are going to line up here.'}
-              </span>
+              shown.map((e) => <FqEventCard key={e.id} e={e} data={data} />)
             )}
           </div>
-          <Suspense fallback={null}>
-            <HubLinks title="Events" boxed links={(v) => hubLinks('/events', v)} />
-          </Suspense>
-        </aside>
-      </div>
+          {sortedEvents.length > shown.length && (
+            <div className="ev-more ev-lib-more">
+              {limit < ROW_CAP ? (
+                <Link className="btn" href={hrefWith(base, params, { show: String(limit + LIB_STEP) })} scroll={false}>
+                  Show more
+                  <span className="ev-n-tag">{sortedEvents.length - shown.length} more</span>
+                </Link>
+              ) : null}
+              <Link className="btn txt" href={hrefWith(base, params, { view: 'calendar', show: null })}>
+                See all {sortedEvents.length} on the calendar
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
+
+      <Suspense fallback={null}>
+        <FqEventsMapLightbox items={mapItems} signedIn={!!myProfileId} homeLabel={homeLabel} />
+      </Suspense>
     </>
   )
 }
