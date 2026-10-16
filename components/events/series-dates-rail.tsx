@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import { formatEventWhen } from '@/lib/time/zone'
@@ -14,16 +15,20 @@ export function SeriesDatesRail({
   dates,
   timeZone,
   className,
+  wrap,
 }: {
   dates: SeriesRailDate[]
   /** The event's own time zone, so a date reads in the zone the host set it in. */
   timeZone: string | null
   className?: string
+  /** Optional frame around the rail (SCAN-955: Frequency folds it into the series line's "More dates"
+   *  disclosure). Absent everywhere else, so the rail renders exactly as before. */
+  wrap?: (rail: ReactNode) => ReactNode
 }) {
   // One date is just this event; there is nothing to offer.
   if (dates.length < 2) return null
 
-  return (
+  const rail = (
     <section className={className} aria-labelledby="series-dates-heading">
       <h2 id="series-dates-heading" className="flex items-center gap-2 text-body-sm font-semibold text-text">
         <CalendarDays className="h-4 w-4 text-primary-strong" aria-hidden />
@@ -63,4 +68,5 @@ export function SeriesDatesRail({
       </ul>
     </section>
   )
+  return wrap ? wrap(rail) : rail
 }

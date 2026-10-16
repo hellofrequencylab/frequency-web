@@ -101,6 +101,7 @@ import {
   FqEventActionRow,
   FqEventCover,
   FqEventFact,
+  FqEventSeries,
   fqEventPrimaryAction,
 } from '@/components/frequency/members/event/event-header'
 import { FqEventCountdown } from '@/components/frequency/members/event/event-countdown'
@@ -2306,16 +2307,19 @@ export default async function EventDetailPage({
     )
   }
 
-  // The host line under Frequency is one row of the facts list; DAWN keeps the bare line.
-  const fqHostFact = (line: ReactNode) => (FREQUENCY && line ? <FqEventFact icon="host">{line}</FqEventFact> : line)
+  // The host line under Frequency is a small byline (SCAN-955); DAWN keeps the bare line.
+  const fqHostFact = (line: ReactNode) => (FREQUENCY && line ? <div className="fqm-evh-by">{line}</div> : line)
 
   // ── THE FREQUENCY HEADER (SCAN-903) ────────────────────────────────────────────────────────────
   // Owner, 2026-10-14: "I feel like we can do better on the event listing header and title area.
   // Also, the countdown timers don't seem like they are a part of the theme." The layout stays the
   // original one (FQ_EVENT_KIT_LAYOUT above); only what fills its slots changes, reading top to bottom:
-  // the cover shown whole, a kicker (category · Circle), the title at the kit's heading size, one
-  // facts list (when, where with Directions, who), the countdown card beside it, then ONE action row
-  // with the RSVP / ticket action first. Every value below is one the DAWN header already reads.
+  // the cover shown whole, a kicker (category · Circle), the title at the kit's heading size, the
+  // facts as calm text lines in the DAWN order (SCAN-955: the date and time on one line, the venue
+  // with its address and Directions on one line, the host as a byline, the Circle / Space / Journey
+  // as small links, the series folded into one line with a "More dates" disclosure), the countdown
+  // beside them on the page, then ONE action row with the RSVP / ticket action first. Every value
+  // below is one the DAWN header already reads.
   const checkInGates = {
     eventId: event.id,
     cancelled: !!event.is_cancelled,
@@ -2345,6 +2349,23 @@ export default async function EventDetailPage({
     : venueName && addressLine
       ? { name: venueName, sub: addressLine }
       : { name: headerLocation, sub: null }
+  // The series as one sentence: the cadence, when it ends, and (for an anchor whose own date has
+  // passed) the next date. The DAWN header gives each of these its own line.
+  const fqSeries = event.recurrence_type !== 'none' || !!event.parent_event_id
+  const fqNext = nextRecurrence
+    ? nextRecurrence.toLocaleDateString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+      })
+    : null
+  const fqSeriesLine = [
+    recurrenceLineFor(event) ?? 'Part of a recurring series',
+    event.recurrence_until
+      ? `until ${new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : null,
+    fqNext ? `next ${fqNext}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const fqPrimary = fqEventPrimaryAction({
     cancelled: !!event.is_cancelled,
     ended: hasEnded,
@@ -2646,8 +2667,9 @@ export default async function EventDetailPage({
         // The when-line is the key fact under the title — it renders a step stronger
         // (size, weight, and full text color) than the rest of the subtitle stack.
         when: FREQUENCY ? (
-          <FqEventFact icon="event" sub={fqTimeLine}>
-            {formatFull(event.starts_at)}
+          <FqEventFact icon="event" className="is-when">
+            <span>{formatFull(event.starts_at)}</span>
+            <span className="fqm-evh-q">{fqTimeLine}</span>
           </FqEventFact>
         ) : (
           <div className="flex items-center gap-2">
@@ -2661,19 +2683,22 @@ export default async function EventDetailPage({
             <FqEventFact icon="globe">Online</FqEventFact>
           ) : (
             fqPlace.name && (
-              <FqEventFact
-                icon="pin"
-                sub={fqPlace.sub}
-                action={
-                  mapsHref ? (
-                    <a className="btn txt sm fqm-evh-dir" href={mapsHref} target="_blank" rel="noopener noreferrer">
-                      <FqIcon name="map" />
-                      Directions
+              // One line: the venue, its address as a quiet link into Maps, and Directions.
+              <FqEventFact icon="pin" className="is-where">
+                <span className="fqm-evh-venue">{fqPlace.name}</span>
+                {fqPlace.sub &&
+                  (mapsHref ? (
+                    <a className="fqm-evh-q fqm-evh-addr" href={mapsHref} target="_blank" rel="noopener noreferrer">
+                      {fqPlace.sub}
                     </a>
-                  ) : undefined
-                }
-              >
-                {fqPlace.name}
+                  ) : (
+                    <span className="fqm-evh-q">{fqPlace.sub}</span>
+                  ))}
+                {mapsHref && (
+                  <a className="fqm-evh-dir" href={mapsHref} target="_blank" rel="noopener noreferrer">
+                    Directions
+                  </a>
+                )}
               </FqEventFact>
             )
           )
@@ -2704,16 +2729,9 @@ export default async function EventDetailPage({
         // every other Wednesday says so instead of "Repeats weekly". A row with no rule falls back
         // to what its legacy cadence means, resolved against its own start.
         cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (FREQUENCY ? (
-          <FqEventFact
-            icon="streak"
-            sub={
-              event.recurrence_until
-                ? `Until ${new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                : undefined
-            }
-          >
-            {recurrenceLineFor(event) ?? 'Part of a recurring series'}
-          </FqEventFact>
+          // With other dates to offer, the line rides the rail's "More dates" disclosure (seriesRail
+          // below) instead of standing here as well.
+          seriesRailDates.length >= 2 ? null : <FqEventFact className="is-series">{fqSeriesLine}</FqEventFact>
         ) : (
           <div className="flex items-center gap-2">
             <span aria-hidden className="text-body leading-none">🔁</span>
@@ -2730,13 +2748,10 @@ export default async function EventDetailPage({
 
         // Recurring anchor whose date has passed: surface the next upcoming date so the
         // series never reads as a one-off that already happened.
+        // Under Frequency the next date rides the series line above; it only stands alone on the rare
+        // row that has a next date but no series facts.
         nextDate: nextRecurrence && (FREQUENCY ? (
-          <FqEventFact icon="event">
-            Next:{' '}
-            {nextRecurrence.toLocaleDateString('en-US', {
-              weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-            })}
-          </FqEventFact>
+          fqSeries ? null : <FqEventFact className="is-series">Next: {fqNext}</FqEventFact>
         ) : (
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
@@ -2756,15 +2771,19 @@ export default async function EventDetailPage({
         // sentinel scope_id and the legacy standalone row's profile id cannot reach it.
         // Its Journey needs a read the header must not wait on, so it streams in behind
         // its own <Suspense> (PAGE-FRAMEWORK §5).
-        belonging: (
-          <Suspense fallback={<EventBelongingSkeleton />}>
-            <EventBelonging
-              eventId={event.id}
-              circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
-              canManage={canManage}
-            />
-          </Suspense>
-        ),
+        belonging: (() => {
+          const strip = (
+            <Suspense fallback={<EventBelongingSkeleton />}>
+              <EventBelonging
+                eventId={event.id}
+                circle={scopeSlug ? { name: scopeName, slug: scopeSlug } : null}
+                canManage={canManage}
+              />
+            </Suspense>
+          )
+          // Under Frequency the chips read as small text links (SCAN-955, members-b.css).
+          return FREQUENCY ? <div className="fqm-evh-belong">{strip}</div> : strip
+        })(),
 
         hostedBy: fqHostFact(
           spaceHost ? (
@@ -2833,7 +2852,12 @@ export default async function EventDetailPage({
         // page (ADR-897). Renders nothing for a one-off or a single-date series. It sits FULL
         // WIDTH under both identity lanes (EventIdentitySlots) — it is a row of date chips, and
         // in the narrow column it used to live in they wrapped into three rows.
-        seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} />,
+        // Under Frequency the series line is the summary of a "More dates" disclosure around the rail.
+        seriesRail: <SeriesDatesRail
+          dates={seriesRailDates}
+          timeZone={eventTz}
+          wrap={FREQUENCY && fqSeries ? (rail) => <FqEventSeries line={fqSeriesLine} dates={rail} /> : undefined}
+        />,
 
         // [A3] THE REWARD LINE MOVED, AND THE SLOT IS DELIBERATELY LEFT EMPTY (ADR-1315).
         //
@@ -2914,7 +2938,7 @@ export default async function EventDetailPage({
     />
   )
 
-  // `fqm-evh` scopes the Frequency header rules (members-b.css): the title size, the facts list, the
-  // countdown card. DAWN renders the template bare, exactly as before.
+  // `fqm-evh` scopes the Frequency header rules (members-b.css): the title size, the facts lines, the
+  // countdown. DAWN renders the template bare, exactly as before.
   return FREQUENCY ? <div className="fqm-evh">{eventPage}</div> : eventPage
 }
