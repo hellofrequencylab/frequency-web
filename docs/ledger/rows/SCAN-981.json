@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-981",
+  "title": "Circles per Space follow the value ladder: a free Space runs its Space Circle only, Business 5, Collective 10, Network unlimited",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-16",
+  "source": {
+    "file": "lib/pricing/meter-limits.ts",
+    "ref": "Owner 2026-10-16: \"For value ladder. Let's do this for Circles. Free: Primary Circle included. Business: 5 Circles. Collective: 10 Circles. Network: Unlimited Circles. Crew and up can have 5 non busines circles each.\""
+  },
+  "detail": "space_circles was free 3, Business 10, Collective unlimited (Network read Collective). It is now free 1 (the Space Circle counts toward it), Business 5, Collective 10, and Network names its own unlimited. The personal circle_host row already gives Crew 5 Circles and a free Member 1, so it is unchanged. The add-Circle check (checkSpaceCircleMeter) and the pricing comparison table both read the row, so no other number moves. No Circle is ever removed: the cap only refuses a new one, and it bites when beta_grace ends.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('lib/pricing/meter-limits.ts','utf8');const bad=[];if(!/space_circles: \\{ free: 1, business: 5, collective: 10, network: null \\}/.test(m))bad.push('Circles per Space are not 1, 5, 10, unlimited');if(!/circle_host: \\{ free: 1, crew: 5 \\}/.test(m))bad.push('Crew does not host 5 Circles');if(bad.length){console.error('SCAN-981: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
