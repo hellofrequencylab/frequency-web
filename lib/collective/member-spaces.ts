@@ -1,12 +1,25 @@
-import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
+import { asSpacePlan, NETWORK_PLAN, type SpacePlan } from '@/lib/pricing/plans'
 
 const INCLUDED_MEMBER_SPACES = 5
 export function isCollectivePlan(plan: string | null | undefined): boolean {
   return plan === 'collective' || plan === 'nonprofit_collective'
 }
 
-/** Only live purchased collective_space quantity expands the included five. */
-export function memberSpaceCapacity(items: readonly { item_key: string; status: string; quantity: number }[]): number {
+/** Network (SCAN-956) is one owner running many groups: its same-owner children are its chapters. */
+export function isNetworkPlan(plan: string | null | undefined): boolean {
+  return plan === 'network'
+}
+
+/** A plan whose Space can hold same-owner children: Network's chapters, and the member Spaces existing
+ *  Collectives already bought (kept, never taken away). Extra-Space billing stays Collective only. */
+export function isChapterParentPlan(plan: string | null | undefined): boolean {
+  return isNetworkPlan(plan) || isCollectivePlan(plan)
+}
+
+/** Only live purchased collective_space quantity expands the included five. A Network holds its included
+ *  chapters; more than that is a quote, so no self-serve quantity applies to it. */
+export function memberSpaceCapacity(items: readonly { item_key: string; status: string; quantity: number }[], plan?: string | null): number {
+  if (isNetworkPlan(plan)) return NETWORK_PLAN.includedChapters
   return INCLUDED_MEMBER_SPACES + items.reduce((n, item) =>
     item.item_key === 'collective_space' && ['active', 'trialing', 'past_due'].includes(item.status)
       && Number.isSafeInteger(item.quantity) && item.quantity > 0 ? n + item.quantity : n, 0)
@@ -16,7 +29,7 @@ export function memberSpaceCapacity(items: readonly { item_key: string; status: 
 export function memberSpacePlan(ownPlan: string | null | undefined, parent: { plan?: string | null; status?: string | null } | null,
   relationship?: { childOwnerId?: string | null; parentOwnerId?: string | null; childStatus?: string | null; childType?: string | null; parentType?: string | null; parentParentId?: string | null }): SpacePlan {
   const own = asSpacePlan(ownPlan)
-  return own === 'free' && parent?.status === 'active' && isCollectivePlan(parent.plan)
+  return own === 'free' && parent?.status === 'active' && isChapterParentPlan(parent.plan)
     && !!relationship?.childOwnerId && relationship.childOwnerId === relationship.parentOwnerId
     && relationship.childStatus === 'active' && relationship.childType !== 'root'
     && relationship.parentType !== 'root' && relationship.parentParentId === null ? 'business' : own

@@ -6,7 +6,7 @@ type NetworkReport = { status: 'denied' } | { status: 'unavailable' } | {
 }
 function ownerCollective(parent: ReportSpace | null, caller: string | null): parent is ReportSpace {
   return !!parent && !!caller && parent.owner_profile_id === caller && parent.status === 'active'
-    && parent.type !== 'root' && ['collective', 'nonprofit_collective'].includes(parent.plan ?? '')
+    && parent.type !== 'root' && ['collective', 'nonprofit_collective', 'network'].includes(parent.plan ?? '')
 }
 export function attachedReportSpaces(parent: ReportSpace, rows: readonly ReportSpace[]): ReportSpace[] {
   const seen = new Set([parent.id])

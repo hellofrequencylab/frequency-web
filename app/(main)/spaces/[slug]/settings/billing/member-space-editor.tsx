@@ -23,7 +23,7 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
         const result = await setCollectiveMemberSpace(parentId, childId, attach)
         if ('error' in result) setError(result.error)
         else { setSelected(''); router.refresh() }
-      } catch { setError('Could not update this member Space. Try again.') }
+      } catch { setError(`Could not update this ${one}. Try again.`) }
     })
   }
   function saveExtraSpaces() {
@@ -37,12 +37,16 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
       } catch { setError('Could not update extra Spaces. Refresh before trying again.') }
     })
   }
+  // A Network's children are its chapters (SCAN-960); a Collective's stay member Spaces.
+  const net = management.network
+  const one = net ? 'chapter' : 'member Space'
+  const group = net ? 'Network' : 'Collective'
   const money = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
   return (
     <section className="rounded-card border border-border bg-surface px-5 py-4 space-y-4">
-      <h2 className="text-body-lg font-bold text-text">Member Spaces</h2>
-      <p className="text-body-sm text-muted">{management.members.length} of {management.capacity} Spaces attached. Each member Space keeps its own content and gets Business tools while your Collective is active.</p>
-      {management.members.length === 0 && <p className="text-body-sm text-muted">Attach a Space you own to bring it into your Collective.</p>}
+      <h2 className="text-body-lg font-bold text-text">{net ? 'Chapters' : 'Member Spaces'}</h2>
+      <p className="text-body-sm text-muted">{management.members.length} of {management.capacity} {net ? 'chapters' : 'Spaces'} attached. Each {one} keeps its own content and gets Business tools while your {group} is active.</p>
+      {management.members.length === 0 && <p className="text-body-sm text-muted">Attach a Space you own to bring it into your {group}{net ? ' as a chapter' : ''}.</p>}
       <ul className="space-y-3">
         {management.members.map(space => (
           <li key={space.id} className="flex items-center justify-between gap-4">
@@ -51,7 +55,7 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
           </li>
         ))}
       </ul>
-      <p className="text-meta text-muted">Detaching restores the Space&apos;s own plan. Its content stays in place. Reducing your extra Spaces never removes an attached Space.</p>
+      <p className="text-meta text-muted">Detaching restores the Space&apos;s own plan. Its content stays in place.{net ? '' : ' Reducing your extra Spaces never removes an attached Space.'}</p>
       {management.candidates.length > 0 && (
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-body-sm text-text" htmlFor="collective-member-space">Choose one of your Spaces
@@ -60,7 +64,7 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
               {management.candidates.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
             </Select>
           </label>
-          <Button disabled={pending || !selected || management.members.length >= management.capacity} onClick={() => change(selected, true)}>Attach Space</Button>
+          <Button disabled={pending || !selected || management.members.length >= management.capacity} onClick={() => change(selected, true)}>{net ? 'Add chapter' : 'Attach Space'}</Button>
         </div>
       )}
       {management.active && quote && (
@@ -74,9 +78,9 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
           {saved !== null && <p role="status" className="text-meta text-muted">Extra Spaces updated. Your invoice reflects the prorated change.</p>}
         </div>
       )}
-      {management.active && !quote && <p className="text-body-sm text-muted">Extra-Space billing is available once your paid Collective subscription and its prices are ready.</p>}
-      {management.active && management.members.length >= management.capacity && <p className="text-body-sm text-muted">Your Collective is full. Add another Space to your plan before attaching one.</p>}
-      {!management.active && <p className="text-body-sm text-muted">Your Collective is inactive. Member Spaces now use their own plans, and you can still detach them.</p>}
+      {management.active && !quote && !net && <p className="text-body-sm text-muted">Extra-Space billing is available once your paid Collective subscription and its prices are ready.</p>}
+      {management.active && management.members.length >= management.capacity && <p className="text-body-sm text-muted">{net ? `Your Network has all ${management.capacity} included chapters. Talk to us to add more.` : 'Your Collective is full. Add another Space to your plan before attaching one.'}</p>}
+      {!management.active && <p className="text-body-sm text-muted">Your {group} is inactive. {net ? 'Chapters' : 'Member Spaces'} now use their own plans, and you can still detach them.</p>}
       {error && <p role="alert" className="text-body-sm text-text">{error}</p>}
     </section>
   )

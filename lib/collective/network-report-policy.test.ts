@@ -32,6 +32,10 @@ describe('private Collective reporting', () => {
     const { deps } = setup(); expect(await buildNetworkReport('p', caller, deps)).toEqual({ status: 'denied' })
     expect(deps.children).not.toHaveBeenCalled(); expect(deps.earnings).not.toHaveBeenCalled()
   })
+  it('reports for a Network parent across its chapters (SCAN-960)', async () => {
+    const { deps, rows } = setup(); rows.set('p', { ...parent, plan: 'network' })
+    expect(await buildNetworkReport('p', 'owner', deps)).toMatchObject({ status: 'complete', members: 2 })
+  })
   it('denies a downgraded parent before member or finance reads', async () => {
     const { deps, rows } = setup(); rows.set('p', { ...parent, plan: 'business' })
     expect(await buildNetworkReport('p', 'owner', deps)).toEqual({ status: 'denied' }); expect(deps.members).not.toHaveBeenCalled(); expect(deps.earnings).not.toHaveBeenCalled()

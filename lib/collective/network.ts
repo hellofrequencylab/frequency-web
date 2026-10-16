@@ -1,11 +1,11 @@
-import { isCollectivePlan } from './member-spaces'
+import { isChapterParentPlan } from './member-spaces'
 import type { Space } from '@/lib/spaces/types'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
 export type NetworkParent = Pick<Space, 'id' | 'slug' | 'status' | 'plan' | 'networkConnected' | 'ownerProfileId'>
 /** A downgraded, suspended, off-network or ownerless parent has no network home. */
 export function collectiveNetworkOpen(parent: NetworkParent): boolean {
-  return parent.status === 'active' && parent.networkConnected === true && !!parent.ownerProfileId && isCollectivePlan(parent.plan)
+  return parent.status === 'active' && parent.networkConnected === true && !!parent.ownerProfileId && isChapterParentPlan(parent.plan)
 }
 export interface MemberSpaceRow {
   id: string; slug: string; name: string; brand_name: string | null; brand_logo_url: string | null
