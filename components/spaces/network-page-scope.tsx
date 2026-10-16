@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { NETWORK_CSS, NETWORK_BLOCK_CSS } from '@/components/sites/network-css'
 import { networkAccentVars, networkScheme } from '@/lib/theme/network'
+import { SITE_FACE_SHEETS, SITE_FACE_VARS } from '@/lib/theme/site-faces'
 
 // THE SPACE PAGE IN ITS WEBSITE'S LOOK (LIVE-906). A Space whose website wears Network shows the same sections
 // on its Frequency page, so the page body wears the website's paper, scheme, faces and section sheet instead
@@ -11,12 +12,8 @@ import { networkAccentVars, networkScheme } from '@/lib/theme/network'
 // Importing that here would register three faces on every Space page route (DEPLOY-SAFETY), so this page
 // asks Google Fonts for them only when it renders (the CSP already allows fonts.googleapis.com and
 // fonts.gstatic.com), and sets the `--font-nw-*` variables the token block reads to the named faces.
-const FACES = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=Outfit:wght@400..700&display=swap'
-const FONT_VARS = {
-  '--font-nw-bricolage': "'Bricolage Grotesque'",
-  '--font-nw-outfit': "'Outfit'",
-  '--font-nw-instrument': "'Instrument Serif'",
-} as Record<string, string>
+const FACES = SITE_FACE_SHEETS.network
+const FONT_VARS = SITE_FACE_VARS.network
 
 /** The website sheet minus its page-level rule: the app's own canvas stays the app's. The body column is
  *  narrower than the viewport the sheet's `vw` sizes assume, so the widest number sizes to the column. */

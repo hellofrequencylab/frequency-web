@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { type AccentVars, type FrequencyAccentVars } from '@/lib/spaces/accent'
 import { type SpaceThemeId } from '@/lib/theme/space-themes'
 import { LEGACY_THEME_AXES } from '@/lib/theme/design'
+import { SITE_FACE_SHEETS, SITE_FACE_VARS, type SiteFacesId } from '@/lib/theme/site-faces'
 
 // ACCENT SCOPE — the wrapper that paints a Space's brand accent over its profile subtree
 // (ENTITY-SPACES-BUILD §A, D4 "the accent is a guest" / D6 "tokens only"). It sets the
@@ -20,6 +21,7 @@ export function AccentScope({
   vars,
   theme,
   fqAccent,
+  siteFaces,
   className,
   children,
 }: {
@@ -38,6 +40,9 @@ export function AccentScope({
   /** The Space's own accent in the Frequency design's slots (lib/spaces/accent.ts frequencyAccentVars),
    *  applied only when the design owns the `--color-primary*` family. Null keeps the iridescent fill. */
   fqAccent?: FrequencyAccentVars | null
+  /** The website theme's own faces (lib/theme/site-faces.ts), when the Space page is synced to a website
+   *  theme that carries faces no font set has. Frequency only; it replaces the stand-in font set. */
+  siteFaces?: SiteFacesId | null
   className?: string
   children: ReactNode
 }) {
@@ -51,8 +56,10 @@ export function AccentScope({
   // fonts in its theme, never per heading). It rides `data-space-fonts`, which only
   // app/themes/frequency/space-page.css reads, and only for a set other than the house default.
   const fqVars = !LEGACY_THEME_AXES ? (fqAccent ?? undefined) : undefined
-  const style = (LEGACY_THEME_AXES ? (vars ?? undefined) : fqVars) as CSSProperties | undefined
-  const fqFonts = !LEGACY_THEME_AXES && theme && theme !== 'frequency' ? theme : undefined
+  const faces = !LEGACY_THEME_AXES && siteFaces ? siteFaces : null
+  const base = LEGACY_THEME_AXES ? (vars ?? undefined) : fqVars
+  const style = (faces ? { ...base, ...SITE_FACE_VARS[faces] } : base) as CSSProperties | undefined
+  const fqFonts = faces ?? (!LEGACY_THEME_AXES && theme && theme !== 'frequency' ? theme : undefined)
   return (
     <div
       className={className}
@@ -61,6 +68,7 @@ export function AccentScope({
       data-space-fonts={fqFonts}
       data-space-accent={fqVars ? '' : undefined}
     >
+      {faces && <link rel="stylesheet" href={SITE_FACE_SHEETS[faces]} precedence="default" />}
       {children}
     </div>
   )

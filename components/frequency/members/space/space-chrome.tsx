@@ -21,8 +21,9 @@ import '@/app/themes/active/space-page'
 // gives it a centred column and a right rail. A visitor reads it under the public site shell, which gives
 // it neither, so the page ran edge to edge with its first tab cut at the screen's edge. Public pages
 // therefore open their own frame: the site kit's centred `.wrap` (the container every public Frequency
-// page sits in), the same cover and tab row inside it untouched, then the body beside an `aside` column
-// of key facts (FqSpaceFacts). The member tree passes neither prop and renders exactly as before.
+// page sits in), the same cover and tab row inside it untouched, then the body at the column's
+// full width (the DAWN presentation, owner 2026-10-16) with the key facts (FqSpaceFacts) as a band of
+// cards under it. The member tree passes neither prop and renders exactly as before.
 
 export function FqSpaceChrome({
   back,
@@ -65,7 +66,7 @@ export function FqSpaceChrome({
   notices?: ReactNode
   /** The share page sits outside the member shell, so it opens its own kit scope. */
   public?: boolean
-  /** The signed-out page's side column (FqSpaceFacts): the key facts beside the body. */
+  /** The signed-out page's key facts (FqSpaceFacts): a band of cards under the full-width body. */
   aside?: ReactNode
   children: ReactNode
 }) {

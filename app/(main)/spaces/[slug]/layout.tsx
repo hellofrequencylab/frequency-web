@@ -8,6 +8,7 @@ import { spaceManageHref } from '@/lib/spaces/types'
 import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { AccentScope } from '@/components/spaces/accent-scope'
+import { spacePageSiteFaces } from '@/lib/theme/site-style'
 import { SpaceBreadcrumbs } from '@/components/spaces/space-breadcrumbs'
 
 // ── THE SPACE ROOT LAYOUT (thin, chrome-free) ───────────────────────────────────────────────────
@@ -87,7 +88,7 @@ export default async function SpaceRootLayout({
   return (
     <>
       <SpaceBreadcrumbs slug={slug} brandName={brandName} manageHref={spaceManageHref(space.type, slug)} />
-      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
+      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)} siteFaces={spacePageSiteFaces(space.preferences)}>
         {children}
       </AccentScope>
     </>
