@@ -111,7 +111,9 @@ if (!existsSync(SERVER_DIR)) {
  *  rasteriser and must not be asked for one. */
 const RASTERISING = /(opengraph-image|twitter-image)/
 const STATIC_IMAGE = /\.(jpg|jpeg|png|gif|webp|avif)\//
-const LIBVIPS = /libvips-cpp\.so/
+// Linux deploys carry .so; local macOS artifacts carry a versioned .dylib.
+// Match the actual native library, not the package directory or its README.
+const LIBVIPS = /(?:^|\/)libvips-cpp(?:\.so(?:\.\d+)*|(?:\.\d+)*\.dylib)$/
 
 const traces = globSync('**/*.nft.json', { cwd: SERVER_DIR })
 if (traces.length === 0) {
