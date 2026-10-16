@@ -2,6 +2,7 @@ import { MENSWORK_PALETTE } from '@/lib/theme/menswork'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { NETWORK_SCHEMES } from '@/lib/theme/network'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
+import type { SiteFacesId } from '@/lib/theme/site-faces'
 
 // THE SITE STYLE (owner ask 2026-10-11, ADR-1726). A Space and its website wear one of four THEMES:
 //
@@ -220,6 +221,13 @@ export function siteLookOverrides(style: SiteStyle): Partial<SiteLook> {
 /** The theme the website wears. */
 export function siteTheme(preferences: unknown): SiteThemeId {
   return readSiteStyle(preferences).theme
+}
+
+/** The website faces a Space page wears: its website's, when the page is synced to a theme with its own. */
+export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
+  const style = readSiteStyle(preferences)
+  if (!style.synced) return null
+  return style.theme === 'network' || style.theme === 'wildheart' ? style.theme : null
 }
 
 /** The font set the SPACE PAGE renders in: the website's while synced, else the Space page's own. */

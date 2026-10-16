@@ -33,6 +33,12 @@
 [data-design="frequency"] [data-space-fonts="accessible"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-atkinson); }
 [data-design="frequency"] [data-space-fonts="modern"] { --space-font-display: var(--font-lexend); --space-font-body: var(--font-nunito); }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-font-display: var(--font-sofia-xc); --space-font-body: var(--font-barlow); }
+/* The website's own faces (lib/theme/site-faces.ts): a page synced to a Network or Wildheart website wears
+   that website's faces, loaded from Google Fonts by components/spaces/accent-scope.tsx, which also names
+   them in the website's own `--font-nw-*` / `--font-wh-*` variables. The stand-in set the root layout
+   carries follows while the sheet loads. */
+[data-design="frequency"] [data-space-fonts="network"] { --space-font-display: var(--font-nw-bricolage), var(--font-lexend); --space-font-body: var(--font-nw-outfit), var(--font-nunito); }
+[data-design="frequency"] [data-space-fonts="wildheart"] { --space-font-display: var(--font-wh-fell), var(--font-playfair); --space-font-body: var(--font-wh-garamond), var(--font-pt-serif); }
 
 /* ══ 0b. THE SPACE'S ACCENT (SCAN-979) ═══════════════════════════════════════════════════════════
    A Space that picked a brand color wears it where the design draws its iridescent fill: the buttons,
@@ -59,6 +65,15 @@
 [data-design="frequency"] [data-space-fonts] [data-space-page] {
   font-family: var(--space-font-body), var(--fq-font-sans);
 }
+/* ONE SET ACROSS THE CHROME TOO (owner 2026-10-16): the facts cards and the tagline speak the Space's faces,
+   so the cover, the body and the side cards read as one Space, the same faces its website wears. */
+[data-design="frequency"] [data-space-fonts] :is(.fqs-card-t, .fqs-date b) {
+  font-family: var(--space-font-display), var(--fq-font-display);
+  letter-spacing: var(--space-display-track, var(--fq-track-h4));
+}
+[data-design="frequency"] [data-space-fonts] :is(.fqs-tagline, .fqs-card-p, .fqs-card-l, .fqs-list, .fqs-event-t) {
+  font-family: var(--space-font-body), var(--fq-font-sans);
+}
 [data-design="frequency"] [data-space-fonts] .fqs-hero h1 {
   font-family: var(--space-font-display), var(--fq-font-display);
   font-size: calc(clamp(32px, 4vw, 46px) * var(--space-display-scale, 1));
@@ -72,8 +87,8 @@
      Unbounded's -0.04em reads as one smudge);
    · --space-display-scale lifts a condensed face, whose narrow letters at Unbounded's sizes read a
      size smaller than the scale means. Every heading size below multiplies by it (default 1). */
-[data-design="frequency"] :is([data-space-fonts="editorial"], [data-space-fonts="classic"]) { --space-display-track: -0.015em; }
-[data-design="frequency"] :is([data-space-fonts="playful"], [data-space-fonts="accessible"], [data-space-fonts="modern"]) { --space-display-track: -0.02em; }
+[data-design="frequency"] :is([data-space-fonts="editorial"], [data-space-fonts="classic"], [data-space-fonts="wildheart"]) { --space-display-track: -0.015em; }
+[data-design="frequency"] :is([data-space-fonts="playful"], [data-space-fonts="accessible"], [data-space-fonts="modern"], [data-space-fonts="network"]) { --space-display-track: -0.02em; }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */
@@ -306,10 +321,14 @@
    the Commons sand under it. Inside it the cover and the tab row are the member chrome, unchanged. */
 [data-design="frequency"] [data-kit="members"].fqs-public{background:var(--fq-surface-card);color:var(--fq-text-body);font-family:var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"].fqs-public>.fqs-wrap{padding-top:var(--fq-space-5);padding-bottom:var(--fq-space-8)}
-/* The body beside its key-facts column; one column below a laptop, the facts after the body. */
-[data-design="frequency"] [data-kit="members"] .fqs-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:48px;align-items:start;margin-top:36px}
+/* THE DAWN PRESENTATION (owner 2026-10-16: "We had a way better design in the Dawn system"). The DAWN page
+   gave the owner's blocks the whole column: cover, tabs, then the page at full width, and the visitor's way
+   in at its foot. A 320px facts column beside the body squeezed every two-cell row (a lead row's side cell
+   fell to ~300px, so a section title broke one word per line). The body now runs the full width again and
+   the key facts sit under it as one band of cards, side by side where they fit. */
+[data-design="frequency"] [data-kit="members"] .fqs-cols{display:grid;grid-template-columns:minmax(0,1fr);gap:56px;align-items:start;margin-top:36px}
 [data-design="frequency"] [data-kit="members"] .fqs-cols>.fqs-pane{margin-top:0}
-[data-design="frequency"] [data-kit="members"] .fqs-aside{display:flex;flex-direction:column;gap:16px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqs-aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px;align-items:stretch;min-width:0;padding-top:40px;border-top:1px solid var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqs-card{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:var(--fq-radius-l);background:var(--fq-surface-raised);box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqs-card.fqs-join{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqs-card-k{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
@@ -331,8 +350,8 @@
 [data-design="frequency"] [data-kit="members"] .fqs-event-t{font:600 var(--fq-text-body-s)/1.3 var(--fq-font-sans);color:var(--fq-text-strong);overflow-wrap:anywhere}
 [data-design="frequency"] [data-kit="members"] .fqs-event:hover .fqs-event-t{text-decoration:underline}
 [data-design="frequency"] [data-kit="members"] .fqs-more{align-self:flex-start;margin-top:4px}
-@media (max-width:1000px){
-[data-design="frequency"] [data-kit="members"] .fqs-cols{grid-template-columns:minmax(0,1fr);gap:40px}}
+@media (max-width:720px){
+[data-design="frequency"] [data-kit="members"] .fqs-cols{gap:40px}}
 [data-design="frequency"] [data-kit="members"] .fqs-notices{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
 [data-design="frequency"] [data-kit="members"] .fqs-notices:empty{display:none}
 [data-design="frequency"] [data-kit="members"] .fqs-hero{position:relative;border-radius:28px;overflow:hidden;min-height:320px;display:flex;align-items:flex-end;background-size:cover}

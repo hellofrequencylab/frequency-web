@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { AccentScope } from '@/components/spaces/accent-scope'
+import { spacePageSiteFaces } from '@/lib/theme/site-style'
 import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
@@ -47,7 +48,7 @@ export default async function PublicSpaceLayout({
   const spaceTheme = spacePageFonts(space.preferences)
 
   return (
-    <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
+    <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)} siteFaces={spacePageSiteFaces(space.preferences)}>
       {children}
     </AccentScope>
   )
