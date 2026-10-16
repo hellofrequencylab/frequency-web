@@ -48,8 +48,8 @@ export function GetStarted({ steps, className }: { steps: GsStep[]; className?: 
           return (
             <div key={s.key} className={s.done ? 'fqm-step done' : now ? 'fqm-step now' : 'fqm-step'}>
               <button type="button" aria-expanded={now} disabled={s.done} onClick={() => setOpen(s.key)}>
-                <span className={now ? 'fqm-mark fq-breathe' : 'fqm-mark'} aria-hidden>
-                  {s.done ? <FqIcon name="checkin" /> : now ? <i /> : null}
+                <span className="fqm-mark" aria-hidden>
+                  {s.done ? <FqIcon name="checkin" /> : now ? <i className="fq-breathe" /> : null}
                 </span>
                 {s.label}
               </button>

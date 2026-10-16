@@ -314,7 +314,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-mark{width:22px;height:22px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--fqm-ink-14);display:flex;align-items:center;justify-content:center}
 [data-design="frequency"] [data-kit="members"] .fqm-step.done .fqm-mark{background:var(--fq-pa);box-shadow:none;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-step.done .fqm-mark svg{width:13px;height:13px}
-[data-design="frequency"] [data-kit="members"] .fqm-step.now .fqm-mark{background:var(--fq-surface-raised);box-shadow:0 0 0 2px var(--fq-x-violet-neon),0 0 14px color-mix(in oklab,var(--fq-x-violet-neon) 60%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-step.now .fqm-mark{background:var(--fq-surface-raised);box-shadow:inset 0 0 0 2px var(--fq-presence),inset 0 0 12px color-mix(in oklab,var(--fq-presence) 20%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqm-step.now .fqm-mark i{width:8px;height:8px;border-radius:50%;background:var(--fq-pa)}
 [data-design="frequency"] [data-kit="members"] .fqm-step-open{display:flex;flex-direction:column;gap:12px;padding:0 0 16px 34px}
 [data-design="frequency"] [data-kit="members"] .fqm-step-open p{margin:0;font:400 var(--fq-text-meta)/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
