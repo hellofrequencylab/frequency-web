@@ -131,7 +131,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // the private Collective report, and the cross-listing settings (LIVE-764, LIVE-765, LIVE-766).
   // `space-email` is the Space Email surface, where the owner sets up a sender on their own domain.
   { key: 'website', label: 'Space website', area: 'operator', routes: ['/hosted/[host]', '/sites/[slug]', '/spaces/[slug]/manage/layout'], core: false },
-  { key: 'collective', label: 'Collective network', area: 'operator', routes: ['/spaces/[slug]/network', '/spaces/[slug]/settings/reach', '/spaces/[slug]/settings/cross-listing'], core: false },
+  { key: 'collective', label: 'Collective network', area: 'operator', routes: ['/spaces/[slug]/network', '/spaces/[slug]/partners', '/spaces/[slug]/settings/reach', '/spaces/[slug]/settings/cross-listing'], core: false },
   { key: 'space-email', label: 'Space email and sender domain', area: 'operator', routes: ['/spaces/[slug]/settings/email'], core: false },
 ]
 

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-246",
+  "wave": "W7",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const NL=String.fromCharCode(10);const blocks=t=>{let o=t;for(;;){const a=o.indexOf(\"/*\");if(a<0)return o;const z=o.indexOf(\"*/\",a);if(z<0)return o.slice(0,a);o=o.slice(0,a)+o.slice(z+2)}};const code=blocks(s).split(NL).filter(l=>l.trim().indexOf(\"//\")!==0).join(NL);const rows=(code.match(/id: .space\\.[a-z]+./g)||[]).length;const kids=(code.match(/parent: ./g)||[]).length;const tops=rows-kids;console.error(\"rows \"+rows+\", parentless \"+tops);process.exit(rows===34&&tops===5?0:1)'",
+      "note": "Comment-stripped so a comment that names parent: cannot inflate the child count. 32 rows is the catalog after hubs and nexuses folded into Spaces (LIVE-242); five parentless boxes remain."
+    }
+  },
+  "append": {
+    "detail": "2026-10-16 (SCAN-982): the probe pin moves 33 -> 34 rows for one new TOOL, space.listings (Collective listings, the first menu door to settings/cross-listing, where an invited partner Space answers a Collective's partner invite). It nests under Reach with a parent, so the five parentless boxes are unchanged, which is the half of this probe that measures the fold."
+  }
+}

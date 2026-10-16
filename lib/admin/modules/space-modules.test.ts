@@ -303,6 +303,7 @@ describe('the five boxes (ADR-1432)', () => {
       'space.airwaves': 'space.content',
       'space.loom': 'space.content',
       'space.reachreceipt': 'space.reach',
+      'space.listings': 'space.reach',
       'space.comms': 'space.reach',
       'space.marketing': 'space.reach',
       'space.emailstyle': 'space.reach',
@@ -340,6 +341,7 @@ describe('the five boxes (ADR-1432)', () => {
     ])
     expect(spaceModuleChildren('space.reach').map((m) => m.id)).toEqual([
       'space.reachreceipt',
+      'space.listings',
       'space.comms',
       'space.marketing',
       'space.emailstyle',

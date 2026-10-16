@@ -1,4 +1,5 @@
 import { collectiveNetworkOpen } from '@/lib/collective/network'
+import { spacePlanTab } from '@/lib/collective/partners'
 import { getCallerProfile } from '@/lib/auth'
 import type { WebRole } from '@/lib/core/roles'
 import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
@@ -180,6 +181,7 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
   // "Start your first circle" empty state stays reachable.
   const canSeeAsOwner = manage.canManage || manage.staffViewing
 
+  const planTab = spacePlanTab(space)
   const autoTabs: (SpaceProfileTab & { key: string })[] = [
     { key: 'home', href: base, label: pages[0]?.label ?? 'Home' },
     ...sections.map((s) => ({ key: `anchor:${s.anchor}`, href: `${base}#${s.anchor}`, label: s.label })),
@@ -191,7 +193,10 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // one thing. Shown only when the Space has upcoming PUBLIC events (the exact set the grid
     // renders), so the tab never opens onto an empty calendar.
     ...(hasCalendarEvents ? [{ key: 'feature:calendar', href: `${base}/calendar`, label: 'Calendar' }] : []),
-    ...(collectiveNetworkOpen(space) ? [{ key: 'feature:network', href: `${base}/network`, label: 'Network' }] : []),
+    // The plan decides one tab, never both (SCAN-982): a Collective is many owners, so it shows
+    // Partners; a Network is one owner's chapters, so it shows Network.
+    ...(planTab === 'partners' ? [{ key: 'feature:partners', href: `${base}/partners`, label: 'Partners' }] : []),
+    ...(planTab === 'network' && collectiveNetworkOpen(space) ? [{ key: 'feature:network', href: `${base}/network`, label: 'Network' }] : []),
     // Memberships (LIVE-509): the Space's tiers, and the door that joins one. Sits high, right after
     // Calendar, because it is the commercial answer to "what is this place" and it was previously
     // reachable ONLY through the one operator-overridable header button. A visitor gets it once the
