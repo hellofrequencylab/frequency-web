@@ -101,8 +101,8 @@ export function FqEventFact({
       <div className="fqm-evh-fact-b">
         <div className="t1">{children}</div>
         {sub && <div className="t2">{sub}</div>}
+        {action}
       </div>
-      {action}
     </div>
   )
 }
