@@ -54,7 +54,10 @@
 [data-design="frequency"] [data-kit="editor"] .fld>.l em, [data-design="frequency"] [data-kit="editor"] .fld>label em{font-style:normal;font-weight:400;color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="editor"] .fld>.l{display:flex;justify-content:space-between}
 /* The shared field form's labels carry the design's character count on the right. */
-[data-design="frequency"] [data-kit="editor"] .fields label:has(>em){display:flex;justify-content:space-between;gap:8px}
+[data-design="frequency"] [data-kit="editor"] .fields label[for]{display:block;margin-bottom:8px}
+[data-design="frequency"] [data-kit="editor"] .fields label:has(>em){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:4px}
+[data-design="frequency"] [data-kit="editor"] .fields label[for]>span{display:block;margin-top:4px;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="editor"] .fields label:has(>em)>span{grid-column:1/-1;margin-top:0}
 [data-design="frequency"] [data-kit="editor"] .fields label>em{font-style:normal;font-weight:400;color:var(--fq-text-faint)}
 /* Theme tab: the theme card's two swatches, the accent choices and the theme's own type sample. */
 [data-design="frequency"] [data-kit="editor"] .theme .sw i[data-swatch="bg"]{background:var(--th-bg)}
@@ -168,7 +171,8 @@
 [data-design="frequency"] [data-kit="editor"] .ih b{font-size:var(--fq-text-body-s)}
 [data-design="frequency"] [data-kit="editor"] .isub{padding:0 10px 8px}
 [data-design="frequency"] [data-kit="editor"] .fields{padding:0 12px 16px}
-[data-design="frequency"] [data-kit="editor"] .fields .fld{gap:6px;padding:8px 0}
+[data-design="frequency"] [data-kit="editor"] .fields .fld{gap:8px;padding:8px 0}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field]>div{padding:10px 0}
 [data-design="frequency"] [data-kit="editor"] .fields :is(input:not([type=checkbox],[type=radio],[type=range],[type=color]),select){min-height:36px;padding:8px 10px}
 [data-design="frequency"] [data-kit="editor"] .fields textarea{padding:8px 10px}
 }
