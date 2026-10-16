@@ -12,7 +12,7 @@ export type Allowance = number | null // a numeric cap, or null = unlimited
 /** Plans that share a rank with a ladder rung (Non Profit and Independent with Business, Non Profit
  *  Collective with Collective). A row MAY give one of them its own number, which wins for that plan;
  *  otherwise it reads its rung. They are never rungs of the displayed ladder themselves. */
-export const SIBLING_PLAN_TIERS: readonly string[] = ['nonprofit', 'independent', 'nonprofit_collective']
+export const SIBLING_PLAN_TIERS: readonly string[] = ['nonprofit', 'independent', 'nonprofit_collective', 'network']
 
 
 // ── THE ONE GO-LIVE MAP OF QUANTITIES (ADR-837) ─────────────────────────────────────────────────────
@@ -58,7 +58,9 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_multi_pipeline: { free: 1, business: 5, collective: null },
   space_vera: { free: 10, business: 200, collective: null },
   space_crm_playbooks: { free: 100, business: 5_000, collective: 5_000 },
-  space_crm_resonance_ai: { free: 10, business: 2_000, collective: 10_000 },
+  // Network (SCAN-956) is not a displayed rung: it reads Collective's numbers except where a row names
+  // it. Vera AI's metered depth is five times Collective's (NETWORK_PLAN.veraMonthlyMatches).
+  space_crm_resonance_ai: { free: 10, business: 2_000, collective: 10_000, network: 50_000 },
   space_collaborators: { free: 0, business: 3, collective: null },
   space_membership_tiers: { free: 1, business: 5, collective: null },
   space_member_benefits: { free: 1, business: null, collective: null },

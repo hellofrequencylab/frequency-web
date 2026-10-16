@@ -19,6 +19,9 @@ import {
   BILLING_MANAGED_KEYS,
   spaceHasCustomDomain,
   limitsWaivedPlan,
+  NETWORK_PLAN,
+  networkCheckoutOpen,
+  networkMonthlyCents,
 } from './plans'
 import {
   deriveGamificationAccess,
@@ -37,13 +40,50 @@ import { PLACEHOLDER_METER_LIMITS, allowanceVerdict } from './feature-meters'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
+describe('the Network plan (SCAN-956): one owner running many chapters, quote only', () => {
+  it('carries the approved numbers', () => {
+    expect(SPACE_PLAN_LABEL.network).toBe('Network')
+    expect(NETWORK_PLAN.monthlyCents).toBe(59_900)
+    expect(NETWORK_PLAN.nonprofitMonthlyCents).toBe(47_900)
+    expect(NETWORK_PLAN.includedChapters).toBe(10)
+    expect(NETWORK_PLAN.extraChapterCents).toBe(4_900)
+    expect(NETWORK_PLAN.maxChapters).toBe(25)
+    expect(NETWORK_PLAN.networkFeeBps).toBe(200)
+    expect(NETWORK_PLAN.centralAdmins).toBe(10)
+    expect(PLACEHOLDER_METER_LIMITS.space_crm_resonance_ai!.network).toBe(NETWORK_PLAN.veraMonthlyMatches)
+  })
+
+  it('prices chapters: ten included, $49 each up to 25, then a quote', () => {
+    expect(networkMonthlyCents(3)).toBe(59_900)
+    expect(networkMonthlyCents(10)).toBe(59_900)
+    expect(networkMonthlyCents(11)).toBe(64_800)
+    expect(networkMonthlyCents(25)).toBe(59_900 + 15 * 4_900)
+    expect(networkMonthlyCents(26)).toBeNull()
+    expect(networkMonthlyCents(10, { nonprofit: true })).toBe(47_900)
+  })
+
+  it('has no checkout until a Stripe price id exists, and says Talk to us', () => {
+    expect(NETWORK_PLAN.stripePriceId).toBeNull()
+    expect(networkCheckoutOpen()).toBe(false)
+    expect(networkCheckoutOpen('price_x')).toBe(true)
+    expect(NETWORK_PLAN.quoteLabel).toBe('Talk to us')
+  })
+
+  it('includes Vera AI and the custom domain, and a waiver never lowers it', () => {
+    expect(planEntitlementKeys('network')).toEqual(expect.arrayContaining(['crm.resonance_ai', 'custom_domain']))
+    expect(spaceHasCustomDomain('network', [])).toBe(true)
+    expect(limitsWaivedPlan('network')).toBe('network')
+  })
+})
+
 describe('space tiers (Community Collective ladder · ADR-811)', () => {
   it('SPACE_PLANS carries Collective again, ranked above the Business depth (ADR-1709)', () => {
-    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective'])
+    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective', 'network'])
     expect(planRank('free')).toBe(0)
     for (const p of ['business', 'nonprofit', 'independent']) expect(planRank(p)).toBe(1)
     expect(planRank('collective')).toBe(2)
     expect(planRank('nonprofit_collective')).toBe(2)
+    expect(planRank('network')).toBe(3) // Network (SCAN-956) ranks above Collective
     expect(planRank('nonsense')).toBe(0)
   })
 

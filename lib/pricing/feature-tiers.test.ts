@@ -41,7 +41,7 @@ import { SPACE_PLANS, type SpacePlan } from './plans'
 
 /** The catalog item each PAID plan is billed from, restated here on purpose: the test asserts the
  *  mapping the module makes rather than importing the module's own private copy of it. */
-const PLAN_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
+const PLAN_ITEM: Record<Exclude<SpacePlan, 'free' | 'network'>, CatalogItemKey> = {
   business: 'business_base',
   nonprofit: 'nonprofit_seat',
   independent: 'independent_base',

@@ -46,7 +46,9 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
 // ADR-811 / ADR-1709: the paid loadout tiers map onto their per-plan switches. Always GATED on
 // billingLive(). Collective and Non Profit Collective share ONE sell switch, `plan_collective_enabled`
 // (Founding Collective, OWN-096): neither sells until member Spaces and the network home work.
-type LoadoutPlan = Exclude<SpacePlan, 'free'>
+// Network is not a loadout plan (SCAN-956): it is quote only until its Stripe prices exist, so it has no
+// sell switch and never reaches checkout.
+type LoadoutPlan = Exclude<SpacePlan, 'free' | 'network'>
 const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
@@ -57,7 +59,7 @@ const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
 
 function asLoadoutPlan(plan: string): LoadoutPlan | null {
   const key = asSpacePlan(plan)
-  return key === 'free' ? null : key
+  return key === 'free' || key === 'network' ? null : key
 }
 
 /** Is a loadout tier sellable right now? billingLive() AND its mapped per-plan switch. GATED,

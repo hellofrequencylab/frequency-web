@@ -177,10 +177,10 @@ export type OrderSource = 'self' | 'network'
 /** The four SPACE rungs a plan can stand on (ADR-1709, LIVE-754). `paid` is Business and Independent (5%);
  *  `collective` is Collective (3%); `nonprofit` is Non Profit and Non Profit Collective (0); `free` is the
  *  default-deny rung only, since a free Space no longer sells (LIVE-753). */
-type TakeRateRung = 'free' | 'paid' | 'collective' | 'nonprofit'
+type TakeRateRung = 'free' | 'paid' | 'collective' | 'network' | 'nonprofit'
 
 /** The rungs in ladder order, top rate first. The enumeration the console and the display readers walk. */
-export const TAKE_RATE_RUNGS: readonly TakeRateRung[] = ['free', 'paid', 'collective', 'nonprofit']
+export const TAKE_RATE_RUNGS: readonly TakeRateRung[] = ['free', 'paid', 'collective', 'network', 'nonprofit']
 
 /** The 0% a seller pays on a sale to their OWN audience, at every rung. A RULE, never a stored rate: it
  *  is declared here so the ladder reads as four outcomes (free / paid / nonprofit / own audience) and it
@@ -208,6 +208,8 @@ export interface NetworkTakeRate {
   paid: number
   /** Collective, its own rung since ADR-1709 (LIVE-754). */
   collective: number
+  /** Network, its own rung (SCAN-956): 2% on sales Frequency sends. */
+  network: number
   /** A verified Non Profit. */
   nonprofit: number
   /** Individual (profile) seller on the FREE Member tier — the reference rate (ADR-914). */
@@ -228,6 +230,7 @@ export const NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {
   free: 1000,
   paid: 500,
   collective: 300,
+  network: 200,
   nonprofit: 0,
   memberFree: 1000,
   member: 800,
@@ -246,6 +249,8 @@ export function takeRateRungForPlan(plan: SpacePlan | string | null | undefined)
       return 'nonprofit'
     case 'collective':
       return 'collective'
+    case 'network':
+      return 'network'
     case 'business':
     case 'independent':
       return 'paid'
@@ -310,6 +315,7 @@ export function networkTakeRateFromStored(stored: StoredTakeRateFields | null | 
     free: bps(vec.free, NETWORK_TAKE_RATE_DEFAULT.free),
     paid: bps(vec.paid, NETWORK_TAKE_RATE_DEFAULT.paid),
     collective: bps(vec.collective, NETWORK_TAKE_RATE_DEFAULT.collective),
+    network: bps(vec.network, NETWORK_TAKE_RATE_DEFAULT.network),
     nonprofit: bps(vec.nonprofit, NETWORK_TAKE_RATE_DEFAULT.nonprofit),
     memberFree: bps(stored?.member_free_bps, NETWORK_TAKE_RATE_DEFAULT.memberFree),
     member: bps(stored?.member_bps, NETWORK_TAKE_RATE_DEFAULT.member),
