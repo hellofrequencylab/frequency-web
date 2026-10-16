@@ -34,19 +34,22 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly nine live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821)', () => {
+  it('holds exactly twelve live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821; three Network items, SCAN-980)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
       'collective_base',
       'collective_space',
       'nonprofit_collective',
+      'network_base',
+      'network_chapter',
+      'nonprofit_network',
       'independent_base',
       'addon_ai',
       'addon_custom_domain',
       'nonprofit_seat',
       'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(9)
+    expect(catalogItems()).toHaveLength(12)
   })
 
   it('the custom domain add-on is $19/mo flat, yearly two months free, not per seat (LIVE-821)', () => {
@@ -97,9 +100,9 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(seat.month.foundingCents).toBe(1200)
     expect(seat.year.listCents).toBe(12000)
     expect(seat.year.foundingCents).toBe(12000)
-    // The two quantity items are the extra member Space and the operator seat; every flat plan/add-on
-    // stays perSeat:false.
-    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'operator_seat'])
+    // The three quantity items are the extra member Space, the extra Network chapter and the operator
+    // seat; every flat plan/add-on stays perSeat:false.
+    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'network_chapter', 'operator_seat'])
   })
 
   it('every item has a founding <= list amount on both intervals', () => {
@@ -141,9 +144,9 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 9 items x 2 intervals x 2 variants = 36 keys', () => {
+  it('allCatalogPriceKeys = 12 items x 2 intervals x 2 variants = 48 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(36)
+    expect(keys).toHaveLength(48)
     expect(keys).toContain('addon_custom_domain_month')
     expect(keys).toContain('addon_custom_domain_year_list')
     expect(keys).toContain('business_base_month')

@@ -65,6 +65,7 @@ describe('planForItemKeys (collapsed · ADR-552; collective/independent · ADR-8
   it('a paid Collective base resolves to collective, never to business or free', () => {
     expect(planForItemKeys(['collective'])).toBe('collective')
     expect(planForItemKeys(['collective', 'collective_space'])).toBe('collective')
+    expect(planForItemKeys(['network', 'network_chapter', 'operator_seat'])).toBe('network')
     expect(planForItemKeys(['collective', 'operator_seat'])).toBe('collective')
     expect(planForItemKeys(['nonprofit_collective'])).toBe('nonprofit_collective')
   })
@@ -86,6 +87,9 @@ describe('planForItemKeys (collapsed · ADR-552; collective/independent · ADR-8
   it('the catalog keys map to their own DB item keys (ADR-1709)', () => {
     expect(itemKeyForCatalogKey('collective_base')).toBe('collective')
     expect(itemKeyForCatalogKey('collective_space')).toBe('collective_space')
+    expect(itemKeyForCatalogKey('network_base')).toBe('network')
+    expect(itemKeyForCatalogKey('nonprofit_network')).toBe('network')
+    expect(itemKeyForCatalogKey('network_chapter')).toBe('network_chapter')
     expect(itemKeyForCatalogKey('nonprofit_collective')).toBe('nonprofit_collective')
   })
 

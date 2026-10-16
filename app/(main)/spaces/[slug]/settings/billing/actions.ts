@@ -74,7 +74,7 @@ export async function setOperatorSeats(slug: string, seats: number): Promise<Act
  *  included; Independent is the flat standalone white-label base; Nonprofit is the flat per-mission
  *  item. All go through the SAME createSpaceLoadoutCheckout, so interval + seat count thread
  *  identically, and each gates on its own per-plan switch inside the checkout. */
-const LOADOUT_PLANS = ['business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective'] as const
+const LOADOUT_PLANS = ['business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective', 'network'] as const
 type LoadoutPlan = (typeof LOADOUT_PLANS)[number]
 function asLoadoutPlan(plan: string | undefined): LoadoutPlan {
   const key = asSpacePlan(plan)

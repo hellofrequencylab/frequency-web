@@ -37,6 +37,8 @@ export const ITEM_KEYS = [
   'collective', // COLLECTIVE base (ADR-1709): collective_base -> 'collective'
   'collective_space', // an extra Collective member Space (ADR-1709), quantity = extra Spaces
   'nonprofit_collective', // NON PROFIT COLLECTIVE base (ADR-1709)
+  'network', // NETWORK base (SCAN-980): network_base and nonprofit_network both -> 'network'
+  'network_chapter', // a chapter past the ten a Network includes (SCAN-980), quantity = extra chapters
   'independent', // INDEPENDENT base (ADR-811): the standalone white-label tier (independent_base -> 'independent')
   'ai',
   'custom_domain', // the custom domain add-on (LIVE-821): addon_custom_domain -> 'custom_domain'
@@ -66,6 +68,8 @@ export function itemKeyForCatalogKey(catalogKey: string | null | undefined): Ite
   if (key === 'collective_base') return 'collective'
   if (key === 'collective_space') return 'collective_space'
   if (key === 'nonprofit_collective') return 'nonprofit_collective'
+  if (key === 'network_base' || key === 'nonprofit_network') return 'network'
+  if (key === 'network_chapter') return 'network_chapter'
   if (key === 'independent_base') return 'independent'
   if (key) {
     const addon = addonKeyForCatalogItem(key)
@@ -119,7 +123,8 @@ export function seatQuantityFromItems(items: readonly ReconciledItem[]): number 
  *  The legacy 'organization' item folds to nonprofit; a 'nonprofit_seat' item -> nonprofit; a
  *  'business' item OR the legacy 'base' (former Pro) item -> business; an empty set -> free. */
 export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
-  // Collective rungs first (ADR-1709): they carry the deepest toolkit.
+  // Network first (SCAN-980), then the Collective rungs (ADR-1709): highest capability wins.
+  if (itemKeys.includes('network')) return 'network'
   if (itemKeys.includes('nonprofit_collective')) return 'nonprofit_collective'
   if (itemKeys.includes('collective')) return 'collective'
   if (itemKeys.includes('independent')) return 'independent'

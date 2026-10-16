@@ -13,7 +13,7 @@ import {
   type EffectiveTier,
   type EntitlementTier,
 } from '@/lib/core/entitlement'
-import { type SpacePlan, asSpacePlan } from '@/lib/pricing/plans'
+import { type SpacePlan, asSpacePlan, NETWORK_PLAN } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
@@ -460,6 +460,9 @@ export const CATALOG_ITEM_KEYS = [
   'collective_base',
   'collective_space',
   'nonprofit_collective',
+  'network_base',
+  'network_chapter',
+  'nonprofit_network',
   'independent_base',
   'addon_ai',
   'addon_custom_domain',
@@ -598,6 +601,30 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Frequency Non Profit Collective',
     perSeat: false,
     ...amountsFromMonthly(11900, 11900), // $119/mo flat
+  },
+  network_base: {
+    // NETWORK (SCAN-980): one owner running many chapters, the rung above Collective. Ten chapters are
+    // included (more ride `network_chapter`), Vera AI is included, the network fee is the 2% rung. Every
+    // figure is NETWORK_PLAN (lib/pricing/plans.ts); the Stripe objects exist (owner "Create all six",
+    // 2026-10-16), so the sync finds them by metadata rather than minting new ones.
+    key: 'network_base',
+    label: 'Frequency Network',
+    perSeat: false,
+    ...amountsFromMonthly(NETWORK_PLAN.monthlyCents, NETWORK_PLAN.monthlyCents),
+  },
+  network_chapter: {
+    // A chapter past the ten a Network includes, up to 25 (SCAN-980). A quantity item.
+    key: 'network_chapter',
+    label: 'Network chapter',
+    perSeat: true,
+    ...amountsFromMonthly(NETWORK_PLAN.extraChapterCents, NETWORK_PLAN.extraChapterCents),
+  },
+  nonprofit_network: {
+    // The Network for a verified 501(c)(3) (SCAN-980). The plan is still `network`; only the base differs.
+    key: 'nonprofit_network',
+    label: 'Frequency Non Profit Network',
+    perSeat: false,
+    ...amountsFromMonthly(NETWORK_PLAN.nonprofitMonthlyCents, NETWORK_PLAN.nonprofitMonthlyCents),
   },
   addon_ai: {
     key: 'addon_ai',
