@@ -124,7 +124,7 @@ export function SiteChrome({
   seasonNow?: { module: string; theme: string | null; next: string | null } | null
   /** The blue admin links ending the menu, and the console link the footer's admin section adds. Only
    *  with a skin. */
-  admin?: { menu: SiteAdminNavLink[]; console: string } | null
+  admin?: { menu: SiteAdminNavLink[]; console: string; check?: string } | null
   /** The owner's global styles that differ from the theme's own (siteLookOverrides, ADR-1728). */
   look?: Partial<Pick<SiteLook, 'corners' | 'spacing' | 'header'>>
   /** The reader's own membership in this Space, an island beside the header button (LIVE-699). */
@@ -146,6 +146,7 @@ export function SiteChrome({
       homeHref={homeHref}
       links={links}
       adminLinks={adminLinks?.menu ?? null}
+      adminCheck={adminLinks?.check ?? null}
       cta={cta}
       logoUrl={logoUrl}
       logoMode={skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
@@ -219,7 +220,7 @@ export function SiteChrome({
           ) : null}
         </div>
       )}
-      {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} />}
+      {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} check={adminLinks.check} />}
       {wild && (
         <div className="hs-footer-ornament">
           <WhOrnament variant="star" />
