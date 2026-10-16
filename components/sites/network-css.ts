@@ -104,6 +104,9 @@ ${N} .hs-admin-nav a{font-size:15px;font-weight:600;color:var(--nw-pop);text-dec
 ${N} .hs-admin-nav a:hover,${N} .hs-admin-nav a[aria-current="page"]{text-decoration:underline}
 ${N} .hs-footer{max-width:none;margin:0;padding:20px max(var(--nw-gutter),calc((100% - 1240px) / 2 + var(--nw-gutter))) 28px;background:var(--nw-ink);border-top:1px solid var(--nw-ink-border);font-size:14px;color:var(--nw-on-ink-subtle)}
 ${N} .hs-footer a{color:var(--nw-on-ink-subtle);font-weight:400}
+${N} .hs-footer a.hs-partner{font-family:var(--nw-body);font-size:13px;padding:7px 14px 7px 11px;border:1px solid var(--nw-ink-border);border-radius:var(--nw-r-pill);background:transparent;color:var(--nw-on-ink-subtle)}
+${N} .hs-footer a.hs-partner b{font-weight:600;color:var(--nw-on-ink)}
+${N} .hs-footer a.hs-partner:hover{border-color:var(--nw-on-ink-subtle);color:var(--nw-on-ink)}
 ${N} .hs-footer-line,${N} .hs-footer-note{color:var(--nw-on-ink-subtle)}
 
 ${M} .mw-wrap{max-width:1240px}
