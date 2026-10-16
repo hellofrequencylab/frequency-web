@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { checkInEvent, type CheckInResult } from '@/app/(main)/events/actions'
 import { FqIcon } from '@/components/frequency/icon'
 import { showZapToast } from '@/components/zap-toast'
+import { checkInWindowOpenAt } from '@/lib/events/checkin-window'
 import { SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 import { checkInSurfaceState, countdownParts, type CheckInSurfaceInput } from '@/lib/events/checkin-surface'
 
@@ -12,25 +13,29 @@ import { checkInSurfaceState, countdownParts, type CheckInSurfaceInput } from '@
  * like they are a part of the theme." Same behaviour as components/events/event-checkin-surface.tsx
  * (the DAWN one, unchanged): the same state machine (`checkInSurfaceState`), the same ticker, the same
  * check-in action and Zap toast, the same door note. Only the look is the kit's: no card at all (the
- * owner's follow-up, 2026-10-14: it sits straight on the page), the numbers large in the display face
- * with tabular figures and the iridescent sweep, larger unit labels, room to breathe, and the live dot
+ * owner's follow-up, 2026-10-14: it sits straight on the page), a supporting clock in the display face
+ * with tabular figures and the iridescent sweep, clear unit labels, and the live dot
  * once the doors are open.
  *
- * `remaining` starts null for the reason the DAWN surface gives: `Date.now()` in render is impure and
- * a server clock hydrates against a client one that has already moved. Until the first tick the
- * clock reads the start instant itself, so it shows its full value rather than flashing zeros.
- * `startsAtMs` arrives through `eventInstant` on the page (ADR-1150), never rebuilt from `starts_at`.
+ * The server supplies its render instant so the first frame already shows a meaningful clock.
+ * The client starts from that same value and ticks after mount, avoiding a blank or zero clock.
+ * Resolved start/end instants follow the canonical door window as time passes; authorization
+ * remains in checkInEvent. `startsAtMs` always arrives through eventInstant (ADR-1150).
  */
 export function FqEventCountdown({
   eventId,
   doorNote,
+  endsAtMs,
+  renderedAtMs,
   ...gates
 }: Omit<CheckInSurfaceInput, 'nowMs'> & {
+  readonly renderedAtMs?: number
+  readonly endsAtMs?: number | null
   readonly eventId: string
   readonly doorNote?: string | null
 }) {
   const { startsAtMs } = gates
-  const [now, setNow] = useState<number | null>(null)
+  const [now, setNow] = useState<number | null>(renderedAtMs ?? null)
   const [result, setResult] = useState<CheckInResult | null>(null)
   const [pending, start] = useTransition()
 
@@ -42,7 +47,7 @@ export function FqEventCountdown({
   }, [])
 
   const nowMs = now ?? (startsAtMs ?? 0)
-  const state = checkInSurfaceState({ ...gates, nowMs })
+  const state = checkInSurfaceState({ ...gates, windowOpen: now === null ? gates.windowOpen : checkInWindowOpenAt(startsAtMs, endsAtMs ?? null, nowMs), nowMs })
   const checkedIn = result?.ok === true || state.kind === 'done'
 
   if (state.kind === 'hidden') return null
@@ -51,7 +56,7 @@ export function FqEventCountdown({
   const earned = result?.zapsAwarded ?? zaps
 
   return (
-    <div className="fqm-evh-cd" aria-live="polite">
+    <div className="fqm-evh-cd">
       {state.kind === 'countdown' && (
         <>
           <span className="k">Starts in</span>

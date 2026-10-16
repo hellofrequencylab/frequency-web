@@ -1957,6 +1957,7 @@ export default async function EventDetailPage({
     // The Space that hosts the event (posted from a Space) → attributed to the Space (null for a personal
     // / circle / standalone event, where the person host above is shown as today).
     spaceHost,
+    venueSpace,
     // Spaces co-hosting via an accepted share (ADR-834) — the featured Collaborators credit.
     collaboratorSpaces,
     myProfileId,
@@ -2320,6 +2321,8 @@ export default async function EventDetailPage({
     cancelled: !!event.is_cancelled,
     checkInEnabled,
     startsAtMs: eventInstant(event.starts_at, eventTz)?.getTime() ?? null,
+    endsAtMs: eventInstant(event.ends_at, eventTz)?.getTime() ?? null,
+    renderedAtMs: salesNow.getTime(),
     windowOpen: checkInWindow,
     signedIn: !!myProfileId,
     // The gate the surface names `isGoing` is "holds a seat", and a succeeded ticket is one
