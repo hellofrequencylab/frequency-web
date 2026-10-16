@@ -4,10 +4,11 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { loadHomeEvents, loadNeedsYou, loadZapBreakdown, type HomeEvents } from '@/lib/feed/frequency-home'
 import { SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
-import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { HOME_TZ } from '@/lib/time/zone'
 import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
 import { Standing, type StandingPractice } from './standing'
+import { loadPracticeWeek } from '@/lib/feed/practice-week-data'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { FeedPlanner } from './planner'
@@ -67,7 +68,7 @@ const SORTS: [FeedSort, string][] = [
 export async function FrequencyFeed(p: FrequencyFeedProps) {
   // The viewer's own active Circles: their own membership rows, so the session client reads them under RLS.
   const supabase = await createClient()
-  const [{ data: memberships }, zapRows, operates] = await Promise.all([
+  const [{ data: memberships }, zapRows, operates, practiceWeek] = await Promise.all([
     supabase
       .from('memberships')
       .select('circle_id, circles!circle_id ( id, name )')
@@ -75,6 +76,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       .eq('status', 'active'),
     loadZapBreakdown(p.profileId),
     hasOperatedSpaces(p.profileId),
+    loadPracticeWeek(p.profileId).catch(() => null),
   ])
   const circles = ((memberships ?? []) as unknown as { circles: { id: string; name: string } | null }[])
     .map((m) => m.circles)
@@ -91,7 +93,6 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
   const hello = partOfDay < 12 ? 'Good morning' : partOfDay < 18 ? 'Good afternoon' : 'Good evening'
   const dateLine = now.toLocaleDateString('en-US', { timeZone: HOME_TZ, weekday: 'long', month: 'long', day: 'numeric' })
   const clock = now.toLocaleTimeString('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()
-  const todayDow = new Date(`${dayInZone(now, HOME_TZ)}T12:00:00Z`).getUTCDay()
   const rankOrder = SEASON_RANKS.find((r) => r.rank === p.standing.rank)?.order ?? 1
   const sort = p.sort === 'nearby' && !p.home ? 'relevant' : p.sort
   const nearby = p.home ? { ...p.home, radiusM: p.radiusM } : null
@@ -114,7 +115,6 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
             <ContextLine eventsP={eventsP} />
           </Suspense>
         </div>
-        <CreateButton />
       </div>
 
       {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
@@ -126,6 +126,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       {/* Hidden on desktop while the right rail shows its full Stats & streaks box (members-shell.css). */}
       <div className="fa-standing">
         <Standing
+          afterStats={<div className="fa-create-footer"><span>For your community</span><div className="fa-create-slot"><CreateButton /></div></div>}
           streak={p.standing.streak}
           loggedToday={p.standing.loggedToday}
           atRisk={p.standing.atRisk}
@@ -141,7 +142,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
           journeysToNext={p.standing.journeysToNext}
           zapRows={zapRows}
           tuneOutHref={p.tuneOutHref}
-          todayDow={todayDow}
+          practiceWeek={practiceWeek}
           practices={p.practices}
         />
       </div>

@@ -1,6 +1,6 @@
 /* Search composition follows Frequency's Commons Search reference: glass, pill field,
    dark active chips, display headings and compact entity rows. Current theme owns colour. */
-.fq-search-panel { background: var(--fq-glass-panel, var(--color-surface)); box-shadow: var(--fq-glass-panel-shadow, var(--design-shadow-lg)); backdrop-filter: blur(24px) saturate(1.2); border-radius: var(--radius-card); }
+.fq-search-panel { background: var(--fq-menu-surface, var(--color-surface)); box-shadow: var(--fq-glass-panel-shadow, var(--design-shadow-lg)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--fq-border-hair, var(--color-border)); border-radius: var(--radius-card); }
 .fq-search-intro { padding: 24px 24px 16px; background: var(--fq-wash, var(--color-surface-elevated)); }
 .fq-search-eyebrow { font-family: var(--design-font-display); font-size: var(--text-2xs); letter-spacing: .14em; text-transform: uppercase; color: var(--color-text-muted); }
 .fq-search-intro h2 { font-family: var(--design-font-display); font-size: var(--fq-text-h3); line-height: 1.3; letter-spacing: -.035em; margin: 12px 0 8px; color: var(--fq-text-strong); }

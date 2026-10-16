@@ -399,3 +399,39 @@
 [data-design="frequency"] .fq-iri-btn {
   box-shadow: 0 0 28px rgba(143, 233, 255, .4), 0 0 70px rgba(163, 212, 255, .22) !important; /* export iri glow in aqua and sky */
 }
+
+/* Mobile cohesion, 2026-10-15. The cooled canvas/sweep above did not move the old violet/magenta
+   action, link and focus roles: semantic UI (including Mindless) still wore the previous scheme.
+   Bind those roles at each palette boundary, so their contrast follows the room's existing
+   presence/on-accent pair. Live, reward, entity tones and authored artwork keep their meaning. */
+:root[data-design="frequency"],
+[data-design="frequency"] [data-surface="stage"],
+[data-design="frequency"][data-surface="stage"],
+[data-design="frequency"] [data-time="night"],
+[data-design="frequency"] [data-skin],
+[data-design="frequency"][data-skin] {
+  --fq-action-primary: var(--fq-presence);
+  --fq-action-primary-hover: color-mix(in oklab, var(--fq-presence) 88%, var(--fq-text-strong));
+  --fq-action-primary-text: var(--fq-text-on-accent);
+  --fq-action-glow: 0 6px 18px -8px color-mix(in oklab, var(--fq-presence) 45%, transparent);
+  --fq-text-link: var(--fq-presence);
+  --fq-focus-ring: var(--fq-presence);
+}
+
+/* The Stage canvas/raised room was cooled above, but its cards and glass retained the UV export.
+   Derive the intermediate surfaces from that same blue-black room, rather than adding a palette. */
+[data-design="frequency"] [data-surface="stage"],
+[data-design="frequency"][data-surface="stage"] {
+  --fq-bg-sunken: color-mix(in oklab, var(--fq-bg-canvas) 90%, var(--fq-ink));
+  --fq-surface-card: color-mix(in oklab, var(--fq-bg-canvas) 55%, var(--fq-surface-raised));
+  --fq-surface-glass: color-mix(in oklab, var(--fq-surface-raised) 65%, transparent);
+}
+
+/* Canonical fields are 15px in both the members kit and the outside-kit fallback. iOS zooms
+   the viewport on focus below 16px. Keep the design's body role for mobile text entry; the
+   important is restricted to these fields because both kits load after the alias layer. */
+@media (max-width: 760px) {
+  :root[data-design="frequency"] :is(input, textarea, select).input {
+    font-size: var(--fq-text-body-size) !important;
+  }
+}
