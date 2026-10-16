@@ -66,7 +66,9 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_member_benefits: { free: 1, business: null, collective: null },
   // New Space meters (LIVE-750, ADR-1709). The Space Circle counts toward space_circles; events count
   // while upcoming; guests are per Event; shop listings on free are inquiries only (selling is LIVE-753).
-  space_circles: { free: 3, business: 10, collective: null },
+  // Circles per Space (owner ruling 2026-10-16, SCAN-981): a free Space runs its Space Circle only,
+  // Business 5, Collective 10, Network unlimited.
+  space_circles: { free: 1, business: 5, collective: 10, network: null },
   space_events: { free: 5, business: null, collective: null },
   space_event_guests: { free: 100, business: null, collective: null },
   space_practice_publish: { free: 5, business: null, collective: null },
