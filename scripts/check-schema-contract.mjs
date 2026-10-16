@@ -155,6 +155,9 @@ export const ALLOWLIST = [
       'LIVE-781: migration 20270346003100_space_domain_purchases.sql creates the domain purchase record (service role only, untyped admin client). lib/database.types.ts has not been regenerated since; this entry retires on the next regeneration after the migration is applied.',
     owner: 'LIVE-781',
   },
+  { file: 'lib/collective/network-tools-store.ts', table: 'network_central_admins', added: '2026-10-16', owner: 'SCAN-983', reason: 'Migration 20270346009300_network_tools.sql creates this service-only table (a Network parent\'s central admins). Retire on public schema regeneration after the migration is applied.' },
+  { file: 'lib/collective/network-tools-store.ts', table: 'network_event_approvals', added: '2026-10-16', owner: 'SCAN-983', reason: 'Migration 20270346009300_network_tools.sql creates this service-only table (chapter event approvals). Retire on public schema regeneration after the migration is applied.' },
+  { file: 'lib/collective/network-tools-store.ts', table: 'add_network_central_admin', kind: 'rpc', added: '2026-10-16', owner: 'SCAN-983', reason: 'Migration 20270346009300_network_tools.sql adds this service-only capped insert under the parent lock. Retire on public schema regeneration after the migration is applied.' },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

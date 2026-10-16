@@ -125,3 +125,7 @@ space_email_domain_operations
 
 # LIVE-767: co-host revenue shares are set by the home Space owner through a server action and read by the ticket checkout and the Reach report; service-only, no browser role.
 event_revenue_splits
+
+# SCAN-983: Network central admins and chapter event approvals are written and read only by server actions that re-check the Network owner or a central admin; service-only, no browser role.
+network_central_admins
+network_event_approvals

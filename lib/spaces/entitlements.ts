@@ -366,6 +366,16 @@ export async function getSpaceCapabilities(
     const membership = await getSpaceMembership(space.id, profileId)
     // Only an ACTIVE membership confers a role (invited/suspended carry none).
     if (membership && membership.status === 'active') memberRole = membership.role
+    // A Network's central admin (SCAN-983) reaches every chapter as admin, never as owner. Asked only when
+    // the person holds no admin role here; one cached read per person, and false for everyone not named.
+    if (!isOwner && memberRole !== 'admin') {
+      try {
+        const { networkCentralAdminReach } = await import('@/lib/collective/network-tools-store')
+        if (await networkCentralAdminReach(space.id, profileId)) memberRole = 'admin'
+      } catch {
+        // Fail-safe: no reach.
+      }
+    }
   }
   // Not owner and no active membership: normally nothing — BUT a platform staff caller (janitor / admin
   // web_role) gets full operator authority over any Space's content. Resolved via a dynamic import so this
