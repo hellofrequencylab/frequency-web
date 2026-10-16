@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-955",
+  "title": "The member event header under Frequency reads calm again: the facts as text lines in the DAWN order, no icon tiles",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "app/(main)/events/[slug]/event-member-page.tsx",
+    "ref": "Owner 2026-10-15 on /events/tg-thrive-on-thursday-2026-10-15 under Frequency: \"The events look like trash with all the icons under the hero. Clean that all up. It used to look good in the dawn system. Let's get that vibe back with the Frequency look and feel.\""
+  },
+  "detail": "SCAN-903 had filled the identity slots of EventDetailTemplate with icon-tile fact rows (date, place, host, cadence, next date, upcoming dates, then the Circle / Space / Journey chips). Under SITE_DESIGN=frequency the slots now carry the DAWN header's structure in Frequency type and tokens. Top to bottom under the title: one line for the date and the time range (the date strong, the time in body colour, a 16px inline calendar mark like DAWN's, no tile); one line for the venue, its address as a quiet link into Maps and a Directions text link, behind a 16px pin mark (an online event reads Online; a hidden address reads the city and the RSVP note); the host as a small meta-size byline (Hosted by ...); the Circle / Space / Journey strip as small text links with the chip borders, fills and icons removed; and for a series one quiet meta line (the cadence, until when, and the next date for a passed anchor) which, when the series has other dates, is the summary of a More dates disclosure opening onto the date chips (the rail's own heading kept for screen readers only). The countdown still sits on the page beside the facts with no card, and the single action row follows with more room above it. Groups sit var(--fq-space-6) apart and lines within a group var(--fq-space-3), the DAWN 2:1 rhythm. Colours are surface and text tokens only, so .dark carries over. FqEventFact keeps its name and the icon prop (now an optional inline mark) and gains FqEventSeries; DAWN renders exactly as before. Filed as SCAN-955 because SCAN-920 was already taken by another row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const pg=r('app/(main)/events/[slug]/event-member-page.tsx');const h=r('components/frequency/members/event/event-header.tsx');const css=r('app/themes/frequency/members-b.css');const bad=[];if(h.includes('fqm-evh-fact-ic')||css.includes('.fqm-evh-fact-ic{')||pg.includes('icon=\\\"host\\\"')||pg.includes('icon=\\\"streak\\\"')||pg.includes('sub={fqTimeLine}'))bad.push('the facts still stack as icon-tile rows');if(!pg.includes('className=\\\"fqm-evh-by\\\"'))bad.push('the host is not a small byline');if(!pg.includes('fqm-evh-addr')||!pg.includes('Directions'))bad.push('the venue line has no quiet address link with Directions');if(!h.includes('export function FqEventSeries')||!h.includes('More dates')||!pg.includes('<FqEventSeries')||!css.includes('.fqm-evh-more'))bad.push('the series facts are not folded into one line with a More dates disclosure');if(!pg.includes('fqm-evh-belong')||!css.includes('.fqm-evh-belong a svg{display:none}'))bad.push('Circle, Space and Journey are not small text links');if(!/\\\\.fqm-evh \\\\.event-identity-layout>div:first-child\\\\{[^}]*gap:var\\\\(--fq-space-6\\\\)/.test(css))bad.push('the facts lack the calmer DAWN rhythm');if(!pg.includes('<CalendarDays className=\\\"w-4 h-4 text-primary-strong shrink-0\\\" />')||!pg.includes('<EventCheckInSurface {...checkInGates} />'))bad.push('the DAWN header changed');if(bad.length){console.error('SCAN-955: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

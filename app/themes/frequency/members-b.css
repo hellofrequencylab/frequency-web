@@ -242,7 +242,7 @@
    title area. Also, the countdown timers don't seem like they are a part of the theme.") ─────────────────────
    app/(main)/events/[slug]/event-member-page.tsx under Frequency, wrapped in .fqm-evh; the pieces are
    components/frequency/members/event/event-header.tsx and event-countdown.tsx. The original layout stays
-   (FQ_EVENT_KIT_LAYOUT is off): cover, kicker, title, the facts beside the countdown card, one action row.
+   (FQ_EVENT_KIT_LAYOUT is off): cover, kicker, title, the facts beside the countdown, one action row.
    Unlayered, like the public event rules above, so it outranks the template's own utilities on this page.
    A literal is the design's own geometry with no token (a blur radius, the cover's height cap) (token-ok). */
 /* The cover, whole: the art contained over a blurred copy of itself, never cropped through its lettering. */
@@ -258,15 +258,54 @@
 [data-design="frequency"] [data-kit="members"] .fqm-evh header .h1{font-size:clamp(var(--fq-text-h3),4.2vw,var(--fq-text-h2));line-height:1.08;letter-spacing:-.04em;text-wrap:balance}
 [data-design="frequency"] [data-kit="members"] .fqm-evh header .h1 input{font:inherit;letter-spacing:inherit;line-height:inherit}
 [data-design="frequency"] [data-kit="members"] .fqm-evh header .k{display:block}
-/* The facts list: an icon tile, the fact, a quieter second line, and Directions at the end of the place. */
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact{display:flex;align-items:center;gap:var(--fq-space-4);margin:0;padding:var(--fq-space-2) 0}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-ic{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:var(--fq-radius-s);background:var(--fq-pa-soft);color:var(--fq-accent);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-ic .fq-icon{width:18px;height:18px}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--fq-space-1)}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b .t1 a{font-weight:600;color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b .t1 a:hover{color:var(--fq-accent)}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b .t1 p{margin:0}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{flex:none}
+/* The facts, calm again (SCAN-955; owner, 2026-10-15: "The events look like trash with all the icons under
+   the hero. Clean that all up. It used to look good in the dawn system."). The DAWN header's structure in
+   Frequency type: text lines with no tiles, the date and time on one line, the venue with its address as a
+   quiet link and Directions on one line, the host as a small byline, the Circle / Space / Journey as small
+   text links, the series as one quiet line opening onto a "More dates" disclosure. Generous room between
+   the groups, the DAWN rhythm. Surface and text tokens only, so the .dark palette carries over untouched.
+   The two inline marks are sized to the text (16px, the DAWN mark), not tiles (token-ok). */
+[data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-layout>div:first-child{display:flex;flex-direction:column;gap:var(--fq-space-6);font:400 var(--fq-text-body-size)/1.5 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-layout>div:first-child>div{display:flex;flex-direction:column;gap:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-layout>div:first-child>*,[data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-layout>div:first-child>div>*{margin:0}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact{display:flex;align-items:flex-start;gap:var(--fq-space-3);margin:0;padding:0}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-mk{flex:none;width:16px;height:16px;margin-top:var(--fq-space-2);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--fq-space-3);row-gap:var(--fq-space-1)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b>*+*::before{content:"\00B7";display:inline-block;margin-right:var(--fq-space-3);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact.is-when{font-weight:500;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact.is-when .fqm-evh-fact-mk{color:var(--fq-text-link)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact.is-when .fqm-evh-q{font-weight:400;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-venue{font-weight:500;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-q{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] a.fqm-evh-addr{text-decoration:none}
+[data-design="frequency"] [data-kit="members"] a.fqm-evh-addr:hover{color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{flex:none;font-weight:500;color:var(--fq-text-link);text-decoration:none}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-dir:hover{text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-by{font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-by p{margin:0}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-by a{font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-by a:hover{color:var(--fq-text-link)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong>div{gap:var(--fq-space-2) var(--fq-space-4)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong>div>span{font-size:var(--fq-text-meta);font-weight:400;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong a{gap:var(--fq-space-2);padding:0;border:0;border-radius:0;background:none;font-size:var(--fq-text-meta)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong a svg{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong a span{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong a span:last-child{font-weight:500;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-belong a:hover span:last-child{color:var(--fq-text-link);text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-fact.is-series{font-size:var(--fq-text-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more{display:block}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more>summary{cursor:pointer;list-style:none}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more>summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more-t{font-weight:500;color:var(--fq-text-link)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more-t::after{content:" \25BE"}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more[open] .fqm-evh-more-t::after{content:" \25B4"}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more>section{margin-top:var(--fq-space-4)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more ul{margin:0;gap:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more li>a,[data-design="frequency"] [data-kit="members"] .fqm-evh-more li>span{padding:var(--fq-space-2) var(--fq-space-4);border:0;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);font-size:var(--fq-text-meta);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more li>a:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-more li>span[aria-current]{background:var(--fq-surface-card);font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-evh .fqm-evh-act{padding-top:var(--fq-space-5)}
 /* The countdown, straight on the page (owner, 2026-10-14: no card, no border, no shadow): the numbers at the
    display step in the display face with tabular figures and the iridescent sweep, the unit labels a step up
    from the kit label, generous room between units and above and below the block, the live dot once the
@@ -317,7 +356,6 @@
 [data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-layout>div:first-child{flex:1 1 22rem;min-width:0}
 [data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-aside{flex:0 1 16rem;width:auto;min-width:0;max-width:100%}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-fact-b{overflow-wrap:anywhere}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{align-self:flex-start;min-height:36px;padding-inline:0;white-space:normal;text-align:left}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cd{min-width:0;width:100%;padding:var(--fq-space-4) 0;gap:var(--fq-space-3);border-top:1px solid var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cd-n{display:flex;flex-wrap:wrap;gap:var(--fq-space-5);max-width:100%}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cd-u{gap:var(--fq-space-2);min-width:0}
@@ -330,3 +368,5 @@
  [data-design="frequency"] [data-kit="members"] .fqm-evh .event-identity-aside{flex-basis:100%}
  [data-design="frequency"] [data-kit="members"] .fqm-evh-cd-facts{flex-direction:row;flex-wrap:wrap;gap:var(--fq-space-3)}
 }
+/* SCAN-955: on a phone the quiet Directions link keeps the 36px touch target SCAN-945 gave it. */
+@media (max-width:640px){[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{display:inline-flex;align-items:center;min-height:36px}}

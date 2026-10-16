@@ -6,7 +6,8 @@ import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 // THE EVENT HEADER, FREQUENCY PIECES (SCAN-903). The member event page keeps the original
 // EventDetailTemplate layout under Frequency (FQ_EVENT_KIT_LAYOUT is off by owner ruling, 2026-10-14),
 // so these are not a second layout: they are the nodes the page hands that template's slots when the
-// design is Frequency. The cover, one fact row, and the action row. DAWN never renders this file.
+// design is Frequency. The cover, the facts as text lines (SCAN-955), and the action row. DAWN never
+// renders this file.
 //
 // Owner, 2026-10-14: "I feel like we can do better on the event listing header and title area." The
 // flyer was cropped through its own lettering, the title was oversized with the buttons floating
@@ -79,31 +80,42 @@ export function FqEventCover({
   )
 }
 
-/** One line of the facts list: an icon tile, the fact, an optional quieter second line and an
- *  optional trailing action (Directions). */
+/** One line of the facts block (SCAN-955). Owner, 2026-10-15: "The events look like trash with all
+ *  the icons under the hero. Clean that all up. It used to look good in the dawn system." So the
+ *  facts are text again, read the way the DAWN header reads them: no tile, no column of glyphs. The
+ *  date and the place carry the same two small inline marks DAWN gives them (a calendar and a pin),
+ *  sized to the text and drawn in its colour; every other line passes no icon and is pure text. */
 export function FqEventFact({
   icon,
   children,
-  sub,
-  action,
+  className,
 }: {
-  icon: FqIconName
+  icon?: FqIconName
   children: ReactNode
-  sub?: ReactNode
-  action?: ReactNode
+  className?: string
 }) {
   return (
-    <div className="fqm-evh-fact">
-      <span className="fqm-evh-fact-ic">
-        <FqIcon name={icon} />
-      </span>
-      {/* Divs, not spans: the host line arrives as a <p> (the DAWN line's own markup). */}
-      <div className="fqm-evh-fact-b">
-        <div className="t1">{children}</div>
-        {sub && <div className="t2">{sub}</div>}
-        {action}
-      </div>
+    <div className={className ? `fqm-evh-fact ${className}` : 'fqm-evh-fact'}>
+      {icon && <FqIcon name={icon} className="fqm-evh-fact-mk" />}
+      {/* A div, not a span: the host line arrives as a <p> (the DAWN line's own markup). */}
+      <div className="fqm-evh-fact-b">{children}</div>
     </div>
+  )
+}
+
+/** The series facts folded into one quiet line (SCAN-955): the cadence, its end and the next date
+ *  read as one sentence, and when the series has other dates the line itself is the summary of a
+ *  small "More dates" disclosure that opens onto them. Nothing about the series stacks any more. */
+export function FqEventSeries({ line, dates }: { line: ReactNode; dates: ReactNode }) {
+  if (!dates) return <FqEventFact className="is-series">{line}</FqEventFact>
+  return (
+    <details className="fqm-evh-fact is-series fqm-evh-more">
+      <summary className="fqm-evh-fact-b">
+        <span>{line}</span>
+        <span className="fqm-evh-more-t">More dates</span>
+      </summary>
+      {dates}
+    </details>
   )
 }
 
