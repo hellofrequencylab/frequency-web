@@ -2,8 +2,9 @@
 // Retreat | About (Blue after this) | ADMIN: Executive Overview", then "Add blue admin section to the footer
 // as well with a link to Executive Overview" and "Make the Year Calendar a blue admin link"). A Menswork
 // website ends its one menu with these, in the theme's blue, and repeats them in a blue footer section. They
-// show for everyone; the admin pages themselves are gated (lib/sites/site-admin.ts), so a visitor who taps
-// one is sent to sign in.
+// show only to the Space's admins (SCAN-970): the cached page asks `check` after it loads
+// (site-admin-gate.tsx), and the admin pages themselves stay gated (lib/sites/site-admin.ts).
+import { SiteAdminOnly } from './site-admin-gate'
 
 export interface SiteAdminNavLink {
   href: string
@@ -20,13 +21,15 @@ export interface SiteAdminNavLink {
  *  sites' operating pages, not a Network site's (owner ruling 2026-10-14). Its header draws the link as its
  *  own admin chip, apart from the site's menu (components/sites/network-css.ts). */
 export function siteAdminNavLinks(
-  hrefs: { overview: string; calendar: string; editor?: string; console: string },
+  hrefs: { overview: string; calendar: string; editor?: string; console: string; check?: string },
   current: 'overview' | 'calendar' | 'editor' | null = null,
   theme?: 'wildheart' | 'network',
-): { menu: SiteAdminNavLink[]; console: string } {
+): { menu: SiteAdminNavLink[]; console: string; check?: string } {
   const wild = theme === 'wildheart'
-  if (theme === 'network') return { menu: hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor' }] : [], console: hrefs.console }
+  const check = hrefs.check ? { check: hrefs.check } : {}
+  if (theme === 'network') return { menu: hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor' }] : [], console: hrefs.console, ...check }
   return {
+    ...check,
     menu: [
       ...(hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor', footerOnly: wild }] : []),
       { href: hrefs.overview, label: 'Executive Overview', current: current === 'overview', ...(wild ? { label: 'Vision' } : {}) },
@@ -36,9 +39,10 @@ export function siteAdminNavLinks(
   }
 }
 
-/** The blue admin section above the footer line. */
-export function SiteFooterAdmin({ links, console }: { links: SiteAdminNavLink[]; console: string }) {
+/** The blue admin section above the footer line, drawn only for a reader `check` confirms as an admin. */
+export function SiteFooterAdmin({ links, console, check }: { links: SiteAdminNavLink[]; console: string; check?: string | null }) {
   return (
+    <SiteAdminOnly check={check}>
     <div className="hs-admin">
       <div className="hs-admin-in">
         <span className="hs-admin-tag">Admin</span>
@@ -52,5 +56,6 @@ export function SiteFooterAdmin({ links, console }: { links: SiteAdminNavLink[];
         </nav>
       </div>
     </div>
+    </SiteAdminOnly>
   )
 }

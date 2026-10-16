@@ -24,6 +24,8 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import type { FeatureGrid, Offering } from '@/lib/pricing/pricing-grid'
+import { PlanPeriodScope, PlanPeriodSwitch } from './plan-period'
+import { CollectiveOrNetwork, FeeBars, TierLadder, feeBars, ladderSteps } from './tier-graphics'
 
 type Faq = { q: string; a: string }[]
 
@@ -52,6 +54,9 @@ interface PlanCardView {
   name: string
   who: string
   price: string
+  /** The yearly price, shown when the switch is on Yearly. Absent (free, or set by the Space): the
+   *  monthly price stands for both. */
+  yearly?: string | null
   /** The struck list price where the config carries a beta anchor ("$29"), else null. */
   anchor?: string | null
   points: string[]
@@ -66,6 +71,7 @@ function offeringView(o: Offering, hue: string): PlanCardView {
     name: o.label,
     who: o.tagline,
     price: o.monthly,
+    yearly: o.yearly,
     anchor: o.listAnchor,
     points: [o.billing, o.trial, o.betaNote, o.takeRate].filter((x): x is string => Boolean(x)),
     detail: o.forWho,
@@ -83,15 +89,36 @@ const BUYING: Omit<PlanCardView, 'hue'> = {
   points: ['Payment goes straight to the host', 'Hosts can refund a ticket'],
 }
 
+/** A card's price row. With `show`, it is one of the card's two periods and the kit CSS shows it only
+ *  while the switch is on that period; without it the figure stands for both. */
+function PriceBlock({ label, anchor, show }: { label: string; anchor?: string | null; show?: 'month' | 'year' }) {
+  const { lead, amount, per } = splitPrice(label)
+  // A figure or a one-word price ("Free") takes the display size; a phrase ("Set by the Space") steps down.
+  const big = /\d/.test(amount) || !/\s/.test(amount)
+  return (
+    <div className={big ? 'pb-price' : 'pb-price is-text'} data-period-show={show}>
+      {anchor && (
+        <s className="pb-was">
+          <span className="sr-only">Was </span>
+          {anchor}/mo
+        </s>
+      )}
+      <span className="pb-fig">
+        {lead && <span className="pb-lead">{lead}</span>}
+        <span className="pb-amt">{amount}</span>
+        {per && <span className="pb-per">{per}</span>}
+      </span>
+    </div>
+  )
+}
+
 /** One plan card, in five named rows: head, price, points, detail, CTA. Inside a plan row the rows
  *  are a subgrid, so every card lines its price, its list and its button up with its neighbours (a
  *  flex column with the CTA pinned to the bottom where subgrid is missing). The price is sized off the
  *  card's own width (a container query), and wraps rather than clips. The featured plan, read off
  *  `Offering.featured`, wears the kit's iridescent rim and the "Recommended" flag the DAWN card uses. */
 function PlanCard({ view }: { view: PlanCardView }) {
-  const { lead, amount, per } = splitPrice(view.price)
-  // A figure or a one-word price ("Free") takes the display size; a phrase ("Set by the Space") steps down.
-  const big = /\d/.test(amount) || !/\s/.test(amount)
+  const year = view.yearly ?? null
   return (
     <div className={`pop pb-plan${view.featured ? ' is-feat' : ''}`} style={vars({ '--fq-pc': view.hue })}>
       <span className="pglow" />
@@ -103,19 +130,14 @@ function PlanCard({ view }: { view: PlanCardView }) {
           </div>
           <p className="pb-who">{view.who}</p>
         </header>
-        <div className={big ? 'pb-price' : 'pb-price is-text'}>
-          {view.anchor && (
-            <s className="pb-was">
-              <span className="sr-only">Was </span>
-              {view.anchor}/mo
-            </s>
-          )}
-          <span className="pb-fig">
-            {lead && <span className="pb-lead">{lead}</span>}
-            <span className="pb-amt">{amount}</span>
-            {per && <span className="pb-per">{per}</span>}
-          </span>
-        </div>
+        {year ? (
+          <>
+            <PriceBlock label={view.price} anchor={view.anchor} show="month" />
+            <PriceBlock label={year} show="year" />
+          </>
+        ) : (
+          <PriceBlock label={view.price} anchor={view.anchor} />
+        )}
         <ul className="pb-pts">
           {view.points.map((p) => (
             <li key={p}>{p}</li>
@@ -160,11 +182,15 @@ export function FrequencyPricing({
   spaces,
   grid,
   faq,
+  yearlyNote,
 }: {
   members: Offering[]
   spaces: Offering[]
   grid: FeatureGrid
   faq: Faq
+  /** The yearly line under the Monthly / Yearly switch (annualDiscountNote), so the page never states
+   *  a discount the charge does not apply. */
+  yearlyNote: string
 }) {
   const planCount = COUNT_WORD[spaces.length] ?? String(spaces.length)
   // The matrix columns are the Space offerings: each header carries its price, and the featured plan's
@@ -198,47 +224,89 @@ export function FrequencyPricing({
         </div>
       </section>
 
-      <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
-        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
-        <div className="wrap">
-          <div className="sh">
-            <div className="label">
-              <b>Plans</b>One price per plan
+      <PlanPeriodScope>
+        <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
+          <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+          <div className="wrap">
+            <div className="sh">
+              <div className="label">
+                <b>Plans</b>One price per plan
+              </div>
+              <h2 className="h-l">{`${planCount} plans. Start free.`}</h2>
+              <p className="pb-note">{PLAN_STORY.paid}</p>
             </div>
-            <h2 className="h-l">{`${planCount} plans. Start free.`}</h2>
-            <p className="pb-note">{PLAN_STORY.paid}</p>
-          </div>
-          <div className="pb-row">
-            <div className={`pb-plans n${spaces.length}`}>
-              {spaces.map((o, i) => (
-                <PlanCard key={o.id} view={offeringView(o, HUES[i % HUES.length]!)} />
-              ))}
+            <PlanPeriodSwitch note={yearlyNote} />
+            <div className="pb-row">
+              <div className={`pb-plans n${spaces.length}`}>
+                {spaces.map((o, i) => (
+                  <PlanCard key={o.id} view={offeringView(o, HUES[i % HUES.length]!)} />
+                ))}
+              </div>
             </div>
+            <p className="pb-note">{PLAN_STORY.selling}</p>
           </div>
-          <p className="pb-note">{PLAN_STORY.selling}</p>
-        </div>
-      </section>
+        </section>
 
-      <section className="sec pb-sec" id="people" data-screen-label="02b For people">
-        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
-        <div className="wrap">
-          <div className="sh">
-            <div className="label">
-              <b>For people</b>Joining and hosting
+        <section className="sec pb-sec" id="collective-or-network" data-screen-label="02a Collective or Network">
+          <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+          <div className="wrap">
+            <div className="sh">
+              <div className="label">
+                <b>Which plan</b>One Space to a whole network
+              </div>
+              <h2 className="h-l">Run one Space, partner with others, or run a whole network.</h2>
+              <p className="pb-note">
+                Collective is for separate groups that partner: each keeps its own members, payouts and settings, and you
+                share a calendar and cross-list each other&apos;s Circles and Journeys. Network is for one organization with
+                chapters: one membership works in every chapter, central admins see the whole network, and each chapter
+                leader runs their own.
+              </p>
             </div>
-            <h2 className="h-l">Everything for people is free.</h2>
-            <p className="pb-note">{PLAN_STORY.crew}</p>
+            <div className="tg-row">
+              <div className="tg-card">
+                <TierLadder steps={ladderSteps(spaces)} />
+              </div>
+            </div>
+            <div className="tg-row two">
+              <div className="tg-card">
+                <h3>Collective or Network?</h3>
+                <p>Ask who owns the Spaces. Different owners working together is a Collective. One owner with chapters is a Network.</p>
+                <CollectiveOrNetwork />
+              </div>
+              <div className="tg-card">
+                <h3>What you pay on sales</h3>
+                <p>{`The fee is only on a customer Frequency introduces, charged once. Your own people are 0% on every plan, ${PLAN_STORY.plusProcessing}.`}</p>
+                <FeeBars bars={feeBars(spaces)} />
+              </div>
+            </div>
+            <p className="pb-note">
+              <Link href="/networks">See how a Network works</Link>
+            </p>
           </div>
-          <div className="pb-row">
-            <div className={`pb-plans n${members.length + 1}`}>
-              {members.map((o, i) => (
-                <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
-              ))}
-              <PlanCard view={{ ...BUYING, hue: 'var(--fq-x-magenta-neon)' }} />
+        </section>
+
+        <section className="sec pb-sec" id="people" data-screen-label="02b For people">
+          <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+          <div className="wrap">
+            <div className="sh">
+              <div className="label">
+                <b>For people</b>Joining and hosting
+              </div>
+              <h2 className="h-l">Everything for people is free.</h2>
+              <p className="pb-note">{PLAN_STORY.crew}</p>
+            </div>
+            <PlanPeriodSwitch note={yearlyNote} />
+            <div className="pb-row">
+              <div className={`pb-plans n${members.length + 1}`}>
+                {members.map((o, i) => (
+                  <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
+                ))}
+                <PlanCard view={{ ...BUYING, hue: 'var(--fq-x-magenta-neon)' }} />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </PlanPeriodScope>
 
       <section className="sec pb-sec" id="features" data-screen-label="03 Features by plan">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />

@@ -104,6 +104,19 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'For partners, investors, civic leaders and press. The vision for Frequency third spaces: the first is planned to open in 2028, and nothing is bookable yet.',
     crumbs: [{ name: 'Vision', path: '/vision' }],
   },
+  networks: {
+    path: '/networks',
+    title: 'Networks: run every chapter as one organization',
+    description:
+      'For organizations with chapters: one membership in every chapter, central admins, chapter leaders, one calendar and a roll-up report.',
+    shareTitle: 'Frequency Networks: run every chapter as one organization',
+    headline: 'Run every chapter as one organization.',
+    lede: 'For organizations with chapters, circles or local teams. Each chapter runs its own day. You see the whole network.',
+    crumbs: [
+      { name: 'Pricing', path: '/pricing' },
+      { name: 'Networks', path: '/networks' },
+    ],
+  },
 } as const satisfies Record<string, FrequencyPageSeo>
 
 /** The page's Metadata under Frequency: title, description, canonical, OpenGraph and X card, all from

@@ -20,6 +20,7 @@ const BODIES: Record<keyof typeof FREQUENCY_PAGE_SEO, string> = {
   features: 'components/frequency/site/pages/features/frequency-features.tsx',
   stories: 'components/frequency/site/pages/stories/frequency-stories.tsx',
   vision: 'components/frequency/site/pages/vision/frequency-vision.tsx',
+  networks: 'components/frequency/site/pages/networks/frequency-networks.tsx',
 }
 
 /** The body's source as the reader sees it: JSX tags and braces removed, whitespace collapsed. */

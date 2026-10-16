@@ -25,7 +25,7 @@ function mount(extra: Partial<React.ComponentProps<typeof WebsiteEditorShell>> =
 it('keeps home escape doors visible and opens the header surface from the canvas', () => {
  const { node, click } = mount()
  expect(node.querySelector('a[aria-label="Website home"]')?.getAttribute('href')).toBe('https://hearts.example/')
- expect(node.querySelector('a[aria-label="Back to Space home"]')?.getAttribute('href')).toBe('https://frequency.example/spaces/hearts')
+ expect(node.querySelector('a[aria-label="Back to website"]')?.getAttribute('href')).toBe('https://hearts.example/')
  click('Select header'); expect(node.textContent).toContain('Editing header chrome')
 })
 it('Vera rewrites the selected nested card and preserves its sibling on save', async () => {
