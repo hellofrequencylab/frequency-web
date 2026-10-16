@@ -1,5 +1,7 @@
 'use client'
 
+import { CompactSetup, type SetupChoice } from './compact-setup'
+
 // Mindless — the ONE practice-timer door (ADR-229, docs/ON-AIR.md). The same On
 // Air session, launchable from anywhere via the header / Zap menu / practice
 // pages, layered over the whole site instead of routed to.
@@ -59,6 +61,10 @@ function writeLastMode(mode: TimerMode): void {
  *  passes BOTH `resumeFromSec` (how far the partial sit already got) and `secondsTarget` (the
  *  practice's full length): the timer then runs only the REMAINING time and reports the TOTAL. */
 export interface MindlessOpenOpts {
+  /** Explicit custom length from the unified setup. Authored locked durations still win. */
+  minutesOverride?: number
+  /** Opens existing detailed controls rather than the compact door. */
+  advanced?: boolean
   practiceId?: string
   /** Force Get Moving on this movement sub-mode (a movement practice / the Movement entry). */
   mode?: MovementMode
@@ -109,6 +115,8 @@ type OverlayState =
   | { phase: 'closed' }
   | {
       phase: 'loading'
+      setup?: boolean
+      minutesOverride?: number
       practiceId?: string
       movementMode?: MovementMode
       resume?: ResumeInfo
@@ -124,6 +132,8 @@ type OverlayState =
     }
   | {
       phase: 'ready'
+      setup?: boolean
+      minutesOverride?: number
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
@@ -220,6 +230,11 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   // The open implementation. `forceMode` is the crash-recovery override (open Get Moving so the
   // Movement engine, which owns the saved 'movement' record, mounts and re-prompts).
   const openInternal = useCallback((opts?: MindlessOpenOpts, forceMode?: TimerMode) => {
+    // Reopening a generic door while a run is banked must mount its recovery engine immediately.
+    if (!forceMode && !opts?.autoStart && !opts?.practiceId) {
+      if (loadLiveSession('movement')) forceMode = 'move'
+      else if (loadLiveSession('mindless')) forceMode = 'still'
+    }
     // Go fullscreen straight from the click that opened the overlay — fullscreen is
     // gesture-gated, so it has to ride the same tap, not a later effect (C.1-3).
     // Best-effort: iOS Safari no-ops and the dvh takeover is the fallback.
@@ -244,6 +259,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     // and forces a mode); a recovered session must surface its own Resume prompt, not auto-run.
     setState({
       phase: 'loading',
+      setup: !forceMode && !opts?.autoStart && !opts?.advanced && !resume,
+      minutesOverride: opts?.minutesOverride,
       practiceId: hasQueue ? queueIds[0] : opts?.practiceId,
       movementMode: opts?.mode,
       resume,
@@ -302,6 +319,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       writeLastMode(mode)
       setState({
         phase: 'ready',
+        setup: state.setup,
+        minutesOverride: state.minutesOverride,
         data: result.data,
         mode,
         practiceId: requestedPracticeId,
@@ -364,7 +383,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   // Esc closes the loading / error / empty states (the live session has its
   // own close affordances and shouldn't be torn out of a sit by a stray key).
   useEffect(() => {
-    if (state.phase === 'closed' || (state.phase === 'ready' && state.data.practices.length > 0)) return
+    if (state.phase === 'closed' || (state.phase === 'ready' && !state.setup && state.data.practices.length > 0)) return
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') close()
     }
@@ -373,6 +392,13 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   }, [state, close])
 
   const api = useMemo<MindlessApi>(() => ({ open, close }), [open, close])
+
+  function configured(choice: SetupChoice, advanced = false) {
+    setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
+      practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: !advanced,
+      movementMode: choice.mode === 'move' ? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode : undefined,
+      data: { ...s.data, defaultPracticeId: choice.practiceId } }))
+  }
 
   return (
     <MindlessContext.Provider value={api}>
@@ -401,7 +427,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           </div>
         </MindlessShell>
       )}
-      {state.phase === 'ready' &&
+      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} rememberedMinutes={state.data.prefs.minutes} onStart={configured} onAdvanced={(choice) => configured(choice, true)} onClose={close} />}
+      {state.phase === 'ready' && !state.setup &&
         (state.data.practices.length === 0 ? (
           <MindlessShell onClose={close}>
             <div className="flex min-h-[60vh] flex-col items-center justify-center">
@@ -423,6 +450,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         ) : state.mode === 'move' ? (
           <MovementSession
             // Loaded ONCE by the provider; passed to both engines so toggling is instant.
+            minutesOverride={state.minutesOverride}
             practices={state.data.practices}
             defaultPracticeId={state.data.defaultPracticeId}
             // The Movement sub-mode to open on: the forced one (a movement practice / Movement
@@ -454,6 +482,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           />
         ) : (
           <OnAirSession
+            minutesOverride={state.minutesOverride}
             practices={state.data.practices}
             defaultPracticeId={state.data.defaultPracticeId}
             // The explicitly-requested practice (a practice-button launch): an explicit log-only

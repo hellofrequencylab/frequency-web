@@ -43,7 +43,7 @@ export default async function OnAirPage({
     if (SITE_DESIGN === 'frequency') return <MindlessEmpty />
     return (
       <FocusTemplate
-        eyebrow="The Quest"
+        eyebrow="Mindless"
         title="Mindless"
         description="The world can wait a few minutes. Breathe, log, collect the day."
         width="narrow"
