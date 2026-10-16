@@ -5,6 +5,7 @@
 // Pure server read; extracted verbatim from app/(main)/events/page.tsx so behavior
 // is unchanged (mirrors lib/circles/index-data.ts).
 
+import type { HostSpaceEmbed } from '@/lib/events/platform-credit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { nearbyEvents } from '@/lib/events/geocode'
@@ -88,6 +89,8 @@ export type EventRow = {
   host_space_id?: string | null
   join_mode?: string | null
   host: { id: string; display_name: string; handle: string } | null
+  // The hosting Space's name, so a card credits the chapter rather than the person (eventHostLabel).
+  host_space?: HostSpaceEmbed
 }
 
 // Library taxonomy (events.category) — the discovery facet, Eventbrite-style. Read from the ONE
@@ -442,7 +445,8 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
        cover_image_path, theme, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, poster_path, geog,
        host_id, host_space_id, join_mode,
-       host:profiles!host_id ( id, display_name, handle )`
+       host:profiles!host_id ( id, display_name, handle ),
+       host_space:spaces!host_space_id ( name, brand_name, status )`
 
   // ── The three event sources + proximity, fetched in ONE wave ────────────────
   // (1) in-scope CIRCLE events, (2) every upcoming standalone PUBLIC event (hybrid scope,

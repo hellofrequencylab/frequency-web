@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PLATFORM_HANDLE, isPlatformAccount, showsOrganizerCredit } from './platform-credit'
+import { PLATFORM_HANDLE, eventHostLabel, isPlatformAccount, showsOrganizerCredit } from './platform-credit'
 
 describe('the house account is not a byline (ADR-1311)', () => {
   it('recognises the platform handle however it is cased or padded', () => {
@@ -67,5 +67,20 @@ describe('both credit surfaces consult the shared answer', () => {
     // sitting in scope is how "Posted by Frequency" comes back by accident.
     expect(page).not.toContain('BRAND_CREDIT')
     expect(page).not.toContain('brandRow')
+  })
+})
+
+describe('eventHostLabel', () => {
+  const house = { display_name: 'Frequency', handle: 'frequency' }
+  it('credits the hosting Space, brand name first, over the house account', () => {
+    expect(eventHostLabel(house, { name: 'The Group La Jolla', brand_name: null, status: 'active' })).toBe('The Group La Jolla')
+    expect(eventHostLabel(house, { name: 'the-group', brand_name: 'The Group SD', status: 'active' })).toBe('The Group SD')
+  })
+  it('never prints the house account', () => {
+    expect(eventHostLabel(house, null)).toBeNull()
+    expect(eventHostLabel(house, { name: 'Gone', brand_name: null, status: 'archived' })).toBeNull()
+  })
+  it('falls back to a real person host', () => {
+    expect(eventHostLabel({ display_name: 'Amie Barsky', handle: 'amie' }, null)).toBe('Amie Barsky')
   })
 })

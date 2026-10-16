@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-962",
+  "title": "A Space-hosted event card names its hosting Space (The Group and its chapters), never the Frequency house account",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-16",
+  "source": {
+    "file": "lib/events/platform-credit.ts",
+    "ref": "Owner 2026-10-16: attribute all event hosting from The Group events to the group or subgroup; the cards said Frequency hosts all of them."
+  },
+  "detail": "The Group's seeded events carry the house account as host_id and the chapter as host_space_id. The detail page already credited the Space, but the events index card, the search result line and the share image printed the person, so every card read Frequency. eventHostLabel (lib/events/platform-credit.ts) is the one short host label: an active hosting Space (brand name first), then a real person host, never the house account. The index, search and share-image reads embed host_space:spaces!host_space_id.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('components/frequency/members/events/event-card.tsx','utf8');const d=fs.readFileSync('app/(main)/events/index-data.ts','utf8');const o=fs.readFileSync('app/(public)/events/[slug]/opengraph-image.tsx','utf8');const p=fs.readFileSync('lib/events/platform-credit.ts','utf8');const bad=[];if(!p.includes('export function eventHostLabel'))bad.push('no host label rule');if(!c.includes('eventHostLabel(e.host, e.host_space)'))bad.push('card prints the person host');if(!d.includes('spaces!host_space_id'))bad.push('index does not read the hosting Space');if(!o.includes('eventHostLabel('))bad.push('share image prints the person host');if(bad.length){console.error('SCAN-962: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
