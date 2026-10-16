@@ -67,6 +67,10 @@ type KeyLike = Pick<globalThis.KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 's
 const HISTORY_DEPTH = FQ_EDITOR ? 60 : 30
 const SEO_TITLE_ADVISED = 60
 const SEO_DESCRIPTION_ADVISED = 160
+/** The live website's address for a page (SCAN-970): the editor's back control returns here. */
+export function websitePageUrl(host: string, slug: string): string {
+  return `https://${host}/${slug === 'home' ? '' : slug}`
+}
 function savedAgo(at: number, now: number) {
   const minutes = Math.floor((now - at) / 60000)
   return minutes < 1 ? 'just now' : minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hr ago`
@@ -603,11 +607,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     // The Publish badge counts the change log; a draft that arrived with unpublished work counts its pages.
     const pendingCount = dirty ? changes.length || changeCount : 0
     const otherChanged = changedPages.filter((p) => p.slug !== page.slug).map((p) => p.label)
-    // Back to the site admin's Overview (the design's first control), else the Space home.
-    const adminMenu = (metadata?.websiteChrome as { admin?: { menu?: { href: string; label: string }[] } | null } | undefined)?.admin?.menu ?? []
-    const overview = adminMenu.find((item) => /overview|vision/i.test(item.label))
-    const backHref = overview?.href ?? `${origin}/spaces/${links.slug}`
-    const backLabel = overview ? `Back to ${overview.label.replace(/^Executive /, '')}` : 'Back to Space home'
+    // SCAN-970 (owner 2026-10-16: "When a user exits the admin editor it should go back to the website, not
+    // the space"): the back control opens the live website at the page being edited.
+    const backHref = websitePageUrl(host, persisted.published?.pages.some((p) => p.slug === page.slug) ? page.slug : 'home')
+    const backLabel = 'Back to website'
     const suggestions = VERA_SUGGESTIONS[selectedMeta?.kind ?? '_']
     return <div data-editor-root data-kit="editor" className={fontClass} data-website-theme={draft.theme} style={{ ...websiteThemeVars(draft.theme, activeAccent), position: 'relative', zIndex: 60 }}>
       <style>{WEBSITE_TOKEN_CSS}</style>
@@ -697,7 +700,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   return <div data-editor-root className={`we-shell ${fontClass ?? ''}`} data-left-folded={!left} data-right-folded={!right} data-preview={preview} onKeyDown={keys}>
     <link rel="stylesheet" href={DS_FACES} precedence="default" />
     <header className="we-top">
-      <a className="we-icon" aria-label="Back to Space home" title="Back to Space home" href={`${origin}/spaces/${links.slug}`}><ChevronLeft size={18} aria-hidden /></a>
+      <a className="we-icon" aria-label="Back to website" title="Back to website" href={websitePageUrl(host, persisted.published?.pages.some((p) => p.slug === page.slug) ? page.slug : 'home')}><ChevronLeft size={18} aria-hidden /></a>
       <div className="we-brand">{activeLogo ? <img className="we-logo" src={activeLogo} alt="" /> : <span className="we-logo" aria-hidden />}<div><strong>{draft.chrome?.name || brandName}</strong><small>{host}</small></div></div>
       <div className="we-pick">
         <button type="button" className="we-page-pick" aria-haspopup="menu" aria-expanded={pageMenu} onClick={() => setPageMenu(!pageMenu)}><span>{page.label}</span><ChevronDown size={16} aria-hidden /></button>
