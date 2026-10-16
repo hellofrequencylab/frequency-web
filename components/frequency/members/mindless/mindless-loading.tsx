@@ -7,7 +7,7 @@ export function MindlessLoading() {
   return (
     <MembersBody className="mc-door">
       <div className="stack mc-gap-12 mc-center">
-        <span className="k">The Quest · Mindless</span>
+        <span className="k">Mindless</span>
         <span className="h1">
           Tune <span className="serif">out.</span>
         </span>

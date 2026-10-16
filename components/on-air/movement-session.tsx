@@ -223,6 +223,7 @@ function fmt(sec: number): string {
 }
 
 export function MovementSession({
+  minutesOverride,
   practices,
   defaultPracticeId,
   defaultMode,
@@ -241,6 +242,7 @@ export function MovementSession({
   mode: doorMode,
   onModeChange,
 }: {
+  minutesOverride?: number
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   /** The Movement mode this session opens on (from a practice's movement_config, or Walk). */
@@ -354,18 +356,19 @@ export function MovementSession({
   // to pick here — the primary button always STARTS the resolved practice.
   // The per-mode duration default, overridden to the resumed practice's TARGET length so the plan
   // total matches and the live screen runs exactly the remaining time. A fresh sit uses the preset.
+  const customMin = !launched?.durationLocked && typeof minutesOverride === 'number' && Number.isFinite(minutesOverride) ? Math.max(1, Math.min(120, Math.round(minutesOverride))) : null
   const resumeMin = initialResume ? Math.max(1, Math.round(initialResume.targetSec / 60)) : 0
   // Walk
-  const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : (initialCfg?.walkMinutes ?? 20))
+  const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : (customMin ?? initialCfg?.walkMinutes ?? 20))
   const [walkIntervalMin, setWalkIntervalMin] = useState(initialCfg?.walkIntervalMin ?? 0)
   // Run
-  const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : (initialCfg?.runMinutes ?? 20))
+  const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : (customMin ?? initialCfg?.runMinutes ?? 20))
   const [runIntervalMin, setRunIntervalMin] = useState(initialCfg?.runIntervalMin ?? 0)
   // Yoga
   const [yogaKind, setYogaKind] = useState<YogaPresetKind>(initialCfg?.yogaKind ?? 'vinyasa')
   // Stretch
   const [stretchMinutes, setStretchMinutes] = useState(
-    defaultMode === 'stretch' && resumeMin ? resumeMin : (initialCfg?.stretchMinutes ?? 10),
+    defaultMode === 'stretch' && resumeMin ? resumeMin : (customMin ?? initialCfg?.stretchMinutes ?? 10),
   )
   const [stretchIntervalMin, setStretchIntervalMin] = useState(initialCfg?.stretchIntervalMin ?? 0)
   // Strength (a preset, plus tunable steppers that override it). Seeds from the author's config.

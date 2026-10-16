@@ -1,0 +1,20 @@
+.root { display:flex;flex-direction:column;gap:16px;max-height:calc(100dvh - var(--tab-bar-clearance,100px) - 48px);overflow-y:auto;overscroll-behavior:contain;color:var(--fq-text-strong) }
+.heading { display:flex;align-items:center;justify-content:space-between;gap:12px }
+.eyebrow { display:block;font:600 10px/1.4 var(--fq-font-sans);letter-spacing:.13em;text-transform:uppercase;color:var(--fq-text-muted) }
+.heading h2 { margin:4px 0 0;font:500 25px/1.1 var(--fq-font-display);letter-spacing:-.04em }
+.close { display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border:0;border-radius:50%;background:var(--fq-pa-soft);color:inherit;cursor:pointer }
+.grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px }
+.grid>a,.grid>button { display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;min-height:105px;padding:12px;border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-m);background:var(--fq-surface-card);color:inherit;text-decoration:none;text-align:left;cursor:pointer }
+.icon { display:grid;place-items:center;width:32px;height:32px;margin-bottom:2px;border-radius:10px;background:var(--fq-pa-soft);color:var(--fq-text-link) }
+.icon svg { width:20px;height:20px }
+.root strong { font:600 14px/1.25 var(--fq-font-sans) }
+.root small { display:block;font:400 11px/1.4 var(--fq-font-sans);color:var(--fq-text-muted) }
+.mindless { display:flex;align-items:center;gap:12px;padding:14px 12px;border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-m);background:var(--fq-pa-soft);color:inherit;text-align:left;cursor:pointer }
+.orb { display:block;width:42px;height:42px;flex-shrink:0 }
+.mindless strong { font-size:16px }.mindless small { margin-top:4px;font-size:12px }
+.start { display:flex;align-items:center;gap:4px;margin-left:auto;font:600 12px/1 var(--fq-font-sans) }.start svg { width:16px;height:16px }
+.tools { display:flex;flex-wrap:wrap;gap:2px;justify-content:space-between;border-top:1px solid var(--fq-border-hair);padding-top:4px }
+.tools a { display:flex;align-items:center;gap:5px;min-height:44px;color:var(--fq-text-link);font:500 11px/1.2 var(--fq-font-sans);text-decoration:none }.tools svg { width:15px;height:15px }
+.root :is(button,a):focus-visible { outline:2px solid var(--fq-text-link);outline-offset:3px }
+@media (hover:hover) { .grid>a:hover,.grid>button:hover,.mindless:hover { background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fq-text-link) } }
+@media (prefers-reduced-motion:reduce) { .orb { animation:none } }
