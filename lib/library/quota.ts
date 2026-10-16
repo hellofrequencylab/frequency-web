@@ -52,6 +52,8 @@ export const LOOM_STORAGE_CAP_BYTES: Record<SpacePlan, number> = {
   // Collective rungs (ADR-1709): five member Spaces share one account, so the account holds more.
   collective: 50 * GB,
   nonprofit_collective: 50 * GB,
+  // Network (SCAN-956): one owner, up to 25 chapters on one account.
+  network: 250 * GB,
 }
 
 /** The rows one page of the sum reads, and the most pages it will read before it calls the sum

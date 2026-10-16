@@ -35,7 +35,7 @@
 import { formatCents } from './display'
 import { PWYW_CONFIG_DEFAULT } from './catalog-config'
 import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
-import { PLAN_CAPABILITY_RANK, SPACE_PLAN_LABEL, type SpacePlan } from './plans'
+import { NETWORK_PLAN, PLAN_CAPABILITY_RANK, SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
 import { catalogItem, type CatalogAmounts, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import { mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
@@ -53,8 +53,9 @@ import { mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 export const PLACEHOLDER_PRICING = false
 
 /** The catalog item each PAID Space plan is billed from (space-plan-checkout catalogKeysForLoadout).
- *  A free Space has no item because $0 is not a Stripe price. PURE. */
-const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
+ *  A free Space has no item because $0 is not a Stripe price, and Network has none because it is quote
+ *  only until its Stripe prices exist (SCAN-956). PURE. */
+const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free' | 'network'>, CatalogItemKey> = {
   business: 'business_base',
   nonprofit: 'nonprofit_seat',
   independent: 'independent_base',
@@ -79,6 +80,8 @@ export const SPACE_PLAN_PRICE_CENTS: Record<SpacePlan, CatalogAmounts> = {
   independent: catalogItem(PLAN_CATALOG_ITEM.independent).month,
   collective: catalogItem(PLAN_CATALOG_ITEM.collective).month,
   nonprofit_collective: catalogItem(PLAN_CATALOG_ITEM.nonprofit_collective).month,
+  // Network is quoted, not sold through the catalog (SCAN-956): the "from" price, no anchor.
+  network: { listCents: NETWORK_PLAN.monthlyCents, foundingCents: NETWORK_PLAN.monthlyCents },
 }
 
 /** @deprecated The LIST monthly price per Space plan, in cents. Derived from SPACE_PLAN_PRICE_CENTS and
@@ -91,6 +94,7 @@ export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   independent: SPACE_PLAN_PRICE_CENTS.independent.listCents,
   collective: SPACE_PLAN_PRICE_CENTS.collective.listCents,
   nonprofit_collective: SPACE_PLAN_PRICE_CENTS.nonprofit_collective.listCents,
+  network: SPACE_PLAN_PRICE_CENTS.network.listCents,
 }
 
 /** The monthly price per SELLABLE personal membership tier, in cents: Member free, Crew from the

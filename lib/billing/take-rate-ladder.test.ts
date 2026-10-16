@@ -178,8 +178,12 @@ describe('the resolver: four outcomes, and nothing else', () => {
     expect(OWN_AUDIENCE_BPS).toBe(0)
   })
 
-  it('the ladder carries exactly the four Space rungs, and the resolver can place every plan on one', () => {
-    expect([...TAKE_RATE_RUNGS]).toEqual(['free', 'paid', 'collective', 'nonprofit'])
+  it('the ladder carries exactly the five Space rungs, and the resolver can place every plan on one', () => {
+    expect([...TAKE_RATE_RUNGS]).toEqual(['free', 'paid', 'collective', 'network', 'nonprofit'])
+    // Network (SCAN-956) has its own 2% rung.
+    expect(takeRateRungForPlan('network')).toBe('network')
+    expect(takeRateBps('network', 'network')).toBe(200)
+    expect(takeRateBps('network', 'self')).toBe(0)
     for (const plan of SPACE_PLANS) expect(TAKE_RATE_RUNGS).toContain(takeRateRungForPlan(plan))
     // `business` and `independent` are not rungs: they resolve THROUGH the map, never off the vector.
     expect(Object.keys(NETWORK_TAKE_RATE_DEFAULT).sort()).toEqual([
@@ -187,6 +191,7 @@ describe('the resolver: four outcomes, and nothing else', () => {
       'free',
       'member',
       'memberFree',
+      'network',
       'nonprofit',
       'paid',
     ])
@@ -222,7 +227,7 @@ describe('the stored row: either vintage resolves to the same vector', () => {
       network_bps: { free: 1000, business: 500, collective: 300, nonprofit: 0, independent: 0 },
     }
     const vec = networkTakeRateFromStored(legacy)
-    expect(vec).toEqual({ free: 1000, paid: 500, collective: 300, nonprofit: 0, memberFree: 1000, member: 800 })
+    expect(vec).toEqual({ free: 1000, paid: 500, collective: 300, network: 200, nonprofit: 0, memberFree: 1000, member: 800 })
     expect(networkTakeRateBpsForPlan('business', vec)).toBe(500)
     expect(networkTakeRateBpsForPlan('independent', vec)).toBe(500)
     expect('business' in vec).toBe(false)
@@ -247,7 +252,8 @@ describe('the stored row: either vintage resolves to the same vector', () => {
       member_free_bps: 1100,
       member_bps: 700,
     })
-    expect(vec).toEqual({ free: 1200, paid: 450, collective: 250, nonprofit: 0, memberFree: 1100, member: 700 })
+    // A row stored before Network existed carries no `network` rung, so it reads the seeded 200.
+    expect(vec).toEqual({ free: 1200, paid: 450, collective: 250, network: 200, nonprofit: 0, memberFree: 1100, member: 700 })
   })
 
   it('an empty, partial, or malformed row never leaves a rung undefined or at 0 by accident', () => {
@@ -256,7 +262,7 @@ describe('the stored row: either vintage resolves to the same vector', () => {
     expect(networkTakeRateFromStored({ network_bps: { paid: 'three' } })).toEqual(NETWORK_TAKE_RATE_DEFAULT)
     expect(networkTakeRateFromStored({ network_bps: { paid: 200 } })).toEqual({ ...NETWORK_TAKE_RATE_DEFAULT, paid: 200 })
     // The seeded default is the code default, and the code default is the ladder.
-    expect(PRICING_DEFAULTS.take_rate.network_bps).toEqual({ free: 1000, paid: 500, collective: 300, nonprofit: 0 })
+    expect(PRICING_DEFAULTS.take_rate.network_bps).toEqual({ free: 1000, paid: 500, collective: 300, network: 200, nonprofit: 0 })
   })
 })
 

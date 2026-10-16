@@ -36,7 +36,7 @@ import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
  *  Business, its checkout is live, and the owner ruled that public pages name it from this row on.
  *  NON PROFIT COLLECTIVE stays off the list: it is sold, but a reader meets it as a line under Non
  *  Profit rather than as a column of its own. */
-export const ADVERTISED_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
+export const ADVERTISED_SPACE_PLANS: readonly Exclude<SpacePlan, 'free' | 'network'>[] = [
   'business',
   'collective',
   'nonprofit',

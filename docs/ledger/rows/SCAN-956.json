@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-956",
+  "title": "The Network plan joins the catalog: from $599 for ten chapters, a 2% fee, quote only until its Stripe price exists",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-15",
+  "source": {
+    "file": "lib/pricing/plans.ts",
+    "ref": "Owner 2026-10-15, splitting the top tier: Collective is many owners working together; Network is one owner running many groups (chapters). PR 1 of 6, the catalog step."
+  },
+  "detail": "Network is a first-class Space plan id ('network', capability rank 3, above Collective). NETWORK_PLAN in lib/pricing/plans.ts holds the approved values: from $599/mo with 10 chapters included, $49 per extra chapter up to 25 chapters, then a quote; $479 non profit; 10 central admins; Vera AI and the custom domain included (the Collective depth), with 50,000 Resonance matches a month, five times Collective's 10,000. The fee rung 'network' is 2% on sales Frequency sends, 0% on a Space's own audience. No Stripe price exists, so stripePriceId is null, networkCheckoutOpen is false, Network is not a loadout plan and every surface says Talk to us. Collective's move to $99 standard and Non Profit Collective's to $79 are deferred to their own PR, after Daniel creates the new Stripe prices: live checkout still charges $149 and $119, and changing the displayed price first would mismatch. Migration 20270346008900 widens space_billing_agreements.plan to admit network, so a quoted Network can be billed by hand. Moving member Space features to chapters is PR 2; marketing is PR 3.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('lib/pricing/plans.ts','utf8');const k=fs.readFileSync('lib/billing/pricing-keys.ts','utf8');const bad=[];if(!/'network',\\s*\\] as const/.test(p))bad.push('network is not a plan id');if(!p.includes('monthlyCents: 59_900')||!p.includes('nonprofitMonthlyCents: 47_900'))bad.push('Network is not 599 from, 479 non profit');if(!p.includes('includedChapters: 10')||!p.includes('extraChapterCents: 4_900')||!p.includes('maxChapters: 25'))bad.push('no chapter allowance');if(!p.includes('stripePriceId: null'))bad.push('Network is not quote only');if(!/network: 200,/.test(k))bad.push('no 2 percent Network fee');if(bad.length){console.error('SCAN-956: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

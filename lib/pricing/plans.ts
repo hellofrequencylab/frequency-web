@@ -29,6 +29,9 @@ export const SPACE_PLANS = [
   'independent',
   'collective',
   'nonprofit_collective',
+  // NETWORK (owner ruling 2026-10-15, SCAN-956): one owner running many groups (chapters), the rung
+  // above Collective. Quote only until its Stripe prices exist (NETWORK_PLAN below).
+  'network',
 ] as const
 
 export type SpacePlan = (typeof SPACE_PLANS)[number]
@@ -43,6 +46,7 @@ export const PLAN_CAPABILITY_RANK: Record<SpacePlan, number> = {
   independent: 1,
   collective: 2,
   nonprofit_collective: 2,
+  network: 3,
 }
 
 /** The capability rank of any plan label (legacy labels narrow first; unknown is free, 0). PURE. */
@@ -50,8 +54,9 @@ export function planRank(raw: string | null | undefined): number {
   return PLAN_CAPABILITY_RANK[asSpacePlan(raw)] ?? 0
 }
 
-/** The plan a STAFF-WAIVED Space is gated at (LIVE-822, `spaces.limits_waived`): Collective, the top
- *  capability rank, unless the plan already ranks there. Every plan gate then opens; the counted caps
+/** The plan a STAFF-WAIVED Space is gated at (LIVE-822, `spaces.limits_waived`): Collective, unless the
+ *  plan already ranks there. Network (SCAN-956) ranks above it but is never granted by a waiver: it is a
+ *  quoted plan staff set on purpose. Every plan gate then opens; the counted caps
  *  are lifted separately at the meter seam. PURE. */
 export function limitsWaivedPlan(raw: string | null | undefined): SpacePlan {
   const plan = asSpacePlan(raw)
@@ -68,6 +73,52 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   independent: 'Independent',
   collective: 'Collective',
   nonprofit_collective: 'Non Profit Collective',
+  network: 'Network',
+}
+
+// ── NETWORK (owner ruling 2026-10-15, SCAN-956) ─────────────────────────────────────────────────────
+// The rule that splits the top tier: COLLECTIVE is many owners working together (a hub linking partner
+// Spaces); NETWORK is one owner running many groups, its chapters. These are the approved numbers.
+// No Stripe price exists for Network yet and none may be minted from here, so `stripePriceId` is null
+// and every surface shows "Talk to us" instead of a checkout (networkCheckoutOpen). Independent Network
+// is quote only and is not in the catalog at all.
+
+/** The Network plan's catalog values. PURE data, the one place they are written down. */
+export const NETWORK_PLAN = {
+  /** From $599/mo for the included chapters. */
+  monthlyCents: 59_900,
+  /** Verified non profit rate. */
+  nonprofitMonthlyCents: 47_900,
+  /** Chapters included in the base price. */
+  includedChapters: 10,
+  /** Each chapter past the included ten. */
+  extraChapterCents: 4_900,
+  /** The most chapters the plan sells; past this the plan is a quote. */
+  maxChapters: 25,
+  /** The fee on sales Frequency sends (bps). Own-audience sales stay 0%, like every plan. */
+  networkFeeBps: 200,
+  /** Central admins across the whole Network. */
+  centralAdmins: 10,
+  /** Resonance matches a month, Vera AI's metered depth: five times Collective's 10,000. */
+  veraMonthlyMatches: 50_000,
+  /** The Stripe price the plan checks out against. Null until Daniel creates it; null means quote only. */
+  stripePriceId: null as string | null,
+  /** What a surface says instead of a price button while there is no Stripe price. */
+  quoteLabel: 'Talk to us',
+} as const
+
+/** Can a Network be bought through checkout? Only once a Stripe price id exists. PURE. */
+export function networkCheckoutOpen(stripePriceId: string | null = NETWORK_PLAN.stripePriceId): boolean {
+  return typeof stripePriceId === 'string' && stripePriceId.length > 0
+}
+
+/** The monthly Network price for a chapter count: the base covers the included ten, each chapter past
+ *  that adds $49, and more than 25 chapters is a quote (null). Non profit swaps the base. PURE. */
+export function networkMonthlyCents(chapters: number, opts: { nonprofit?: boolean } = {}): number | null {
+  const n = Math.max(0, Math.trunc(Number.isFinite(chapters) ? chapters : 0))
+  if (n > NETWORK_PLAN.maxChapters) return null
+  const base = opts.nonprofit ? NETWORK_PLAN.nonprofitMonthlyCents : NETWORK_PLAN.monthlyCents
+  return base + Math.max(0, n - NETWORK_PLAN.includedChapters) * NETWORK_PLAN.extraChapterCents
 }
 
 // LEGACY -> NEW plan remap (ADR-552). The retired tier names narrow forward at READ time so a Space still
@@ -156,6 +207,10 @@ export const COLLECTIVE_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   'custom_domain',
 ]
 
+/** Network depth (SCAN-956): the Collective depth, Vera AI and the custom domain included. Network-only
+ *  features (chapters, central admins) gate on the plan rank, not on a key here. */
+const NETWORK_DEPTH_ENTITLEMENT_KEYS: readonly string[] = COLLECTIVE_DEPTH_ENTITLEMENT_KEYS
+
 /** Independent (~$249, white-label, network-disconnected) depth = Business depth PLUS branding
  *  (`whitelabel`). White-label is UN-FOLDED from Business (ADR-811) into this standalone tier only. */
 export const INDEPENDENT_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
@@ -224,6 +279,7 @@ const BASE_PLAN_KEYS: Record<SpacePlan, readonly string[]> = {
   independent: INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
   collective: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   nonprofit_collective: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
+  network: NETWORK_DEPTH_ENTITLEMENT_KEYS,
 }
 
 // The tier -> entitlement-keys map (ADR-552). Each tier grants the keys its BASE depth unlocks; the
@@ -241,6 +297,7 @@ const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   independent: INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
   collective: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
   nonprofit_collective: COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
+  network: NETWORK_DEPTH_ENTITLEMENT_KEYS,
 }
 
 /** The `spaces.entitlements.billing` keys a tier unlocks (base tier only, no add-ons; code source of

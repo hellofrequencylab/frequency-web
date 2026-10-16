@@ -154,7 +154,7 @@ describe('offerings: every sellable tier is on the page', () => {
         expect(o.monthly).toBe('Free')
         continue
       }
-      const price = PRICING_DEFAULTS.plan[o.tier as Exclude<SpacePlan, 'free'>]
+      const price = PRICING_DEFAULTS.plan[o.tier as Exclude<SpacePlan, 'free' | 'network'>]
       const charged = betaActive ? price.monthly_cents : Math.max(price.monthly_cents, price.list_cents ?? 0)
       expect(o.monthly).toBe(`${formatCents(charged)}/mo`)
       // Two months free, from the ONE piece of annual math the catalog itself uses. Reading
@@ -467,8 +467,8 @@ describe('seats and the AI add-on', () => {
     )
   })
 
-  it('keeps the AI add-on keys out of every Business-depth base (only Collective includes it, ADR-1709)', () => {
-    for (const plan of SPACE_PLANS.filter((p) => p !== 'collective' && p !== 'nonprofit_collective')) {
+  it('keeps the AI add-on keys out of every Business-depth base (only Collective and Network include it, ADR-1709)', () => {
+    for (const plan of SPACE_PLANS.filter((p) => p !== 'collective' && p !== 'nonprofit_collective' && p !== 'network')) {
       const keys = planEntitlementKeys(plan)
       for (const k of ADDON_ENTITLEMENT_KEYS.ai) expect(keys).not.toContain(k)
     }

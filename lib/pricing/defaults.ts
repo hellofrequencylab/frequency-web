@@ -76,7 +76,7 @@ export interface PricingDefaults {
     // (not stored). A plan finds its rung through lib/billing/pricing-keys.ts takeRateRungForPlan; no
     // reader indexes this object by plan name. A row stored before LIVE-230 (keyed by plan name) is
     // normalised into this shape by getPricingValues, so the typed value is always rung-keyed.
-    network_bps: { free: number; paid: number; collective: number; nonprofit: number }
+    network_bps: { free: number; paid: number; collective: number; network: number; nonprofit: number }
   }
   /** Vera free-tier daily message cap. */
   vera_free_daily_cap: { messages: number }
@@ -146,6 +146,7 @@ export const PRICING_DEFAULTS: PricingDefaults = {
       free: NETWORK_TAKE_RATE_DEFAULT.free,
       paid: NETWORK_TAKE_RATE_DEFAULT.paid,
       collective: NETWORK_TAKE_RATE_DEFAULT.collective,
+      network: NETWORK_TAKE_RATE_DEFAULT.network,
       nonprofit: NETWORK_TAKE_RATE_DEFAULT.nonprofit,
     },
   },

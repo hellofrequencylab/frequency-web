@@ -40,6 +40,7 @@ const PLAN_PLAYBOOK_ACTION_CEILING: Record<SpacePlan, number | null> = {
   independent: null,
   collective: null,
   nonprofit_collective: null,
+  network: null,
 }
 
 /** The monthly playbook-action ceiling for a plan (the soft volume lever). `null` = unlimited.
