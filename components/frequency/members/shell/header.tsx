@@ -51,6 +51,7 @@ import { hasAccount, readStoredMode, syncMode, writeStoredMode, type ThemeMode }
 import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
 import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import { FqTabBar, tabActive } from './tab-bar'
+import { ZapSheet } from './zap-sheet'
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
 
@@ -343,7 +344,7 @@ export function FqHeader({
           aria-hidden={open !== 'zap'}
           inert={open !== 'zap'}
         >
-          <ZapSheet onClose={() => setOpen(null)} />
+          {open === 'zap' && <ZapSheet onClose={() => setOpen(null)} />}
         </div>
         <div
           className={open === 'bell' ? 'ap-sheet on' : 'ap-sheet'}
@@ -825,48 +826,6 @@ function MegaMenu({
 function StreakFoot({ streak, line }: { streak: Promise<number>; line: string }) {
   const n = use(streak)
   return <span>{n > 0 ? `Day ${n}. ${line}` : line}</span>
-}
-
-/** shell.js's Zap sheet: four round actions and the Mindless row. */
-function ZapSheet({ onClose }: { onClose: () => void }) {
-  const capture = (mode: 'post' | 'contact') => {
-    window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode } }))
-    onClose()
-  }
-  return (
-    <>
-      <span className="ap-sheet-t">Capture a moment.</span>
-      <div className="ap-zapg">
-        <button type="button" onClick={() => capture('post')}>
-          <span>
-            <i><FqIcon name="page" /></i>Share
-          </span>
-        </button>
-        <Link href="/events/new">
-          <span>
-            <i><FqIcon name="event" /></i>Event
-          </span>
-        </Link>
-        <button type="button" onClick={() => capture('contact')}>
-          <span>
-            <i><FqIcon name="contacts" /></i>Contact
-          </span>
-        </button>
-        <Link href="/codes">
-          <span>
-            <i><FqIcon name="qr" /></i>Connect
-          </span>
-        </Link>
-      </div>
-      <Link href="/on-air" className="ap-sheet-row" data-energy="still">
-        <span className="orb fq-breathe fqm-sheet-orb" />
-        <span>
-          <b>Mindless</b>
-          <span className="t2">Tune out</span>
-        </span>
-      </Link>
-    </>
-  )
 }
 
 // The bell's state is shared between its button (the dot) and the sheet (the list), so it lives in

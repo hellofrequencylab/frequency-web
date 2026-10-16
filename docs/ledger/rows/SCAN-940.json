@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-940",
+  "title": "Restore and evolve Frequency Zap quick actions",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/frequency/members/shell/zap-sheet.tsx",
+    "ref": "Owner mobile Zap regression screenshot 2026-10-15"
+  },
+  "detail": "Compared prior CaptureLauncher and Frequency design handoff: current Frequency Zap reduced tools to four icon circles and routed Mindless away from the current page. Extracted token styled compact two-column quick actions preserves Share/Create event/Save contact/Connect and restores existing scan-poster, scan-card and journal destinations. Mindless now opens canonical provider in place, respecting its saved mode and setup; no timer auto-start or writes. Explicit close,44px minimum targets,scroll containment,page scroll lock,Tab trap and focus restoration. Old Check In/Ghost Node/Partners tiles were inert Soon placeholders and remain omitted. Existing parent Escape,backdrop and pathname dismissal remain. Browser verification pending integration.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "3 jsdom behavioral tests pass: preserved/restored destinations, Capture mode dispatch/Mindless provider handoff,scroll lock/Tab wrap/focus restore. Scoped ESLint pass. Parent must verify rebuilt390x844 rendering,all action labels,target geometry,Escape/backdrop dismissal and provider handoff without unintended submission; row remains open until runtime check."
+  },
+  "wave": "W7"
+}
