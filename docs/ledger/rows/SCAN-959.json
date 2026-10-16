@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-959",
+  "title": "The home page photo scroll runs smoothly and loads fast on a phone",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/home/home-motion.tsx",
+    "ref": "Owner report 2026-10-16: on phones the home motion section with pictures stutters, jams and loads slowly"
+  },
+  "detail": "The pinned fold loaded six 1600px photos (1.7MB) to show them at most 300px wide, measured its progress against innerHeight (which changes while a phone's address bar slides away, so the stage jumped), and wrote the fold's styles before reading the hero's box every frame (a forced second layout), rewriting both even when unchanged. Fold photos now load 640px variants from public/brand/frequency/photos/sm (264KB in total) with the original as a srcset candidate; progress is measured against the stage's own height, re-read on resize; every read precedes every write and styles change only when progress does. On a phone the 13 orbs between the photos are hidden and the 80px photo shadow is replaced by a light one. Desktop motion is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/home-fold-phone.mjs"
+  },
+  "wave": "W7"
+}

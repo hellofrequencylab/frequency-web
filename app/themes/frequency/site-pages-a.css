@@ -93,7 +93,8 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .pds{grid-template-columns:1fr;gap:10px}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd{min-height:clamp(130px,22vh,200px)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd .dp{display:none}
-[data-design="frequency"] [data-kit="site"] .pa-home .fl-ph{opacity:.5}}
+[data-design="frequency"] [data-kit="site"] .pa-home .fl-ph{opacity:.5;box-shadow:0 14px 32px -18px color-mix(in oklab,var(--fq-uv-void) 90%,transparent)}
+[data-design="frequency"] [data-kit="site"] .pa-home .fold-stage>.tx-field .tx-jewel{display:none}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pa-home .pdw{opacity:1!important;transform:none!important}
 [data-design="frequency"] [data-kit="site"] .pa-home .pdg{opacity:.26!important;animation:none!important}
 [data-design="frequency"] [data-kit="site"] .pa-home .fold{height:auto}
