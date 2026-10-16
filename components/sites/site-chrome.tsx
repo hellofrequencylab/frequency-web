@@ -41,8 +41,9 @@ import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
 //     website's one menu ends with its admin links (site-admin-bar.tsx) in the theme's blue, on every page,
 //     the /admin pages included, and a blue admin section sits above the footer line. The admin pages do
 //     the gating.
-//   · FOOTER: the copyright line and the "Frequency Partner" badge, the ONLY mention of Frequency on the
-//     site (owner ask 2026-10-06).
+//   · FOOTER: the copyright line and, at its right end, the "Frequency Partner" badge (SCAN-995, owner ask
+//     2026-10-16): a small pill with the bolt mark, drawn in each theme's own style, linking to the
+//     Frequency Spaces page. With the copyright suffix, the ONLY mention of Frequency on the site.
 //
 // Every word comes from the Space. Colors are DAWN tokens, so the Space's brand accent (AccentScope) paints
 // the whole site; the faces follow the Space's page theme when it chose one (HOUSE_CSS). Links are
@@ -232,16 +233,34 @@ export function SiteChrome({
           {footer?.suffix && (
             <>
               {' · '}
-              <a href={appOrigin()}>{footer.suffix}</a>
+              <a href={PARTNER_HREF()}>{footer.suffix}</a>
             </>
           )}
         </span>
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
-        {!footer?.suffix && <a href={appOrigin()}>Frequency Partner</a>}
+        <PartnerBadge />
       </footer>
       </div>
     </div>
+  )
+}
+
+/** Where the badge goes: the Frequency Spaces marketing page, on the app origin. */
+const PARTNER_HREF = () => `${appOrigin()}/spaces`
+
+/** The "Frequency Partner" badge closing every website footer. The colors, faces and shape come from the
+ *  site's theme CSS (`.hs-partner` in house-css.ts and each skin); the mark is drawn in currentColor. */
+export function PartnerBadge() {
+  return (
+    <a href={PARTNER_HREF()} className="hs-partner" data-partner-badge="">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden focusable="false">
+        <path d="M9.2 1 3 9.1h4.3L6.4 15 13 6.6H8.6L9.2 1Z" fill="currentColor" />
+      </svg>
+      <span>
+        Frequency <b>Partner</b>
+      </span>
+    </a>
   )
 }
 

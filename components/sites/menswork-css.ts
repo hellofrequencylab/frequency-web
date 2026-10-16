@@ -231,6 +231,9 @@ ${M} .hs-footer-links a:hover{color:var(--color-primary-strong)}
 ${M} .hs-footer{max-width:1248px;padding:24px clamp(20px,4vw,48px) 40px;border-top:1px solid var(--mw-hairline);${LABEL};font-size:11px;color:var(--color-text-muted)}
 ${M} .hs-footer a{color:var(--color-text-muted);font-weight:500}
 ${M} .hs-footer a:hover{color:var(--color-primary-strong)}
+${M} .hs-footer a.hs-partner{${LABEL};font-size:10px;gap:8px;padding:8px 14px 8px 11px;border:1px solid var(--mw-hairline);border-radius:0;background:transparent;color:var(--color-text-muted)}
+${M} .hs-footer a.hs-partner b{font-weight:700;color:var(--color-text)}
+${M} .hs-footer a.hs-partner:hover{border-color:var(--color-primary-strong);color:var(--color-primary-strong)}
 ${M} .hs-nav .hs-nav-admin{display:flex;align-items:stretch;gap:10px}
 ${M} .hs-nav-admin-tag{${LABEL};padding:0;display:flex;align-items:center;color:var(--color-signal-strong)}
 ${M} .hs-nav .hs-nav-admin a{color:var(--color-signal-strong)}
