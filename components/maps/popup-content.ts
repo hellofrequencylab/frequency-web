@@ -100,7 +100,7 @@ function pill(text: string, token?: string): HTMLSpanElement {
 }
 
 /** Build the popup card for a pin, or null when the pin carries nothing to show. */
-export function buildPopupContent(pin: MapPin): HTMLElement | null {
+export function buildPopupContent(pin: MapPin, design = false): HTMLElement | null {
   const title = pin.title?.trim()
   const subtitle = pin.subtitle?.trim()
   const detail = pin.detail?.trim()
@@ -109,7 +109,7 @@ export function buildPopupContent(pin: MapPin): HTMLElement | null {
   const imageUrl = safeImageSrc(pin.imageUrl)
   if (!title && !subtitle && !detail && !href) return null
 
-  const paint = resolvePinPaint(pin)
+  const paint = resolvePinPaint(pin, design)
   const root = document.createElement('div')
   // Class hooks for the Frequency card (SCAN-918, app/themes/frequency/members-ui.css): the cover runs
   // edge to edge at the top under the close button, the body is padded, and every colour takes the
