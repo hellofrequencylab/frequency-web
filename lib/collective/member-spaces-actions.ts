@@ -18,7 +18,9 @@ export async function setCollectiveMemberSpace(parentId: string, childId: string
   const { error } = await createAdminClient().rpc('set_collective_member_space' as never,
     { p_parent_id: parentId, p_child_id: childId, p_owner_id: caller.id, p_attach: attach } as never)
   if (error) {
-    if (error.message.includes('collective_full')) return fail('Your Collective is full. Add another Space to your plan before attaching one.')
+    if (error.message.includes('collective_full')) return fail(parent.plan === 'network'
+      ? 'Your Network has all its included chapters. Talk to us to add more.'
+      : 'Your Collective is full. Add another Space to your plan before attaching one.')
     return fail('Could not update this member Space. Check that you own both Spaces and try again.')
   }
   revalidatePath('/spaces', 'layout')

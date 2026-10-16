@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-960",
+  "title": "A Network Space runs chapters: member Spaces, shared membership, the network home and the roll-up report open to Network",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-16",
+  "source": {
+    "file": "lib/collective/member-spaces.ts",
+    "ref": "Owner 2026-10-15, the Collective / Network split (one owner running many groups is a Network). PR 2 of 6, the gates step."
+  },
+  "detail": "isChapterParentPlan (lib/collective/member-spaces.ts) is the one rule for which plans hold same-owner children: network, plus collective and nonprofit_collective so existing Collectives keep what they bought. The member Space plan inheritance (and with it shared membership), the member Space manager, the network home (collectiveNetworkOpen) and the private roll-up report all read it. A Network holds NETWORK_PLAN.includedChapters (10) chapters with no self-serve extra quantity; past ten is a quote. Extra-Space billing and cross-listing stay Collective only. The billing editor says chapters for a Network and member Spaces for a Collective. Migration 20270346009000 replaces set_collective_member_space so the database admits a network parent with ten chapters and never lets a Network become a child.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('lib/collective/member-spaces.ts','utf8');const n=fs.readFileSync('lib/collective/network.ts','utf8');const r=fs.readFileSync('lib/collective/network-report-policy.ts','utf8');const sql=fs.readFileSync('supabase/migrations/20270346009000_network_chapters.sql','utf8');const bad=[];if(!/isNetworkPlan\\(plan\\) \\|\\| isCollectivePlan\\(plan\\)/.test(m))bad.push('Network does not hold chapters');if(!m.includes('NETWORK_PLAN.includedChapters'))bad.push('no ten-chapter capacity');if(!n.includes('isChapterParentPlan(parent.plan)'))bad.push('no Network home');if(!r.includes(\\\"'network'\\\"))bad.push('no Network report');if(!sql.includes(\\\"'network'\\\"))bad.push('database refuses Network chapters');if(bad.length){console.error('SCAN-960: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

@@ -160,7 +160,7 @@ export async function BillingBody({ slug }: { slug: string }) {
         <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
           <p className="eyebrow text-subtle">Current plan</p>
           <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
-          {hasInheritedBusiness && <p className="mt-2 text-body-sm text-muted">Business tools are included through your Collective. This Space keeps its own free plan.</p>}
+          {hasInheritedBusiness && <p className="mt-2 text-body-sm text-muted">Business tools are included through the Collective or Network this Space belongs to. It keeps its own free plan.</p>}
         </div>
 
         {memberSpaces && <MemberSpaceEditor parentId={space.id} management={memberSpaces} quote={extraSpaceQuote} />}

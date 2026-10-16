@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { memberSpaceCapacity, memberSpacePlan } from './member-spaces'
+import { isChapterParentPlan, memberSpaceCapacity, memberSpacePlan } from './member-spaces'
 
 const relation = { childOwnerId: 'owner', parentOwnerId: 'owner', childStatus: 'active', childType: 'business', parentType: 'business', parentParentId: null }
 
@@ -41,5 +41,22 @@ describe('Collective member Space entitlement', () => {
     }
     expect(memberSpacePlan('free', { plan: 'business', status: 'active' })).toBe('free')
     expect(memberSpacePlan('free', { plan: 'unknown', status: 'active' })).toBe('free')
+  })
+})
+
+describe('Network chapters (SCAN-960)', () => {
+  it('holds ten included chapters and ignores extra Collective Space quantity', () => {
+    expect(memberSpaceCapacity([], 'network')).toBe(10)
+    expect(memberSpaceCapacity([{ item_key: 'collective_space', quantity: 3, status: 'active' }], 'network')).toBe(10)
+    expect(memberSpaceCapacity([], 'collective')).toBe(5)
+  })
+  it('grants Business to a free same-owner chapter of an active Network', () => {
+    expect(memberSpacePlan('free', { plan: 'network', status: 'active' }, relation)).toBe('business')
+    expect(memberSpacePlan('free', { plan: 'network', status: 'suspended' }, relation)).toBe('free')
+    expect(memberSpacePlan('free', { plan: 'network', status: 'active' }, { ...relation, parentOwnerId: 'other' })).toBe('free')
+  })
+  it('keeps existing Collectives as chapter parents and refuses every other plan', () => {
+    for (const plan of ['network', 'collective', 'nonprofit_collective']) expect(isChapterParentPlan(plan)).toBe(true)
+    for (const plan of ['free', 'business', 'nonprofit', 'independent', null, 'unknown']) expect(isChapterParentPlan(plan)).toBe(false)
   })
 })

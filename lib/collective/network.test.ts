@@ -19,6 +19,7 @@ describe('Collective public projection', () => {
   })
   it('accepts the nonprofit Collective but does not turn canceled calendar context into invitations', () => {
     expect(collectiveNetworkOpen({...parent,plan:'nonprofit_collective'})).toBe(true)
+    expect(collectiveNetworkOpen({...parent,plan:'network'})).toBe(true)
     expect(liveNetworkUpcoming([item,{...item,slug:'cancelled',isCancelled:true},{...item,slug:'past',dayKey:'2026-10-01'},{...item,slug:'private',layer:'private'}],'2026-10-08')).toEqual([item])
   })
 })
