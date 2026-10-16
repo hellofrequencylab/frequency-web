@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { eventHostLabel } from '@/lib/events/platform-credit'
 import type { EventRow, EventsIndexData } from '@/app/(main)/events/index-data'
 import { formatWhen } from '@/app/(main)/events/index-data'
 import { FqIcon } from '@/components/frequency/icon'
@@ -66,7 +67,7 @@ export function FqEventCard({
   const dist = miles(e.distance_m)
   const mode = e.attendance_mode === 'online' ? 'Online' : e.attendance_mode === 'hybrid' ? 'In person + online' : null
   const circle = e.scope_type === 'circle' ? circleNames[e.scope_id] : undefined
-  const hostName = e.host?.display_name ?? null
+  const hostName = eventHostLabel(e.host, e.host_space)
 
   return (
     <article className={e.is_cancelled ? 'ev-card off' : 'ev-card'}>

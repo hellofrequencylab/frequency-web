@@ -1,4 +1,5 @@
 import 'server-only'
+import type { HostSpaceEmbed } from '@/lib/events/platform-credit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -57,6 +58,7 @@ export type EventRow = SeriesFields & {
   cover_image_path?: string | null
   ends_at?: string | null
   host: { display_name: string; handle: string } | null
+  host_space?: HostSpaceEmbed
 }
 
 export type CircleRow = {
@@ -128,7 +130,8 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS, category
       .from('events')
       .select(
         `id, title, slug, starts_at, ends_at, category, location, is_cancelled, is_demo, cover_image_path, ${SERIES_COLUMNS},
-         host:profiles!host_id ( display_name, handle )`,
+         host:profiles!host_id ( display_name, handle ),
+         host_space:spaces!host_space_id ( name, brand_name, status )`,
       )
       , ['title', 'description'], safe)
       .eq('status', 'published')
