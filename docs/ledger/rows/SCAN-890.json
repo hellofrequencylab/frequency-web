@@ -1,6 +1,6 @@
 {
   "id": "SCAN-890",
-  "title": "The rail's DAWN-drawn panels (Today's goals and the rest) span the full right-rail width like the Frequency panels, so the Feed no longer reads off centre, and the header account button shows initials instead of repeating the profile photo",
+  "title": "Legacy rail panels span the full right rail; the header account button follows the current requested photo treatment",
   "status": "done",
   "priority": "P2",
   "lane": "live",
@@ -10,10 +10,10 @@
     "file": "app/themes/frequency/members-shell.css",
     "ref": "Owner 2026-10-14 (Feed screenshots): the right column's standard layout feels off centre; make it the full width like Your Circles this season. Then: make the top right profile photo an initial icon, not a double pic."
   },
-  "detail": "SCAN-873 took the glass card off every rail panel, but the platform panels rendered through DAWN components inside .fqm-legacy (Today's goals with its practice, on-track and going rows) keep their own px-/mx- gutter utilities, so their rows and bars sat inset next to Your Circles this season, which spans the rail. Inside the rail's legacy panels those horizontal gutters are now zero, in the utilities layer so they outrank the single utility classes. The header's account button (.ap-me) drew the member's photo while the rail's You card showed the same photo; it now always shows the member's initials.",
+  "detail": "SCAN-873 took the glass card off every rail panel, but the platform panels rendered through DAWN components inside .fqm-legacy (Today's goals with its practice, on-track and going rows) keep their own px-/mx- gutter utilities, so their rows and bars sat inset next to Your Circles this season, which spans the rail. Inside the rail's legacy panels those horizontal gutters are now zero, in the utilities layer so they outrank the single utility classes. The header's account button (.ap-me) drew the member's photo while the rail's You card showed the same photo; it now always shows the member's initials. 2026-10-15 integration: the probe now follows the shared IndexHeader replacement (SCAN-946) and the owner-requested header photo restoration (SCAN-938), while preserving the no-photo hub and full-width rail checks.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const s=require('fs').readFileSync('app/themes/frequency/members-shell.css','utf8');const h=require('fs').readFileSync('components/frequency/members/shell/header.tsx','utf8');if(/className=.ap-me.[\\\\s\\\\S]{0,400}avatarBg/.test(h)){console.error('SCAN-890: the header button still shows the photo');process.exit(1)}if(!s.includes('.fqm-legacy section:not(section section) :is([class*=\\\"px-\\\"]')){console.error('SCAN-890: the rail legacy panels still keep their inner gutters');process.exit(1)}\""
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/themes/frequency/members-shell.css','utf8'),h=fs.readFileSync('components/frequency/members/shell/header.tsx','utf8');if(!s.includes('.fqm-legacy section:not(section section) :is([class*=\\\"px-\\\"]')||!h.includes('className=\\\"fqm-header-avatar\\\" style={avatarBg(profile.avatar_url)}'))process.exit(1)\""
   },
   "wave": "W7"
 }

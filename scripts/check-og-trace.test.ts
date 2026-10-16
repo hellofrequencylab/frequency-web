@@ -27,6 +27,7 @@ type Options = {
   incidental?: number
   starved?: number
   ext?: string
+  libvips?: string
 }
 
 const fixtures: string[] = []
@@ -36,7 +37,7 @@ afterAll(() => {
 
 /** A fake `.next/server`: `plain` functions carrying no sharp, `rasterisers` card routes carrying
  *  it, `incidental` ordinary pages carrying it by inheritance, `starved` card routes without it. */
-function makeArtifact({ plain = 220, rasterisers = 6, incidental = 10, starved = 0, ext = '.nft.json' }: Options = {}): string {
+function makeArtifact({ plain = 220, rasterisers = 6, incidental = 10, starved = 0, ext = '.nft.json', libvips = LIBVIPS }: Options = {}): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'og-trace-'))
   fixtures.push(dir)
   const server = path.join(dir, '.next/server')
@@ -46,9 +47,9 @@ function makeArtifact({ plain = 220, rasterisers = 6, incidental = 10, starved =
     writeFileSync(p, JSON.stringify({ version: 1, files }))
   }
   for (let i = 0; i < plain; i++) trace(`app/plain-${i}/page.js${ext}`, PLAIN)
-  for (let i = 0; i < rasterisers; i++) trace(`app/discover/kind-${i}/[slug]/opengraph-image/route.js${ext}`, [...PLAIN, LIBVIPS])
+  for (let i = 0; i < rasterisers; i++) trace(`app/discover/kind-${i}/[slug]/opengraph-image/route.js${ext}`, [...PLAIN, libvips])
   for (let i = 0; i < starved; i++) trace(`app/starved-${i}/[slug]/twitter-image/route.js${ext}`, PLAIN)
-  for (let i = 0; i < incidental; i++) trace(`app/(main)/spaces/[slug]/inherit-${i}/page.js${ext}`, [...PLAIN, LIBVIPS])
+  for (let i = 0; i < incidental; i++) trace(`app/(main)/spaces/[slug]/inherit-${i}/page.js${ext}`, [...PLAIN, libvips])
   // A static card being SERVED, not drawn: it must not be asked for a rasteriser.
   trace(`app/opengraph-image.jpg/route.js${ext}`, PLAIN)
   return dir
@@ -60,6 +61,20 @@ function run(dir: string) {
 }
 
 describe('check-og-trace · the clean case is a real pass', () => {
+  const macLibvips = '../../../../node_modules/@img/sharp-libvips-darwin-x64/lib/libvips-cpp.8.18.7.dylib'
+  it('recognizes the actual macOS native library without calling every card starved', () => {
+    const { code, out } = run(makeArtifact({ libvips: macLibvips }))
+    expect(code, out).toBe(0)
+    expect(out).toContain('sharp ships to all 6 rasterising route(s), and to 10 other function(s)')
+  })
+
+  it('still refuses missing and over-inherited macOS native libraries', () => {
+    expect(run(makeArtifact({ libvips: macLibvips, starved: 1 })).out).toContain('1 card-rasterising route(s) ship WITHOUT sharp')
+    const spread = run(makeArtifact({ libvips: macLibvips, incidental: 101 }))
+    expect(spread.code).toBe(1)
+    expect(spread.out).toContain('sharp reached 101 function(s)')
+  })
+
   it('exits 0 and counts the rasterisers, the incidental carriers, and the rest', () => {
     const { code, out } = run(makeArtifact())
     expect(code, out).toBe(0)
