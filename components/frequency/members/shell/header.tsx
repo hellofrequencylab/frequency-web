@@ -608,7 +608,10 @@ const DRAWER_TILES: readonly {
   { label: 'Circles', href: '/circles', icon: 'circle', tone: 'violet', navKey: 'circles' },
   { label: 'Messages', href: '/messages', icon: 'message', tone: 'aqua', navKey: 'messageBoards', badge: 'messages' },
   { label: 'My Quest', href: '/crew', icon: 'standing', tone: 'sun', navKey: 'quest' },
-  { label: 'Mindless', href: '/on-air', icon: 'breath', tone: 'magenta' },
+  // Spaces took Mindless's tile (owner, 2026-10-16: "Replace mindless with spaces in the ios menu"). It
+  // lands where the desktop Business Spaces shortcut does; Mindless stays one tap away in the Zap sheet
+  // and The Quest.
+  { label: 'Spaces', href: '/spaces/directory', icon: 'space', tone: 'magenta' },
   { label: 'Journeys', href: '/journeys', icon: 'program', tone: 'aqua', navKey: 'journeys' },
   { label: 'Practices', href: '/practices', icon: 'checkin', tone: 'sun', navKey: 'practices' },
   { label: 'Members', href: '/network', icon: 'contacts', tone: 'violet', navKey: 'people' },
