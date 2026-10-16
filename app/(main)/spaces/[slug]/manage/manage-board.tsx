@@ -22,6 +22,8 @@ import { SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqOverviewBody } from '@/components/frequency/admin/pages/overview/overview-body'
 import { FqContactsBody } from '@/components/frequency/admin/pages/contacts/contacts-body'
+import { ManageQuickLinks } from '@/components/spaces/manage-quick-links'
+import { readWebsitePublished } from '@/lib/spaces/website'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
 // gates on manage access, computes the gated surface spine + Mode emphasis, and renders the console.
@@ -173,6 +175,8 @@ export async function SpaceManageBoard({
 
   return (
     <>
+      {/* Doors to everything outside the tabs (SCAN-971): full console, web editor, website, menu. */}
+      <ManageQuickLinks slug={space.slug} published={readWebsitePublished(space.preferences)} inPanel={!!sectionHref} />
       <SpaceManageConsole
         slug={space.slug}
         modules={modules}
