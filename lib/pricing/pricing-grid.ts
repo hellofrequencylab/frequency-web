@@ -47,6 +47,7 @@ import {
   networkTakeRateBpsForPlan,
   networkTakeRateFromStored,
   type CatalogItemKey,
+  yearlyFromMonthly,
 } from '@/lib/billing/pricing-keys'
 import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
@@ -68,6 +69,8 @@ import { PLAN_STORY } from './plan-story'
 import {
   ADDON_ENTITLEMENT_KEYS,
   SPACE_PLAN_LABEL,
+  NETWORK_PLAN,
+  networkCheckoutOpen,
   planEntitlementKeys,
   type AddonKey,
   type SpacePlan,
@@ -183,9 +186,15 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
     forWho:
       'Practitioners, teachers who work across studios, studio owners, and community leaders ready to charge: paid tickets, memberships, donations, a shop and booking deposits, with the limits lifted.',
   },
+  // The split (owner ruling 2026-10-15, SCAN-961): Collective is many owners working together, Network
+  // is one owner running many groups. The cards say which one a reader is.
   collective: {
-    tagline: 'Groups of groups.',
-    forWho: `Networks, federations, and anyone running several Spaces together: ${COLLECTIVE_INCLUDED_SPACES} member Spaces under one account, each with the Business tools, and Vera AI included.`,
+    tagline: 'Grow together without giving anything up.',
+    forWho: `Separate groups that partner: a hub that links partner Spaces, cross-listed Circles and Journeys, a shared calendar and Vera AI included. Each partner keeps its own members and payouts. Existing Collectives keep their ${COLLECTIVE_INCLUDED_SPACES} member Spaces.`,
+  },
+  network: {
+    tagline: 'Run every chapter as one organization.',
+    forWho: `One organization with chapters: ${NETWORK_PLAN.includedChapters} chapters and ${NETWORK_PLAN.centralAdmins} central admins included, one membership that works in every chapter, one network calendar and home, and a roll-up report. Chapter leaders see only their own chapter.`,
   },
   nonprofit: {
     tagline: 'Business tools, verified.',
@@ -341,7 +350,35 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         },
       }
     }),
+    networkOffering(rate('network'), sells('network') ? rateBps('network') : 0),
   ]
+}
+
+/** The Network card (SCAN-961). Quote only until its Stripe price exists (networkCheckoutOpen), so the
+ *  price reads "from" and the button opens the Networks page, never checkout. Every figure is NETWORK_PLAN. */
+function networkOffering(takeRate: string, networkRateBps: number): Offering {
+  const from = formatCents(NETWORK_PLAN.monthlyCents)
+  return {
+    id: 'network',
+    axis: 'plan',
+    tier: 'network',
+    label: SPACE_PLAN_LABEL.network,
+    ...OFFERING_COPY.network!,
+    monthly: `from ${from}/mo`,
+    monthlyCents: NETWORK_PLAN.monthlyCents,
+    yearly: `from ${formatCents(yearlyFromMonthly(NETWORK_PLAN.monthlyCents))}/yr`,
+    listAnchor: null,
+    betaNote: null,
+    trial: null,
+    billing: `${NETWORK_PLAN.includedChapters} chapters included, ${formatCents(NETWORK_PLAN.extraChapterCents)} a month for each extra chapter up to ${NETWORK_PLAN.maxChapters}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitMonthlyCents)}.`,
+    takeRate,
+    networkRateBps,
+    sells: true,
+    featured: false,
+    cta: networkCheckoutOpen()
+      ? { label: 'Start a Network', href: '/spaces' }
+      : { label: NETWORK_PLAN.quoteLabel, href: '/networks' },
+  }
 }
 
 /** Every sellable offering, member ladder then Space ladder. PURE. */

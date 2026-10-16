@@ -53,12 +53,13 @@ function routeExists(href: string): boolean {
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored, yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 import { isBetaPricingActive } from './beta'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
-import { ADVERTISED_SPACE_PLANS, formatCents } from './display'
+import { ADVERTISED_SPACE_PLANS, QUOTED_SPACE_PLANS, formatCents } from './display'
 import { FEATURE_GATES, meetsGate } from './gates'
 import {
   ADDON_ENTITLEMENT_KEYS,
   BUSINESS_DEPTH_ENTITLEMENT_KEYS,
   INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
+  NETWORK_PLAN,
   SPACE_PLANS,
   SPACE_PLAN_LABEL,
   planEntitlementKeys,
@@ -91,7 +92,7 @@ const input: PricingGridInput = {
  *  public surface derives from, so this constant follows it rather than restating a ladder. Every
  *  column-by-column assertion below sweeps THIS, and `no public surface advertises a hand-sold tier`
  *  further down proves the difference is real rather than merely untested. */
-const SHOWN_SPACE_PLANS: readonly SpacePlan[] = ['free', ...ADVERTISED_SPACE_PLANS]
+const SHOWN_SPACE_PLANS: readonly SpacePlan[] = ['free', ...ADVERTISED_SPACE_PLANS, ...QUOTED_SPACE_PLANS]
 
 /** Find one row anywhere in a grid by its key. */
 function row(grid: FeatureGrid, key: string) {
@@ -154,6 +155,11 @@ describe('offerings: every sellable tier is on the page', () => {
         expect(o.monthly).toBe('Free')
         continue
       }
+      // Network is quoted (SCAN-961): its "from" price is NETWORK_PLAN, the one place it is written.
+      if (o.tier === 'network') {
+        expect(o.monthly).toBe(`from ${formatCents(NETWORK_PLAN.monthlyCents)}/mo`)
+        continue
+      }
       const price = PRICING_DEFAULTS.plan[o.tier as Exclude<SpacePlan, 'free' | 'network'>]
       const charged = betaActive ? price.monthly_cents : Math.max(price.monthly_cents, price.list_cents ?? 0)
       expect(o.monthly).toBe(`${formatCents(charged)}/mo`)
@@ -172,7 +178,8 @@ describe('offerings: every sellable tier is on the page', () => {
 
   it('applies the operator-set trial to the paid Space plans only', () => {
     for (const o of spaceOfferings(input)) {
-      if (o.tier === 'free') expect(o.trial).toBeNull()
+      // A quoted Network has no self-serve trial.
+      if (o.tier === 'free' || o.tier === 'network') expect(o.trial).toBeNull()
       else expect(o.trial).toBe(`${PRICING_DEFAULTS.trial.days}-day free trial.`)
     }
     // Members get no trial: the free tier is the trial.
@@ -305,12 +312,14 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
       business: 'Included',
       collective: 'Included',
       nonprofit: 'Included',
+      network: 'Included',
     })
     expect(cellsByColumn(grid, 'team')).toEqual({
       free: 'Not included',
       business: 'Included',
       collective: 'Included',
       nonprofit: 'Included',
+      network: 'Included',
     })
     // The third separator used to be `whitelabel`, the key that split Independent from Collective.
     // With Independent off the advertised ladder that row read "Not included" in every column, so it
@@ -320,6 +329,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
       business: 'Included',
       collective: 'Included',
       nonprofit: 'Included',
+      network: 'Included',
     })
     expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('whitelabel')
   })

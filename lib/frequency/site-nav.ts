@@ -43,6 +43,8 @@ export const ROUTES = {
   about: '/about',
   /** The town calendar, "What's happening". */
   happening: '/discover/events',
+  /** The public Business Spaces directory (the in-app twin is /spaces/directory). */
+  directory: '/discover/spaces',
   signIn: '/sign-in',
   feed: '/feed',
   /** The home page for a signed-in member: bare `/` sends a member to the Feed (lib/nav/front-door.ts),
@@ -247,6 +249,8 @@ export const FEATURES_LABEL = 'Features'
 
 /** DIRECT: the plain links after the three menus. */
 export const DIRECT_LINKS: SiteLink[] = [
+  // Owner, 2026-10-16: the Business Spaces directory is prominent in every navigation.
+  { href: ROUTES.directory, label: 'Business Spaces' },
   { href: ROUTES.pricing, label: 'Pricing' },
   { href: ROUTES.stories, label: 'Stories' },
 ]
@@ -302,6 +306,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
     heading: 'For people',
     links: [
       { href: ROUTES.people, label: 'Find your Circle' },
+      { href: ROUTES.directory, label: 'Business Spaces' },
       { href: FIRST_NIGHT, label: 'Your first gathering' },
       { href: ROUTES.happening, label: 'What’s happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },

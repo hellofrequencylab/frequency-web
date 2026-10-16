@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -15,6 +15,14 @@ import { WILDHEART_CSS } from '@/components/sites/wildheart-css'
 import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
 import { buildEvents, buildItems, buildPageDocs, buildPreferences, ptIso, CIRCLE, CIRCLES_MORE, FOUNDATION, PAGES, SLUG, TAGLINE, YEAR } from '../scripts/seed-wildheart.mts'
 import { expandSiteSeries, type SiteEventRow } from '@/lib/sites/site-events'
+
+// The handoff draws the site as its admin sees it (the Vision and Calendar chip). Since SCAN-970 the admin
+// links are a client island that shows only once the site's check confirms an admin, so this render stands
+// in that confirmed answer.
+vi.mock('@/components/sites/site-admin-gate', () => ({
+  useSiteAdmin: () => true,
+  SiteAdminOnly: ({ children }: { children: React.ReactNode }) => children,
+}))
 
 // THE WILDHEART SITE, RENDERED OFFLINE (LIVE-903, LIVE-904). The live site is the seed's page docs drawn by
 // the same chrome and section renderer the Next page uses (components/sites/site-page.tsx), with the
