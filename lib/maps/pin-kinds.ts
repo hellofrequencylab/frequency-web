@@ -113,9 +113,12 @@ export const MAP_CLUSTER_PAINT = {
 export function resolvePinPaint(pin: {
   kind?: MapPinKind | null
   tone?: MapPinTone | null
-}): MapPinPaint {
-  if (pin.tone) return MAP_PIN_TONES[pin.tone]
-  return MAP_PIN_KINDS[pin.kind ?? 'place']
+}, design = false): MapPinPaint {
+  const paint = pin.tone ? MAP_PIN_TONES[pin.tone] : MAP_PIN_KINDS[pin.kind ?? 'place']
+  // Map accents are scoped to the map, not the legacy action-primary token (purple in older kits).
+  return design && paint.token === '--color-primary'
+    ? { ...paint, token: '--design-map-pin', fallback: FREQUENCY_CLUSTER.stops[1] }
+    : paint
 }
 
 /** The layers a browsing surface offers, in the order a legend should list them. `place` is

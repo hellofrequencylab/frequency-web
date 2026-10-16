@@ -39,6 +39,7 @@ export interface GoogleMap {
 }
 
 export interface GoogleMarker {
+  setIcon(icon: GoogleSymbol | GoogleIcon): void
   setPosition(p: GoogleLatLngLiteral): void
   getPosition(): GoogleLatLng | null | undefined
   setMap(map: GoogleMap | null): void
@@ -52,6 +53,7 @@ export interface GoogleInfoWindow {
 }
 
 export interface GoogleCircle {
+  setOptions(options: Partial<GoogleCircleOptions>): void
   setMap(map: GoogleMap | null): void
 }
 

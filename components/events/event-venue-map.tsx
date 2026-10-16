@@ -24,7 +24,7 @@ export default function EventVenueMap({
     <MapCanvas
       center={[lng, lat]}
       zoom={14}
-      pins={[{ id: 'venue', lat, lng }]}
+      pins={[{ id: 'venue', lat, lng, kind: 'event' }]}
       className={className}
     />
   )

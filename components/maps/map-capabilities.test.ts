@@ -237,6 +237,15 @@ describe('pins carry a kind, and one table decides what a kind looks like', () =
     expect(resolvePinPaint({ kind: 'circle', tone: 'secondary' }).token).toBe('--color-info')
   })
 
+  it('Frequency venues share the map accent while secondary and other entity paints stay distinct', () => {
+    expect(resolvePinPaint({ kind: 'event' }, true).token).toBe('--design-map-pin')
+    expect(resolvePinPaint({}, true).token).toBe('--design-map-pin')
+    expect(resolvePinPaint({ kind: 'circle', tone: 'primary' }, true).token).toBe('--design-map-pin')
+    expect(resolvePinPaint({ kind: 'circle' }, true)).toEqual(MAP_PIN_KINDS.circle)
+    expect(resolvePinPaint({ kind: 'space' }, true)).toEqual(MAP_PIN_KINDS.space)
+    expect(resolvePinPaint({ tone: 'secondary' }, true).token).toBe('--color-info')
+  })
+
   it('every colour carries a concrete fallback, because one engine cannot take a variable', () => {
     // A Google Symbol needs a colour STRING. A canvas that mounts before the stylesheet
     // resolves would otherwise draw an invisible pin on the keyed engine only.
