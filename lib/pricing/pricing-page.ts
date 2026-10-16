@@ -44,6 +44,7 @@ import {
   type BillingInterval,
   type CatalogAmounts,
   type CatalogItemKey,
+  yearlyFromMonthly,
 } from '@/lib/billing/pricing-keys'
 
 // ── A money amount rendered both intervals (the table + strip show monthly with a yearly toggle) ─────
@@ -294,11 +295,11 @@ export function pricingTiers(
 
   return offerings.map((o): PricingTier => {
     const id = o.id as PricingTier['id']
-    // Network is quoted (SCAN-961): no catalog item, a "from" price read off NETWORK_PLAN, a year of twelve.
+    // Network is quoted (SCAN-961): no catalog item, a "from" price read off NETWORK_PLAN, a year at the house rate (two months free).
     const network = id === 'network'
     const item = id === 'free' || id === 'network' ? null : cat[TIER_ITEM[id]]
     const from: CatalogAmounts = { listCents: NETWORK_PLAN.monthlyCents, foundingCents: NETWORK_PLAN.monthlyCents }
-    const fromYear: CatalogAmounts = { listCents: NETWORK_PLAN.monthlyCents * 12, foundingCents: NETWORK_PLAN.monthlyCents * 12 }
+    const fromYear: CatalogAmounts = { listCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents), foundingCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents) }
     return {
       id,
       name: offeringLadderLabel(o),

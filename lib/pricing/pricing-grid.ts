@@ -47,6 +47,7 @@ import {
   networkTakeRateBpsForPlan,
   networkTakeRateFromStored,
   type CatalogItemKey,
+  yearlyFromMonthly,
 } from '@/lib/billing/pricing-keys'
 import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
@@ -365,7 +366,7 @@ function networkOffering(takeRate: string, networkRateBps: number): Offering {
     ...OFFERING_COPY.network!,
     monthly: `from ${from}/mo`,
     monthlyCents: NETWORK_PLAN.monthlyCents,
-    yearly: null,
+    yearly: `from ${formatCents(yearlyFromMonthly(NETWORK_PLAN.monthlyCents))}/yr`,
     listAnchor: null,
     betaNote: null,
     trial: null,

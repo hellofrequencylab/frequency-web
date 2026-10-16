@@ -77,8 +77,8 @@ export function TierLadder({ steps, active = 'network' }: { steps: readonly Ladd
                 })}
               </>
             )}
-            <text className="tg-t" x={x + (colW - 24) / 2} y={212} textAnchor="middle" fontWeight={600} fontSize={15} fill="currentColor">{s.label}</text>
-            <text className="tg-m" x={x + (colW - 24) / 2} y={234} textAnchor="middle" fontSize={13} fill="currentColor">{s.price}</text>
+            <text className="tg-t tg-s15" x={x + (colW - 24) / 2} y={212} textAnchor="middle" fontWeight={600} fill="currentColor">{s.label}</text>
+            <text className="tg-m tg-s13" x={x + (colW - 24) / 2} y={234} textAnchor="middle" fill="currentColor">{s.price}</text>
           </g>
         )
       })}
@@ -99,8 +99,8 @@ export function CollectiveOrNetwork() {
         <SpaceMark x={216} y={50} s={44} owner="tg-q" />
         <rect className="tg-a" x={40} y={118} width={220} height={14} rx={7} fill="currentColor" fillOpacity={0.3} stroke="currentColor" strokeWidth={1.5} />
         {[62, 150, 238].map((cx) => <path key={cx} className="tg-q" d={`M${cx} 96v20`} stroke="currentColor" strokeWidth={1.5} strokeDasharray="3 3" />)}
-        <text className="tg-t" x={150} y={170} textAnchor="middle" fontWeight={600} fontSize={16} fill="currentColor">Collective</text>
-        <text className="tg-m" x={150} y={194} textAnchor="middle" fontSize={13} fill="currentColor">Many owners, working together</text>
+        <text className="tg-t tg-s16" x={150} y={170} textAnchor="middle" fontWeight={600} fill="currentColor">Collective</text>
+        <text className="tg-m tg-s13" x={150} y={194} textAnchor="middle" fill="currentColor">Many owners, working together</text>
       </g>
       <path className="tg-q" d="M320 30v170" stroke="currentColor" strokeWidth={1} />
       {/* Network: one parent, one owner, chapters branching below. */}
@@ -112,8 +112,8 @@ export function CollectiveOrNetwork() {
             <SpaceMark x={cx} y={100} s={28} cls="tg-q" owner="tg-a" />
           </g>
         ))}
-        <text className="tg-t" x={490} y={170} textAnchor="middle" fontWeight={600} fontSize={16} fill="currentColor">Network</text>
-        <text className="tg-m" x={490} y={194} textAnchor="middle" fontSize={13} fill="currentColor">One owner, many chapters</text>
+        <text className="tg-t tg-s16" x={490} y={170} textAnchor="middle" fontWeight={600} fill="currentColor">Network</text>
+        <text className="tg-m tg-s13" x={490} y={194} textAnchor="middle" fill="currentColor">One owner, many chapters</text>
       </g>
     </svg>
   )
@@ -146,11 +146,11 @@ export function WhoSeesWhat() {
       <title id="tg-who-t">Who sees what in a Network</title>
       <desc id="tg-who-d">A central admin sees every chapter. A chapter leader sees only their own chapter.</desc>
       <Tree ox={40} lit="all" />
-      <text className="tg-t" x={154} y={160} textAnchor="middle" fontWeight={600} fontSize={15} fill="currentColor">Central admin</text>
-      <text className="tg-m" x={154} y={182} textAnchor="middle" fontSize={13} fill="currentColor">Sees every chapter</text>
+      <text className="tg-t tg-s15" x={154} y={160} textAnchor="middle" fontWeight={600} fill="currentColor">Central admin</text>
+      <text className="tg-m tg-s13" x={154} y={182} textAnchor="middle" fill="currentColor">Sees every chapter</text>
       <Tree ox={360} lit="one" />
-      <text className="tg-t" x={474} y={160} textAnchor="middle" fontWeight={600} fontSize={15} fill="currentColor">Chapter leader</text>
-      <text className="tg-m" x={474} y={182} textAnchor="middle" fontSize={13} fill="currentColor">Sees their own chapter</text>
+      <text className="tg-t tg-s15" x={474} y={160} textAnchor="middle" fontWeight={600} fill="currentColor">Chapter leader</text>
+      <text className="tg-m tg-s13" x={474} y={182} textAnchor="middle" fill="currentColor">Sees their own chapter</text>
     </svg>
   )
 }
@@ -188,16 +188,16 @@ export function FeeBars({ bars }: { bars: readonly FeeBar[] }) {
         const cls = b.id === 'network' ? 'tg-a' : 'tg-q'
         return (
           <g key={b.id}>
-            <text className="tg-t" x={0} y={y + 20} fontSize={14} fontWeight={600} fill="currentColor">{b.label}</text>
+            <text className="tg-t tg-s14" x={0} y={y + 20} fontWeight={600} fill="currentColor">{b.label}</text>
             <rect className={cls} x={140} y={y + 6} width={wBar} height={20} rx={6} fill="currentColor" fillOpacity={0.35} stroke="currentColor" strokeWidth={1.5} />
-            <text className="tg-t" x={150 + wBar} y={y + 21} fontSize={14} fill="currentColor">{pct(b.bps)}</text>
+            <text className="tg-t tg-s14" x={150 + wBar} y={y + 21} fill="currentColor">{pct(b.bps)}</text>
           </g>
         )
       })}
       <g>
-        <text className="tg-t" x={0} y={10 + bars.length * rowH + 20} fontSize={14} fontWeight={600} fill="currentColor">Your own people</text>
+        <text className="tg-t tg-s14" x={0} y={10 + bars.length * rowH + 20} fontWeight={600} fill="currentColor">Your own people</text>
         <rect className="tg-q" x={140} y={10 + bars.length * rowH + 6} width={6} height={20} rx={3} fill="currentColor" />
-        <text className="tg-m" x={156} y={10 + bars.length * rowH + 21} fontSize={14} fill="currentColor">0% on every plan, plus card processing</text>
+        <text className="tg-m tg-s14" x={156} y={10 + bars.length * rowH + 21} fill="currentColor">0% on every plan, plus card processing</text>
       </g>
     </svg>
   )

@@ -8,6 +8,7 @@ import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
 import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
+import { annualDiscountNote } from '@/lib/pricing/display'
 import {
   memberOfferings,
   planExtras,
@@ -210,7 +211,13 @@ export default async function PricingPage() {
             ...priceSchema,
           ]}
         />
-        <FrequencyPricing members={members} spaces={spaces} grid={spaceFeatureGrid(input)} faq={faq} />
+        <FrequencyPricing
+          members={members}
+          spaces={spaces}
+          grid={spaceFeatureGrid(input)}
+          faq={faq}
+          yearlyNote={annualDiscountNote(values)}
+        />
       </>
     )
   }
