@@ -257,11 +257,11 @@ export function EventDetailTemplate({
         // smaller screen, the countdown should be below the info area"*); `sm:flex-row` sets
         // them side by side. `items-start` so the countdown aligns to the TOP of the info
         // rather than drifting to its vertical centre as the info stack grows.
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="event-identity-layout flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           {/* `min-w-0` so a long address wraps inside this column instead of shoving the
               countdown off the row. */}
           <div className="min-w-0 flex-1 space-y-3 text-body-sm text-muted">{identityStack}</div>
-          <div className="w-full sm:w-auto sm:shrink-0">{identity.aside}</div>
+          <div className="event-identity-aside w-full sm:w-auto sm:shrink-0">{identity.aside}</div>
         </div>
       ) : (
         // `space-y-3` between groups against `space-y-1.5` inside one: the whole reorganisation

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-945",
+  "title": "Restore a responsive event invitation and distinct host, venue and collaborator credits",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/frequency/members/event/event-panels.tsx",
+    "ref": "Owner event detail screenshot and role clarification 2026-10-15"
+  },
+  "detail": "Research traced canonical hosting/venue axes, ticket payee selection and optional accepted-collaborator revenue splits, accepted event_space_shares and event_cohosts, newest public-venue privacy rulings and original Event design handoff. Frequency Host panel incorrectly labeled collaborating Spaces and person cohosts identically; distinct venue already resolved by page was absent from module context. New context carries existing venue read, and role credits remain distinct without altering payout or authorization. Header uses canonical EventDetailTemplate with content-width flex wrapping, Directions adjacent location text and subordinate countdown. Numeric door-window helper is shared with server rule so a mounted Frequency countdown transitions at opening/closure rather than following stale server window snapshot. Server render instant preserves meaningful first frame. No DB writes or new data queries. Isolated canonical-template fixture inspected with embedded production fonts at320/390/600/768/1120; all five document scroll widths equal their viewports. Parent visual approval and final built-runtime integration remain pending.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "71 tests passed across real host/countdown renderers, canonical window/state/belonging and EventDetailTemplate equivalence. Scoped ESLint and git diff --check pass. Isolated actual EventDetailTemplate fixture verified via CUA at320/390/600/768/1120 with Unbounded loaded and zero horizontal document overflow. Parent must review fixture and rebuilt real event with rail resizing, public hidden-address gates and actual check-in state. Keep open until built-runtime verification."
+  },
+  "wave": "W7"
+}

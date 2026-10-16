@@ -44,15 +44,17 @@ export function checkInWindowOpen(
   now: Date = new Date(),
 ): boolean {
   const start = eventInstant(startsAtIso, zone)
-  if (!start) return false
-  if (now.getTime() < start.getTime()) return false
-
-  // An `ends_at` BEFORE the start is a bad row, not a zero-length event: fall back to the start so
-  // a data slip cannot shut the door on a gathering that is happening right now.
   const end = eventInstant(endsAtIso, zone)
-  const close = (end && end.getTime() > start.getTime() ? end : start).getTime() + GRACE_MS
-  return now.getTime() < close
+  return checkInWindowOpenAt(start?.getTime() ?? null, end?.getTime() ?? null, now.getTime())
 }
 
-/** The line a member sees where the check-in control used to be. No em dashes (CONTENT-VOICE §10). */
+/** Same window on already-resolved instants, for a ticking client display. */
+export function checkInWindowOpenAt(startMs: number | null, endMs: number | null, nowMs: number): boolean {
+  if (startMs === null || !Number.isFinite(startMs) || !Number.isFinite(nowMs)) return false
+  if (nowMs < startMs) return false
+  const end = endMs !== null && Number.isFinite(endMs) && endMs > startMs ? endMs : startMs
+  return nowMs < end + GRACE_MS
+}
+
+/** The line a member sees where the check-in control used to be. */
 export const CHECK_IN_CLOSED_NOTE = 'Check-in for this one has closed.'
