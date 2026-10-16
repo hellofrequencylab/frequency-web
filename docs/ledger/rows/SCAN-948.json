@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-948",
+  "title": "Give Frequency floating menus a readable shared material",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/themes/frequency/members-shell.css",
+    "ref": "Owner menu transparency screenshot2026-10-15"
+  },
+  "detail": "Unify member mega navigation, account/notifications/Zap sheets, facet and utility menus, mobile drawer, Create dialog and Search panel under a96% semantic card material with16px blur and hairline depth. Opaque surface fallback applies when backdrop blur or color mixing is unsupported. Re-declare the role at skin/surface boundaries so Commons light/dark and Stage inherit their actual palette. Text opacity and existing opening transitions remain unchanged; global glass panels and page cards are untouched. Inventory exceptions: public Stage mega94%, public Search98%, and fullscreen public Menu already solid/readable keep their intentional dark text/surface contract. Tooltip uses its existing contrast-specific role. No behavioral changes or DB writes.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-15",
+    "evidence": "14 focused Search/Create/actualSSR fixture checks pass; token/adoption/phantom gates pass. Fixture /private/tmp/frequency-menu-material-review.html renders actual Create and Standing with source CSS and fonts over a busy existing brand photo and large poster text,390 Commons light/dark and960 light/Stage dark. Actual integrated header/account/notifications/Zap/Search and computed contrast/no-blur geometry review remain pending parent browser acceptance; CSS preserves full-opacity content and theme-derived foregrounds."
+  },
+  "wave": "W7"
+}

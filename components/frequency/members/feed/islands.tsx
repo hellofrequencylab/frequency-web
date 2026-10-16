@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { FqIcon, type FqIconName } from '@/components/frequency/icon'
+import { FqIcon } from '@/components/frequency/icon'
 import { CaptureBar } from '@/components/feed/capture-bar'
 import { acceptFriendRequest, declineFriendRequest } from '@/app/(main)/people/friend-actions'
 import { completeReminder } from '@/app/(main)/connections/actions'
@@ -14,68 +14,11 @@ import { NEAR_EVENT } from './planner'
 // The Feed's small client islands. Each replaces one of the prototype's inline handlers with
 // component state; every action that changes something is the platform's real one.
 
-// ── Create ────────────────────────────────────────────────────────────────────
-
-const CREATE: { label: string; sub: string; href: string; icon: FqIconName }[] = [
-  { label: 'Post', sub: 'To your wall and the feed', href: '#compose', icon: 'page' },
-  { label: 'Event', sub: 'Vera can draft from a poster', href: '/events/new', icon: 'event' },
-  { label: 'Circle', sub: 'Start from a template', href: '/circles/new', icon: 'circle' },
-  { label: 'Practice', sub: 'Write one or fork one', href: '/practices/new', icon: 'checkin' },
-  { label: 'Journey', sub: 'Phases, modules, lessons', href: '/journeys/new', icon: 'program' },
-  { label: 'Listing', sub: 'Market, Classifieds, Housing', href: '/classifieds/new', icon: 'ticket' },
-]
-
-export function CreateButton() {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const out = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('mousedown', out)
-    document.addEventListener('keydown', esc)
-    return () => {
-      document.removeEventListener('mousedown', out)
-      document.removeEventListener('keydown', esc)
-    }
-  }, [open])
-  return (
-    <div ref={ref} className="fa-pop">
-      <button type="button" className="fa-create fq-iri-rim" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <b aria-hidden>+</b>Create
-      </button>
-      {open && (
-        <div className="fa-menu">
-          {CREATE.map((c) => (
-            <Link
-              key={c.label}
-              href={c.href}
-              onClick={() => {
-                setOpen(false)
-                if (c.href === '#compose') window.dispatchEvent(new Event(COMPOSE_EVENT))
-              }}
-            >
-              <FqIcon name={c.icon} />
-              <span>
-                <b>{c.label}</b>
-                <small>{c.sub}</small>
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+export { CreateButton } from './create-quick-action'
+import { COMPOSE_EVENT } from './create-quick-action'
 
 // ── Composer ──────────────────────────────────────────────────────────────────
 
-const COMPOSE_EVENT = 'fq:compose'
-
-/** The glass pill. Tapping it opens the platform's real Capture box (post, poll, ask, photo...)
- *  in place; Event, Log practice and Listing go to their own create flows. */
 export function FeedComposer({ scopeId, avatarUrl, name, practiceHref }: { scopeId: string; avatarUrl: string | null; name: string; practiceHref: string }) {
   const [open, setOpen] = useState(false)
   useEffect(() => {

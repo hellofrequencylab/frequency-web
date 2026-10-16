@@ -125,9 +125,9 @@ async function GoalsPanel({ profileId, stats }: { profileId: string; stats: Stat
   })
   const done = goals.filter((g) => g.done).length
   return (
-    <section className="fqm-rp" aria-label="Today’s goals" data-visual-mask="rail-panel">
+    <section className="fqm-rp fqm-goals" aria-label="Today’s goals" data-visual-mask="rail-panel">
       <div className="fqm-rp-h">
-        <b>Today’s goals</b>
+        <h2>Today’s goals</h2>
         <span>
           {done} of {goals.length}
         </span>

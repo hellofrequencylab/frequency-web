@@ -45,7 +45,11 @@ describe.each(DESIGNS.filter((d) => d.id !== 'dawn'))('the $id sheet', ({ id }) 
 
   it('scopes every rule to its own data-design attribute', () => {
     const selectors = [...sheet.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter(Boolean)
-    for (const sel of selectors) expect(sel, sel).toContain(`[data-design="${id}"]`)
+    for (const sel of selectors) {
+      // Media groups are not selectors; their nested selectors are still checked below.
+      if (sel.startsWith('@media ')) continue
+      expect(sel, sel).toContain(`[data-design="${id}"]`)
+    }
   })
 
   // ADR-1740: a design is its OWN vocabulary in a generated core sheet (app/themes/<id>/core.css, every

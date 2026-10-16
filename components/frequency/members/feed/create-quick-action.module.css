@@ -1,0 +1,20 @@
+.trigger{min-height:44px;gap:8px;background:var(--fq-pa);color:var(--fq-text-strong);box-shadow:var(--fq-pa-glow),inset 0 1px 0 var(--fq-border-hair)}
+.trigger svg{width:18px;height:18px}
+.dialog{box-sizing:border-box;width:100%;max-width:360px;max-height:var(--create-max-height,90dvh);overflow-y:auto;background:var(--fq-menu-surface,var(--fq-surface-card));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--fq-text-strong);border:1px solid var(--fq-border-hair);border-radius:var(--fq-radius-l);box-shadow:0 24px 60px -24px color-mix(in oklab,var(--fq-ink) 30%,transparent)}
+.content{padding:16px}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--fq-border-hair)}
+.heading h2{margin:0;font:500 var(--fq-text-h4)/var(--fq-lh-h4) var(--fq-font-display);color:var(--fq-text-strong)}
+.heading p{margin:5px 0 0;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
+.heading button{min-width:44px;min-height:44px}
+.heading svg{width:18px;height:18px}
+.actions{display:flex;flex-direction:column;gap:2px;padding-top:8px}
+.actions a{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px;border-radius:var(--fq-radius-m);color:var(--fq-text-strong);text-decoration:none}
+.actions a:hover{background:var(--fq-surface-sunken)}
+.actions a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:-2px}
+.actions a>svg{width:20px;height:20px;flex:none;color:var(--fq-text-muted)}
+.actions a>svg:last-child{width:14px;height:14px;margin-left:auto}
+.actions span{min-width:0;display:flex;flex-direction:column;gap:4px}
+.actions b{font:600 var(--fq-text-body-s)/1.2 var(--fq-font-sans)}
+.actions small{font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+@media(min-width:768px){.dialog{position:fixed;top:var(--create-top,120px);left:var(--create-left,12px);margin:0}}
+@media(max-width:767px){.dialog{position:fixed;bottom:0;left:0;max-width:none;max-height:calc(100dvh - max(16px,env(safe-area-inset-top)));border-radius:var(--fq-radius-l) var(--fq-radius-l) 0 0;border-bottom:0}.content{padding:16px max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}}

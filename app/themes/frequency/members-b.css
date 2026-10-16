@@ -184,7 +184,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-pe-info{display:flex;flex-direction:column;gap:var(--fq-space-4);min-width:0;color:var(--fq-text-on-accent)}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-info>.k{color:var(--fq-text-on-accent);opacity:.75}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-info>.h1{font-size:var(--fq-text-display-l);line-height:1.02;letter-spacing:-.03em;color:var(--fq-text-on-accent);text-wrap:balance}
-[data-design="frequency"] [data-kit="members"] .fqm-pe-facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font:400 var(--fq-text-body)/1.45 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-pe-facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font:400 var(--fq-text-body-size)/1.45 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-facts li{display:flex;gap:12px;align-items:flex-start}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-facts svg{flex:none;width:18px;height:18px;margin-top:2px;opacity:.8}
 [data-design="frequency"] [data-kit="members"] .fqm-pe-info a{color:inherit;text-decoration:underline;text-underline-offset:3px}
@@ -299,4 +299,15 @@
 }
 @media (prefers-reduced-motion:reduce){
   [data-design="frequency"] [data-kit="members"] .fqm-evh-cd-live .dot{animation:none}
+}
+
+
+/* On phones the poster stacks above the facts, below the finite decorative backdrop. The facts
+   therefore need their own opaque surface: no cover colour, blur, or viewport height determines
+   whether a date/address can be read. The RSVP becomes the second section of the same card. */
+@media (max-width:860px){
+  [data-design="frequency"] [data-kit="members"] .fqm-pe-info{padding:var(--fq-space-6);border-radius:var(--fq-radius-xl);background:var(--fq-surface-card);color:var(--fq-text-body);box-shadow:var(--fq-shadow-2)}
+  [data-design="frequency"] [data-kit="members"] .fqm-pe-info>.k{color:var(--fq-text-muted);opacity:1}
+  [data-design="frequency"] [data-kit="members"] .fqm-pe-info>.h1{color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="members"] .fqm-pe-info>.fqm-pe-join{padding:var(--fq-space-5) 0 0;border-top:1px solid var(--fq-border-hair);border-radius:0;box-shadow:none}
 }

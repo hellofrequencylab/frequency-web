@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import Link from 'next/link'
+import { AdoptedPracticeStart } from '@/components/practice/adopted-practice-start'
 import { FqIcon } from '@/components/frequency/icon'
+import type { PracticeWeekDay } from '@/lib/feed/practice-week'
 import type { ZapRow } from '@/lib/feed/frequency-home'
 
 // STANDING: four tappable numbers (streak, Zaps this season, Gems, season rank) over one glass
@@ -69,8 +71,8 @@ interface StandingProps {
   journeysToNext: number | null
   zapRows: ZapRow[]
   tuneOutHref: string
-  /** Today's weekday (0 = Sunday) in the community's zone, so the chain's letters match the server. */
-  todayDow: number
+  /** Real session minutes and untimed logs, Monday–Sunday in the member's timezone. */
+  practiceWeek?: PracticeWeekDay[] | null
   /** The member's adopted practices, with whether each is logged on their today. */
   practices: StandingPractice[]
 }
@@ -92,7 +94,7 @@ function useCountUp(target: number): number {
   return Math.round(target * t)
 }
 
-export function Standing(props: StandingProps) {
+export function Standing(props: StandingProps & { afterStats?: React.ReactNode }) {
   const [stat, setStat] = useState<Stat>('streak')
   const boxOpen = useSyncExternalStore(subscribeBox, readBox, () => true)
   const streak = useCountUp(props.streak)
@@ -106,18 +108,7 @@ export function Standing(props: StandingProps) {
     { k: 'rank', label: 'Season rank', val: props.rankLabel, glyph: '' },
   ]
 
-  // The seven-day chain, derived from the streak itself: a run of N days ending today (logged) or
-  // yesterday (today still open) means those N days were logged. No other day data is read.
-  const doneBefore = Math.min(6, Math.max(0, props.loggedToday ? props.streak - 1 : props.streak))
-  const chain = Array.from({ length: 7 }, (_, i) => {
-    const fromToday = 6 - i
-    const today = fromToday === 0
-    const on = today ? props.loggedToday : fromToday <= doneBefore
-    return { today, on }
-  })
-  const dayLetters = chainLetters(props.todayDow)
   const pct = props.nextMilestone ? Math.min(100, Math.round((props.streak / props.nextMilestone.day) * 100)) : 100
-  const chainDone = chain.filter((c) => c.on).length
 
   const zapMax = Math.max(1, ...props.zapRows.map((r) => r.zaps))
   const doneN = props.practices.filter((p) => p.done).length
@@ -132,7 +123,7 @@ export function Standing(props: StandingProps) {
 
   return (
     <>
-      <div className="fa-stats">
+      <div className="fa-stats-composition"><div className="fa-stats">
         {stats.map((s) => (
           <button key={s.k} type="button" className="fa-stat" aria-pressed={stat === s.k} onClick={() => setStat(s.k)}>
             {s.k === 'rank' ? (
@@ -149,7 +140,8 @@ export function Standing(props: StandingProps) {
           </button>
         ))}
       </div>
-      <div className="fa-glass" data-open={boxOpen ? '' : undefined}>
+      {props.afterStats}</div>
+      <div className="fa-glass fa-standing-panel" data-open={boxOpen ? '' : undefined}>
         <button
           type="button"
           className="fa-fold"
@@ -171,10 +163,10 @@ export function Standing(props: StandingProps) {
               <small>{hint}</small>
             </span>
             {next && (
-              <Link href={next.href} className="fa-tuneout">
+              <AdoptedPracticeStart practiceId={next.id} title={next.title} className="fa-tuneout">
                 <span className="fq-breathe" aria-hidden />
                 Start {next.title}
-              </Link>
+              </AdoptedPracticeStart>
             )}
           </div>
         )}
@@ -193,39 +185,28 @@ export function Standing(props: StandingProps) {
             <div className="fa-streak-r">
               <div className="fa-between">
                 <span className="fa-h18">{props.streak > 0 ? 'Keep it going' : 'Start a streak'}</span>
-                {props.nextMilestone && props.toNext > 0 && (
-                  <span className="fa-m13">
-                    {props.toNext} {props.toNext === 1 ? 'day' : 'days'} to your {props.nextMilestone.day}-day mark
-                  </span>
-                )}
+                <span className="fa-streak-support">{props.loggedToday ? 'You showed up today.' : 'One practice keeps it going.'}</span>
               </div>
-              <div className="fa-chain">
-                <s style={{ width: `calc((100% - 32px) * ${Math.max(0, chainDone - 1)} / 6)` }} aria-hidden />
-                {chain.map((d, i) => (
-                  <span key={i} className={d.today ? (d.on ? 'fa-node on' : 'fa-node today') : d.on ? 'fa-node on' : 'fa-node'}>
-                    <span className={d.today && !d.on ? 'fq-breathe' : undefined}>{d.on && <FqIcon name="checkin" />}</span>
-                    {dayLetters[i]}
-                  </span>
-                ))}
-              </div>
+              <PracticeWeek days={props.practiceWeek ?? null} />
               {props.practices.length > 0 ? (
                 <div className="fa-practices" data-visual-mask="feed-practices">
                   <div className="fa-between">
                     <span className="k">Your practices</span>
-                    <span className="fa-m13">{hint}</span>
+                    <span className="fa-practice-count">{doneN}/{props.practices.length} today</span>
                   </div>
                   <div className="fa-pgrid">
                     {props.practices.map((p) => (
-                      <Link key={p.id} href={p.href} className={p.done ? 'fa-pchip done' : 'fa-pchip'} title={p.done ? `${p.title}, done today` : `Start ${p.title}`}>
+                      <AdoptedPracticeStart key={p.id} practiceId={p.id} title={p.title} className={p.done ? 'fa-pchip done' : 'fa-pchip'}>
                         <span className="fa-pchip-ic" aria-hidden>
                           <FqIcon name={p.done ? 'check' : 'practice'} />
                         </span>
                         <span className="fa-pchip-t">
                           <b>{p.title}</b>
-                          <small>{p.done ? 'Done today' : p.meta || 'Start'}</small>
+                          <small>{p.meta.split(' · ').find((part) => /\d.*min/.test(part)) || 'Start'}</small>
                         </span>
-                      </Link>
+                      </AdoptedPracticeStart>
                     ))}
+                    <Link href="/practices#practices-mine" className="fa-pchip fa-practice-more"><span>{props.practices.length > 5 ? `Show all ${props.practices.length}` : '+ Adopt'}</span></Link>
                   </div>
                   <div className="row wrap">
                     {props.freezeTokens > 0 && (
@@ -234,9 +215,7 @@ export function Standing(props: StandingProps) {
                         {props.freezeTokens} {props.freezeTokens === 1 ? 'freeze' : 'freezes'}
                       </span>
                     )}
-                    <Link href="/practices" className="fa-link">
-                      Adopt another practice
-                    </Link>
+                    <Link href="/practices" className="fa-link fa-practice-adopt-desktop">Adopt another practice</Link>
                   </div>
                 </div>
               ) : (
@@ -311,8 +290,18 @@ export function Standing(props: StandingProps) {
   )
 }
 
-/** The chain's day letters, oldest to today, in the member's own week. */
-function chainLetters(today: number): string[] {
-  const L = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-  return Array.from({ length: 7 }, (_, i) => L[(today - (6 - i) + 7) % 7]!)
+function PracticeWeek({ days }: { days: PracticeWeekDay[] | null }) {
+  if (!days) return <p className="fa-week-unavailable">Practice activity is unavailable right now.</p>
+  const max = Math.max(1, ...days.map((d) => d.minutes))
+  const total = Math.round(days.reduce((n, d) => n + d.minutes, 0) * 10) / 10
+  const untimed = days.reduce((n, d) => n + d.untimed, 0)
+  return <figure className="fa-week" aria-label="Monday to Sunday practice activity. Session minutes are attributed to the local finish day. Dots mark untimed completions.">
+    <figcaption><b>This week</b><span>{total} min{untimed ? ` · ${untimed} untimed` : ''}</span></figcaption>
+    <ol className="fa-week-bars">{days.map((d) => <li key={d.date} data-today={d.today || undefined} data-empty={d.minutes === 0 || undefined} data-future={d.future || undefined} aria-label={`${d.label} ${d.date}: ${d.future ? 'upcoming' : `${d.minutes} minutes finished, ${d.untimed} untimed completions`}${d.today ? ', today' : ''}`}>
+      <span className="fa-week-value" aria-hidden>{d.future ? '–' : d.minutes || '0'}</span>
+      <span className="fa-week-track" aria-hidden><i style={{ height: `${d.minutes / max * 100}%` }} />{d.untimed > 0 && <s title={`${d.untimed} untimed`} />}</span>
+      <span aria-hidden>{d.label}</span>
+    </li>)}</ol>
+    <p title="Session minutes are attributed to the local finish day. Dots mark untimed completions.">Minutes by day</p>
+  </figure>
 }
