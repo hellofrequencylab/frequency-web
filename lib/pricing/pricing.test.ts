@@ -62,9 +62,10 @@ describe('the Network plan (SCAN-956): one owner running many chapters, quote on
     expect(networkMonthlyCents(10, { nonprofit: true })).toBe(47_900)
   })
 
-  it('has no checkout until a Stripe price id exists, and says Talk to us', () => {
-    expect(NETWORK_PLAN.stripePriceId).toBeNull()
-    expect(networkCheckoutOpen()).toBe(false)
+  it('opens checkout once a Stripe price id exists, and says Talk to us without one (SCAN-980)', () => {
+    expect(NETWORK_PLAN.stripePriceId).toBe('price_1UREmtPhyalyRPP1cFZwkpf0')
+    expect(networkCheckoutOpen()).toBe(true)
+    expect(networkCheckoutOpen(null)).toBe(false)
     expect(networkCheckoutOpen('price_x')).toBe(true)
     expect(NETWORK_PLAN.quoteLabel).toBe('Talk to us')
   })

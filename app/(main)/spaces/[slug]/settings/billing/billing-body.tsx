@@ -107,6 +107,7 @@ export async function BillingBody({ slug }: { slug: string }) {
     contactCount,
     manualAgreement,
     collectiveSellable,
+    networkSellable,
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
@@ -130,6 +131,8 @@ export async function BillingBody({ slug }: { slug: string }) {
     activeAgreementForSpace(space.id),
     // Collective reads its own sell switch (plan_collective_enabled), for the ladder chip only.
     spaceLoadoutSellable('collective'),
+    // Network (SCAN-980): sells once its Stripe price exists, on the Collective switch.
+    spaceLoadoutSellable('network'),
   ])
 
   const memberSpaces = !staffViewing && viewerProfileId ? await loadMemberSpaceManagement(space.id, viewerProfileId) : null
@@ -211,7 +214,7 @@ export async function BillingBody({ slug }: { slug: string }) {
           currentPlan={currentPlan}
           slug={space.slug}
           isFree={!isPaid && !staffViewing}
-          sellable={{ business: businessSellable, collective: collectiveSellable }}
+          sellable={{ business: businessSellable, collective: collectiveSellable, network: networkSellable }}
         />}
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise

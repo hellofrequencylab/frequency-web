@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { eventHostLabel, type HostSpaceEmbed } from '@/lib/events/platform-credit'
 import { resolveEventHeroUrl } from '@/lib/events/hero-url'
 import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -111,7 +112,8 @@ type Row = {
   details: EventDetailsWithMedia | null
   /** The presentation bag (events.theme jsonb) — read for its `coverFocus` key only. */
   theme: unknown
-  host: { display_name: string | null } | null
+  host: { display_name: string | null; handle: string | null } | null
+  host_space: HostSpaceEmbed
 }
 
 // The Frequency mark is inlined through lib/og/local-image.ts, from lib/og/event-card.tsx (Satori
@@ -126,7 +128,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { data } = await admin
     .from('events')
     .select(
-      'title, starts_at, attendance_mode, is_cancelled, visibility, status, removed_at, hide_address, location, venue_name, street, city, region, cover_image_path, poster_path, details, theme, host:profiles!host_id ( display_name )',
+      'title, starts_at, attendance_mode, is_cancelled, visibility, status, removed_at, hide_address, location, venue_name, street, city, region, cover_image_path, poster_path, details, theme, host:profiles!host_id ( display_name, handle ), host_space:spaces!host_space_id ( name, brand_name, status )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -182,7 +184,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   // the host set `hide_address`. This card cannot prove the reader is attending, so it never gets the
   // attendee exception the page grants.
   const where = publicVisibleLocation(ev ?? {})?.trim() || null
-  const hostName = ev?.host?.display_name?.trim() || null
+  const hostName = ev ? eventHostLabel(ev.host, ev.host_space) : null
   const mode = ev?.attendance_mode ?? 'in_person'
   const chip = ev?.is_cancelled
     ? 'Cancelled'

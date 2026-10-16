@@ -10,7 +10,7 @@
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingLive, getPricingValues, loadPricingFlags, type PricingFlagKey } from '@/lib/pricing/settings'
-import { asAddonKey, asSpacePlan, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
+import { asAddonKey, asSpacePlan, networkCheckoutOpen, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
 import {
   asCatalogItemKey,
@@ -46,20 +46,22 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
 // ADR-811 / ADR-1709: the paid loadout tiers map onto their per-plan switches. Always GATED on
 // billingLive(). Collective and Non Profit Collective share ONE sell switch, `plan_collective_enabled`
 // (Founding Collective, OWN-096): neither sells until member Spaces and the network home work.
-// Network is not a loadout plan (SCAN-956): it is quote only until its Stripe prices exist, so it has no
-// sell switch and never reaches checkout.
-type LoadoutPlan = Exclude<SpacePlan, 'free' | 'network'>
+// Network (SCAN-980) sells once its Stripe price exists (networkCheckoutOpen) and rides the Collective
+// switch: it is the rung above Collective, so it never sells while Collective is held back.
+type LoadoutPlan = Exclude<SpacePlan, 'free'>
 const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
   independent: 'plan_independent_enabled',
   collective: 'plan_collective_enabled',
   nonprofit_collective: 'plan_collective_enabled',
+  network: 'plan_collective_enabled',
 }
 
 function asLoadoutPlan(plan: string): LoadoutPlan | null {
   const key = asSpacePlan(plan)
-  return key === 'free' || key === 'network' ? null : key
+  if (key === 'network' && !networkCheckoutOpen()) return null
+  return key === 'free' ? null : key
 }
 
 /** Is a loadout tier sellable right now? billingLive() AND its mapped per-plan switch. GATED,
@@ -205,6 +207,9 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   // Collective (ADR-1709) bills its own base; Vera AI is included, so no add-on line rides on it.
   if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }, ...operatorSeat]
   if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }, ...operatorSeat]
+  // Network (SCAN-980) bills its own base with ten chapters and Vera AI included. A chapter past ten
+  // rides `network_chapter`, which first checkout never adds.
+  if (loadout.plan === 'network') return [{ key: 'network_base', perSeat: false }, ...operatorSeat]
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
   // Business and Non Profit: a flat base plus the optional add-ons, Vera AI and the custom domain
@@ -326,7 +331,8 @@ export async function createSpaceLoadoutCheckout(
         key === 'independent_base' ||
         key === 'nonprofit_seat' ||
         key === 'collective_base' ||
-        key === 'nonprofit_collective'
+        key === 'nonprofit_collective' ||
+        key === 'network_base'
       )
         return null
       continue

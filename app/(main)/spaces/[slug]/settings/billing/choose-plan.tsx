@@ -10,8 +10,9 @@ import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 
 // CHOOSE PLAN BUTTON (client · ADR-811 / LIVE-438). The inline upgrade action for a ladder rung the
 // checkout can sell self-serve, which today is Business: Independent came off the self-serve path
-// when the owner made it a hand-sold tier (LIVE-227), so the prop type names the one plan this
-// button offers and a second one cannot be added without a decision. It wires to
+// when the owner made it a hand-sold tier (LIVE-227), so the prop type names the plans this button
+// offers and another cannot be added without a decision. Network joined on the owner's word that its
+// checkout opens (2026-10-16, SCAN-980). It wires to
 // startSpaceLoadoutCheckout, which is DOUBLE-GATED server-side (billingLive AND the per-plan
 // switch), so the parent only renders this when the plan is sellable. Business also has a richer
 // CTA (GoBusinessCta) with the seat picker; this is the plain one-click choose. The paid
@@ -24,8 +25,8 @@ export function ChoosePlanButton({
   label,
 }: {
   slug: string
-  /** The loadout plan to buy. After LIVE-228 the self-serve rung is Business. */
-  plan: 'business'
+  /** The loadout plan to buy: Business (LIVE-228) or Network (SCAN-980). */
+  plan: 'business' | 'network'
   /** The button label, e.g. "Choose Business". */
   label: string
 }) {

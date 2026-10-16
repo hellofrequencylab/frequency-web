@@ -279,3 +279,29 @@ export function resolveAccentVars(
 /** The accent base tokens this module can fully remap (used by the blueprint default-accent guard +
  *  the test, so a role never declares a default the override can't paint). */
 export const SUPPORTED_ACCENT_TOKENS: ReadonlySet<string> = new Set(Object.keys(FAMILIES))
+
+/** The Frequency design's accent slots (ADR-1737). Under Frequency the `--color-primary*` family is the
+ *  design's own, so a Space's accent rides three names only app/themes/frequency/space-page.css reads:
+ *  the fill, the label on it and the readable text shade. The fill replaces the iridescent `--fq-pa` on
+ *  the Space's buttons, active tab and highlights. */
+export interface FrequencyAccentVars {
+  '--space-accent': string
+  '--space-accent-on': string
+  '--space-accent-strong': string
+}
+
+// The Frequency button label is ink on the iridescent fill. On an owner's accent the label is whichever
+// of that ink and white reads better, so a yellow keeps dark text (as its website draws it) and a purple
+// gets white.
+const FQ_INK = '#1E1B18'
+
+/** The Frequency accent override for a Space's OWN brand accent (never a role default: an un-customized
+ *  Space keeps the design's iridescent fill). Null when unset or not a supported value. */
+export function frequencyAccentVars(brandAccent: string | null | undefined): FrequencyAccentVars | null {
+  const vars = accentVars(brandAccent)
+  if (!vars || !brandAccent) return null
+  const on = HEX_ACCENT.test(brandAccent)
+    ? contrastRatio(FQ_INK, brandAccent) >= contrastRatio('#ffffff', brandAccent) ? FQ_INK : '#ffffff'
+    : vars['--color-text-on-primary']
+  return { '--space-accent': vars['--color-primary'], '--space-accent-on': on, '--space-accent-strong': vars['--color-primary-strong'] }
+}
