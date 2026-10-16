@@ -123,7 +123,8 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 
 - **Subscribe to your events as a calendar.** Add one link to Google or Apple Calendar and your RSVPs show up automatically, no re-checking.
 - **Organizer pages** gather everything a host runs at one link, so you can follow the people whose gatherings you like.
-- Switch the library to **map view** to see what's happening near you (we use your approximate neighborhood, never an exact address).
+- **Around you** sits at the top of the Events page. It leads with your next event when you have one this week, or the one we think you'll like most, with a few more picks under it and a live list of what's yours, what's for you, this week's events and what's nearby.
+- Tap the **map** (in Around you, or Map in the toolbar) to open every event on a map. Search it, pick a day or a category, show only what you're going to, and sort by soonest, nearest or most going. Pins sit on each host's area, never an exact address.
 - We'll quietly point out **people you might click with**: folks going to the same event who share a Channel with you and aren't connected yet.
 
 ## For hosts
