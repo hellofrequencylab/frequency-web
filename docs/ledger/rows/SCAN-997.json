@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-997",
+  "title": "Around you on the Events page is one block with no long right column, so the library starts right under it, and the phone layout stacks cleanly",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "closed": "2026-10-17",
+  "source": {
+    "file": "components/frequency/members/events/around-you.tsx",
+    "ref": "Owner 2026-10-17 on /events, with a screenshot: close that huge gap, the right column is pushing it down; make the top area a block with no long right column; put the tags in a horizontal box if needed; the phone layout is super funky, make it smooth."
+  },
+  "detail": "SCAN-975 drew Around you as two columns: the spotlight and three cards on the left, and the map tile, an eight-row ticker and the More in events links stacked on the right. The right column ran far taller than the left, so a large empty gap opened under the cards before the library. Around you is now one block of full-width rows: the spotlight beside the map tile at the spotlight's own height, the three cards across, then the ticker as one horizontal box (the Yours, For you, This week and Nearby tabs over a sideways strip of short rows). The More in events links leave the feature (the toolbar's More menu already carries New event, Drafts and Manage). On a phone every row stacks: a shorter spotlight cover and title with full-width actions, a compact map tile whose label never runs under the Open map button, and the cards and the ticker as swipe rows; library card covers are shorter on a narrow phone. Tokens only. DAWN is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const a=r('components/frequency/members/events/around-you.tsx'),c=r('app/themes/frequency/members-events.css');const bad=[];if(!a.includes('className=\\\"ay-top\\\"')||a.includes('ay-side')||a.includes('HubLinks'))bad.push('Around you still has a right column');if(!c.includes('.ay-top{display:grid')||c.includes('.ay-side'))bad.push('the CSS still draws a side column');if(!c.includes('.ay-list li{flex:0 0 240px'))bad.push('the ticker is not a horizontal strip');if(bad.length){console.error('SCAN-997: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
