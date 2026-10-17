@@ -18,6 +18,8 @@ import { FqPeopleToMeet } from './events-lanes'
 import { FqAroundYou, FqAroundYouFrame } from './around-you'
 import { ayMapItems } from './around-you-items'
 import { FqEventsMapLightbox, FqMapButton } from './events-map-lightbox'
+import { HubLinks } from '@/components/frequency/members/shared/hub-links'
+import { hubLinks } from '@/components/frequency/members/shell/nav'
 
 // EVENTS, FREQUENCY BODY (templates/members/Events.html + app/events.css + app/events.js, the
 // 2026-10-14 export). The shell owns the kit root, header and rails; this is the page body: the
@@ -460,6 +462,12 @@ export function FqEventsBody({
           )}
         </section>
       )}
+
+      {/* The hub's own doors (New event, Drafts, Manage) close the page, full width, so no side column
+          grows beside Around you (SCAN-997). */}
+      <Suspense fallback={null}>
+        <HubLinks title="Events" links={(v) => hubLinks('/events', v)} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <FqEventsMapLightbox items={mapItems} signedIn={!!myProfileId} homeLabel={homeLabel} />

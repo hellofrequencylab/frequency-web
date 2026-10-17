@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -118,6 +118,14 @@ function words(html: string): string {
 }
 
 describe("The Group's site, rendered from the seed through the real chrome and sections", () => {
+  // The blocks read the wall clock (the hero's next Friday, the countdowns), so the render runs at NOW.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+  afterAll(() => {
+    vi.useRealTimers()
+  })
   const out = process.env.THE_GROUP_SHOTS_DIR
   if (out) mkdirSync(out, { recursive: true })
 

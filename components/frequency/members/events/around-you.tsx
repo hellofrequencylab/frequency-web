@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Suspense } from 'react'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
 import { scoreEventsForViewer } from '@/lib/events/matching'
 import { eventBlurb } from '@/lib/ai/event-blurb'
@@ -7,8 +6,6 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { SHORT_MONTH_LABELS } from '@/lib/events/calendar-grid'
 import { FqIcon } from '@/components/frequency/icon'
 import { GoButton } from '@/components/frequency/members/go-button'
-import { HubLinks } from '@/components/frequency/members/shared/hub-links'
-import { hubLinks } from '@/components/frequency/members/shell/nav'
 import { planAroundYou, toAyItem, type AyItem, type AyMapItem, type AyReason, type AyTag } from './around-you-items'
 import { AyCountdown, AyPulse, AyTicker } from './around-you-live'
 import { FqMapTile } from './events-map-lightbox'
@@ -19,8 +16,13 @@ import { FqMapTile } from './events-map-lightbox'
 //
 //   ┌ Around you ─────────────────────────────── pulse strip (live, starting soon, filling up) ┐
 //   │ SPOTLIGHT: your next event, or your best pick      │ MAP TILE (opens the lightbox)      │
-//   │ three cards: the balance of yours, picks, filling  │ TICKER: Yours · For you · Week · Near │
+//   │ three cards: the balance of yours, picks, filling up                                    │
+//   │ TICKER: Yours · For you · Week · Near, one horizontal strip                             │
 //   └─────────────────────────────────────────────────────────────────────────────────────────┘
+//
+// ONE BLOCK (SCAN-997, owner 2026-10-17: "close that huge gap ... the top area is a block with no long right
+// column"). Every row spans the feature's full width, so no column can outgrow its neighbour and push the
+// library down; the map tile only ever sits beside the spotlight, at the spotlight's height.
 //
 // The plan (around-you-items.ts planAroundYou) decides what leads; this file only draws it. The one slow read
 // is the viewer's ranked picks (embedding scores) and the spotlight's one plain why line, so the body
@@ -88,91 +90,84 @@ export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; m
 
       <AyPulse items={plan.pulse} />
 
-      <div className="ay-grid">
-        <div className="ay-main">
-          <article className={`ay-spot ${plan.spotlight.reason}`}>
-            <Link
-              href={`/events/${spot.slug}`}
-              className="ay-spot-cover"
-              tabIndex={-1}
-              aria-hidden="true"
-              style={spot.cover ? { backgroundImage: `url('${spot.cover}')`, backgroundPosition: spot.coverFocus ?? undefined } : undefined}
-            >
-              {spotRow && (
-                <span className="ev-date">
-                  <b>{Number(spotRow.starts_at.slice(8, 10))}</b>
-                  <i>{SHORT_MONTH_LABELS[Number(spotRow.starts_at.slice(5, 7)) - 1]}</i>
+      <div className="ay-top">
+        <article className={`ay-spot ${plan.spotlight.reason}`}>
+          <Link
+            href={`/events/${spot.slug}`}
+            className="ay-spot-cover"
+            tabIndex={-1}
+            aria-hidden="true"
+            style={spot.cover ? { backgroundImage: `url('${spot.cover}')`, backgroundPosition: spot.coverFocus ?? undefined } : undefined}
+          >
+            {spotRow && (
+              <span className="ev-date">
+                <b>{Number(spotRow.starts_at.slice(8, 10))}</b>
+                <i>{SHORT_MONTH_LABELS[Number(spotRow.starts_at.slice(5, 7)) - 1]}</i>
+              </span>
+            )}
+          </Link>
+          <div className="ay-spot-b">
+            <span className="ay-tag">
+              {plan.spotlight.reason === 'next' ? <FqIcon name="check" /> : <FqIcon name="zap" />}
+              {REASON[plan.spotlight.reason]}
+            </span>
+            <Link href={`/events/${spot.slug}`} className="ay-spot-t">
+              {spot.title}
+            </Link>
+            <AyCountdown item={spot} />
+            {why && <span className="ev-why">{why}</span>}
+            <div className="ev-stats">
+              <span>
+                <FqIcon name="contacts" />
+                {spot.goingCount > 0 ? `${spot.goingCount} going` : 'Be the first'}
+                {spot.spotsLeft != null && ` · ${spot.spotsLeft === 0 ? 'Waitlist' : `${spot.spotsLeft} left`}`}
+              </span>
+              {spot.price && (
+                <span className="ev-price">
+                  <FqIcon name="ticket" />
+                  {spot.price}
                 </span>
               )}
-            </Link>
-            <div className="ay-spot-b">
-              <span className="ay-tag">
-                {plan.spotlight.reason === 'next' ? <FqIcon name="check" /> : <FqIcon name="zap" />}
-                {REASON[plan.spotlight.reason]}
-              </span>
-              <Link href={`/events/${spot.slug}`} className="ay-spot-t">
-                {spot.title}
-              </Link>
-              <AyCountdown item={spot} />
-              {why && <span className="ev-why">{why}</span>}
-              <div className="ev-stats">
+              {spot.place && (
                 <span>
-                  <FqIcon name="contacts" />
-                  {spot.goingCount > 0 ? `${spot.goingCount} going` : 'Be the first'}
-                  {spot.spotsLeft != null && ` · ${spot.spotsLeft === 0 ? 'Waitlist' : `${spot.spotsLeft} left`}`}
+                  <FqIcon name="pin" />
+                  {spot.place}
                 </span>
-                {spot.price && (
-                  <span className="ev-price">
-                    <FqIcon name="ticket" />
-                    {spot.price}
-                  </span>
-                )}
-                {spot.place && (
-                  <span>
-                    <FqIcon name="pin" />
-                    {spot.place}
-                  </span>
-                )}
-              </div>
-              <div className="ay-spot-acts">
-                {spotRow && needsTicket(spot, spotRow.join_mode, spotRow.price_cents) ? (
-                  <Link className="btn pa sm" href={`/events/${spot.slug}`}>
-                    <FqIcon name="ticket" />
-                    {spot.price ? `Tickets · ${spot.price}` : 'Tickets'}
-                  </Link>
-                ) : myProfileId ? (
-                  <GoButton eventId={spot.id} slug={spot.slug} going={spot.going} />
-                ) : (
-                  <Link className="btn pa sm" href={`/events/${spot.slug}`}>
-                    RSVP
-                  </Link>
-                )}
-                <Link className="btn sm" href={`/events/${spot.slug}`}>
-                  {spot.going ? 'Your details' : 'See details'}
-                </Link>
-              </div>
+              )}
             </div>
-          </article>
-
-          {plan.supporting.length > 0 && (
-            <ul className="ay-trio" aria-label="More around you">
-              {plan.supporting.map(({ item, tag }) => (
-                <li key={item.id}>
-                  <AyCard item={item} tag={tag} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="ay-side">
-          <FqMapTile items={mapItems} homeLabel={homeLabel} />
-          {plan.defaultTab && <AyTicker tabs={plan.tabs} defaultTab={plan.defaultTab} />}
-          <Suspense fallback={null}>
-            <HubLinks title="Events" links={(v) => hubLinks('/events', v)} />
-          </Suspense>
-        </div>
+            <div className="ay-spot-acts">
+              {spotRow && needsTicket(spot, spotRow.join_mode, spotRow.price_cents) ? (
+                <Link className="btn pa sm" href={`/events/${spot.slug}`}>
+                  <FqIcon name="ticket" />
+                  {spot.price ? `Tickets · ${spot.price}` : 'Tickets'}
+                </Link>
+              ) : myProfileId ? (
+                <GoButton eventId={spot.id} slug={spot.slug} going={spot.going} />
+              ) : (
+                <Link className="btn pa sm" href={`/events/${spot.slug}`}>
+                  RSVP
+                </Link>
+              )}
+              <Link className="btn sm" href={`/events/${spot.slug}`}>
+                {spot.going ? 'Your details' : 'See details'}
+              </Link>
+            </div>
+          </div>
+        </article>
+        <FqMapTile items={mapItems} homeLabel={homeLabel} />
       </div>
+
+      {plan.supporting.length > 0 && (
+        <ul className="ay-trio" aria-label="More around you">
+          {plan.supporting.map(({ item, tag }) => (
+            <li key={item.id}>
+              <AyCard item={item} tag={tag} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {plan.defaultTab && <AyTicker tabs={plan.tabs} defaultTab={plan.defaultTab} />}
     </section>
   )
 }
@@ -204,20 +199,16 @@ export function FqAroundYouFrame() {
       <div className="ay-h">
         <span className="ev-skel-bar tall w30" />
       </div>
-      <div className="ay-grid">
-        <div className="ay-main">
-          <div className="ay-spot">
-            <span className="ay-spot-cover" />
-            <div className="ay-spot-b">
-              <span className="ev-skel-bar w30" />
-              <span className="ev-skel-bar tall w60" />
-              <span className="ev-skel-bar w45" />
-            </div>
+      <div className="ay-top">
+        <div className="ay-spot">
+          <span className="ay-spot-cover" />
+          <div className="ay-spot-b">
+            <span className="ev-skel-bar w30" />
+            <span className="ev-skel-bar tall w60" />
+            <span className="ev-skel-bar w45" />
           </div>
         </div>
-        <div className="ay-side">
-          <span className="evm-tile" />
-        </div>
+        <span className="evm-tile" />
       </div>
     </section>
   )
