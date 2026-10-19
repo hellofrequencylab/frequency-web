@@ -10,12 +10,17 @@
 // redeliver. Fail-closed: with no auth token set, every request is rejected.
 //
 // STOP handling is the compliance-critical leg: an inbound STOP/STOPALL/UNSUBSCRIBE
-// propagates a GLOBAL opt-out (recordGlobalStop) across email + SMS at once. Twilio's
-// Messaging Service also auto-handles the carrier STOP/HELP replies; this is our own
-// record so the platform honours the opt-out everywhere immediately.
+// propagates a GLOBAL opt-out (recordGlobalStop) across email + SMS at once. START /
+// UNSTOP lifts that stop on the ledger (recordSmsRestart, ADR-1790). Twilio's Messaging
+// Service auto-replies to STOP / START / HELP at the carrier level; this is our own
+// record so the platform honours the member's choice everywhere immediately.
+//
+// Replies: an inbound-message webhook expects TwiML, so every verified inbound request
+// gets an empty <Response/> (text/xml). Anything else makes Twilio log a warning on each
+// text. Status callbacks accept any 2xx, so they keep the JSON ack.
 
 import { NextResponse } from 'next/server'
-import { recordGlobalStop } from '@/lib/crm/contact-consent'
+import { recordGlobalStop, recordSmsRestart } from '@/lib/crm/contact-consent'
 import { verifyTwilioSignature } from '@/lib/webhook-verify'
 
 export const runtime = 'nodejs'
@@ -24,7 +29,17 @@ export const dynamic = 'force-dynamic'
 // Carrier-standard opt-out keywords. Twilio also recognises these at the carrier
 // level, but we record our own global stop so every channel honours it at once.
 const STOP_KEYWORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'])
+// Carrier-standard re-subscribe keywords. Twilio lifts its own block on these; we lift ours.
+const START_KEYWORDS = new Set(['start', 'unstop', 'yes'])
 const HELP_KEYWORDS = new Set(['help', 'info'])
+
+/** The empty TwiML Twilio expects back from an inbound-message webhook. */
+function twiml(handled: string): Response {
+  return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+    status: 200,
+    headers: { 'content-type': 'text/xml', 'x-frequency-handled': handled },
+  })
+}
 
 /**
  * The public URL Twilio signed. Behind a proxy, `req.url` can be the internal origin,
@@ -85,16 +100,23 @@ export async function POST(req: Request) {
         `[twilio-webhook] recordGlobalStop failed for ${from}: ${err instanceof Error ? err.message : String(err)}`,
       )
     }
-    return NextResponse.json({ ok: true, handled: 'stop' })
+    return twiml('stop')
+  }
+
+  if (from && START_KEYWORDS.has(keyword)) {
+    // Lift our own stop for every member whose latest row on this phone is opted_out.
+    // Best-effort (recordSmsRestart never throws); ack regardless.
+    await recordSmsRestart({ phone: from, source: 'sms_webhook' })
+    return twiml('start')
   }
 
   if (from && HELP_KEYWORDS.has(keyword)) {
     // HELP is carrier/Messaging-Service-handled (the configured auto-reply). We just
     // acknowledge; no state change. (See docs/A2P-REGISTRATION.md §4a #5 for the copy.)
-    return NextResponse.json({ ok: true, handled: 'help' })
+    return twiml('help')
   }
 
   // Any other inbound message: acknowledge without acting. Retrying would not change
   // the outcome, so a 200 stops Twilio redelivering.
-  return NextResponse.json({ ok: true, handled: 'ack' })
+  return twiml('ack')
 }

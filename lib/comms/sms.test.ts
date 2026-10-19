@@ -1,5 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { evaluateSmsGate, isInsideQuietHours, isSmsProvisioned, type SmsGateState } from './sms'
+import {
+  evaluateSmsGate,
+  isInsideQuietHours,
+  isSmsProvisioned,
+  smsSenderRegistration,
+  type SmsGateState,
+} from './sms'
 
 // ── The pure SMS gate: the only path to allowed (ADR-256) ─────────────────────
 // SMS is the hardest-gated channel: registration -> consent -> preference -> quiet
@@ -103,6 +109,7 @@ describe('isSmsProvisioned — fail-closed on env', () => {
     'SMS_A2P_BRAND_ID',
     'SMS_A2P_CAMPAIGN_ID',
     'TWILIO_MESSAGING_SERVICE_SID',
+    'SMS_TOLLFREE_VERIFICATION_SID',
   ] as const
 
   const saved: Record<string, string | undefined> = {}
@@ -116,9 +123,18 @@ describe('isSmsProvisioned — fail-closed on env', () => {
   })
 
   function setAll() {
+    delete process.env.SMS_TOLLFREE_VERIFICATION_SID
     process.env.SMS_PROVISIONING_ENABLED = 'true'
     process.env.SMS_A2P_BRAND_ID = 'BN123'
     process.env.SMS_A2P_CAMPAIGN_ID = 'CM123'
+    process.env.TWILIO_MESSAGING_SERVICE_SID = 'MG123'
+  }
+
+  function setTollFree() {
+    delete process.env.SMS_A2P_BRAND_ID
+    delete process.env.SMS_A2P_CAMPAIGN_ID
+    process.env.SMS_PROVISIONING_ENABLED = 'true'
+    process.env.SMS_TOLLFREE_VERIFICATION_SID = 'HH123'
     process.env.TWILIO_MESSAGING_SERVICE_SID = 'MG123'
   }
 
@@ -143,11 +159,40 @@ describe('isSmsProvisioned — fail-closed on env', () => {
     }
   })
 
-  it('is false when any single flag is missing', () => {
+  it('is false when any single 10DLC flag is missing', () => {
     for (const missing of KEYS) {
+      if (missing === 'SMS_TOLLFREE_VERIFICATION_SID') continue
       setAll()
       delete process.env[missing]
       expect(isSmsProvisioned()).toBe(false)
     }
+  })
+
+  // ── Toll-free sender (ADR-1790): one verification id stands in for brand + campaign ──
+  it('is true for an approved toll-free verification with no A2P brand or campaign', () => {
+    setTollFree()
+    expect(smsSenderRegistration()).toBe('toll_free')
+    expect(isSmsProvisioned()).toBe(true)
+  })
+
+  it('a toll-free sender still needs the switch and the Messaging Service', () => {
+    setTollFree()
+    delete process.env.TWILIO_MESSAGING_SERVICE_SID
+    expect(isSmsProvisioned()).toBe(false)
+    setTollFree()
+    process.env.SMS_PROVISIONING_ENABLED = '0'
+    expect(isSmsProvisioned()).toBe(false)
+  })
+
+  it('names the registration: 10DLC wins when both are set, null when neither is complete', () => {
+    setAll()
+    expect(smsSenderRegistration()).toBe('a2p_10dlc')
+    process.env.SMS_TOLLFREE_VERIFICATION_SID = 'HH123'
+    expect(smsSenderRegistration()).toBe('a2p_10dlc')
+    delete process.env.SMS_A2P_CAMPAIGN_ID
+    expect(smsSenderRegistration()).toBe('toll_free')
+    delete process.env.SMS_TOLLFREE_VERIFICATION_SID
+    expect(smsSenderRegistration()).toBeNull()
+    expect(isSmsProvisioned()).toBe(false)
   })
 })

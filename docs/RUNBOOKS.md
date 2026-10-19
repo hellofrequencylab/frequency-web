@@ -716,14 +716,15 @@ Then set `LOYALTY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset i
 
 ### SMS provisioning (ADR-256)
 
-`SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `SMS_A2P_BRAND_ID`, `SMS_A2P_CAMPAIGN_ID` and `TWILIO_MESSAGING_SERVICE_SID`. Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md).
+`SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `TWILIO_MESSAGING_SERVICE_SID` and one carrier registration: either `SMS_A2P_BRAND_ID` + `SMS_A2P_CAMPAIGN_ID` (A2P 10DLC) or `SMS_TOLLFREE_VERIFICATION_SID` (a verified toll-free number, ADR-1790). Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md) (§8 is the toll-free path).
 
 **Gate before turning it on**, in order. All **owner** unless tagged.
 
-1. Brand and campaign approved in Twilio (A2P-REGISTRATION §3–§4). Carrier review is 10 to 15 days. Do not set the switch to try a send.
-2. Migration `20260626010000` applied (`sms_consent` exists). **agent** can confirm with a read of `pg_tables`.
-3. The four provisioning vars plus `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` set in Vercel Production. `/admin/sms` shows presence of the four, never the values.
-4. The platform `sms_enabled` switch at `/admin/sms` stays off until a consented test send is ready.
+1. The registration approved in Twilio: a 10DLC brand and campaign (A2P-REGISTRATION §3–§4, 10 to 15 days) or a toll-free verification (§8, usually one to three weeks). Do not set the switch to try a send.
+2. Migration `20260626010000` applied (`sms_consent` exists; applied in production 2026-10-19). **agent** can confirm with a read of `pg_tables`.
+3. The switch, the registration id(s) and `TWILIO_MESSAGING_SERVICE_SID`, plus `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`, set in Vercel Production. `/admin/sms` shows presence of each, never the values.
+4. The Messaging Service's inbound webhook points at `https://frequencylocal.com/api/webhooks/twilio` (STOP writes the global opt-out, START lifts it) and its status callback at the same URL.
+5. The platform `sms_enabled` switch at `/admin/sms` stays off until a consented test send is ready.
 
 Then set `SMS_PROVISIONING_ENABLED` to `1`, `true` or `on` and redeploy. The first send is a consented test to a staff number. TCPA statutory damages are $500 to $1,500 per unconsented US text; this switch is the legal lock, not a feature flag.
 

@@ -6,7 +6,7 @@ import { FormSection } from '@/components/admin/form-section'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { smsEnabledFlag } from '@/lib/platform-flags'
-import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
+import { isSmsProvisioned, isSmsConsentTableReady, smsSenderRegistration } from '@/lib/comms/sms'
 import { SmsToggle } from './sms-toggle'
 import { envFlag } from '@/lib/env/string'
 
@@ -90,7 +90,9 @@ export default async function AdminSmsPage() {
   const provisioningEnabled = envFlag('SMS_PROVISIONING_ENABLED')
   const brandSet = !!process.env.SMS_A2P_BRAND_ID
   const campaignSet = !!process.env.SMS_A2P_CAMPAIGN_ID
+  const tollFreeSet = !!process.env.SMS_TOLLFREE_VERIFICATION_SID
   const serviceSet = !!process.env.TWILIO_MESSAGING_SERVICE_SID
+  const registration = smsSenderRegistration()
   const provisioned = isSmsProvisioned()
 
   return (
@@ -119,13 +121,20 @@ export default async function AdminSmsPage() {
 
         <FormSection
           title="Legal registration"
-          description="The A2P 10DLC brand and campaign (and the Twilio Messaging Service they map to) are registration secrets, so they live in the environment, never here. This is a read-only status of whether each one is set."
+          description="The carrier registration (an A2P 10DLC brand and campaign, or an approved toll-free verification) and the Twilio Messaging Service it maps to are registration secrets, so they live in the environment, never here. This is a read-only status of whether each one is set. One registration is enough."
         >
           <div>
             <EnvFlagRow label="Provisioning enabled" set={provisioningEnabled} />
             <EnvFlagRow label="A2P 10DLC brand" set={brandSet} />
             <EnvFlagRow label="A2P 10DLC campaign" set={campaignSet} />
+            <EnvFlagRow label="Toll-free verification" set={tollFreeSet} />
             <EnvFlagRow label="Twilio Messaging Service" set={serviceSet} />
+            <div className="flex items-center justify-between gap-4 border-t border-border/70 py-2.5">
+              <span className="text-body-sm text-text">Sender registration</span>
+              <StatusChip tone={registration ? 'success' : 'neutral'} size="sm">
+                {registration === 'a2p_10dlc' ? 'A2P 10DLC' : registration === 'toll_free' ? 'Toll-free' : 'None'}
+              </StatusChip>
+            </div>
             <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3">
               <span className="text-body-sm font-semibold text-text">Registration complete</span>
               <StatusChip tone={provisioned ? 'success' : 'warning'}>
