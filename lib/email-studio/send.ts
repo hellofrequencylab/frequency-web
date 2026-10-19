@@ -39,6 +39,7 @@ import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-gu
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 import { applyMergeTags } from './render'
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
+import { resolveDataBlockRefs } from './data-blocks'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from './types'
 import { lintVoice } from './voice-lint'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
@@ -680,8 +681,9 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   if (lintVoice(campaignAuthoredCopy(rawDoc)).hasEmDash) return fail(VOICE_EM_DASH_ERROR)
 
   // Resolve the data-bound Product card ONCE (before the recipient loop) so every recipient's email ships the
-  // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4).
-  const doc: EmailRenderDoc = { ...rawDoc, layout: await resolveProductRefs(rawDoc.layout) }
+  // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4). The Event and
+  // Circle cards refresh the same way (EMAIL-025).
+  const doc: EmailRenderDoc = { ...rawDoc, layout: await resolveDataBlockRefs(await resolveProductRefs(rawDoc.layout)) }
   const productVars = productVarsFromLayout(doc.layout)
 
   // The send From: a per-campaign envelope ADDRESS (from_address) if set, else the broadcast default

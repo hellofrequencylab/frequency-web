@@ -109,8 +109,14 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // link from the LIVE commerce catalog at send time (lib/email-studio/product-block.ts), so it never goes
   // stale. On the web a Space already shows its catalog through the connected `offerings` data block.
   { id: 'productCard', label: 'Product', description: 'A product or offering, pulled live from a maker or Space catalog.', category: 'content', kinds: ['email'], order: 285 },
-  { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 286 },
-  { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 288 },
+  // The two sibling data-bound cards (EMAIL-025): an EVENT and a CIRCLE, each picked from a Space and refreshed
+  // from the live row at send time (lib/email-studio/data-blocks.ts), on the same reads-live + resolveAt:send
+  // contract as the Product card (EDITOR-ARCHITECTURE T-2). Email-only for the same reason: the web already
+  // shows a Space's events and circles through its connected `events` / `circles` data blocks.
+  { id: 'eventCard', label: 'Event', description: 'An upcoming event, pulled live from a Space calendar.', category: 'content', kinds: ['email'], order: 286 },
+  { id: 'circleCard', label: 'Circle', description: 'A circle to join, pulled live from a Space.', category: 'content', kinds: ['email'], order: 287 },
+  { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 288 },
+  { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 289 },
   // Two focused TEXT design blocks (ADR-571): a big Display heading and a Prose paragraph, each with its own
   // text-style controls (size / weight / color / shadow) and explanatory demo copy. They give an operator a
   // deliberate "big title" and "body text" block distinct from the plain member Heading / Text content blocks.
@@ -242,7 +248,7 @@ const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
 
 /** The curated EMAIL palette (Email Studio, 2026): the CONTENT + DESIGN blocks that port cleanly to an
  *  inline-styled email document. Headings + text (Display heading / Heading, Text block / Text), a single
- *  Image, the Banner (photoHero), Editorial, Card grid, the data-bound Product card, Callout, Quote, Divider,
+ *  Image, the Banner (photoHero), Editorial, Card grid, the data-bound Product, Event and Circle cards, Callout, Quote, Divider,
  *  Features, and the dedicated Button. It deliberately EXCLUDES every `data` block (they bind to live web data), the web-only `embed`
  *  iframe, the scroll / masonry `gallery`, and the layout-heavy `zigzag` / `accentBeat` design blocks (which
  *  lean on side-by-side columns email cannot lay out safely). The email renderer (lib/email-studio/render.ts)
@@ -257,6 +263,8 @@ export const EMAIL_PALETTE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'image',
   'cardGrid',
   'productCard',
+  'eventCard',
+  'circleCard',
   'features',
   'callout',
   'button',

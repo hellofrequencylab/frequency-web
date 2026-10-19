@@ -25,6 +25,7 @@ const live: Record<string, string> = Object.fromEntries(
     LAYOUT,
     BLOCK_CONTENT,
     'lib/email-studio/product-block.ts',
+    'lib/email-studio/data-blocks.ts',
     'lib/email-studio/shell.ts',
     'lib/email-studio/send.ts',
     'lib/nurture/runner.ts',
