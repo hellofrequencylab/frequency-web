@@ -82,6 +82,13 @@ export default async function RewardsPage() {
           <NearbyRegularsList places={nearby} />
         </section>
       )}
+      <p className="mt-8 text-body-sm text-muted">
+        Met someone from Frequency in person?{' '}
+        <Link href="/meet" className="font-semibold text-text underline">
+          Tap to meet
+        </Link>{' '}
+        and you both earn Zaps.
+      </p>
       {openHunts.length > 0 && (
         <section className="mt-8">
           <SectionHeader title="Hunts on now" count={openHunts.length} />
