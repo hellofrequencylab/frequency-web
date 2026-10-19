@@ -50,7 +50,8 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
       if (state.listFails) return Promise.resolve(resolve({ data: null, error: { message: 'list down' } }))
       let rows = state.listRows
       if (filter.state) rows = rows.filter((row) => row.state === filter.state)
-      if (typeof filter.updated_at_gte === 'string') rows = rows.filter((row) => String(row.updated_at ?? '') >= filter.updated_at_gte)
+      const since = filter.updated_at_gte
+      if (typeof since === 'string') rows = rows.filter((row) => String(row.updated_at ?? '') >= since)
       return Promise.resolve(resolve({ data: rows, error: null }))
     },
     insert: (v: Record<string, unknown>) => { insert = v; return q }, update: (v: Record<string, unknown>) => { update = v; return q }, upsert: (v: Record<string, unknown>) => { upsert = v; return q },
