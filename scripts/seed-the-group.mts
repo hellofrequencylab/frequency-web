@@ -53,10 +53,13 @@ const INSTAGRAM = 'https://www.instagram.com/thegroupsd/'
 const EMAIL = 'June@thegroupcoastal.com'
 const PHONE = '858-997-5951'
 const DIRECTIONS = 'https://share.google/Pwn7yM4FAS1VedbL7'
-const PITCH_SIGNUP = 'https://www.thegroupcoastal.com/pitchfest2026'
+// The brief allows no link to the old site (handoff H, 2026-10-19): a pitch sign-up, a speaker ask and an event
+// submission all land on Frequency. Sign-ups and speaker asks go to the contact page until a form block exists;
+// an event is created on Frequency, where a chapter event waits for a central admin's yes (SCAN-983).
+const PITCH_SIGNUP = PAGE('contact')
 const PITCH_PARTY = 'https://partiful.com/e/9B3VudHuElBPDiShN2Tj'
-const SPEAKER_FORM = 'https://www.thegroupcoastal.com/featuredspeaker-1'
-const EVENT_SUBMIT = 'https://www.thegroupcoastal.com/events-and-workshop-submission'
+const SPEAKER_FORM = PAGE('contact')
+const EVENT_SUBMIT = '/events/new'
 const START_CIRCLE = '/sign-in?next=%2Fcircles%2Fnew'
 const PODCAST = 'https://www.youtube.com/@heartofthematterpod'
 // TODO [confirm]: the podcast channel URL is not in the handoff (it names YouTube and Spotify only). The
@@ -117,7 +120,7 @@ export const CHAPTERS: Chapter[] = [
     // TODO [confirm]: North Park's day, time and place (the portal lists Team Up Tuesday at Maya Moon).
     key: 'north-park', code: 'np', short: 'North Park', meeting: 'Team Up Tuesday', when: 'Tuesdays, 9:00–10:10 AM', where: 'Maya Moon, 3349 Adams Ave, San Diego, CA 92116', icon: 'building', city: 'San Diego',
     tagline: 'Team Up Tuesday at Maya Moon',
-    about: 'Come join the Tuesday Normal Heights chapter at Maya Moon. A weekday morning with your people, close to home.',
+    about: 'Come join the Tuesday North Park chapter at Maya Moon. A weekday morning with your people, close to home.',
     image: PHOTO('patio-coffee'),
   },
   {
@@ -207,6 +210,23 @@ export const circleId = (key: string) => uuidFrom(`circle:${key}`)
 const circleName = (name: string) => (/^the group\b/i.test(name) ? name : `The Group ${name.replace(/^the\s+/i, '')}`)
 /** South OC: forming, on the Network until its details are confirmed (TODO [confirm] with June). */
 export const SOUTH_OC = { key: 'south-oc', name: 'The Group South OC (forming)', about: 'A South OC chapter of The Group, forming now. Come help fill it.', area: 'South Orange County' }
+/** The three network-wide circles the handoff adds (task C4), on the Network itself. Their schedules wait on
+ *  June (section B), so each carries a PLACEHOLDER meetup that says so instead of an invented date, and no
+ *  event is seeded for them. `match` places a seeded event whose title carries it (task E). TODO [confirm] with June. */
+export const NETWORK_CIRCLES = [
+  { key: 'masterminds', name: 'The Group Masterminds', match: 'Mastermind', pillar: 'mind', body: "Masterminds by business stage: a small group of members at the same point in the journey, meeting to work on each other's businesses. Bring a challenge, leave with a plan.", meetup: 'Monthly, by business stage. Day and place to be announced once June confirms the schedule.' },
+  { key: 'wellness', name: 'The Group Wellness', match: 'Wellness Club', pillar: 'body', body: 'Plunges, sound baths and breathwork with members who take care of themselves so they can take care of their work.', meetup: 'Plunges, sound baths and breathwork. Day and place to be announced once June confirms the schedule.' },
+  { key: 'pickleball', name: 'The Group Pickleball', match: 'Pickleball', pillar: 'body', body: 'Pickleball, plunges and real talk. All levels, paddles to borrow, conversation between games.', meetup: 'Pickleball, all levels, paddles to borrow. Court and day to be announced once June confirms the schedule.' },
+] as const
+
+/** The circle a seeded event is placed in (task E, SCAN-949): the first circle whose `match` its title carries,
+ *  else null, which places it in the hosting Space's own Space Circle (the chapter's for a chapter meeting, the
+ *  Network's for a network-wide event). Case-insensitive; apostrophes are ignored so Swami's matches Swami’s. */
+export function circleFor(title: string): string | null {
+  const fold = (t: string) => t.toLowerCase().replace(/[’']/g, '')
+  const hit = [...CIRCLES, ...NETWORK_CIRCLES].find((c) => fold(title).includes(fold(c.match)))
+  return hit ? hit.key : null
+}
 
 // ── Events (The Group Portal export) ────────────────────────────────────────────────────────────
 interface PortalEvent { id: string; t: string; d: string; s: number; e: number; where: string; ch: string; type: string; free: boolean; org: string; rec: string | null; series: string | null; desc: string }
@@ -269,6 +289,8 @@ export interface SeedEvent {
   location: string
   /** The chapter Space that hosts it, or null for the Network itself. */
   chapter: Chapter['key'] | null
+  /** The circle it is placed in (a CIRCLES or NETWORK_CIRCLES key), or null for the host Space's Space Circle. */
+  circle: string | null
   category: string
   energy: string | null
   rule: string | null
@@ -301,7 +323,7 @@ export function buildEvents(): SeedEvent[] {
     const slug = `tg-${slugPart(e.t)}-${e.d}`
     if (used.has(slug)) continue
     used.add(slug)
-    out.push({ slug, title: e.t, description: cleanText(e.desc), date: e.d, start: hhmm(e.s), end: hhmm(e.e), location: e.where, chapter: chapterFor(e.ch), category: CATEGORY[e.type] ?? 'gathering', energy: ENERGY[e.type] ?? null, rule: null, occurrences: [] })
+    out.push({ slug, title: e.t, description: cleanText(e.desc), date: e.d, start: hhmm(e.s), end: hhmm(e.e), location: e.where, chapter: chapterFor(e.ch), circle: circleFor(e.t), category: CATEGORY[e.type] ?? 'gathering', energy: ENERGY[e.type] ?? null, rule: null, occurrences: [] })
   }
   for (const [s, rows] of groups) {
     const first = rows[0]
@@ -311,7 +333,7 @@ export function buildEvents(): SeedEvent[] {
     const occurrences = expandRepeat(ptIso(first.d, start), parseRepeat(s.rule), { through, from: floor, includeAnchor: false }).map((d) => d.toISOString().slice(0, 10))
     out.push({
       slug, title: s.title ?? first.t, description: s.description ?? cleanText(first.desc), date: first.d, start, end: s.end ?? hhmm(first.e), location: s.where ?? first.where,
-      chapter: chapterFor(first.ch), category: CATEGORY[first.type] ?? 'gathering', energy: ENERGY[first.type] ?? null, rule: s.rule, occurrences,
+      chapter: chapterFor(first.ch), circle: circleFor(s.title ?? first.t), category: CATEGORY[first.type] ?? 'gathering', energy: ENERGY[first.type] ?? null, rule: s.rule, occurrences,
     })
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start))
@@ -387,7 +409,7 @@ const eventsBlock = (id: string, extra: Record<string, unknown> = {}): Block => 
 export function buildWebsiteDocs(): Record<string, unknown> {
   const home = doc([
     { type: 'NetworkHero', props: { id: 'tg-home-hero', eyebrow: 'Every Friday · 9 AM · Fox Point Farms, Encinitas', title: 'The non‑networking *networking* group.', lead: 'No pressure. No pitch. Just good energy, meaningful conversations, and a community where you can show up as yourself.', primaryLabel: 'Come this Friday', primaryHref: PAGE('fridays'), secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: PHOTO('hero-market'), alt: 'The Group in a circle at a Friday gathering', focus: '50% 52%', crop: 'leaf', featureMatch: 'Feel Good Friday', featureNote: 'June An & Carol Yeh-Garner', featureCta: 'RSVP', proof: '8,500+ members · 300+ every week', proofNote: 'Chapters from Oceanside to North Park', faces: FACES, layout: desktop } },
-    { type: 'NetworkStats', props: { id: 'tg-home-stats', items: [{ icon: 'users', value: '8,500+', label: 'active members' }, { icon: 'calendar', value: '300+', label: 'weekly attendees' }, { icon: 'eye', value: '100,000+', label: 'monthly profile views' }], layout: desktop } },
+    { type: 'NetworkStats', props: { id: 'tg-home-stats', items: [{ icon: 'briefcase', value: 'Nearly 100', label: 'businesses launched' }, { icon: 'pin', value: `${CHAPTERS.length}`, label: 'chapters and growing' }, { icon: 'sun', value: 'Every Friday', label: 'rain or shine' }], layout: desktop } },
     { type: 'NetworkSplit', props: { id: 'tg-home-fridays', anchor: 'fridays', eyebrow: 'Feel Good Fridays', title: 'Start your Friday *with good people.*', body: "After a full week of building, creating, and showing up for your goals, Friday morning is your chance to exhale. A weekly ritual where conversations flow easily, new friendships form naturally, and familiar faces remind you that you're part of something bigger.", image: PHOTO('courtyard-group'), alt: 'A Friday morning circle at Fox Point Farms', mediaSide: 'left', band: 'sand', facts: [{ icon: 'pin', label: 'Where', value: 'Fox Point Farms', note: '1200 Fox Point Farms Ln, Encinitas' }, { icon: 'clock', label: 'When', value: 'Every Friday', note: '9:00–10:10 AM' }], quote: '', quoteBy: '', primaryLabel: 'Get directions', primaryHref: DIRECTIONS, secondaryLabel: 'See the calendar', secondaryHref: '#events', layout: desktop } },
     { type: 'NetworkBand', props: { id: 'tg-home-pitchfest', anchor: 'pitchfest', eyebrow: 'PitchFest 2026', title: 'Bring your idea. *Bring your people.*', body: 'Sign up to pitch in front of the community, then celebrate together at the 2nd annual Presentations & Party, Wednesday, October 21, 5:30–8 PM at C3 Bank Encinitas.', countdownTo: '2026-10-21T17:30', timeZone: TZ, countdownLabel: 'Time until the PitchFest Party', image: PHOTO('hall-selfie'), alt: 'Members celebrating together', primaryLabel: 'Sign up to pitch', primaryHref: PITCH_SIGNUP, secondaryLabel: 'RSVP to the party', secondaryHref: PITCH_PARTY, layout: desktop } },
     eventsBlock('tg-home-events'),
@@ -662,7 +684,7 @@ export const SITE_HERO = {
 export const SITE_FOOTER = {
   columns: [
     { title: 'Locations', links: [{ label: 'Encinitas', href: PAGE('fridays') }, ...CHAPTERS.map((c) => ({ label: c.short, href: `/spaces/${chapterSlug(c)}` }))] },
-    { title: 'Explore', links: [{ label: 'Feel Good Fridays', href: PAGE('fridays') }, { label: 'Events calendar', href: `/spaces/${SLUG}/calendar` }, { label: 'Incubator Studios', href: PAGE('studio') }, { label: 'Creative Collective', href: 'https://www.thegroupcoastal.com/creative-collective' }, { label: 'Merch', href: PAGE('shop') }, { label: 'Members portal', href: 'https://thegroupportal.com' }] },
+    { title: 'Explore', links: [{ label: 'Feel Good Fridays', href: PAGE('fridays') }, { label: 'Events calendar', href: `/spaces/${SLUG}/calendar` }, { label: 'Incubator Studios', href: PAGE('studio') }, { label: 'Merch', href: PAGE('shop') }, { label: 'Members portal', href: 'https://thegroupportal.com' }] },
     { title: 'Contact', links: [{ label: EMAIL, href: PAGE('contact') }, { label: PHONE, href: PAGE('contact') }, { label: 'Instagram', href: INSTAGRAM }, { label: 'Get coffee with June', href: CALENDLY }] },
   ],
   blurb: 'Together, we are stronger.',
@@ -676,7 +698,7 @@ const PROFILE_DATA = {
   about: ABOUT,
   email: EMAIL,
   phone: PHONE,
-  website: 'https://www.thegroupcoastal.com',
+  website: 'https://thegrouplocal.com',
   address: '1200 Fox Point Farms Ln, Encinitas, CA 92024',
   hours: 'Feel Good Fridays · every Friday, 9:00–10:10 AM',
   socials: [
@@ -805,22 +827,30 @@ on conflict (slug) do update set name = excluded.name, status = 'active', networ
 where spaces.owner_profile_id = ${q(OWNER_ID)};`
 }
 
+/** Every event is placed in a circle (task E, SCAN-949), the same three columns lib/events/placement.ts
+ *  livePlacementPatch writes: a member-led series in its own circle, a chapter meeting in the chapter's Space
+ *  Circle, a network-wide one in the Network's. Tenancy (space_id) and hosting (host_space_id) do not move. */
+function circleRef(e: SeedEvent, hostSpace: string): string {
+  return e.circle ? q(circleId(e.circle)) : `(select id from circles where space_id = ${hostSpace} and is_space_primary order by created_at limit 1)`
+}
+
 function eventInsert(e: SeedEvent, hostSpace: string): string {
-  return `insert into events (slug, title, description, host_id, scope_id, scope_type, starts_at, ends_at, time_zone, location, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled)
-values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(OWNER_ID)}, (select region_id from _tg), 'public', ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, ${q(e.location)}, 'public', 'published', now(), 'rsvp', ${q(e.category)}, ${q(e.energy)}, 'in_person', 'manual', ${q(SPACE_ID)}, ${hostSpace}, ${q(e.rule ? (e.rule.startsWith('FREQ=MONTHLY') ? 'monthly' : 'weekly') : 'none')}, ${q(e.rule)}, false)
-on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, energy_tag = excluded.energy_tag, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule;`
+  const circle = circleRef(e, hostSpace)
+  return `insert into events (slug, title, description, host_id, scope_id, scope_type, scope_circle_id, starts_at, ends_at, time_zone, location, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled)
+values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(OWNER_ID)}, ${circle}, 'circle', ${circle}, ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, ${q(e.location)}, 'public', 'published', now(), 'rsvp', ${q(e.category)}, ${q(e.energy)}, 'in_person', 'manual', ${q(SPACE_ID)}, ${hostSpace}, ${q(e.rule ? (e.rule.startsWith('FREQ=MONTHLY') ? 'monthly' : 'weekly') : 'none')}, ${q(e.rule)}, false)
+on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, scope_type = excluded.scope_type, scope_circle_id = excluded.scope_circle_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, energy_tag = excluded.energy_tag, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule;`
 }
 
 function occurrencesInsert(e: SeedEvent): string {
   if (!e.occurrences.length) return ''
   return [
     'insert into events (slug, parent_event_id, starts_at, ends_at, recurrence_type, recurrence_until, recurrence_rule, is_cancelled,',
-    '  title, description, host_id, scope_id, scope_type, location, visibility, status, published_at, price_cents, currency, capacity, venmo_handle, join_mode,',
+    '  title, description, host_id, scope_id, scope_type, scope_circle_id, location, visibility, status, published_at, price_cents, currency, capacity, venmo_handle, join_mode,',
     '  category, energy_tag, time_zone, cover_image_path, gallery_image_paths, poster_path, theme, details, space_id, host_space_id, domain_id,',
     '  attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, hide_address, journey_id, source, is_demo,',
     '  posted_by_profile_id, organizer_name, organizer_contact)',
     `select a.slug || '-' || d.day, a.id, (d.day || ' ${e.start}+00')::timestamptz, (d.day || ' ${e.end}+00')::timestamptz, 'none', null, null, false,`,
-    '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
+    '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.scope_circle_id, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
     '  a.category, a.energy_tag, a.time_zone, a.cover_image_path, a.gallery_image_paths, a.poster_path, a.theme, a.details, a.space_id, a.host_space_id, a.domain_id,',
     '  a.attendance_mode, a.online_url, a.venue_name, a.street, a.city, a.region, a.country, a.postal_code, a.geog, a.hide_address, a.journey_id, a.source, a.is_demo,',
     '  a.posted_by_profile_id, a.organizer_name, a.organizer_contact',
@@ -889,6 +919,14 @@ export function renderSql(): string {
     `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
     `values (${q(circleId(SOUTH_OC.key))}, ${q(circleName(SOUTH_OC.name))}, 'tg-south-oc', ${q(SOUTH_OC.about)}, 'in-person', 50, 0, 'forming', ${q(OWNER_ID)}, ${q(SPACE_ID)}, ${q(SOUTH_OC.area)}, ${q(SOUTH_OC.area)}, 'mind', ${q(TZ)}, 'open')`,
     'on conflict (id) do update set name = excluded.name, about = excluded.about, status = excluded.status;',
+    '--    The three network-wide circles (handoff C4). Their meetup is a placeholder until June confirms a schedule',
+    '--    (section B), and an owner\'s own meetup text is never overwritten.',
+    ...NETWORK_CIRCLES.flatMap((c) => [
+      `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
+      `values (${q(circleId(c.key))}, ${q(c.name)}, ${q(`tg-${c.key}`)}, ${q(c.body)}, 'in-person', 50, 0, 'active', ${q(OWNER_ID)}, ${q(SPACE_ID)}, 'Encinitas', 'Encinitas', ${q(c.pillar)}, ${q(TZ)}, 'open')`,
+      `on conflict (id) do update set name = excluded.name, about = excluded.about, status = excluded.status;`,
+      `insert into circle_profiles (circle_id, meetup) values (${q(circleId(c.key))}, ${qj({ text: c.meetup, length: '' })}) on conflict (circle_id) do update set meetup = excluded.meetup, updated_at = now() where coalesce(circle_profiles.meetup->>'text', '') = '';`,
+    ]),
     '',
     '-- 5. Membership tiers (setMembershipTiers\' shape: monthly cents, benefits as a JSON array of strings).',
     ...TIERS.map((t) => `insert into space_membership_tiers (id, space_id, name, price_cents, interval, description, benefits, sort, is_active)
@@ -908,12 +946,16 @@ on conflict (id) do update set title = excluded.title, description = excluded.de
     '--    calendar holds every chapter; a chapter\'s own meetings are hosted by its Space (host_space_id), so each',
     '--    chapter\'s calendar shows its own. Recurring series are anchors with an RRULE plus the first 60 days of',
     '--    occurrences (lib/event-recurrence.ts); the daily job rolls the window forward from here.',
+    '--    Every row is placed in a circle (task E, SCAN-949): a member-led series in its circle, a chapter meeting',
+    '--    in the chapter\'s Space Circle, a network-wide event in the Network\'s (lib/events/placement.ts).',
     ...events.flatMap((e) => [eventInsert(e, chapterRef(e.chapter)), occurrencesInsert(e)].filter(Boolean)),
     '',
     `-- VERIFY: select slug, plan, parent_id is not null as chapter, preferences->'siteStyle'->>'theme' as theme from spaces where slug like 'the-group%' order by slug;`,
     `-- EXPECT: 7 rows: the-group (network, theme network) and six chapters with parent_id set.`,
     `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}';`,
     `-- EXPECT: ${events.length + events.reduce((n, e) => n + e.occurrences.length, 0)}`,
+    `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}' and (scope_type is distinct from 'circle' or scope_circle_id is null);`,
+    '-- EXPECT: 0 (every event sits in a circle)',
     '',
     'commit;',
   )

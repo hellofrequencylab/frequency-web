@@ -7,6 +7,7 @@ import { startSpaceLoadoutCheckout, settleSpaceLoadoutAction } from './actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import type { BillingInterval } from '@/lib/billing/pricing-keys'
 
 // CHOOSE PLAN BUTTON (client · ADR-811 / LIVE-438). The inline upgrade action for a ladder rung the
 // checkout can sell self-serve, which today is Business: Independent came off the self-serve path
@@ -17,18 +18,22 @@ import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 // switch), so the parent only renders this when the plan is sellable. Business also has a richer
 // CTA (GoBusinessCta) with the seat picker; this is the plain one-click choose. The paid
 // confirmation names SPACE_PLAN_LABEL[plan], never a retired plan label (LIVE-228). No em
-// dashes (CONTENT-VOICE §10).
+// dashes (CONTENT-VOICE §10). The interval comes from the ladder's Monthly / Yearly switch (LIVE-990):
+// the checkout always accepted 'year', this button used to hardcode 'month'.
 
 export function ChoosePlanButton({
   slug,
   plan,
   label,
+  interval = 'month',
 }: {
   slug: string
   /** The loadout plan to buy: Business (LIVE-228), Collective (OWN-096) or Network (SCAN-980). */
   plan: 'business' | 'collective' | 'network'
   /** The button label, e.g. "Choose Business". */
   label: string
+  /** Monthly or yearly billing, as picked on the ladder's switch. Default monthly. */
+  interval?: BillingInterval
 }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -39,7 +44,7 @@ export function ChoosePlanButton({
     setSession(null)
     setError('Opening secure checkout…')
     start(async () => {
-      const res = await startSpaceLoadoutCheckout(slug, { plan, interval: 'month', forceHosted: true })
+      const res = await startSpaceLoadoutCheckout(slug, { plan, interval, forceHosted: true })
       if (!isError(res) && res.data.url) window.location.href = res.data.url
       else setError('Could not start checkout. Please try again.')
     })
@@ -53,7 +58,7 @@ export function ChoosePlanButton({
     }
     start(async () => {
       warmStripeBrowser()
-      const res = await startSpaceLoadoutCheckout(slug, { plan, interval: 'month' })
+      const res = await startSpaceLoadoutCheckout(slug, { plan, interval })
       if (isError(res)) setError(res.error)
       else if (res.data.clientSecret) {
         setSession({ clientSecret: res.data.clientSecret, sessionId: res.data.sessionId ?? null })

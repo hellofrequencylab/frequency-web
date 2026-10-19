@@ -155,7 +155,7 @@ describe("The Group's site, rendered from the seed through the real chrome and s
 
   it("draws Home in the handoff's order with the brief's words and the Space's own dates", () => {
     const home = words(renderPage('home'))
-    const order = ['The non', '8,500+', 'Start your Friday', 'Bring your idea', 'Find a group.', 'Your first Friday', 'Pockets of community', 'Find the people', 'Meet June An, founder', 'June, Carol', 'Your journey', 'Your story deserves a studio', 'The podcast.', 'Connect with us', 'Made with local', "The Group's golden rule."]
+    const order = ['The non', 'Nearly 100', 'Start your Friday', 'Bring your idea', 'Find a group.', 'Your first Friday', 'Pockets of community', 'Find the people', 'Meet June An, founder', 'June, Carol', 'Your journey', 'Your story deserves a studio', 'The podcast.', 'Connect with us', 'Made with local', "The Group's golden rule."]
     let at = 0
     for (const s of order) {
       const i = home.indexOf(s, at)
@@ -164,8 +164,10 @@ describe("The Group's site, rendered from the seed through the real chrome and s
     }
     // The hero's "This Friday" card is the next Feel Good Friday, Oct 16 at 9:00.
     expect(home).toContain('FRI 16 Feel Good Friday 9:00–10:10 AM · June An & Carol Yeh-Garner')
-    expect(home).toContain('300+ weekly attendees')
-    expect(home).toContain('100,000+ monthly profile views')
+    expect(home).toContain('6 chapters and growing')
+    expect(home).toContain('Every Friday rain or shine')
+    expect(home).not.toContain('thegroupcoastal.com/')
+    expect(home).not.toContain('Normal Heights')
     for (const t of TIERS) expect(home).toContain(t.name)
     for (const m of MERCH) expect(home).toContain(m.short)
     expect(home).toContain('$19.99')

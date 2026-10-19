@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-943",
+  "title": "Regulars gets its psychology layer: a stated surprise stamp, the Regular badge, a forgiving weekly streak, the one-stamp-away nudge and the owner's four numbers",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "lib/loyalty/program.ts",
+    "ref": "Owner ask 2026-10-19 ('a new kind of program that plays on all the best practice psychological angles'). docs/LOYALTY.md section 2, ADR-1782"
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. Phase 3 of Regulars (docs/LOYALTY.md). Migration 20270346010400 adds space_loyalty_programs.surprise_odds (0 or 10) and rewrites loyalty_record_visit to roll the surprise stamp after a visit stamp lands and to return the member's visit days. readStanding (pure) reads the Regular badge (three visits in 30 days) and the weekly streak with one forgiven week off those days; nothing is stored, so both lapse quietly. The stamp that leaves one visit to the reward sends one push through the notification router (registry row loyalty.nudge, lifecycle, push). The owner panel shows new versus returning this month, rewards handed out and their cost, members a hunt neighbor sent, and the regulars by name.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/surprise_odds smallint/.test(r('supabase/migrations/20270346010400_loyalty_regulars_layer.sql')))miss.push('no surprise_odds column');if(!/random\\(\\) < 0\\.1/.test(r('supabase/migrations/20270346010400_loyalty_regulars_layer.sql')))miss.push('the writer rolls no surprise stamp');if(!/export function readStanding/.test(r('lib/loyalty/program.ts')))miss.push('no Regular badge or streak math');if(!/'loyalty\\.nudge'/.test(r('lib/notifications/registry.ts')))miss.push('no nudge registry row');if(!/routeNotification\\(\\s*'loyalty\\.nudge'/.test(r('lib/loyalty/visit.ts')))miss.push('the one-stamp-away nudge is not sent');if(!/listRegulars/.test(r('app/(main)/spaces/[slug]/settings/checkin/regulars-section.tsx')))miss.push('the owner sees no regulars');if(!/sentByNeighbors/.test(r('lib/loyalty/store.ts')))miss.push('no neighbor number');if(miss.length){console.error('LIVE-943: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}

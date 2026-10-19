@@ -34,9 +34,14 @@ export function seedWebsiteHome(space: Space, fallback: Data): Data {
     actionPrimaryLabel: hero.action?.label ?? '', actionPrimaryHref: hero.action?.href ?? '',
     actionSecondaryLabel: hero.secondary?.label ?? '', actionSecondaryHref: hero.secondary?.href ?? '',
   } }]
+  // One website block per block TYPE. The legacy Space document keys its authored bags by type, so a
+  // type placed twice (legal since E0 task 10) still has exactly one bag to import; emitting it twice
+  // would duplicate the copy and the `website-<id>` id.
+  const seeded = new Set<string>()
   for (const row of resolveRows(grid, 'space')) for (const id of row.cells.flat()) {
     const type = TYPES[id]
-    if (!type) continue
+    if (!type || seeded.has(id)) continue
+    seeded.add(id)
     const authored = grid.content?.[id]
     const originals = fallback.content.filter((block) => block.type === type)
     if (!authored && originals.length) {

@@ -61,6 +61,8 @@ export default async function RewardsPage() {
                   rewardTitle={c.rewardTitle}
                   rewardValueCents={c.rewardValueCents}
                   openRewards={c.openRewards}
+                  standing={c.standing}
+                  surpriseOdds={c.surpriseOdds}
                 />
               </Link>
             </li>
