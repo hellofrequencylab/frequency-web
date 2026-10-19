@@ -45,6 +45,8 @@ import { readTagline } from '@/lib/spaces/tagline'
 import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
 import type { Space } from '@/lib/spaces/types'
 import { appOrigin } from '@/lib/sites/host'
+import { getLoyaltyProgram, loyaltyEnabled } from '@/lib/loyalty/store'
+import { nearbyLine } from '@/lib/loyalty/nearby'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
@@ -223,6 +225,10 @@ export async function SitePage({
   // The reader's own membership in THIS Space, asked for after the cached page is up (LIVE-699).
   const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite} />
   const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
+  // The "Check in with Frequency" door (LIVE-944): only while Regulars is on at this Space. It points at the
+  // Space's page in the app, where the member reads the card and the door code does the check-in.
+  const regulars = loyaltyEnabled() ? await getLoyaltyProgram(space.id) : null
+  const checkIn = regulars?.status === 'on' ? { href: `${origin}/spaces/${space.slug}`, line: nearbyLine(regulars) } : null
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
   if (!contactPage && !bookPage && !websitePage && !hasPage(space.preferences, pageSlug)) notFound()
@@ -341,6 +347,7 @@ export async function SitePage({
         look={lookOverrides}
         member={memberBadge}
         footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
+        checkIn={checkIn}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >
