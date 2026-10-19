@@ -210,6 +210,23 @@ export const circleId = (key: string) => uuidFrom(`circle:${key}`)
 const circleName = (name: string) => (/^the group\b/i.test(name) ? name : `The Group ${name.replace(/^the\s+/i, '')}`)
 /** South OC: forming, on the Network until its details are confirmed (TODO [confirm] with June). */
 export const SOUTH_OC = { key: 'south-oc', name: 'The Group South OC (forming)', about: 'A South OC chapter of The Group, forming now. Come help fill it.', area: 'South Orange County' }
+/** The three network-wide circles the handoff adds (task C4), on the Network itself. Their schedules wait on
+ *  June (section B), so each carries a PLACEHOLDER meetup that says so instead of an invented date, and no
+ *  event is seeded for them. `match` places a seeded event whose title carries it (task E). TODO [confirm] with June. */
+export const NETWORK_CIRCLES = [
+  { key: 'masterminds', name: 'The Group Masterminds', match: 'Mastermind', pillar: 'mind', body: "Masterminds by business stage: a small group of members at the same point in the journey, meeting to work on each other's businesses. Bring a challenge, leave with a plan.", meetup: 'Monthly, by business stage. Day and place to be announced once June confirms the schedule.' },
+  { key: 'wellness', name: 'The Group Wellness', match: 'Wellness Club', pillar: 'body', body: 'Plunges, sound baths and breathwork with members who take care of themselves so they can take care of their work.', meetup: 'Plunges, sound baths and breathwork. Day and place to be announced once June confirms the schedule.' },
+  { key: 'pickleball', name: 'The Group Pickleball', match: 'Pickleball', pillar: 'body', body: 'Pickleball, plunges and real talk. All levels, paddles to borrow, conversation between games.', meetup: 'Pickleball, all levels, paddles to borrow. Court and day to be announced once June confirms the schedule.' },
+] as const
+
+/** The circle a seeded event is placed in (task E, SCAN-949): the first circle whose `match` its title carries,
+ *  else null, which places it in the hosting Space's own Space Circle (the chapter's for a chapter meeting, the
+ *  Network's for a network-wide event). Case-insensitive; apostrophes are ignored so Swami's matches Swami’s. */
+export function circleFor(title: string): string | null {
+  const fold = (t: string) => t.toLowerCase().replace(/[’']/g, '')
+  const hit = [...CIRCLES, ...NETWORK_CIRCLES].find((c) => fold(title).includes(fold(c.match)))
+  return hit ? hit.key : null
+}
 
 // ── Events (The Group Portal export) ────────────────────────────────────────────────────────────
 interface PortalEvent { id: string; t: string; d: string; s: number; e: number; where: string; ch: string; type: string; free: boolean; org: string; rec: string | null; series: string | null; desc: string }
@@ -272,6 +289,8 @@ export interface SeedEvent {
   location: string
   /** The chapter Space that hosts it, or null for the Network itself. */
   chapter: Chapter['key'] | null
+  /** The circle it is placed in (a CIRCLES or NETWORK_CIRCLES key), or null for the host Space's Space Circle. */
+  circle: string | null
   category: string
   energy: string | null
   rule: string | null
@@ -304,7 +323,7 @@ export function buildEvents(): SeedEvent[] {
     const slug = `tg-${slugPart(e.t)}-${e.d}`
     if (used.has(slug)) continue
     used.add(slug)
-    out.push({ slug, title: e.t, description: cleanText(e.desc), date: e.d, start: hhmm(e.s), end: hhmm(e.e), location: e.where, chapter: chapterFor(e.ch), category: CATEGORY[e.type] ?? 'gathering', energy: ENERGY[e.type] ?? null, rule: null, occurrences: [] })
+    out.push({ slug, title: e.t, description: cleanText(e.desc), date: e.d, start: hhmm(e.s), end: hhmm(e.e), location: e.where, chapter: chapterFor(e.ch), circle: circleFor(e.t), category: CATEGORY[e.type] ?? 'gathering', energy: ENERGY[e.type] ?? null, rule: null, occurrences: [] })
   }
   for (const [s, rows] of groups) {
     const first = rows[0]
@@ -314,7 +333,7 @@ export function buildEvents(): SeedEvent[] {
     const occurrences = expandRepeat(ptIso(first.d, start), parseRepeat(s.rule), { through, from: floor, includeAnchor: false }).map((d) => d.toISOString().slice(0, 10))
     out.push({
       slug, title: s.title ?? first.t, description: s.description ?? cleanText(first.desc), date: first.d, start, end: s.end ?? hhmm(first.e), location: s.where ?? first.where,
-      chapter: chapterFor(first.ch), category: CATEGORY[first.type] ?? 'gathering', energy: ENERGY[first.type] ?? null, rule: s.rule, occurrences,
+      chapter: chapterFor(first.ch), circle: circleFor(s.title ?? first.t), category: CATEGORY[first.type] ?? 'gathering', energy: ENERGY[first.type] ?? null, rule: s.rule, occurrences,
     })
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start))
@@ -808,22 +827,30 @@ on conflict (slug) do update set name = excluded.name, status = 'active', networ
 where spaces.owner_profile_id = ${q(OWNER_ID)};`
 }
 
+/** Every event is placed in a circle (task E, SCAN-949), the same three columns lib/events/placement.ts
+ *  livePlacementPatch writes: a member-led series in its own circle, a chapter meeting in the chapter's Space
+ *  Circle, a network-wide one in the Network's. Tenancy (space_id) and hosting (host_space_id) do not move. */
+function circleRef(e: SeedEvent, hostSpace: string): string {
+  return e.circle ? q(circleId(e.circle)) : `(select id from circles where space_id = ${hostSpace} and is_space_primary order by created_at limit 1)`
+}
+
 function eventInsert(e: SeedEvent, hostSpace: string): string {
-  return `insert into events (slug, title, description, host_id, scope_id, scope_type, starts_at, ends_at, time_zone, location, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled)
-values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(OWNER_ID)}, (select region_id from _tg), 'public', ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, ${q(e.location)}, 'public', 'published', now(), 'rsvp', ${q(e.category)}, ${q(e.energy)}, 'in_person', 'manual', ${q(SPACE_ID)}, ${hostSpace}, ${q(e.rule ? (e.rule.startsWith('FREQ=MONTHLY') ? 'monthly' : 'weekly') : 'none')}, ${q(e.rule)}, false)
-on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, energy_tag = excluded.energy_tag, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule;`
+  const circle = circleRef(e, hostSpace)
+  return `insert into events (slug, title, description, host_id, scope_id, scope_type, scope_circle_id, starts_at, ends_at, time_zone, location, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled)
+values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(OWNER_ID)}, ${circle}, 'circle', ${circle}, ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, ${q(e.location)}, 'public', 'published', now(), 'rsvp', ${q(e.category)}, ${q(e.energy)}, 'in_person', 'manual', ${q(SPACE_ID)}, ${hostSpace}, ${q(e.rule ? (e.rule.startsWith('FREQ=MONTHLY') ? 'monthly' : 'weekly') : 'none')}, ${q(e.rule)}, false)
+on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, scope_type = excluded.scope_type, scope_circle_id = excluded.scope_circle_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, energy_tag = excluded.energy_tag, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule;`
 }
 
 function occurrencesInsert(e: SeedEvent): string {
   if (!e.occurrences.length) return ''
   return [
     'insert into events (slug, parent_event_id, starts_at, ends_at, recurrence_type, recurrence_until, recurrence_rule, is_cancelled,',
-    '  title, description, host_id, scope_id, scope_type, location, visibility, status, published_at, price_cents, currency, capacity, venmo_handle, join_mode,',
+    '  title, description, host_id, scope_id, scope_type, scope_circle_id, location, visibility, status, published_at, price_cents, currency, capacity, venmo_handle, join_mode,',
     '  category, energy_tag, time_zone, cover_image_path, gallery_image_paths, poster_path, theme, details, space_id, host_space_id, domain_id,',
     '  attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, hide_address, journey_id, source, is_demo,',
     '  posted_by_profile_id, organizer_name, organizer_contact)',
     `select a.slug || '-' || d.day, a.id, (d.day || ' ${e.start}+00')::timestamptz, (d.day || ' ${e.end}+00')::timestamptz, 'none', null, null, false,`,
-    '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
+    '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.scope_circle_id, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
     '  a.category, a.energy_tag, a.time_zone, a.cover_image_path, a.gallery_image_paths, a.poster_path, a.theme, a.details, a.space_id, a.host_space_id, a.domain_id,',
     '  a.attendance_mode, a.online_url, a.venue_name, a.street, a.city, a.region, a.country, a.postal_code, a.geog, a.hide_address, a.journey_id, a.source, a.is_demo,',
     '  a.posted_by_profile_id, a.organizer_name, a.organizer_contact',
@@ -892,6 +919,14 @@ export function renderSql(): string {
     `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
     `values (${q(circleId(SOUTH_OC.key))}, ${q(circleName(SOUTH_OC.name))}, 'tg-south-oc', ${q(SOUTH_OC.about)}, 'in-person', 50, 0, 'forming', ${q(OWNER_ID)}, ${q(SPACE_ID)}, ${q(SOUTH_OC.area)}, ${q(SOUTH_OC.area)}, 'mind', ${q(TZ)}, 'open')`,
     'on conflict (id) do update set name = excluded.name, about = excluded.about, status = excluded.status;',
+    '--    The three network-wide circles (handoff C4). Their meetup is a placeholder until June confirms a schedule',
+    '--    (section B), and an owner\'s own meetup text is never overwritten.',
+    ...NETWORK_CIRCLES.flatMap((c) => [
+      `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
+      `values (${q(circleId(c.key))}, ${q(c.name)}, ${q(`tg-${c.key}`)}, ${q(c.body)}, 'in-person', 50, 0, 'active', ${q(OWNER_ID)}, ${q(SPACE_ID)}, 'Encinitas', 'Encinitas', ${q(c.pillar)}, ${q(TZ)}, 'open')`,
+      `on conflict (id) do update set name = excluded.name, about = excluded.about, status = excluded.status;`,
+      `insert into circle_profiles (circle_id, meetup) values (${q(circleId(c.key))}, ${qj({ text: c.meetup, length: '' })}) on conflict (circle_id) do update set meetup = excluded.meetup, updated_at = now() where coalesce(circle_profiles.meetup->>'text', '') = '';`,
+    ]),
     '',
     '-- 5. Membership tiers (setMembershipTiers\' shape: monthly cents, benefits as a JSON array of strings).',
     ...TIERS.map((t) => `insert into space_membership_tiers (id, space_id, name, price_cents, interval, description, benefits, sort, is_active)
@@ -911,12 +946,16 @@ on conflict (id) do update set title = excluded.title, description = excluded.de
     '--    calendar holds every chapter; a chapter\'s own meetings are hosted by its Space (host_space_id), so each',
     '--    chapter\'s calendar shows its own. Recurring series are anchors with an RRULE plus the first 60 days of',
     '--    occurrences (lib/event-recurrence.ts); the daily job rolls the window forward from here.',
+    '--    Every row is placed in a circle (task E, SCAN-949): a member-led series in its circle, a chapter meeting',
+    '--    in the chapter\'s Space Circle, a network-wide event in the Network\'s (lib/events/placement.ts).',
     ...events.flatMap((e) => [eventInsert(e, chapterRef(e.chapter)), occurrencesInsert(e)].filter(Boolean)),
     '',
     `-- VERIFY: select slug, plan, parent_id is not null as chapter, preferences->'siteStyle'->>'theme' as theme from spaces where slug like 'the-group%' order by slug;`,
     `-- EXPECT: 7 rows: the-group (network, theme network) and six chapters with parent_id set.`,
     `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}';`,
     `-- EXPECT: ${events.length + events.reduce((n, e) => n + e.occurrences.length, 0)}`,
+    `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}' and (scope_type is distinct from 'circle' or scope_circle_id is null);`,
+    '-- EXPECT: 0 (every event sits in a circle)',
     '',
     'commit;',
   )

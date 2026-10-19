@@ -32,6 +32,7 @@ export type NotificationEvent =
   | 'plan.comment'
   | 'plan.assign'
   | 'order.shipped'
+  | 'loyalty.nudge'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -66,6 +67,10 @@ export interface NotificationContexts {
    *  the email from the money-receipt builders; a buyer with no deliverable address hands in no
    *  email and that channel is a clean skip. */
   'order.shipped': { title: string; body: string; url: string; email?: EmailPayload }
+  /** A Regulars card one stamp from its reward (LIVE-943, ADR-1782). The caller
+   *  (lib/loyalty/visit.ts nudgeOneAway) authors the copy in-voice; `tag` collapses a repeat for
+   *  the same Space on the device, and the subject lets a per-Space mute win. */
+  'loyalty.nudge': { title: string; body: string; url: string; tag: string }
 }
 
 /** Per-channel rendered payloads. A type renders only the channels it declares; a channel
@@ -200,6 +205,18 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url },
       ...(ctx.email ? { email: ctx.email } : {}),
+    }),
+  },
+
+  // One stamp away on a Regulars card (LIVE-943). Lifecycle category, push only: news about the
+  // member's own standing at a Space, so their push_lifecycle switch and a per-Space mute decide.
+  // Sent once per card by construction (the card passes required-1 once).
+  'loyalty.nudge': {
+    event: 'loyalty.nudge',
+    category: 'lifecycle',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
     }),
   },
 }

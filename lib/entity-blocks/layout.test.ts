@@ -213,7 +213,7 @@ describe('rows validation (parseEntityLayout)', () => {
     expect(parsed?.rows).toEqual([{ id: 'r0', columns: 2, cells: [['about'], []] }])
   })
 
-  it('dedupes a block id across all rows (later repeat becomes null)', () => {
+  it('holds a data block to one placement across all rows (a later repeat becomes null)', () => {
     const parsed = parseEntityLayout({
       rows: [
         { id: 'r0', columns: 1, slots: ['about'] },
@@ -221,6 +221,21 @@ describe('rows validation (parseEntityLayout)', () => {
       ],
     })
     expect(parsed?.rows?.[1].cells).toEqual([[], ['stats']])
+  })
+
+  it('keeps two text blocks across rows (E0 task 10: content blocks repeat, data blocks do not)', () => {
+    const parsed = parseEntityLayout({
+      rows: [
+        { id: 'r0', columns: 1, slots: ['text'] },
+        { id: 'r1', columns: 2, slots: ['text', 'offerings'] },
+        { id: 'r2', columns: 1, slots: ['offerings'] },
+      ],
+    })
+    expect(parsed?.rows).toEqual([
+      { id: 'r0', columns: 1, cells: [['text']] },
+      { id: 'r1', columns: 2, cells: [['text'], ['offerings']] },
+      { id: 'r2', columns: 1, cells: [[]] },
+    ])
   })
 
   it('clamps slots length to columns (pads with null, truncates extras)', () => {

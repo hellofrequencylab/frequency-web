@@ -1,5 +1,5 @@
-import { Gift, Stamp } from 'lucide-react'
-import { cardLine, formatCode, formatRewardValue, type LoyaltyReward } from '@/lib/loyalty/program'
+import { Gift, Sparkles, Stamp } from 'lucide-react'
+import { cardLine, formatCode, formatRewardValue, standingLine, type LoyaltyReward, type LoyaltyStanding } from '@/lib/loyalty/program'
 
 // THE STAMP CARD (LIVE-940, docs/LOYALTY.md). One presentational card, no hooks, rendered by the check-in
 // result (client) and the /rewards page (server). It always counts DOWN ("2 more visits to your free
@@ -15,6 +15,9 @@ export function StampCard({
   openRewards = [],
   justEarnedCode = null,
   compact = false,
+  surprise = false,
+  standing = null,
+  surpriseOdds = 0,
 }: {
   spaceName?: string | null
   stamps: number
@@ -25,8 +28,15 @@ export function StampCard({
   /** The code earned by the tap that just happened, shown first and loud. */
   justEarnedCode?: string | null
   compact?: boolean
+  /** The tap that just happened rolled the surprise stamp (LIVE-943). */
+  surprise?: boolean
+  /** The Regular badge and streak, when known. */
+  standing?: LoyaltyStanding | null
+  /** The stated odds, printed on the card; 0 prints nothing. */
+  surpriseOdds?: number
 }) {
   const value = formatRewardValue(rewardValueCents ?? 0)
+  const standingText = standing ? standingLine(standing) : null
   const filled = Math.min(stamps, required)
   const codes = [
     ...(justEarnedCode ? [{ code: justEarnedCode, fresh: true }] : []),
@@ -61,6 +71,15 @@ export function StampCard({
         {cardLine(stamps, required, rewardTitle)}
         {value ? <span className="font-normal text-muted"> ({value} value)</span> : null}
       </p>
+      {surprise && (
+        <p className="mt-1 flex items-center gap-1.5 text-body-sm font-semibold text-success">
+          <Sparkles className="h-4 w-4" aria-hidden /> Surprise stamp. One in ten visits earns a second one.
+        </p>
+      )}
+      {standingText && <p className="mt-1 text-meta font-semibold text-primary-strong">{standingText}</p>}
+      {!surprise && surpriseOdds > 0 && !compact && (
+        <p className="mt-1 text-meta text-subtle">One visit in ten earns a surprise stamp.</p>
+      )}
       {codes.length > 0 && (
         <ul className="mt-3 space-y-2">
           {codes.map(({ code, fresh }) => (

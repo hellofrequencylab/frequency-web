@@ -13,9 +13,11 @@ import { envFlag } from '@/lib/env/string'
 import { planRank, PLAN_CAPABILITY_RANK } from '@/lib/pricing/plans'
 import { spaceLimitsWaived } from '@/lib/pricing/space-allowance'
 import { isMappable, normalizeSpaceLocation } from '@/lib/spaces/location'
+import { memberDay } from '@/lib/member-day'
 import type { Space } from '@/lib/spaces/types'
 import {
   defaultProgram,
+  readStanding,
   type LoyaltyCard,
   type LoyaltyProgram,
   type LoyaltyProgramInput,
@@ -77,8 +79,9 @@ type ProgramRow = {
   reward_value_cents: number
   reward_note: string | null
   geofence: boolean
+  surprise_odds: number
 }
-const PROGRAM_COLS = 'space_id, status, stamps_required, welcome_stamps, reward_title, reward_value_cents, reward_note, geofence'
+const PROGRAM_COLS = 'space_id, status, stamps_required, welcome_stamps, reward_title, reward_value_cents, reward_note, geofence, surprise_odds'
 
 type RewardRow = {
   id: string
@@ -101,6 +104,7 @@ function toProgram(r: ProgramRow): LoyaltyProgram {
     rewardValueCents: r.reward_value_cents,
     rewardNote: r.reward_note,
     geofence: !!r.geofence,
+    surpriseOdds: r.surprise_odds === 0 ? 0 : 10,
   }
 }
 
@@ -138,14 +142,17 @@ export async function listMyLoyaltyCards(profileId: string): Promise<LoyaltyCard
   try {
     const db = createAdminClient()
     const [{ data: stamps }, { data: rewards }] = await Promise.all([
-      db.from('loyalty_stamps').select('space_id, reward_id').eq('profile_id', profileId).limit(2000),
+      db.from('loyalty_stamps').select('space_id, reward_id, kind, visit_day').eq('profile_id', profileId).limit(2000),
       db.from('loyalty_rewards').select(REWARD_COLS).eq('profile_id', profileId).order('earned_at', { ascending: false }).limit(200),
     ])
     const open = new Map<string, number>()
-    for (const s of (stamps ?? []) as { space_id: string; reward_id: string | null }[]) {
+    const visitDays = new Map<string, string[]>()
+    for (const s of (stamps ?? []) as { space_id: string; reward_id: string | null; kind: string; visit_day: string }[]) {
       if (!open.has(s.space_id)) open.set(s.space_id, 0)
       if (!s.reward_id) open.set(s.space_id, (open.get(s.space_id) ?? 0) + 1)
+      if (s.kind === 'visit') visitDays.set(s.space_id, [...(visitDays.get(s.space_id) ?? []), s.visit_day])
     }
+    const today = memberDay(null)
     const byRewardSpace = new Map<string, LoyaltyReward[]>()
     for (const r of (rewards ?? []) as RewardRow[]) {
       if (r.redeemed_at) continue
@@ -174,6 +181,8 @@ export async function listMyLoyaltyCards(profileId: string): Promise<LoyaltyCard
         rewardTitle: program.rewardTitle,
         rewardValueCents: program.rewardValueCents,
         openRewards,
+        standing: readStanding(visitDays.get(sp.id) ?? [], today),
+        surpriseOdds: program.surpriseOdds,
       })
     }
     return cards
@@ -208,24 +217,86 @@ export async function listRewardsToHandOut(
   }
 }
 
-/** The three owner numbers for the panel: stamps this month, rewards earned, rewards handed out.
- *  Gated on the owner gate. FAIL-SAFE to zeros. */
-export async function loyaltyOwnerCounts(spaceId: string): Promise<{ stampsThisMonth: number; earned: number; handedOut: number }> {
-  const zero = { stampsThisMonth: 0, earned: 0, handedOut: 0 }
+/** The owner numbers for the panel (LIVE-943): members whose first stamp here was this month versus
+ *  returning ones, rewards handed out this month and what they cost, and members a hunt neighbor sent
+ *  (they stamped here AND at another stop of a live hunt this Space is on). Gated on the owner gate.
+ *  FAIL-SAFE to zeros. */
+export async function loyaltyOwnerCounts(spaceId: string): Promise<LoyaltyOwnerCounts> {
+  const zero: LoyaltyOwnerCounts = { newThisMonth: 0, returningThisMonth: 0, handedOutThisMonth: 0, handedOutCostCents: 0, sentByNeighbors: 0 }
   if (!(await loyaltyOwnerGate(spaceId))) return zero
   try {
     const db = createAdminClient()
     const monthStart = new Date()
     monthStart.setUTCDate(1)
     monthStart.setUTCHours(0, 0, 0, 0)
-    const [{ count: stamps }, { count: earned }, { count: handedOut }] = await Promise.all([
-      db.from('loyalty_stamps').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).eq('kind', 'visit').gte('created_at', monthStart.toISOString()),
-      db.from('loyalty_rewards').select('id', { count: 'exact', head: true }).eq('space_id', spaceId),
-      db.from('loyalty_rewards').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).not('redeemed_at', 'is', null),
+    const monthIso = monthStart.toISOString()
+    const monthDay = monthIso.slice(0, 10)
+    const [{ data: stamps }, { data: handed }, { data: stops }] = await Promise.all([
+      db.from('loyalty_stamps').select('profile_id, visit_day').eq('space_id', spaceId).eq('kind', 'visit').limit(5000),
+      db.from('loyalty_rewards').select('reward_value_cents').eq('space_id', spaceId).gte('redeemed_at', monthIso),
+      db.from('loyalty_hunt_stops').select('hunt_id').eq('space_id', spaceId).eq('status', 'accepted'),
     ])
-    return { stampsThisMonth: stamps ?? 0, earned: earned ?? 0, handedOut: handedOut ?? 0 }
+    const first = new Map<string, string>()
+    const thisMonth = new Set<string>()
+    for (const s of (stamps ?? []) as { profile_id: string; visit_day: string }[]) {
+      const prev = first.get(s.profile_id)
+      if (!prev || s.visit_day < prev) first.set(s.profile_id, s.visit_day)
+      if (s.visit_day >= monthDay) thisMonth.add(s.profile_id)
+    }
+    let newThisMonth = 0
+    for (const id of thisMonth) if ((first.get(id) ?? '') >= monthDay) newThisMonth += 1
+    const handedRows = (handed ?? []) as { reward_value_cents: number }[]
+    let sentByNeighbors = 0
+    const huntIds = ((stops ?? []) as { hunt_id: string }[]).map((h) => h.hunt_id)
+    if (huntIds.length && first.size) {
+      const { data: hunts } = await db.from('loyalty_hunts').select('id, starts_on, ends_on').in('id', huntIds).eq('status', 'live')
+      const live = (hunts ?? []) as { id: string; starts_on: string; ends_on: string }[]
+      if (live.length) {
+        const { data: others } = await db.from('loyalty_hunt_stops').select('hunt_id, space_id').in('hunt_id', live.map((h) => h.id)).eq('status', 'accepted').neq('space_id', spaceId)
+        const otherIds = [...new Set(((others ?? []) as { space_id: string }[]).map((o) => o.space_id))]
+        if (otherIds.length) {
+          const { data: theirs } = await db.from('loyalty_stamps').select('profile_id').in('space_id', otherIds).eq('kind', 'visit').in('profile_id', [...first.keys()].slice(0, 1000)).limit(5000)
+          sentByNeighbors = new Set(((theirs ?? []) as { profile_id: string }[]).map((t) => t.profile_id).filter((id) => first.has(id))).size
+        }
+      }
+    }
+    return {
+      newThisMonth,
+      returningThisMonth: thisMonth.size - newThisMonth,
+      handedOutThisMonth: handedRows.length,
+      handedOutCostCents: handedRows.reduce((sum, r) => sum + (r.reward_value_cents || 0), 0),
+      sentByNeighbors,
+    }
   } catch {
     return zero
+  }
+}
+
+interface LoyaltyOwnerCounts {
+  newThisMonth: number
+  returningThisMonth: number
+  handedOutThisMonth: number
+  handedOutCostCents: number
+  sentByNeighbors: number
+}
+
+/** The owner's regulars (LIVE-943): members with three visits here in the last 30 days, most visits
+ *  first, so the counter can greet them by name. Gated on the owner gate. FAIL-SAFE to []. */
+export async function listRegulars(spaceId: string): Promise<{ profileId: string; name: string; visits: number }[]> {
+  if (!(await loyaltyOwnerGate(spaceId))) return []
+  try {
+    const db = createAdminClient()
+    const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)
+    const { data } = await db.from('loyalty_stamps').select('profile_id').eq('space_id', spaceId).eq('kind', 'visit').gte('visit_day', since).limit(5000)
+    const visits = new Map<string, number>()
+    for (const s of (data ?? []) as { profile_id: string }[]) visits.set(s.profile_id, (visits.get(s.profile_id) ?? 0) + 1)
+    const regulars = [...visits].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 50)
+    if (regulars.length === 0) return []
+    const { data: people } = await db.from('profiles').select('id, display_name').in('id', regulars.map(([id]) => id))
+    const names = new Map(((people ?? []) as { id: string; display_name: string | null }[]).map((p) => [p.id, p.display_name]))
+    return regulars.map(([profileId, n]) => ({ profileId, name: names.get(profileId) ?? 'A member', visits: n }))
+  } catch {
+    return []
   }
 }
 
@@ -249,6 +320,7 @@ export async function writeLoyaltyProgram(spaceId: string, input: LoyaltyProgram
         reward_value_cents: input.rewardValueCents,
         reward_note: input.rewardNote,
         geofence: input.geofence,
+        surprise_odds: input.surpriseOdds,
         updated_by: gate.callerId,
         updated_at: new Date().toISOString(),
       },

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-944",
+  "title": "Regulars is findable: nearby Spaces and live hunts on Rewards, the Regulars line on a Space page, the Check in with Frequency door on Space websites, and a help article",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/loyalty/discover.ts",
+    "ref": "Owner ask 2026-10-19 (the loyalty program). docs/LOYALTY.md section 5 phase 4, ADR-1783"
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. Phase 4 of Regulars (docs/LOYALTY.md). No migration. /rewards lists the public Spaces running Regulars nearest the member (home pin, else the member's city) and the hunts live today that the member has not started. A Space's public page carries one Regulars line (what a full card earns) while the program is on, in both designs. A Space website whose Space runs Regulars carries a Check in with Frequency door beside the Partner badge, a labeled Frequency CTA pointing at the Space's page in the app. content/help/getting-started/regulars.md tells a member how it works. The map stays as it is: it plots city centroids for privacy and has no Space pins to join; the marketing page is operator content.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/export async function listNearbyRegulars/.test(r('lib/loyalty/discover.ts')))miss.push('no nearby read');if(!/export async function listLiveHunts/.test(r('lib/loyalty/discover.ts')))miss.push('no live hunts read');if(!/export function rankNearby/.test(r('lib/loyalty/nearby.ts')))miss.push('no ranking');if(!/NearbyRegularsList/.test(r('app/(main)/rewards/page.tsx')))miss.push('/rewards lists no nearby Spaces');if(!/RegularsNote/.test(r('app/(main)/spaces/[slug]/(profile)/layout.tsx')))miss.push('no Regulars line on the Space page');if(!/data-checkin-badge/.test(r('components/sites/site-chrome.tsx')))miss.push('no website door');if(!/checkIn=\\{checkIn\\}/.test(r('components/sites/site-page.tsx')))miss.push('the website door is not wired');if(!fs.existsSync('content/help/getting-started/regulars.md'))miss.push('no help article');if(miss.length){console.error('LIVE-944: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}
