@@ -11,6 +11,9 @@ import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { loadChannelsForum } from '@/lib/channels/forum-index'
+import { FqChannelsBody } from '@/components/frequency/members/channels/channels-body'
 
 // Channels (ADR-270/294). The page now opens on the SHARED MarketHero header (the same hero band
 // Events / Classifieds / Business Spaces / Circles use) so every browse surface reads as one
@@ -39,7 +42,11 @@ export function generateMetadata() {
   return pageContentMetadata('/channels', CONTENT_FALLBACK)
 }
 
-export default async function ChannelsPage() {
+export default async function ChannelsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const admin = createAdminClient()
   const supabase = await createClient()
 
@@ -50,11 +57,31 @@ export default async function ChannelsPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   let canCreate = false
+  let myProfileId: string | null = null
   if (user) {
     const { data: profile } = await admin
-      .from('profiles').select('community_role').eq('auth_user_id', user.id).maybeSingle()
+      .from('profiles').select('id, community_role').eq('auth_user_id', user.id).maybeSingle()
     const role = (profile as { community_role?: string } | null)?.community_role
+    myProfileId = (profile as { id?: string } | null)?.id ?? null
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
+  }
+
+  // THE DESIGN SWITCH (ADR-1737): build-time. Frequency draws the forum board (LIVE-1028, ADR-1849); the
+  // DAWN tree below is untouched when it is off.
+  if (SITE_DESIGN === 'frequency') {
+    const sp = await searchParams
+    const params = Object.fromEntries(
+      Object.entries(sp).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
+    ) as Record<string, string | undefined>
+    return (
+      <FqChannelsBody
+        index={await loadChannelsForum(admin, myProfileId)}
+        params={params}
+        content={{ title: pageTitle, body: pageBody ?? null, ctaLabel: ctaLabel ?? null, ctaHref: ctaHref ?? null }}
+        signedIn={!!user}
+        canCreate={canCreate}
+      />
+    )
   }
 
   // The header's independent reads in one batch: the whole hero band through the ONE browse-hero
