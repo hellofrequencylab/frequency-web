@@ -396,6 +396,13 @@ as today**.
 > `is_space_admin`). App reads use the service-role admin client (bypasses RLS) plus the
 > `getVisibleSpaceBySlug` gate; this policy closes the direct anon/session-client read of a Private
 > Space's metadata (the prior policy was visibility-blind).
+>
+> **`space_private_state` (SCAN-827, ADR-1756; `20270346009800`).** Website editor drafts, review
+> comments, version history, scheduled publishes, and the Executive Overview live on this
+> service-role-only row (`space_id` PK). `spaces.preferences` stays anon-readable and may carry only
+> the comment-free published snapshot plus revision (`websiteEditor.v` / `revision` / `published`).
+> `save_website_editor` and `publish_due_websites` write both. RLS on, no policies; browser roles
+> revoked.
 
 > **New `spaces` columns** (ADR-322): `visibility text CHECK (network|private)` default `'network'`,
 > the first-class public-vs-walled axis (`network` spaces appear in cross-network discovery /

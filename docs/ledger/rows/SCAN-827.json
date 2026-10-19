@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-827",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if((()=>{const d='supabase/migrations';const fsx=fs.readdirSync(d).filter(f=>f.endsWith('.sql')).sort().reverse();for(const f of fsx){const s=r(d+'/'+f);const ms=[...s.matchAll(/^grant select \\(([^)]*)\\)\\s*on public\\.spaces to anon/gm)];if(ms.length)return /\\bpreferences\\b/.test(ms[ms.length-1][1])&&!fs.readdirSync(d).some(x=>/space_private_state/.test(r(d+'/'+x)));}return false})()){console.error('SCAN-827: spaces.preferences, which holds website drafts and the private overview, is still granted to anon');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1756). PREMISE RE-TESTED on main: the newest grant of spaces columns to anon still named preferences, and no migration created space_private_state. Migration 20270346009800: service-role-only space_private_state holds website_editor and program_overview; spaces.preferences keeps only a comment-free published stub. save_website_editor and publish_due_websites write both. Apply with execute_sql then schema_migrations at 20270346009800."
+  }
+}

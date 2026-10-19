@@ -32,7 +32,8 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
   // Bound the complete retained history, not only the incoming document.
   while (new TextEncoder().encode(JSON.stringify(next)).length > 1_500_000 && next.versions.length > 1) next.versions.pop()
   if (new TextEncoder().encode(JSON.stringify(next)).length > 1_500_000) return { ok: false, error: 'This website is too large to save. Reduce its section count and try again.' }
-  // RPC is deliberately service-only and atomically replaces just websiteEditor.
+  // RPC is deliberately service-only. It writes the full state to space_private_state and a
+  // comment-free published stub onto spaces.preferences (SCAN-827).
   const rpc = auth.db as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: unknown }> }
   const result = await rpc.rpc('save_website_editor', { p_space_id: auth.space.id, p_expected_revision: expectedRevision, p_state: next, p_publish: publish })
   if (result.error) return { ok: false, error: 'Could not save your website. Try again.' }
