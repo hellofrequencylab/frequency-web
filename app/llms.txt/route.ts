@@ -90,11 +90,10 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
         { path: '/vision', label: 'Vision', desc: 'For partners, investors, civic leaders and press: the plan for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.' },
       ]
     : []),
-  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
-  { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
-  { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings after card processing, pay only on the business the network sends you. A Collective Space also gets a public network page: its member Spaces and one shared calendar of their events.' },
+  // /what-is-frequency merged into /about (SCAN-1017): one explainer, with the FAQ on it.
+  { path: '/about', label: 'About', desc: `What ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), why it exists, and the people building it.` },
+  { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings after card processing, pay only on the business the network sends you. A Collective also gets a public partner page: the Spaces it partners with and one shared calendar of their events.' },
   { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). Two themes, Default and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
-  { path: '/tools-for-community-builders', label: 'Tools for community builders', desc: 'The operator toolkit: Circles, Events, a calendar, email, a CRM and a storefront, for the people who gather others.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
   { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, then every town with a Circle meeting or an event coming up.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
@@ -133,7 +132,9 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/friendship-as-an-adult', label: 'How to make friends as an adult', desc: 'Why it gets hard to make friends after 30, how to meet people in a new city, how to find like-minded people, and how to reconnect with old friends.' },
   { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: feel less awkward in groups and build a social life without drinking. Pick one recurring thing and become a regular.' },
   { path: '/calm-down-fast', label: 'How to calm down fast', desc: 'What to do when you are wired and cannot switch off, and the quiet fix underneath it.' },
-  { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering and run a community space without burning out.' },
+  // The operator track. /tools-for-community-builders merged into this guide (SCAN-1017), which now
+  // carries the four jobs a community builder's tools do.
+  { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering, run a community space without burning out, and the four tools a builder actually needs.' },
   { path: '/how-to-start-a-circle', label: 'How to start a Circle', desc: 'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each time you meet.' },
 ]
 

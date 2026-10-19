@@ -136,7 +136,6 @@ export const SITE_MAP: SiteMapColumn[] = [
 /** The public pages a DAWN build serves, in the member footer's order. */
 const WEBSITE_LINKS: SiteMapLink[] = [
   { label: 'Home', href: '/?home' },
-  { label: 'What is Frequency', href: '/what-is-frequency' },
   { label: 'About', href: '/about' },
   { label: 'The Community', href: '/the-community' },
   { label: 'Spaces', href: '/spaces' },

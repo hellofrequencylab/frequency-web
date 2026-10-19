@@ -51,8 +51,9 @@ export const EDITABLE_PAGES = [
   { slug: 'friendship-as-an-adult', title: 'Adult friendship', path: '/friendship-as-an-adult' },
   { slug: 'calm-down-fast', title: 'Calm down fast', path: '/calm-down-fast' },
   { slug: 'how-to-be-more-social', title: 'How to be more social', path: '/how-to-be-more-social' },
-  { slug: 'tools-for-community-builders', title: 'Tools for community builders', path: '/tools-for-community-builders' },
-  { slug: 'what-is-frequency', title: 'What is Frequency', path: '/what-is-frequency' },
+  // tools-for-community-builders and what-is-frequency MERGED (SCAN-1017) into how-to-build-community
+  // and about: their routes 308 there, so they are no longer editable pages. Their templates stay as
+  // source (llms, the pricing tests, two launch probes), the way the-lab's and the-quest's did.
 ] as const
 
 type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']

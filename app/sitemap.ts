@@ -242,9 +242,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
     // /the-quest MERGED into /features#f-zaps (owner ruling 2026-10-14): it 301s, so it is not listed.
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.7 },
-    // The core story page — the answer-first "What is Frequency?" explainer of the
-    // movement/vision (Article + FAQ schema). Complements /about (the founding narrative).
-    { url: `${SITE_URL}/what-is-frequency`, changeFrequency: "monthly", priority: 0.7 },
+    // /what-is-frequency MERGED into /about (SCAN-1017): it 308s, so it is not listed. About now carries
+    // the explainer FAQ (FAQPage node) beside the founding narrative.
     // /beta is GONE (LIVE-251). It sold "Free during the beta" and a membership price
     // "when paid membership launches" for a window that closed on 2026-08-17, and under
     // the current model free is permanent, so the page's premise died with the window,
@@ -324,11 +323,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // gather around an activity, not a bar. Answer-first, Article + FAQ schema.
     // Seeker-track pillar (CONTENT-VOICE §7a): reaching back to a friend you
     // drifted from — one warm message, one easy plan. Answer-first, HowTo + FAQ schema.
-    // Labs-track SEO pillar cluster (CONTENT-VOICE §2b builder/operator track): the
-    // community-builder pages that balance the Seeker pillars above (Labs = the
-    // infrastructure that lets people build + run third spaces). Each funnels to
-    // /spaces (+ The Lab). Answer-first; Article/HowTo + FAQ schema.
-    { url: `${SITE_URL}/tools-for-community-builders`, changeFrequency: "monthly", priority: 0.7 },
+    // /tools-for-community-builders MERGED into /how-to-build-community (SCAN-1017): it 308s, so it is
+    // not listed. The operator guide above carries the "four jobs" section now.
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,
@@ -343,8 +339,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/guidelines`, changeFrequency: "yearly", priority: 0.3 },
     // The Space email acceptable-use policy, live since LIVE-729 (ADR-1673): public reference like the two above.
     { url: `${SITE_URL}/space-email-policy`, changeFrequency: "yearly", priority: 0.3 },
-    // Public double-opt-in subscribe landing (the confirm page is noindex + allowlisted in check-seo).
-    { url: `${SITE_URL}/subscribe`, changeFrequency: "monthly", priority: 0.6 },
+    // /subscribe is a retention page, not a search landing (SCAN-1017): robots noindex,follow on the
+    // page itself, so it is not listed (the confirm page is noindex + allowlisted in check-seo).
     { url: `${SITE_URL}/help`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/help/changelog`, changeFrequency: "weekly", priority: 0.5 },
   ];

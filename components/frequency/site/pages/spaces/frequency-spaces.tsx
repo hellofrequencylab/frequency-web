@@ -24,12 +24,14 @@ import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
 
-const TYPES: { icon: FqIconName; kind: string; line: string }[] = [
-  { icon: 'breath', kind: 'Studios', line: 'Fill the 7pm class.' },
-  { icon: 'contacts', kind: 'Coaches + practitioners', line: 'A client list you keep.' },
-  { icon: 'ticket', kind: 'Event hosts', line: 'A guest list that comes back.' },
-  { icon: 'space', kind: 'Cafés + venues', line: 'Your slow night, full.' },
-  { icon: 'gem', kind: 'Non-profits', line: 'Every tool, nothing taken.' },
+/** Each kind links to its door (SCAN-1017): under the Frequency design nothing else on the site reached
+ *  the /for pages. Venues have no door of their own, so their card opens the Spaces directory. */
+const TYPES: { icon: FqIconName; kind: string; line: string; href: string }[] = [
+  { icon: 'breath', kind: 'Studios', line: 'Fill the 7pm class.', href: '/for/studios' },
+  { icon: 'contacts', kind: 'Coaches + practitioners', line: 'A client list you keep.', href: '/for/coaches-and-healers' },
+  { icon: 'ticket', kind: 'Event hosts', line: 'A guest list that comes back.', href: '/for/event-hosts' },
+  { icon: 'space', kind: 'Cafés + venues', line: 'Your slow night, full.', href: '/discover/spaces' },
+  { icon: 'gem', kind: 'Non Profits', line: 'Every tool, nothing taken.', href: '/for/nonprofits' },
 ]
 
 const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] = [
@@ -48,7 +50,7 @@ const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] 
 const GUIDES: { href: string; icon: FqIconName; title: string; body: string }[] = [
   { href: '/loneliness', icon: 'space', title: 'What a third space is', body: 'The definition, why they got rare, and how to build one today.' },
   { href: '/how-to-build-community', icon: 'circle', title: 'How to run a community space', body: 'The operator playbook: a rhythm, a room, a few regulars, light tooling.' },
-  { href: '/tools-for-community-builders', icon: 'page', title: 'Tools for community builders', body: 'The four jobs a builder needs, and how one Space covers them.' },
+  { href: '/networks', icon: 'page', title: 'Run every chapter as one', body: 'For organizations with chapters: one membership everywhere, one calendar, one report.' },
   { href: '/how-to-start-a-circle', icon: 'host', title: 'How to start a Circle', body: 'Pick one thing, set a standing time, invite a few people, keep the format simple.' },
 ]
 
@@ -209,7 +211,7 @@ export async function FrequencySpaces() {
           </div>
           <div className="g5">
             {TYPES.map((t) => (
-              <div className="pop" key={t.kind}>
+              <Link className="pop" key={t.kind} href={t.href}>
                 <span className="pglow" />
                 <article className="pc">
                   <span className="ic">
@@ -218,7 +220,7 @@ export async function FrequencySpaces() {
                   <span className="v">{t.kind}</span>
                   <h3>{t.line}</h3>
                 </article>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

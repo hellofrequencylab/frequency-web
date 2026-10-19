@@ -367,7 +367,6 @@ function MobileLeftDrawer({
               mega-menu only, so nothing is desktop-reachable-only. */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-muted">
             <Link href="/about" onClick={onClose} className="hover:text-text transition-colors">About</Link>
-            <Link href="/what-is-frequency" onClick={onClose} className="hover:text-text transition-colors">What is Frequency</Link>
             <Link href="/terms" onClick={onClose} className="hover:text-text transition-colors">Terms</Link>
             <Link href="/guidelines" onClick={onClose} className="hover:text-text transition-colors">Guidelines</Link>
             <Link href="/privacy" onClick={onClose} className="hover:text-text transition-colors">Privacy</Link>

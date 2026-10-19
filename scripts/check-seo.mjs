@@ -99,6 +99,10 @@ const INTENTIONALLY_EXCLUDED = new Map([
   // filesystem router runs (owner ruling 2026-10-14, ADR-1747), so no visitor or crawler reaches this
   // page until three real stories exist. The file is kept so it can come back by deleting that rule.
   ['/stories', 'hidden behind a temporary 302 until three real stories exist (ADR-1747); page kept to return'],
+  // MERGED (SCAN-1017): each page.tsx is a permanentRedirect stub kept only because two launch probes
+  // (LIVE-912, LIVE-913) read the file by path, and a next.config rule would shadow a live route.
+  ['/what-is-frequency', 'permanentRedirect stub to /about (SCAN-1017); file kept for the LIVE-912 probe'],
+  ['/tools-for-community-builders', 'permanentRedirect stub to /how-to-build-community (SCAN-1017); file kept for the LIVE-912 probe'],
 ])
 
 // ── Route helpers ─────────────────────────────────────────────────────────────

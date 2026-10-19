@@ -381,11 +381,6 @@ return {
 }
 }
 
-/** The document for a resolved pricing input: what the route renders as its template rung. */
-export function whatIsFrequencyData(input: PricingGridInput) {
-  return articleTemplate(whatIsFrequencySpec(input))
-}
-
 /** The code-default evaluation: the editor seed (templates/index.ts) and the tests. */
 export const spec: ArticleSpec = whatIsFrequencySpec(defaultPricingInput())
 export const data = articleTemplate(spec)

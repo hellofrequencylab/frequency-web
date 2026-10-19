@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description:
     "A few notes a month from Daniel Tyack, through Frequency: Circles, practices, and events. Leave your email, confirm the link, and you're on the list.",
   alternates: { canonical: '/subscribe' },
+  // A retention page for people already here, not a search landing (SCAN-1017): out of the index and
+  // the sitemap, links still followed.
+  robots: { index: false, follow: true },
   openGraph: {
     ...OG_SITE,
     images: ROOT_OG_IMAGES,
@@ -83,7 +86,7 @@ export default function SubscribePage() {
       <PageHero
         eyebrow="Stay in the loop"
         title="Get notes from Frequency."
-        subtitle="Leave your email and hear from Daniel Tyack, through Frequency. A few notes a month on Circles, practices, and events. Nothing more."
+        subtitle="A few notes a month from Daniel, the founder: Circles, practices, and what's happening near you. Nothing more."
       />
 
       {/* ── The form (the whole point of the page) ─────────────────────────── */}

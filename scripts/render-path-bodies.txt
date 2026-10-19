@@ -201,7 +201,6 @@ how-to-be-more-social  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, AD
                     #    enrolment; the coded steps carried no per-step url), FAQPage from the
                     #    Accordion (13 Q&A), Breadcrumb still from the route. Template-only
                     #    from here.
-tools-for-community-builders  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift 5d, ADR-1068). The
                     #    281-line coded article became
                     #    lib/page-editor/templates/tools-for-community-builders.ts, a spec run
                     #    through articleTemplate(). Every block, in the coded order, and every word
@@ -214,7 +213,6 @@ tools-for-community-builders  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift
                     #    from <BlockDocJsonLd> (route passes its own title/description/dates/three
                     #    images, unchanged), FAQPage from the Accordion (6 Q&A), Breadcrumb still
                     #    from the route. Template-only from here.
-what-is-frequency  0  # ✅ ENROLLED + template-only 2026-08-24 (Lift 5d, ADR-1068). The 517-line
                     #    coded article became lib/page-editor/templates/what-is-frequency.ts, a
                     #    spec run through articleTemplate(). Every block, in the coded order, and
                     #    every word verbatim. It widened THREE seams, each optional and each

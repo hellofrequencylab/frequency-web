@@ -73,9 +73,10 @@ export const FREQUENCY_PAGE_SEO = {
   // and descriptions they shipped with; the entry adds the WebPage node their visible hero supports.
   features: {
     path: '/features',
-    title: 'Features',
+    // Not the bare word (SCAN-678): 'Features · Frequency' names nothing a query contains.
+    title: 'Features: everything it takes to gather',
     description:
-      'Everything Frequency does for people and Spaces, from the town calendar to door check-in, programs and payouts.',
+      'Everything Frequency does for people and Spaces: the town calendar, Circles, Events, door check-in, programs, tickets and memberships.',
     shareTitle: 'Features · Frequency',
     headline: 'Everything it takes to gather.',
     lede: 'Every feature, for both sides of the door. Open one to see how it works.',

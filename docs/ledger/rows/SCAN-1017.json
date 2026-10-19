@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1017",
+  "title": "The public site drops its duplicate pages: What is Frequency merges into About, the tools page into the operator guide, and the doors and guides get site-wide links",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/sitemap.ts",
+    "ref": "Marketing page audit 2026-10-19 (project thread \"Marketing page audit and trim\"), /mnt/project-files/scan/2026-10-19-marketing-trim/audit.md"
+  },
+  "detail": "The site advertised 31 static marketing URLs. Three told one story twice: /about and /what-is-frequency (a 2,100-word explainer still describing Pillars and Channels the live site no longer shows), and /tools-for-community-builders beside /how-to-build-community. Under the Frequency design nothing linked the six /for doors except one line on the tools page, nothing linked /networks except /pricing, and the pillar guides had no site-wide link. Fix: /what-is-frequency 308s to /about, which carries the five surviving answers as its FAQ (FAQPage node); /tools-for-community-builders 308s to /how-to-build-community, which carries the four jobs as one section; /subscribe leaves the index; the /spaces type cards link to their doors; the footer gets Networks and a Guides column; the header hint names Collective and Network; retired words (Non-profit, Runs, the Member/Host/Guide/Mentor path, Practitioner plan labels) leave the public and in-app copy.\n\nCLOSED 2026-10-19 (ADR-1752). The two page files stay as permanentRedirect stubs because the LIVE-912 probe reads them by path and a next.config rule would shadow a live route (lib/marketing/redirect-shadow.test.ts); their templates stay as source, as the-lab's did (ADR-1747). The six niche doors all stay: the LIVE-911 probe pins six trustLines, and each door is a distinct funnel once /spaces links them.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.readFileSync(p,'utf8');const bad=[];const sm=r('app/sitemap.ts').replace(/\\\\/\\\\/.*$/gm,'');for(const p of ['/what-is-frequency','/tools-for-community-builders','/subscribe'])if(sm.includes('}'+p+String.fromCharCode(96)))bad.push('sitemap still advertises '+p);for(const f of ['app/(marketing)/what-is-frequency/page.tsx','app/(marketing)/tools-for-community-builders/page.tsx'])if(!/permanentRedirect\\\\(/.test(r(f)))bad.push(f+' is not a redirect stub');if(!/q: 'What is Frequency\\\\?'/.test(r('lib/page-editor/templates/about.ts')))bad.push('About carries no explainer FAQ');const nav=r('lib/frequency/site-nav.ts');if(/Non-profit/.test(nav))bad.push('site-nav still says Non-profit');if(!/heading: 'Guides'/.test(nav))bad.push('footer has no Guides column');if(!/href: '\\\\/for\\\\/studios'/.test(r('components/frequency/site/pages/spaces/frequency-spaces.tsx')))bad.push('/spaces type cards do not link the doors');if(bad.length){console.error('SCAN-1017: '+bad.join('; '));process.exit(1)}\"",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

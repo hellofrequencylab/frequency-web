@@ -69,8 +69,8 @@ const ROUTES = {
   'friendship-as-an-adult': 'app/(marketing)/friendship-as-an-adult/page.tsx',
   'calm-down-fast': 'app/(marketing)/calm-down-fast/page.tsx',
   'how-to-be-more-social': 'app/(marketing)/how-to-be-more-social/page.tsx',
-  'tools-for-community-builders': 'app/(marketing)/tools-for-community-builders/page.tsx',
-  'what-is-frequency': 'app/(marketing)/what-is-frequency/page.tsx',
+  // tools-for-community-builders and what-is-frequency merged away (SCAN-1017): their page files are
+  // redirect stubs now, out of EDITABLE_PAGES, so they are not scored.
 }
 
 /** Blank both comment forms, length-preserving (same reason as check-grants.mjs / check-labels.mjs:

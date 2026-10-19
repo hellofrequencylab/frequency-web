@@ -45,7 +45,7 @@ export default async function PartnerProgramsPage() {
     <IndexTemplate
       {...hero}
       title="Partner programs"
-      description="Upgrade packages for what you do beyond membership. Claim any combination. The team verifies each before its tools go live. Practitioner and Organization go Active once you add a payout account."
+      description="Partner programs for what you do beyond membership. Claim the ones that fit. The team verifies each before its tools go live, and programs that move money go live once your payout account is connected."
     >
       <div className="grid max-w-2xl grid-cols-1 gap-3">
         {PARTNER_PERSONAS.map((p) => {
