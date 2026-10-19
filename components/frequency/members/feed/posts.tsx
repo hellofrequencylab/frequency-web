@@ -17,6 +17,7 @@ import { relativeTime } from '@/lib/utils'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FqAvatar, phStyle } from '../shared/avatar'
 import { feedWhyShown } from '@/lib/feed/why-pref'
+import { SystemNotice } from '../shared/system-notice'
 
 // THE STREAM (Frequency Member Feed, section 9). Posts sit between hairlines with no card, a dot
 // marks the source, and each can say why it is there. The rows are the platform's own feed RPC
@@ -116,9 +117,12 @@ export async function FeedStream({
     }
     if (days.length === 0) {
       return (
-        <div className="fa-empty">
-          <span className="fa-serif18">The story starts with the first post. Share a moment to begin it.</span>
-        </div>
+        <SystemNotice
+          icon="page"
+          title="The story starts with the first post."
+          body="Share a moment and it becomes the first line."
+          actions={[{ href: '/feed?sort=relevant#compose', label: 'Share a moment', primary: true }]}
+        />
       )
     }
     return (
@@ -136,12 +140,15 @@ export async function FeedStream({
   // A first-run member: nothing from anyone yet. Say so plainly and point at the two ways in.
   if (posts.length === 0 && !milestone && !journey && classifieds.length < 2 && !dispatch) {
     return (
-      <div className="fa-empty">
-        <span className="fa-serif18">Nothing from your people yet. Join a Circle, or share a moment of your own.</span>
-        <Link href="/circles" className="btn sm">
-          Find a Circle
-        </Link>
-      </div>
+      <SystemNotice
+        icon="circle"
+        title="Nothing from your people yet."
+        body="Join a Circle to see what it is up to, or share a moment of your own."
+        actions={[
+          { href: '/circles', label: 'Find a Circle', primary: true },
+          { href: '/feed?sort=relevant#compose', label: 'Share a moment' },
+        ]}
+      />
     )
   }
 

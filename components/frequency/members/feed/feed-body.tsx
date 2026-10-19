@@ -14,6 +14,7 @@ import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { FeedPlanner } from './planner'
 import { feedWhyShown } from '@/lib/feed/why-pref'
 import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type GsStep } from './islands'
+import { ExploreSection } from './explore'
 import { FeedStream, type FeedSort, type JourneyRun } from './posts'
 import { FrequencyPhonePanels } from '../shell/right-rail'
 import { loadGameStats } from '@/components/sidebar/right-sidebar'
@@ -173,6 +174,13 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         <NeedsSection profileId={p.profileId} nextLesson={nextLesson} />
       </Suspense>
 
+      {/* A member with few Circles gets the way in right under Needs you; everyone else gets it at the end. */}
+      {circles.length < 3 && (
+        <Suspense fallback={null}>
+          <ExploreSection mine={circles.map((c) => c.id)} home={p.home} lead="Find your people" />
+        </Suspense>
+      )}
+
       <FeedComposer scopeId={p.profileId} avatarUrl={p.avatarUrl} name={p.displayName} practiceHref={p.tuneOutHref} />
 
       <nav className="tabs fa-lens" aria-label="Sort the feed">
@@ -198,6 +206,12 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       <Suspense fallback={null}>
         <CaughtUp eventsP={eventsP} />
       </Suspense>
+
+      {circles.length >= 3 && (
+        <Suspense fallback={null}>
+          <ExploreSection mine={circles.map((c) => c.id)} home={p.home} lead="Keep exploring" />
+        </Suspense>
+      )}
     </div>
   )
 }
