@@ -57,7 +57,7 @@ export async function generateMetadata({
   // name: its stored start is the first meeting, not the next one.
   const title = seo.facts.isAnchor ? event.title : `${event.title} · ${formatEventDate(event.starts_at)}`
   const ogTitle = `${title} · ${SITE_NAME}`
-  // SCAN-1014 / ADR-1760: an unlisted event is a link, not a listing. The plan noindexes it and
+  // SCAN-1014 / ADR-1751: an unlisted event is a link, not a listing. The plan noindexes it and
   // omits the canonical; a public date still uses the past and series rules, with a self-canonical.
   const plan = publicEventIndexPlan({
     visibility: seo.visibility === 'unlisted' ? 'unlisted' : seo.visibility,
