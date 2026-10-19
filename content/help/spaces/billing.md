@@ -37,7 +37,7 @@ not see billing at all.
 
 Pick the plan you want on the billing page. The card fields open under the button you pressed. A few things worth knowing:
 
-- Every paid plan starts with a **14 day free trial**.
+- Business, Collective and Non Profit plans start with a **14 day free trial**. Network is quoted, not started from this page.
 - **Yearly saves two months.** A yearly plan costs ten months of the monthly price.
 - Moving up takes effect right away. Moving down takes effect at the end of what you have paid for,
   so you keep what you bought.
