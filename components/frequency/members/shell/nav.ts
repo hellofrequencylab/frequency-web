@@ -298,7 +298,6 @@ export const FQ_ACCOUNT_MENU: readonly FqMenuRow[] = [
 /** The about and policy pages (DAWN's phone drawer foot): a small text row under the avatar menu and
  *  in the phone drawer's website group. */
 export const FQ_ABOUT_LINKS: readonly { label: string; href: string }[] = [
-  { label: 'What is Frequency', href: '/what-is-frequency' },
   { label: 'About', href: '/about' },
   { label: 'Compare', href: '/vs' },
   { label: 'Guidelines', href: '/guidelines' },

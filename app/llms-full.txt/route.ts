@@ -11,8 +11,6 @@ import { spec as loneliness } from '@/lib/page-editor/templates/loneliness'
 import { spec as friendshipAsAnAdult } from '@/lib/page-editor/templates/friendship-as-an-adult'
 import { spec as calmDownFast } from '@/lib/page-editor/templates/calm-down-fast'
 import { spec as howToBeMoreSocial } from '@/lib/page-editor/templates/how-to-be-more-social'
-import { spec as toolsForCommunityBuilders } from '@/lib/page-editor/templates/tools-for-community-builders'
-import { spec as whatIsFrequency } from '@/lib/page-editor/templates/what-is-frequency'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
 import { quickAnswers } from '@/lib/marketing/quick-answers'
@@ -63,8 +61,8 @@ const ARTICLE_SPECS: Record<string, ArticleSpec> = {
   'friendship-as-an-adult': friendshipAsAnAdult,
   'calm-down-fast': calmDownFast,
   'how-to-be-more-social': howToBeMoreSocial,
-  'tools-for-community-builders': toolsForCommunityBuilders,
-  'what-is-frequency': whatIsFrequency,
+  // tools-for-community-builders and what-is-frequency merged into how-to-build-community and about
+  // (SCAN-1017); their routes redirect, so the corpus no longer quotes a page nobody can land on.
 }
 
 /** One question and its answer, in the form an answer engine lifts whole. */

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-855",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const s=require('fs').readFileSync('app/layout.tsx','utf8');const b=s.slice(s.indexOf('const nunito'),s.indexOf('const playfair'));process.exit((b.match(/preload/g)||[]).length>=3?0:1)\""
+    }
+  },
+  "append": {
+    "detail": "\n\nNunito, Geist Mono and Anton carry preload: false in app/layout.tsx, so no route preloads a DAWN face; they still load on demand where a Space page draws them."
+  }
+}
