@@ -2,7 +2,7 @@
 // another, how long it lives, and the one line each outcome prints. No Supabase, no Next:
 // lib/meet/codes.test.ts covers it. The IO lives in ./store.ts.
 
-import { randomBytes } from 'crypto'
+import { randomInt } from 'crypto'
 import { SITE_URL } from '@/lib/site'
 
 /** How long a shown code claims. Long enough to open a camera, short enough that a screenshot is worthless. */
@@ -15,10 +15,10 @@ export const MEETUP_TAP_ZAPS = 15
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const LENGTH = 8
 
-/** A fresh code. Uniform over the alphabet (32 symbols, so every byte maps cleanly). Pure over randomness. */
+/** A fresh code. Uniform over the alphabet: randomInt draws without modulo bias. Pure over randomness. */
 export function generateMeetCode(): string {
   let out = ''
-  for (const b of randomBytes(LENGTH)) out += ALPHABET[b % ALPHABET.length]
+  for (let i = 0; i < LENGTH; i++) out += ALPHABET[randomInt(ALPHABET.length)]
   return out
 }
 
