@@ -397,7 +397,7 @@ as today**.
 > `getVisibleSpaceBySlug` gate; this policy closes the direct anon/session-client read of a Private
 > Space's metadata (the prior policy was visibility-blind).
 >
-> **`space_private_state` (SCAN-827, ADR-1756; `20270346009800`).** Website editor drafts, review
+> **`space_private_state` (SCAN-827, ADR-1757; `20270346009800`).** Website editor drafts, review
 > comments, version history, scheduled publishes, and the Executive Overview live on this
 > service-role-only row (`space_id` PK). `spaces.preferences` stays anon-readable and may carry only
 > the comment-free published snapshot plus revision (`websiteEditor.v` / `revision` / `published`).

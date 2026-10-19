@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-19 (ADR-1756). PREMISE RE-TESTED on main: the newest grant of spaces columns to anon still named preferences, and no migration created space_private_state. Migration 20270346009800: service-role-only space_private_state holds website_editor and program_overview; spaces.preferences keeps only a comment-free published stub. save_website_editor and publish_due_websites write both. Apply with execute_sql then schema_migrations at 20270346009800."
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1757). PREMISE RE-TESTED on main: the newest grant of spaces columns to anon still named preferences, and no migration created space_private_state. Migration 20270346009800: service-role-only space_private_state holds website_editor and program_overview; spaces.preferences keeps only a comment-free published stub. save_website_editor and publish_due_websites write both. Apply with execute_sql then schema_migrations at 20270346009800."
   }
 }
