@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronUp, Globe, Loader2, Trash2, Undo2 } from 'lucide-react'
-import { useProfileLayout } from './profile-layout-context'
+import { useEditorBinding } from './editor-binding'
 import { setUnpublishedWork, UNPUBLISHED_LEAVE_WARNING } from '@/lib/layout/unpublished-work'
 import {
   discardSpaceProfileDraft,
@@ -46,7 +46,7 @@ export function SpacePublishFab({
    *  ordinary visit would be chrome nobody asked for. Minimized, it is one pill. */
   editable?: boolean
 }) {
-  const store = useProfileLayout()
+  const store = useEditorBinding()
   const router = useRouter()
   const [open, setOpen] = useState(editable)
   const [published, setPublished] = useState(initialPublished)

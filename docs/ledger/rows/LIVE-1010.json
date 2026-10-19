@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1010",
+  "title": "Events opens without a black block: its loading screen draws the plain header the page renders",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/events/events-loading.tsx",
+    "ref": "Daniel 2026-10-19 design list (30 items), item 6"
+  },
+  "detail": "Daniel 2026-10-19: loading Events first shows a black space where the header used to be. Cause: components/frequency/members/events/events-loading.tsx still drew a bare `ev-hero` (the retired photo band, min-height 360px on --fq-ink) after events-body.tsx moved to `ev-hero is-plain`. The skeleton now uses the plain header, and the linen skeleton bars are scoped to the photo band only so they stay visible on the canvas. Swept the other moved pages: Circles, Marketplace, Messages, Search, Feed and Around You already wait on plain heads; Channels, Members and Business Spaces still render a photo hero, so their skeletons match until LIVE-1012 moves them to the shared header and updates the skeleton in the same change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/frequency/members/events/events-loading.tsx','utf8');if(!s.includes('className=\\\"ev-hero is-plain\\\"')){console.error('LIVE-1010: Events skeleton lost the plain header');process.exit(1)}\"",
+    "note": "Fails when the Events wait goes back to the dark photo band. Behavior is events-loading.test.ts.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
