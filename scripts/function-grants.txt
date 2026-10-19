@@ -326,3 +326,4 @@ loyalty_record_visit internal
 loyalty_hunt_progress internal
 set_space_preferences                internal
 auth_email_exists                    internal
+meet_tap                             internal
