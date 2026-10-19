@@ -32,7 +32,7 @@ your own come with Business.
 ## Use your own domain
 
 Your own domain, like `yourname.com`, is the custom domain add-on on Business and Non Profit, and it
-is included with Collective and Network. Prices are on the [pricing page](/pricing).
+is included with Collective. Prices are on the [pricing page](/pricing).
 
 In the **Your website** card, find **Your domain** and enter a domain you own. Some providers show a
 **Connect with** button that sets the records for you. Otherwise the card lists the records to add

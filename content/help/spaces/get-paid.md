@@ -63,7 +63,7 @@ There are six ways a Space can take money, and Get paid lists all six with the s
 | **Journeys** | A price on a Journey this Space sells. |
 
 Three things have to be true for a path to take money: your Space is on a plan that sells (Business,
-Collective, Network, or Non Profit), the path has its own setup, and the payout account exists. So a path can read **Ready once payouts are on** while everything else about it
+Collective, or Non Profit), the path has its own setup, and the payout account exists. So a path can read **Ready once payouts are on** while everything else about it
 is finished, and a path you have not turned on reads **Turned off in your settings** even when payouts
 are live.
 
