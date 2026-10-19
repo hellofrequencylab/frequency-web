@@ -30,7 +30,7 @@ import { CollectiveOrNetwork, FeeBars, TierLadder, feeBars, ladderSteps } from '
 type Faq = { q: string; a: string }[]
 
 /** The reference's card hues, in ladder order. Tokens only. */
-const HUES = ['var(--fq-x-aqua-neon)', 'var(--fq-x-sun-neon)', 'var(--fq-x-violet-neon)', 'var(--fq-x-magenta-neon)']
+const HUES = ['var(--fq-x-aqua-neon)', 'var(--fq-x-sun-neon)', 'var(--fq-x-sky-neon)', 'var(--fq-x-magenta-neon)']
 
 const COUNT_WORD = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
 
