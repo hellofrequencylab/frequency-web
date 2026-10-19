@@ -13,7 +13,7 @@
 -- not. The app-side count stays as the polite refusal; this is the commit guard.
 --
 -- Apply with execute_sql, then insert supabase_migrations.schema_migrations at
--- version 20270346009900. Do not apply_migration. Do not db push.
+-- version 20270346010000. Do not apply_migration. Do not db push.
 --
 -- ROLLBACK:
 --   Restore public.validate_collective_partner() from 20270346009200.

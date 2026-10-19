@@ -7,10 +7,10 @@
       "kind": "cmd",
       "cmd": "node -e \"const fs=require('fs');const dir='supabase/migrations';const files=fs.readdirSync(dir).filter(f=>f.endsWith('.sql')).sort();let last='';for(const f of files){const t=fs.readFileSync(dir+'/'+f,'utf8');if(/function\\\\s+[\\\\w.]*validate_collective_partner/i.test(t))last=t}const i=last.search(/function\\\\s+[\\\\w.]*validate_collective_partner/i);const body=i<0?'':last.slice(i,i+6000);if(!/for update/i.test(body)||!/count\\\\(/i.test(body)){console.error('SCAN-1010: the partner trigger does not lock the hub and count, so concurrent invites pass the cap of 10');process.exit(1)}\"",
       "checked": "2026-10-19",
-      "note": "Closed 2026-10-19 (ADR-1757). Passes when the latest validate_collective_partner body locks FOR UPDATE and counts live partner rows."
+      "note": "Closed 2026-10-19 (ADR-1765). Passes when the latest validate_collective_partner body locks FOR UPDATE and counts live partner rows."
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-19 (ADR-1757). PREMISE RE-TESTED on this tree: invitePartnerSpace still counted then inserted, and validate_collective_partner in 20270346009200 still share-locked both Spaces with no count, so two invites could both pass ten. Migration 20270346009900: on INSERT of pending/accepted (or UPDATE back to a live status) lock both Space rows FOR UPDATE in id order and refuse when 10 pending or accepted rows already exist. Declined and revoked do not count. pgTAP: supabase/tests/collective_partner_cap.test.sql. Apply with execute_sql then schema_migrations at 20270346009900."
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1765). PREMISE RE-TESTED on this tree: invitePartnerSpace still counted then inserted, and validate_collective_partner in 20270346009200 still share-locked both Spaces with no count, so two invites could both pass ten. Migration 20270346010000: on INSERT of pending/accepted (or UPDATE back to a live status) lock both Space rows FOR UPDATE in id order and refuse when 10 pending or accepted rows already exist. Declined and revoked do not count. pgTAP: supabase/tests/collective_partner_cap.test.sql. Apply with execute_sql then schema_migrations at 20270346010000."
   }
 }

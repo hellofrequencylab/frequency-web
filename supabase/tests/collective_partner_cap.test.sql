@@ -1,4 +1,4 @@
--- pgTAP for validate_collective_partner's ten-partner cap (migration 20270346009900, SCAN-1010).
+-- pgTAP for validate_collective_partner's ten-partner cap (migration 20270346010000, SCAN-1010).
 -- The TypeScript invite counts first; only this file pins that the eleventh live row is refused
 -- at commit, that declined and revoked free a slot, and that a second hub is not blocked.
 --
