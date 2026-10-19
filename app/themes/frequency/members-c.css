@@ -175,9 +175,9 @@
 /* The glows at the templates' strength: Journey's next lesson, the Mindless orb, the Vault's medals,
    the profile photo's halo. */
 [data-design="frequency"] [data-kit="members"] .ic.mc-now{box-shadow:var(--fq-ig-glow),0 0 18px color-mix(in oklab,var(--fq-x-aqua-neon) 45%,transparent)}
-[data-design="frequency"] [data-kit="members"] .mc-orb-core{box-shadow:0 0 60px color-mix(in oklab,var(--fq-x-violet-neon) 45%,transparent),inset 0 0 0 1px var(--fqm-white-60)}
-[data-design="frequency"] [data-kit="members"] .mc-medal{box-shadow:0 12px 30px -12px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent),inset 0 0 0 4px var(--fqm-white-60)}
-[data-design="frequency"] [data-kit="members"] .mc-photo{box-shadow:0 0 0 4px var(--fq-ig-hole),0 20px 50px -24px color-mix(in oklab,var(--fq-x-violet-neon) 40%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mc-orb-core{box-shadow:0 0 60px color-mix(in oklab,var(--fq-x-sky-neon) 45%,transparent),inset 0 0 0 1px var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .mc-medal{box-shadow:0 12px 30px -12px color-mix(in oklab,var(--fq-x-sky-neon) 70%,transparent),inset 0 0 0 4px var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .mc-photo{box-shadow:0 0 0 4px var(--fq-ig-hole),0 20px 50px -24px color-mix(in oklab,var(--fq-x-sky-neon) 40%,transparent)}
 /* Help's search pill is the raised white of Search's bar (Help.html: #fff). */
 [data-design="frequency"] [data-kit="members"] .mc-pill{background:var(--fq-surface-raised)}
 /* Search: a result row is a tappable row with the kit's list hover (Search.html rows are links). */

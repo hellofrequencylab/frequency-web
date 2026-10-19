@@ -10,11 +10,11 @@
   --surface-card:#FFFEFC;--surface-raised:#FFFFFF;--bg-canvas:#FAF4EA;
   --text-strong:#34312E;--text-body:#4D4945;--text-muted:#7C766F;--text-faint:#A59F98;
   --border-hair:rgba(30,27,24,.07);--border-strong:rgba(30,27,24,.2);--track:rgba(30,27,24,.06);
-  --x-violet-deep:var(--text-strong);--x-lilac:#C4B8FF;--accent-soft:rgba(30,27,24,.07);--focus-ring:var(--text-strong);--text-link:var(--text-strong);
+  --x-violet-deep:var(--text-strong);--x-lilac:#A3D4FF;--accent-soft:rgba(30,27,24,.07);--focus-ring:var(--text-strong);--text-link:var(--text-strong);
   --live:#B0287F;--live-soft:#FBE3F1;--reward:#9A6200;--reward-soft:#FFF0D6;
   --success:#2F7F5A;--warning:#A86A00;--danger:#C2362B;--tip-bg:rgba(52,49,46,.92);
   --pa:linear-gradient(120deg,#EEC1EC 0%,#C4B8FF 36%,#A3D4FF 68%,#8FE9FF 100%);
-  --pa-soft:linear-gradient(120deg,rgba(255,214,186,.24),rgba(238,193,236,.2) 34%,rgba(196,184,255,.2) 66%,rgba(143,233,255,.2));
+  --pa-soft:linear-gradient(120deg,rgba(255,214,186,.24),rgba(238,193,236,.2) 34%,rgba(163,212,255,.2) 66%,rgba(143,233,255,.2));
   --pa-orb:radial-gradient(circle at 35% 30%,#fff 0,#E6CDF4 26%,#B3C6FF 58%,#8FE9FF 100%);
   --pa-glow:0 12px 28px -14px rgba(120,150,225,.55);
   --font-ui:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;--font-ds-display:'Unbounded','Hanken Grotesk',system-ui,sans-serif;
@@ -103,7 +103,7 @@
 .we-caption button{border:0;background:none;padding:0;font:500 12px/1 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--text-link)}
 .we-row{position:relative;width:100%;min-height:44px;display:flex;align-items:center;gap:10px;padding:6px 8px;border:0;border-radius:14px;background:none;text-align:left;color:var(--text-strong);font:500 14px/1.2 var(--font-ui);text-decoration:none}
 .we-row:hover{background:rgba(30,27,24,.04)}
-.we-row[aria-pressed=true],.we-row[aria-current=true]{background:var(--pa-soft);box-shadow:inset 0 0 0 1px rgba(196,184,255,.6)}
+.we-row[aria-pressed=true],.we-row[aria-current=true]{background:var(--pa-soft);box-shadow:inset 0 0 0 1px rgba(163,212,255,.6)}
 .we-row>svg{flex:none;color:var(--text-muted)}
 .we-row-ic{flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(30,27,24,.05);color:var(--text-strong);font-style:normal}
 .we-row[aria-pressed=true] .we-row-ic,.we-row[aria-current=true] .we-row-ic{background:#fff}
@@ -148,7 +148,7 @@
 /* Vera command bar */
 .we-vera{position:absolute;left:50%;bottom:20px;z-index:8;width:min(640px,calc(100% - 40px));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px}
 .we-shell[data-preview=true] .we-vera{display:none}
-.we-vera-bar{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:22px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 30px 60px -30px rgba(30,27,24,.45),inset 0 0 0 1px rgba(196,184,255,.55)}
+.we-vera-bar{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:22px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 30px 60px -30px rgba(30,27,24,.45),inset 0 0 0 1px rgba(163,212,255,.55)}
 .we-vera-bar input{flex:1;min-width:0;min-height:0;padding:8px 0;border:0;outline:0;background:none;box-shadow:none;font:400 15px/1 var(--font-ui);color:var(--text-strong)}
 .we-orb{flex:none;width:28px;height:28px;border-radius:50%;background:var(--pa-orb);box-shadow:0 0 18px rgba(179,198,255,.8);animation:we-breath 5s ease-in-out infinite}
 .we-orb.lg{width:56px;height:56px;box-shadow:0 0 30px rgba(179,198,255,.8)}
@@ -174,7 +174,7 @@
 .we-field input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),.we-field textarea,.we-field select{width:100%;min-height:44px;box-sizing:border-box;padding:11px 14px;border:0;border-radius:14px;background:rgba(30,27,24,.045);box-shadow:none;font:400 14px/1.4 var(--font-ui);color:var(--text-strong);outline:none;transition:box-shadow var(--dur-fast),background var(--dur-fast)}
 .we-field :is(input,textarea,select):focus{background:#fff;box-shadow:0 0 0 2px var(--x-violet-deep)}
 .we-field textarea{min-height:96px;resize:vertical}
-.we-field input[type=range]{accent-color:#7C6CF0}
+.we-field input[type=range]{accent-color:var(--text-strong)}
 .we-field input:is([type=checkbox],[type=radio]){width:auto;align-self:flex-start;accent-color:var(--x-violet-deep)}
 .we-note{margin:6px 0;padding:12px 14px;border-radius:16px;background:var(--pa-soft);font:400 13px/1.5 var(--font-ui);color:var(--text-body)}
 .we-note strong{color:var(--text-strong);font-weight:600}
@@ -240,10 +240,10 @@
 
 /* 6. Inside the canvas frame (this sheet is copied there): hover and selection, the type tag, the dark section
    toolbar and the insert points. Two classes deep so they outrank the canvas's own sheet. */
-.we-canvas-root .we-section:hover{outline:1.5px dashed rgba(91,63,208,.45);outline-offset:-1.5px}
+.we-canvas-root .we-section:hover{outline:1.5px dashed rgba(30,27,24,.45);outline-offset:-1.5px}
 .we-canvas-root .we-section[data-selected=true]{outline:2px solid var(--x-violet-deep);outline-offset:-2px}
 .we-canvas-root .we-section[data-hidden=true]{opacity:.35;filter:grayscale(.6)}
-.we-canvas-root .we-section-label{left:10px;right:auto;top:10px;height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:999px;background:var(--x-violet-deep);color:#fff;font:600 12px/1 var(--font-ui);box-shadow:0 8px 20px -10px rgba(91,63,208,.8);cursor:grab}
+.we-canvas-root .we-section-label{left:10px;right:auto;top:10px;height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:999px;background:var(--x-violet-deep);color:#fff;font:600 12px/1 var(--font-ui);box-shadow:0 8px 20px -10px rgba(30,27,24,.8);cursor:grab}
 .we-canvas-root .we-section:not([data-selected=true]) .we-section-label{opacity:0;pointer-events:none}
 .we-canvas-root .we-micro{position:absolute;top:10px;right:10px;margin:0;width:auto;gap:2px;padding:4px;border:0;border-radius:14px;background:rgba(30,27,24,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;box-shadow:0 14px 30px -14px rgba(0,0,0,.6)}
 .we-canvas-root .we-micro button,.we-canvas-root .we-micro summary{width:32px;height:32px;border-radius:10px;color:#fff}
@@ -254,7 +254,7 @@
 .we-canvas-root .we-ins::after{content:"";position:absolute;left:0;right:0;top:-12px;height:24px}
 .we-canvas-root .we-ins::before{content:"";position:absolute;left:24px;right:24px;top:-1px;height:2px;background:var(--x-violet-deep);opacity:0;transition:opacity var(--dur-fast)}
 .we-canvas-root .we-ins:hover::before{opacity:1}
-.we-canvas-root .we-insert{width:auto;height:30px;padding:0 14px;border:0;border-radius:999px;background:var(--x-violet-deep);color:#fff;font:600 12px/1 var(--font-ui);box-shadow:0 10px 24px -10px rgba(91,63,208,.8);cursor:pointer}
+.we-canvas-root .we-insert{width:auto;height:30px;padding:0 14px;border:0;border-radius:999px;background:var(--x-violet-deep);color:#fff;font:600 12px/1 var(--font-ui);box-shadow:0 10px 24px -10px rgba(30,27,24,.8);cursor:pointer}
 .we-canvas-root .we-ins .we-insert{position:absolute;left:50%;top:-15px;z-index:1;transform:translateX(-50%) scale(.8);opacity:0;transition:opacity var(--dur-fast),transform var(--dur-fast) var(--ease-out)}
 .we-canvas-root .we-ins:hover .we-insert,.we-canvas-root .we-ins .we-insert:focus-visible{opacity:1;transform:translateX(-50%) scale(1)}
 .we-canvas-root .we-addend{display:flex;justify-content:center;padding:28px}
