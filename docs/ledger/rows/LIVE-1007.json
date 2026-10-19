@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1007",
+  "title": "Editor E0 task 12b, grid slice: a node grid renders and edits a Space node document, two Text blocks as two blocks",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 6; §8 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19. components/entity-blocks/live-node-grid.tsx is LiveProfileGrid for a node document: rows from resolveNodeRows(layout, 'space'), cells are BlockNode, each node draws from its own content and style, on-page edits fold over the freshest layout through the node store (setNodeContent), selection and scroll sync are by node id, and a Map holds the block refs (CodeQL property injection). The server prerender stays keyed by type. Dormant: nothing renders it. Honest gap: the page builder, block-edit-panel and the owner preview choosing this grid are still to come.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/entity-blocks/live-node-grid.tsx','utf8');const bad=[];if(!s.includes(\\\"resolveNodeRows(layout, 'space')\\\"))bad.push('rows are not resolved from nodes');if(!s.includes('useNodeLayout'))bad.push('does not read the node store');if(!s.includes('setNodeContent'))bad.push('does not edit by node');if(/Record<string, HTMLDivElement/.test(s))bad.push('refs keyed by an object');if(bad.length){console.error('LIVE-1007: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the grid stops reading nodes from the node store or keys a Record by node id. Behavior is live-node-grid.test.tsx.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}
