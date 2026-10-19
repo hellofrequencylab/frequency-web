@@ -6,8 +6,8 @@
   "lane": "live",
   "size": "L",
   "source": {
-    "file": "/mnt/project-files/changed-plan/build-plan-2026-10-19.md",
-    "ref": "Phase 4; items 5, 7, 26 (feature area), 27, 28"
+    "file": "docs/ledger/adr/ADR-1841.md",
+    "ref": "Design changes plan 2026-10-19, Phase 4; items 5, 7, 26 (feature area), 27, 28"
   },
   "detail": "Under the Frequency design /spaces/directory renders FqSpacesBody: the kit head (kicker, title, one line, Create and Manage), one find row (search, Subject, City, Has events, Following, Sort), a kind strip with real counts that wraps instead of clipping, removable active-filter chips, a Featured row (operator picks via preferences.directoryFeatured, set from /admin/spaces/[id] > Directory, else the most active three), a Founding Businesses row, a results grid truncated at 12 with Show more, an empty-search state offering the kinds, and a Run something in town prompt. Sections come from lib/spaces/directory-sections.ts. Founding status stays a badge and a row, never a ranking input. Not in this row: type-ahead suggestions and an open-now filter (no open-hours data on a Space); the shared index header (LIVE-1012) is adopted when it merges; the cover-image Founding badge is LIVE-1019. No migration.",
   "verify": {
