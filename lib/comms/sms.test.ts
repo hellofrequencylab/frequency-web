@@ -127,6 +127,14 @@ describe('isSmsProvisioned — fail-closed on env', () => {
     expect(isSmsProvisioned()).toBe(true)
   })
 
+  it('is true for every envFlag on-value (1 / true / on)', () => {
+    for (const on of ['1', 'true', 'TRUE', 'on']) {
+      setAll()
+      process.env.SMS_PROVISIONING_ENABLED = on
+      expect(isSmsProvisioned()).toBe(true)
+    }
+  })
+
   it('is false when the master switch is not an envFlag on-value (1 / true / on)', () => {
     for (const off of ['yes', 'enabled', 'false', '0', '']) {
       setAll()
