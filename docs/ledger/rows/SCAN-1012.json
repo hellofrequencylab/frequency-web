@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-1012",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/comms/space-inbox-address.ts','utf8'),a=fs.readFileSync('lib/crm/contact-allowance.ts','utf8');const i=s.indexOf('async function ensureSpaceContact');const b=i<0?'':s.slice(i,i+2500);const gated=/canAddSpaceContact/.test(b)||/ensureSpaceContact/.test(a);const fires=/contact\\\\.created/.test(b);if(!gated||!fires){console.error('SCAN-1012: the Space inbox writes contacts with no allowance verdict and no contact.created trigger');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nRuling 2026-10-19 (Count it): ensureSpaceContact checks canAddSpaceContact before inserting a new sender; past the allowance the message still lands in a new thread with no contact row and no CRM mirror, so inbound mail is never dropped by the meter. A fresh contact fires contact.created like the console path. A sender who is already a contact is never metered."
+  }
+}
