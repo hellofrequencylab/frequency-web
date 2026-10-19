@@ -9,6 +9,9 @@ import {
   type Rail,
 } from '@/lib/layout/page-chrome'
 import { RouteChromeRow } from '@/components/admin/page-layout/route-chrome-row'
+import { RenderPathToggle } from '@/components/admin/page-layout/render-path-toggle'
+import { RENDER_PATH_SURFACES } from '@/lib/render-path'
+import { renderPathEnabled } from '@/lib/platform-flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +44,7 @@ export default async function PageLayoutAdminPage() {
     routes: MANAGED_ROUTES.filter((r) => r.area === area),
   })).filter((g) => g.routes.length > 0)
 
+  const renderPaths = await Promise.all(RENDER_PATH_SURFACES.map(async (surface) => ({ surface, enabled: await renderPathEnabled(surface) })))
   const overrideCount = MANAGED_ROUTES.filter((r) => r.route in overrides).length
 
   return (
@@ -66,6 +70,17 @@ export default async function PageLayoutAdminPage() {
               </>
             )}
           </p>
+        </div>
+      </AdminSection>
+
+      <AdminSection
+        title="Render path"
+        description="Which surfaces render from the node tree. Every switch starts off, which keeps the saved layout rendering as it does today. A read error also means off."
+      >
+        <div className="space-y-3">
+          {renderPaths.map(({ surface, enabled }) => (
+            <RenderPathToggle key={surface} surface={surface} label={surface.replace('_', ' ')} enabled={enabled} />
+          ))}
         </div>
       </AdminSection>
 

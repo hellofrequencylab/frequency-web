@@ -778,12 +778,11 @@ export async function joinEmailHasAccount(email: string): Promise<{ exists: bool
   // SCAN-1007: and per mailbox, as sign-in does (signin:email, 4 per 10 minutes), so a walker rotating IPs
   // still gets only a handful of silent answers about any one address.
   if (!(await rateLimitOk('join:email-check:mail', address, 4, '10 m', { whenUnconfigured: 'allow' }))) return { exists: false }
+  // SCAN-1013: one indexed lookup through a service_role-only SECURITY DEFINER function, instead of
+  // paging auth.admin.listUsers 1,000 rows at a time (up to 50 admin reads per check, growing with
+  // the member count). The two throttles above stay in front of it; a lookup error reads as "no".
   const admin = createAdminClient()
-  for (let page = 1; page <= 50; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
-    if (error || !data) return { exists: false }
-    if (data.users.some((u) => (u.email ?? '').toLowerCase() === address)) return { exists: true }
-    if (data.users.length < 1000) break
-  }
-  return { exists: false }
+  const { data, error } = await admin.rpc('auth_email_exists', { p_email: address })
+  if (error) return { exists: false }
+  return { exists: data === true }
 }

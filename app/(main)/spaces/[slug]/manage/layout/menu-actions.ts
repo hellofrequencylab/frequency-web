@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug, writeSpacePreferences } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
@@ -21,8 +21,6 @@ import {
   parseSiteMenu,
   readHeaderLogo,
   readSiteMenu,
-  withHeaderLogo,
-  withSiteMenu,
   type HeaderLogo,
   type MenuCatalogEntry,
   type MenuItem,
@@ -156,7 +154,7 @@ export async function saveSiteMenu(slug: string, input: unknown): Promise<Action
   if (!parsed) return fail('That menu could not be saved. Check each link and try again.')
   const c = await catalogs(auth.space)
   const menu: SiteMenu = { v: 1, items: parsed.items, known: knownKeys([...c.space, ...c.website]) }
-  if (!(await writeSpacePreferences(auth.space.id, withSiteMenu(auth.preferences, menu)))) return fail('Could not save your menu. Try again.')
+  if (!(await patchSpacePreferences(auth.space.id, { siteMenu: menu }))) return fail('Could not save your menu. Try again.')
   revalidateMenu(slug)
   return ok()
 }
@@ -165,7 +163,7 @@ export async function saveSiteMenu(slug: string, input: unknown): Promise<Action
 export async function resetSiteMenu(slug: string): Promise<ActionResult> {
   const auth = await authorize(slug)
   if (!auth) return fail('You do not have access to edit this menu.')
-  if (!(await writeSpacePreferences(auth.space.id, withSiteMenu(auth.preferences, null)))) return fail('Could not reset your menu. Try again.')
+  if (!(await patchSpacePreferences(auth.space.id, { siteMenu: null }))) return fail('Could not reset your menu. Try again.')
   revalidateMenu(slug)
   return ok()
 }
@@ -175,7 +173,7 @@ export async function saveHeaderLogo(slug: string, input: unknown): Promise<Acti
   if (!auth) return fail('You do not have access to edit this logo.')
   const logo = parseHeaderLogo(input)
   if (!logo) return fail(input && typeof input === 'object' && (input as { mode?: unknown }).mode === 'logo' ? 'Upload a logo first.' : 'Pick how your logo shows.')
-  if (!(await writeSpacePreferences(auth.space.id, withHeaderLogo(auth.preferences, logo)))) return fail('Could not save your logo. Try again.')
+  if (!(await patchSpacePreferences(auth.space.id, { headerLogo: logo }))) return fail('Could not save your logo. Try again.')
   revalidateMenu(slug)
   return ok()
 }

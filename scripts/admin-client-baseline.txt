@@ -1251,3 +1251,6 @@ lib/loyalty/visit.ts
 lib/loyalty/hunt-store.ts
 lib/loyalty/hunts-visit.ts
 lib/loyalty/discover.ts
+lib/events/door-code.ts
+app/(main)/events/[slug]/manage/door-section.tsx
+lib/meet/store.ts

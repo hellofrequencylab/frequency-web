@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-946",
+  "title": "Tap to meet: two members who meet in person show and open a 60-second code, and both earn Zaps and each other as a contact",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "lib/meet/codes.ts",
+    "ref": "Owner ask 2026-10-19 ('tap phones for in person meet ups in the wild'). docs/LOYALTY.md section 6, ADR-1785"
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. Migration 20270346011300 adds meet_codes, meet_taps (one row per pair per week, a < b), the meet_tap writer (refuses self and an expired code, three meets a day for either member, advisory lock per pair) and zap_config meetup_tap (15, cap 45). /meet shows the signed-in member a QR of /meet/<code> plus the eight letters, fresh every minute; /meet/<code> is what the other camera lands on, and one press records the meet, pays both through awardZapsForAction and files each as the other's contact (captureQrContact, met at Tap to meet). A typed code works too. Rides the LOYALTY_ENABLED switch. True phone-to-phone NFC waits for the iOS app (a web page cannot read or emit NFC on iPhone).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const m=r('supabase/migrations/20270346011300_tap_to_meet.sql');if(!/create or replace function public\\.meet_tap/.test(m))miss.push('no meet_tap writer');if(!/'meetup_tap', 15, 45/.test(m))miss.push('no meetup_tap zaps');if(!/export function generateMeetCode/.test(r('lib/meet/codes.ts')))miss.push('no code');if(!/awardZapsForAction\\(otherId, 'meetup_tap'\\)/.test(r('lib/meet/store.ts')))miss.push('the other member is not paid');if(!/captureQrContact/.test(r('lib/meet/store.ts')))miss.push('no contact filed');if(!/ShowMeetCode/.test(r('app/(main)/meet/page.tsx')))miss.push('no code to show');if(!/TapMeetButton/.test(r('app/(main)/meet/[code]/page.tsx')))miss.push('no tap');if(!/meetup_tap: 15/.test(r('lib/zaps.ts')))miss.push('no zaps fallback');if(miss.length){console.error('LIVE-946: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}

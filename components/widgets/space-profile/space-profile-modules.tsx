@@ -6,7 +6,9 @@ import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
-import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import type { BlockNode } from '@/lib/entity-blocks/node-tree'
+import { resolveNodeRowsFor } from '@/lib/entity-blocks/node-ops'
 import {
   resolveDataHeader,
   pickerSelection,
@@ -52,6 +54,12 @@ import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authore
 // LIVE: this IS the space profile Home body (ADR-508 U3 cutover) — the (profile)/page.tsx visitor render
 // mounts it with the operator's effective GRID, and the staff /profile-preview route mounts it the same
 // way. Both feed the function-only palette (blocksForKind('space')), so the two renders stay uniform.
+//
+// NODE RENDER (E0 task 12, ADR-1832): the grid path renders NODES. Each placement is a `BlockNode` whose
+// own `content` and `style` the block reads, so two Text blocks on one page each draw their own words.
+// The flat path and the editor's render-all-once node map still address a block by its registry id, so
+// they wrap the id in a transient node carrying the type's bag from the sibling maps; those two paths
+// move to nodes with the store and the live grid (task 12b).
 
 type BlockComponent = (props: {
   space: SpaceProfileContext
@@ -141,24 +149,36 @@ async function FeaturesSourceView({
   return <ContentBlockView id="features" props={{ ...props, items }} />
 }
 
-/** Render ONE space block by unified id into its fail-safe <Suspense> node (no owner frame), wrapped in its
- *  per-block STYLE frame (ADR-528). CONTENT ids render the operator's inline-authored content (from the
- *  layout's `content` bag, falling back to any legacy Puck-doc content); DATA ids render live space data
- *  under the owner's authored eyebrow/title (folded into the block's own header). Shared by the live render
- *  and the render-all-once node map.
- *  Unknown / empty id → null. */
-function renderSpaceBlock(
-  id: string,
+/** A block addressed by registry id (the flat path, the editor's node map) as a node: the type's bag from
+ *  the legacy sibling maps, and the id for its key. The LIVE-875 boundary still holds those paths to the
+ *  type-keyed document, so one bag per type is exactly what they mean. */
+function transientNode(id: string, layout: EntityLayout | null): BlockNode {
+  const node: BlockNode = { nid: id, type: id }
+  const content = layout?.content?.[id]
+  if (content) node.content = content
+  const style = layout?.style?.[id]
+  if (style) node.style = style
+  return node
+}
+
+/** Render ONE space block NODE into its fail-safe <Suspense> node (no owner frame), wrapped in its
+ *  per-block STYLE frame (ADR-528). CONTENT types render the operator's inline-authored content (the
+ *  node's own `content` bag, falling back to any legacy Puck-doc content); DATA types render live space
+ *  data under the owner's authored eyebrow/title (folded into the block's own header). Shared by the live
+ *  render and the render-all-once node map.
+ *  Unknown / empty type → null. */
+function renderSpaceNode(
+  node: BlockNode,
   space: SpaceProfileContext,
   data: SpaceContentData,
   authored: SpaceAuthored,
-  layout: EntityLayout | null,
   styled = true,
 ): React.ReactNode {
+  const id = node.type
   if (id.length === 0) return null
   const block = entityBlockById(id)
-  const style = layout?.style?.[id]
-  const contentProps = layout?.content?.[id]
+  const style = node.style
+  const contentProps = node.content
 
   let inner: React.ReactNode
   if (isDesignBlock(id)) {
@@ -248,7 +268,7 @@ function renderSpaceBlock(
   // applies it CLIENT-side from the shared store so a style edit shows instantly (no server round-trip).
   const body = styled ? <BlockStyleFrame style={style}>{inner}</BlockStyleFrame> : inner
   return (
-    <Suspense key={id} fallback={null}>
+    <Suspense key={node.nid} fallback={null}>
       {body}
     </Suspense>
   )
@@ -269,7 +289,7 @@ export function renderSpaceBlockNodes(
 ): Record<string, React.ReactNode> {
   const nodes: Record<string, React.ReactNode> = {}
   // styled=false: LiveProfileGrid applies each block's style frame client-side (instant live style edits).
-  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceBlock(b.id, space, data, authored, layout, false)
+  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceNode(transientNode(b.id, layout), space, data, authored, false)
   return nodes
 }
 
@@ -321,27 +341,29 @@ export async function SpaceProfileModules({
   // collapses itself when the block renders honest-empty, so a hidden block never leaves a phantom pencil.
   // Absent (visitor / non-owner), the block returns exactly as before. The `key` moves onto whichever
   // node is outermost, so React keys the list the same either way.
-  const wrap = (id: string, node: React.ReactNode) =>
+  // The frame and the editor href still address the block by TYPE: the rail builder is type-keyed until
+  // task 12b hands it `selectedNid`.
+  const wrap = (node: BlockNode, rendered: React.ReactNode) =>
     editHref ? (
-      <OwnerBlockFrame key={id} blockId={id} editHref={editHref(id)} label={id}>
-        {node}
+      <OwnerBlockFrame key={node.nid} blockId={node.type} editHref={editHref(node.type)} label={node.type}>
+        {rendered}
       </OwnerBlockFrame>
     ) : (
-      node
+      rendered
     )
 
-  const renderBlock = (id: string) => {
-    const node = renderSpaceBlock(id, space, data, authored, grid ?? null)
-    return node === null ? null : wrap(id, node)
+  const renderNode = (node: BlockNode) => {
+    const rendered = renderSpaceNode(node, space, data, authored)
+    return rendered === null ? null : wrap(node, rendered)
   }
 
-  // GRID path (ADR-516): resolve the effective freeform rows and render them. Fail-safe: unknown ids drop.
+  // GRID path (ADR-516): resolve the effective rows AS NODES and render them. Fail-safe: unknown types drop.
   if (grid) {
     return (
       <div className="@container/profile">
         <EntityGrid
-          rows={resolveRows(grid, 'space')}
-          renderBlock={renderBlock}
+          rows={resolveNodeRowsFor(grid, 'space')}
+          renderBlock={renderNode}
           wrapRow={wrapRow}
           className={wrapRow ? '' : undefined}
         />
@@ -352,5 +374,9 @@ export async function SpaceProfileModules({
   // Flat single-column fallback (S2). `@container/profile`: the sections size to THIS slot's width, not
   // the viewport, so the module render drops cleanly into any column.
   const resolved = layout ?? effectiveProfileLayout(space, space.preferences)
-  return <div className="@container/profile space-y-14">{resolved.map((id) => renderBlock(id))}</div>
+  return (
+    <div className="@container/profile space-y-14">
+      {resolved.map((id) => renderNode(transientNode(id, grid ?? null)))}
+    </div>
+  )
 }
