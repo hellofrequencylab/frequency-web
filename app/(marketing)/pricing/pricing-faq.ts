@@ -118,11 +118,11 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'How do team seats work?',
-      a: `Your own seat is included on every plan. ${seats.availability} ${seats.detail} ${seats.price === 'Owner-priced today' ? 'Seats are owner-priced today, so you bring on the people you need without a locked public per-seat price.' : `Extra seats are ${seats.price}.`}`,
+      a: `${seats.detail} ${seats.availability} ${seats.price === 'Owner-priced today' ? 'Seats are owner-priced today, so you bring on the people you need without a locked public per-seat price.' : `Extra seats are ${seats.price}.`}`,
     },
     {
       q: 'What is the Vera AI add-on?',
-      a: `${ai.detail} ${ai.availability} It is ${ai.price}${trial ? `, with a ${trial.toLowerCase().replace(/\.$/, '')}` : ''}.${collective ? ' Collective includes it.' : ''}`,
+      a: `${ai.detail} ${ai.availability} It is ${ai.price}${trial ? `, with a ${trial.toLowerCase().replace(/\.$/, '')}` : ''}.${collective && network ? ' Collective and Network include it.' : collective ? ' Collective includes it.' : ''}`,
     },
     {
       q: 'Is there a free trial?',

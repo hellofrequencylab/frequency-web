@@ -37,3 +37,13 @@ it('recipient management never uses an independently fetched hidden source subje
   const result=await crossListingManagement('target')
   expect(result.rows).toHaveLength(1);expect(result.rows[0].label).toBeUndefined();expect(result.rows[0].subjectSlug).toBeUndefined();expect(result.rows[0].sourceName).toBeUndefined()
 })
+it('offers a Network parent and its chapters to each other as listing targets, like a Collective and its member Spaces (LIVE-950)',async()=>{
+  state.tables.spaces=[
+    {...space('network'),plan:'network'},
+    {...space('chapter'),plan:'free',parent_id:'network'},
+    {...space('stranger-chapter'),plan:'free',parent_id:'network',owner_profile_id:'someone-else'},
+    {...space('business'),plan:'business'},
+  ]
+  const fromChapter=await crossListingManagement('own')
+  expect(fromChapter.targets.map(s=>s.id).sort()).toEqual(['chapter','network'])
+})

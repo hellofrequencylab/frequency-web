@@ -136,3 +136,7 @@ network_event_approvals
 space_loyalty_programs
 loyalty_stamps
 loyalty_rewards
+# LIVE-942 Regulars hunts: hunts, stops and completions are written by lib/loyalty/hunt-store.ts after the owner gate and by the loyalty_hunt_progress RPC; service-only, no browser role.
+loyalty_hunts
+loyalty_hunt_stops
+loyalty_hunt_completions

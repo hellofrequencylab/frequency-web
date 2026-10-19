@@ -70,10 +70,13 @@ const FEATS: { icon: FqIconName; name: string; vp: string; ve: string; pp: strin
 ]
 
 /** Both halves of a two-sided line. */
+// The space between the two sides is for readers of the text alone (crawlers, screen readers reading
+// both): the kit CSS hides one side, so on screen it costs nothing, and without it the home H1 was
+// indexed as one run-on sentence ("...near you.Host local events...").
 function Sided({ p, e }: { p: ReactNode; e: ReactNode }) {
   return (
     <>
-      <span className="p-only">{p}</span>
+      <span className="p-only">{p}</span>{' '}
       <span className="e-only">{e}</span>
     </>
   )

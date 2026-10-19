@@ -18,7 +18,9 @@ import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { resolveMemberDay } from '@/lib/member-day'
 import { isOfferLive, pickPlaqueOffer } from '@/lib/partners/offers'
 import { recordLoyaltyVisit } from '@/lib/loyalty/visit'
+import { recordHuntProgress } from '@/lib/loyalty/hunts-visit'
 import type { LoyaltyVisitOutcome } from '@/lib/loyalty/program'
+import type { HuntProgress } from '@/lib/loyalty/hunts'
 import type { EngagementSource } from './events'
 
 // node.type → engagement source. Ghost nodes are a geo source.
@@ -36,6 +38,8 @@ export interface CaptureResult {
   offerTitle?: string | null
   /** The member's Regulars card after a Space check-in, when the Space runs the program (LIVE-940). */
   loyalty?: LoyaltyVisitOutcome | null
+  /** Every live hunt this check-in moved, with the completion code when it finished one (LIVE-942). */
+  hunts?: HuntProgress[]
 }
 
 /**
@@ -147,10 +151,18 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   // member-local day (so a retry can never stamp twice) and only for a Space check-in node. Best-effort
   // inside recordLoyaltyVisit: a loyalty failure never fails the check-in.
   let loyalty: LoyaltyVisitOutcome | null = null
+  let hunts: HuntProgress[] = []
   if ((node.kind as string) === 'checkin' && typeof node.space_id === 'string' && node.space_id) {
     const visit = await recordLoyaltyVisit(node.space_id, attempt.actorProfileId, day)
     loyalty = visit.outcome
     amount += visit.zapsAwarded
+    // 4c) HUNTS (LIVE-942): the same stamp may be a stop on a live hunt; the one SQL writer counts the
+    //     member's stops and mints the completion reward once. Only after a stamp landed.
+    if (loyalty) {
+      const progress = await recordHuntProgress(node.space_id, attempt.actorProfileId, day)
+      hunts = progress.hunts
+      amount += progress.zapsAwarded
+    }
   }
 
   // 4b) A proximity-verified physical capture is also a verified practice (the
@@ -233,5 +245,5 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     offerTitle = offer?.title ?? null
   }
 
-  return { ok: true, zapsAwarded: amount > 0 ? amount : 0, offerTitle, loyalty }
+  return { ok: true, zapsAwarded: amount > 0 ? amount : 0, offerTitle, loyalty, hunts }
 }

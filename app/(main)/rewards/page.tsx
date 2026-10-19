@@ -4,14 +4,18 @@ import { Stamp } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { DashboardTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SectionHeader } from '@/components/ui/section-header'
 import { StampCard } from '@/components/loyalty/stamps'
+import { HuntProgressList } from '@/components/loyalty/hunt-progress'
+import { listMyHuntProgress } from '@/lib/loyalty/hunt-store'
 import { listMyLoyaltyCards, loyaltyEnabled } from '@/lib/loyalty/store'
 
 export const dynamic = 'force-dynamic'
 
 // MY REWARDS (LIVE-940, docs/LOYALTY.md): every Regulars card the member holds, with any reward code
 // waiting to be collected. A member page behind sign-in: noindex, the global rail (railFor falls through).
-// Nearby Spaces running Regulars and live hunts join this page in LIVE-943. No em dashes.
+// Hunts the member has started sit under the cards (LIVE-942); nearby Spaces and live hunts join in
+// LIVE-944. No em dashes.
 export const metadata: Metadata = {
   title: 'Rewards',
   robots: { index: false },
@@ -19,7 +23,8 @@ export const metadata: Metadata = {
 
 export default async function RewardsPage() {
   const profileId = await getMyProfileId()
-  const cards = profileId && loyaltyEnabled() ? await listMyLoyaltyCards(profileId) : []
+  const on = !!profileId && loyaltyEnabled()
+  const [cards, hunts] = on ? await Promise.all([listMyLoyaltyCards(profileId), listMyHuntProgress(profileId)]) : [[], []]
 
   return (
     <DashboardTemplate
@@ -27,6 +32,12 @@ export default async function RewardsPage() {
       description="Your stamp cards at the places you check in. A full card earns the reward the shop set."
       width="default"
     >
+      {hunts.length > 0 && (
+        <section className="mb-6">
+          <SectionHeader title="Hunts" count={hunts.length} />
+          <HuntProgressList hunts={hunts} />
+        </section>
+      )}
       {cards.length === 0 ? (
         <EmptyState
           icon={Stamp}
@@ -50,6 +61,8 @@ export default async function RewardsPage() {
                   rewardTitle={c.rewardTitle}
                   rewardValueCents={c.rewardValueCents}
                   openRewards={c.openRewards}
+                  standing={c.standing}
+                  surpriseOdds={c.surpriseOdds}
                 />
               </Link>
             </li>

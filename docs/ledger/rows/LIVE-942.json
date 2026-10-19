@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-942",
+  "title": "Spaces running Regulars host a hunt together: a member who checks in at every stop inside the window earns the host's reward and 100 Zaps",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "wave": "W7",
+  "source": {
+    "file": "lib/loyalty/hunt-store.ts",
+    "ref": "Owner ask 2026-10-19 ('businesses to be able to work together to create scavenger hunt sales or events where users have to visit each location to get the points and full rewards'). docs/LOYALTY.md, ADR-1781"
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. Phase 2 of Regulars (docs/LOYALTY.md). Migration 20270346010300 adds loyalty_hunts, loyalty_hunt_stops, loyalty_hunt_completions, loyalty_rewards.hunt_id, the loyalty_hunt_progress RPC (same advisory lock as the stamp; mints the completion reward once) and the zap_config row hunt_complete (100, cap 100). The host creates a draft inside the Check-in panel under Regulars, invites Spaces by their link (they must run Regulars), the invited owner joins or declines from the same panel, and the host goes live at three accepted stops. lib/engagement/capture.ts asks recordHuntProgress after a stamp landed; the claim result and /rewards show the stops counted down and the completion code; /hunts/[slug] is the page a host shares. The reward is handed out at the host's counter through the existing roster.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/create or replace function public\\.loyalty_hunt_progress/.test(r('supabase/migrations/20270346010300_loyalty_hunts.sql')))miss.push('no loyalty_hunt_progress migration');if(!/recordHuntProgress\\(node\\.space_id/.test(r('lib/engagement/capture.ts')))miss.push('a stamp does not move the hunts');if(!/awardZapsForAction\\(profileId, 'hunt_complete'\\)/.test(r('lib/loyalty/hunts-visit.ts')))miss.push('finishing a hunt pays no Zaps');if(!/hunt_complete: 100/.test(r('lib/zaps.ts')))miss.push('hunt_complete is not 100 Zaps');if(!/HuntsPanel/.test(r('app/(main)/spaces/[slug]/settings/checkin/regulars-section.tsx')))miss.push('the owner has no hunts panel');if(!/getPublicHunt/.test(r('app/(main)/hunts/[slug]/page.tsx')))miss.push('no public hunt page');if(!/HuntProgressList/.test(r('app/(main)/n/[nodeId]/claim-button.tsx')))miss.push('the check-in result shows no hunt progress');if(miss.length){console.error('LIVE-942: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}

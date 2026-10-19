@@ -142,6 +142,8 @@ export async function BillingBody({ slug }: { slug: string }) {
   // The resolved (operator-set) per-seat monthly price, so the seat pickers can show what a chosen
   // quantity actually costs instead of leaving the count priceless. The FOUNDING amount is the one charged.
   const seatMonthlyCents = catalogConfigByKey(catalog).operator_seat.monthlyFoundingCents
+  // The yearly seat price (two months free unless the operator set an override), for the Yearly reading.
+  const seatYearlyCents = catalogConfigByKey(catalog).operator_seat.year.foundingCents
   // Downgrade floor: the licensed total (base + seatQuantity) must cover the operators already active, so
   // the minimum safe seatQuantity is used - the free base allowance. Reducing below it would leave active
   // operators over the licensed count. `used` counts member-operators only (the owner rides the base seat).
@@ -266,6 +268,7 @@ export async function BillingBody({ slug }: { slug: string }) {
               sellable={businessSellable}
               seatsSellable={seatsSellable}
               seatMonthlyCents={seatMonthlyCents}
+              seatYearlyCents={seatYearlyCents}
               trialDays={values.trial.days}
             />
             {/* The per-city Founding BUSINESS cohort door was here. Removed 2026-08-10: the cohort was

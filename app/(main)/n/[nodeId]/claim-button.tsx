@@ -5,6 +5,7 @@ import { Zap, Check, AlertCircle } from 'lucide-react'
 import { claimNode, type ClaimResult } from './actions'
 import { showZapToast } from '@/components/zap-toast'
 import { StampCard } from '@/components/loyalty/stamps'
+import { HuntProgressList } from '@/components/loyalty/hunt-progress'
 
 const REASON_LABEL: Record<string, string> = {
   not_signed_in: 'Sign in to claim this.',
@@ -56,7 +57,14 @@ export function ClaimButton({ nodeId, secret }: { nodeId: string; secret?: strin
               required={result.loyalty.required}
               rewardTitle={result.loyalty.rewardTitle}
               justEarnedCode={result.loyalty.earnedCode}
+              surprise={result.loyalty.surprise}
+              standing={result.loyalty.standing}
             />
+          </div>
+        )}
+        {result.hunts && result.hunts.length > 0 && (
+          <div className="w-full max-w-sm">
+            <HuntProgressList hunts={result.hunts} />
           </div>
         )}
       </div>

@@ -34,6 +34,7 @@ vi.mock('@/lib/zaps', () => ({ awardZaps: vi.fn() }))
 vi.mock('@/lib/trust', () => ({ trustSource: () => ({ signal: async () => {} }) }))
 vi.mock('@/lib/crm/interactions', () => ({ recordSpaceMemberActivity: vi.fn() }))
 vi.mock('@/lib/loyalty/visit', () => ({ recordLoyaltyVisit: vi.fn(async () => ({ outcome: null, zapsAwarded: 0 })) }))
+vi.mock('@/lib/loyalty/hunts-visit', () => ({ recordHuntProgress: vi.fn(async () => ({ hunts: [], zapsAwarded: 0 })) }))
 
 import { captureNode } from './capture'
 

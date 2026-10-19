@@ -38,6 +38,7 @@ export function LoyaltyProgramForm({
   const [stampsRequired, setStampsRequired] = useState(initial.stampsRequired)
   const [welcomeStamps, setWelcomeStamps] = useState(initial.welcomeStamps)
   const [geofence, setGeofence] = useState(initial.geofence)
+  const [surprise, setSurprise] = useState(initial.surpriseOdds !== 0)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
@@ -58,6 +59,7 @@ export function LoyaltyProgramForm({
         stampsRequired,
         welcomeStamps,
         geofence,
+        surpriseOdds: surprise ? LOYALTY_LIMITS.surpriseOdds : 0,
       })
       if (isError(result)) {
         setError(result.error)
@@ -154,6 +156,16 @@ export function LoyaltyProgramForm({
             }}
           />
         </div>
+
+        <Checkbox
+          checked={surprise}
+          onChange={(e) => {
+            setSurprise(e.target.checked)
+            touch()
+          }}
+          label="One visit in ten earns a surprise stamp (the odds are printed on the card)"
+          wrapperClassName="flex"
+        />
 
         <Checkbox
           checked={geofence}
