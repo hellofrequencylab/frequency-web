@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-937",
+  "title": "Conversations, Pipeline, Tasks, Leads, Doors and Shared open inside the Frequency Space console (Contacts phase 3)",
+  "status": "open",
+  "priority": "P2",
+  "size": "L",
+  "lane": "live",
+  "wave": "W7",
+  "detail": "Contacts phase 3, parked 2026-10-14, active 2026-10-19. Plan in SCAN-872's detail.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Filed 2026-10-19 from the full scan. Probe to write as a cmd before the first PR: each of the six has a body under components/frequency/admin/pages/ routed from the console",
+    "checked": "2026-10-19"
+  }
+}
