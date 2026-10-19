@@ -40,6 +40,8 @@ vi.mock('@/lib/events/public-venue', () => ({ getPublicEventVenue: async () => v
 vi.mock('@/lib/events/series-seo', () => ({
   seriesRobots: () => undefined,
   seriesSeoFactsBySlug: async () => null,
+  shareEventSeo: async () => ({ facts: { inSeries: false, isAnchor: false, ordinal: null, seriesLive: false }, visibility: 'public' }),
+  publicEventIndexPlan: () => ({ robots: undefined, canonical: true }),
   suppressPastNoindex: () => false,
 }))
 vi.mock('@/lib/events/series-config', () => ({

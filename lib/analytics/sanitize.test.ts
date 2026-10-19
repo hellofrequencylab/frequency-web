@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pixelSafePath, pixelSafeProps, sanitizeProps } from './sanitize'
+import { REDACTED_PAGE_TITLE, pixelSafePath, pixelSafeProps, pixelSafeTitle, sanitizeProps } from './sanitize'
 
 // Locks the prop-bag allowlist. The bag is built from attacker-influenced KEY names as well
 // as values, so the key tests matter as much as the value ones.
@@ -75,5 +75,17 @@ describe('pixelSafePath', () => {
     expect(pixelSafePath('/events/abc')).toBe('/events/abc')
     expect(pixelSafePath('/circles')).toBe('/circles')
     expect(pixelSafePath('/discover/topics/breathwork')).toBe('/discover/topics/[slug]')
+  })
+})
+
+describe('pixelSafeTitle (SCAN-838)', () => {
+  it('keeps the title on a path that is not redacted', () => {
+    expect(pixelSafeTitle('/pricing', 'Pricing · Frequency')).toBe('Pricing · Frequency')
+    expect(pixelSafeTitle('/events/abc', 'Sunrise sit · Frequency')).toBe('Sunrise sit · Frequency')
+  })
+  it('goes generic wherever pixelSafePath redacts the path', () => {
+    for (const path of ['/journeys/grief-walks', '/circles/mens-fire', '/discover/topics/grief']) {
+      expect(pixelSafeTitle(path, 'Grief Walks · Frequency'), path).toBe(REDACTED_PAGE_TITLE)
+    }
   })
 })

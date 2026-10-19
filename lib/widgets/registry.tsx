@@ -54,9 +54,9 @@ import { PracticeDetailLineage } from '@/components/widgets/practice-detail/prac
 import { ChannelsList } from '@/components/widgets/channels/channels-list'
 import { ChallengesSeason } from '@/components/widgets/challenges/challenges-season'
 import { EntityCta } from '@/components/widgets/entity/entity-cta'
-import { PagesInAppMember, PagesInAppFocus } from '@/components/widgets/pages/pages-in-app'
+import { PagesInApp } from '@/components/widgets/pages/pages-in-app'
 import { PagesSplashFunnels } from '@/components/widgets/pages/pages-splash-funnels'
-import { PagesMarketing } from '@/components/widgets/pages/pages-marketing'
+import { PagesSite, PagesLeadSeo, PagesSystem } from '@/components/widgets/pages/pages-public'
 import { MarketingAnalyticsNorthStar } from '@/components/widgets/marketing/analytics-northstar'
 import { MarketingAnalyticsRetention } from '@/components/widgets/marketing/analytics-retention'
 import { MarketingAnalyticsCrm } from '@/components/widgets/marketing/analytics-crm'
@@ -226,11 +226,12 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // '/spaces/*' set the profile never mounted. entity-cta stays bound because the Book tab renders
   // <EntityCta> directly — the binding is what lets a future <PageModules> mount adopt it.
   'entity-cta': EntityCta,
-  // Pages workspace (/pages) — the operator's find-any-page-and-edit-it surface.
-  'pages-in-app-member': PagesInAppMember,
-  'pages-in-app-focus': PagesInAppFocus,
+  // Pages workspace (/pages) — the page index: every page, most important first (ADR-1763).
+  'pages-marketing': PagesSite,
+  'pages-lead-seo': PagesLeadSeo,
   'pages-splash-funnels': PagesSplashFunnels,
-  'pages-marketing': PagesMarketing,
+  'pages-in-app-member': PagesInApp,
+  'pages-system': PagesSystem,
   // Marketing analytics (/admin/marketing/analytics) — read-models off the event backbone.
   'marketing-analytics-northstar': MarketingAnalyticsNorthStar,
   'marketing-analytics-retention': MarketingAnalyticsRetention,

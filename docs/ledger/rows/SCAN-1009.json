@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-1009",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/settings/billing/actions.ts','utf8');if(!/isOwner/.test(s)){console.error('SCAN-1009: the Space billing actions admit any admin, including a Network central admin');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nRuling 2026-10-19 (Owner only): the Space billing actions (openSpaceBillingPortal, setOperatorSeats, startSpaceLoadoutCheckout) now gate on caps.isOwner, so a Network central admin, any admin and staff are refused with 'Only the Space owner can manage billing.' The billing page still renders at the admin floor so an admin can read the bill. SCAN-983's promise now holds."
+  }
+}

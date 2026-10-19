@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E4",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY (website slice only). Probe run as written: FAIL (yjs and y-prosemirror absent from package.json; @tiptap/* is installed but not used in the website canvas). What the website editor shell (LIVE-EDITOR-SHELL) put in the tree: a real same-origin iframe viewport with one React tree through createPortal (components/sites/editor/canvas.tsx:255, :411, sandbox allow-same-origin), inline text editing by contenteditable (lib/sites/editor/inline-edit.ts, canvas.tsx data-site-text-selected), collaborator cursors (.we-collaborator-cursor) fed by website_editor_presence polling through syncWebsitePresence (lib/sites/editor/actions.ts:67, a 15-second DB upsert, not a CRDT), device switcher at real iframe widths. Missing against the E4 definition: no y-prosemirror or any CRDT so two browsers do not converge, no bubbleEvent/coordinate translation layer, no Tiptap in the canvas, click-to-edit is on the website surface only (not Spotlight, in-app profile or Space profile, which still use components/entity-blocks), no RSC-canvas parity harness. The row detail of LIVE-EDITOR-SHELL says this slice does not close E4."
-  }
-}

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-1015",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/spaces/manage-quick-links.tsx','utf8');if(!/siteAdminHandoffPath\\\\(/.test(s)){console.error('SCAN-1015: the Manage panel has no door to the website builder; Web editor opens the Space page sidebar');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nRuling 2026-10-19 (Add builder): the Manage quick links gain a Website builder door at siteAdminHandoffPath(slug, 'editor') beside Web editor, which keeps opening the Space page editor so SCAN-971's probe holds."
+  }
+}

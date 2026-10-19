@@ -35,8 +35,8 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { brandSignature } from '@/lib/comms/signature'
-import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
-import { renderReplyEmail } from '@/lib/comms/email-template'
+import { startConversationMessage, resolveSpaceConversationSender, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
+import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { withDisplayName } from '@/lib/comms/from-address'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
@@ -125,8 +125,9 @@ export async function sendSpaceConversationReplyAction(
   }
 
   let from: string
+  let identityId: string | null
   try {
-    from = await resolveSpaceConversationFrom(gate.spaceId, gate.brandName)
+    ;({ from, identityId } = await resolveSpaceConversationSender(gate.spaceId, gate.brandName))
   } catch (err) {
     return fail(brandSenderUnavailable(err))
   }
@@ -153,6 +154,7 @@ export async function sendSpaceConversationReplyAction(
     const queued = await queueOutboundMessage({
       conversationId: conv.id,
       from,
+      identityId,
       to: conv.externalEmail,
       body,
       html: storedHtml,
@@ -337,7 +339,7 @@ async function createSpaceCounterpart(
     if (!(await canAddSpaceContact(spaceId))) return null
     const db = createAdminClient()
     const nowIso = new Date().toISOString()
-    const { data: inserted } = await db
+    const { data: inserted, error } = await db
       .from('contacts')
       .insert({
         space_id: spaceId,
@@ -350,6 +352,9 @@ async function createSpaceCounterpart(
       })
       .select('id, profile_id')
       .maybeSingle()
+    // SCAN-1003: a unique-key race (a double send, or the contact arriving between the lookup and this insert)
+    // is not a full contact list. Re-read the contact that won, as ensureSpaceContact does for the inbox.
+    if (error?.code === '23505') return await resolveSpaceCounterpart(spaceId, email)
     if (!inserted) return null
     const contactId = String(inserted.id)
     // AUTOMATION TRIGGER (ADR-561): a contact just entered this Space's CRM. Fire-and-forget; it never throws.
@@ -412,9 +417,9 @@ export async function startSpaceConversationAction(
 
   // The shared compose primitive (ADR-821): open the ticket + send the first message through the ONE
   // pipeline replies use — reply-token, Message-ID, renderReplyEmail + brand signature, batching.
-  let from: string
+  let sender: { from: string; identityId: string | null }
   try {
-    from = await resolveSpaceConversationFrom(gate.spaceId, gate.brandName)
+    sender = await resolveSpaceConversationSender(gate.spaceId, gate.brandName)
   } catch (err) {
     return fail(brandSenderUnavailable(err))
   }
@@ -422,7 +427,8 @@ export async function startSpaceConversationAction(
     ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
     actorProfileId: gate.viewerProfileId,
     actorAuthorKind: 'staff',
-    from,
+    from: sender.from,
+    identityId: sender.identityId,
     signature: brandSignature(gate.brandName),
     email,
     contactId: counterpart.contactId,
@@ -444,9 +450,4 @@ function replySubject(subject: string | null): string {
   return s.toLowerCase().startsWith('re:') ? s.slice(0, 200) : `Re: ${s}`.slice(0, 200)
 }
 
-/** Plain-text reply → minimal safe HTML (escaped, newlines to <br>). No external template. */
-function bodyToHtml(text: string): string {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
-  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
-}
+// bodyToHtml comes from lib/comms/email-template.ts (EMAIL-023): one copy, palette ink.

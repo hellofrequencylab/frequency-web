@@ -24,7 +24,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({
 }) }))
 import { loadExtraSpaceQuote, updateExtraCollectiveSpaces } from './extra-space-billing'
 function line(key: string, id: string, quantity = 1, interval = 'month') {
-  return { id, quantity, price: { id: key === 'collective_space' ? 'price_extra' : 'price_base', recurring: { interval }, metadata: { frequency_pricing_key: `${key}_${interval}` } } }
+  return { id, quantity, price: { id: key === 'collective_space' || key === 'network_chapter' ? 'price_extra' : 'price_base', recurring: { interval }, metadata: { frequency_pricing_key: `${key}_${interval}` } } }
 }
 beforeEach(() => {
   vi.clearAllMocks(); state.caller = { id: 'owner' }; state.owner = 'owner'; state.billing = true; state.plan = 'collective'; state.enabled = true
@@ -106,5 +106,46 @@ describe('owner-gated extra Space purchases', () => {
     state.update.mockRejectedValueOnce(new Error('timeout'))
     expect(await updateExtraCollectiveSpaces('parent', 2, 'price_extra', 2900)).toHaveProperty('error')
     expect(state.rpc.mock.calls.map(c => c[0])).toEqual(['begin_collective_space_change'])
+  })
+})
+
+// SCAN-1008 (owner ruling 2026-10-19, "Build both"): a Network buys chapters past its ten included the
+// same way a Collective buys member Spaces, on the network_chapter item, and stops at 25 in all.
+describe('a Network buys extra chapters on network_chapter, up to 25 chapters (SCAN-1008)', () => {
+  beforeEach(() => {
+    state.plan = 'network'
+    state.sub.items.data = [line('network_base', 'si_base')]
+    state.price.mockResolvedValue({ id: 'price_extra', active: true, currency: 'usd', unit_amount: 4900, recurring: { interval: 'month' }, metadata: { frequency_pricing_key: 'network_chapter_month' } })
+  })
+  it('quotes the chapter item with ten included and fifteen more at most', async () => {
+    expect(await loadExtraSpaceQuote('parent')).toEqual(expect.objectContaining({ itemKey: 'network_chapter', included: 10, maxQuantity: 15, unitCents: 4900, quantity: 0, minQuantity: 0 }))
+    expect(state.resolvePrice).toHaveBeenCalledWith('network_chapter_month')
+  })
+  it('floors at the chapters attached past the ten included', async () => {
+    state.attached = 12
+    expect(await loadExtraSpaceQuote('parent')).toEqual(expect.objectContaining({ minQuantity: 2 }))
+    expect(await updateExtraCollectiveSpaces('parent', 1, 'price_extra', 4900)).toHaveProperty('error')
+    expect(state.update).not.toHaveBeenCalled()
+  })
+  it('refuses more than fifteen extra chapters: past 25 is a quote', async () => {
+    expect(await updateExtraCollectiveSpaces('parent', 16, 'price_extra', 4900)).toHaveProperty('error')
+    expect(state.update).not.toHaveBeenCalled()
+  })
+  it('adds exactly the chapter item and settles on its own row', async () => {
+    state.update.mockImplementation(async (_: string, params: { items: { deleted?: boolean; quantity?: number }[] }) => {
+      const target = params.items[0].deleted ? 0 : (params.items[0].quantity ?? 0)
+      state.settled = target
+      state.sub.items.data = [line('network_base', 'si_base'), ...(target ? [line('network_chapter', 'si_extra', target)] : [])]
+      return structuredClone(state.sub)
+    })
+    expect(await updateExtraCollectiveSpaces('parent', 3, 'price_extra', 4900)).toEqual({ data: undefined })
+    expect(state.update.mock.calls[0][1].items).toEqual([{ price: 'price_extra', quantity: 3 }])
+    expect(state.rpc.mock.calls.map(c => c[0])).toEqual(['begin_collective_space_change', 'finish_collective_space_change'])
+  })
+  it('a Collective still quotes collective_space with five included and no ceiling', async () => {
+    state.plan = 'collective'
+    state.sub.items.data = [line('collective_base', 'si_base')]
+    state.price.mockResolvedValue({ id: 'price_extra', active: true, currency: 'usd', unit_amount: 2900, recurring: { interval: 'month' }, metadata: { frequency_pricing_key: 'collective_space_month' } })
+    expect(await loadExtraSpaceQuote('parent')).toEqual(expect.objectContaining({ itemKey: 'collective_space', included: 5, maxQuantity: null }))
   })
 })

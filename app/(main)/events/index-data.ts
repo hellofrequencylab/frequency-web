@@ -13,6 +13,9 @@ import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { listableOnly } from '@/lib/events/market-listing'
 import { pointFromGeog } from '@/lib/events/geo'
+import { withholdsAddress } from '@/lib/events/location-intent'
+import { cityLine } from '@/lib/events/visible-location'
+import { approximatePoint } from '@/lib/maps/approximate'
 import { demoModeEnabled, eventsListingHorizonDays } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
@@ -80,6 +83,12 @@ export type EventRow = {
   // as an EWKB hex STRING (or, in some setups, a GeoJSON object) — decode it with
   // pointFromGeog. Used to plot standalone public events (no hosting circle) at their spot.
   geog?: unknown
+  /** ADR-825: the host withheld the address. The card shows the city line and the pin is coarsened. */
+  hide_address?: boolean | null
+  city?: string | null
+  region?: string | null
+  /** Set by the loader (SCAN-1005): the flag OR the host's own words withhold the address. */
+  address_hidden?: boolean
   // The PAYEE inputs (ADR-819) + the join model (ADR-826), read so the card can answer "may we
   // name a price here?" before it prints one. A space-hosted event pays the space OWNER, not the
   // organizer, and an RSVP-mode price is collected at the door rather than through checkout --
@@ -444,6 +453,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
        cover_image_path, theme, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, poster_path, geog,
+       hide_address, city, region,
        host_id, host_space_id, join_mode,
        host:profiles!host_id ( id, display_name, handle ),
        host_space:spaces!host_space_id ( name, brand_name, status )`
@@ -577,6 +587,14 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     if (seenEventIds.has(e.id)) continue
     seenEventIds.add(e.id)
     events.push(e)
+  }
+  // 🔴 SCAN-1005: the address a host withheld (ADR-825) never leaves this loader. /events is anonymous-readable
+  // and the rail map reads the same data on every member page, so the rule is applied once, here, for every
+  // card, search hit and pin: the flag OR the host's own words (ADR-1028) coarsen the pin, and the flag swaps
+  // the location line for the city line, the rule publicVisibleLocation states.
+  for (const e of events) {
+    e.address_hidden = e.hide_address === true || withholdsAddress(e.location)
+    if (e.hide_address === true) e.location = cityLine(e)
   }
   const hasAnyScope = myCircleIds.length > 0 || !!myGeocell || hostedEvents.length > 0
 
@@ -866,10 +884,14 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       // Standalone / public event → its own geocoded point, when it has one. `geog` arrives
       // as an EWKB hex string from PostgREST, so decode it (never read `.coordinates` raw).
       const pt = pointFromGeog(e.geog)
-      if (pt) {
-        return { ...base, cityLabel: e.location ?? null, lat: pt.lat, lng: pt.lng }
+      if (!pt) return null
+      // SCAN-1005: a withheld address gets a grid cell, never the coordinate, and the city line, never the
+      // venue. approximatePoint's null means NO PIN, never a fall back to the exact point.
+      if (e.address_hidden) {
+        const cell = approximatePoint(pt.lat, pt.lng, e.id)
+        return cell ? { ...base, cityLabel: cityLine(e), lat: cell.lat, lng: cell.lng } : null
       }
-      return null
+      return { ...base, cityLabel: e.location ?? null, lat: pt.lat, lng: pt.lng }
     })
     .filter((p): p is EventMapPin => p !== null)
 

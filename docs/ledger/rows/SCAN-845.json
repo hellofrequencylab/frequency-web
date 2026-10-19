@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-845",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345013100'&&/founder/.test(r('supabase/migrations/'+f))&&/(before update[\\s\\S]*profiles|founder_rewards|founder_claims)/i.test(r('supabase/migrations/'+f)))){console.error('SCAN-845: the founder once-only record lives in member-writable profile meta');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1750). PREMISE RE-TESTED on main: claim_founder_flags still stamps profiles.meta.founder, profiles self-update still lets a member PATCH meta, prevent_economy_self_edit still ignores jsonb keys, and achievement gem_config has no daily cap. Migration 20270346009500: BEFORE UPDATE on profiles refuses a change to meta.founder unless auth.role() is service_role. pgTAP: member PATCH / merge / remove of founder is 42501; other keys still write; claim_founder_flags as service_role still stamps. Apply with execute_sql then schema_migrations at 20270346009500."
+  }
+}

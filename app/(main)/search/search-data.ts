@@ -7,6 +7,7 @@ import {
   isListableInDirectory,
 } from '@/lib/connections/directory-visibility'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { publicVisibleLocation, type EventLocationFields } from '@/lib/events/visible-location'
 import {
   SERIES_COLUMNS,
   TEASER_CARDS_PER_SERIES,
@@ -129,7 +130,7 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS, category
     let query = applySearchTerms(admin
       .from('events')
       .select(
-        `id, title, slug, starts_at, ends_at, category, location, is_cancelled, is_demo, cover_image_path, ${SERIES_COLUMNS},
+        `id, title, slug, starts_at, ends_at, category, location, hide_address, city, region, is_cancelled, is_demo, cover_image_path, ${SERIES_COLUMNS},
          host:profiles!host_id ( display_name, handle ),
          host_space:spaces!host_space_id ( name, brand_name, status )`,
       )
@@ -154,7 +155,9 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS, category
     limit + 1,
     { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES },
   )
-  return { rows: folded.slice(0, limit), truncated: folded.length > limit }
+  // SCAN-1006: a host who hid the address (ADR-825) shows the city line here too, never the venue.
+  const rows = folded.slice(0, limit).map((row) => ({ ...row, location: publicVisibleLocation(row as EventRow & EventLocationFields) }))
+  return { rows, truncated: folded.length > limit }
 }
 
 /** Live, listed Circles by name. "Private" Circles are unlisted, so they never answer a search. Read under

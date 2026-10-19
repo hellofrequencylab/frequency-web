@@ -30,13 +30,29 @@ export default async function CollectivePartnersPage({ params }: { params: Promi
   const caller = await getCallerProfile()
   const hub = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!hub || spacePlanTab(hub) !== 'partners') notFound()
-  const view = await loadPartnersView(hub.id)
+  // SCAN-1000: the partners store throws when its table cannot be read (a migration not yet in production,
+  // an outage). The tab shows on every Collective, so it says so plainly instead of failing the page.
+  const view = await loadPartnersView(hub.id).catch((error: unknown) => {
+    console.error('[partners] the partners view could not be read', error)
+    return 'unavailable' as const
+  })
   if (!view) notFound()
   const now = new Date()
   const year = now.getUTCFullYear(), month1 = now.getUTCMonth() + 1
   const window = monthGridWindow(year, month1)
+  if (view === 'unavailable') {
+    const hero = await resolveIndexHero(`/spaces/${hub.slug}/partners`)
+    return (
+      <IndexTemplate {...hero} title={`${hub.name} partners`} description="Spaces run by other people, working together. Each one keeps its own members and settings." adminBar={false}>
+        <EmptyState title="Partners are not available yet" description="Check back soon. Nothing about this Space has changed." />
+      </IndexTemplate>
+    )
+  }
   const [events, hero] = await Promise.all([
-    loadPartnersCalendarWindow(view, window.fromDay, window.toDay),
+    loadPartnersCalendarWindow(view, window.fromDay, window.toDay).catch((error: unknown) => {
+      console.error('[partners] the shared calendar could not be read', error)
+      return []
+    }),
     resolveIndexHero(`/spaces/${hub.slug}/partners`),
   ])
   const isOwner = !!caller && caller.id === hub.ownerProfileId
