@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-023",
+  "title": "Every outgoing email reads its colours from the palette, prints one tagline, and the week-to-go reminder wears the member shell",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/theme/palette.ts",
+    "ref": "ADR-1767; owner 2026-10-19 in the project chat: deep scan and design polish on all our outgoing emails, every template and token follows the system; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-19 from the email scan. THE CONSEQUENCE: the reply wrapper (lib/comms/email-template.ts) carried its own grey ramp (#111827, #ececec, #9aa0a6, #6b7280), six files each held a private bodyToHtml with its own #111, the member shell (lib/email.ts) kept twenty-four hand-typed greys (#777, #888, #999, #f9fafb) beside its palette reads, lib/this-week.ts and lib/events/waitlist-notify.ts one each, and the week-to-go reminder cron shipped a bare fragment in the pre-DAWN indigo (#4f46e5) with no doctype, wordmark or footer and an emoji in its subject. A Frequency deploy recoloured the shells and not these, so a member's mail wore two palettes, and scripts/check-tokens.mjs waived each file whole so nothing could notice. The three shells spelled the tagline three ways (The community collective, Community collective, Community Collective). THE FIX: every literal is ${palette.x}; EMAIL_TAGLINE in lib/email-studio/postal.ts is the one tagline; bodyToHtml in lib/comms/email-template.ts is the one body helper; the reminder renders through emailShell with the RSVP footer and a plain subject; the six cleaned files leave the token guard's waiver list so a planted hex fails pnpm check:tokens.\n\nCLOSED 2026-10-19 (ADR-1767). Every literal in the ten modules is ${palette.x}; six files left the token guard's waiver list; one tagline (EMAIL_TAGLINE), one bodyToHtml; the week-to-go reminder renders through emailShell with the RSVP footer and a plain subject. The receipt goldens were recaptured for the tagline only. Push notification titles keep their emoji (not email copy).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-palette.mjs",
+    "note": "PASS 2026-10-19: the probe reads the ten email modules for typed hex, the guard for the removed waivers, the shells for EMAIL_TAGLINE and the six importers for the shared bodyToHtml; pnpm check:tokens green with the waivers gone."
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

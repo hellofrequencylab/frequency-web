@@ -6,7 +6,7 @@ import type { EmailRenderLayout } from './render-layout'
 // 102 KB clip. Pure + framework-free; voice canon (no em dashes in the copy it emits).
 
 import { DEFAULT_EMAIL_COLORS, escapeHtml, type EmailColors } from './render'
-import { PLATFORM_POSTAL_LINE } from './postal'
+import { EMAIL_TAGLINE, PLATFORM_POSTAL_LINE } from './postal'
 
 const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
@@ -17,7 +17,7 @@ export interface EmailBrand {
   wordmark?: string
   /** An absolute logo image URL. When present it renders instead of the wordmark text. */
   logoUrl?: string
-  /** Small uppercase tagline under the wordmark (default 'The community collective'). Pass '' to hide. */
+  /** Small uppercase tagline under the wordmark (default EMAIL_TAGLINE). Pass '' to hide. */
   tagline?: string
   /** The physical mailing address shown in the footer (CAN-SPAM). Falls back to the platform postal address. */
   address?: string
@@ -33,9 +33,9 @@ const DEFAULT_BASE_URL = 'https://frequencylocal.com'
  *  email shell stays framework-free (importing lib/site pulls the whole nav registry). */
 const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
 
-/** The default brand tagline / one-line sender description. Mirrors lib/site.ts SITE_TAGLINE (ADR-811);
- *  kept LOCAL so the email shell stays framework-free (see ORG_LEGAL_NAME). A Space send can override it. */
-const DEFAULT_TAGLINE = 'Community collective'
+/** The default brand tagline: the one every Frequency shell prints (lib/email-studio/postal.ts). A Space
+ *  send can override it. */
+const DEFAULT_TAGLINE = EMAIL_TAGLINE
 
 /** The brand + unsubscribe inputs shared by the full shell and the standalone footer builder, so the on-canvas
  *  editor and the sent email read from ONE footer source of truth. */

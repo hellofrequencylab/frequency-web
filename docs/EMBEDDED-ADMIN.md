@@ -433,11 +433,12 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > on-page shell-rail control was the wrong layer and was pulled. The interior sections are staged "Next"
 > until their engines land (see below).
 >
-> ✅ **One editable page Library (ADR-262).** `/pages` is grown into the single page library: an
-> **In-app pages** section (`MANAGED_ROUTES`, Member + Focus areas) opens the real page with edit mode
-> on (`?edit=1`): "the library that pulls up the actual page with edit capabilities". Relaxed janitor →
-> **admin+**; the marketing + splash editors stay janitor-only (hidden for non-janitor admins, no
-> dead-ends). This Library is the **anchor for condensing `/admin`**: as a surface becomes reachable +
+> ✅ **One editable page Library (ADR-262), now the page index (ADR-1763).** `/pages` lists every page
+> in five lists, most important first (Site pages, Lead and SEO pages, Funnels, In-app pages, System
+> pages; `lib/pages/index-catalog.ts`). An **In-app pages** row (`MANAGED_ROUTES`) opens the real page;
+> staff edit its header, SEO and (on a module route) layout from the page's own Settings button. The
+> old `?edit=1` link is gone: no page in that list read it. Every list shows for **admin+**; only a
+> janitor gets the Edit buttons, and only on a row the block editor really produces (no dead-ends). This Library is the **anchor for condensing `/admin`**: as a surface becomes reachable +
 > editable on its page, its bespoke admin route can be merged or retired (ongoing, non-destructive).
 >
 > ⏳ **Remaining (polish, non-blocking):** ① the interior **Layout** engine (the `WidgetSlot` engine
