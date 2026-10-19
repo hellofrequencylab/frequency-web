@@ -790,10 +790,15 @@ const qj = (v: unknown): string => `${q(JSON.stringify(v))}::jsonb`
 const qarr = (v: string[]): string => `array[${v.map(q).join(', ')}]::text[]`
 const pt = (date: string, time: string) => `timestamptz '${date} ${time}+00'`
 
+/** The preferences keys an owner edits in the app (the Space Home layout, the page list and the page
+ *  documents). A re-run writes them only when the Space has none, so edits made since the last run
+ *  survive (SCAN-1016, owner ruling 2026-10-19 "Keep edits"). Every other seeded key still overwrites. */
+const EDITED_KEYS_SQL = `array['pageDocs', 'profileLayout', 'pages']::text[]`
+
 function spaceUpsert(id: string, slug: string, name: string, brand: string, tagline: string, about: string, plan: string, parent: string | null, prefs: Record<string, unknown>, logo: string | null, cover: string | null, city = 'Encinitas'): string {
   return `insert into spaces (id, slug, name, type, status, entity_id, skin, network_connected, visibility, plan, limits_waived, entitlements, owner_profile_id, brand_name, tagline, about, time_zone, brand_logo_url, cover_image_url, parent_id, city, region, country, preferences)
 values (${q(id)}, ${q(slug)}, ${q(name)}, 'business', 'active', (select entity_id from _tg), 'dawn', true, 'network', ${q(plan)}, ${plan === 'collective'}, '{}'::jsonb, ${q(OWNER_ID)}, ${q(brand)}, ${q(tagline)}, ${q(about)}, ${q(TZ)}, ${q(logo)}, ${q(cover)}, ${parent ? q(parent) : 'null'}, ${q(city)}, 'CA', 'US', ${qj(prefs)})
-on conflict (slug) do update set name = excluded.name, status = 'active', network_connected = true, visibility = 'network', plan = excluded.plan, limits_waived = excluded.limits_waived, brand_name = excluded.brand_name, tagline = excluded.tagline, about = excluded.about, time_zone = excluded.time_zone, brand_logo_url = excluded.brand_logo_url, cover_image_url = excluded.cover_image_url, parent_id = excluded.parent_id, city = excluded.city, preferences = coalesce(spaces.preferences, '{}'::jsonb) || excluded.preferences, updated_at = now()
+on conflict (slug) do update set name = excluded.name, status = 'active', network_connected = true, visibility = 'network', plan = excluded.plan, limits_waived = excluded.limits_waived, brand_name = excluded.brand_name, tagline = excluded.tagline, about = excluded.about, time_zone = excluded.time_zone, brand_logo_url = excluded.brand_logo_url, cover_image_url = excluded.cover_image_url, parent_id = excluded.parent_id, city = excluded.city, preferences = coalesce(spaces.preferences, '{}'::jsonb) || (excluded.preferences - ${EDITED_KEYS_SQL}) || (select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from jsonb_each(excluded.preferences) e(k, v) where k = any(${EDITED_KEYS_SQL}) and not (coalesce(spaces.preferences, '{}'::jsonb) ? k)), updated_at = now()
 where spaces.owner_profile_id = ${q(OWNER_ID)};`
 }
 
@@ -835,6 +840,8 @@ export function renderSql(): string {
     '-- its membership tiers, its merch, its studio offerings, its calendar and its website pages on the',
     '-- Network theme. ONE transaction. Idempotent: every statement is an upsert on a natural key (slug) or a',
     '-- deterministic id. A Space row is only updated while it is still owner-held (owner_profile_id below).',
+    '-- Page edits survive a re-run: pageDocs, profileLayout and pages are written only when the Space has none',
+    '-- (SCAN-1016); every other seeded preference overwrites.',
     '-- websitePublished is NOT written: the owner publishes the website by hand.',
     '',
     'begin;',
