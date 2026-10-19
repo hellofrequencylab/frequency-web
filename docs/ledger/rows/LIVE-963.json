@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-963",
+  "wave": "W7",
+  "title": "The profile photo shows on a phone even when no cosmetic border is equipped",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/themes/frequency/members-c.css",
+    "ref": "Template comparison against design_handoff/frequency/templates/members/Profile.html at 390px, 2026-10-19"
+  },
+  "detail": "FILED 2026-10-19. At phone width the profile identity photo (.mc-id-photo) rendered with no display rule when no cosmetic border was equipped, so the photo area collapsed and the header read as empty. The Frequency kit now gives it display:flex and the template's overlap margin, matching Profile.html.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"process.exit(require('fs').readFileSync('app/themes/frequency/members-c.css','utf8').includes('.mc-id-photo{display:flex')?0:1)\""
+  },
+  "closed": "2026-10-19"
+}

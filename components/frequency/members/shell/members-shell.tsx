@@ -142,7 +142,7 @@ function DrawerStanding({ d }: { d: DockData }) {
         <b>{n(d.streak)}</b>
         <small>Streak</small>
       </span>
-      <span data-tone="violet">
+      <span data-tone="ink">
         <FqIcon name="zap" />
         <b>{n(d.zaps)}</b>
         <small>Zaps</small>

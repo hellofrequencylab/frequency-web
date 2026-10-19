@@ -351,6 +351,9 @@
 [data-design="frequency"] [data-kit="members"] .fqs-event:hover .fqs-event-t{text-decoration:underline}
 [data-design="frequency"] [data-kit="members"] .fqs-more{align-self:flex-start;margin-top:4px}
 @media (max-width:720px){
+[data-design="frequency"] [data-kit="members"] .fqs-cover-logo{left:16px;bottom:-36px}
+[data-design="frequency"] [data-kit="members"] .fqs-ident.has-logo{padding-top:48px}
+[data-design="frequency"] [data-kit="members"] .fqs-ident{gap:14px}
 [data-design="frequency"] [data-kit="members"] .fqs-cols{gap:40px}}
 [data-design="frequency"] [data-kit="members"] .fqs-notices{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
 [data-design="frequency"] [data-kit="members"] .fqs-notices:empty{display:none}
@@ -360,14 +363,29 @@
 [data-design="frequency"] [data-kit="members"] .fqs-hero-in{position:relative;width:100%;padding:32px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqs-id{display:flex;align-items:flex-end;gap:18px;min-width:0;flex:1 1 320px}
 [data-design="frequency"] [data-kit="members"] .fqs-id>.stack{gap:10px;min-width:0}
-[data-design="frequency"] [data-kit="members"] .fqs-id .h1{color:var(--fq-text-on-accent);overflow-wrap:anywhere}
-[data-design="frequency"] [data-kit="members"] .fqs-k{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in oklab,var(--fq-text-on-accent) 82%,transparent)}
-[data-design="frequency"] [data-kit="members"] .fqs-tagline{margin:0;max-width:62ch;font:400 var(--fq-text-body-size)/1.45 var(--fq-font-sans);color:color-mix(in oklab,var(--fq-text-on-accent) 88%,transparent);text-wrap:pretty}
+[data-design="frequency"] [data-kit="members"] .fqs-id .h1{overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqs-hero .fqs-id .h1{color:var(--fq-text-on-accent)}
+[data-design="frequency"] [data-kit="members"] .fqs-k{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-hero .fqs-k{color:color-mix(in oklab,var(--fq-text-on-accent) 82%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqs-tagline{margin:0;max-width:62ch;font:400 var(--fq-text-body-size)/1.45 var(--fq-font-sans);color:var(--fq-text-body);text-wrap:pretty}
+[data-design="frequency"] [data-kit="members"] .fqs-hero .fqs-tagline{color:color-mix(in oklab,var(--fq-text-on-accent) 88%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqs-tagline a{color:inherit;text-decoration:underline dashed;text-underline-offset:4px}
 [data-design="frequency"] [data-kit="members"] .fqs-tagline .serif{font-size:1.1em}
 [data-design="frequency"] [data-kit="members"] .fqs-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* On the photo the quiet buttons are frosted glass. */
 [data-design="frequency"] [data-kit="members"] .fqs-hero .btn.fqs-frost{background:color-mix(in oklab,var(--fq-surface-card) 86%,transparent);box-shadow:none;color:var(--fq-ink);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+/* THE DAWN HEADER, WEARING FREQUENCY (LIVE-1029). The Space page's default header is DAWN's: a clean cover
+   band with no text on the photo, the logo chip hanging half off its bottom edge, then ONE identity row
+   under it on the page ground (the name, the badges, the tagline on the left, the buttons pushed right).
+   The Hero size (`.fqs-hero.tall`) keeps the identity on the photo. Same radii, ink and faces as the kit. */
+[data-design="frequency"] [data-kit="members"] .fqs-cover{position:relative;margin-bottom:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqs-cover-img{height:clamp(176px,24vw,260px);border-radius:28px;background-size:cover;background-position:center;background-color:var(--fq-surface-raised);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqs-cover-logo{position:absolute;left:24px;bottom:-44px;z-index:1}
+[data-design="frequency"] [data-kit="members"] .fqs-cover-badge{position:absolute;top:16px;left:16px;z-index:1;display:flex;gap:6px;flex-wrap:wrap}
+[data-design="frequency"] [data-kit="members"] .fqs-ident{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding-top:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqs-ident.has-logo{padding-top:56px}
+[data-design="frequency"] [data-kit="members"] .fqs-ident .fqs-id{align-items:flex-start}
+[data-design="frequency"] [data-kit="members"] .fqs-ident .fqs-tagline{max-width:70ch}
 [data-design="frequency"] [data-kit="members"] .fqs-badges{display:flex;gap:6px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqs-back{display:inline-block;margin-bottom:16px}
 /* The tab row pins under the header, frosted, like the kit's header. */

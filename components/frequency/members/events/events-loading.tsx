@@ -1,12 +1,15 @@
 import '@/app/themes/active/members-events'
 
-// THE EVENTS WAIT, UNDER FREQUENCY: the destination's own frame (the hero, the tab bar, a grid of
-// card shapes), so nothing jumps when the list lands. Drawn from the same ev-* classes the page uses.
+// THE EVENTS WAIT, UNDER FREQUENCY: the destination's own frame (the plain header, the tab bar, a grid
+// of card shapes), so nothing jumps when the list lands. Drawn from the same ev-* classes the page uses.
+// The header is `ev-hero is-plain`, exactly as events-body.tsx renders it. A bare `ev-hero` is the
+// retired photo band (min-height 360px on the ink fill), which painted a black block where the header
+// used to be on every cold open of /events (LIVE-1010).
 
 export function FqEventsLoading() {
   return (
     <div aria-busy="true" aria-label="Loading events">
-      <div className="ev-hero">
+      <div className="ev-hero is-plain">
         <div className="ev-hero-in">
           <span className="ev-skel-bar w30" />
           <span className="ev-skel-bar tall w60" />
