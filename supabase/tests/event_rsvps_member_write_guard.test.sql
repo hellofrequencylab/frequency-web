@@ -1,16 +1,19 @@
--- pgTAP behavioural guard for migration 20270345011900 (SCAN-696).
+-- pgTAP behavioural guard for migrations 20270345011900 (SCAN-696) and 20270346009400 (SCAN-844).
 --
--- The update-own policy on event_rsvps checks ownership alone, so before this migration a member
+-- The update-own policy on event_rsvps checks ownership alone, so before SCAN-696 a member
 -- could PATCH their own row from the browser with approval_status = 'approved', attended_at = now(),
--- attended_by = themselves and plus_ones = 500. Every forged write below is made AS a member through
--- the policy, exactly the way PostgREST would make it, and must be refused; the writes the app makes
--- for a member (a pending request, a withdrawal, a re-join, a plus-one within the cap) must still
--- land; and the host's writes on the service role and the anon guest door must be untouched.
+-- attended_by = themselves and plus_ones = 500. Before SCAN-844 they could also DELETE that pending
+-- row and INSERT it again with approval_status = 'none' on an approval-gated event, which every
+-- admission reader treats as a seat. Every forged write below is made AS a member through the
+-- policy, exactly the way PostgREST would make it, and must be refused; the writes the app makes
+-- for a member (a pending request, a withdrawal, a re-join, a plus-one within the cap, an admitted
+-- insert on an open event) must still land; and the host's writes on the service role and the anon
+-- guest door must be untouched.
 --
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(20);
+select plan(24);
 
 -- ── Seed (as postgres, which RLS does not bind) ─────────────────────────────────────────────────
 
@@ -28,14 +31,19 @@ delete from public.profiles
 where auth_user_id in ('00000000-0000-4000-a696-000000000001', '00000000-0000-4000-a696-000000000002')
   and id not in ('00000000-0000-4000-b696-000000000001', '00000000-0000-4000-b696-000000000002');
 
--- A published, public, future, approval-required RSVP event with no capacity cap.
+-- A published, public, future, approval-required RSVP event with no capacity cap, and a twin that
+-- does not require approval so the open-event insert still lands as 'none'.
 insert into public.events (id, title, slug, scope_type, scope_id, visibility, status, starts_at, ends_at,
                            join_mode, is_cancelled, capacity, time_zone, host_id, rsvp_requires_approval)
 values
   ('00000000-0000-4000-e696-000000000001', 'MWG sit', 'mwg-sit', 'public',
    '00000000-0000-4000-e696-0000000000aa', 'public', 'published',
    now() + interval '30 days', now() + interval '30 days 2 hours', 'rsvp', false, null,
-   'America/Los_Angeles', '00000000-0000-4000-b696-000000000002', true);
+   'America/Los_Angeles', '00000000-0000-4000-b696-000000000002', true),
+  ('00000000-0000-4000-e696-000000000002', 'MWG open', 'mwg-open', 'public',
+   '00000000-0000-4000-e696-0000000000aa', 'public', 'published',
+   now() + interval '30 days', now() + interval '30 days 2 hours', 'rsvp', false, null,
+   'America/Los_Angeles', '00000000-0000-4000-b696-000000000002', false);
 
 -- ── 1. The trigger is attached, fires first, and is not a browser-callable function ─────────────
 
@@ -82,6 +90,29 @@ select lives_ok(
   $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
      values ('00000000-0000-4000-e696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'pending') $$,
   'a member inserts a pending request');
+
+-- SCAN-844: delete-own then re-insert as already admitted.
+select lives_ok(
+  $$ delete from public.event_rsvps
+      where event_id = '00000000-0000-4000-e696-000000000001'
+        and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  'a member can delete their own pending request');
+
+select throws_ok(
+  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
+     values ('00000000-0000-4000-e696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'none') $$,
+  '42501', null,
+  'a member cannot re-insert an admitted seat on an approval-gated event');
+
+select lives_ok(
+  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
+     values ('00000000-0000-4000-e696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'pending') $$,
+  'a member re-inserts a pending request after the refused skip');
+
+select lives_ok(
+  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
+     values ('00000000-0000-4000-e696-000000000002', '00000000-0000-4000-b696-000000000001', 'going', 'none') $$,
+  'a member inserts an admitted seat on an event that does not require approval');
 
 -- ── 3. Forged updates, as the member ────────────────────────────────────────────────────────────
 

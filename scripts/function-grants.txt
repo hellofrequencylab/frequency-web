@@ -206,6 +206,7 @@ practice_admin_facets                internal
 practices_fill_slug                  internal
 practices_touch_updated_at           public
 prevent_economy_self_edit            internal
+prevent_founder_meta_self_edit       internal
 prevent_role_self_escalation         internal
 provision_channel_room               internal
 public_active_circle_count           public
