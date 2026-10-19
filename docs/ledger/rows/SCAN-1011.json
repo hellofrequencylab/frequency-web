@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-19 (ADR-1757). PREMISE RE-TESTED on main after SCAN-864: listSpaceInboxAddressesToFinish still used state.eq.failed,updated_at.gte, and saveRow restamped updated_at on every check and provision, so a failed inbox address never left the 24h window. FIX: a failed-to-failed re-read does not write; the first failure stamp is the clock. The list loads pending first, then failed rows inside the window. Set up my address passes restartFailureWindow so the owner button opens a fresh 24 hours. No migration."
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1758). PREMISE RE-TESTED on main after SCAN-864: listSpaceInboxAddressesToFinish still used state.eq.failed,updated_at.gte, and saveRow restamped updated_at on every check and provision, so a failed inbox address never left the 24h window. FIX: a failed-to-failed re-read does not write; the first failure stamp is the clock. The list loads pending first, then failed rows inside the window. Set up my address passes restartFailureWindow so the owner button opens a fresh 24 hours. No migration."
   }
 }
