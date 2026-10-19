@@ -1,0 +1,7 @@
+{
+  "id": "DEF-ETSY",
+  "wave": "W7",
+  "append": {
+    "detail": "\n\n── ACTIVE by owner ruling 2026-10-19 (project thread, decision card \"Make active\"): every deferred item except the iOS app build returns to the active build list. Earlier park or hold text in this row no longer applies. Evidence refresh: P5 transfers (commerce_order_transfers) and the P6 fulfilment ladder (lib/commerce/fulfilment-state.ts) are partly in; P3 shipping, P4 facets, cart, order messaging and P7 remain."
+  }
+}

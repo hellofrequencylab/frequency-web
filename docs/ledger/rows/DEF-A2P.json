@@ -1,0 +1,7 @@
+{
+  "id": "DEF-A2P",
+  "wave": "W7",
+  "append": {
+    "detail": "\n\n── ACTIVE by owner ruling 2026-10-19 (project thread, decision card \"Make active\"): every deferred item except the iOS app build returns to the active build list. Earlier park or hold text in this row no longer applies. Back in the owner queue; nothing is filed until the owner files it, and /terms (app/terms/page.tsx:34) still reads \"Draft pending legal review\"."
+  }
+}

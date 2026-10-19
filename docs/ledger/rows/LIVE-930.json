@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-930",
+  "title": "The Frequency Contacts card and composer draw in the kit (Contacts phase 2)",
+  "status": "open",
+  "priority": "P2",
+  "size": "M",
+  "lane": "live",
+  "wave": "W7",
+  "detail": "Contacts phase 2, parked 2026-10-14, active 2026-10-19. Plan in SCAN-872's detail. contacts-body.tsx:9,128 still mounts DAWN's SpaceMemberViewer.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Filed 2026-10-19 from the full scan. Probe to write as a cmd before the first PR: components/frequency/admin/pages/contacts imports nothing from components/spaces/crm/* (the DAWN card and composer)",
+    "checked": "2026-10-19"
+  }
+}

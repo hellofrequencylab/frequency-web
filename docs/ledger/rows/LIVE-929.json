@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-929",
+  "title": "Every member section opens on one shared Frequency header (kicker, serif title, meta, actions, search)",
+  "status": "open",
+  "priority": "P2",
+  "size": "M",
+  "lane": "live",
+  "wave": "W7",
+  "detail": "Page-header uniformity, parked 2026-10-14, active 2026-10-19. Survey: /mnt/project-files/header-survey.md. Today Circles, Marketplace, Crew and Vault each hand-roll a <div className=\"head\"> (circles-body.tsx:125, marketplace-body.tsx:117, crew-body.tsx:379, vault-body.tsx:329); /nearby, Practices, Members, Journal and Notifications still render DAWN PageHero / IndexTemplate / FocusTemplate. Phase 1: one exported header component under components/frequency/members/shared used by the survey's bodies; phase 2: Leaderboard, Settings, Help, Site map and the DAWN-template pages; phase 3: the seven search boxes.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Filed 2026-10-19 from the full scan. Probe to write as a cmd before the first PR: one exported header component under components/frequency/members/shared imported by every surveyed body, and zero PageHero/IndexTemplate/FocusTemplate imports in the Frequency branch of /nearby, /practices, /network, /journal, /notifications",
+    "checked": "2026-10-19"
+  }
+}
