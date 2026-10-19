@@ -13,7 +13,7 @@ describe('Collective owner controls', () => {
     expect(html).not.toContain('Your Collective is full')
   })
   it('shows the exact yearly price and quantity floor before an extra-Space purchase', () => {
-    const html = renderToStaticMarkup(<MemberSpaceEditor parentId="parent" management={{ network: false, active: true, capacity: 7, members: [space], candidates: [] }} quote={{ quantity: 2, minQuantity: 1, priceId: 'price_year', unitCents: 29000, interval: 'year' }} />)
+    const html = renderToStaticMarkup(<MemberSpaceEditor parentId="parent" management={{ network: false, active: true, capacity: 7, members: [space], candidates: [] }} quote={{ quantity: 2, minQuantity: 1, maxQuantity: null, included: 5, itemKey: 'collective_space', priceId: 'price_year', unitCents: 29000, interval: 'year' }} />)
     expect(html).toContain('$580.00 per year')
     expect(html).toContain('min="1"')
     expect(html).toContain('Save extra Spaces')

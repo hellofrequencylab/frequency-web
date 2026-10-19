@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-829",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/\\.range\\(/.test(r('lib/spaces/audiences.ts'))){console.error('SCAN-829: the strict audience read is one capped page, so a Space over 1,000 contacts never previews');process.exit(1)}\"",
+      "checked": "2026-10-19",
+      "evidence": "PASS. readSpaceContacts walks id-ordered .range() pages of 1,000 up to MAX_RECIPIENTS; lib/spaces/audiences.test.ts (2,500-contact preview and send, 5,001 capped) and lib/spaces/audience-readiness.test.ts pass."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19. The contact read pages with .range() in id order, so a Space over 1,000 contacts previews and sends to everyone up to 5,000 (the old single read stopped at PostgREST's 1,000-row cap, so sends also reached only the first 1,000). Above 5,000 the preview reports a capped state naming the Space's total and that one send reads the first 5,000."
+  }
+}

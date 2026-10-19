@@ -8,7 +8,7 @@ export async function readAudienceEligibility(
   spaceId: string, filter: AudienceFilter = {}, pickedTopic?: unknown,
 ): Promise<AudienceEligibilitySummary> {
   try {
-    const { contacts, topic } = await resolveAudienceCandidatePlan(spaceId, filter, pickedTopic)
+    const { contacts, topic, cappedAt, spaceContacts } = await resolveAudienceCandidatePlan(spaceId, filter, pickedTopic)
     const addresses = [...new Set(contacts.map(c => c.email.trim().toLowerCase()).filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))]
     const suppressed = new Set<string>(), muted = new Set<string>()
     const db = createAdminClient()
@@ -25,7 +25,8 @@ export async function readAudienceEligibility(
       for (const row of [...(results[0].data ?? []), ...(results[1].data ?? [])]) suppressed.add(row.email.trim().toLowerCase())
       for (const row of results[2].data ?? []) if (row.state === 'unsubscribed') muted.add(row.email.trim().toLowerCase())
     }
-    return summarizeAudienceEligibility(contacts, topic, suppressed, muted)
+    const summary = summarizeAudienceEligibility(contacts, topic, suppressed, muted)
+    return cappedAt != null && spaceContacts != null ? { ...summary, state: 'capped', cappedAt, spaceContacts } : summary
   } catch {
     return unavailableAudienceEligibility()
   }

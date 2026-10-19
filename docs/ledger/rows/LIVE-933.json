@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-933",
+  "title": "Editor E0 gate: the email block offer and the email renderer are one set, and the renderer reads nothing live",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-GATES.md",
+    "ref": "§5 check:email-blocks"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19 (owner: \"Begin the editor program\"; ADR-1325 sequence: gates first, on the tree they protect). check:email-blocks walks the TypeScript AST of lib/entity-blocks/registry.ts, lib/email-studio/render.ts, lib/entity-blocks/layout.ts and lib/entity-blocks/block-content.ts and proves the nine EDITOR-GATES §5 assertions: EMAIL_PALETTE_BLOCK_IDS and renderBlockInner's case labels are the same set both ways (14 and 14 today); every palette id declares kinds 'email' and every 'email' kind is offered; a live-reading block in the palette must declare resolveAt 'send' and a SEND_RESOLVERS compile step whose file exports the symbol (productCard, resolveProductRefs); KNOWN_BLOCK_IDS is derived from ENTITY_BLOCKS, never restated; the switch has a fail-closed default; MAX_COLUMNS_BY_KIND.email is 1; both document-rendering crons (nurture, space-campaigns) still reach renderEmailLayout hop by hop and render.ts imports nothing from the Supabase layer; and integrity floors fail the run if the walker stops finding the palette, the switch or the registry. Wired as a package.json script and in ci.yml's checks guards array; scripts/check-email-blocks.test.ts proves every assertion fires on a mutated copy of the real files. Not covered: whether the HTML renders in a mail client (coverage, not correctness), merge tags, voice, contrast. check:blocks, check:surface-binding and check:loom-integrity stay with PROG-E0/E1: each needs a registry root (defineBlock) that is not in the tree yet.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/check-email-blocks.mjs",
+    "note": "Runs the gate over the tree. Fails when the email offer, the registry kinds and the renderer switch disagree, when the renderer imports a Supabase module, when a cron stops reaching the renderer, or when the instruments find nothing (E9).",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}

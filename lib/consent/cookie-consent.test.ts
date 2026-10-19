@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { REDACTED_PAGE_TITLE } from '@/lib/analytics/sanitize'
 import {
   CONSENT_COOKIE,
   CONSENT_REGION_COOKIE,
@@ -198,5 +199,40 @@ describe('withdrawal clears the storage the permission paid for', () => {
     const cleared = cookiesToClearOnWithdrawal(jar)
     expect(cleared).toEqual(expect.arrayContaining(['fq_attr', 'fq_src', '_ga', '_ga_G12345']))
     expect(cleared, 'the session cookie is essential and must never be cleared').not.toContain('sb-access-token')
+  })
+})
+
+describe('SCAN-838: a redacted path carries a generic page_title', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+    document.title = ''
+  })
+
+  function configArgs(): Record<string, unknown> | undefined {
+    const calls = ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>))
+    return calls.find((args) => args[0] === 'config')?.[2] as Record<string, unknown> | undefined
+  }
+  function setArgs(): Record<string, unknown> | undefined {
+    const calls = ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>))
+    return calls.find((args) => args[0] === 'set')?.[1] as Record<string, unknown> | undefined
+  }
+
+  it('a Journey page: the slug leaves page_location AND the name leaves page_title', () => {
+    window.history.replaceState(null, '', '/journeys/grief-walks')
+    document.title = 'Grief Walks · Frequency'
+    runBootstrap({})
+    const cfg = configArgs()
+    expect(cfg?.page_location).toBe(`${location.origin}/journeys/[slug]`)
+    expect(cfg?.page_title).toBe(REDACTED_PAGE_TITLE)
+    expect(cfg?.page_title).not.toContain('Grief')
+    // Later hits on the same page read the set parameter, not document.title.
+    expect(setArgs()?.page_title).toBe(REDACTED_PAGE_TITLE)
+  })
+
+  it('a plain page keeps its own title', () => {
+    window.history.replaceState(null, '', '/pricing')
+    document.title = 'Pricing · Frequency'
+    runBootstrap({})
+    expect(configArgs()?.page_title).toBe('Pricing · Frequency')
   })
 })

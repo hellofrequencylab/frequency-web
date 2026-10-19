@@ -92,7 +92,7 @@ export interface ScopedRow {
  *   - a reader that DROPS the filter would (visibly) return both Spaces' rows, failing the leak test.
  *
  * Supports the read chain the space-scoped readers use: from(t).select(cols).eq(col,val)[.eq...]
- * .order().limit().maybeSingle().in(col, vals) and awaiting the builder. `.in('x', [])` returns NO
+ * .order().limit().range(from, to).maybeSingle().in(col, vals) and awaiting the builder. `.in('x', [])` returns NO
  * rows (mirrors the readers' explicit empty-set guard, never "all rows").
  *
  * This is intentionally small: it is a LEAK ORACLE, not a Postgres. It returns whatever survives the
@@ -108,12 +108,21 @@ export function makeTwoSpaceDb(tables: Record<string, ScopedRow[]>): {
     // An upsert hands back the rows it wrote (Postgres `upsert ... returning`), so a write awaited after
     // `.select()` resolves to them; every other builder reads the seeded table.
     let written: ScopedRow[] | null = null
-    const apply = () => written ?? rows.filter((r) => preds.every((p) => p(r)))
+    // A `.range(from, to)` window (SCAN-829: the contact read pages); null reads every surviving row.
+    let window: [number, number] | null = null
+    const apply = () => {
+      const survivors = written ?? rows.filter((r) => preds.every((p) => p(r)))
+      return window ? survivors.slice(window[0], window[1] + 1) : survivors
+    }
 
     const chain: Record<string, unknown> = {
       select: () => chain,
       order: () => chain,
       limit: () => chain,
+      range: (from: number, to: number) => {
+        window = [from, to]
+        return chain
+      },
       not: () => chain,
       // insert/update/delete record nothing in this in-memory oracle (it exists to prove which ROWS
       // survive the read filters, not to mutate); they return the chain so a `.select().maybeSingle()`
