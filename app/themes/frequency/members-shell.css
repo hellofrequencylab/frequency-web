@@ -124,7 +124,7 @@
    member's stored choice); a collapsed rail is the 76px micro rail.
    `data-l` / `data-r` are the member's choice (full | micro) or `auto`, which follows the viewport
    (README: right auto-micro under 1240, left under 960, both hidden under 768, where the phone tab bar takes over). */
-[data-design="frequency"] [data-kit="members"] .fqm-body{--fqm-l:248px;--fqm-r:288px;--fqm-lw:var(--fqm-l);--fqm-rw:var(--fqm-r);position:relative;z-index:1;flex:1;width:100%;padding:24px 40px 160px;display:grid;gap:56px;align-items:start;grid-template-columns:var(--fqm-lw) minmax(0,1fr) var(--fqm-rw);transition:grid-template-columns 300ms var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .fqm-body{--fqm-l:248px;--fqm-r:288px;--fqm-lw:var(--fqm-l);--fqm-rw:var(--fqm-r);position:relative;z-index:1;flex:1;width:100%;padding:24px 40px 0;display:grid;gap:56px;align-items:start;grid-template-columns:var(--fqm-lw) minmax(0,1fr) var(--fqm-rw);transition:grid-template-columns 300ms var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-drag]{transition:none;user-select:none}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-has="l"]{grid-template-columns:var(--fqm-lw) minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-has="r"]{grid-template-columns:minmax(0,1fr) var(--fqm-rw)}
@@ -150,8 +150,26 @@
 [data-design="frequency"] [data-kit="members"] .fqm-center{min-width:0;width:100%;max-width:860px;justify-self:center;display:flex;flex-direction:column}
 [data-design="frequency"] [data-kit="members"] .fqm-body[data-has="none"] .fqm-center{max-width:none}
 [data-design="frequency"] [data-kit="members"] .fqm-center:focus{outline:none}
+/* THE DOCKS SIT ON THE FOOTER (LIVE-1011, owner 2026-10-19: "the bottom left and right menus should always
+   stay attached to the top of the footer"). Each rail is a sticky box whose foot carries its tab, and a
+   sticky box stops at the end of its grid row. The 160px of breathing room under the page used to be the
+   body's bottom padding, which sits OUTSIDE that row, so at the end of a page both tabs stopped 160px above
+   the footer and floated in empty space. The room now lives inside the centre column instead: the row runs
+   to the footer, the tabs ride the window bottom while the page scrolls, and come to rest on the footer's
+   top edge, however tall the footer is. */
+/* An OPEN footer (the mega footer, LIVE-1030) rises from the window bottom and publishes how far as
+   --fq-foot-lift on <html> (0 while closed, unset before it ships). The rails shorten by that much, so both
+   tabs push up with it and stay on its top edge; the console's corner dock lifts the same way. */
+[data-design="frequency"] [data-kit="members"] .fqm-center{padding-bottom:160px}
+[data-design="frequency"] [data-kit="members"] .fqm-body[data-edge] .fqm-center{padding-bottom:0}
+@media (max-width:767px){[data-design="frequency"] [data-kit="members"] .fqm-center{padding-bottom:0}}
+/* An open dock panel rises over the page header instead of being cut by it (LIVE-1011, item 20). The body
+   is its own stacking context (z-index 1) under the sticky header (45), so a panel's own z-index cannot
+   lift it past the header. While a panel is open the body steps above the header; the outside-click rule
+   in rail-tabs.tsx closes it before anything in the header can be reached. */
+[data-design="frequency"] [data-kit="members"] .fqm-body:has(.fqm-rise[data-open]){z-index:46}
 
-[data-design="frequency"] [data-kit="members"] .fqm-rail{position:sticky;top:108px;height:calc(100vh - 132px);min-height:420px;min-width:0;display:flex;flex-direction:column;gap:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-rail{position:sticky;top:108px;height:calc(100vh - 132px - var(--fq-foot-lift, 0px));transition:height 340ms var(--fq-ease-out);min-height:420px;min-width:0;display:flex;flex-direction:column;gap:16px}
 [data-design="frequency"] [data-kit="members"] .fqm-rail-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;padding:8px 2px 12px}
 [data-design="frequency"] [data-kit="members"] .fqm-rail-scroll::-webkit-scrollbar{display:none}
 [data-design="frequency"] [data-kit="members"] .fqm-handle{position:absolute;top:0;bottom:0;width:12px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3}
@@ -238,18 +256,20 @@
 [data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-rise{right:0;transform-origin:bottom right}
 [data-design="frequency"] [data-kit="members"] .fqm-rise[data-open]{opacity:1;transform:none;pointer-events:auto}
 /* The console's corner dock: the right rail's foot tab, fixed bottom-right while the rails are away. */
-[data-design="frequency"] [data-kit="members"] .fqm-console-dock{position:fixed;right:24px;bottom:20px;z-index:45;width:248px}
+[data-design="frequency"] [data-kit="members"] .fqm-console-dock{position:fixed;right:24px;bottom:calc(20px + var(--fq-foot-lift, 0px));transition:bottom 340ms var(--fq-ease-out);z-index:45;width:248px}
 [data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-micro{display:none}
 [data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-rise{right:0;transform-origin:bottom right}
 @media (max-width:767px){[data-design="frequency"] [data-kit="members"] .fqm-console-dock{display:none}}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card{max-height:calc(100vh - 220px);overflow-y:auto;width:300px;padding:20px;border-radius:var(--fq-radius-l);background:color-mix(in oklab,var(--fq-surface-card) 82%,transparent);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 40%,transparent),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 80%,transparent);display:flex;flex-direction:column;gap:18px}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-rise-card{background:color-mix(in oklab,var(--fq-surface-card) 97%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-l .fqm-tab{background:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 97%,transparent),color-mix(in oklab,var(--fq-surface-card) 90%,transparent))}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault{position:relative;overflow:hidden}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault .fq-aura{opacity:.28}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card.vault>*{position:relative}
 [data-design="frequency"] [data-kit="members"] .fqm-you-head{display:flex;gap:12px;align-items:center}
 [data-design="frequency"] [data-kit="members"] .fqm-you-head b{display:block;font:500 15px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-you-head small{display:block;margin-top:5px;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] .fqm-you-foot{display:flex;justify-content:space-between;font:400 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-you-foot{display:flex;flex-wrap:wrap;gap:10px 16px;padding-top:14px;border-top:1px solid var(--fq-border-hair);font:400 var(--fq-text-meta)/1 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"] .fqm-you-foot a{color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-h{display:flex;justify-content:space-between;align-items:baseline}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-h b{font:500 16px/1 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}

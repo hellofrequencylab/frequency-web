@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1011",
+  "title": "Both rail docks rest on the top of the footer, the left dock is more solid and rises over the header, and its panel lists Home, Account, Notifications and Help before Site map",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/themes/frequency/members-shell.css",
+    "ref": "Daniel 2026-10-19 design list (30 items), items 3, 15, 20, 21"
+  },
+  "detail": "Daniel 2026-10-19: the bottom left and right menus should always stay attached to the top of the footer (stuck at the bottom while scrolling, pushed up and stuck when the footer is reached); do not change the bottom right menu closed state; make the bottom left menu less see-through and keep it from being cut by the header; add critical links before Site Map. Cause of the float: the rails are sticky grid items, and the 160px page-end padding sat on .fqm-body outside their grid row, so at the end of a page both tabs stopped 160px above the footer. The padding moved into .fqm-center, so the row runs to the footer and the tabs rest on its top edge whatever its height. While a dock panel is open, .fqm-body steps above the sticky header (z 46 over 45). The left tab and panel are 97% solid; the right tab is untouched. The You panel foot lists Home, Account (signed in only), Notifications, Help, then Site map. Reading of 'less opaque' as 'less see-through' is stated to Daniel for a flip if he meant the reverse. When the mega footer (LIVE-1030) is open it publishes --fq-foot-lift on <html>; the rails shorten by it and the console corner dock lifts by it, so both tabs push up and stay on the footer's top edge (0px fallback before that PR ships).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('app/themes/frequency/members-shell.css','utf8');const bad=[];if(c.includes('padding:24px 40px 160px'))bad.push('page-end padding is back on .fqm-body, the docks float above the footer');if(!c.includes('.fqm-body:has(.fqm-rise[data-open]){z-index:46}'))bad.push('an open dock panel is cut by the header');if(bad.length){console.error('LIVE-1011: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the docks stop resting on the footer or the header cuts an open panel. Behavior is components/frequency/members/shell/dock-footer.test.ts.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
