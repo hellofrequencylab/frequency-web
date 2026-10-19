@@ -73,6 +73,7 @@
     "check:stored-blocks": "node scripts/check-stored-blocks.mjs",
     "check:stored-links": "node scripts/check-stored-links.mjs",
     "check:entity-layouts": "node scripts/check-entity-layouts.mjs",
+    "check:email-blocks": "node scripts/check-email-blocks.mjs",
     "check:cosmetic-renders": "node scripts/check-cosmetic-renders.mjs",
     "check:studio": "node scripts/check-studio.mjs",
     "check:creates": "node scripts/check-creates.mjs",

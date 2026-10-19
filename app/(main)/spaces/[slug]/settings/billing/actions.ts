@@ -20,22 +20,26 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 //     billingLive() + the per-plan switch inside the checkout; returns a clean error while billing is
 //     OFF, so the CTA never fires a broken checkout).
 //
-// Every action re-resolves the space + gates on the billing function's floor (ADMIN, matching
-// functions.ts defaultMinRole 'admin' and the billing page render's spaceFunctionAccess gate). These
-// actions mutate the OWNER's live Stripe subscription (checkout, portal, seats), so an EDITOR (the
-// canManage/canEditProfile level) must NOT reach them. No em dashes. The retired white-label lead
+// Every action re-resolves the space + gates on the OWNER (SCAN-1009; the billing page render still
+// opens at the ADMIN floor so an admin can read the bill). These actions mutate the OWNER's live Stripe
+// subscription (checkout, portal, seats), so neither an EDITOR (the canManage/canEditProfile level) nor
+// an admin reaches them. No em dashes. The retired white-label lead
 // capture was removed with the multi-tier UI (ADR-552). startSpacePlanCheckout (the single-item plan
 // checkout action) was DELETED by OWNER RULING (LIVE-062 batch 6, 2026-08-20): the ADR-811 loadout
 // checkout superseded it and no UI called it; git history keeps the implementation.
 
-/** Authorize the caller as an ADMIN (or owner) of `slug`'s space — the billing floor. Returns
- *  { spaceId, brandName } or null. Billing is not an editor-level action (it changes the owner's bill). */
+/** Authorize the caller as the OWNER of `slug`'s space — the billing floor. Returns { spaceId, brandName }
+ *  or null. Billing is not an editor-level action (it changes the owner's bill), and since SCAN-1009
+ *  (owner ruling 2026-10-19, "Owner only") it is not an admin-level one either: the Stripe customer is
+ *  the owner, so the portal, the seat count and a plan checkout move the owner's own money. A Network's
+ *  central admins (SCAN-983) are admins of the parent and never isOwner, so this is what keeps billing
+ *  the owner's. Staff viewing a Space are not its owner either and stay out. */
 async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandName: string } | null> {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return null
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
-  if (!caps.isAdmin) return null
+  if (!caps.isOwner) return null
   return { spaceId: space.id, brandName: space.brandName ?? space.name }
 }
 
@@ -44,7 +48,7 @@ async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandNam
  *  has no Stripe customer yet (nothing to manage) so the button never routes to a broken URL. */
 export async function openSpaceBillingPortal(slug: string): Promise<ActionResult<{ url: string }>> {
   const auth = await authorizeOwner(slug)
-  if (!auth) return fail('You do not have access to manage this space.')
+  if (!auth) return fail('Only the Space owner can manage billing.')
   const portal = await viaStripe('spaces/billing openSpaceBillingPortal', () =>
     createSpaceBillingPortal(auth.spaceId),
   )
@@ -59,7 +63,7 @@ export async function openSpaceBillingPortal(slug: string): Promise<ActionResult
  *  billing is OFF or seats are inactive. */
 export async function setOperatorSeats(slug: string, seats: number): Promise<ActionResult<{ seats: number }>> {
   const auth = await authorizeOwner(slug)
-  if (!auth) return fail('You do not have access to manage this space.')
+  if (!auth) return fail('Only the Space owner can manage billing.')
   const seatChange = await viaStripe('spaces/billing setOperatorSeats', () =>
     updateOperatorSeats(auth.spaceId, seats),
   )
@@ -100,7 +104,7 @@ export async function startSpaceLoadoutCheckout(
   },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
   const auth = await authorizeOwner(slug)
-  if (!auth) return fail('You do not have access to manage this space.')
+  if (!auth) return fail('Only the Space owner can manage billing.')
   const plan = asLoadoutPlan(input.plan)
   // SCAN-818: the Non Profit rungs (the discounted price, the 0% network fee, Business depth for member
   // Spaces) are for a verified 501(c)(3). The page only offers them after review, but this action is

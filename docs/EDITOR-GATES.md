@@ -222,6 +222,11 @@ send-time resolution falling back to a stale snapshot (by design) · deliverabil
 **Ships with E0**, ~120 lines, passes today — protecting the send path *before* block ids start
 moving, which is precisely when one is most likely to move.
 
+✅ **Landed 2026-10-19** ([ADR-1759](DECISIONS.md), LIVE-933): `scripts/check-email-blocks.mjs`, `pnpm check:email-blocks`,
+in the `checks` guards array. E8 also proves renderer purity as an import check (render.ts imports nothing
+from the Supabase layer) and walks each cron hop by hop; `SEND_RESOLVERS` names `productCard` →
+`resolveProductRefs` and the gate reads `reads` / `resolveAt` off registry rows so E4 arms itself when E1 adds them.
+
 ---
 
 ## 6. The six ratchets

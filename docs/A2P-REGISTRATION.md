@@ -166,7 +166,7 @@ send once the gate is open.
 
 | Env var | Set where | Value | Unblocks |
 |---|---|---|---|
-| `SMS_PROVISIONING_ENABLED` | Vercel (Production) | literal string `true` | The master kill-switch. Absent or any other value = SMS stays fully gated. |
+| `SMS_PROVISIONING_ENABLED` | Vercel (Production) | `1`, `true` or `on` (`envFlag`) | The master kill-switch. Absent or any other value = SMS stays fully gated. Gate: [`RUNBOOKS.md`](RUNBOOKS.md) "SMS provisioning". |
 | `SMS_A2P_BRAND_ID` | Vercel (Production) | Brand SID from §3 | Proves an EIN-backed brand exists. |
 | `SMS_A2P_CAMPAIGN_ID` | Vercel (Production) | Campaign SID from §4 | Proves an approved use-case exists. |
 | `TWILIO_MESSAGING_SERVICE_SID` | Vercel (Production) | Messaging Service SID from §4 | The service the campaign maps to; the send target. |
@@ -175,7 +175,7 @@ send once the gate is open.
 
 Notes:
 - `isSmsProvisioned()` requires **all four** of the top group simultaneously
-  (`SMS_PROVISIONING_ENABLED === 'true'` AND the three SIDs non-empty). Setting only some of
+  (`envFlag('SMS_PROVISIONING_ENABLED')` AND the three SIDs non-empty). Setting only some of
   them keeps the gate closed by design.
 - Even with all flags set, a send still has to pass the per-member gates (consent ledger →
   `notification_preferences` → quiet hours, `evaluateSmsGate`). The env flags only unblock

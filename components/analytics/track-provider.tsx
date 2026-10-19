@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { pixelSafePath, pixelSafeProps } from '@/lib/analytics/sanitize'
+import { pixelSafePath, pixelSafeProps, pixelSafeTitle } from '@/lib/analytics/sanitize'
 
 // Client-side tracking (ADR-070, ANALYTICS.md). Dual-emit: mirror to GA4 (if the tag
 // is live) AND record first-party via /api/track. PageViewTracker auto-captures
@@ -60,8 +60,12 @@ export function PageViewTracker() {
     // LIVE-810: GA's own page_view for in-app navigation, with the Journey/Circle/topic slug
     // redacted. The bootstrap config already sent (and redacted) the first page view.
     if (!first && typeof window !== 'undefined') {
+      // SCAN-838: and its title, which gtag.js would otherwise read from document.title.
+      const pageTitle = pixelSafeTitle(pathname, document.title)
+      window.gtag?.('set', { page_title: pageTitle })
       window.gtag?.('event', 'page_view', {
         page_location: window.location.origin + pixelSafePath(pathname),
+        page_title: pageTitle,
       })
     }
   }, [pathname])

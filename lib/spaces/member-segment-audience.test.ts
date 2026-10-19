@@ -33,7 +33,7 @@ const db = { contacts: [] as ContactRow[] }
 const reads: { space_id?: string; inCols: string[] }[] = []
 
 // A chainable `contacts` mock supporting BOTH shapes in play:
-//   audiences.ts       .select(cols).eq('space_id', v).limit(n)
+//   audiences.ts       .select(cols).eq('space_id', v).order('id').range(from, to)   [SCAN-829 pages]
 //   the segment lookup .select(cols).eq('space_id', v).in('profile_id', ids)   [awaited directly]
 function contactsBuilder() {
   const f: { space_id?: string; profileIds?: string[]; emails?: string[] } = {}
@@ -63,7 +63,12 @@ function contactsBuilder() {
       if (col === 'email') f.emails = vals.map((v) => v.toLowerCase())
       return api
     },
+    order: () => api,
     limit: async () => rows(),
+    range: async (from: number, to: number) => {
+      const r = rows()
+      return { ...r, data: r.data.slice(from, to + 1) }
+    },
     then(resolve: (v: ReturnType<typeof rows>) => void) {
       resolve(rows())
     },
