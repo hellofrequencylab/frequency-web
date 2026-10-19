@@ -18337,6 +18337,7 @@ export type Database = {
         }
         Returns: Json
       }
+      set_space_preferences: { Args: { p_space_id: string; p_patch: Json }; Returns: boolean }
       settle_email_provider_attempt: {
         Args: {
           p_queue_job_id: string

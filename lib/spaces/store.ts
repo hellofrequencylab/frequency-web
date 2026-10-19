@@ -382,7 +382,9 @@ export async function resolveSpaceForHost(host: string | null): Promise<Space | 
  *
  *  Gating is the CALLER's: every caller resolves an editor for the Space first, and this takes an
  *  already-resolved id, never a slug. It REPLACES the whole blob, so a caller must merge — the
- *  `next*Preferences` helpers in this directory are the merge, and they are pure and tested. */
+ *  `next*Preferences` helpers in this directory are the merge, and they are pure and tested.
+ *  🔴 A whole-blob replace races `save_website_editor` (SCAN-833): prefer `patchSpacePreferences`
+ *  below whenever the caller knows which keys it owns. */
 export async function writeSpacePreferences(
   spaceId: string,
   preferences: Record<string, unknown>,
@@ -403,6 +405,34 @@ export async function writeSpacePreferences(
     return true
   } catch (err) {
     log.warn('space_preferences_write_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
+    return false
+  }
+}
+
+/** Key-scoped write to a Space's preferences (SCAN-833, ADR-1822). Each top-level key in `patch`
+ *  is set in place by the `set_space_preferences` function in ONE update; a `null` value deletes
+ *  its key; every key the patch does not name is left exactly as stored. Use this instead of
+ *  `writeSpacePreferences` wherever the caller knows which keys it owns, so an editor autosave
+ *  (`save_website_editor`, which writes the `websiteEditor` stub into the same row) landing between
+ *  a read and a write is never reverted. `websiteEditor` and `programOverview` are refused by the
+ *  function: SCAN-827 owns them. Gating is the CALLER's, as for `writeSpacePreferences`. */
+export async function patchSpacePreferences(
+  spaceId: string,
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  if (!spaceId || !patch || typeof patch !== 'object' || Array.isArray(patch)) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
+    }
+    const { data, error } = await db.rpc('set_space_preferences', { p_space_id: spaceId, p_patch: patch })
+    if (error) {
+      log.warn('space_preferences_patch_failed', { spaceId, keys: Object.keys(patch), message: error.message })
+      return false
+    }
+    return data === true
+  } catch (err) {
+    log.warn('space_preferences_patch_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
     return false
   }
 }
