@@ -6,8 +6,8 @@
   "lane": "live",
   "size": "S",
   "source": {
-    "file": "/mnt/project-files/changed-plan/build-plan-2026-10-19.md",
-    "ref": "Phase 2: Events"
+    "file": "docs/UX-MATURITY-PLAN.md",
+    "ref": "Owner design changes list 2026-10-19, Events items 9 to 12 (plan: changed-plan/build-plan-2026-10-19.md, Phase 2)"
   },
   "detail": "Owner list 2026-10-19 item 12. EventsAddBox sits above the hub doors. Any signed-in member sees New event (plus Drafts and Manage once they have an event); a visitor sees Sign up to host and Log in (back to /events/new) with three plain steps. The More in Events chip row stays below it because the nav coverage guard requires every hub body to draw its hub links.",
   "verify": {

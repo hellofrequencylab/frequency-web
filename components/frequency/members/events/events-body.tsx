@@ -482,7 +482,7 @@ export function FqEventsBody({
               {params.q ? ` for “${params.q}”` : ''}
             </span>
           </div>
-          <div className="ev-list ev-list4">
+          <div className="ev-list ev-list3">
             {shown.length === 0 ? (
               <div className="ev-empty">
                 <span className="ic">

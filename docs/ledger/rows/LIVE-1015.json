@@ -6,8 +6,8 @@
   "lane": "live",
   "size": "M",
   "source": {
-    "file": "/mnt/project-files/changed-plan/build-plan-2026-10-19.md",
-    "ref": "Phase 2: Events"
+    "file": "docs/UX-MATURITY-PLAN.md",
+    "ref": "Owner design changes list 2026-10-19, Events items 9 to 12 (plan: changed-plan/build-plan-2026-10-19.md, Phase 2)"
   },
   "detail": "Owner list 2026-10-19 item 10. The library bar keeps the category tabs and facet menus and gains a segmented date picker (Any time, Today, This week, This weekend, This month) in place of the Date menu on desktop, and an active-filter row on every width: the result count, one removable chip per search word and filter, and Clear all. Every control stays a URL, so any view is shareable. Phone keeps the Filters sheet and quick chips (month added).",
   "verify": {

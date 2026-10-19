@@ -309,7 +309,7 @@
    · the map lightbox (.evm-dlg) and its .evm-tile door live in events-map.css (SCAN-998), so the right rail
      can open the same lightbox without loading this sheet.
    · .ev-libbar, the category tabs and the facet and sort menus in one bar that sticks under the toolbar
-     (.ev-tb is 64px tall) while the library scrolls; .ev-list4, the library three across.
+     (.ev-tb is 64px tall) while the library scrolls; .ev-list4, the library four across (the SCAN-975 probe pins it); .ev-list3, the library three across (LIVE-1014).
    Surface, text, ink and accent tokens only, so the light canvas and the night room both read. */
 @layer components {
 [data-design="frequency"] [data-kit="members"] .ay{display:flex;flex-direction:column;gap:18px;margin:8px 0 48px}
@@ -385,9 +385,12 @@
 [data-design="frequency"] [data-kit="members"] .ev-libbar .ev-facets{margin-bottom:0;padding:10px 0 12px}
 [data-design="frequency"] [data-kit="members"] .ev-libbar .ev-bar{margin-bottom:0}
 [data-design="frequency"] [data-kit="members"] .ev-lib{padding-top:20px}
-[data-design="frequency"] [data-kit="members"] .ev-list4{grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="members"] .ev-list4{grid-template-columns:repeat(4,minmax(0,1fr))}
 [data-design="frequency"] [data-kit="members"] .ev-lib-more{flex-wrap:wrap;gap:8px;margin-top:28px}
 [data-design="frequency"] [data-kit="members"] .ev-lib-more .ev-n-tag{font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-faint);margin-left:6px}
+@media (max-width:1280px){
+[data-design="frequency"] [data-kit="members"] .ev-list4{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 @media (max-width:1100px){
 [data-design="frequency"] [data-kit="members"] .ay-top{grid-template-columns:minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .ay-top>.evm-tile{min-height:168px;height:auto}
@@ -420,6 +423,14 @@
 @media (max-width:560px){
 [data-design="frequency"] [data-kit="members"] .ev-list4{grid-template-columns:minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .ay-spot-cover,[data-design="frequency"] [data-kit="members"] .ev-list4 .ev-cover{aspect-ratio:2/1}
+}
+[data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:900px){
+[data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+[data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .ev-list3 .ev-cover{aspect-ratio:2/1}
 }
 /* LIVE-1014 / 1015 / 1016: the Around you line under the feature, the date picker and active chips, the Add an event box. */
 [data-design="frequency"] [data-kit="members"] .ay-line{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin:0}
