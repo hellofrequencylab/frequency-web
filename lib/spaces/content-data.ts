@@ -160,6 +160,16 @@ export type SpacePracticesData = {
 /** One live Circle the SpaceCommunity block lists, from the Space's OWN active circles (the same
  *  reader the public Circles tab uses: listPublicSpaceCircles).
  *  Plain shape so the block imports nothing server-only. */
+/** One chapter of a Network: the parent Space itself (`self`) or one of its member Spaces. */
+type SpaceChapterItem = {
+  id: string
+  slug: string
+  name: string
+  city: string | null
+  tagline: string | null
+  self: boolean
+}
+
 export type SpaceCircleItem = {
   id: string
   slug: string
@@ -270,6 +280,10 @@ export type SpaceContentData = {
    *  same way `booking.href` is, and null in the editor / a member Spotlight (no slug to build from),
    *  where the block simply renders no link. */
   communityHref?: string | null
+  /** The Space's CHAPTERS when it runs some (a Collective or Network parent, ADR-1770): itself first, then
+   *  its active, non-private member Spaces, for the Network website blocks that list or filter by
+   *  chapter. Empty when the Space has no member Spaces; undefined in a member Spotlight. */
+  chapters?: SpaceChapterItem[]
   /** The Space's TEAM — active members with an operator role (editor / moderator / admin), for the Team
    *  block. Empty when the operator has added no team (honest-empty; the block renders nothing). */
   team?: SpaceTeamMember[]
@@ -505,7 +519,7 @@ interface SpaceContentInput {
  *  (which injects the same rows into the blocks) both read through here, so the two never disagree
  *  AND the queries run once per request. React.cache: per-request, primitive-keyed. */
 const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) => {
-  const [aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team] =
+  const [aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team, chapters] =
     await Promise.all([
       getSpaceAbout(spaceId),
       getSpaceReviews(spaceId),
@@ -517,8 +531,9 @@ const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) =
       getSpacePractices(spaceId),
       getSpaceCommunity(spaceId),
       getSpaceTeam(spaceId),
+      getSpaceChapters(spaceId),
     ])
-  return { aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team }
+  return { aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team, chapters }
 })
 
 /** Which live sections currently have real rows, for the pre-populated anchor menu (the chrome shows
@@ -549,7 +564,7 @@ export async function getSpaceContentData(
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
   const slug = input?.slug?.trim() || null
-  const { aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team } =
+  const { aboutShort, reviews, faqs, highlights, stats, events, booking, practices, community, team, chapters } =
     await getSpaceLiveContent(spaceId, slug)
   const identity: SpaceIdentity | undefined = input
     ? {
@@ -574,6 +589,7 @@ export async function getSpaceContentData(
     practices,
     community,
     communityHref: slug ? `/spaces/${slug}/circles` : null,
+    chapters,
     team,
     profile: input?.profile,
     layoutPreset: input?.layoutPreset,
@@ -878,6 +894,34 @@ export async function resolveMemberCards(ids: string[]): Promise<SpaceTeamMember
  *  circle a Space owned on that Space's public Home page (ADR-1094). The status filter and axis 1
  *  both live in the reader now — and both run before the cap, so a hidden circle can no longer eat
  *  a visible one's slot in the six. */
+/** The Space's CHAPTERS for the Network website blocks (ADR-1770): the Space itself first, then every
+ *  active, non-private member Space (spaces.parent_id), by name. One bounded read; [] when the Space runs no
+ *  chapters, so a plain Space pays nothing but the query. FAIL-SAFE to []. */
+const CHAPTERS_CAP = 40
+async function getSpaceChapters(spaceId: string): Promise<SpaceChapterItem[]> {
+  try {
+    const { data } = await createAdminClient()
+      .from('spaces')
+      .select('id, slug, name, city, tagline, parent_id, visibility')
+      .eq('parent_id', spaceId)
+      .eq('status', 'active')
+      .neq('visibility', 'private')
+      .order('name', { ascending: true })
+      .limit(CHAPTERS_CAP)
+    const members = (data ?? []) as Row[]
+    if (members.length === 0) return []
+    const { data: parent } = await createAdminClient().from('spaces').select('id, slug, name, city, tagline').eq('id', spaceId).maybeSingle()
+    const toItem = (r: Row, self: boolean): SpaceChapterItem | null =>
+      typeof r.id === 'string' && typeof r.slug === 'string' && typeof r.name === 'string'
+        ? { id: r.id, slug: r.slug, name: r.name, city: typeof r.city === 'string' && r.city.trim() ? r.city.trim() : null, tagline: typeof r.tagline === 'string' && r.tagline.trim() ? r.tagline.trim() : null, self }
+        : null
+    const own = parent ? toItem(parent as Row, true) : null
+    return [...(own ? [own] : []), ...members.map((r) => toItem(r, false)).filter((r): r is SpaceChapterItem => r !== null)]
+  } catch {
+    return []
+  }
+}
+
 export async function getSpaceCommunity(spaceId: string): Promise<SpaceCircleItem[]> {
   try {
     const circles = await listPublicSpaceCircles(spaceId, {

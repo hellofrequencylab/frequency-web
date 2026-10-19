@@ -312,6 +312,7 @@ export function FqHeader({
             aria-haspopup="dialog"
             aria-expanded={meOn}
             aria-controls="fqm-me"
+            data-photo={profile.avatar_url ? '' : undefined}
             onClick={() => toggle('me')}
           >
             <span className="fqm-header-avatar" style={avatarBg(profile.avatar_url)} aria-hidden />

@@ -1,4 +1,4 @@
--- Regulars: a Space with a physical location runs a stamp card on its door check-in (LIVE-940, ADR-1780).
+-- Regulars: a Space with a physical location runs a stamp card on its door check-in (LIVE-940).
 -- See docs/BUILD-BACKLOG.json for status and docs/LOYALTY.md for the program; this file explains the
 -- schema, it does not track the work.
 --

@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-026",
+  "title": "Every stock email template has a rendered sample in one catalog, and pnpm email:samples mails the whole set to an inbox",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/email-samples/catalog.ts",
+    "ref": "owner 2026-10-19 in the project chat: once the emails are redesigned, send every stock template to danieltyack@gmail.com; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-19 from the email program. THE CONSEQUENCE: there was no list of the stock templates and no way to see the set in a mail client. lib/email.ts holds thirty-odd senders and builders, receipts render through React Email, block campaigns through the Studio shell, plain campaigns through plainTextEmail and replies through the conversation wrapper; reading the set meant reading the senders, and a new transactional email could ship with nobody looking at it rendered. THE FIX: lib/email-samples/catalog.ts lists every stock template as a SampleSpec with fixture data (a builder returns its payload; a sender is called for real and its enqueueEmail captured by the test's outbox mock), plus a showcase block email placing every palette block and the three data cards. lib/email-samples/catalog.test.ts pins that every sample renders, prints no fixture gap, carries no em dash or emoji in the subject, and that every commercial template carries the postal line and an unsubscribe link; with EMAIL_SAMPLES_OUT it writes the rendered set. scripts/email-samples.mjs (pnpm email:samples --to <inbox> [--only ids] [--dry]) renders through that test and posts each email to Resend's REST API with EMAIL_FROM, spaced under the rate limit; nothing is queued. The probe reads every send*Email / build*Email export in lib/email.ts and fails when the catalog has no sample for one.\n\nBuilt 2026-10-19: 41 stock templates in lib/email-samples/catalog.ts, pinned by catalog.test.ts; pnpm email:samples mails the set through Resend; ADR-1756",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-samples.mjs",
+    "note": "PASS 2026-10-19: the probe reads every send*Email and build*Email export in lib/email.ts against the catalog, the five other shells the catalog must render, the showcase's three data cards, the test's outbox mock and EMAIL_SAMPLES_OUT seam, the sender script and the package script."
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
