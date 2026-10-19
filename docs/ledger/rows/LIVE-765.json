@@ -1,7 +1,0 @@
-{
-  "id": "LIVE-765",
-  "wave": "W7",
-  "append": {
-    "detail": "2026-10-16 (SCAN-982): cross-listing-store now also admits an accepted Collective partner Space (owned by someone else) through livePartnerSpaceIds in lib/collective/partners-live-store.ts. scripts/live-765-probe.mjs adds that module and its pure dependencies (partners.ts, member-spaces.ts) to the set it executes for real, so the probe keeps running the shipped store instead of a stubbed import. No assertion changed."
-  }
-}

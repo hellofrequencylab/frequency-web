@@ -1,7 +1,0 @@
-{
-  "id": "DEF-ETSY",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY; the premise in the evidence (\"not started: no shipping/delivery model, no faceted discovery, no multi-seller cart\") is stale. In the tree: P3 shipping partly (lib/commerce/shipping.ts SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession collect a Stripe shipping address at checkout; no seller shipping profiles or rate tables, no digital delivery); P5 partly (lib/commerce/checkout.ts and funds-flow.ts carry the split funds flow, two or more sellers in one cart settle as one platform charge with transfer_group and per-seller transfers from commerce_order_transfers, ADR-1731 reuses it for ticket splits; there is no persistent cart table, zero commerce_carts/cart_items hits); P6 partly (lib/commerce/fulfilment-state.ts FULFILLMENT_LADDER none/pending/shipped/delivered/completed with carrier + tracking in fulfilment.ts, lib/commerce/disputes.ts, cancellation.ts; no order-scoped buyer-seller messaging thread). Not started: P4 faceted discovery and ranking (app/(main)/market/page.tsx has no facets; the only facet hits are app catalog facets in lib/apps/app-registry.tsx), P7 promotions and discount codes (zero hits) and tax posture / 1099 thresholds (zero hits under lib/ and migrations)."
-  }
-}

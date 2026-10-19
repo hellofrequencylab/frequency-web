@@ -102,11 +102,13 @@ jobs:
         env:
           AUTHOR: ${{ steps.pr.outputs.author }}
           ACTOR: ${{ github.actor }}
+          SHA: ${{ steps.pr.outputs.sha }}
         run: |
           set -euo pipefail
-          # The latest review per reviewer decides; an APPROVED from anyone but the author counts.
+          # The latest review per reviewer ON THE HEAD COMMIT decides; an APPROVED from anyone but the
+          # author counts. An approval of an earlier commit does not vouch for SQL pushed after it (SCAN-1002).
           approved=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews?per_page=100" \
-            --jq '[.[] | select(.user.login != "'"$AUTHOR"'")] | group_by(.user.login) | map(last) | map(select(.state == "APPROVED")) | length')
+            --jq '[.[] | select(.user.login != "'"$AUTHOR"'") | select(.commit_id == "'"$SHA"'")] | group_by(.user.login) | map(last) | map(select(.state == "APPROVED")) | length')
           if [ "${approved:-0}" -gt 0 ]; then
             echo "PR #$PR is approved by $approved reviewer(s) other than its author."; exit 0
           fi

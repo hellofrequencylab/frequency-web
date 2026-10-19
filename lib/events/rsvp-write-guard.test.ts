@@ -84,3 +84,42 @@ describe('event_rsvps member write guard (SCAN-696)', () => {
     expect(tap).toMatch(/plus_ones = 500[\s\S]*'23514'/)
   })
 })
+
+describe('event_rsvps member write guard (SCAN-844)', () => {
+  const files = readdirSync('supabase/migrations')
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+  const latest = [...files].reverse().find((f) => {
+    const s = readFileSync(`supabase/migrations/${f}`, 'utf8')
+    return f > '20270345011900' && /guard_event_rsvp_member_write/.test(s) && /rsvp_requires_approval/.test(s)
+  })
+  const sql = latest ? readFileSync(`supabase/migrations/${latest}`, 'utf8') : ''
+  const start = sql.indexOf('create or replace function public.guard_event_rsvp_member_write')
+  const fn = start >= 0 ? sql.slice(start, sql.indexOf('$$;', start)) : ''
+  const insertBranch = fn.slice(fn.indexOf("tg_op = 'INSERT'"), fn.indexOf('-- UPDATE:'))
+
+  it('ships a later migration that keeps the trigger INVOKER and reads the approval flag on insert', () => {
+    expect(latest, 'SCAN-844: a member can insert an admitted RSVP on an approval-gated event').toBeTruthy()
+    expect(fn).toMatch(/\nsecurity invoker\n/)
+    expect(fn).not.toMatch(/security definer/)
+    expect(insertBranch).toMatch(/private\.event_rsvp_requires_approval\(new\.event_id\)/)
+    expect(insertBranch).toMatch(/new\.approval_status is distinct from 'pending'/)
+  })
+
+  it('reads the withheld column through a definer helper, so the INVOKER trigger does not fail open', () => {
+    expect(sql).toMatch(
+      /create or replace function private\.event_rsvp_requires_approval\(p_event_id uuid\)[\s\S]*security definer/
+    )
+    expect(sql).toMatch(/revoke all on function private\.event_rsvp_requires_approval\(uuid\) from public, anon, authenticated/)
+    expect(sql).toMatch(/grant execute on function private\.event_rsvp_requires_approval\(uuid\) to authenticated/)
+    expect(sql).toMatch(/coalesce\([\s\S]*rsvp_requires_approval[\s\S]*true/)
+  })
+
+  it('pgTAP refuses delete-then-insert none on a gated event, and still admits none on an open event', () => {
+    const tap = readFileSync(PGTAP, 'utf8')
+    expect(tap).toMatch(
+      /delete from public\.event_rsvps[\s\S]*approval_status\)[\s\S]*'none'[\s\S]*'42501'[\s\S]*re-insert an admitted seat on an approval-gated event/
+    )
+    expect(tap).toMatch(/does not require approval/)
+  })
+})

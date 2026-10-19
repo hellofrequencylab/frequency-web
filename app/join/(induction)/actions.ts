@@ -775,6 +775,9 @@ export async function joinEmailHasAccount(email: string): Promise<{ exists: bool
   const h = await headers()
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
   if (!(await rateLimitOk('join:email-check', ip, 30, '10 m', { whenUnconfigured: 'allow' }))) return { exists: false }
+  // SCAN-1007: and per mailbox, as sign-in does (signin:email, 4 per 10 minutes), so a walker rotating IPs
+  // still gets only a handful of silent answers about any one address.
+  if (!(await rateLimitOk('join:email-check:mail', address, 4, '10 m', { whenUnconfigured: 'allow' }))) return { exists: false }
   const admin = createAdminClient()
   for (let page = 1; page <= 50; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })

@@ -40,6 +40,11 @@ function readClaim(data: unknown): { added: string[]; completing: boolean } {
 // 20270345011800) selects the row FOR UPDATE, stamps only what is not yet stamped and returns
 // {added, completing}: the exact set THIS call claimed. The Gems are paid for that set only, so
 // the second overlapping call gets added=[] and pays nothing.
+//
+// 2026-10-19 (SCAN-845): the record itself is no longer member-writable. A member who PATCHed
+// meta.founder={} (or merged / removed the key) made the next claim look like a first claim.
+// prevent_founder_meta_self_edit (migration 20270346009500) refuses a change to that key unless
+// the caller is service_role, which this action is.
 
 // All tunable in lib/onboarding/founder-config.ts (the single edit point).
 const PER_TASK_GEMS = FOUNDER_REWARD.perTaskGems
