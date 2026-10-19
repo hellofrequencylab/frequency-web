@@ -23,7 +23,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
-import { wrapEmailHtml, textToInnerHtml } from '@/lib/comms/email-template'
+import { buildRenewalNoticeEmail, renewalTouchCopy } from '@/lib/billing/renewal-notice-email'
 import { agreementsDue, stampAgreementTouch, type ManualAgreement } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
@@ -54,45 +54,6 @@ function dueDateLabel(paidThrough: string): string {
   })
 }
 
-/** The per-touch copy. Plain voice, no urgency theater, no em dashes (CONTENT-VOICE §10): the
- *  reader learns the date, the locked rate, and that the crew handles the rest. */
-function touchCopy(
-  touch: Touch,
-  planLabel: string,
-  spaceName: string,
-  dateLabel: string,
-  rateLabel: string,
-): { subject: string; inapp: string; body: string[] } {
-  if (touch === 'reminder_30') {
-    return {
-      subject: `Your ${planLabel} plan renewal is coming up`,
-      inapp: `Your ${planLabel} plan renews on ${dateLabel}. Your rate stays locked at ${rateLabel}.`,
-      body: [
-        `The ${planLabel} plan for ${spaceName} renews on ${dateLabel}.`,
-        `Your rate stays locked at ${rateLabel}. The crew will reach out about payment closer to the date. Nothing you need to do today.`,
-      ],
-    }
-  }
-  if (touch === 'reminder_7') {
-    return {
-      subject: `One week until your ${planLabel} plan renews`,
-      inapp: `Your ${planLabel} plan renews on ${dateLabel}, one week out. Your locked rate: ${rateLabel}.`,
-      body: [
-        `The ${planLabel} plan for ${spaceName} renews on ${dateLabel}, one week from now.`,
-        `Your locked rate is ${rateLabel}. If payment is already arranged with the crew, you are all set. Questions? Just reply.`,
-      ],
-    }
-  }
-  return {
-    subject: `Your ${planLabel} plan payment is due`,
-    inapp: `Payment for your ${planLabel} plan came due on ${dateLabel}. Reach out to the crew to settle up.`,
-    body: [
-      `Payment for the ${planLabel} plan on ${spaceName} came due on ${dateLabel}.`,
-      `Your rate stays locked at ${rateLabel}. Reach out to the crew to settle up and everything keeps running as usual.`,
-    ],
-  }
-}
-
 type SpaceRow = { id: string; name: string | null; slug: string | null; owner_profile_id: string | null }
 
 /** One agreement's fan-out: in-app rows for the owner + active admins, email to the owner. Never
@@ -113,7 +74,7 @@ async function notifyAgreement(agreement: ManualAgreement, touch: Touch): Promis
   const spaceName = space.name ?? 'your space'
   const dateLabel = dueDateLabel(agreement.paidThrough)
   const rateLabel = agreement.label ?? formatAgreementRate(agreement.amountCents, agreement.interval)
-  const copy = touchCopy(touch, planLabel, spaceName, dateLabel, rateLabel)
+  const copy = renewalTouchCopy(touch, planLabel, spaceName, dateLabel, rateLabel)
 
   // Recipients: the owner plus every ACTIVE admin (the people the billing surface already serves).
   const recipients = new Set<string>()
@@ -172,22 +133,16 @@ async function notifyAgreement(agreement: ManualAgreement, touch: Touch): Promis
         if (user?.email) {
           const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
           const billingUrl = space.slug ? `${appUrl}/spaces/${space.slug}/settings/billing` : appUrl
-          const greeting = profile.display_name ? `Hi ${profile.display_name},` : 'Hi,'
-          const paragraphs = copy.body
-          // The SHARED branded wrapper (header, footer, frequencylocal.com) every Frequency email
-          // rides, rather than a hand-rolled document: it owns the type and colour so this body
-          // carries no literal styling of its own, and the notice looks like the rest of our mail.
-          const inner = [greeting, ...paragraphs]
-            .map((p) => `<p>${textToInnerHtml(p)}</p>`)
-            .join('')
-          const cta = `<p><a href="${billingUrl}">View plan and billing</a></p>`
-          const why = `<p>${textToInnerHtml(`You are receiving this because you run ${spaceName} on Frequency.`)}</p>`
-          await enqueueEmail({
+          await enqueueEmail(buildRenewalNoticeEmail({
             to: user.email,
-            subject: copy.subject,
-            html: wrapEmailHtml(`${inner}${cta}${why}`),
-            text: `${greeting}\n\n${paragraphs.join('\n\n')}\n\nView plan and billing: ${billingUrl}\n\nYou are receiving this because you run ${spaceName} on Frequency.\n`,
-          })
+            touch,
+            planLabel,
+            spaceName,
+            dateLabel,
+            rateLabel,
+            greetingName: profile.display_name,
+            billingUrl,
+          }))
           delivered = true
         }
       }

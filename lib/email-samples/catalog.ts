@@ -41,6 +41,16 @@ import {
   sendWelcomeEmail,
 } from '@/lib/email'
 import { receiptHtml, receiptText, type ReceiptContent } from '@/lib/billing/receipt-email'
+// EMAIL-027: the stock emails built outside lib/email.ts, each through its exported builder.
+import { buildContactLeadEmail } from '@/lib/crm/lead-notify'
+import { promotedSeatHtml, promotedSeatText, PROMOTED_SEAT_LINE } from '@/lib/events/waitlist-notify'
+import { briefHtml, briefText, ownerBriefEmailHtml } from '@/lib/ai/vera/owner-brief'
+import type { TodayCard } from '@/lib/ai/vera/today'
+import { buildRenewalNoticeEmail } from '@/lib/billing/renewal-notice-email'
+import { saleEmailHtml, saleEmailText } from '@/lib/billing/ticket-sale-notify'
+import { tipEmailHtml, tipEmailText } from '@/lib/billing/tips-notify'
+import { shippedNoticeContent } from '@/lib/commerce/shipped-notice'
+import { actorEmailMessage } from '@/lib/automations'
 import { compileEmailDoc, plainTextEmail } from '@/lib/email-studio/shell'
 import { DEFAULT_EMAIL_COLORS } from '@/lib/email-studio/render'
 import { renderCampaignHtml } from '@/lib/spaces/campaign-html'
@@ -64,7 +74,7 @@ export interface SampleSpec {
   /** Stable id, also the filename stem when the catalog is written out. */
   id: string
   /** The family the template belongs to, for the index and the sample subject. */
-  group: 'Welcome and sign-up' | 'Events' | 'Tickets and bookings' | 'Digests' | 'Money' | 'Spaces and campaigns' | 'Conversations' | 'Community'
+  group: 'Welcome and sign-up' | 'Events' | 'Tickets and bookings' | 'Digests' | 'Money' | 'Spaces and campaigns' | 'Conversations' | 'Community' | 'Owner notices'
   /** Which production sender the template goes out as (default `system`). */
   sender?: SampleSender
   /** Returns the payload, or calls a sender whose enqueueEmail the test captures (then returns nothing). */
@@ -156,6 +166,14 @@ const SPACE_BRAND = {
 
 const REPLY_BRAND = { name: 'North Light Yoga', logoUrl: null, accent: null, url: `${SITE}/spaces/north-light` }
 
+const UNSUB = `${SITE}/unsubscribe/t`
+
+/** Two Today cards for the owner brief: the fields the brief prints, with the scoring fields it ignores stubbed. */
+const BRIEF_CARDS: TodayCard[] = [
+  { contactId: 'c1', subjectProfileId: PROFILE, name: 'Maya', context: 'At risk', whyNow: 'Three swims in a row, then nothing for a month.', actionDraft: 'Send a two-line note asking if Tuesday still works.', playbookId: 'win-back', playbookName: 'Win back · Suggest', autonomyTier: 'suggest', score: 0.8, confidence: 'high', topSignals: ['No visit in 31 days'] } as unknown as TodayCard,
+  { contactId: 'c2', subjectProfileId: null, name: 'Jon', context: 'New', whyNow: 'Signed up on Friday and has not picked a circle.', actionDraft: 'Point him at the beginner mornings.', playbookId: 'welcome', playbookName: 'Welcome · Suggest', autonomyTier: 'suggest', score: 0.6, confidence: 'medium', topSignals: ['Joined 3 days ago'] } as unknown as TodayCard,
+]
+
 export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── Welcome and sign-up ──────────────────────────────────────────────────────────────────────────────
   { id: 'welcome', group: 'Welcome and sign-up', run: () => sendWelcomeEmail({ to: TO, displayName: 'Maya', inviterName: 'Jordan' }) },
@@ -178,6 +196,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'event-cancelled', group: 'Events', run: () => sendEventCancelledEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, eventUrl: EVENT_URL, refunded: true }) },
   { id: 'guest-event-cancelled', group: 'Events', run: () => sendGuestEventCancelledEmail({ to: TO, guestName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, eventUrl: EVENT_URL, refunded: false }) },
   { id: 'made-it', group: 'Events', run: () => sendMadeItEmail({ to: TO, name: 'Maya', eventTitle: 'Sunrise sound bath', eventUrl: EVENT_URL, madeItUrl: `${EVENT_URL}/made-it`, next: { title: 'Full moon swim', whenAbsolute: 'Friday, November 20, 6:30 PM PT', url: `${SITE}/events/full-moon-swim`, shareUrl: `${SITE}/events/full-moon-swim?share=1` }, joinUrl: `${SITE}/sign-up`, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
+  { id: 'promoted-seat', group: 'Events', run: () => { const p = { recipientName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, location: 'Moonlight Beach, Encinitas', hostName: 'Jordan', circleName: 'Dawn swimmers', eventUrl: EVENT_URL, icsUrl: `${EVENT_URL}.ics`, googleCalUrl: 'https://calendar.google.com/calendar/r/eventedit?text=Sunrise+sound+bath', unsubscribeUrl: UNSUB }; return { to: TO, subject: `${PROMOTED_SEAT_LINE} Sunrise sound bath`, html: promotedSeatHtml(p), text: promotedSeatText(p) } } },
   { id: 'event-claim-invite', group: 'Events', run: () => sendEventClaimInviteEmail({ to: TO, organizerName: 'Jordan', posterName: 'Jordan', eventTitle: 'Sunrise sound bath', whenLine: WHEN, location: 'Moonlight Beach, Encinitas', claimUrl: `${SITE}/claim/abc123`, eventUrl: EVENT_URL }) },
 
   // ── Tickets and bookings ─────────────────────────────────────────────────────────────────────────────
@@ -195,6 +214,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
 
   // ── Money ────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'receipt-order', group: 'Money', run: async () => ({ to: TO, subject: 'Your order from North Light Yoga', html: await receiptHtml(ORDER_RECEIPT), text: receiptText(ORDER_RECEIPT) }) },
+  { id: 'order-shipped', group: 'Money', run: async () => { const { subject, content } = shippedNoticeContent({ greetingName: 'Maya', seller: 'North Light Yoga', summary: 'Cedar candle x2', first: 'Cedar candle', fulfilment: { carrier: 'USPS', tracking: '9400 1000 0000 0000 0000 00', trackingUrl: 'https://tools.usps.com/go/TrackConfirmAction?tLabels=9400100000000000000000', shippedAt: '2026-10-19T17:00:00Z' }, ordersUrl: `${SITE}/orders` }); return { to: TO, subject, html: await receiptHtml(content), text: receiptText(content) } } },
   { id: 'receipt-donation', group: 'Money', run: async () => ({ to: TO, subject: 'Thank you for giving to Tidepool Trust', html: await receiptHtml(DONATION_RECEIPT), text: receiptText(DONATION_RECEIPT) }) },
 
   // ── Spaces and campaigns ─────────────────────────────────────────────────────────────────────────────
@@ -218,5 +238,13 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'dispatch-notification', group: 'Community', run: () => sendDispatchNotificationEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, authorName: 'Jordan', dispatchTitle: 'Notes from the water', excerpt: 'Three mornings, one tide chart, and a new favorite spot.', dispatchUrl: `${SITE}/dispatches/notes-from-the-water` }) },
   { id: 'outreach-note', group: 'Community', run: () => sendOutreachNoteEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, authorName: 'Jordan', body: 'We missed you at the last two swims. The water is warm and the group asked about you. Come Tuesday?' }) },
   { id: 'housing-match', group: 'Community', run: () => buildHousingMatchEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, counterpartName: 'Sam', kind: 'listing', city: 'Encinitas', matchPath: '/housing/matches/abc123' }) },
+  { id: 'automation-note', group: 'Community', run: () => { const out = actorEmailMessage('Hi Maya,\n\nYou made it to three swims this month. The group noticed, and so did we.\n\nSee you at the water,\nThe Frequency team', UNSUB); return { to: TO, subject: 'Three swims this month', html: out.html, text: out.text } } },
   { id: 'plan-share-requested', group: 'Community', run: () => buildPlanShareEmail({ to: TO, recipientName: 'Jordan', recipientProfileId: PROFILE, moment: 'requested', otherSpaceName: 'Tidepool Trust', planTitle: 'Winter beach cleanups', calendarPath: '/spaces/north-light/settings/calendar' }) },
+  // ── Owner notices (EMAIL-027: the stock emails built outside lib/email.ts) ──────────────────────────
+  { id: 'contact-lead', group: 'Owner notices', run: () => buildContactLeadEmail({ to: TO, ownerName: 'Jordan', who: 'Maya Chen', spaceName: SAMPLE_SPACE_NAME, preview: 'Hi, is the Tuesday sunrise session OK for a beginner? I can swim but I have never done open water.', optedIn: true, keptOutOfCrm: false, crmUrl: `${SITE}/spaces/north-light/crm`, replyTo: 'maya@example.com' }) },
+  { id: 'ticket-sale-host', group: 'Owner notices', run: () => { const c = { hostName: 'Jordan', buyerName: 'Maya', countLabel: '2 tickets', eventTitle: 'Sunrise sound bath', tierName: 'General', grossLabel: '$40', feeLabel: '$2.40', feeIsZero: false, overage: null, eventUrl: EVENT_URL }; return { to: TO, subject: 'You sold 2 tickets to Sunrise sound bath', html: saleEmailHtml(c), text: saleEmailText(c) } } },
+  { id: 'tip-received', group: 'Owner notices', run: () => { const p = { recipientName: 'Jordan', tipperName: 'Maya', amount: '$10', note: 'Thank you for the extra time after class.' }; return { to: TO, subject: 'Maya sent you a $10 tip', html: tipEmailHtml(p), text: tipEmailText(p) } } },
+  { id: 'renewal-reminder', group: 'Owner notices', run: () => buildRenewalNoticeEmail({ to: TO, touch: 'reminder_30', planLabel: 'Collective', spaceName: SAMPLE_SPACE_NAME, dateLabel: 'November 19, 2026', rateLabel: '$99 a month', greetingName: 'Jordan', billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
+  { id: 'renewal-overdue', group: 'Owner notices', run: () => buildRenewalNoticeEmail({ to: TO, touch: 'overdue', planLabel: 'Collective', spaceName: SAMPLE_SPACE_NAME, dateLabel: 'October 19, 2026', rateLabel: '$99 a month', greetingName: null, billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
+  { id: 'owner-brief', group: 'Owner notices', run: () => { const intro = 'Two people are worth a note today, and the rest can wait.'; return { to: TO, subject: 'Your Frequency brief: 2 moves today', html: ownerBriefEmailHtml(briefHtml(intro, BRIEF_CARDS, 3), UNSUB), text: briefText(intro, BRIEF_CARDS, 3) + `\nUnsubscribe or manage emails: ${UNSUB}\n` } } },
 ]
