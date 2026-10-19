@@ -6,6 +6,7 @@
 import { getMyProfileId } from '@/lib/auth'
 import { captureNode } from '@/lib/engagement/capture'
 import type { LoyaltyVisitOutcome } from '@/lib/loyalty/program'
+import type { HuntProgress } from '@/lib/loyalty/hunts'
 
 export interface ClaimResult {
   ok: boolean
@@ -14,6 +15,8 @@ export interface ClaimResult {
   offerTitle?: string | null
   /** The member's Regulars card after a Space check-in (LIVE-940). */
   loyalty?: LoyaltyVisitOutcome | null
+  /** Live hunts this check-in moved (LIVE-941). */
+  hunts?: HuntProgress[]
 }
 
 export async function claimNode(
@@ -43,5 +46,6 @@ export async function claimNode(
     zapsAwarded: result.zapsAwarded,
     offerTitle: result.offerTitle,
     loyalty: result.loyalty ?? null,
+    hunts: result.hunts ?? [],
   }
 }

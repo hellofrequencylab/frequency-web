@@ -322,3 +322,4 @@ validate_collective_partner internal
 add_network_central_admin internal
 clear_network_tools_on_space_change internal
 loyalty_record_visit internal
+loyalty_hunt_progress internal

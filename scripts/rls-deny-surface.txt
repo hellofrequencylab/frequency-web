@@ -143,5 +143,8 @@ recording_attachments                carrier    -
 # (scripts/rls-deny-all.txt); the capture pipeline writes the stamps and the owner gate writes the rest.
 space_loyalty_programs               carrier    -
 loyalty_rewards                      carrier    -
+# loyalty_hunts.reward_value_cents (LIVE-941) is the same stated worth on a hunt's finish reward; the reward
+# itself is minted as a loyalty_rewards row. Service-role-only (scripts/rls-deny-all.txt).
+loyalty_hunts                        carrier    -
 # push_subscriptions matched on the word "subscription". It holds a Web Push endpoint.
 push_subscriptions                   carrier    -
