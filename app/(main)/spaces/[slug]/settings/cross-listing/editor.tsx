@@ -20,7 +20,7 @@ export function CrossListingEditor({spaceId,subjects,rows,targets,canRequest=tru
     <div className="space-y-3">
       <label htmlFor="listing-subject">Journey or Circle</label>
       <Select id="listing-subject" value={subject} onChange={e=>setSubject(e.target.value)} disabled={pending}><option value="">Choose a published Journey or listed Circle</option>{subjects.map(s=><option key={`${s.kind}:${s.id}`} value={`${s.kind}:${s.id}`}>{s.label} ({s.kind})</option>)}</Select>
-      <label htmlFor="listing-target">Collective or member Space</label>
+      <label htmlFor="listing-target">Collective, Network or member Space</label>
       <Select id="listing-target" value={target} onChange={e=>setTarget(e.target.value)} disabled={pending}><option value="">Choose a Space</option>{targets.map(s=><option key={s.id} value={s.id}>{s.name ?? s.slug}</option>)}</Select>
       <Button disabled={pending || !canRequest || !selected || !target} onClick={()=>selected && run(()=>requestCollectiveCrossListing(selected.kind,selected.id,target))}>Request listing</Button>
       {!canRequest && <p>New listings need an active Collective or member Space with a visible profile. You can still remove existing listings.</p>}
