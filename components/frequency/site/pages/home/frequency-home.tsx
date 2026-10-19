@@ -6,7 +6,7 @@
 //   03 Story      four chapters per side (Find, Show up, Come back, Pass it on), with "Live this week"
 //   04 Features   six ways to be in the room / six things you can make
 //   05 Weave      how both sides' steps thread together (client island, ./weave.tsx)
-//   03y Beta      the beta announcement band: free until January 1, founding members, one Join the beta button
+//   03y Beta      the beta announcement band: free until December 1, founding members, one Join the beta button
 //   06 Manifesto  "Sacred, not serious."
 //   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
 //
@@ -45,7 +45,9 @@ const SIG = 'Gather like it matters.'
 /** When the beta ends, as the page says it. No beta-end constant exists in lib/ (BETA_PRICING_ENDS_AT is
  *  the pricing window that closed on 2026-08-17, a different thing), so the owner's date lives here,
  *  once, for the pill, the band and the closer. */
-const BETA_UNTIL = 'January 1'
+// Owner ruling 2026-10-19 (SCAN-1017): the whole site says December 1, the day the beta_grace window
+// closes and the help centre already names. BETA_ENDS_LABEL (lib/core/beta-notices.ts) says the same.
+const BETA_UNTIL = 'December 1'
 const BETA_CTA = 'Join the beta'
 
 /** The fold's floating photos: [file, data-d depth, position + size]. Verbatim from the design. */

@@ -15,7 +15,7 @@
 // THE INVITE NO LONGER MENTIONS A BETA RATE (ADR-1060). It used to read "to hold the beta rate and
 // add the badge", which was true only while the beta pricing window was open. The owner closed that
 // window on 2026-08-17 ("scratch the beta pricing and just charge full price"), and this notice keys
-// off the SEPARATE feature-gate grace window (`beta_grace`, still ending September 1), so it kept
+// off the SEPARATE feature-gate grace window (`beta_grace`, ending December 1), so it kept
 // rendering an offer the checkout would refuse. The badge half was always the real invitation and it
 // is still true, so that is what is left.
 //

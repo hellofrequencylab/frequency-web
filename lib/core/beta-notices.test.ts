@@ -16,7 +16,7 @@ const noEmDash = (s: string) => expect(s.includes('—')).toBe(false)
 
 describe('beta-notices copy rule', () => {
   it('exposes the launch date label', () => {
-    expect(BETA_ENDS_LABEL).toMatch(/September/)
+    expect(BETA_ENDS_LABEL).toMatch(/December/)
   })
 
   it('betaLeadLine reflects the flag and names the date when open', () => {
