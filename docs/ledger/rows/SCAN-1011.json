@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-1011",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/comms/space-inbox-address.ts','utf8');const a=fs.readFileSync('app/(main)/spaces/[slug]/settings/email/inbox-actions.ts','utf8');if(/state\\\\.eq\\\\.failed,updated_at\\\\.gte/.test(s)){console.error('SCAN-1011: failed window still uses the or-filter that restamping refreshed');process.exit(1)}if(!s.includes(\\\".eq('state', 'failed')\\\")||!s.includes(\\\".gte('updated_at'\\\")){console.error('SCAN-1011: failed rows are not listed on a frozen updated_at window');process.exit(1)}if(!s.includes('isFrozenFailedRetry(row.state, state)')){console.error('SCAN-1011: check still saves a failed-to-failed row');process.exit(1)}if(!a.includes('restartFailureWindow: true')){console.error('SCAN-1011: Set up my address does not restamp the failure window');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1757). PREMISE RE-TESTED on main after SCAN-864: listSpaceInboxAddressesToFinish still used state.eq.failed,updated_at.gte, and saveRow restamped updated_at on every check and provision, so a failed inbox address never left the 24h window. FIX: a failed-to-failed re-read does not write; the first failure stamp is the clock. The list loads pending first, then failed rows inside the window. Set up my address passes restartFailureWindow so the owner button opens a fresh 24 hours. No migration."
+  }
+}

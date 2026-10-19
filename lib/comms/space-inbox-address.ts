@@ -80,6 +80,7 @@ type Result = { data: Record<string, unknown> | null; error: { code?: string; me
 type ListResult = { data: Record<string, unknown>[] | null; error: { code?: string; message?: string } | null }
 type Query = {
   select(s: string): Query; eq(k: string, v: unknown): Query; ilike(k: string, v: string): Query; limit(n: number): Query
+  gte(k: string, v: unknown): Query
   or(filters: string): Query; order(k: string, opts?: Record<string, unknown>): Query
   insert(v: Record<string, unknown>): Query; update(v: Record<string, unknown>): Query
   upsert(v: Record<string, unknown>, opts?: Record<string, unknown>): Query
@@ -112,18 +113,43 @@ export async function readSpaceInboxAddress(spaceId: string): Promise<SpaceInbox
 }
 
 /**
- * The rows the verify cron still owes a finish: every `pending` row, and every `failed` row updated
- * since `failedSince` (a transient provider refusal retries; an old failure waits for the owner).
- * Oldest `updated_at` first, at most `limit`. Throws on a read fault so the cron can log it.
+ * The rows the verify cron still owes a finish: every `pending` row first (they still restamp
+ * `updated_at` so the tail is the next run's head), then every `failed` row whose `updated_at` is
+ * at or after `failedSince`. A failed-to-failed save does not restamp, so that stamp is the first
+ * failure and an older one waits for the owner. Pending first so frozen failed rows cannot fill
+ * the budget. Throws on a read fault so the cron can log it.
  */
 export async function listSpaceInboxAddressesToFinish(opts: { limit: number; failedSince: string }): Promise<SpaceInboxAddressRow[]> {
+  const pending = await listInboxRowsByState('pending', opts.limit)
+  const remaining = Math.max(0, opts.limit - pending.length)
+  const failed = remaining === 0 ? [] : await listFailedInboxRows(opts.failedSince, remaining)
+  return [...pending, ...failed]
+}
+
+async function listInboxRowsByState(state: 'pending', limit: number): Promise<SpaceInboxAddressRow[]> {
   const { data, error } = await table('space_inbox_addresses')
     .select('*')
-    .or(`state.eq.pending,and(state.eq.failed,updated_at.gte.${opts.failedSince})`)
+    .eq('state', state)
     .order('updated_at', { ascending: true })
-    .limit(opts.limit)
+    .limit(limit)
   if (error) throw new Error(error.message ?? 'Space inbox address list is unavailable.')
   return (data ?? []) as unknown as SpaceInboxAddressRow[]
+}
+
+async function listFailedInboxRows(failedSince: string, limit: number): Promise<SpaceInboxAddressRow[]> {
+  const { data, error } = await table('space_inbox_addresses')
+    .select('*')
+    .eq('state', 'failed')
+    .gte('updated_at', failedSince)
+    .order('updated_at', { ascending: true })
+    .limit(limit)
+  if (error) throw new Error(error.message ?? 'Space inbox address list is unavailable.')
+  return (data ?? []) as unknown as SpaceInboxAddressRow[]
+}
+
+/** A failed-to-failed write must not move `updated_at`, or the 24h cron window never ends (SCAN-1011). */
+function isFrozenFailedRetry(previous: SpaceInboxState | undefined, next: SpaceInboxState): boolean {
+  return previous === 'failed' && next === 'failed'
 }
 
 async function readSpace(spaceId: string): Promise<{ slug: string; name: string; brand_name: string | null; owner_profile_id: string | null } | null> {
@@ -154,7 +180,10 @@ async function saveRow(spaceId: string, patch: Record<string, unknown>): Promise
  * Set up (or resume setting up) the Space's address. Idempotent: an existing provider domain is reused,
  * DNS writes are repeatable, and a verified address is simply reported. Never throws.
  */
-export async function provisionSpaceInboxAddress(spaceId: string): Promise<SpaceInboxResult> {
+export async function provisionSpaceInboxAddress(
+  spaceId: string,
+  opts?: { restartFailureWindow?: boolean },
+): Promise<SpaceInboxResult> {
   try {
     const root = spaceInboxRoot()
     if (!spaceInboxAddressesEnabled() || !root) return { ok: false, message: UNAVAILABLE }
@@ -200,7 +229,17 @@ export async function provisionSpaceInboxAddress(spaceId: string): Promise<Space
     }
 
     // 2) Remember the provider id BEFORE touching DNS, so a DNS fault never loses the domain we created.
-    const saved = await saveRow(spaceId, { domain, local_part: SPACE_INBOX_LOCAL_PART, provider_domain_id: providerId, state: providerState, dns_records: zoneRecords })
+    //    A cron failed-to-failed retry must not restamp updated_at (SCAN-1011). The owner button passes
+    //    restartFailureWindow so Set up my address opens a fresh 24 hours.
+    const restartFailureWindow = opts?.restartFailureWindow === true
+    const skipFailedStamp = !restartFailureWindow
+      && !!existing
+      && isFrozenFailedRetry(existing.state, providerState)
+      && existing.domain === domain
+      && existing.provider_domain_id === providerId
+    const saved = skipFailedStamp
+      ? existing
+      : await saveRow(spaceId, { domain, local_part: SPACE_INBOX_LOCAL_PART, provider_domain_id: providerId, state: providerState, dns_records: zoneRecords })
     if (!saved) return { ok: false, message: 'Your Space address could not be saved. Try again.' }
 
     // 3) The records into the apex zone. Repeatable; a record already there counts as written. The
@@ -209,10 +248,11 @@ export async function provisionSpaceInboxAddress(spaceId: string): Promise<Space
     const dns = await upsertZoneDnsRecords(zone, zoneRecords.map(r => ({ type: r.type, name: r.name, value: r.value, mxPriority: r.mxPriority })))
     if (!dns.ok) {
       console.warn('[space-inbox] zone DNS write failed', { spaceId, zone, error: dns.error })
-      await saveRow(spaceId, { dns_written_at: null })
+      if (restartFailureWindow || existing?.dns_written_at != null) await saveRow(spaceId, { dns_written_at: null })
       return { ok: false, message: 'Your Space address is saved, but its records could not be written yet. It will be tried again on its own.' }
     }
-    await saveRow(spaceId, { dns_written_at: new Date().toISOString() })
+    if (!saved.dns_written_at) await saveRow(spaceId, { dns_written_at: new Date().toISOString() })
+    else if (restartFailureWindow) await saveRow(spaceId, { dns_written_at: saved.dns_written_at })
 
     // 4) Ask the provider to look, and report where it stands.
     return await checkSpaceInboxAddress(spaceId)
@@ -233,6 +273,16 @@ export async function checkSpaceInboxAddress(spaceId: string): Promise<SpaceInbo
     await requestEmailProviderVerification(row.provider_domain_id).catch(() => undefined)
     const provider = await inspectEmailProviderDomain(row.provider_domain_id, row.domain)
     const state = inboxStateFromProvider(provider)
+    // SCAN-1011: a failed-to-failed re-read must not restamp updated_at, or the cron's 24h window
+    // never ends. Skip the verify poke's save; the inspect already ran. Pending and verified still write.
+    if (isFrozenFailedRetry(row.state, state)) {
+      return {
+        ok: true,
+        address,
+        state,
+        message: 'The provider could not verify your Space address. Press Set up my address to try again.',
+      }
+    }
     const saved = await saveRow(spaceId, {
       state,
       verified_at: state === 'verified' ? (row.verified_at ?? new Date().toISOString()) : row.verified_at,
