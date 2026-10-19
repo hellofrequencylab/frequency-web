@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E7",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY. Probe run as written: FAIL (1099 has zero hits under lib/billing). Exists: per-profile Stripe Express Connect in lib/billing/connect.ts (getOrCreateConnectedAccount, createOnboardingLink, syncConnectedAccount, createDashboardLink, getConnectStatus, payoutsLive gate, canReceivePayouts true for every role), memberTakeRateCents in lib/billing/fees.ts, a placeable booking block (lib/entity-blocks/registry.ts:51, requiresFunction availability) and a contact block (:68), lib/sites/site-booking.ts for the website. Missing: donate, tickets, membership and enroll are not placeable blocks (no such ids in lib/entity-blocks/registry.ts or components/page-editor/blocks/*), no form block, and no tax/1099 path anywhere under lib/ (zero hits)."
-  }
-}

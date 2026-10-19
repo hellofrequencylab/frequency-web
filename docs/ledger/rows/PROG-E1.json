@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E1",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED. Probe run as written: FAIL (no exported defineBlock under lib/, the only hit is a comment in lib/entity-blocks/node-tree.ts:36; package.json lacks check:blocks, check:surface-binding, check:email-blocks). lib/entity-blocks/registry.ts (ENTITY_BLOCKS, DATA_BLOCKS, CONTENT_BLOCKS) is a plain descriptor list with no Zod content schema, no up/down migrations, no reads live|authored flag and no resolveAt; the website editor inspector (components/sites/editor/inspector.tsx:22) derives its fields from lib/page-editor/config.tsx components[type].fields, the Puck-style config, not from a block contract."
-  }
-}

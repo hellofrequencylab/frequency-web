@@ -1,7 +1,0 @@
-{
-  "id": "PROG-A3",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED. Probe run as written: FAIL (no CREATE POLICY in supabase/migrations reads a module enablement key; the two files a loose scan hits, 20270345002800_entitlement_grants.sql and 20270345006400, do not place module or hidden_modules inside a policy body). Enablement is still the menu preference in lib/admin/modules/space-modules.ts (SPACE_MODULES, isModuleHideable)."
-  }
-}

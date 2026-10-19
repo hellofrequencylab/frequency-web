@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E3",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY. Probe run as written: FAIL (test/e2e/surfaces.ts declares no /spotlight or /sites/ surface). Moved since 2026-10-05: kinds[] already carries member. lib/entity-blocks/registry.ts:18 EntityKind = member | space | email and about/stats declare kinds [member, space], so the member widening is partly in. Still missing: density as a declared block property (zero hits in registry.ts or layout.ts), the Site four things, and the visual baselines for Spotlight, in-app profile and Site, so the zero-visual-diff gate still has no instrument."
-  }
-}
