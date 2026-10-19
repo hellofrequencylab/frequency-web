@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-941",
+  "title": "The in-app pricing and billing copy names Network and the December 1 date everywhere the public site already does",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/admin/pricing/pricing-console.tsx",
+    "ref": "Marketing page audit 2026-10-19 (SCAN-1017, ADR-1761) follow-up: the copy lines that did not fit under the 40-file gate"
+  },
+  "detail": "SCAN-1017 aligned the public site with the Network tier (ADR-1761) and the owner's December 1 beta ruling, but seven lines were cut from that PR by the 40-file gate. Four help and billing surfaces still read the old story: the admin pricing console listed the bases without Network and told the admin Non Profit got the Collective toolkit (it is the Business toolkit, discounted: lib/page-editor/templates/pricing.ts), the billing help page said every paid plan started with a trial (Network is quote-only, no checkout, no trial), the get-paid and website help pages listed three tiers, the Space billing body still credited inherited Business tools to a Collective (member Spaces sit behind Network), and the beta notice module's comments still quoted September 1. Fix: each line names Network where the tier applies, the trial line names the three plans that start one, and the comments quote the December 1 date.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=p=>fs.readFileSync(p,'utf8');const bad=[];const pc=r('app/(main)/admin/pricing/pricing-console.tsx');if(!pc.includes('(Business, Collective, Network, Non Profit, Independent) plus'))bad.push('pricing console base list lacks Network');if(pc.includes('full Collective toolkit, discounted'))bad.push('pricing console still says Non Profit gets the Collective toolkit');if(!r('content/help/spaces/billing.md').includes('Business, Collective and Non Profit plans start with a **14 day free trial**'))bad.push('billing help trial line not re-scoped');if(!r('content/help/spaces/get-paid.md').includes('Network'))bad.push('get-paid help never names Network');if(!r('content/help/spaces/your-website.md').includes('Collective and Network'))bad.push('website help never names Network');if(/September 1/.test(r('lib/pricing/beta-notice.ts')))bad.push('beta-notice comments still say September 1');if(bad.length){console.error('LIVE-941: '+bad.join('; '));process.exit(1)}\"",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
