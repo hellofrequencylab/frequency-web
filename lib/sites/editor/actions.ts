@@ -107,26 +107,21 @@ export async function saveWebsiteStyle(host: string, patch: { theme?: string; lo
   // A THEME PER PAGE (LIVE-699): a page's own theme, or null to put it back on the site's.
   const pageThemes = Object.entries(patch.pages ?? {})
   if (pageThemes.length > 30 || pageThemes.some(([slug, value]) => typeof slug !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 64 || (value !== null && !isSiteThemeId(value)))) return { ok: false, error: 'Choose Same as site, Frequency or Bold for the page.' }
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const auth = await authorizeWebsiteEditor(host)
-    if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
-    const prefs = auth.preferences && typeof auth.preferences === 'object' && !Array.isArray(auth.preferences) ? (auth.preferences as Record<string, unknown>) : {}
-    const current = readSiteStyle(prefs)
-    const theme = patch.theme !== undefined && isSiteThemeId(patch.theme) ? patch.theme : current.theme
-    const look = { ...current.look, ...(patch.look as Partial<typeof current.look>) }
-    let next = withSiteStyle(prefs, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts } : {}) })
-    for (const [slug, value] of pageThemes) next = withSitePageTheme(next, slug, value !== null && isSiteThemeId(value) ? value : null)
-    // The stored revision as it is, so the guard matches the row even when the editor state fails validation.
-    const editor = prefs.websiteEditor as { revision?: unknown } | undefined
-    const revision = editor && typeof editor === 'object' && Number.isSafeInteger(editor.revision) ? (editor.revision as number) : null
-    const db = auth.db as unknown as { from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => { filter: (c: string, op: string, v: string) => { select: (f: string) => Promise<{ data: unknown[] | null; error: unknown }> } } } } }
-    // The draft revision the style was computed against must still be the stored one.
-    const result = await db.from('spaces').update({ preferences: next }).eq('id', auth.space.id).filter('preferences->websiteEditor->>revision', revision === null ? 'is' : 'eq', revision === null ? 'null' : String(revision)).select('id')
-    if (result.error) return { ok: false, error: 'Could not save your style. Try again.' }
-    if (result.data && result.data.length > 0) {
-      refreshSite(auth.space.slug)
-      return { ok: true, style: readSiteStyle(next) }
-    }
-  }
-  return { ok: false, error: 'Your website was saving at the same moment. Pick the style again.' }
+  const auth = await authorizeWebsiteEditor(host)
+  if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
+  const prefs = auth.preferences && typeof auth.preferences === 'object' && !Array.isArray(auth.preferences) ? (auth.preferences as Record<string, unknown>) : {}
+  const current = readSiteStyle(prefs)
+  const theme = patch.theme !== undefined && isSiteThemeId(patch.theme) ? patch.theme : current.theme
+  const look = { ...current.look, ...(patch.look as Partial<typeof current.look>) }
+  let next = withSiteStyle(prefs, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts } : {}) })
+  for (const [slug, value] of pageThemes) next = withSitePageTheme(next, slug, value !== null && isSiteThemeId(value) ? value : null)
+  // KEY-SCOPED (SCAN-833, ADR-1822): the style owns exactly two preference keys, `theme` (the fonts,
+  // absent on the default) and `siteStyle`. set_space_preferences writes those two in one update and
+  // leaves every other key as stored, so an editor autosave landing at the same moment is never
+  // reverted and this write never needs the websiteEditor revision guard it used to carry.
+  const db = auth.db as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }
+  const result = await db.rpc('set_space_preferences', { p_space_id: auth.space.id, p_patch: { theme: next.theme ?? null, siteStyle: next.siteStyle ?? null } })
+  if (result.error || result.data !== true) return { ok: false, error: 'Could not save your style. Try again.' }
+  refreshSite(auth.space.slug)
+  return { ok: true, style: readSiteStyle(next) }
 }

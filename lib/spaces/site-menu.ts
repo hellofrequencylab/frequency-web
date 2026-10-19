@@ -333,9 +333,8 @@ export function parseHeaderLogo(v: unknown): HeaderLogo | null {
   return { mode: v.mode, logoUrl }
 }
 
-export function withHeaderLogo(preferences: unknown, logo: HeaderLogo): Record<string, unknown> {
-  return { ...(record(preferences) ? preferences : {}), headerLogo: logo }
-}
+// withHeaderLogo (the whole-blob merge) retired by SCAN-833: saveHeaderLogo now sends `{ headerLogo }`
+// through patchSpacePreferences, so the key is set in place and nothing else in the blob is rewritten.
 
 /** What a header draws for the logo slot: which image (if any) and whether the name shows beside it.
  *  `logo` mode without an uploaded logo falls back to the default. */
