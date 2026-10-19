@@ -45,17 +45,23 @@ import { Analytics } from "@/components/analytics/vercel-analytics";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
+// `preload: false` on DAWN's three faces (SCAN-855): the Frequency design draws none of them outside a
+// Space page, so a preload on every route was three wasted font fetches ahead of the LCP on a phone.
+// next/font options must be literals, so this cannot follow FONTS_DESIGN; the @font-face still loads
+// each face wherever its text renders (space-page.css, DAWN Space websites).
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 // Anton: heavy condensed display face for the public marketing headlines
@@ -66,6 +72,7 @@ const anton = Anton({
   subsets: ["latin"],
   weight: "400",
   display: "swap",
+  preload: false,
 });
 
 // Member-selectable Spotlight fonts (lib/spotlight/theme.ts maps ids → these vars). Loaded
