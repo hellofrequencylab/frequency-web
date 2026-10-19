@@ -1,6 +1,6 @@
-// Seed THE GROUP as a Collective Space with its chapters, built from The Group's design handoff (owner ask
-// 2026-10-13). Idempotent + service-role only. Scoped to the rows it names: the Collective Space (slug
-// `the-group`), its five chapter Spaces (`the-group-<chapter>`), and new child rows that reference them.
+// Seed THE GROUP as a Network Space with its chapters, built from The Group's design handoff (owner ask
+// 2026-10-13). Idempotent + service-role only. Scoped to the rows it names: the Network Space (slug
+// `the-group`), its six chapter Spaces (`the-group-<chapter>`), and new child rows that reference them.
 //
 //   node --experimental-strip-types scripts/seed-the-group.mts --sql > scripts/seed-the-group.sql
 //       prints the seed as ONE SQL transaction (every statement an upsert on a natural key or a
@@ -26,9 +26,10 @@ import { pathToFileURL } from 'node:url'
 import { expandRepeat, parseRepeat } from '../lib/events/repeat-rule.ts'
 
 // ── Fixed ids ─────────────────────────────────────────────────────────────────────────────────
-// The owner until June An claims the Space: the profile that owns the in-house Spaces (Wildheart, Hearts on
-// Fire). Chapters must share the Collective's owner (set_collective_member_space), so all six use it.
-export const OWNER_ID = 'c1d40f58-318b-4c7b-a331-21788d632fc9'
+// The owner until June An claims the Space: @frequency (owner ruling 2026-10-19, "owner @frequency for now";
+// production moved every Space and circle to it that day). Chapters must share the Network's owner
+// (set_collective_member_space), so all seven Spaces use it.
+export const OWNER_ID = '78d47bae-c4c8-4d1c-80a0-ac69aaf98ef8'
 export const SLUG = 'the-group'
 export const TZ = 'America/Los_Angeles'
 /** The day the seed's occurrence window starts from (the handoff's own "today"). */
@@ -62,7 +63,8 @@ const PODCAST = 'https://www.youtube.com/@heartofthematterpod'
 // episode cards link each video by id, which the handoff does carry; this channel link is the one guess
 // and is used ONLY for "View all episodes". Replace it with The Group's channel once June confirms it.
 
-// ── The Collective ────────────────────────────────────────────────────────────────────────────
+// ── The Network (plan `network` since 2026-10-19; re-running never moves it back to Collective) ──
+const PLAN = 'network'
 export const NAME = 'The Group'
 export const BRAND = 'The Group SD'
 export const TAGLINE = 'The Best Non-Networking Networking Group.'
@@ -79,14 +81,14 @@ export const PAGES = [
   { slug: 'about', label: 'About' },
 ]
 
-// ── Chapters: member Spaces of the Collective (spaces.parent_id) ──────────────────────────────
-// Encinitas is the Collective itself (Feel Good Fridays). Five chapters fill the Collective plan's five
-// included member Spaces. South OC has no confirmed day, time or place yet, so it is a forming circle on
-// the Collective rather than a Space (TODO [confirm] with June, then promote it to a member Space; a sixth
-// member Space is a purchased seat).
+// ── Chapters: member Spaces of the Network (spaces.parent_id) ──────────────────────────────
+// Six chapters of the Network plan's ten: Encinitas (Feel Good Fridays, its own chapter since the 2026-10-19
+// handoff; the Network itself hosts nothing of its own now) and five more. South OC has no confirmed day,
+// time or place yet, so it is a forming circle on the Network rather than a Space (TODO [confirm] with June,
+// then promote it to a member Space).
 export interface Chapter {
-  key: 'la-jolla' | 'north-park' | 'oceanside' | 'north-county' | 'veterans'
-  code: 'lj' | 'np' | 'oc' | 'nc' | 'vet'
+  key: 'encinitas' | 'la-jolla' | 'north-park' | 'oceanside' | 'north-county' | 'veterans'
+  code: 'enc' | 'lj' | 'np' | 'oc' | 'nc' | 'vet'
   short: string
   meeting: string
   when: string
@@ -99,6 +101,12 @@ export interface Chapter {
 }
 
 export const CHAPTERS: Chapter[] = [
+  {
+    key: 'encinitas', code: 'enc', short: 'Encinitas', meeting: 'Feel Good Fridays', when: 'Fridays, 9:00–10:10 AM', where: 'Fox Point Farms, 1200 Fox Point Farms Ln, Encinitas, CA 92024', icon: 'sun', city: 'Encinitas',
+    tagline: 'Feel Good Fridays at Fox Point Farms',
+    about: 'Feel Good Friday at Fox Point Farms in Encinitas, every Friday at 9:00 AM, is the reset button that brings you back to center: a space to slow down, reconnect, and end the week with the right people around you. No agenda. No pressure. No pitch.',
+    image: PHOTO('courtyard-group'),
+  },
   {
     key: 'la-jolla', code: 'lj', short: 'La Jolla', meeting: 'Motivation Mondays', when: 'Mondays, 9:00–10:10 AM', where: 'Parakeet Cafe, Nautilus, 3535 General Atomics Ct, San Diego, CA 92121', icon: 'waves', city: 'San Diego',
     tagline: 'The Group is Growing · Motivation Mondays in La Jolla',
@@ -181,22 +189,24 @@ export const merchId = (key: string) => uuidFrom(`product:${key}`)
 
 // ── Circles (member-led groups that meet between Fridays), the handoff's twelve ─────────────────
 export const CIRCLES = [
-  { key: 'womens-coffee', name: "Women's Group Coffee Meetup ☕️", match: "Women's Group Coffee", icon: 'coffee', body: "Heart-led women's group for meaningful conversation and aligned support.", when: 'Wednesdays · 12:45 PM', where: 'Pannikin Coffee & Tea · Free', area: 'Leucadia', chapter: null },
-  { key: 'woman-within', name: 'Woman Within Circle', match: 'Woman Within Circle', icon: 'heart', body: 'A gentle drop-in circle of connection, healing and sisterhood.', when: 'Every other Saturday · 9 AM', where: 'Encinitas · Free', area: 'Encinitas', chapter: null },
-  { key: 'coffee-connection', name: 'Networking and Connection over Coffee', match: 'Connection over Coffee', icon: 'coffee', body: 'Coffee and connections, with 10% off at Lofty Coffee.', when: 'Thursdays · 12 PM', where: '97 N Coast Highway Encinitas · Free', area: 'Encinitas', chapter: null },
-  { key: 'coaches-club', name: 'The Coaches Club', match: 'Coaches Club', icon: 'mic', body: 'Coaches and practitioners building, growing and scaling their businesses.', when: 'Monthly · 9:30 AM', where: 'Via Zoom · Free', area: 'North County', chapter: 'north-county' },
-  { key: 'new-moms', name: 'New Moms Meetup', match: 'New Moms', icon: 'heart', body: 'Meet other new moms and learn from pregnancy, birth and postpartum experts.', when: 'Monthly, the 28th · 12 PM', where: 'Solana Beach · Free', area: 'Solana Beach', chapter: null },
-  { key: 'breathwork-park', name: 'Breathwork in the Park', match: 'Breathwork in the Park', icon: 'wind', body: 'Breathwork, community and nature time at Presidio Park.', when: 'Every other Sunday · 4 PM', where: 'Presidio Park · Free', area: 'San Diego', chapter: null },
-  { key: 'swamis', name: 'Swami’s Beach Gathering in the Grass', match: 'Swami', icon: 'sun', body: "A revived Sunday community gathering on the grass at Swami's.", when: 'Sundays · 2 PM', where: '1298 S Coast Hwy 101 Encinitas · Free', area: 'Encinitas', chapter: null },
-  { key: 'dance-jam', name: 'Encinitas Sunday Dance Jam', match: 'Dance Jam', icon: 'music', body: 'Journey through the Five Elements on the dance floor. Donation based.', when: 'Every other Sunday · 11 AM', where: '535 Encinitas Blvd Suite 100 · Paid', area: 'Encinitas', chapter: null },
-  { key: 'oceanside-women', name: 'Oceanside Womens Group', match: 'Oceanside Womens', icon: 'heart', body: "Biweekly women's circle in Oceanside. Bring a pillow to sit on.", when: 'Every other Thursday · 3 PM', where: '411 Garfield St · Free', area: 'Oceanside', chapter: 'oceanside' },
-  { key: 'vibe-check', name: 'Vibe Check 🌀', match: 'Vibe Check', icon: 'spark', body: 'A monthly gathering for conscious leaders to connect and collaborate.', when: 'Monthly, the 18th · 3 PM', where: 'Encinitas private residence · Paid', area: 'Encinitas', chapter: null },
-  { key: 'breath-sound', name: 'Breath & Sound by the Sea', match: 'Breath & Sound', icon: 'waves', body: 'A weekly heart-expanding gathering on the beach in Oceanside.', when: 'Fridays · 6:30 PM', where: '2300 Ocean St · Paid', area: 'Oceanside', chapter: 'oceanside' },
-  { key: 'videography', name: 'Videography Meet-Up @ ICON Industries', match: 'Videography', icon: 'video', body: 'Videographers, editors and motion creatives connect and collaborate.', when: 'Wednesday · 6 PM', where: '925 S. Orange St. Escondido · Free', area: 'Escondido', chapter: null },
+  { key: 'womens-coffee', name: "The Group Women's Coffee Meetup", match: "Women's Group Coffee", icon: 'coffee', body: "Heart-led women's group for meaningful conversation and aligned support.", when: 'Wednesdays · 12:45 PM', where: 'Pannikin Coffee & Tea · Free', area: 'Leucadia', chapter: null },
+  { key: 'woman-within', name: 'The Group Woman Within Circle', match: 'Woman Within Circle', icon: 'heart', body: 'A gentle drop-in circle of connection, healing and sisterhood.', when: 'Every other Saturday · 9 AM', where: 'Encinitas · Free', area: 'Encinitas', chapter: null },
+  { key: 'coffee-connection', name: 'The Group Coffee & Connection', match: 'Connection over Coffee', icon: 'coffee', body: 'Coffee and connections, with 10% off at Lofty Coffee.', when: 'Thursdays · 12 PM', where: '97 N Coast Highway Encinitas · Free', area: 'Encinitas', chapter: 'encinitas' },
+  { key: 'coaches-club', name: 'The Group Coaches Club', match: 'Coaches Club', icon: 'mic', body: 'Coaches and practitioners building, growing and scaling their businesses.', when: 'Monthly · 9:30 AM', where: 'Via Zoom · Free', area: 'North County', chapter: 'north-county' },
+  { key: 'new-moms', name: 'The Group New Moms Meetup', match: 'New Moms', icon: 'heart', body: 'Meet other new moms and learn from pregnancy, birth and postpartum experts.', when: 'Monthly, the 28th · 12 PM', where: 'Solana Beach · Free', area: 'Solana Beach', chapter: null },
+  { key: 'breathwork-park', name: 'The Group Breathwork in the Park', match: 'Breathwork in the Park', icon: 'wind', body: 'Breathwork, community and nature time at Presidio Park.', when: 'Every other Sunday · 4 PM', where: 'Presidio Park · Free', area: 'San Diego', chapter: null },
+  { key: 'swamis', name: "The Group Swami's Beach Gathering", match: 'Swami', icon: 'sun', body: "A revived Sunday community gathering on the grass at Swami's.", when: 'Sundays · 2 PM', where: '1298 S Coast Hwy 101 Encinitas · Free', area: 'Encinitas', chapter: 'encinitas' },
+  { key: 'dance-jam', name: 'The Group Sunday Dance Jam', match: 'Dance Jam', icon: 'music', body: 'Journey through the Five Elements on the dance floor. Donation based.', when: 'Every other Sunday · 11 AM', where: '535 Encinitas Blvd Suite 100 · Paid', area: 'Encinitas', chapter: 'encinitas' },
+  { key: 'oceanside-women', name: "The Group Oceanside Women's Group", match: 'Oceanside Womens', icon: 'heart', body: "Biweekly women's circle in Oceanside. Bring a pillow to sit on.", when: 'Every other Thursday · 3 PM', where: '411 Garfield St · Free', area: 'Oceanside', chapter: 'oceanside' },
+  { key: 'vibe-check', name: 'The Group Vibe Check', match: 'Vibe Check', icon: 'spark', body: 'A monthly gathering for conscious leaders to connect and collaborate.', when: 'Monthly, the 18th · 3 PM', where: 'Encinitas private residence · Paid', area: 'Encinitas', chapter: null },
+  { key: 'breath-sound', name: 'The Group Breath & Sound by the Sea', match: 'Breath & Sound', icon: 'waves', body: 'A weekly heart-expanding gathering on the beach in Oceanside.', when: 'Fridays · 6:30 PM', where: '2300 Ocean St · Paid', area: 'Oceanside', chapter: 'oceanside' },
+  { key: 'videography', name: 'The Group Videography Meet-Up', match: 'Videography', icon: 'video', body: 'Videographers, editors and motion creatives connect and collaborate.', when: 'Wednesday · 6 PM', where: '925 S. Orange St. Escondido · Free', area: 'Escondido', chapter: null },
 ] as const
 export const circleId = (key: string) => uuidFrom(`circle:${key}`)
-/** South OC: forming, on the Collective until its details are confirmed (TODO [confirm] with June). */
-export const SOUTH_OC = { key: 'south-oc', name: 'South OC Chapter', about: 'A South OC chapter of The Group, forming now. Come help fill it.', area: 'South Orange County' }
+/** Every circle's name starts with "The Group" (owner ruling 2026-10-19, handoff task C3), so a re-run keeps the renames. */
+const circleName = (name: string) => (/^the group\b/i.test(name) ? name : `The Group ${name.replace(/^the\s+/i, '')}`)
+/** South OC: forming, on the Network until its details are confirmed (TODO [confirm] with June). */
+export const SOUTH_OC = { key: 'south-oc', name: 'The Group South OC (forming)', about: 'A South OC chapter of The Group, forming now. Come help fill it.', area: 'South Orange County' }
 
 // ── Events (The Group Portal export) ────────────────────────────────────────────────────────────
 interface PortalEvent { id: string; t: string; d: string; s: number; e: number; where: string; ch: string; type: string; free: boolean; org: string; rec: string | null; series: string | null; desc: string }
@@ -257,7 +267,7 @@ export interface SeedEvent {
   start: string
   end: string
   location: string
-  /** The chapter Space that hosts it, or null for the Collective itself. */
+  /** The chapter Space that hosts it, or null for the Network itself. */
   chapter: Chapter['key'] | null
   category: string
   energy: string | null
@@ -325,13 +335,6 @@ const PILLARS = [
   { title: 'Support', body: 'Encouragement, advice and resources, so no member has to face their challenges alone.' },
 ]
 const BRENE = { quote: '“True belonging is not passive. It’s not the belonging that comes with just joining a group.”', by: 'Dr. Brené Brown' }
-const CHAPTER_TAGS = [
-  { label: 'Encinitas', spaceId: SPACE_ID, match: 'encinitas|leucadia|fox point|solana beach|cardiff|la costa|escondido|swami' },
-  ...(['la-jolla', 'north-park', 'oceanside', 'veterans', 'north-county'] as const).map((key) => {
-    const c = CHAPTERS.find((chapter) => chapter.key === key)!
-    return { label: c.short, spaceId: chapterId(c), match: ({ 'la-jolla': 'parakeet|general atomics|la jolla|motivation monday', 'north-park': 'maya moon|adams ave|north park|team up tuesday', oceanside: 'oceanside|ocean st|garfield', veterans: 'veteran', 'north-county': 'coaches club|house party|break free' })[key] }
-  }),
-]
 const CHAPTER_CHIPS = [
   { icon: 'sun', name: 'Encinitas', line: 'Feel Good Friday · Fox Point Farms', when: 'Fri · 9 AM', href: PAGE('fridays'), on: true },
   ...CHAPTERS.map((c) => ({ icon: c.icon, name: c.short, line: c.meeting === 'Coaches Club · House Party' ? 'Coaches Club · House Party' : `${c.meeting}${c.key === 'la-jolla' ? ' · Parakeet Cafe' : c.key === 'north-park' ? ' · Maya Moon' : ''}`, when: c.key === 'la-jolla' ? 'Mon · 9 AM' : c.key === 'north-park' ? 'Tue · 9 AM' : c.key === 'oceanside' ? 'Thu · 9 AM' : c.key === 'veterans' ? 'Wed · 11:30 AM' : 'Monthly', href: `/spaces/${chapterSlug(c)}`, on: false })),
@@ -374,7 +377,7 @@ const eventsBlock = (id: string, extra: Record<string, unknown> = {}): Block => 
   props: {
     id, anchor: 'events', eyebrow: 'Events', title: 'Find a group. *Or fill one.*',
     lead: 'Chapter mornings, circles, workshops and parties across San Diego. RSVP to anything and add it to your calendar.',
-    actionLabel: 'Submit an event', actionHref: EVENT_SUBMIT, max: 6, chapters: CHAPTER_TAGS, moreLabel: 'See more events', moreHref: `/spaces/${SLUG}/calendar`, empty: 'No groups meet this day. Try another chapter.', layout: desktop, ...extra,
+    actionLabel: 'Submit an event', actionHref: EVENT_SUBMIT, max: 6, source: 'live', allLabel: 'All chapters', chapters: [], moreLabel: 'See more events', moreHref: `/spaces/${SLUG}/calendar`, empty: 'No groups meet this day. Try another chapter.', layout: desktop, ...extra,
   },
 })
 
@@ -394,7 +397,7 @@ export function buildWebsiteDocs(): Record<string, unknown> {
       { title: 'Join the circle', body: 'Shared stories, a featured speaker, and time to just listen. Done by 10:10.', ctaLabel: '', ctaHref: '' },
       { title: 'Meet June for coffee', body: 'The one rule for every member, new and old. Book thirty minutes with June.', ctaLabel: 'Book coffee', ctaHref: CALENDLY },
     ], layout: desktop } },
-    { type: 'NetworkChapters', props: { id: 'tg-home-chapters', anchor: 'chapters', eyebrow: 'Chapters', title: 'Pockets of community *across San Diego.*', lead: '', chips: CHAPTER_CHIPS, cards: [
+    { type: 'NetworkChapters', props: { id: 'tg-home-chapters', anchor: 'chapters', eyebrow: 'Chapters', title: 'Pockets of community *across San Diego.*', lead: '', source: 'live', selfHref: PAGE('fridays'), chips: [], cards: [
       { image: PHOTO('june-harvest'), alt: 'June An at a La Jolla gathering', icon: 'waves', kicker: 'La Jolla · Mondays 9 AM', title: 'Motivation Monday', body: 'At Parakeet Cafe, hosted by trauma-informed coach Amie Barsky.', href: `/spaces/${SLUG}-la-jolla` },
       { image: PHOTO('patio-coffee'), alt: 'Members talking over coffee on a patio', icon: 'mic', kicker: 'Group Services', title: 'Incubator Studios', body: 'A full-service podcast and content studio in Encinitas, from $200/hour.', href: PAGE('studio') },
       { image: PHOTO('rooftop-gathering'), alt: 'A large group of members on a rooftop', icon: 'star', kicker: 'Events', title: 'PitchFest 2026', body: 'Sign up to pitch, then celebrate at the PitchFest Party on Oct 21.', href: PITCH_SIGNUP },
@@ -426,7 +429,7 @@ export function buildWebsiteDocs(): Record<string, unknown> {
 
   const lj = CHAPTERS[0]
   const chapters = doc([
-    { type: 'NetworkChapters', props: { id: 'tg-chapters-band', anchor: 'chapters', eyebrow: 'Chapters', title: 'Pockets of community *across San Diego.*', lead: 'Our vision is to create spaces throughout San Diego where everyone feels they belong, where ideas become reality, and where community becomes the foundation for growth.', chips: CHAPTER_CHIPS, cards: [], notes: [], layout: desktop } },
+    { type: 'NetworkChapters', props: { id: 'tg-chapters-band', anchor: 'chapters', eyebrow: 'Chapters', title: 'Pockets of community *across San Diego.*', lead: 'Our vision is to create spaces throughout San Diego where everyone feels they belong, where ideas become reality, and where community becomes the foundation for growth.', source: 'live', selfHref: PAGE('fridays'), chips: [], cards: [], notes: [], layout: desktop } },
     { type: 'NetworkSplit', props: { id: 'tg-chapters-lj', eyebrow: 'La Jolla Chapter', title: 'The Group is growing: *Motivation Mondays.*', body: `${lj.about}\nWhether you cannot always make it to Feel Good Fridays in Encinitas or you are ready to double down on connection by joining both, Motivation Monday was created for you. It is a place where authentic conversations spark new opportunities, where encouragement turns into action, and where people come together to lift each other higher both personally and professionally.`, image: PHOTO('june-harvest'), alt: 'June An with members in La Jolla', mediaSide: 'left', facts: [{ icon: 'pin', label: 'Where', value: 'Parakeet Cafe, Nautilus', note: '3535 General Atomics Ct, SD, CA 92121' }, { icon: 'clock', label: 'When', value: 'Every Monday', note: '9am to 10:10am' }], quote: '“The goal is to build up the community with inspiration and a sense of support. Make the group what you want for you.”', quoteBy: 'June An', primaryLabel: 'Visit the La Jolla chapter', primaryHref: `/spaces/${chapterSlug(lj)}`, secondaryLabel: '', secondaryHref: '', layout: desktop } },
     { type: 'NetworkFounder', props: { id: 'tg-chapters-amie', eyebrow: 'Motivation Monday host', quote: 'Empowering high-achievers to break free from burnout and *reconnect with their authentic selves.*', body: 'Amie Barsky is a trauma-informed coach specializing in Nervous System Regulation and Somatic Processing, helping professionals transform overwhelm into sustainable success. Her approach integrates neuroscience with holistic healing methods, drawing from her personal journey of overcoming people pleasing, perfectionism and trauma.', image: '', alt: '', hosts: [{ image: '', name: 'Amie Barsky', role: 'Host · Motivation Mondays' }], ctaLabel: '', ctaHref: '', layout: desktop } },
     eventsBlock('tg-chapters-events', { title: 'Every chapter, *every week.*', max: 10 }),
@@ -797,7 +800,7 @@ const EDITED_KEYS_SQL = `array['pageDocs', 'profileLayout', 'pages']::text[]`
 
 function spaceUpsert(id: string, slug: string, name: string, brand: string, tagline: string, about: string, plan: string, parent: string | null, prefs: Record<string, unknown>, logo: string | null, cover: string | null, city = 'Encinitas'): string {
   return `insert into spaces (id, slug, name, type, status, entity_id, skin, network_connected, visibility, plan, limits_waived, entitlements, owner_profile_id, brand_name, tagline, about, time_zone, brand_logo_url, cover_image_url, parent_id, city, region, country, preferences)
-values (${q(id)}, ${q(slug)}, ${q(name)}, 'business', 'active', (select entity_id from _tg), 'dawn', true, 'network', ${q(plan)}, ${plan === 'collective'}, '{}'::jsonb, ${q(OWNER_ID)}, ${q(brand)}, ${q(tagline)}, ${q(about)}, ${q(TZ)}, ${q(logo)}, ${q(cover)}, ${parent ? q(parent) : 'null'}, ${q(city)}, 'CA', 'US', ${qj(prefs)})
+values (${q(id)}, ${q(slug)}, ${q(name)}, 'business', 'active', (select entity_id from _tg), 'dawn', true, 'network', ${q(plan)}, ${plan === 'collective' || plan === 'network'}, '{}'::jsonb, ${q(OWNER_ID)}, ${q(brand)}, ${q(tagline)}, ${q(about)}, ${q(TZ)}, ${q(logo)}, ${q(cover)}, ${parent ? q(parent) : 'null'}, ${q(city)}, 'CA', 'US', ${qj(prefs)})
 on conflict (slug) do update set name = excluded.name, status = 'active', network_connected = true, visibility = 'network', plan = excluded.plan, limits_waived = excluded.limits_waived, brand_name = excluded.brand_name, tagline = excluded.tagline, about = excluded.about, time_zone = excluded.time_zone, brand_logo_url = excluded.brand_logo_url, cover_image_url = excluded.cover_image_url, parent_id = excluded.parent_id, city = excluded.city, preferences = coalesce(spaces.preferences, '{}'::jsonb) || (excluded.preferences - ${EDITED_KEYS_SQL}) || (select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from jsonb_each(excluded.preferences) e(k, v) where k = any(${EDITED_KEYS_SQL}) and not (coalesce(spaces.preferences, '{}'::jsonb) ? k)), updated_at = now()
 where spaces.owner_profile_id = ${q(OWNER_ID)};`
 }
@@ -836,7 +839,7 @@ export function renderSql(): string {
     '-- scripts/seed-the-group.sql',
     '-- GENERATED by `node --experimental-strip-types scripts/seed-the-group.mts --sql` from scripts/seed-the-group.mts. Edit the .mts, then regenerate.',
     '--',
-    '-- Seeds THE GROUP as a Collective Space (slug the-group) with five chapter member Spaces, its circles,',
+    '-- Seeds THE GROUP as a Network Space (slug the-group) with six chapter member Spaces, its circles,',
     '-- its membership tiers, its merch, its studio offerings, its calendar and its website pages on the',
     '-- Network theme. ONE transaction. Idempotent: every statement is an upsert on a natural key (slug) or a',
     '-- deterministic id. A Space row is only updated while it is still owner-held (owner_profile_id below).',
@@ -859,11 +862,11 @@ export function renderSql(): string {
     '  end if;',
     'end $guard$;',
     '',
-    '-- 1. The Collective. Inserting it fires spaces_ensure_space_circle: its primary circle is minted here.',
-    spaceUpsert(SPACE_ID, SLUG, NAME, BRAND, TAGLINE, ABOUT, 'collective', null, buildPreferences(), LOGO, PHOTO('hero-market')),
+    '-- 1. The Network. Inserting it fires spaces_ensure_space_circle: its primary circle is minted here.',
+    spaceUpsert(SPACE_ID, SLUG, NAME, BRAND, TAGLINE, ABOUT, PLAN, null, buildPreferences(), LOGO, PHOTO('hero-market')),
     '',
-    '-- 2. The five chapters, member Spaces of the Collective (set_collective_member_space\'s rules: same owner,',
-    '--    active, network-visible, not a Collective themselves, no children; five is the plan\'s included count).',
+    '-- 2. The six chapters, member Spaces of the Network (set_collective_member_space\'s rules: same owner,',
+    '--    active, network-visible, not a Collective themselves, no children; the Network plan includes ten).',
     ...CHAPTERS.map((c) => spaceUpsert(chapterId(c), chapterSlug(c), `The Group ${c.short}`, `The Group ${c.short}`, c.tagline, c.about, 'free', SPACE_ID, buildChapterPreferences(c), LOGO, c.image, c.city)),
     '',
     '-- 3. The owner is an admin of every Space (createSpace\'s addSpaceMember). June An, Carol Yeh-Garner, Dr. Lisel',
@@ -874,17 +877,17 @@ export function renderSql(): string {
     'on conflict (space_id, profile_id) do nothing;',
     '',
     '-- 4. Circles. Each Space\'s primary circle was minted by the trigger; here it gets its words. The member-led',
-    '--    circles (the handoff\'s twelve) live on the Collective, or on the chapter they meet in.',
+    '--    circles (the handoff\'s twelve) live on the Network, or on the chapter they meet in.',
     `update circles set about = ${q('Feel Good Fridays at Fox Point Farms, Encinitas: every Friday, 9:00–10:10 AM. No pressure. No pitch. Come find your people.')}, neighborhood = 'Encinitas', timezone = ${q(TZ)}, primary_pillar = 'mind' where space_id = ${q(SPACE_ID)} and is_space_primary;`,
     ...CHAPTERS.map((c) => `update circles set about = ${q(`${c.meeting} · ${c.when}. ${c.where}.`)}, neighborhood = ${q(c.short)}, timezone = ${q(TZ)}, primary_pillar = 'mind' where space_id = ${q(chapterId(c))} and is_space_primary;`),
     ...CIRCLES.flatMap((c) => [
       `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
-      `values (${q(circleId(c.key))}, ${q(c.name)}, ${q(`tg-${c.key}`)}, ${q(c.body)}, 'in-person', 50, 0, 'active', ${q(OWNER_ID)}, ${chapterRef(c.chapter)}, ${q(c.area)}, ${q(c.area)}, 'mind', ${q(TZ)}, 'open')`,
+      `values (${q(circleId(c.key))}, ${q(circleName(c.name))}, ${q(`tg-${c.key}`)}, ${q(c.body)}, 'in-person', 50, 0, 'active', ${q(OWNER_ID)}, ${chapterRef(c.chapter)}, ${q(c.area)}, ${q(c.area)}, 'mind', ${q(TZ)}, 'open')`,
       `on conflict (id) do update set name = excluded.name, about = excluded.about, status = excluded.status, space_id = excluded.space_id, neighborhood = excluded.neighborhood, city = excluded.city, timezone = excluded.timezone;`,
       `insert into circle_profiles (circle_id, meetup) values (${q(circleId(c.key))}, ${qj({ text: `${c.when} · ${c.where}`, length: '' })}) on conflict (circle_id) do update set meetup = excluded.meetup, updated_at = now();`,
     ]),
     `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
-    `values (${q(circleId(SOUTH_OC.key))}, ${q(SOUTH_OC.name)}, 'tg-south-oc', ${q(SOUTH_OC.about)}, 'in-person', 50, 0, 'forming', ${q(OWNER_ID)}, ${q(SPACE_ID)}, ${q(SOUTH_OC.area)}, ${q(SOUTH_OC.area)}, 'mind', ${q(TZ)}, 'open')`,
+    `values (${q(circleId(SOUTH_OC.key))}, ${q(circleName(SOUTH_OC.name))}, 'tg-south-oc', ${q(SOUTH_OC.about)}, 'in-person', 50, 0, 'forming', ${q(OWNER_ID)}, ${q(SPACE_ID)}, ${q(SOUTH_OC.area)}, ${q(SOUTH_OC.area)}, 'mind', ${q(TZ)}, 'open')`,
     'on conflict (id) do update set name = excluded.name, about = excluded.about, status = excluded.status;',
     '',
     '-- 5. Membership tiers (setMembershipTiers\' shape: monthly cents, benefits as a JSON array of strings).',
@@ -908,7 +911,7 @@ on conflict (id) do update set title = excluded.title, description = excluded.de
     ...events.flatMap((e) => [eventInsert(e, chapterRef(e.chapter)), occurrencesInsert(e)].filter(Boolean)),
     '',
     `-- VERIFY: select slug, plan, parent_id is not null as chapter, preferences->'siteStyle'->>'theme' as theme from spaces where slug like 'the-group%' order by slug;`,
-    `-- EXPECT: 6 rows: the-group (collective, theme network) and five chapters with parent_id set.`,
+    `-- EXPECT: 7 rows: the-group (network, theme network) and six chapters with parent_id set.`,
     `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}';`,
     `-- EXPECT: ${events.length + events.reduce((n, e) => n + e.occurrences.length, 0)}`,
     '',

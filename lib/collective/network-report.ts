@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { completeEarningsRead } from '@/lib/commerce/complete-read'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { buildNetworkReport, type ReportSpace } from './network-report-policy'
+import { networkToolsAccess } from './network-tools-store'
 const SPACE_COLS = 'id, name, slug, parent_id, owner_profile_id, status, plan, type'
 export async function readCollectiveNetworkReport(parentId: string, callerProfileId: string | null) {
   return buildNetworkReport(parentId, callerProfileId, {
@@ -36,5 +37,7 @@ export async function readCollectiveNetworkReport(parentId: string, callerProfil
       return data as { id: string; space_id: string | null; host_space_id: string | null }[]
     },
     earnings: id => spaceEarningsSummary(id, undefined, true),
+    // A named central admin of a Network parent (network_central_admins, with an active admin membership on it).
+    centralAdmin: async (parentId, caller) => { const access = await networkToolsAccess(parentId, caller); return !!access && !access.isOwner },
   })
 }

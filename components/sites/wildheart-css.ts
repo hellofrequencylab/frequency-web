@@ -736,6 +736,10 @@ ${M} .mw-parts-top::after{content:none}
 ${M} .mw-parts .mw-icon{width:24px;height:24px;stroke-width:1.4;color:var(--wh-symbol-ink);filter:url(#wh-ink-fine)}
 ${M} .mw-parts h3{${DISPLAY};font-size:24px;line-height:1.1;color:var(--wh-witch)}
 ${M} .mw-parts .mw-small{font-size:16px;line-height:1.5;color:var(--color-text-muted)}
+${M} .mw-parts-stat{gap:6px;margin:10px 0 4px}
+${M} .mw-parts-stat strong{${DISPLAY};font-size:2.5rem;line-height:1;color:var(--wh-witch)}
+${M} .mw-parts-link{color:var(--wh-witch);text-decoration:none}
+${M} .mw-parts-link:hover{color:var(--wh-symbol-ink)}
 
 ${M} .wh-block-head-row{margin-bottom:28px}
 ${M} .wh-path{gap:16px;padding-top:0}

@@ -8,6 +8,14 @@ function ownerCollective(parent: ReportSpace | null, caller: string | null): par
   return !!parent && !!caller && parent.owner_profile_id === caller && parent.status === 'active'
     && parent.type !== 'root' && ['collective', 'nonprofit_collective', 'network'].includes(parent.plan ?? '')
 }
+/** Who may read the report: the owner of any chapter parent, or a named central admin of a NETWORK parent (the
+ *  /networks copy promises central admins the whole network; handoff task A3, 2026-10-19). The central admin
+ *  standing is confirmed once, before any child or finance read, and the parent row is re-read at every step. */
+type Standing = 'owner' | 'central'
+function mayRead(parent: ReportSpace | null, caller: string | null, standing: Standing | null): boolean {
+  if (ownerCollective(parent, caller)) return true
+  return standing === 'central' && !!parent && !!caller && parent.status === 'active' && parent.type !== 'root' && parent.plan === 'network'
+}
 export function attachedReportSpaces(parent: ReportSpace, rows: readonly ReportSpace[]): ReportSpace[] {
   const seen = new Set([parent.id])
   return [parent, ...rows.filter(row => {
@@ -21,18 +29,23 @@ export interface ReportDeps {
   members: (ids: string[]) => Promise<{ profile_id: string; status: string }[]>;
   events: (ids: string[]) => Promise<{ id: string; space_id: string | null; host_space_id: string | null }[]>;
   earnings: (id: string) => Promise<ReportEarnings>;
+  /** Is the caller a named central admin of this Network parent, with an active admin membership on it? Optional:
+   *  a report built without it is owner-only, as before. */
+  centralAdmin?: (parentId: string, caller: string) => Promise<boolean>;
 }
 export async function buildNetworkReport(parentId: string, caller: string | null, deps: ReportDeps): Promise<NetworkReport> {
   if (!caller) return { status: 'denied' }
   try {
     const parent = await deps.space(parentId)
-    if (!ownerCollective(parent, caller)) return { status: 'denied' }
+    const standing: Standing | null = ownerCollective(parent, caller) ? 'owner'
+      : parent?.plan === 'network' && parent.status === 'active' && deps.centralAdmin && (await deps.centralAdmin(parent.id, caller)) === true ? 'central' : null
+    if (!parent || !mayRead(parent, caller, standing)) return { status: 'denied' }
     const candidates = attachedReportSpaces(parent, await deps.children(parent.id))
     const current: ReportSpace[] = []
     for (const candidate of candidates) {
       const row = await deps.space(candidate.id)
       if (candidate.id === parent.id) {
-        if (!ownerCollective(row, caller)) return { status: 'denied' }
+        if (!row || !mayRead(row, caller, standing)) return { status: 'denied' }
         current.push(row)
       } else if (row && attachedReportSpaces(parent, [row]).length === 2) current.push(row)
     }
@@ -42,7 +55,7 @@ export async function buildNetworkReport(parentId: string, caller: string | null
     const earnings: ReportEarnings = { grossCents: 0, feeCents: 0, netCents: 0, refundedCents: 0, orderCount: 0, networkGrossCents: 0, networkFeeCents: 0, networkOrderCount: 0 }
     for (const source of current) {
       // Revalidate the parent and source immediately before every finance read.
-      if (!ownerCollective(await deps.space(parent.id), caller)) return { status: 'denied' }
+      if (!mayRead(await deps.space(parent.id), caller, standing)) return { status: 'denied' }
       const fresh = await deps.space(source.id)
       if (!fresh || (source.id !== parent.id && attachedReportSpaces(parent, [fresh]).length !== 2)) return { status: 'unavailable' }
       const part = await deps.earnings(source.id)

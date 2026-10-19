@@ -152,6 +152,25 @@ function eventHref(e: EventRow, metadata: Props | undefined): string | null {
   return origin ? `${origin}/events/${e.slug}` : `/events/${e.slug}`
 }
 
+/** The Space's live chapters (ADR-1770): itself first, then its member Spaces (lib/spaces/content-data.ts
+ *  getSpaceChapters). A chapter's short label drops the parent's name from the front ("The Group La Jolla"
+ *  reads "La Jolla"); the parent itself reads as its city, or its name. [] when the Space runs no chapters. */
+interface ChapterRow { id: string; slug: string; name: string; city?: string | null; tagline?: string | null; self?: boolean }
+const isChapter = (c: unknown): c is ChapterRow => !!c && typeof (c as ChapterRow).id === 'string' && typeof (c as ChapterRow).slug === 'string' && typeof (c as ChapterRow).name === 'string'
+export function liveChapters(metadata: Props | undefined): { id: string; label: string; href: string; line: string; self: boolean }[] {
+  const space = metadata?.space as { chapters?: unknown } | undefined
+  const rows = Array.isArray(space?.chapters) ? space.chapters.filter(isChapter) : []
+  const parent = rows.find((c) => c.self === true)
+  const prefix = parent?.name.trim().toLowerCase() ?? ''
+  return rows.map((c) => {
+    const name = c.name.trim()
+    const short = c.self ? (c.city?.trim() || name) : prefix && name.toLowerCase().startsWith(`${prefix} `) ? name.slice(prefix.length).trim() : name
+    return { id: c.id, label: short || name, href: `/spaces/${c.slug}`, line: c.tagline?.trim() ?? '', self: c.self === true }
+  })
+}
+/** Typed list or live chapters: live wins when the Space runs chapters, unless the block says "the list below". */
+const useLive = (p: Props, metadata: Props | undefined) => str(p.source) !== 'typed' && liveChapters(metadata).length > 0
+
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const utc = (iso: string) => new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)))
 
@@ -353,11 +372,17 @@ export function NetworkBandBlock({ p, metadata, now = new Date(), pad, vis }: { 
 export function NetworkEventsBlock({ p, metadata, now = new Date(), pad, vis }: { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }) {
   const rows = upcoming(metadata, now)
   const max = Math.max(1, Math.min(24, Number(p.max) || 6))
-  const chapters = arr(p.chapters).map((c) => ({ label: str(c.label), spaceId: str(c.spaceId), match: str(c.match).toLowerCase().split('|').map((s) => s.trim()) })).filter((c) => c.label)
+  const live = useLive(p, metadata) ? liveChapters(metadata) : null
+  // Live chapters: an event with no declared host is the parent Space's own (the seed and the console leave
+  // host_space_id empty for the Network's own meetings), so it files under the parent's chip.
+  const selfId = live?.find((c) => c.self)?.id ?? null
+  const chapters = live
+    ? live.map((c) => ({ label: c.label, spaceId: c.id, match: [] as string[] }))
+    : arr(p.chapters).map((c) => ({ label: str(c.label), spaceId: str(c.spaceId), match: str(c.match).toLowerCase().split('|').map((s) => s.trim()) })).filter((c) => c.label)
   const today = todayIn(now, rows[0]?.timeZone || ZONE)
   const items = rows.map((e) => {
     const href = eventHref(e, metadata)
-    const chapter = chapterOf(e, chapters)
+    const chapter = chapterOf(selfId && !e.hostingSpaceId ? { ...e, hostingSpaceId: selfId } : e, chapters)
     const target = wallClockInstant(e.startsAt, e.timeZone || ZONE)
     const end = e.endsAt ? wallClockInstant(e.endsAt, e.timeZone || ZONE) : Number.NaN
     return {
@@ -409,7 +434,9 @@ export function NetworkStepsBlock({ p, metadata, pad, vis }: { p: Props; metadat
 
 // 7. Chapters: the dark band. Chapter chips, photo cards, then icon cards.
 export function NetworkChaptersBlock({ p, metadata, pad, vis }: { p: Props; metadata?: Props; pad?: string; vis?: string }) {
-  const chips = arr(p.chips).map((c) => ({ icon: str(c.icon), name: str(c.name), line: str(c.line), when: str(c.when), href: str(c.href), on: c.on === true })).filter((c) => c.name)
+  const chips = useLive(p, metadata)
+    ? liveChapters(metadata).map((c) => ({ icon: 'pin', name: c.label, line: c.line, when: '', href: c.self ? str(p.selfHref) : c.href, on: c.self }))
+    : arr(p.chips).map((c) => ({ icon: str(c.icon), name: str(c.name), line: str(c.line), when: str(c.when), href: str(c.href), on: c.on === true })).filter((c) => c.name)
   const cards = arr(p.cards).map((c) => ({ image: img(c.image), alt: str(c.alt), icon: str(c.icon), kicker: str(c.kicker), title: str(c.title), body: str(c.body), href: str(c.href) })).filter((c) => c.title)
   const notes = arr(p.notes).map((c) => ({ icon: str(c.icon), title: str(c.title), body: str(c.body) })).filter((c) => c.title)
   return (
@@ -806,6 +833,8 @@ const anchor = text('Link anchor', 'Optional. Lets a menu item jump here, like #
 const buttons = { primaryLabel: text('Main button'), primaryHref: text('Main button link'), secondaryLabel: text('Second button'), secondaryHref: text('Second button link') }
 const head = { eyebrow: text('Small label', 'The short line above the heading.'), title: area('Heading', VOICE_HINT), lead: area('Intro') }
 const action = { actionLabel: text('Link beside the heading'), actionHref: text('Link beside the heading: where it goes') }
+/** Where a block's chapter list comes from (ADR-1770): the Space's own member Spaces, or the list typed below. */
+const chapterSource = { type: 'radio', label: 'Chapters from', options: [{ label: 'Your chapter Spaces', value: 'live' }, { label: 'The list below', value: 'typed' }] } as const
 
 function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: { p: Props; metadata?: Props; pad?: string; vis?: string }) => ReactNode): ComponentConfig {
   return {
@@ -838,17 +867,19 @@ export const networkComponents: Record<string, ComponentConfig> = {
   }, { anchor: '', eyebrow: '', title: '', body: '', countdownTo: '', timeZone: 'America/Los_Angeles', countdownLabel: '', image: '', alt: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '' }, NetworkBandBlock),
   NetworkEvents: block('Events list and calendar (live)', {
     anchor, ...head, ...action, max: { type: 'number', label: 'How many to list', min: 1, max: 24 },
+    source: chapterSource,
     chapters: { type: 'array', label: 'Chapter filters', hint: 'Each becomes a filter chip over the list.', arrayFields: { label: text('Chapter'), spaceId: text('Hosting Space ID', 'Optional. Matches the event’s declared hosting Space before any title or place words.'), match: text('Matches events containing', 'Legacy match when no hosting Space mapping is available. Words in the title or place, separated by |.') } },
     allLabel: text('All chapters filter', 'The first filter chip, which shows every chapter. Defaults to All chapters.'),
     moreLabel: text('More events link'), moreHref: text('More events link: where it goes'), empty: text('Message when nothing is scheduled'),
-  }, { anchor: '', eyebrow: 'Events', title: 'Find a group. *Or fill one.*', lead: '', actionLabel: '', actionHref: '', max: 6, chapters: [], allLabel: '', moreLabel: 'See more events', moreHref: '', empty: '' }, NetworkEventsBlock),
+  }, { anchor: '', eyebrow: 'Events', title: 'Find a group. *Or fill one.*', lead: '', actionLabel: '', actionHref: '', max: 6, source: 'live', allLabel: '', chapters: [], moreLabel: 'See more events', moreHref: '', empty: '' }, NetworkEventsBlock),
   NetworkSteps: block('Numbered steps', { anchor, ...head, steps: { type: 'array', label: 'Steps', arrayFields: { title: text('Title'), body: area('Body text'), ctaLabel: text('Button', 'Optional.'), ctaHref: text('Button link') } } }, { anchor: '', eyebrow: 'Your first visit', title: '', lead: '', steps: [] }, NetworkStepsBlock),
   NetworkChapters: block('Chapters band', {
     anchor, ...head,
+    source: chapterSource, selfHref: text('Home chapter link', 'Where the chip for this Space itself goes, like /spaces/the-group/fridays. Live chapters only.'),
     chips: { type: 'array', label: 'Chapters', arrayFields: { icon: iconField, name: text('Name'), line: text('What meets'), when: text('When'), href: text('Link'), on: { type: 'radio', label: 'Highlight', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } } },
     cards: { type: 'array', label: 'Photo cards', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), icon: iconField, kicker: text('Small label'), title: text('Title'), body: area('Body text'), href: text('Link') } },
     notes: { type: 'array', label: 'Icon cards', arrayFields: { icon: iconField, title: text('Title'), body: area('Body text') } },
-  }, { anchor: '', eyebrow: 'Chapters', title: '', lead: '', chips: [], cards: [], notes: [] }, NetworkChaptersBlock),
+  }, { anchor: '', eyebrow: 'Chapters', title: '', lead: '', source: 'live', selfHref: '', chips: [], cards: [], notes: [] }, NetworkChaptersBlock),
   NetworkCircles: block('Circles (next dates live)', {
     anchor, ...head, ...action,
     circles: { type: 'array', label: 'Circles', arrayFields: { icon: iconField, title: text('Name'), body: area('Body text'), when: text('When'), where: text('Where'), circleSlug: text('Circle slug', 'The last part of its Frequency circle URL. Opens the circle even when no event is scheduled.'), match: text('Matches events titled', 'Optional. Defaults to the circle name.') } },
