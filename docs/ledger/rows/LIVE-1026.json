@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1026",
+  "title": "Market landing design pass: featured makers, category chips, sort, and a seller prompt in the Frequency kit",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-1026.json",
+    "ref": "Daniel design list 2026-10-19, item 16"
+  },
+  "detail": "The Frequency Market body (components/frequency/members/marketplace) gets a Featured makers strip (Founding, Verified or rated 4.5+, up to four, removed from their group rail), category chips from the listing categories, Top picks / Newest / Price sorts alongside Near me, a clear-filters reset, and a seller prompt panel at the end (List a product, or Sign in). The shared index header lands separately in LIVE-1012 and the pinned nav in LIVE-1027.\n\nFeatured strip, category chips and sort shipped",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('components/frequency/members/marketplace/marketplace-body.tsx','utf8');const b=fs.readFileSync('components/frequency/members/marketplace/item-grid.tsx','utf8');const bad=[];if(!a.includes('Featured makers'))bad.push('no featured strip');if(!b.includes('aria-label=\\x22Sort\\x22'))bad.push('no sort control');if(!b.includes('aria-label=\\x22Category\\x22'))bad.push('no category chips');if(bad.length){console.error('LIVE-1026: '+bad.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

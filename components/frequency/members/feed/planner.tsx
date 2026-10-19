@@ -6,6 +6,7 @@ import { FqIcon } from '@/components/frequency/icon'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { fqToast } from '../shared/toast'
 import { FqAvatar, phStyle } from '../shared/avatar'
+import { SystemNotice } from '../shared/system-notice'
 import { distanceLabel, friendsLine, type HomeIntent, type HomeSlot, type RankedHomeEvent } from '@/lib/feed/home-rank'
 import type { HomePlan } from '@/lib/feed/frequency-home'
 
@@ -206,8 +207,11 @@ export function FeedPlanner({
             <span className="k">Up next for you</span>
             <span className="fa-serif18">Nothing ranked for you this week yet.</span>
             <div className="fa-actions">
-              <Link href="/events" className="btn">
+              <Link href="/events" className="btn pa">
                 Browse events
+              </Link>
+              <Link href="/events/new" className="btn">
+                Add an event
               </Link>
             </div>
           </div>
@@ -277,18 +281,21 @@ export function FeedPlanner({
         })}
       </div>
       {near.length === 0 && (
-        <div className="fa-empty">
-          <span className="fa-serif18">{hasHome ? `Nothing that fits within ${radius} mi.` : 'Nothing on for that yet.'}</span>
-          {hasHome && radius < 15 ? (
-            <button type="button" className="btn sm" onClick={() => setRadius(15)}>
-              Widen to 15 mi
-            </button>
-          ) : !hasHome ? (
-            <Link href="/settings/profile" className="btn sm">
-              Set your home base
-            </Link>
-          ) : null}
-        </div>
+        <SystemNotice
+          icon="pin"
+          title={hasHome ? `Nothing that fits within ${radius} mi.` : 'Nothing on for that yet.'}
+          body={hasHome ? 'Widen the circle, try another day, or put something on yourself.' : 'Set a home base and we will show what is close.'}
+          actions={[
+            hasHome ? { href: '/events/new', label: 'Add an event' } : { href: '/settings/profile', label: 'Set your home base', primary: true },
+            { href: '/events', label: 'Browse events' },
+          ]}
+          className="fa-notice-flush"
+        />
+      )}
+      {near.length === 0 && hasHome && radius < 15 && (
+        <button type="button" className="btn sm fa-widen" onClick={() => setRadius(15)}>
+          Widen to 15 mi
+        </button>
       )}
 
       {plans.length > 0 && (

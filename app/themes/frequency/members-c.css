@@ -72,7 +72,7 @@
    under the identity. */
 [data-design="frequency"] [data-kit="members"] .mc-cover{height:clamp(160px,24vw,280px);border-radius:var(--fq-radius-xl);background-size:cover;background-position:center}
 [data-design="frequency"] [data-kit="members"] .mc-identity{display:grid;grid-template-columns:auto minmax(min-content,1fr) auto;align-items:end;gap:var(--fq-space-5) var(--fq-space-8);padding:0 var(--fq-space-7)}
-[data-design="frequency"] [data-kit="members"] .mc-id-photo{margin-top:calc(var(--fq-space-11) * -1)}
+[data-design="frequency"] [data-kit="members"] .mc-id-photo{display:flex;margin-top:calc(var(--fq-space-11) * -1)}
 [data-design="frequency"] [data-kit="members"] .mc-id-text{gap:var(--fq-space-3);min-width:0;padding-bottom:var(--fq-space-2)}
 [data-design="frequency"] [data-kit="members"] .h1.mc-name{white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .mc-id-acts{justify-content:flex-end;padding-bottom:var(--fq-space-2)}

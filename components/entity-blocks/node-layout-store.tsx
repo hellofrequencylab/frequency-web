@@ -40,6 +40,10 @@ interface NodeLayoutStoreValue {
   /** The node whose settings are focused. A node id, so two Text blocks are two selections. */
   selectedNid: string | null
   select: (nid: string | null) => void
+  /** Within a multi-item block (Features / Card Grid), the one item focused on the canvas and in the rail.
+   *  Cleared whenever the selected node changes, like the live store's. */
+  selectedItemIndex: number | null
+  selectItem: (index: number | null) => void
   /** Fold a change over the freshest layout, repaint now, save debounced. */
   edit: (change: (layout: NodeLayout) => NodeLayout) => void
   undo: () => void
@@ -63,6 +67,7 @@ const NodeLayoutCtx = createContext<NodeLayoutStoreValue | null>(null)
 export function NodeLayoutProvider({ identity, save, children }: { identity?: string; save: SaveNodeLayout; children: ReactNode }) {
   const [layout, setLayout] = useState<NodeLayout | null>(null)
   const [selectedNid, setSelectedNid] = useState<string | null>(null)
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +78,7 @@ export function NodeLayoutProvider({ identity, save, children }: { identity?: st
     setIdentityWas(identity)
     setLayout(null)
     setSelectedNid(null)
+    setSelectedItemIndex(null)
     setSaving(false)
     setDirty(false)
     setError(null)
@@ -182,6 +188,12 @@ export function NodeLayoutProvider({ identity, save, children }: { identity?: st
     setLayout(initial)
   }, [syncSubject])
 
+  const select = useCallback((nid: string | null) => {
+    setSelectedNid(nid)
+    setSelectedItemIndex(null)
+  }, [])
+  const selectItem = useCallback((index: number | null) => setSelectedItemIndex(index), [])
+
   // A mid-debounce edit is never lost on unmount or navigation.
   useEffect(() => {
     return () => {
@@ -192,7 +204,7 @@ export function NodeLayoutProvider({ identity, save, children }: { identity?: st
 
   return (
     <NodeLayoutCtx.Provider
-      value={{ seeded: layout !== null, layout, selectedNid, select: setSelectedNid, edit, undo, canUndo, seed, saving, dirty, error }}
+      value={{ seeded: layout !== null, layout, selectedNid, select, selectedItemIndex, selectItem, edit, undo, canUndo, seed, saving, dirty, error }}
     >
       {children}
     </NodeLayoutCtx.Provider>
