@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1001",
+  "title": "A redelivered email to a Space inbox address is acknowledged before a thread opens, so provider retries leave no empty conversations",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "closed": "2026-10-19",
+  "source": {
+    "file": "lib/comms/space-inbox-address.ts",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "recordSpaceInboxMessage (EMAIL-022) opened a NEW conversation (forceNew) before appending the message, and the duplicate only surfaced at the append through the unique index on comms_messages.external_message_id. A provider redelivery (a webhook timeout, or a retry after a 503) therefore inserted a fresh conversation every time and left it empty in the Space console. It now looks the Message-ID up first and acknowledges the duplicate before creating a contact or a thread; a failed lookup asks for redelivery. A test pins that a redelivery opens nothing.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/comms/space-inbox-address.ts','utf8');const i=s.indexOf('export async function recordSpaceInboxMessage');const b=s.slice(i,i+3000);const seen=b.indexOf(\\\"table('comms_messages')\\\"),open=b.indexOf('openOrGetConversation(');if(i<0||seen<0||open<0||seen>open){console.error('SCAN-1001: a redelivered Space inbox message opens a new thread before the duplicate is noticed');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

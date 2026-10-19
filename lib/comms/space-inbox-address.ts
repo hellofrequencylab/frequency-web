@@ -329,6 +329,14 @@ export async function recordSpaceInboxMessage(
   parsed: { from: string; subject: string | null; text: string | null; messageId: string | null; inReplyTo: string | null; referencesIds: string[] | null },
 ): Promise<SpaceInboxRecordStatus> {
   if (!route.ownerProfileId) return { status: 'no_owner' }
+  // SCAN-1001: a redelivery is acknowledged BEFORE a thread opens. The append's unique index on
+  // external_message_id catches the duplicate, but only after forceNew has already inserted a conversation,
+  // so every provider retry left an empty thread in the Space console.
+  if (parsed.messageId) {
+    const seen = await table('comms_messages').select('conversation_id').eq('external_message_id', parsed.messageId).limit(1).maybeSingle()
+    if (seen.error) return { status: 'error' }
+    if (seen.data) return { status: 'duplicate', conversationId: String(seen.data.conversation_id) }
+  }
   const contact = await ensureSpaceContact(route.spaceId, parsed.from)
   if (!contact) return { status: 'error' }
   const subject = (parsed.subject ?? '').trim().slice(0, 300) || '(no subject)'
