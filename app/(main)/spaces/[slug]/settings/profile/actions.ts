@@ -137,8 +137,11 @@ async function saveSpaceProfileLayout(
   // `hidden` where the seed path strips it — two encodings of one arrangement that could never
   // match as bytes. Drafts only; a write to the PUBLISHED node is the owner's explicit act and is
   // never second-guessed.
-  if (!nativeWrite && target === 'profileLayoutDraft' && layoutRendersSame(node, current.profileLayout ?? null, 'space')) {
-    delete current.profileLayoutDraft
+  // A native draft is never auto-cleared: layoutRendersSame compares type-keyed documents (ADR-1834).
+  if (!nativeWrite) {
+    if (target === 'profileLayoutDraft' && layoutRendersSame(node, current.profileLayout ?? null, 'space')) {
+      delete current.profileLayoutDraft
+    }
   }
 
   if (!(await updateSpacePreferences(space.id, current))) {
