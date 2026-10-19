@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { readProgramOverview } from '@/lib/spaces/leadership'
+import { readSpacePrivateState } from '@/lib/spaces/private-state'
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -45,7 +46,8 @@ export default async function SpaceLeadershipPage({
 
   const brandName = space.brandName?.trim() || space.name
   const published = readWebsitePublished(space.preferences)
-  const markdown = readProgramOverview(space.preferences)
+  const privateState = await readSpacePrivateState(space.id)
+  const markdown = readProgramOverview(privateState.programOverview || space.preferences)
 
   return (
     <ConsoleDashboardTemplate

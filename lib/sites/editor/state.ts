@@ -122,6 +122,15 @@ export function validWebsiteSnapshot(v: unknown): v is WebsiteSnapshot {
   return slugs.has('home') && new TextEncoder().encode(JSON.stringify(v)).length <= MAX_WEBSITE_BYTES
 }
 
+/** Overlay the service-role editor row onto a Space's public preferences (SCAN-827). The public
+ *  stub has no draft; editors must read through this so review comments stay off the anon-readable row. */
+export function overlayWebsiteEditor(preferences: unknown, websiteEditor: unknown): unknown {
+  if (websiteEditor == null) return preferences
+  const rec = record(preferences) ? { ...preferences } : {}
+  rec.websiteEditor = websiteEditor
+  return rec
+}
+
 export function readWebsiteEditor(preferences: unknown): WebsiteEditorState | null {
   const s = record(preferences) ? preferences.websiteEditor : null
   if (!record(s) || s.v !== 1 || !Number.isSafeInteger(s.revision) || (s.revision as number) < 0 || !validWebsiteSnapshot(s.draft)) return null
@@ -143,7 +152,8 @@ export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteThe
 
 /** The published website the PUBLIC site draws, or null to keep the house look: nothing published, or a
  *  published theme not yet in WEBSITE_THEMES_LIVE. The one gate every public reader goes through (the
- *  site, its share image, the crawler); the editor reads its own state through readWebsiteEditor. */
+ *  site, its share image, the crawler). The public preferences stub carries only this snapshot plus
+ *  revision (SCAN-827); the editor reads the full state through overlayWebsiteEditor + readWebsiteEditor. */
 export function publishedWebsiteSnapshot(preferences: unknown): WebsiteSnapshot | null {
   const editor = record(preferences) ? preferences.websiteEditor : null
   const published = record(editor) ? editor.published : null

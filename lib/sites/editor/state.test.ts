@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextWebsiteState, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, WEBSITE_THEMES_LIVE, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
+import { nextWebsiteState, overlayWebsiteEditor, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, WEBSITE_THEMES_LIVE, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
 const comment = (): SiteComment => ({ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false })
 const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [comment()] }] })
 const state = (): WebsiteEditorState => ({ v: 1, revision: 0, draft: snapshot(), published: null, versions: [] })
@@ -58,6 +58,15 @@ describe('website draft boundary', () => {
     expect(live.published?.pages[0].comments).toEqual([])
     expect(live.draft.pages[0].comments).toHaveLength(1)
     expect(withoutWebsiteDrafts({ websiteEditor: live, profileLayout: 'unchanged' })).toEqual({ profileLayout: 'unchanged' })
+  })
+  it('overlays the private editor row onto a public preferences stub', () => {
+    const live = nextWebsiteState(state(), snapshot(), true, 'owner')
+    const stub = { websiteEditor: { v: 1, revision: live.revision, published: live.published }, theme: 'kept' }
+    const merged = overlayWebsiteEditor(stub, live)
+    expect(readWebsiteEditor(stub)).toBeNull()
+    expect(readWebsiteEditor(merged)).toEqual(live)
+    expect(publishedWebsiteSnapshot(stub)?.theme).toBe(live.published?.theme)
+    expect(overlayWebsiteEditor(stub, null)).toBe(stub)
   })
   it('keeps the house look live when a theme whose render is not ready is published', () => {
     // Owner ask 2026-10-11: a DAWN publish replaced danieltyack.com with an unfinished render.

@@ -3,6 +3,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueueEmail, listUnsubscribeHeaders, sendGuestRsvpConfirmationEmail } from '@/lib/email'
+import { palette } from '@/lib/theme/palette'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { sendPushToProfile } from '@/lib/push'
 import { formatEventWhen, resolveZone } from '@/lib/time/zone'
@@ -12,7 +13,6 @@ import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { mintGuestSeatUrl, type SeatRpcClient } from '@/lib/events/guest-seat'
 import type { PromotedSeat } from './capacity'
-import { palette } from '@/lib/theme/palette'
 
 // ── "A spot opened up and you're in." ────────────────────────────────────────────────────────────
 //
@@ -292,7 +292,7 @@ function promotedSeatHtml(p: PromotedSeatEmailParts): string {
     <a href="${p.googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>
     <a href="${p.icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>
   </p>
-  <p style="font-size:14px;line-height:1.5;color:#6B6252;margin:24px 0 0;">Plans changed? Open the event and tap Going again to give the seat back.</p>
+  <p style="font-size:14px;line-height:1.5;color:${palette.textMuted};margin:24px 0 0;">Plans changed? Open the event and tap Going again to give the seat back.</p>
   <p style="font-size:12px;color:${palette.emailSubtle};margin:32px 0 0;"><a href="${p.unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a></p>
 </div>`.trim()
 }

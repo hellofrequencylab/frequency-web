@@ -18,7 +18,7 @@ function refused(err: unknown): ActionResult<Outcome> {
 }
 export async function setUpSpaceInboxAddress(spaceId: string, slug: string): Promise<ActionResult<Outcome>> {
   try { await assertOwner(spaceId) } catch (err) { return refused(err) }
-  return finish(slug, await provisionSpaceInboxAddress(spaceId))
+  return finish(slug, await provisionSpaceInboxAddress(spaceId, { restartFailureWindow: true }))
 }
 export async function checkSpaceInboxAddressAction(spaceId: string, slug: string): Promise<ActionResult<Outcome>> {
   try { await assertOwner(spaceId) } catch (err) { return refused(err) }
