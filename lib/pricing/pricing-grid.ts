@@ -61,7 +61,7 @@ import {
   trialNote,
   type PriceRow,
 } from './display'
-import { allowanceLabel, currentMeterStepIndex, featureMeter } from './feature-meters'
+import { allowanceAt, allowanceLabel, currentMeterStepIndex, featureMeter, siblingAllowanceText } from './feature-meters'
 import { FOUNDING_RATE_NOTE, isBetaPricingActive } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 import { planTakesPayments } from './payments-plan'
@@ -496,6 +496,12 @@ function gateCell(feature: string, column: GridColumn, overrides: FeatureGateOve
 function meterCell(feature: string, column: GridColumn): GridCell {
   const ladder = featureMeter(feature)
   if (!ladder) return NO
+  // A sibling plan the row names (Non Profit's 5 QR codes, Network's 10 seats) shows ITS number, the
+  // one allowanceAt and the gate use, never the rung it ranks with (LIVE-992).
+  const own = siblingAllowanceText(feature, column.tier)
+  if (own != null) {
+    return allowanceAt(feature, column.tier) === 0 ? { kind: 'no', text: own } : { kind: 'value', text: own }
+  }
   const step = ladder.steps[currentMeterStepIndex(ladder, column.tier)]
   if (!step) return NO
   if (step.allowance === 0) return { kind: 'no', text: allowanceLabel(0, ladder.unit, ladder.period) }
