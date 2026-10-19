@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1005",
+  "title": "The Events page, its map and the rail map never show the exact place of an event whose host hid the address",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-19",
+  "source": {
+    "file": "app/(main)/events/index-data.ts",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "ADR-825 (hide_address) says the precise pin and the street address render only for people who are going, and lib/nearby/map-pins.ts coarsens hidden events with approximatePoint. The /events loader (getEventsIndexData) did neither: it did not select hide_address, plotted standalone events at their exact geocoded point with the host's location line as the label, and passed the same location line to every card and to the Around you items. /events is anonymous-readable, SCAN-975 (#3497) made that map the head of the page, and SCAN-998 (#3505) exposed the same data through loadRailEventsMap, an unauthenticated server action on every member page's rail. The loader now selects hide_address, city and region, marks a row hidden on the flag or the host's own words (withholdsAddress, ADR-1028), swaps the location line for the city line when the flag is set, and gives a hidden event a grid-cell pin (or no pin when it cannot be coarsened).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/events/index-data.ts','utf8');const bad=[];if(!/hide_address, city, region/.test(s))bad.push('the events loader does not read hide_address');if(!/e\\\\.address_hidden = e\\\\.hide_address === true \\\\|\\\\| withholdsAddress\\\\(e\\\\.location\\\\)/.test(s)||!/if \\\\(e\\\\.hide_address === true\\\\) e\\\\.location = cityLine\\\\(e\\\\)/.test(s))bad.push('a hidden address still reaches the cards');if(!/if \\\\(e\\\\.address_hidden\\\\) \\\\{[\\\\s\\\\S]{0,200}approximatePoint\\\\(pt\\\\.lat, pt\\\\.lng, e\\\\.id\\\\)/.test(s))bad.push('a hidden event is still pinned at its exact point');if(bad.length){console.error('SCAN-1005: '+bad.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}
