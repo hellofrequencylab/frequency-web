@@ -10,6 +10,7 @@ import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { readSpaceStanding } from '@/lib/spaces/standing-rollup'
 import { standingLevers, type StandingLever } from '@/lib/spaces/standing'
 import { ReachReceipt } from '@/components/spaces/reach-receipt'
+import { isChapterParentPlan } from '@/lib/collective/member-spaces'
 
 // THE OPERATOR RECEIPT (LIVE-265 - docs/CORE-MODEL.md Phase 10 §8.4): "what did the network send
 // me, and what would send more". The reason an operator opens the app on a Tuesday.
@@ -88,7 +89,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
         listed={index >= 0}
         computedAt={stored?.computedAt ?? null}
       />
-      {caller?.id === space.ownerProfileId && ['collective', 'nonprofit_collective'].includes(space.plan ?? '') && <Suspense fallback={<p className="mt-8 text-body-sm text-muted">Loading your Collective report…</p>}><CollectiveNetworkReport spaceId={space.id} callerProfileId={caller.id} /></Suspense>}
+      {caller?.id === space.ownerProfileId && isChapterParentPlan(space.plan) && <Suspense fallback={<p className="mt-8 text-body-sm text-muted">Loading your Collective report…</p>}><CollectiveNetworkReport spaceId={space.id} callerProfileId={caller.id} /></Suspense>}
     </ConsoleFocusTemplate>
   )
 }
