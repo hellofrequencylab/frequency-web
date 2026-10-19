@@ -70,7 +70,7 @@ describe('effectiveCatalogAmounts', () => {
   })
 })
 
-describe('foundingOpenFor (ADR-1750: a per-item Founding intro that outlives the beta window)', () => {
+describe('foundingOpenFor (ADR-1751: a per-item Founding intro that outlives the beta window)', () => {
   it('while the window is open every item is founding', () => {
     expect(foundingOpenFor('business_base', true)).toBe(true)
     expect(foundingOpenFor(null, true)).toBe(true)

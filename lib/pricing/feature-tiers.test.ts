@@ -150,7 +150,7 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
     for (const plan of SPACE_PLANS) {
       const amounts = SPACE_PLAN_PRICE_CENTS[plan]
       // During beta a plan is charged its founding amount; after the cutover the list becomes the price,
-      // except for a plan whose Founding intro is held open by FOUNDING_OPEN_ITEMS (Collective, ADR-1750).
+      // except for a plan whose Founding intro is held open by FOUNDING_OPEN_ITEMS (Collective, ADR-1751).
       const afterCutover = foundingOpenForPlan(plan, false) ? amounts.foundingCents : amounts.listCents
       expect(spacePlanPriceCents(plan, true), plan).toBe(amounts.foundingCents)
       expect(spacePlanPriceCents(plan, false), plan).toBe(afterCutover)

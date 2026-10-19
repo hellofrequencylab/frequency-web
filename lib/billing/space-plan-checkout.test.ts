@@ -184,7 +184,7 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     beta.active = false // the window is SHUT, which is the only world the grant exists for
   })
 
-  it('WITHOUT the grant: Business resolves the LIST key; a Collective loadout bills the FOUNDING collective_base key (ADR-1750)', async () => {
+  it('WITHOUT the grant: Business resolves the LIST key; a Collective loadout bills the FOUNDING collective_base key (ADR-1751)', async () => {
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month_list'])
     // Collective keeps its Founding intro open after the cutover (FOUNDING_OPEN_ITEMS): $99 under $149.
