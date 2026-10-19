@@ -27,7 +27,7 @@
 //
 // ───────────────────────────────────────────────────────────────────────────
 // REQUIRED ENV FLAGS (none set today -> always gated):
-//   SMS_PROVISIONING_ENABLED  — "true" once the A2P 10DLC legal track is cleared.
+//   SMS_PROVISIONING_ENABLED  — envFlag on (1 / true / on) once the A2P 10DLC legal track is cleared.
 //                               The master kill-switch; absent/anything-else = off.
 //   SMS_A2P_BRAND_ID          — the registered A2P 10DLC brand id (EIN-backed).
 //   SMS_A2P_CAMPAIGN_ID       — the approved A2P 10DLC campaign/use-case id.
