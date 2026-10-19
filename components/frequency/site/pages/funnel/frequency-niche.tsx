@@ -38,7 +38,7 @@ const ICON: Record<FunnelIconName, FqIconName> = {
   spark: 'zap',
 }
 
-const HUES = ['var(--fq-x-sun-neon)', 'var(--fq-x-magenta-neon)', 'var(--fq-x-violet-neon)', 'var(--fq-x-aqua-neon)']
+const HUES = ['var(--fq-x-sun-neon)', 'var(--fq-x-magenta-neon)', 'var(--fq-x-sky-neon)', 'var(--fq-x-aqua-neon)']
 
 export function FrequencyNiche({ config }: { config: FunnelConfig }) {
   const { hero, problem, howItWorks, features, pricing, faq, finalCta } = config

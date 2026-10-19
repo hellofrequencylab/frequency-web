@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-962",
+  "wave": "W7",
+  "title": "The violet and indigo family is gone from Frequency's own surfaces: sky, ink and cool blue-black replace it, and only the pastel pill's lilac stop stays",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/themes/frequency/core.css",
+    "ref": "Owner 2026-10-19: 'You still have that violet color in there. Scan it all again and fix that. Remove the color from the system.'"
+  },
+  "detail": "FILED 2026-10-19. ADR-1791 moved the accent roles to ink and the pastel pill, but the family stayed under other names: --fq-x-violet-neon and --fq-uv-violet (Stage aura, site wing and mood washes, calendar and map halos), the purple-black Stage and night grounds, lavender text, the violet Menu tile tone, lilac glows and iridescent stops, the editor range accent, the OG card indigo and the Indigo rank ramp. Now: the neon token is --fq-x-sky-neon (#A3D4FF), violet-deep and uv-violet are deleted, grounds and text are cool blue-black and cool greys, the tile tone is ink, the OG accent on DAWN is the platform amber, the rank ramp is slate blue on Frequency. Kept: the --fq-pa lilac stop (handoff), DAWN's own files, Wildheart, Spotlight presets, design_handoff. ADR-1792.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/violet-family.mjs"
+  },
+  "closed": "2026-10-19"
+}
