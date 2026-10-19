@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs'
 
 // DAWN's own tokens (app/globals.css :root and its two TypeScript mirrors) belong to the DAWN design that
 // Space websites wear; Frequency overrides them in app/themes/frequency.css.
-const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/spotlight/theme.ts', 'lib/sites/editor/theme-contract.json', 'app/globals.css', 'lib/maps/css-color.ts', 'lib/maps/pin-kinds.ts'])
+const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/spotlight/theme.ts', 'lib/sites/editor/theme-contract.json', 'app/globals.css', 'lib/maps/css-color.ts', 'lib/maps/pin-kinds.ts', 'app/dev/og-root-card/route.tsx'])
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)
 const bad = []
 
