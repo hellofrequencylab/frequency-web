@@ -6,8 +6,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues, billingLive } from '@/lib/pricing/settings'
-import { spaceLoadoutSellable, operatorSeatsSellable } from '@/lib/billing/space-plan-checkout'
-import { loadCatalogConfig, catalogConfigByKey } from '@/lib/pricing/catalog-config'
+import { spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
@@ -26,7 +25,6 @@ import { ManageSubscriptionButton } from './manage-subscription'
 import { loadExtraSpaceQuote } from '@/lib/collective/extra-space-billing'
 import { loadMemberSpaceManagement } from '@/lib/collective/member-spaces-store'
 import { MemberSpaceEditor } from './member-space-editor'
-import { SeatEditor } from './seat-editor'
 
 // BILLING BODY — the chrome-free plan-and-usage hub, lifted out of the standalone /settings/billing page
 // (Stage D2) so it renders in TWO places from one source: (1) that page, wrapped in its FocusTemplate
@@ -95,14 +93,13 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
+  // Seats are included per tier (ADR-1810): nothing on this surface sells a seat.
   const [
     values,
     businessSellable,
-    seatsSellable,
     seatUsage,
     billingIsLive,
     verification,
-    catalog,
     earnings,
     contactCount,
     manualAgreement,
@@ -111,11 +108,9 @@ export async function BillingBody({ slug }: { slug: string }) {
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
-    operatorSeatsSellable(),
     getSeatUsage(space.id),
     billingLive(),
     getSpaceVerification(space.id),
-    loadCatalogConfig(),
     // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
     spaceEarningsSummary(space.id, 30),
     // The CRM usage read for the contacts meter (ADR-837). This counts CONTACTS, which is what the
@@ -139,17 +134,6 @@ export async function BillingBody({ slug }: { slug: string }) {
   const extraSpaceQuote = memberSpaces?.active ? await loadExtraSpaceQuote(space.id) : null
   const isPaid = currentPlan !== 'free'
 
-  // The resolved (operator-set) per-seat monthly price, so the seat pickers can show what a chosen
-  // quantity actually costs instead of leaving the count priceless. The FOUNDING amount is the one charged.
-  const seatMonthlyCents = catalogConfigByKey(catalog).operator_seat.monthlyFoundingCents
-  // The yearly seat price (two months free unless the operator set an override), for the Yearly reading.
-  const seatYearlyCents = catalogConfigByKey(catalog).operator_seat.year.foundingCents
-  // Downgrade floor: the licensed total (base + seatQuantity) must cover the operators already active, so
-  // the minimum safe seatQuantity is used - the free base allowance. Reducing below it would leave active
-  // operators over the licensed count. `used` counts member-operators only (the owner rides the base seat).
-  // `seatUsage.base` is the PLAN's included seats (ADR-917), not a flat 1: a Collective Space includes
-  // three, so flooring against the free base would demand licensed seats it does not need.
-  const minSeats = Math.max(0, seatUsage.used - seatUsage.base)
 
   // The old "you'd have saved $X on Business" nudge is RETIRED (ADR-811): it applied the take-rate delta
   // to a Space's WHOLE processed volume, which now misstates the promise (we take 0% on a Space's own
@@ -266,9 +250,6 @@ export async function BillingBody({ slug }: { slug: string }) {
             <GoBusinessCta
               slug={space.slug}
               sellable={businessSellable}
-              seatsSellable={seatsSellable}
-              seatMonthlyCents={seatMonthlyCents}
-              seatYearlyCents={seatYearlyCents}
               trialDays={values.trial.days}
             />
             {/* The per-city Founding BUSINESS cohort door was here. Removed 2026-08-10: the cohort was
@@ -281,25 +262,11 @@ export async function BillingBody({ slug }: { slug: string }) {
         )}
 
         {/* Already paying: the self-serve subscription control. Opens the Stripe billing portal (payment
-            method, plan change/cancel, seats where the portal allows). Owner action; hidden in staff
+            method, plan change/cancel). Owner action; hidden in staff
             preview (read-only). A paid space that has no Stripe customer yet just gets a clean error.
             Hidden while a MANUAL agreement is active (ADR-872): a cash deal has no Stripe portal, so
             the button would only ever error; the agreement card above carries the state instead. */}
         {isPaid && !staffViewing && !manualAgreement && <ManageSubscriptionButton slug={space.slug} />}
-
-        {/* Direct operator-seat editor (A4/A5): change the licensed seat count on the live subscription
-            with proration. Only when paying AND seats are sellable (activated + priced), so it stays
-            hidden while seats are inert. Guarantees seat management even if the Stripe portal is not
-            configured to expose seat quantities. */}
-        {isPaid && !staffViewing && seatsSellable && (
-          <SeatEditor
-            slug={space.slug}
-            initialSeats={seatUsage?.seatQuantity ?? 0}
-            seatMonthlyCents={seatMonthlyCents}
-            usedSeats={seatUsage.used}
-            minSeats={minSeats}
-          />
-        )}
 
         {/* Non Profit is the verified-501(c)(3) sibling plan (ADR-811): everything Business does, with
             no network fee, at a flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives

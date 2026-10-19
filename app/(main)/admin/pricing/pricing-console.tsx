@@ -28,7 +28,6 @@ import {
   savePwywConfig,
   saveAddonEnabled,
   saveFoundingConfig,
-  setOperatorSeatActive,
   setBetaFlag,
   saveAnnouncementEndsAt,
   saveAnnouncementMessage,
@@ -69,7 +68,7 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
       <GatingReadout gating={data.gating} />
 
       <SwitchesSection flags={data.flags} />
-      <CatalogSection catalog={data.catalog} operatorSeatActive={data.flags.catalog_operator_seat_active} />
+      <CatalogSection catalog={data.catalog} />
       <PlansSection values={data.values} />
       <FoundingConfigSection founding={data.founding} />
       <DomainSalesSection enabled={data.flags.domain_purchase_enabled} markupCents={data.domainMarkupCents} />
@@ -80,24 +79,19 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
   )
 }
 
-// ── The clean catalog editor (Pro base + add-ons + seat + org · ADR-463) ───────────────────────────
+// ── The clean catalog editor (the bases + add-ons · ADR-463) ───────────────────────────────────────
 // Each item shows the LIST anchor and the lower FOUNDING price the member is charged, with the monthly
 // amount the headline and the yearly derived two months free (overridable). Plus the per-add-on enable
-// toggles, the seat bundled floor, and the Supporter PWYW config.
+// toggles, the seat bundled floor, and the Supporter PWYW config. The $12 operator-seat row and its
+// activation switch are gone (ADR-1810): seats are included per tier, never sold.
 
-function CatalogSection({
-  catalog,
-  operatorSeatActive,
-}: {
-  catalog: CatalogConfig
-  operatorSeatActive: boolean
-}) {
+function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
   const byKey = Object.fromEntries(catalog.items.map((i) => [i.key, i])) as Record<string, ResolvedCatalogItem>
   const addonItems = catalog.items.filter((i) => addonKeyForCatalogItem(i.key) !== null)
   return (
     <AdminSection
       title="Catalog"
-      description="Every base (Business, Collective, Network, Non Profit, Independent) plus the Vera AI add-on and the seats. Each price shows a list anchor and the Opening Beta price under it, monthly AND yearly, every field populated. The Opening Beta window is CLOSED (ADR-1060), so the LIST price is what is charged today and the beta figure under it is history until someone re-opens the window in lib/pricing/beta.ts. The yearly stays two months free as you change the monthly, unless you type a different yearly."
+      description="Every base (Business, Collective, Network, Non Profit, Independent) plus the Vera AI and custom domain add-ons. Each price shows a list anchor and the Opening Beta price under it, monthly AND yearly, every field populated. The Opening Beta window is CLOSED (ADR-1060), so the LIST price is what is charged today and the beta figure under it is history until someone re-opens the window in lib/pricing/beta.ts. The yearly stays two months free as you change the monthly, unless you type a different yearly."
     >
       <FormSection
         title="Business base"
@@ -163,13 +157,6 @@ function CatalogSection({
         description="The minimum licensed seats a seat plan bills. A Non Profit pays for at least this many seats even with fewer members."
       >
         <SeatConfigRow bundledFloor={catalog.seat.bundledFloor} seatItem={byKey.nonprofit_seat} />
-      </FormSection>
-
-      <FormSection
-        title="Operator seat"
-        description="Each operator beyond the owner (editor, moderator, admin) bills one seat on a paid plan. The seat ships as a placeholder that the catalog sync skips, so no price is minted. Set the price, then turn the seat on to mint the live Stripe price on the next sync. Nothing charges until billing goes live."
-      >
-        <OperatorSeatRow item={byKey.operator_seat} active={operatorSeatActive} />
       </FormSection>
 
       {/* THIS IS THE CREW PRICE CONTROL, not an extras box. It was labelled "Supporter (pay what you
@@ -380,76 +367,6 @@ function PwywConfigRow({ minCents, suggestedCents }: { minCents: number; suggest
       </div>
       <p className="text-2xs text-muted">The suggested amount is raised to the minimum if you set it lower.</p>
       {error && <p className="text-meta text-danger">{error}</p>}
-    </div>
-  )
-}
-
-// ── Operator seat (per-seat add-on · ADR-799/803) ──────────────────────────────────────────────────
-// The seat ships as a PLACEHOLDER: the catalog sync skips it so no Stripe price is minted. The operator
-// sets the seat price (the same monthly list + founding fields as any catalog item), then flips the
-// activation switch on to drop the placeholder. Only then does the next sync mint the live seat price.
-
-function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: boolean }) {
-  const [on, setOn] = useState(active)
-  const [pending, start] = useTransition()
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  function toggle() {
-    const next = !on
-    if (next) {
-      // Guard against minting a live $0 seat price: the card says "set the price first," so enforce it.
-      if (item.monthlyFoundingCents <= 0) {
-        setError('Set the seat price above 0 before turning it on.')
-        return
-      }
-      if (!window.confirm('Turn the operator seat on? The next catalog sync mints its live Stripe price from the amount below.')) {
-        return
-      }
-    }
-    setOn(next)
-    setError(null)
-    setSaved(false)
-    start(async () => {
-      const res = await setOperatorSeatActive(next)
-      if (isError(res)) {
-        setOn(!next)
-        setError(res.error)
-      } else {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-      }
-    })
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-body-sm font-semibold text-text">Seat activation</span>
-            <StatusChip tone={on ? 'success' : 'neutral'} size="sm">
-              {on ? 'Active' : 'Placeholder'}
-            </StatusChip>
-          </div>
-          <p className="mt-1 text-2xs text-muted">
-            {on
-              ? 'The seat is active. The next catalog sync will mint its Stripe price from the amount below.'
-              : 'The seat is a placeholder. The catalog sync skips it, so no Stripe price is minted. Set the price first, then turn it on.'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {error && <span className="text-meta text-danger">{error}</span>}
-          <Toggle
-            checked={on}
-            onChange={toggle}
-            ariaLabel="Operator seat active"
-            disabled={pending}
-            saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
-          />
-        </div>
-      </div>
-      <CatalogItemRow item={item} />
     </div>
   )
 }

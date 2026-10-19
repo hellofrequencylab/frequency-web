@@ -43,7 +43,6 @@
 
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import {
-  catalogItem,
   networkTakeRateBpsForPlan,
   networkTakeRateFromStored,
   type CatalogItemKey,
@@ -82,7 +81,7 @@ import type { PricingDefaults } from './settings'
 /** Everything the grid needs, resolved by the caller from the operator-editable config. Handed in so
  *  this module stays pure: `values` is getPricingValues() (the pricing_settings layer, which carries the
  *  plan/tier prices, the trial, the annual discount, and the take-rates) and `catalog` is the resolved
- *  catalog config (which carries the metered add-on and the operator-seat amounts). */
+ *  catalog config (which carries the metered add-on amounts). */
 export interface PricingGridInput {
   values: PricingDefaults
   /** The resolved catalog items, keyed (catalogConfigByKey(loadCatalogConfig())). */
@@ -447,8 +446,6 @@ type RowSource =
   | { from: 'payments' }
   /** Reads ADDON_ENTITLEMENT_KEYS + the catalog amount: the metered add-on's availability and price. */
   | { from: 'addon'; addon: AddonKey }
-  /** Reads the operator-seat catalog item: extra team seats, on the tiers whose depth includes `team`. */
-  | { from: 'seats' }
   /** Reads trial.days: the free trial, on the tiers that are sold. */
   | { from: 'trial' }
   /** A capability that is on for every column on this ladder (the free core). One declaration, not a
@@ -530,21 +527,6 @@ function addonCell(addon: AddonKey, column: GridColumn, input: PricingGridInput)
   return { kind: 'value', text: `Add-on, ${formatCents(item.month.foundingCents)}/mo` }
 }
 
-/** Resolve the extra-operator-seats cell. Seats ride the tiers whose depth includes the `team` key
- *  (ADR-799); the per-seat amount comes from the operator-seat catalog item. LIVE-229 cleared the
- *  placeholder, so a missing catalog row is the only remaining "owner-priced" path. */
-function seatsCell(column: GridColumn, input: PricingGridInput): GridCell {
-  if (column.axis !== 'plan') return { kind: 'no', text: 'Not part of a member plan' }
-  if (!planEntitlementKeys(column.tier as SpacePlan).includes('team')) {
-    return { kind: 'no', text: 'Not on this plan' }
-  }
-  const item = input.catalog.operator_seat
-  if (!item || catalogItem('operator_seat').placeholder) {
-    return { kind: 'value', text: 'Add seats, owner-priced' }
-  }
-  return { kind: 'value', text: `${formatCents(item.month.foundingCents)}/seat/mo` }
-}
-
 /** Resolve one cell for one row + column. THE single place a cell is decided. PURE. */
 function resolveCell(source: RowSource, column: GridColumn, input: PricingGridInput): GridCell {
   switch (source.from) {
@@ -573,8 +555,6 @@ function resolveCell(source: RowSource, column: GridColumn, input: PricingGridIn
     }
     case 'addon':
       return addonCell(source.addon, column, input)
-    case 'seats':
-      return seatsCell(column, input)
     case 'trial': {
       const note = trialNote(input.values)
       if (!isPaidColumn(column) || column.axis !== 'plan') return { kind: 'value', text: 'No card, no clock' }
@@ -818,14 +798,8 @@ const SPACE_GROUPS: GroupDef[] = [
       {
         key: 'space_team',
         label: 'Operator seats included',
-        detail: 'The seats that come with the plan. The owner always has one.',
+        detail: 'The seats that come with the plan, at no extra charge. The owner always has one.',
         source: { from: 'meter', feature: 'space_team' },
-      },
-      {
-        key: 'seats',
-        label: 'Extra operator seats',
-        detail: 'Add seats when the team grows past what the plan includes.',
-        source: { from: 'seats' },
       },
       {
         key: 'space_collaborators',
@@ -1055,10 +1029,11 @@ export function memberFeatureGrid(input: PricingGridInput): FeatureGrid {
   return buildGrid(MEMBER_GROUPS, memberOfferings(input).map(offeringColumn), input)
 }
 
-// ── Seats + the AI add-on, stated once, priced from config ───────────────────────────────────────────
+// ── The add-ons, stated once, priced from config ─────────────────────────────────────────────────────
 
-/** One purchasable extra that rides a plan rather than being one: the AI add-on and team seats. Both are
- *  also rows in the grid, so the difference between tiers stays visible in the comparison. */
+/** One purchasable extra that rides a plan rather than being one: Vera AI and the custom domain. Both
+ *  are also rows in the grid, so the difference between tiers stays visible in the comparison. Seats are
+ *  not an extra: every tier includes its seats (ADR-1810). */
 export interface PlanExtra {
   key: string
   label: string
@@ -1073,19 +1048,14 @@ export interface PlanExtra {
 /** The purchasable extras, priced from the operator-editable catalog. PURE.
  *
  *  The AI add-on's availability is derived: its entitlement keys are in no tier base, so it reads as an
- *  add-on on every paid tier. Seats derive from which tiers carry the `team` depth key. */
+ *  add-on on every paid tier. */
 export function planExtras(input: PricingGridInput): PlanExtra[] {
   const ai = input.catalog.addon_ai
   const domain = input.catalog.addon_custom_domain
-  const seat = input.catalog.operator_seat
-  const seatPlaceholder = catalogItem('operator_seat').placeholder === true
-  // 🔴 NAMED OVER THE ADVERTISED LADDER, NOT SPACE_PLANS. These two sentences print plan names to a
+  // 🔴 NAMED OVER THE ADVERTISED LADDER, NOT SPACE_PLANS. These sentences print plan names to a
   // visitor, so they are a public mention of every tier they list. Reading SPACE_PLANS here is how the
   // add-on card went on saying "Optional on every paid Space plan: Business, Collective, Non Profit,
   // and Independent" while the ladder above it had stopped showing Independent at all.
-  const teamTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).includes('team')).map(
-    (p) => SPACE_PLAN_LABEL[p],
-  )
   const paidTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).length > 0)
 
   return [
@@ -1107,15 +1077,6 @@ export function planExtras(input: PricingGridInput): PlanExtra[] {
         : 'Not sold yet',
       availability: addonAvailability('custom_domain', paidTiers),
       detail: 'Your Space site on your own domain. We show you the records to set, and it connects from your Space.',
-    },
-    {
-      key: 'seats',
-      label: 'Operator seats',
-      price:
-        seat && !seatPlaceholder ? `${formatCents(seat.month.foundingCents)}/seat/mo` : 'Owner-priced today',
-      availability: `Available on the plans that include team roles: ${listPhrase(teamTiers)}.`,
-      detail:
-        'Your own seat is included on every plan. Extra seats are for the editors, moderators, and admins who run the Space with you.',
     },
   ]
 }

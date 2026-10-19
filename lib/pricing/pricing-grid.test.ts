@@ -455,9 +455,9 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
   })
 })
 
-// ── Seats + the AI add-on are integrated, priced from config ────────────────────────────────────────
+// ── The add-ons are integrated, priced from config; seats are included, never sold ──────────────────
 
-describe('seats and the AI add-on', () => {
+describe('the add-ons and the included seats', () => {
   const grid = spaceFeatureGrid(input)
 
   it('prices the AI add-on from the catalog on every paid tier, and never sells it on Free', () => {
@@ -495,18 +495,12 @@ describe('seats and the AI add-on', () => {
     }
   })
 
-  it('offers extra seats exactly on the tiers whose depth includes the team key', () => {
-    const cells = cellsByColumn(grid, 'seats')
-    for (const plan of SHOWN_SPACE_PLANS) {
-      const hasTeam = planEntitlementKeys(plan).includes('team')
-      expect(cells[plan] === 'Not on this plan', `seats @ ${plan}`).toBe(!hasTeam)
-    }
-  })
-
-  it('publishes the catalog per-seat price once the seat item is live (LIVE-229)', () => {
-    const seats = planExtras(input).find((e) => e.key === 'seats')!
-    expect(seats.price).toBe(`${formatCents(input.catalog.operator_seat.month.foundingCents)}/seat/mo`)
-    expect(seats.availability).toContain('Business')
+  it('sells no seats: the grid has no extra-seat row and the extras carry no seat card (ADR-1810)', () => {
+    expect(grid.groups.flatMap((g) => g.rows).some((r) => r.key === 'seats')).toBe(false)
+    expect(planExtras(input).some((e) => e.key === 'seats')).toBe(false)
+    expect(planExtras(input).map((e) => e.key)).toEqual(['ai', 'custom_domain'])
+    const included = cellsByColumn(grid, 'space_team')
+    for (const plan of SHOWN_SPACE_PLANS) expect(included[plan], `space_team @ ${plan}`).not.toMatch(/per seat/)
   })
 
   it('states both extras with a price line and a derived availability line', () => {

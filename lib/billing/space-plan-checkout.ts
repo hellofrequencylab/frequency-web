@@ -15,7 +15,6 @@ import { resolveStripePriceId } from './pricing-prices'
 import {
   asCatalogItemKey,
   asSpacePlanKey,
-  catalogPriceKey,
   type BillingInterval,
   type CatalogItemKey,
   type SpacePlanKey,
@@ -79,23 +78,6 @@ export async function spaceLoadoutSellable(plan: string): Promise<boolean> {
   }
 }
 
-/** Whether OPERATOR SEATS can actually be bought right now (A4/A5): billingLive() AND the seat is
- *  activated (`catalog_operator_seat_active`, ADR-803 / ADR-1435) AND its founding price is synced to
- *  Stripe. The catalog amount is live (LIVE-229); this switch is the sell gate. Until all three hold,
- *  the loadout checkout skips the seat line (a null price or a dark switch), so the picker stays
- *  hidden rather than offering a silent no-op. GATED, FAIL-SAFE FALSE. */
-export async function operatorSeatsSellable(): Promise<boolean> {
-  try {
-    if (!(await billingLive())) return false
-    const flags = await loadPricingFlags()
-    if (flags.catalog_operator_seat_active !== true) return false
-    const priceId = await resolveStripePriceId(catalogPriceKey('operator_seat', 'month', false))
-    return !!priceId
-  } catch {
-    return false
-  }
-}
-
 /** Open the Stripe billing portal for a Space's subscription so the OWNER can MANAGE it: update the
  *  payment method, switch or cancel the plan, and adjust seats where the portal is configured to allow it.
  *  Returns the hosted portal URL, or null when the Space has no Stripe customer yet (never went through
@@ -130,7 +112,7 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
 // is sold at them.
 //
 // A Space owner buys Pro as ONE subscription with MULTIPLE items: the Pro base plus one price item per
-// active add-on, with quantity items for Team + Nonprofit seats. Monthly or yearly is chosen by the
+// active add-on, each billed at quantity 1. Monthly or yearly is chosen by the
 // caller. The FOUNDING price is charged (the grandfathered rate); if the Space already holds a locked
 // price id for an item (a prior founding subscribe that has not lapsed), THAT id is re-billed instead,
 // so a founding subscriber keeps their rate on a change. A 14-day per-item trial applies.
@@ -138,8 +120,8 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
 // GATED on billingLive() (the master switch). Returns null (a clean no-op) while OFF, so nothing
 // charges and no Stripe session is created. Server-only.
 
-/** The loadout the caller selects: the base tier, the active add-ons, and the seat counts. Monthly or
- *  yearly via `interval`. */
+/** The loadout the caller selects: the base tier and the active add-ons. Monthly or yearly via
+ *  `interval`. Seats are included per tier (ADR-1810); nothing here is bought per seat. */
 interface SpaceLoadout {
   /** The base tier the loadout is for. 'business' = where selling starts; 'collective' = groups of
    *  groups (five member Spaces and Vera AI included); 'nonprofit_collective' = Collective, verified;
@@ -148,8 +130,6 @@ interface SpaceLoadout {
   plan: string
   /** The active add-ons (Vera AI, custom domain). Sold on Business and Non Profit; ignored elsewhere. */
   addons?: readonly (AddonKey | string)[]
-  /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */
-  seatQuantity?: number
   interval: BillingInterval
 }
 
@@ -203,27 +183,23 @@ function catalogKeysForLoadout(
   loadout: SpaceLoadout,
   opts: { nonprofitVerified?: boolean } = {},
 ): { key: CatalogItemKey; perSeat: boolean }[] {
-  // OPERATOR SEATS (ADR-799): a per-seat add-on available on ANY paid plan. Included only when the owner
-  // buys extra operator seats (seatQuantity > 0); the checkout sets this item's quantity to the seat
-  // count. The owner's own seat is the free base allowance, so this bills only the ADDITIONAL operators.
-  const wantsSeats = Math.floor(loadout.seatQuantity ?? 0) > 0
-  const operatorSeat: { key: CatalogItemKey; perSeat: boolean }[] = wantsSeats
-    ? [{ key: 'operator_seat', perSeat: true }]
-    : []
+  // Seats are included per tier (PLACEHOLDER_METER_LIMITS.space_team, ADR-1810). The $12 operator seat
+  // add-on that used to ride every paid plan here was an old plan that crept back; it is retired and
+  // never billed.
   // Collective (ADR-1709) bills its own base; Vera AI is included, so no add-on line rides on it.
-  if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }, ...operatorSeat]
-  if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }, ...operatorSeat]
+  if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }]
+  if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }]
   // Network (SCAN-980) bills its own base with ten chapters and Vera AI included. A verified 501(c)(3)
   // bills `nonprofit_network` instead (SCAN-1008, owner ruling 2026-10-19 "Build both"): the plan is
   // still `network`, only the base differs, so the reconciler maps both to the `network` item. A chapter
   // past the included ten rides `network_chapter`, bought after checkout on the billing page
   // (lib/collective/extra-space-billing.ts), never on first checkout.
-  if (loadout.plan === 'network' && opts.nonprofitVerified) return [{ key: 'nonprofit_network', perSeat: false }, ...operatorSeat]
-  if (loadout.plan === 'network') return [{ key: 'network_base', perSeat: false }, ...operatorSeat]
+  if (loadout.plan === 'network' && opts.nonprofitVerified) return [{ key: 'nonprofit_network', perSeat: false }]
+  if (loadout.plan === 'network') return [{ key: 'network_base', perSeat: false }]
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
-  if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
+  if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }]
   // Business and Non Profit: a flat base plus the optional add-ons, Vera AI and the custom domain
-  // (LIVE-821; Non Profit buys them too by owner ruling 2026-10-06 22:37), and seats. Collective never
+  // (LIVE-821; Non Profit buys them too by owner ruling 2026-10-06 22:37). Collective never
   // reaches here, so it is never billed for an add-on it includes.
   const base: CatalogItemKey = loadout.plan === 'nonprofit' ? 'nonprofit_seat' : 'business_base'
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
@@ -233,7 +209,7 @@ function catalogKeysForLoadout(
     if (!catalogKey) continue
     out.push({ key: catalogKey, perSeat: false }) // neither add-on is per-seat
   }
-  return [...out, ...operatorSeat]
+  return out
 }
 
 interface SpaceLoadoutCheckoutResult {
@@ -269,7 +245,7 @@ export async function createSpaceLoadoutCheckout(
   const db = createAdminClient()
   const { data: space } = (await db
     .from('spaces')
-    .select('id, owner_profile_id, slug, stripe_customer_id, seat_quantity')
+    .select('id, owner_profile_id, slug, stripe_customer_id')
     .eq('id', spaceId)
     .maybeSingle()) as {
     data: {
@@ -277,7 +253,6 @@ export async function createSpaceLoadoutCheckout(
       owner_profile_id?: string | null
       slug?: string | null
       stripe_customer_id?: string | null
-      seat_quantity?: number | null
     } | null
   }
   if (!space?.id || !space.owner_profile_id) return null
@@ -312,15 +287,6 @@ export async function createSpaceLoadoutCheckout(
     ownerEmail = await receiptEmailFor(space.owner_profile_id)
   }
 
-  // PHASE D: the seat-quantity items (Team add-on / Nonprofit seat) bill the LICENSED seat count. The
-  // caller may pass an explicit count (the picker's chosen seats); when it does not, fall back to the
-  // Space's stored licensed count (spaces.seat_quantity), so a renewal / change bills the count the
-  // Space holds. Floors to 1 (a seat item always bills at least one seat).
-  const storedSeats =
-    typeof space.seat_quantity === 'number' && Number.isFinite(space.seat_quantity)
-      ? Math.max(0, Math.floor(space.seat_quantity))
-      : 0
-  const seatQuantity = Math.max(1, Math.floor(loadout.seatQuantity ?? storedSeats ?? 1))
   // THE PRIVATE BETA PRICE GRANT (ADR-1061), read ONCE for the whole loadout. Its own request, not a
   // column on the select above: `spaces.beta_price_grant` ships in a proposal migration the owner
   // applies by hand, and adding an undeployed column to that select would fail the WHOLE PostgREST
@@ -333,10 +299,10 @@ export async function createSpaceLoadoutCheckout(
   const nonprofitVerified =
     loadout.plan === 'network' ? (await getSpaceVerification(spaceId).catch(() => null))?.status === 'verified' : false
   // Build one line item per catalog item, charging the locked / founding / list price per
-  // `resolveLoadoutPriceId`. Seat items carry the chosen quantity. An item with no synced price is
-  // skipped (never charged at the wrong price).
+  // `resolveLoadoutPriceId`. Every item bills quantity 1 (no catalog item is per-seat since ADR-1810).
+  // An item with no synced price is skipped (never charged at the wrong price).
   const lineItems: { price: string; quantity: number }[] = []
-  for (const { key, perSeat } of catalogKeysForLoadout(loadout, { nonprofitVerified })) {
+  for (const { key } of catalogKeysForLoadout(loadout, { nonprofitVerified })) {
     const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant)
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
@@ -353,7 +319,7 @@ export async function createSpaceLoadoutCheckout(
         return null
       continue
     }
-    lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })
+    lineItems.push({ price: priceId, quantity: 1 })
   }
   if (lineItems.length === 0) return null
 
