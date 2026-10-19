@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1027",
+  "title": "Marketplace areas share one pinned nav: Classifieds, Housing, Market and Store swap content beneath it",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-1027.json",
+    "ref": "Daniel design list 2026-10-19, item 17"
+  },
+  "detail": "Under the Frequency design a pinned area nav (components/frequency/members/marketplace/area-nav.tsx) is mounted by the Classifieds, Housing, Market and new Store layouts through MarketAreaPin. It sticks under the app header and reads the active door from the URL, so soft navigation re-highlights it and each route's loading skeleton fills only the space below. The page bodies and MarketplaceBar no longer draw their own area row there. Honest gap: the four subtrees are separate layouts, so the bar re-mounts (identical, sticky) when crossing areas; a single route-group layout would keep one instance and needs a 40+ file directory move, filed as a follow-up if it shows.\n\nPinned area nav in four layouts",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "'use client'\n\nimport Link from 'next/link'\nimport { usePathname } from 'next/navigation'\n\n// THE PINNED MARKETPLACE NAV (LIVE-1027). One bar for every commerce area (Classifieds, Housing,\n// Market, Store, paid Events) that the layouts of those subtrees mount above their pages. It sticks\n// under the app header, reads the active door from the URL so a soft navigation re-highlights it\n// without a server round trip, and leaves the page body to swap beneath it (each route's own\n// loading.tsx fills the space below the bar, never the bar itself). Doors arrive as props from the\n// server (FqMarketAreas) so the operator's hidden areas stay hidden.\n\nexport interface FqAreaDoor {\n  key: string\n  href: string\n  label: string\n}\n\nconst isActive = (path: string, href: string) => {\n  const base = href.split('?')[0]\n  return path === base || path.startsWith(`${base}/`)\n}\n\nexport function FqMarketNav({ doors }: { doors: FqAreaDoor[] }) {\n  const path = usePathname() ?? ''\n  return (\n    <nav className=\"tabs fqm-tabs fqm-pin-nav\" aria-label=\"Marketplace\">\n      {doors.map((d) => {\n        const on = isActive(path, d.href)\n        return (\n          <Link key={d.key} href={d.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}>\n            {d.label}\n          </Link>\n        )\n      })}\n    </nav>\n  )\n}"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
