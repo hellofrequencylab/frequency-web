@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-945",
+  "title": "Tap to check in for events: every event gets a door code the host prints or writes to an NFC tag, and a tap runs the existing check-in",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/events/door-code.ts",
+    "ref": "Owner ask 2026-10-19 ('tap to check in for events'). docs/LOYALTY.md section 6, ADR-1784"
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. No migration. The Manage page's Home tab shows the event's door code while the host's check-in switch is on: a QR to print, a copy and download, and the same link stamped ?m=nfc to write to a tag. ensureEventDoorCode mints one qr_codes row per event (destination_type event, purpose event_door:<event id>, no owner) and reuses it. A tap lands on the /q resolver's event branch, which already sends a signed-out guest to the guest RSVP door and a member through checkInEvent (window, host switch, RSVP and ticket gates unchanged, event_attend paid). Nothing new runs on a tap.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/export async function ensureEventDoorCode/.test(r('lib/events/door-code.ts')))miss.push('no door code');if(!/destination_type: 'event'/.test(r('lib/events/door-code.ts')))miss.push('the door code is not an event code');if(!/withMedium\\(url, 'nfc'\\)/.test(r('lib/events/door-code.ts')))miss.push('no tag link');if(!/EventDoorSection/.test(r('app/(main)/events/[slug]/manage/page.tsx')))miss.push('the host sees no door code');if(!/readEventCheckInEnabled/.test(r('app/(main)/events/[slug]/manage/door-section.tsx')))miss.push('the door ignores the host switch');if(miss.length){console.error('LIVE-945: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}
