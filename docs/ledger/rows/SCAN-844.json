@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-844",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345011900'&&/guard_event_rsvp_member_write/.test(r('supabase/migrations/'+f))&&/rsvp_requires_approval/.test(r('supabase/migrations/'+f)))){console.error('SCAN-844: a member can insert an admitted RSVP on an approval-gated event');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1749). PREMISE RE-TESTED on main: guard_event_rsvp_member_write still allowed INSERT approval_status none or pending on every event, and isAdmitted treats not-pending as a seat. Migration 20270346009400: on a caller-role INSERT, private.event_rsvp_requires_approval (SECURITY DEFINER, fail-closed) requires pending when events.rsvp_requires_approval is true. The trigger stays SECURITY INVOKER. pgTAP: delete-then-insert none is 42501 on a gated event; none still lands on an open event. Apply with execute_sql then schema_migrations at 20270346009400."
+  }
+}
