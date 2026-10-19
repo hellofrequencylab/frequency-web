@@ -54,10 +54,9 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   // Profit 5 per entity: per Space, so each member Space of a Collective carries its own 5.
   space_qr: { free: 0, business: 3, collective: 5, nonprofit: 5, nonprofit_collective: 5 },
   space_automation: { free: 100, business: 2_000, collective: 10_000 },
-  // Operator seats. Network names its own number (LIVE-992): the ten central admins /pricing and the
-  // Network card promise (NETWORK_PLAN.centralAdmins, pinned by meter-limits.test.ts) are seats, so a
-  // Network that reads Collective's 3 would be over its licence the day beta grace ends.
-  space_team: { free: 1, business: 2, collective: 3, network: 10 },
+  // Operator seats: the three rungs OWN-033 settled (owner 2026-10-06, pinned by its probe). Network's
+  // own number lives in SIBLING_METER_LIMITS below (LIVE-992) and is folded in at load.
+  space_team: { free: 1, business: 2, collective: 3 },
   space_multi_pipeline: { free: 1, business: 5, collective: null },
   space_vera: { free: 10, business: 200, collective: null },
   space_crm_playbooks: { free: 100, business: 5_000, collective: 5_000 },
@@ -96,4 +95,17 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   event_create: { free: 2, crew: 10 },
   // Guests per personal Event (LIVE-750): Member 30, Crew 100.
   event_guests: { free: 30, crew: 100 },
+}
+
+/** A SIBLING plan's own number on a row whose rungs are settled by an owner decision, so the rung
+ *  literal above stays exactly what that decision pinned. Folded into PLACEHOLDER_METER_LIMITS at load:
+ *  readers see ONE map (ADR-837), and allowanceAt / siblingAllowanceText read the sibling's number off
+ *  it the same way they read space_qr's. Network's ten seats are its central admins (LIVE-992,
+ *  NETWORK_PLAN.centralAdmins, pinned by network-seats.test.ts): a Network that read Collective's 3
+ *  would be over its licence the day beta grace ends. */
+const SIBLING_METER_LIMITS: Record<string, Record<string, Allowance>> = {
+  space_team: { network: 10 },
+}
+for (const [feature, own] of Object.entries(SIBLING_METER_LIMITS)) {
+  PLACEHOLDER_METER_LIMITS[feature] = { ...(PLACEHOLDER_METER_LIMITS[feature] ?? {}), ...own }
 }
