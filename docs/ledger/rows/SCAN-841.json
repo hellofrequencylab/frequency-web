@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-841",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/\\.rpc\\(/.test(r('app/(main)/partners/[slug]/loyalty-actions.ts'))){console.error('SCAN-841: a loyalty claim is a read then an unguarded insert');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1753). PREMISE RE-TESTED on main: claimLoyaltyReward still reads progress then inserts partner_redemptions with source loyalty, and 20270346002600 still adds only an index. Migration 20270346009600: claim_loyalty_reward takes pg_advisory_xact_lock per (member, card), re-checks visits since the last loyalty claim of this card, and inserts only when still earned. The action calls the RPC; a missing RPC fails closed. pgTAP: second claim of the same cycle is P0001 not_earned; a later cycle still claims; anon and authenticated cannot execute. Apply with execute_sql then schema_migrations at 20270346009600."
+  }
+}
