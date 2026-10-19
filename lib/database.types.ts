@@ -389,6 +389,7 @@ export type Database = {
           space_id: string
           stamps_required: number
           status: string
+          surprise_odds: number
           updated_at: string
           updated_by: string | null
           welcome_stamps: number
@@ -402,6 +403,7 @@ export type Database = {
           space_id: string
           stamps_required?: number
           status?: string
+          surprise_odds?: number
           updated_at?: string
           updated_by?: string | null
           welcome_stamps?: number
@@ -415,6 +417,7 @@ export type Database = {
           space_id?: string
           stamps_required?: number
           status?: string
+          surprise_odds?: number
           updated_at?: string
           updated_by?: string | null
           welcome_stamps?: number

@@ -57,6 +57,8 @@ export function ClaimButton({ nodeId, secret }: { nodeId: string; secret?: strin
               required={result.loyalty.required}
               rewardTitle={result.loyalty.rewardTitle}
               justEarnedCode={result.loyalty.earnedCode}
+              surprise={result.loyalty.surprise}
+              standing={result.loyalty.standing}
             />
           </div>
         )}
