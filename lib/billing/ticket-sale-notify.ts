@@ -266,7 +266,7 @@ export function payoutSentence(c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero'>): str
 // imported from lib/email.ts. Only the BODY is composed here; `emailShell` supplies the doctype,
 // the head, the wordmark and the unsubscribe footer, exactly as it does for a ticket receipt.
 
-function saleEmailHtml(c: SaleCopy): string {
+export function saleEmailHtml(c: SaleCopy): string {
   const overageBlock = c.overage
     ? `<p style="${EMAIL_P}color:${EMAIL_INK};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(c.overage)}</p>`
     : ''
@@ -279,7 +279,7 @@ ${overageBlock}
 `)
 }
 
-function saleEmailText(c: SaleCopy): string {
+export function saleEmailText(c: SaleCopy): string {
   const lines = [`Hi ${c.hostName},`, '', saleSentence(c)]
   if (c.overage) lines.push('', c.overage)
   lines.push('', payoutSentence(c), '', `See who’s coming: ${c.eventUrl}`)

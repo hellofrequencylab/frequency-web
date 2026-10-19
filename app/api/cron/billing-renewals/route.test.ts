@@ -58,7 +58,8 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-vi.mock('@/lib/email', () => ({
+vi.mock('@/lib/email', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/email')>()),
   enqueueEmail: (payload: { to: string }) => {
     enqueued.push(payload)
     return Promise.resolve()

@@ -40,11 +40,9 @@ import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { routeNotification } from '@/lib/notifications/router'
 import {
   displayNameFor,
-  receiptDate,
   receiptHtml,
   receiptText,
   spaceReceiptTarget,
-  type ReceiptContent,
 } from '@/lib/billing/receipt-email'
 import type { FulfillmentStatus, OwnerKind } from './types'
 // Relative, not '@/': the LIVE-705 probe loads this module with every '@/' import stubbed.
@@ -63,6 +61,7 @@ import {
 
 // The pure half is re-exported so a caller that already holds the writer has one import.
 export * from './fulfilment-state'
+import { shippedNoticeContent } from './shipped-notice'
 
 const LOG = '[commerce fulfilment]'
 
@@ -560,27 +559,14 @@ export async function notifyOrderShipped(input: ShippedNoticeInput, deps: { clie
     const db = deps.client ?? createAdminClient()
     const [{ summary, first }, seller] = await Promise.all([itemSummary(db, input.orderId, input.lines), sellerName(input)])
     const what = first ?? 'Your order'
-    const f = input.fulfilment
-    const content: ReceiptContent = {
+    const { subject, content } = shippedNoticeContent({
       greetingName: await displayNameFor(input.buyerProfileId),
-      lead: summary ? `Your order from ${seller} is on its way: ${summary}.` : `Your order from ${seller} is on its way.`,
-      lines: [
-        { label: 'Carrier', value: f.carrier ?? '' },
-        { label: 'Tracking', value: f.tracking ?? '' },
-        { label: 'Shipped', value: receiptDate(f.shippedAt ? new Date(f.shippedAt) : new Date()) },
-      ],
-      closing: [
-        f.trackingUrl
-          ? 'Follow the tracking link to see where it is.'
-          : f.tracking
-            ? 'Look up the tracking number with the carrier to see where it is.'
-            : `${seller} will have the tracking details if you need them.`,
-        'My orders keeps every purchase you make on Frequency, with the seller and the total.',
-      ],
-      actionLabel: f.trackingUrl ? 'Track it' : 'See my orders',
-      actionUrl: f.trackingUrl ?? `${appUrl()}/orders`,
-    }
-    const subject = `${what} is on its way`
+      seller,
+      summary,
+      first,
+      fulfilment: input.fulfilment,
+      ordersUrl: `${appUrl()}/orders`,
+    })
 
     if (input.buyerProfileId) {
       const to = await profileAccountEmail(input.buyerProfileId)

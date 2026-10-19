@@ -86,7 +86,7 @@ function ImageSlot({
             {/* eslint-disable-next-line @next/next/no-img-element -- operator Loom asset URL, not a build asset */}
             <img src={url} alt={alt} className="max-h-72 w-full object-cover" />
             <span
-              className="absolute right-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-meta font-semibold opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+              className="absolute right-2 top-2 flex items-center gap-1 rounded-control px-2 py-1 text-meta font-semibold opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
               style={{ background: C.surface, color: C.text }}
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden /> Change
@@ -208,7 +208,7 @@ function CardsCanvas({ label, value, onChange }: { label: string; value: unknown
                 <EditableSlot value={text} placeholder="Card text" rich={false} onChange={(v) => patch(i, 'text', v)} />
               </div>
               {btnLabel && (
-                <span className="mt-2 inline-flex rounded-md px-3 py-1.5 text-meta font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+                <span className="mt-2 inline-flex rounded-control px-3 py-1.5 text-meta font-bold" style={{ background: C.primary, color: C.onPrimary }}>
                   {btnLabel}
                 </span>
               )}
@@ -233,7 +233,7 @@ function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
   if (!hasProduct && !title && !image) {
     return (
       <div
-        className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-4 py-8 text-center"
+        className="flex flex-col items-center gap-1 rounded-card border border-dashed px-4 py-8 text-center"
         style={{ borderColor: C.border, color: C.subtle }}
       >
         <Package className="h-5 w-5" aria-hidden />
@@ -251,7 +251,7 @@ function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
       <div style={{ padding: 16 }}>
         <div className="text-body-lg font-bold" style={{ color: C.text }}>{title || 'Product title'}</div>
         {price && <div className="mt-0.5 text-body font-bold" style={{ color: C.primaryStrong }}>{price}</div>}
-        <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+        <span className="mt-3 inline-flex rounded-control px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
           {cta}
         </span>
       </div>
@@ -273,7 +273,7 @@ function DataCardCanvas({ props, kind }: { props: Record<string, unknown>; kind:
   if (!hasPick && !title && !image) {
     return (
       <div
-        className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-4 py-8 text-center"
+        className="flex flex-col items-center gap-1 rounded-card border border-dashed px-4 py-8 text-center"
         style={{ borderColor: C.border, color: C.subtle }}
       >
         <Icon className="h-5 w-5" aria-hidden />
@@ -293,7 +293,7 @@ function DataCardCanvas({ props, kind }: { props: Record<string, unknown>; kind:
         {lines.map((line, i) => (
           <div key={i} className="text-body-sm" style={{ color: C.muted }}>{line}</div>
         ))}
-        <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+        <span className="mt-3 inline-flex rounded-control px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
           {cta}
         </span>
       </div>
@@ -393,7 +393,7 @@ export function CanvasBlock({
         return (
           <div key={key} className="flex">
             <span
-              className="inline-flex rounded-lg px-6 py-3 text-body-sm font-bold"
+              className="inline-flex rounded-control px-6 py-3 text-body-sm font-bold"
               style={{ background: C.primary, color: C.onPrimary }}
             >
               <EditableSlot value={value} placeholder={f.label} rich={false} onChange={set(key)} />

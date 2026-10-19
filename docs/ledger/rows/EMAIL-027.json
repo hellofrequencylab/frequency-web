@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-027",
+  "title": "Every stock email built outside lib/email.ts wears the member shell and has a sample in the catalog",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/email-samples/catalog.ts",
+    "ref": "owner 2026-10-19 in the project chat: make sure every template follows the system; send every stock template to danieltyack@gmail.com; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-19 from the email program. THE CONSEQUENCE: EMAIL-026's catalog and probe read lib/email.ts, but eight stock emails are built in their own modules and three of them still went out as bare fragments after EMAIL-023 and 024: the owner's contact-form lead notice (six paragraphs, no doctype, wordmark, footer or address line), the waitlist's promoted seat (a bare div) and Vera's daily owner brief (a bare div plus a hand-rolled footer), while the billing renewal notice rode the conversation wrapper with no wordmark. None of the eight had a sample, so the owner's set was short and a new one could ship unseen. THE FIX: each module exports a pure builder that renders through emailShell (the lead notice, the promoted seat, the owner brief, the renewal notice in the new lib/billing/renewal-notice-email.ts, the ticket sale, the tip), through the receipt shell (the shipped order in lib/commerce/shipped-notice.ts) or through plainTextEmail (the automation note); the crons and senders call the builders; the catalog samples all eight under an Owner notices group and its test names the account mail that carries no unsubscribe control; owner-brief.ts leaves the token guard's waiver. The week-ahead reminder stays inline in the event-reminders cron, where SCAN-849 and EMAIL-023 pin it, and already wears emailShell. Vera's two outbound shells stay under SCAN-648's probe. The probe reads the eight modules for the export and the shell, the three former fragments for a bare div, the two crons for the builder call, the guard for the waiver and the catalog for the samples.\n\nBuilt 2026-10-19: eight builders exported and shelled; 10 new samples in lib/email-samples/catalog.ts; ADR-1769",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-stock-shells.mjs",
+    "note": "PASS 2026-10-19: reads the eight stock modules for an exported builder rendering through a shell, the three former bare fragments, the billing cron and the fulfilment writer for the builder call, the token guard for the removed waiver, and the catalog and its test for the samples."
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

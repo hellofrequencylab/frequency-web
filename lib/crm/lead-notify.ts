@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail } from '@/lib/email'
+import { enqueueEmail, emailShell, EMAIL_P, type EmailPayload } from '@/lib/email'
+import { palette } from '@/lib/theme/palette'
 
 // TELL THE OPERATOR A LEAD ARRIVED.
 //
@@ -19,10 +20,8 @@ import { enqueueEmail } from '@/lib/email'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
-/** Escape for HTML text/attribute context. Local on purpose: the only other `escapeHtml` in the repo
- *  lives inside lib/email-studio/render.ts, and importing a 700-line email renderer for five
- *  replacements would couple this module to it for nothing. Everything interpolated below is
- *  visitor-supplied, so none of it may reach the markup raw. */
+/** Escape for HTML text/attribute context (the quote forms too, since a name lands in markup).
+ *  Everything interpolated below is visitor-supplied, so none of it may reach the markup raw. */
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -124,47 +123,17 @@ export async function notifyOwnerOfContactLead(
   try {
     const to = await resolveOwner(admin, owner)
     if (to) {
-      const safeWho = escapeHtml(who)
-      const safeName = escapeHtml(to.name)
-      const safeSpace = escapeHtml(input.spaceName)
-      const consentLine = input.optedIn
-        ? 'They ticked the box to hear from you, so they are on your list.'
-        : 'They did not opt in to your list, so reply to them directly.'
-      const bodyHtml = preview
-        ? `<p style="white-space:pre-wrap">${escapeHtml(preview)}</p>`
-        : '<p>They did not leave a message.</p>'
-      // A message the contact allowance kept out of the CRM still reaches the owner, with the reason.
-      const limitLine = input.contactId
-        ? null
-        : 'Your CRM is at its contact limit, so they were not added to it. Reply to this email to answer them.'
-
-      await enqueueEmail({
+      await enqueueEmail(buildContactLeadEmail({
         to: to.email,
-        subject: `${who} messaged ${input.spaceName}`,
-        // REPLY-TO is the point of this email. The operator's instinct is to hit reply, and without
-        // this that reply reaches the platform noreply instead of the person who wrote in.
-        ...(input.fromEmail ? { replyTo: input.fromEmail } : {}),
-        html: [
-          `<p>Hi ${safeName},</p>`,
-          `<p><strong>${safeWho}</strong> just sent a message through the contact form on ${safeSpace}.</p>`,
-          bodyHtml,
-          `<p>${escapeHtml(consentLine)}</p>`,
-          ...(limitLine ? [`<p>${escapeHtml(limitLine)}</p>`] : []),
-          `<p><a href="${crmUrl}">Open your CRM</a></p>`,
-        ].join('\n'),
-        text: [
-          `Hi ${to.name},`,
-          '',
-          `${who} just sent a message through the contact form on ${input.spaceName}.`,
-          '',
-          preview || 'They did not leave a message.',
-          '',
-          consentLine,
-          '',
-          ...(limitLine ? [limitLine, ''] : []),
-          `Open your CRM: ${crmUrl}`,
-        ].join('\n'),
-      })
+        ownerName: to.name,
+        who,
+        spaceName: input.spaceName,
+        preview,
+        optedIn: input.optedIn === true,
+        keptOutOfCrm: !input.contactId,
+        crmUrl,
+        replyTo: input.fromEmail ?? null,
+      }))
       emailed = true
     }
   } catch {
@@ -172,4 +141,71 @@ export async function notifyOwnerOfContactLead(
   }
 
   return { belled, emailed }
+}
+
+/**
+ * The owner's "someone messaged your Space" email (EMAIL-027: the member shell around the note, where
+ * it used to be six bare paragraphs with no wordmark, footer or address line). PURE: returns the
+ * payload for enqueueEmail, so the stock catalog can render it with fixtures.
+ */
+export function buildContactLeadEmail(parts: {
+  to: string
+  ownerName: string
+  /** The visitor's name, or their address, or "Someone". */
+  who: string
+  spaceName: string
+  /** The clipped message, or an empty string when the form collected none. */
+  preview: string
+  optedIn: boolean
+  /** The contact allowance refused the row, so the owner answers from this email. */
+  keptOutOfCrm: boolean
+  crmUrl: string
+  replyTo: string | null
+}): EmailPayload {
+  const safeWho = escapeHtml(parts.who)
+  const safeName = escapeHtml(parts.ownerName)
+  const safeSpace = escapeHtml(parts.spaceName)
+  const consentLine = parts.optedIn
+    ? 'They ticked the box to hear from you, so they are on your list.'
+    : 'They did not opt in to your list, so reply to them directly.'
+  const bodyHtml = parts.preview
+    ? `<p style="${EMAIL_P}color:${palette.text};white-space:pre-wrap;border-left:3px solid ${palette.emailBorder};padding-left:12px;">${escapeHtml(parts.preview)}</p>`
+    : `<p style="${EMAIL_P}color:${palette.textMuted};">They did not leave a message.</p>`
+  // A message the contact allowance kept out of the CRM still reaches the owner, with the reason.
+  const limitLine = parts.keptOutOfCrm
+    ? 'Your CRM is at its contact limit, so they were not added to it. Reply to this email to answer them.'
+    : null
+  const html = emailShell(
+    [
+      `<p style="${EMAIL_P}color:${palette.text};">Hi ${safeName},</p>`,
+      `<p style="${EMAIL_P}color:${palette.text};"><strong>${safeWho}</strong> just sent a message through the contact form on ${safeSpace}.</p>`,
+      bodyHtml,
+      `<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(consentLine)}</p>`,
+      ...(limitLine ? [`<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(limitLine)}</p>`] : []),
+      `<a href="${parts.crmUrl}" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">Open your CRM</a>`,
+    ].join('\n'),
+    // Account mail about the owner's own Space: no membership claim and no unsubscribe control.
+    { text: `You are receiving this because you run ${safeSpace} on Frequency.`, unsubscribe: false },
+  )
+  const text = [
+    `Hi ${parts.ownerName},`,
+    '',
+    `${parts.who} just sent a message through the contact form on ${parts.spaceName}.`,
+    '',
+    parts.preview || 'They did not leave a message.',
+    '',
+    consentLine,
+    '',
+    ...(limitLine ? [limitLine, ''] : []),
+    `Open your CRM: ${parts.crmUrl}`,
+  ].join('\n')
+  return {
+    to: parts.to,
+    subject: `${parts.who} messaged ${parts.spaceName}`,
+    // REPLY-TO is the point of this email. The operator's instinct is to hit reply, and without
+    // this that reply reaches the platform noreply instead of the person who wrote in.
+    ...(parts.replyTo ? { replyTo: parts.replyTo } : {}),
+    html,
+    text,
+  }
 }
