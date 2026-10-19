@@ -1,0 +1,6 @@
+{
+  "id": "PROG-E0",
+  "append": {
+    "detail": "\n\n── 2026-10-19 (ADR-1759, LIVE-933). Owner reopened the program (\"Begin the editor program\"). check:email-blocks (EDITOR-GATES §5, E1 to E9) is in package.json and the ci.yml guards array, green on the tree it protects; its own row is LIVE-933. Gate state for this row: check:node-document-safety (LIVE-871) and check:email-blocks landed; check:blocks, check:surface-binding and check:loom-integrity wait on E1's registry root (defineBlock), since each hard-fails on an absent root. Next on the critical path: task 10 (per-type limits replace the six dedupe sets; stored bench)."
+  }
+}
