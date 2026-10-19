@@ -14,7 +14,7 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencySignIn } from './frequency-sign-in'
 
 export const metadata: Metadata = {
-  title: 'Sign In',
+  title: 'Sign in',
   robots: { index: false, follow: false },
 }
 
