@@ -15,7 +15,7 @@ export const contentType = OG_CONTENT_TYPE
 // Per-practice dynamic OG image for /discover/practices/[id].
 // Falls back to a generic branded card when the practice isn't found.
 // Visual language mirrors app/discover/events/[slug]/opengraph-image.tsx:
-// near-black gradient ground, indigo brand bar (#6366f1), white display type.
+// near-black gradient ground, amber brand bar (#E2912F), white display type.
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

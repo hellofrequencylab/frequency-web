@@ -159,7 +159,7 @@
 
 /* EntityCard / RowCard: the kit's `.card`, lifting on hover like an `a.card`. */
 [data-design="frequency"] [data-kit="members"] .card.mu-ecard{position:relative;display:flex;flex-direction:column;height:100%;transition:transform var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-base) var(--fq-ease-out)}
-[data-design="frequency"] [data-kit="members"] .card.mu-ecard:hover,[data-design="frequency"] [data-kit="members"] a.card.mu-row:hover{transform:translateY(-3px);box-shadow:0 1px 2px color-mix(in oklab,var(--fq-ink) 4%,transparent),0 30px 60px -36px rgba(120,150,225,.55),inset 0 0 0 1px rgba(196,184,255,.6)} /* token-ok: kit-members a.card:hover verbatim; the export ships the PA periwinkle and lilac only inside its --fq-pa-* gradients */
+[data-design="frequency"] [data-kit="members"] .card.mu-ecard:hover,[data-design="frequency"] [data-kit="members"] a.card.mu-row:hover{transform:translateY(-3px);box-shadow:0 1px 2px color-mix(in oklab,var(--fq-ink) 4%,transparent),0 30px 60px -36px rgba(120,150,225,.55),inset 0 0 0 1px rgba(163,212,255,.6)} /* token-ok: kit-members a.card:hover verbatim; the export ships the PA periwinkle and lilac only inside its --fq-pa-* gradients */
 [data-design="frequency"] [data-kit="members"] .mu-ecard>a{flex:1;display:flex;flex-direction:column;color:inherit}
 [data-design="frequency"] [data-kit="members"] .mu-ecard>a:focus-visible{outline-offset:-2px;border-radius:var(--fq-radius-l)}
 [data-design="frequency"] [data-kit="members"] .mu-ecard .ph{position:relative;flex:none;overflow:hidden;aspect-ratio:16/9;transition:transform var(--fq-dur-slow) var(--fq-ease-out)}
@@ -313,7 +313,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-center :is(.rounded-card, .rounded-2xl, .rounded-xl).border.bg-surface :is(.rounded-card, .rounded-2xl, .rounded-xl).border:is(.bg-surface, .bg-surface-elevated):not(:is([data-space-theme], [data-space-page]) *){background:var(--fqm-ink-4);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .fqm-center .mc-pane :is(.rounded-card, .rounded-2xl, .rounded-xl).border:is(.bg-surface, .bg-surface-elevated):not(:is([data-space-theme], [data-space-page]) *){background:none;border-color:var(--fq-border-hair);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .fqm-center :is(.bg-primary-bg, .bg-primary\/5, .bg-primary\/10, .bg-primary\/15):not(:is([data-space-theme], [data-space-page]) *){background:var(--fq-pa-soft)}
-[data-design="frequency"] [data-kit="members"] .fqm-center :is(.border-primary, .border-primary\/40, .border-primary\/50):not(:is([data-space-theme], [data-space-page]) *){border-color:color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-center :is(.border-primary, .border-primary\/40, .border-primary\/50):not(:is([data-space-theme], [data-space-page]) *){border-color:color-mix(in oklab, var(--fq-x-sky-neon) 45%, transparent)}
 [data-design="frequency"] [data-kit="members"] .fqm-center :is(a, button).rounded-control.border.bg-surface:not(:is([data-space-theme], [data-space-page]) *){border-radius:var(--fq-radius-orb);border-color:transparent;background:transparent;box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-center .border-b.bg-surface-elevated:not(:is([data-space-theme], [data-space-page]) *){background:none;border-color:var(--fq-border-hair)}
 
