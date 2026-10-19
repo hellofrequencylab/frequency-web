@@ -21,6 +21,7 @@ import {
 } from '@/lib/entity-blocks/rows-ops'
 import { adminScopeFor, railArchetypeFor } from '@/lib/layout/page-chrome'
 import { saveMemberGridLayout } from '@/app/(main)/settings/profile/spotlight-actions'
+import { NodeLayoutMount } from './node-layout-store'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 
 // THE SHARED ENTITY-LAYOUT CONTEXT (ADR-516 Phase C member; Phase D generalized to Space). Our admin rail
@@ -447,7 +448,7 @@ export function EntityLayoutMount({ children }: { children: ReactNode }) {
       identity={spaceSlug ? `space:${spaceSlug}` : 'member'}
       save={save}
     >
-      {children}
+      <NodeLayoutMount spaceSlug={spaceSlug}>{children}</NodeLayoutMount>
     </EntityLayoutProvider>
   )
 }

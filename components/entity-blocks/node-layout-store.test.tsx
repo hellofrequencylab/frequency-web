@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+vi.mock('@/app/(main)/spaces/[slug]/settings/profile/actions', () => ({ saveSpaceGridLayout: vi.fn() }))
 import { NodeLayoutProvider, useNodeLayout } from './node-layout-store'
 import { addNode, removeNode, setNodeContent, getNode } from '@/lib/entity-blocks/node-ops'
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
@@ -17,7 +18,7 @@ const doc = upgradeLayout({ rows: [{ id: 'r1', columns: 1, cells: [['text', 'tex
 beforeEach(() => {
   vi.useFakeTimers(); save.mockReset().mockResolvedValue({})
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container)
-  act(() => root.render(<NodeLayoutProvider save={save}><Probe /></NodeLayoutProvider>))
+  act(() => root.render(<NodeLayoutProvider identity="a" save={save}><Probe /></NodeLayoutProvider>))
   act(() => store.seed(doc))
 })
 afterEach(async () => {
@@ -79,5 +80,18 @@ describe('node layout store', () => {
     const other = upgradeLayout({ rows: [{ id: 'r9', columns: 1, cells: [['links']] }] })!
     act(() => store.seed(other))
     expect(store.layout).toBe(doc)
+  })
+  it('a subject change resets in place and the outgoing edit still saves to the outgoing subject', async () => {
+    const saveB = vi.fn<(layout: unknown) => Promise<{ error?: string }>>().mockResolvedValue({})
+    const [a] = store.layout!.rows[0].cells[0]
+    act(() => store.edit((l) => setNodeContent(l, a.nid, { title: 'For A' })))
+    const edited = store.layout
+    act(() => root.render(<NodeLayoutProvider identity="b" save={saveB}><Probe /></NodeLayoutProvider>))
+    expect(store.layout).toBeNull()
+    expect(store.selectedNid).toBeNull()
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(save.mock.calls[0][0]).toBe(edited)
+    await tick()
+    expect(saveB).not.toHaveBeenCalled()
   })
 })
