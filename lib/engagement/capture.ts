@@ -17,6 +17,8 @@ import { trustSource } from '@/lib/trust'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { resolveMemberDay } from '@/lib/member-day'
 import { isOfferLive, pickPlaqueOffer } from '@/lib/partners/offers'
+import { recordLoyaltyVisit } from '@/lib/loyalty/visit'
+import type { LoyaltyVisitOutcome } from '@/lib/loyalty/program'
 import type { EngagementSource } from './events'
 
 // node.type → engagement source. Ghost nodes are a geo source.
@@ -32,6 +34,8 @@ export interface CaptureResult {
   zapsAwarded?: number
   /** Title of the partner offer unlocked, when the node is a partner plaque. */
   offerTitle?: string | null
+  /** The member's Regulars card after a Space check-in, when the Space runs the program (LIVE-940). */
+  loyalty?: LoyaltyVisitOutcome | null
 }
 
 /**
@@ -130,12 +134,23 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   }
 
   // 4) Reward — physical = zaps.
-  const amount = Number(node.zaps_value ?? 0)
+  let amount = Number(node.zaps_value ?? 0)
   if (amount > 0 && currencyForSource(source) === 'zaps') {
     await awardZaps(attempt.actorProfileId, amount, {
       actionType: 'node_capture',
       metadata: { nodeId: attempt.nodeId },
     })
+  }
+
+  // 4b) REGULARS (LIVE-940): a check-in at a Space running the program stamps the member's card and
+  // pays the day's check-in Zaps through the capped action. Runs only after the ledger accepted this
+  // member-local day (so a retry can never stamp twice) and only for a Space check-in node. Best-effort
+  // inside recordLoyaltyVisit: a loyalty failure never fails the check-in.
+  let loyalty: LoyaltyVisitOutcome | null = null
+  if ((node.kind as string) === 'checkin' && typeof node.space_id === 'string' && node.space_id) {
+    const visit = await recordLoyaltyVisit(node.space_id, attempt.actorProfileId, day)
+    loyalty = visit.outcome
+    amount += visit.zapsAwarded
   }
 
   // 4b) A proximity-verified physical capture is also a verified practice (the
@@ -218,5 +233,5 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     offerTitle = offer?.title ?? null
   }
 
-  return { ok: true, zapsAwarded: amount > 0 ? amount : 0, offerTitle }
+  return { ok: true, zapsAwarded: amount > 0 ? amount : 0, offerTitle, loyalty }
 }
