@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1029",
+  "title": "The public Space page wears DAWN's layout again, reskinned in Frequency: a clean cover band, the logo hanging off it, one identity row under it",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1849"
+  },
+  "detail": "Owner 2026-10-19 (item 1 of the design changes list): the Frequency Space page chrome put the name on a dark-scrimmed photo card, and the DAWN layout it replaced was better. FqSpaceChrome now draws DAWN's Header size by default: a cover band with no text on the photo, the logo chip hanging off its bottom edge, then one identity row on the page ground (name, badges and tagline left, buttons right), then the sticky tab row and the full-width body. The Hero size keeps the identity on the photo. Both Space trees use it (the member profile layout and the signed-out share page), so no render path moves and the Editor node-store slices are untouched. The loading skeleton matches the new shape. Colors, faces and radii are the Frequency tokens already in space-page.css.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('components/frequency/members/space/space-chrome.tsx','utf8');const s=fs.readFileSync('app/themes/frequency/space-page.css','utf8');const bad=[];if(!c.includes('fqs-cover'))bad.push('chrome has no cover band');if(!c.includes('fqs-ident'))bad.push('chrome has no identity row under the cover');if(!s.includes('.fqs-cover-img'))bad.push('sheet lost the cover band');if(bad.length){console.error('LIVE-1029: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the Space chrome goes back to putting the identity on the photo for the default size.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
