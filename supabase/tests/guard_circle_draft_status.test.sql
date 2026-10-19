@@ -3,10 +3,12 @@
 -- The host/guide/mentor update policy on circles checks identity alone, so before
 -- SCAN-848 a host (or any guide) could PATCH status from 'draft' to 'active'
 -- through PostgREST and skip publishCircleAction's create gate and hosting
--- allowance. Every forged write below is made AS the host through the policy,
--- exactly the way PostgREST would make it, and must be refused; a draft-field
--- edit and a live-status change must still land; and the admin client's publish
--- must be untouched.
+-- allowance. The trigger keys on auth.role(), so these writes stay as postgres
+-- (RLS does not bind) with the JWT role set to authenticated, the same way
+-- prevent_founder_meta_self_edit.test.sql drives SCAN-845. A SET ROLE
+-- authenticated UPDATE on an unlisted draft is filtered to zero rows by
+-- circles_access_restrictive, which is not an exception and never reaches
+-- the trigger (CI 39283464645).
 --
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
@@ -51,9 +53,8 @@ select is(has_function_privilege('authenticated', 'public.guard_circle_draft_sta
 select is(has_function_privilege('anon', 'public.guard_circle_draft_status()', 'execute'), false,
   'anon cannot execute guard_circle_draft_status');
 
--- ── 2. Forged publish, as the host ──────────────────────────────────────────────────────────────
+-- ── 2. Forged publish, JWT role authenticated (the PostgREST caller) ────────────────────────────
 
-set local role authenticated;
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a848-000000000001', 'role', 'authenticated')::text, true);
 
@@ -71,15 +72,10 @@ select throws_ok(
   'circles: a draft leaves draft only through publish',
   'a host cannot PATCH a draft Circle to forming');
 
-reset role;
 select is(
   (select status from public.circles where id = '00000000-0000-4000-c848-000000000001'),
   'draft',
   'the draft is still a draft after the refused host writes');
-
-set local role authenticated;
-select set_config('request.jwt.claims',
-  json_build_object('sub', '00000000-0000-4000-a848-000000000001', 'role', 'authenticated')::text, true);
 
 select lives_ok(
   $$ update public.circles set name = 'Draft Room edited'
@@ -91,7 +87,7 @@ select lives_ok(
       where id = '00000000-0000-4000-c848-000000000002' $$,
   'a host can still change status on a live Circle');
 
--- ── 3. A guide session is refused the same way ──────────────────────────────────────────────────
+-- ── 3. A guide JWT is refused the same way ──────────────────────────────────────────────────────
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a848-000000000002', 'role', 'authenticated')::text, true);
@@ -105,8 +101,6 @@ select throws_ok(
 
 -- ── 4. The admin client's publish still writes ──────────────────────────────────────────────────
 
-reset role;
-set local role service_role;
 select set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
 
 select lives_ok(
