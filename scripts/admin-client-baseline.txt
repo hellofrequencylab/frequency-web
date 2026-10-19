@@ -400,6 +400,7 @@
 # LIVE-764: public Collective directory projection over same-owner children; filters active,
 # public, network-connected Spaces before reusing existing public event access readers.
 
+# lib/loyalty/store.ts + lib/loyalty/visit.ts (added 2026-10-19, LIVE-940): Regulars. The three loyalty tables are service-role only (internal): the store reads are scoped to one Space or the caller, every write runs behind the owner gate, and the visit writer is reached only from the capture pipeline after the signed-code check.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -1244,3 +1245,5 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+lib/loyalty/store.ts
+lib/loyalty/visit.ts

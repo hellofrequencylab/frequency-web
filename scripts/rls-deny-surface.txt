@@ -137,5 +137,11 @@ store_items                          carrier    -
 # service-role-only (scripts/rls-deny-all.txt); neither is a record of a payment.
 recordings                           carrier    -
 recording_attachments                carrier    -
+# space_loyalty_programs.reward_value_cents and loyalty_rewards.reward_value_cents (LIVE-940) are the
+# owner's stated worth of a Regulars reward ("a free coffee, worth $5"), shown on the stamp card. No
+# payment settles against it and no Zap is spent on it. Both tables are service-role-only
+# (scripts/rls-deny-all.txt); the capture pipeline writes the stamps and the owner gate writes the rest.
+space_loyalty_programs               carrier    -
+loyalty_rewards                      carrier    -
 # push_subscriptions matched on the word "subscription". It holds a Web Push endpoint.
 push_subscriptions                   carrier    -
