@@ -17,6 +17,7 @@ const sources = new Map([
   ['@/lib/spaces/store', 'const space=()=>({id:"space",slug:"calm",preferences:globalThis.__spaceNodeWriteProbe.preferences});export const getSpaceById=async()=>space();export const getVisibleSpaceBySlug=async()=>space();'],
   ['@/lib/spaces/entitlements', 'export const resolveSpaceManageAccess=async()=>({canManage:globalThis.__spaceNodeWriteProbe.allowed})'],
   ['@/lib/sites/site-cache', 'export const refreshSite=()=>{}'],
+  ['@/lib/platform-flags', 'export const renderPathEnabled=async()=>false'],
   ['@/lib/importer/store', 'export const getIntakeBySpaceId=async()=>null'],
   ['@/lib/importer/compose', 'export const reseedBlockCopy=async()=>null'],
   ['@/lib/supabase/admin', 'export const createAdminClient=()=>({from:()=>({update:value=>{globalThis.__spaceNodeWriteProbe.writes.push(value);return {eq:async()=>({error:null})}}})})'],
