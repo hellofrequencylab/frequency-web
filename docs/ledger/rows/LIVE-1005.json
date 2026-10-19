@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1005",
+  "title": "Editor E0 task 12b, mount slice: the node layout store mounts in the app shell, light and subject-aware",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 6; §8 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19. EntityLayoutMount wraps its children in NodeLayoutMount (a wrapper in node-layout-store.tsx) at the same position, always, so the shell does not remount. node-layout-store.tsx imports types only from the node modules and resets in place on a subject change, flushing the outgoing edit to the outgoing subject. Node saves go to saveSpaceGridLayout on a Space route. Honest gap: nothing reads the store yet, and the shell-weight result needs a production build (Mac session) because CI never builds.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const s=fs.readFileSync('components/entity-blocks/node-layout-store.tsx','utf8');if(/from '@\\/lib\\/entity-blocks\\/node-ops'/.test(s))bad.push('store imports node-ops at runtime (shell weight)');if(!/import type \\{ NodeLayout \\}/.test(s))bad.push('store lost its type-only import');const m=fs.readFileSync('components/entity-blocks/profile-layout-context.tsx','utf8');if(!m.includes('<NodeLayoutMount'))bad.push('mount does not wrap in NodeLayoutMount');if(bad.length){console.error('LIVE-1005: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the store regains a runtime node-ops import or the mount stops wrapping it. Behavior is node-layout-store.test.tsx and entity-layout-mount.test.tsx.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}
