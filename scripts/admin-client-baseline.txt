@@ -1250,3 +1250,4 @@ lib/loyalty/store.ts
 lib/loyalty/visit.ts
 lib/loyalty/hunt-store.ts
 lib/loyalty/hunts-visit.ts
+lib/loyalty/discover.ts

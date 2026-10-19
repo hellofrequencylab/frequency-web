@@ -400,22 +400,22 @@
   box-shadow: 0 0 28px rgba(143, 233, 255, .4), 0 0 70px rgba(163, 212, 255, .22) !important; /* export iri glow in aqua and sky */
 }
 
-/* Mobile cohesion, 2026-10-15. The cooled canvas/sweep above did not move the old violet/magenta
-   action, link and focus roles: semantic UI (including Mindless) still wore the previous scheme.
-   Bind those roles at each palette boundary, so their contrast follows the room's existing
-   presence/on-accent pair. Live, reward, entity tones and authored artwork keep their meaning. */
+/* Mobile cohesion, 2026-10-15, re-bound 2026-10-19 (LIVE-961). The cooled canvas/sweep above did not
+   move the old violet action, link and focus roles. Bind those roles at each palette boundary to the
+   room's own ink (text-strong), so a button is ink on the Commons and bone on the Stage; the owner
+   retired the solid violet accent. Live, reward, entity tones and authored artwork keep their meaning. */
 :root[data-design="frequency"],
 [data-design="frequency"] [data-surface="stage"],
 [data-design="frequency"][data-surface="stage"],
 [data-design="frequency"] [data-time="night"],
 [data-design="frequency"] [data-skin],
 [data-design="frequency"][data-skin] {
-  --fq-action-primary: var(--fq-presence);
-  --fq-action-primary-hover: color-mix(in oklab, var(--fq-presence) 88%, var(--fq-text-strong));
-  --fq-action-primary-text: var(--fq-text-on-accent);
-  --fq-action-glow: 0 6px 18px -8px color-mix(in oklab, var(--fq-presence) 45%, transparent);
-  --fq-text-link: var(--fq-presence);
-  --fq-focus-ring: var(--fq-presence);
+  --fq-action-primary: var(--fq-text-strong);
+  --fq-action-primary-hover: var(--fq-text-body);
+  --fq-action-primary-text: var(--fq-bg-canvas);
+  --fq-action-glow: 0 6px 18px -8px color-mix(in oklab, var(--fq-text-strong) 35%, transparent);
+  --fq-text-link: var(--fq-text-strong);
+  --fq-focus-ring: var(--fq-text-strong);
 }
 
 /* The Stage canvas/raised room was cooled above, but its cards and glass retained the UV export.

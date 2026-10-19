@@ -7,15 +7,18 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StampCard } from '@/components/loyalty/stamps'
 import { HuntProgressList } from '@/components/loyalty/hunt-progress'
+import { LiveHuntsList, NearbyRegularsList } from '@/components/loyalty/nearby'
 import { listMyHuntProgress } from '@/lib/loyalty/hunt-store'
+import { listLiveHunts, listNearbyRegulars } from '@/lib/loyalty/discover'
 import { listMyLoyaltyCards, loyaltyEnabled } from '@/lib/loyalty/store'
 
 export const dynamic = 'force-dynamic'
 
 // MY REWARDS (LIVE-940, docs/LOYALTY.md): every Regulars card the member holds, with any reward code
 // waiting to be collected. A member page behind sign-in: noindex, the global rail (railFor falls through).
-// Hunts the member has started sit under the cards (LIVE-942); nearby Spaces and live hunts join in
-// LIVE-944. No em dashes.
+// Hunts the member has started sit under the cards (LIVE-942). Under those, the Spaces running Regulars
+// nearest the member and the hunts live today (LIVE-944), so a member with no card yet sees where to get
+// one. No em dashes.
 export const metadata: Metadata = {
   title: 'Rewards',
   robots: { index: false },
@@ -24,7 +27,11 @@ export const metadata: Metadata = {
 export default async function RewardsPage() {
   const profileId = await getMyProfileId()
   const on = !!profileId && loyaltyEnabled()
-  const [cards, hunts] = on ? await Promise.all([listMyLoyaltyCards(profileId), listMyHuntProgress(profileId)]) : [[], []]
+  const [cards, hunts, nearby, liveHunts] = on
+    ? await Promise.all([listMyLoyaltyCards(profileId), listMyHuntProgress(profileId), listNearbyRegulars(profileId), listLiveHunts()])
+    : [[], [], [], []]
+  const started = new Set(hunts.map((h) => h.slug))
+  const openHunts = liveHunts.filter((h) => !started.has(h.slug))
 
   return (
     <DashboardTemplate
@@ -44,7 +51,7 @@ export default async function RewardsPage() {
           title="No cards yet."
           description="Check in at a shop that runs Regulars and your first card lands here, with 25 Zaps for the visit."
           action={
-            <Link href="/discover/spaces" className="btn">
+            <Link href={nearby.length > 0 ? '#near-you' : '/discover/spaces'} className="btn">
               Find a place
             </Link>
           }
@@ -68,6 +75,18 @@ export default async function RewardsPage() {
             </li>
           ))}
         </ul>
+      )}
+      {nearby.length > 0 && (
+        <section className="mt-8" id="near-you">
+          <SectionHeader title="Near you" count={nearby.length} />
+          <NearbyRegularsList places={nearby} />
+        </section>
+      )}
+      {openHunts.length > 0 && (
+        <section className="mt-8">
+          <SectionHeader title="Hunts on now" count={openHunts.length} />
+          <LiveHuntsList hunts={openHunts} />
+        </section>
       )}
     </DashboardTemplate>
   )

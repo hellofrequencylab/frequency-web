@@ -11,8 +11,9 @@ export interface Feature {
   icon: FqIconName
   name: string
   line: string
-  /** Spaces only: the plan that carries it. */
-  tier?: 'Free' | 'Business'
+  /** Spaces only: the plan that carries it. Collective and Network (LIVE-992) are the two plans above
+   *  Business; the chip reads the plan name, so a visitor meets them here, not only on /pricing. */
+  tier?: 'Free' | 'Business' | 'Collective' | 'Network'
   steps: [string, string, string]
   changes: string
 }
@@ -126,6 +127,15 @@ export const SPACES: Half = {
         { id: 'f-tickets', icon: 'ticket', name: 'Tickets + refunds', line: 'Sell, refund and run the guest list in one place.', tier: 'Free', steps: ['Set a price and a capacity.', 'Guests pay at checkout.', 'Refund in one click if plans change.'], changes: 'No spreadsheet on the night.' },
         { id: 'f-memberships', icon: 'membership', name: 'Memberships', line: 'Recurring support, straight into a Circle.', tier: 'Business', steps: ['Set a monthly price.', 'Members join and land in their Circle.', 'Payouts arrive on schedule.'], changes: 'Steady income from your regulars.' },
         { id: 'f-tips', icon: 'gem', name: 'Tips', line: 'Thanks after a good night, with only card processing taken out.', tier: 'Free', steps: ['Guests tip after checking in.', 'It goes straight to you.', 'No platform fee, only card processing.'], changes: 'Gratitude that pays the rent.' },
+      ],
+    },
+    {
+      title: 'Grow together',
+      line: 'More than one group, one network.',
+      photo: 'gathering-04.jpg',
+      features: [
+        { id: 'f-partners', icon: 'host', name: 'Partner hub', line: 'Separate groups that work together, each keeping its own members and payouts.', tier: 'Collective', steps: ['Invite the Spaces you partner with.', 'Share one calendar and cross-list each other’s Circles and Journeys.', 'Each partner keeps its own members, contacts and payouts.'], changes: 'Your groups show up as one scene without merging into one business.' },
+        { id: 'f-chapters', icon: 'space', name: 'Chapters', line: 'One organization, every chapter under one home.', tier: 'Network', steps: ['Add each chapter as its own Space.', 'One membership works in every chapter, with central admins across all of them.', 'A roll-up report shows the whole network.'], changes: 'Every chapter runs itself, and you still see the whole.' },
       ],
     },
   ],
