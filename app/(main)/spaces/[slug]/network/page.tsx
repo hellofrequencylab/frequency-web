@@ -41,19 +41,23 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
   // Owner management and the public projection are separate doors: never add private members to this page.
   // A Network's owner and central admins run its Chapters area (SCAN-983); a Collective keeps its billing door.
   const chapters = isNetworkPlan(parent.plan) && caller?.id ? await networkToolsAccess(parent.id, caller.id) : null
+  // A Network's member Spaces are its chapters (NAMING: a Network is one owner running chapters); a
+  // Collective's are member Spaces. The tab keeps its name, the words on the page follow the plan.
+  const noun = isNetworkPlan(parent.plan) ? { plural: 'Chapters', description: 'Chapters and their events, together.', empty: 'Chapters appear here when they are ready to welcome visitors.' }
+    : { plural: 'Member Spaces', description: 'Member Spaces and their events, together.', empty: 'Member Spaces appear here when they are ready to welcome visitors.' }
   const management = chapters
     ? <Link href={`/spaces/${slug}/settings/chapters`} className={buttonClasses('secondary', 'sm')}>Manage chapters</Link>
     : caller?.id === parent.ownerProfileId
       ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined
   return (
-    <IndexTemplate {...hero} title={`${name} network`} description="Member Spaces and their events, together." action={management} adminBar={false}>
+    <IndexTemplate {...hero} title={`${name} network`} description={noun.description} action={management} adminBar={false}>
       <div className="space-y-10">
         <section aria-labelledby="network-members">
-          <SectionHeader id="network-members" title="Member Spaces" count={members.length} />
+          <SectionHeader id="network-members" title={noun.plural} count={members.length} />
           {members.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{members.map(member => (
             <EntityCard key={member.id} href={`/spaces/${member.slug}`} title={member.name}
               anchor={<BrandAnchor name={member.name} logoUrl={member.logoUrl} size="card" />} />
-          ))}</div> : <EmptyState title="The network is taking shape" description="Member Spaces appear here when they are ready to welcome visitors." />}
+          ))}</div> : <EmptyState title="The network is taking shape" description={noun.empty} />}
         </section>
         <section aria-labelledby="network-upcoming">
           <SectionHeader id="network-upcoming" title="Up next" />

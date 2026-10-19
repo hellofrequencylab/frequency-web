@@ -44,6 +44,9 @@ export const ZAP_AMOUNTS = {
   space_checkin: 25,
   // Regulars hunts (LIVE-942): checked in at every stop of a live hunt; once per hunt, 100 a day.
   hunt_complete: 100,
+  // Tap to meet (LIVE-946): two members who met in person, once per pair a week; zap_config caps it at
+  // 45 a day (three meets). Paid to both by lib/meet/store.ts.
+  meetup_tap: 15,
   program_run: 30,
   // Entry Points (ADR-126): reward setting up a funnel (capped in app to the first
   // few per member) + the activate bonus when a member you brought in shows up.

@@ -491,6 +491,90 @@ export type Database = {
           },
         ]
       }
+      meet_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_codes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_taps: {
+        Row: {
+          a_profile_id: string
+          b_profile_id: string
+          code_id: string | null
+          created_at: string
+          id: string
+          met_day: string
+          week_start: string
+        }
+        Insert: {
+          a_profile_id: string
+          b_profile_id: string
+          code_id?: string | null
+          created_at?: string
+          id?: string
+          met_day: string
+          week_start: string
+        }
+        Update: {
+          a_profile_id?: string
+          b_profile_id?: string
+          code_id?: string | null
+          created_at?: string
+          id?: string
+          met_day?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_taps_a_profile_id_fkey"
+            columns: ["a_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_taps_b_profile_id_fkey"
+            columns: ["b_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_taps_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "meet_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_hunt_completions: {
         Row: {
           completed_on: string
@@ -18253,6 +18337,7 @@ export type Database = {
         }
         Returns: Json
       }
+      set_space_preferences: { Args: { p_space_id: string; p_patch: Json }; Returns: boolean }
       settle_email_provider_attempt: {
         Args: {
           p_queue_job_id: string

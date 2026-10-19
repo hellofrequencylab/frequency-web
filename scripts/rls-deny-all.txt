@@ -140,3 +140,6 @@ loyalty_rewards
 loyalty_hunts
 loyalty_hunt_stops
 loyalty_hunt_completions
+# LIVE-946 Tap to meet: codes and taps are written by lib/meet/store.ts for the signed-in member and by the meet_tap RPC; service-only, no browser role.
+meet_codes
+meet_taps

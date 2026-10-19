@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-954",
+  "title": "A Network's Network tab calls its member Spaces chapters",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "XS",
+  "wave": "W7",
+  "closed": "2026-10-19",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/network/page.tsx",
+    "ref": "Production walk of The Group as a first member (2026-10-19): the Network tab headed its six chapters Member Spaces."
+  },
+  "detail": "The Network tab's section heading, page description and empty state follow the parent's plan: Chapters on a Network (NAMING: a Network is one owner running chapters, and its Chapters door already uses the word), Member Spaces on a Collective. The tab label stays Network, which the public nav test pins. No data or routing changes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/spaces/[slug]/network/page.tsx','utf8');const bad=[];if(!/isNetworkPlan\\(parent.plan\\) \\? \\{ plural: 'Chapters'/.test(s))bad.push('a Network no longer says Chapters');if(!/plural: 'Member Spaces'/.test(s))bad.push('a Collective no longer says Member Spaces');if(/title=\\\"Member Spaces\\\"/.test(s))bad.push('the heading is hard-typed');if(bad.length){console.error('LIVE-954: '+bad.join('; '));process.exit(1)}\""
+  }
+}

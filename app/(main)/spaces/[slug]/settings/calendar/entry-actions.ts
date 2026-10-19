@@ -32,9 +32,7 @@ import {
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
 import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
-import { writeSpacePreferences, writeSpaceTimeZone } from '@/lib/spaces/store'
-import { getSpaceById } from '@/lib/spaces/store'
-import { nextSkyMarkerPreferences } from '@/lib/spaces/sky-markers'
+import { patchSpacePreferences, writeSpaceTimeZone } from '@/lib/spaces/store'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { entryKind, entryStage } from '@/lib/calendar/registry'
 import type { CalendarEvent } from '@/lib/calendar/item'
@@ -94,16 +92,15 @@ export async function setSpaceTimeZone(slug: string, zone: string): Promise<Acti
  * `setSpaceTimeZone` above and as Day notes does: `resolveEditor` already requires
  * `canEditProfile` AND the `events` function, which is the same door the rest of this page uses.
  *
- * The write is SPARSE (`nextSkyMarkerPreferences`): turning it off deletes the key rather than
+ * The write is SPARSE and key-scoped (SCAN-833): turning it off deletes the key rather than
  * writing false, so a Space that never wanted this keeps a clean blob.
  */
 export async function setSpaceSkyMarkers(slug: string, enabled: boolean): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
-  const space = await getSpaceById(editor.spaceId)
-  if (!space) return fail('Could not find this Space.')
-  const next = nextSkyMarkerPreferences(space.preferences, enabled === true)
-  const saved = await writeSpacePreferences(editor.spaceId, next)
+  // Key-scoped (SCAN-833): `skyMarkers: true` sets the key, `null` deletes it, and nothing else in
+  // the blob is read or rewritten, so a concurrent editor autosave is never reverted.
+  const saved = await patchSpacePreferences(editor.spaceId, { skyMarkers: enabled === true ? true : null })
   if (!saved) return fail('Could not save that. Try again.')
   revalidate(slug)
   return ok()
