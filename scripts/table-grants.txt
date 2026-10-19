@@ -348,3 +348,6 @@ space_inbox_addresses                 internal
 space_private_state                   internal
 network_central_admins               internal
 network_event_approvals              internal
+space_loyalty_programs               internal
+loyalty_stamps                       internal
+loyalty_rewards                      internal

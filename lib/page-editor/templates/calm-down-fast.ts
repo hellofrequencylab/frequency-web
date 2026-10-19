@@ -81,7 +81,7 @@ export const spec: ArticleSpec = {
         alt: 'People sitting together on the grass with their eyes closed',
         eyebrow: 'What actually works',
         title: 'Small and repeated, not long and perfect.',
-        body: 'The 60-second breath is for a crisis. The real win is making a short calming practice a habit, so your baseline comes down and you are not always rescuing yourself from the edge.\n\nThe Body practices are the short, physical ones: a breath, cold water on your face, a two-minute walk, a reset you can do before your coffee. None of them ask for an hour, a mat, or a certain mood.',
+        body: 'The 60-second breath is for a crisis. The real win is making a short calming practice a habit, so your baseline comes down and you are not always rescuing yourself from the edge.\n\nThe calming practices are the short, physical ones: a breath, cold water on your face, a two-minute walk, a reset you can do before your coffee. None of them ask for an hour, a mat, or a certain mood.',
         side: 'left',
       },
     },

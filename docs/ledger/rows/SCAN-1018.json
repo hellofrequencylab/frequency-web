@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1018",
+  "title": "The Group runs on Network: the seed writes Network and @frequency with six chapters, the website's chapter chips and event filters read the live member Spaces, and named central admins read the roll-up report",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "scripts/seed-the-group.mts",
+    "ref": "The Group handoff (frequency-agent-handoff.md, 2026-10-19), tasks A1, A3 and A5"
+  },
+  "detail": "Handoff 2026-10-19 (Daniel, via the Group thread): production already moved The Group to plan network under @frequency, with five chapters. Three code gaps remained. A1: scripts/seed-the-group.mts still wrote owner @danieltyack and plan collective, so a re-run reverted the plan (SCAN-1016 had already stopped it wiping page edits). A5: the website's NetworkChapters chips and NetworkEvents filters were typed-in lists (CHAPTER_CHIPS, CHAPTER_TAGS), so a chapter added in the console never reached the site. A3: lib/collective/network-report-policy.ts admitted the owner only, while the /networks copy promises central admins the whole network.\n\nCLOSED 2026-10-19 (ADR-1770). Seed: OWNER_ID is @frequency (78d47bae), PLAN is network, limits_waived follows it, The Group Encinitas is the sixth chapter (code enc, so the portal's Encinitas events are hosted by it), every circle name is the handoff's exact 'The Group ...' name, and the three local circles move to Encinitas; scripts/probes/network-theme.mjs asserts six chapters. Live chapters: lib/spaces/content-data.ts getSpaceChapters lists the Space itself and its active, non-private member Spaces into metadata.space.chapters; NetworkChapters and NetworkEvents draw chips and filters from it when the Space runs chapters, unless the block's new 'Chapters from' field says 'The list below' (the typed list stays for a Space with no chapters). An event with no declared host files under the parent. Report: buildNetworkReport takes an optional centralAdmin dep (networkToolsAccess: named in network_central_admins with an active admin membership on the parent), confirmed once before any child or finance read and only for plan network; the Your reach page shows the report to that caller too. The seed's hand-typed lists are gone from the generated SQL. Production data (section C) is a paste file for the owner, not code.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const seed=fs.readFileSync('scripts/seed-the-group.sql','utf8');const net=fs.readFileSync('components/page-editor/blocks/network.tsx','utf8');const pol=fs.readFileSync('lib/collective/network-report-policy.ts','utf8');const miss=[[/'the-group', 'The Group', 'business', 'active', [^;]*'network', 'network', true/.test(seed)&&!/'the-group', 'The Group', 'business', 'active', [^;]*'collective'/.test(seed),'the seed writes plan network'],[/'the-group-encinitas'/.test(seed),'the Encinitas chapter'],[!/CHAPTER_TAGS/.test(fs.readFileSync('scripts/seed-the-group.mts','utf8')),'no hand-typed event chapter list'],[/liveChapters\\(metadata\\)/.test(net)&&/chapterSource/.test(net),'live chapters in the Network blocks'],[/centralAdmin/.test(pol),'central admins in the report policy']].filter(([ok])=>!ok).map(([,m])=>m);if(miss.length){console.error('SCAN-1018: '+miss.join(', '));process.exit(1)}\"",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

@@ -98,6 +98,11 @@ ${F} .mw-path-grid{grid-template-columns:repeat(3,minmax(0,1fr))}@media (max-wid
 
 ${F} .mw-parts-top{display:flex;align-items:center;justify-content:space-between}
 ${F} .mw-parts-sec{position:relative}
+${F} .mw-parts-stat{display:flex;flex-direction:column;gap:4px;margin:8px 0 4px}
+${F} .mw-parts-stat strong{font-size:2.25rem;line-height:1;color:var(--color-primary-strong)}
+${F} .mw-parts-link{color:inherit;text-decoration:none}
+${F} .mw-parts-link:hover{color:var(--color-primary-strong)}
+${F} .mw-parts-sec li .mw-textlink{margin-top:12px}
 
 ${F} .mw-lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:32px clamp(32px,5vw,56px)}
 ${F} .mw-label-strong.mw-label{margin:0 0 14px}

@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { EMAIL_BASE_URL, EMAIL_SHELL_STYLES, emailPostalAddress, type EmailFooter } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
+import { EMAIL_TAGLINE } from '@/lib/email-studio/postal'
 
 // THE REACT EMAIL BASE TEMPLATE (LIVE-695). The same brand wrapper `emailShell` (lib/email.ts)
 // writes as a string: doctype, head, the wordmark and tagline, the card, and the footer with the
@@ -52,7 +53,7 @@ export function EmailShell({ children, footer }: { children: ReactNode; footer?:
             <a href={EMAIL_BASE_URL} style={S.logo}>
               frequency
             </a>
-            <p style={S.tagline}>The community collective</p>
+            <p style={S.tagline}>{EMAIL_TAGLINE}</p>
             {children}
           </div>
           <div style={S.footer}>

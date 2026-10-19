@@ -11,7 +11,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueue } from '@/lib/queue/outbox'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
-import { postalFooterHtml } from '@/lib/email-studio/postal'
+import { plainTextEmail } from '@/lib/email-studio/shell'
 
 // Event types operators can trigger on (matches engagement_events.event_type +
 // the gamification events that flow through the ledger).
@@ -176,9 +176,9 @@ export async function listRules(): Promise<AutomationRule[]> {
   })
 }
 
-function actorEmailHtml(body: string, unsubscribeUrl: string): string {
-  const safe = body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+/** The rule's email as a branded Frequency email with the unsubscribe footer (EMAIL-024). */
+function actorEmailMessage(body: string, unsubscribeUrl: string): { html: string; text: string } {
+  return plainTextEmail(body, { unsubscribeUrl, audienceLine: 'You are receiving this as a Frequency member.' })
 }
 
 /**
@@ -223,11 +223,12 @@ export async function runAutomationsForEvent(
       if (!gate.allowed) continue
       const cfg = (rule.action_config ?? {}) as { subject?: string; body?: string }
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: actorProfileId, category: 'lifecycle' })
+      const message = actorEmailMessage(cfg.body || '', unsubscribeUrl)
       await enqueueEmail({
         to: actorEmail,
         subject: cfg.subject || 'A note from Frequency',
-        html: actorEmailHtml(cfg.body || '', unsubscribeUrl),
-        text: `${cfg.body || ''}\n\nUnsubscribe: ${unsubscribeUrl}`,
+        html: message.html,
+        text: message.text,
         headers: listUnsubscribeHeaders(unsubscribeUrl),
       })
     } else if (rule.action_type === 'push_actor') {

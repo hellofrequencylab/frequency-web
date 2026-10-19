@@ -4,7 +4,7 @@
 //   3. every scheme reads at AA, the scheme follows the owner's accent, and the token block is scoped, leaves
 //      the accent to the Space and zeroes motion under reduced motion;
 //   4. the Network section family is registered on the website surface and plans as its own full-bleed band;
-//   5. the seed builds what the brief asks: a Collective on the Network theme, five chapter member Spaces,
+//   5. the seed builds what the brief asks: a Network on the Network theme, six chapter member Spaces,
 //      the tiers, the studio offerings, the merch, Feel Good Friday weekly 9:00–10:10 AM, the PitchFest Party,
 //      and scripts/seed-the-group.sql is the seed's current output.
 // Run: node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/network-theme.mjs
@@ -109,7 +109,7 @@ assert.ok(!readFileSync('components/spaces/network-page-scope.tsx', 'utf8').incl
 // 5. The seed.
 const prefs = seed.buildPreferences()
 assert.equal(prefs.siteStyle.theme, 'network')
-assert.equal(seed.CHAPTERS.length, 5, 'five chapter member Spaces (the Collective plan includes five)')
+assert.equal(seed.CHAPTERS.length, 6, 'six chapter member Spaces (Encinitas joined on 2026-10-19; the Network plan includes ten)')
 assert.deepEqual(seed.TIERS.map((t) => [t.name, t.priceCents]), [['Free', 0], ['Basic', 1999], ['Premium', 2999]])
 assert.deepEqual(seed.STUDIO.map((s) => [s.title, s.price]), [['Space Rental', 200], ['Recording Only', 350], ['Recording + Basic', 500]])
 assert.deepEqual(seed.MERCH.map((m) => m.priceCents), [3000, 3000, 4000, 2600])

@@ -32,6 +32,19 @@ describe('private Collective reporting', () => {
     const { deps } = setup(); expect(await buildNetworkReport('p', caller, deps)).toEqual({ status: 'denied' })
     expect(deps.children).not.toHaveBeenCalled(); expect(deps.earnings).not.toHaveBeenCalled()
   })
+  it('reports to a named central admin of a Network parent, and to nobody else (handoff A3)', async () => {
+    const { deps, rows } = setup(); rows.set('p', { ...parent, plan: 'network' })
+    const centralAdmin = vi.fn(async (_parent: string, caller: string) => caller === 'central')
+    expect(await buildNetworkReport('p', 'central', { ...deps, centralAdmin })).toMatchObject({ status: 'complete', members: 2 })
+    expect(await buildNetworkReport('p', 'stranger', { ...deps, centralAdmin })).toEqual({ status: 'denied' })
+    expect(deps.earnings).toHaveBeenCalledTimes(2)
+  })
+  it('never opens a Collective report to a central admin, and asks before any child read', async () => {
+    const { deps } = setup()
+    const centralAdmin = vi.fn(async () => true)
+    expect(await buildNetworkReport('p', 'central', { ...deps, centralAdmin })).toEqual({ status: 'denied' })
+    expect(centralAdmin).not.toHaveBeenCalled(); expect(deps.children).not.toHaveBeenCalled()
+  })
   it('reports for a Network parent across its chapters (SCAN-960)', async () => {
     const { deps, rows } = setup(); rows.set('p', { ...parent, plan: 'network' })
     expect(await buildNetworkReport('p', 'owner', deps)).toMatchObject({ status: 'complete', members: 2 })

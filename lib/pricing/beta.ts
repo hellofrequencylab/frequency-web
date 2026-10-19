@@ -19,6 +19,7 @@ import {
   type CatalogAmounts,
   type CatalogItemKey,
 } from '@/lib/billing/pricing-keys'
+import type { SpacePlan } from './plans'
 
 /** The instant the beta window closes. Owner-editable: moving this one constant shifts the whole
  *  auto-revert (checkout price + every pricing surface).
@@ -66,6 +67,51 @@ export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boo
   if (betaActive) return amounts
   return { listCents: amounts.listCents, foundingCents: amounts.listCents }
 }
+
+// ── THE COLLECTIVE FOUNDING INTRO (ADR-1709 §7, owner 2026-10-19) — a standing PER-ITEM offer ──────
+// The beta window above is one global clock for every catalog item. Collective's Founding price is not
+// a beta: the owner ruled it a standing intro ("Collective is $149 with a $99 intro price", 2026-10-19),
+// open on its own terms and locked for the life of a subscription that takes it. Reopening the global
+// window would also put a beta rate back on every other item (harmless today, since every other item
+// carries founding == list, but it would bring the retired "beta rate" copy back with it). So the
+// Founding arm is opened PER ITEM here, and every surface that asks "is the founding amount the charged
+// amount for this item" asks this one predicate: the checkout (resolveLoadoutPriceId), the display rows
+// (spacePlanRows, spacePlanPriceCents) and the notes beside a price. They cannot diverge because they
+// share the function. Closing the intro is removing the item from the set, which is a code change with
+// an ADR, exactly like a changed amount in the catalog (ADR-916).
+
+/** The catalog items whose FOUNDING amount is charged today regardless of the beta window. */
+export const FOUNDING_OPEN_ITEMS: ReadonlySet<CatalogItemKey> = new Set<CatalogItemKey>(['collective_base'])
+
+/** Is the founding amount of `item` the charged amount right now? True inside the beta window (every
+ *  item), or when the item carries a standing Founding intro. PURE. A null item (a plan with no catalog
+ *  item: free, network) follows the window alone. */
+export function foundingOpenFor(item: CatalogItemKey | null | undefined, betaActive: boolean): boolean {
+  if (betaActive) return true
+  return item != null && FOUNDING_OPEN_ITEMS.has(item)
+}
+
+/** The catalog item a Space plan is priced from, or null for the plans with no item (free; Network is
+ *  priced from NETWORK_PLAN, SCAN-956). The ONE plan-to-item map for pricing surfaces. */
+const SPACE_PLAN_CATALOG_ITEM: Readonly<Record<SpacePlan, CatalogItemKey | null>> = {
+  free: null,
+  business: 'business_base',
+  nonprofit: 'nonprofit_seat',
+  independent: 'independent_base',
+  collective: 'collective_base',
+  nonprofit_collective: 'nonprofit_collective',
+  network: null,
+}
+
+/** `foundingOpenFor` by Space plan. PURE. */
+export function foundingOpenForPlan(plan: SpacePlan, betaActive: boolean): boolean {
+  return foundingOpenFor(SPACE_PLAN_CATALOG_ITEM[plan], betaActive)
+}
+
+/** The one plain sentence beside a Founding price (no countdown, no urgency): the rate is locked for as
+ *  long as the subscription is kept (readLockedPriceId re-bills it). Shared by /pricing, the in-app
+ *  ladder and the FAQ so the promise is worded once. */
+export const FOUNDING_RATE_NOTE = 'Founding price. Yours for as long as you keep the plan.'
 
 // ── THE PRIVATE BETA PRICE GRANT (ADR-1061) — a per-Space grant, never a public offer ────────────
 // The owner, 2026-08-17, the same day they closed the window above: *"I still have a couple people

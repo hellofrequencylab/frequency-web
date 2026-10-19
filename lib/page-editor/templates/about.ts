@@ -1,5 +1,6 @@
 import type { Data } from '@/lib/page-editor/types'
-import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
+import { BETA_CTA_LABEL, BETA_CTA_HREF, CATEGORY_LINE, FOUNDING_PLACE } from '@/lib/site'
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ABOUT — the DAWN 2 rebuild, expressed in blocks (owner directive: the template
@@ -209,8 +210,8 @@ export const data: Data = {
           },
           {
             label: '03',
-            title: 'A Journey and a bench',
-            body: 'A Journey to walk together over a season, and a bench of people who have done it before.',
+            title: 'A season and a bench',
+            body: 'A few weeks of gatherings to walk through together, and a bench of people who have done it before.',
             highlight: 'normal',
           },
         ],
@@ -218,6 +219,47 @@ export const data: Data = {
         texture: 'none',
         flow: 'soft',
         tone: 'canvas',
+        layout: L,
+      },
+    },
+
+    // ── The explainer, as questions (SCAN-1017). These five answers came over from the retired
+    // /what-is-frequency page, which told this page's story a second time at three times the length;
+    // the Accordion block emits the FAQPage node, so the answer engines that quoted that page quote
+    // this one. Money lines read PLAN_STORY, never a retyped figure.
+    {
+      type: 'Accordion',
+      props: {
+        id: 'ab-faq',
+        eyebrow: 'The short version',
+        title: 'What is Frequency?',
+        titleAccent: '',
+        items: [
+          {
+            q: 'What is Frequency?',
+            a: `${CATEGORY_LINE} Frequency is small local Circles that meet on a rhythm, nearby Events, and the tools the people who host them need to grow together. It is built to rebuild the third place: the spaces that are not home and not work where you are known by name.`,
+          },
+          {
+            q: 'How does Frequency work?',
+            a: 'In three steps. Pick something you like doing, join a Circle near you (a small group that meets on a set rhythm), and show up in person. The same handful of faces keep landing in the same room, which is how strangers become regulars and regulars become friends. The app handles who is meeting, where and when, then gets out of the way.',
+          },
+          {
+            q: 'Is Frequency a social media app?',
+            a: 'No. There is no feed to perform belonging for and no follower count to chase. The whole point is to get the same few people into the same real room on a regular rhythm. Success looks like you closing the app and walking into a room, not opening it again.',
+          },
+          {
+            q: 'How does Frequency make money?',
+            a: `${PLAN_STORY.lines} ${PLAN_STORY.selling} We earn a share only of the business the network sends a Space, never of the people a Space brings itself, and the full ladder is on the pricing page.`,
+          },
+          {
+            q: 'Where is Frequency available?',
+            a: `Frequency is taking root in ${FOUNDING_PLACE} first, where the first Circles are forming, and the first Lab is planned for 2028. It spreads the way real community always has: person to person, one Circle and one city at a time.`,
+          },
+        ],
+        emphasis: { scale: 'default', accent: 'none' },
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
         layout: L,
       },
     },

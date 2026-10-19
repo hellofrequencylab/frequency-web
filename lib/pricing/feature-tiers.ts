@@ -34,7 +34,7 @@
 
 import { formatCents } from './display'
 import { PWYW_CONFIG_DEFAULT } from './catalog-config'
-import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
+import { effectiveCatalogAmounts, foundingOpenForPlan, isBetaPricingActive } from './beta'
 import { NETWORK_PLAN, PLAN_CAPABILITY_RANK, SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
 import { catalogItem, type CatalogAmounts, type CatalogItemKey } from '@/lib/billing/pricing-keys'
@@ -122,13 +122,16 @@ export function crewPriceLabel(minCents: number = PLACEHOLDER_MEMBER_PRICE_CENTS
   return `from ${formatCents(minCents)}`
 }
 
-/** What a Space on `plan` is CHARGED per month right now, in cents: the Opening Beta rate while the beta
- *  window is open, the list price once it closes. The display twin of what the checkout resolves
- *  (lib/pricing/beta.ts effectiveCatalogAmounts, the same rule space-plan-checkout bills on), so a rung
- *  can never quote a price the checkout has stopped charging. PURE — pass `betaActive` to pin it. */
+/** What a Space on `plan` is CHARGED per month right now, in cents: the founding rate while it is open
+ *  for that plan (the beta window, or a standing Founding intro such as Collective's), the list price
+ *  otherwise. The display twin of what the checkout resolves (lib/pricing/beta.ts foundingOpenFor +
+ *  effectiveCatalogAmounts, the same rule space-plan-checkout bills on), so a rung can never quote a
+ *  price the checkout has stopped charging. PURE — pass `betaActive` to pin it. */
 export function spacePlanPriceCents(plan: SpacePlan, betaActive: boolean = isBetaPricingActive()): number {
-  return effectiveCatalogAmounts(SPACE_PLAN_PRICE_CENTS[plan] ?? SPACE_PLAN_PRICE_CENTS.free, betaActive)
-    .foundingCents
+  return effectiveCatalogAmounts(
+    SPACE_PLAN_PRICE_CENTS[plan] ?? SPACE_PLAN_PRICE_CENTS.free,
+    foundingOpenForPlan(plan, betaActive),
+  ).foundingCents
 }
 
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────

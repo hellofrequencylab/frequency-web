@@ -131,3 +131,8 @@ event_revenue_splits
 # SCAN-983: Network central admins and chapter event approvals are written and read only by server actions that re-check the Network owner or a central admin; service-only, no browser role.
 network_central_admins
 network_event_approvals
+
+# LIVE-940 Regulars: programs, stamps and rewards are written by lib/loyalty server actions after the owner gate and read by server components; service-only, no browser role.
+space_loyalty_programs
+loyalty_stamps
+loyalty_rewards

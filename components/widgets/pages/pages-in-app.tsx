@@ -1,22 +1,40 @@
-import Link from 'next/link'
-import { ExternalLink, Pencil } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { MANAGED_ROUTES } from '@/lib/layout/page-chrome'
+import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { SectionHeader } from '@/components/ui/section-header'
-import { TABLE_WRAP, HEAD_ROW, TH, BODY_ROW, VIEW_LINK, EDIT_BTN } from './shared'
+import { TABLE_WRAP, HEAD_ROW, TH, BODY_ROW, VIEW_LINK } from './shared'
 
-// Pages-workspace layout modules for the IN-APP pages (ADR-261/262), one per managed AREA.
-// Self-fetching, zero-prop RSCs bound in lib/widgets/registry.tsx and arranged through the
-// on-page Layout editor. View opens the live page; Open & edit opens it in place with ?edit=1.
-// No role gate beyond the workspace itself (admin+): in-app pages are visible to every operator
-// who reaches /pages, so a Site Admin always has something to manage even without janitor.
+// The IN-APP pages of the Pages workspace (ADR-261/262): every managed member surface, one list,
+// the focused surfaces (boards, timers, the scanner) grouped at the end. Self-fetching, zero-prop RSC
+// bound in lib/widgets/registry.tsx. No role gate beyond the workspace itself (admin+).
+//
+// WHAT AN OPERATOR EDITS HERE, AND WHERE. An in-app page has no block document; its body is a
+// template plus, on a module route, <PageModules> (PAGE-FRAMEWORK: never the block editor on an
+// authenticated route). What staff tune is the page's Settings group, opened from the Settings
+// button ON the page: the header (title, subtitle, header image), SEO and visibility on every page,
+// plus Layout (which modules show, and their order) on a module route. So the row says exactly that
+// and offers View; it used to offer "Open & edit" with the `edit` query parameter set, which no page in this list reads
+// (`useEditMode` is read on event pages only), which opened the page with nothing switched on.
+//
+// A patterned row (`/spaces/_/crm` and friends) stands for one page per Space: there is no single
+// page to open, so it carries its pattern and no View link.
 
-function InAppSection({ area, label }: { area: 'Member' | 'Focus surfaces'; label: string }) {
-  const routes = MANAGED_ROUTES.filter((r) => r.area === area)
+const AREAS = [
+  { area: 'Member', label: 'Member pages' },
+  { area: 'Focus surfaces', label: 'Focus surfaces' },
+] as const
+
+function editsFor(route: string): string {
+  return isModuleRoute(route) ? 'Layout, header, SEO' : 'Header, SEO'
+}
+
+export async function PagesInApp() {
   return (
     <section>
-      <SectionHeader title={`In-app pages / ${label}`} />
+      <SectionHeader title="In-app pages" count={MANAGED_ROUTES.filter((r) => r.area !== 'Operator').length} />
       <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">
-        Open any member-facing page with edit mode on. Staff edit it in place, right on the page.
+        Member pages. Open one and use its Settings button to edit the header, SEO and, on a page built from
+        modules, the layout.
       </p>
       <div className={`max-w-3xl ${TABLE_WRAP}`}>
         <table className="w-full text-body-sm">
@@ -24,26 +42,18 @@ function InAppSection({ area, label }: { area: 'Member' | 'Focus surfaces'; labe
             <tr className={HEAD_ROW}>
               <th className={TH}>Page</th>
               <th className={TH}>Route</th>
+              <th className={TH}>Edit on the page</th>
               <th className={`${TH} text-right`}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {routes.map((r) => (
-              <tr key={r.route} className={BODY_ROW}>
-                <td className="px-4 py-3 font-medium text-text">{r.label}</td>
-                <td className="px-4 py-3 font-mono text-meta text-subtle">{r.route}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-3">
-                    <a href={r.route} target="_blank" rel="noreferrer" className={VIEW_LINK}>
-                      <ExternalLink className="h-3.5 w-3.5" /> View
-                    </a>
-                    <Link href={`${r.route}?edit=1`} className={EDIT_BTN}>
-                      <Pencil className="h-3.5 w-3.5" /> Open &amp; edit
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {AREAS.map(({ area, label }) => {
+              const routes = MANAGED_ROUTES.filter((r) => r.area === area)
+              if (routes.length === 0) return null
+              return (
+                <GroupRows key={area} label={label} routes={routes} />
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -51,10 +61,36 @@ function InAppSection({ area, label }: { area: 'Member' | 'Focus surfaces'; labe
   )
 }
 
-export async function PagesInAppMember() {
-  return <InAppSection area="Member" label="Member" />
-}
-
-export async function PagesInAppFocus() {
-  return <InAppSection area="Focus surfaces" label="Focus surfaces" />
+function GroupRows({ label, routes }: { label: string; routes: readonly (typeof MANAGED_ROUTES)[number][] }) {
+  return (
+    <>
+      <tr className={BODY_ROW}>
+        <th scope="rowgroup" colSpan={4} className={`${TH} bg-surface-elevated/60 text-meta text-subtle`}>
+          {label}
+        </th>
+      </tr>
+      {routes.map((r) => {
+        const patterned = !!r.match
+        return (
+          <tr key={r.route} className={BODY_ROW}>
+            <td className="px-4 py-3 font-medium text-text">{r.label}</td>
+            <td className="px-4 py-3 font-mono text-meta text-subtle">
+              {r.route}
+              {patterned && <span className="ml-2 font-sans text-muted">one per Space</span>}
+            </td>
+            <td className="px-4 py-3 text-muted">{editsFor(r.route)}</td>
+            <td className="px-4 py-3">
+              <div className="flex items-center justify-end gap-3">
+                {!patterned && (
+                  <a href={r.route} target="_blank" rel="noreferrer" className={VIEW_LINK}>
+                    <ExternalLink className="h-3.5 w-3.5" /> View
+                  </a>
+                )}
+              </div>
+            </td>
+          </tr>
+        )
+      })}
+    </>
+  )
 }

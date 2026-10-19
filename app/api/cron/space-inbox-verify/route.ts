@@ -1,5 +1,7 @@
-// EMAIL-022 budget (ADR-1252): 25 unfinished address rows per invocation, oldest updated_at first; every
-// row processed is re-stamped by its own save (updated_at), so the tail is the next run's head.
+// EMAIL-022 budget (ADR-1252): 25 unfinished address rows per invocation. Pending rows restamp
+// updated_at so the tail is the next run's head. Failed rows do not (SCAN-1011 / ADR-1762): the
+// 24h window is the first failure, and the list puts pending first so frozen failed rows cannot
+// fill the budget.
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 /**
