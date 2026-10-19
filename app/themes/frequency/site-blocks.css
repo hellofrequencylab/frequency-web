@@ -279,23 +279,22 @@
 /* ══ 5. ACTIONS: the kit's `.btn` pill and `.btn-ghost` ═════════════════════════════════════════════════ */
 
 /* The primary CTA every block draws (components/marketing/marketing-ui.tsx `buttonClasses`, through the
-   kit's CtaButton): a 52px pill in the Stage action colour with its glow. */
+   kit's CtaButton): a 52px pastel pill (--fq-pa) with ink text, the same as the kit's .btn (LIVE-961). */
 [data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).bg-primary.text-on-primary {
   min-height: 52px; /* token-ok: the kit's .btn height */
   padding-block: 0;
   padding-inline: 26px;
   border-radius: var(--fq-radius-orb);
-  background: var(--fq-action-primary);
-  color: var(--fq-action-primary-text);
+  background: var(--fq-pa);
+  color: #1E1B18; /* token-ok: the export's ink on the pastel pill */
   font-family: var(--fq-font-sans);
   font-size: var(--fq-text-body-size);
   font-weight: 600;
   line-height: 1;
-  box-shadow: var(--fq-action-glow);
+  box-shadow: var(--fq-pa-glow);
   transition: transform var(--fq-dur-fast) var(--fq-ease-out);
 }
 [data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).bg-primary.text-on-primary:hover {
-  background: var(--fq-action-primary-hover);
   transform: translateY(-1px);
 }
 [data-design="frequency"] [data-kit="site"] [data-site-blocks] a:is(.rounded-card, .rounded-control).bg-primary.text-on-primary:active {
