@@ -300,7 +300,7 @@ export function pricingTiers(
   // BETA AUTO-REVERT (ADR-811): during beta, a plan with a beta anchor shows it struck under the list;
   // once beta ends the list becomes the price (no strike, no beta caption).
   // effectiveCatalogAmounts mirrors what the checkout charges, so the table never quotes a price the
-  // checkout won't honor. An item whose Founding intro is held open (Collective, ADR-1751) keeps its
+  // checkout won't honor. An item whose Founding intro is held open (Collective, ADR-1760) keeps its
   // struck list anchor after the cutover, exactly as the checkout keeps billing its founding key.
   const eff = (a: CatalogAmounts, item: CatalogItemKey | null) =>
     effectiveCatalogAmounts(a, foundingOpenFor(item, betaActive))

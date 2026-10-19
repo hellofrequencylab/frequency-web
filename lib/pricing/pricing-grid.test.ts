@@ -161,7 +161,7 @@ describe('offerings: every sellable tier is on the page', () => {
         continue
       }
       const price = PRICING_DEFAULTS.plan[o.tier as Exclude<SpacePlan, 'free' | 'network'>]
-      // Collective's Founding intro stays open after the cutover (ADR-1751), so it is charged founding.
+      // Collective's Founding intro stays open after the cutover (ADR-1760), so it is charged founding.
       const charged =
         betaActive || o.tier === 'collective' ? price.monthly_cents : Math.max(price.monthly_cents, price.list_cents ?? 0)
       expect(o.monthly).toBe(`${formatCents(charged)}/mo`)
@@ -242,7 +242,7 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     // crossed-out $29 beside a charged $29, or a "Beta rate" line beside a rate that is no longer a beta
     // rate, is a false claim on the page that sells the plan. Swept across EVERY offering, not just the
     // two that moved, so the idiom cannot come back on a column nobody thought to check.
-    // Collective is the one exception: its Founding intro is held open by FOUNDING_OPEN_ITEMS (ADR-1751),
+    // Collective is the one exception: its Founding intro is held open by FOUNDING_OPEN_ITEMS (ADR-1760),
     // so it keeps the $149 anchor over $99 and the FOUNDING_RATE_NOTE, which says "Founding", never "beta".
     for (const o of allOfferings(closed)) {
       if (o.id === 'collective') {

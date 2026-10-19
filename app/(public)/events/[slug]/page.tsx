@@ -19,7 +19,7 @@ import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { formatEventDate, eventDateBadge } from '@/lib/utils'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
+import { publicEventIndexPlan, shareEventSeo } from '@/lib/events/series-seo'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 
 // Public share URL for an event (SCAN-636 / ADR-1440). Same ISR window and
@@ -51,19 +51,25 @@ export async function generateMetadata({
     .trim()
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
   const ended = hasEventEnded(event)
-  const [facts, { indexedOccurrences }] = await Promise.all([seriesSeoFactsBySlug(event.slug), getSeriesDisplayConfig()])
+  const [seo, { indexedOccurrences }] = await Promise.all([shareEventSeo(event.slug), getSeriesDisplayConfig()])
   // A recurring event's occurrences share one name, so each indexed date carries its day in the title
   // (24 pages read "Circle Night · Frequency" on the live sitemap). The series anchor keeps the bare
   // name: its stored start is the first meeting, not the next one.
-  const title = facts.isAnchor ? event.title : `${event.title} · ${formatEventDate(event.starts_at)}`
+  const title = seo.facts.isAnchor ? event.title : `${event.title} · ${formatEventDate(event.starts_at)}`
   const ogTitle = `${title} · ${SITE_NAME}`
-  const pastRobots = ended && !suppressPastNoindex(facts) ? ({ index: false, follow: true } as const) : undefined
-  const robots = pastRobots ?? seriesRobots(facts, indexedOccurrences)
+  // SCAN-1014 / ADR-1760: an unlisted event is a link, not a listing. The plan noindexes it and
+  // omits the canonical; a public date still uses the past and series rules, with a self-canonical.
+  const plan = publicEventIndexPlan({
+    visibility: seo.visibility === 'unlisted' ? 'unlisted' : seo.visibility,
+    ended,
+    facts: seo.facts,
+    indexedOccurrences,
+  })
   return {
     title,
     description,
-    alternates: { canonical: `/events/${event.slug}` },
-    ...(robots ? { robots } : {}),
+    ...(plan.canonical ? { alternates: { canonical: `/events/${event.slug}` } } : {}),
+    ...(plan.robots ? { robots: plan.robots } : {}),
     openGraph: {
       ...OG_SITE,
       title: ogTitle,

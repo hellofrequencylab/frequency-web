@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
-import { isOccurrenceIndexed, seriesRobots, suppressPastNoindex, type SeriesSeoFacts } from './series-seo'
+import {
+  isOccurrenceIndexed,
+  publicEventIndexPlan,
+  seriesRobots,
+  suppressPastNoindex,
+  type SeriesSeoFacts,
+} from './series-seo'
 import { DEFAULT_INDEXED_OCCURRENCES } from './series'
 
 // The crawl half of ADR-897. The pure rules are exercised directly; the reads are pinned by a
@@ -123,6 +129,49 @@ describe('seriesRobots', () => {
 
   it('stays quiet when the ordinal could not be resolved (a read failed)', () => {
     expect(seriesRobots(facts({ ordinal: null }), 2)).toBeUndefined()
+  })
+})
+
+describe('publicEventIndexPlan (SCAN-1014)', () => {
+  const oneOff: SeriesSeoFacts = { inSeries: false, isAnchor: false, ordinal: null, seriesLive: false }
+
+  it('noindexes an unlisted event and omits the canonical, even if the date is still ahead', () => {
+    expect(publicEventIndexPlan({ visibility: 'unlisted', ended: false, facts: oneOff, indexedOccurrences: 2 })).toEqual({
+      robots: { index: false, follow: true },
+      canonical: false,
+    })
+  })
+
+  it('unlisted wins over a live series anchor that would otherwise stay indexed', () => {
+    expect(
+      publicEventIndexPlan({
+        visibility: 'unlisted',
+        ended: true,
+        facts: facts({ isAnchor: true, seriesLive: true }),
+        indexedOccurrences: 2,
+      }),
+    ).toEqual({ robots: { index: false, follow: true }, canonical: false })
+  })
+
+  it('indexes a public one-off that is still ahead, with a self-canonical', () => {
+    expect(publicEventIndexPlan({ visibility: 'public', ended: false, facts: oneOff, indexedOccurrences: 2 })).toEqual({
+      robots: undefined,
+      canonical: true,
+    })
+  })
+
+  it('noindexes a public past one-off but keeps the self-canonical', () => {
+    expect(publicEventIndexPlan({ visibility: 'public', ended: true, facts: oneOff, indexedOccurrences: 2 })).toEqual({
+      robots: { index: false, follow: true },
+      canonical: true,
+    })
+  })
+
+  it('fails open when visibility could not be read: a public page stays indexable', () => {
+    expect(publicEventIndexPlan({ visibility: null, ended: false, facts: oneOff, indexedOccurrences: 2 })).toEqual({
+      robots: undefined,
+      canonical: true,
+    })
   })
 })
 
@@ -337,11 +386,18 @@ describe('event page robots wiring', () => {
   it('applies the same two rules on the public ISR share page', () => {
     const share = readFileSync(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), 'utf8')
     expect(share).toContain('export const revalidate = 3600')
-    expect(share).toContain('seriesRobots(facts, indexedOccurrences)')
-    expect(
-      sourceWithoutComments(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), { imports: true }),
-    ).toContain('!suppressPastNoindex(facts)')
-    expect(share).toContain('canonical: `/events/${event.slug}`')
+    expect(share).toContain('publicEventIndexPlan')
+    expect(share).toContain('shareEventSeo')
+    expect(sourceWithoutComments(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), { imports: true })).toContain(
+      'canonical: `/events/${event.slug}`',
+    )
+  })
+
+  it('noindexes an unlisted public event page and omits its canonical (SCAN-1014)', () => {
+    const share = sourceWithoutComments(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), { imports: true })
+    expect(share).toContain("seo.visibility === 'unlisted' ? 'unlisted' : seo.visibility")
+    expect(share).toContain('publicEventIndexPlan({')
+    expect(share).toContain('plan.canonical ? { alternates: { canonical: `/events/${event.slug}` } }')
   })
 
   // The /discover/events/<slug> twin carried the same two rules until SCAN-672 retired it (a 308 to

@@ -13,7 +13,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // checkout charges the CATALOG key on both sides of the 2026-09-01 cutover, never the legacy
 // `<plan>_<period>` product, and stamps the metadata the webhook reconciles on.
 
-const { created, beta, flags, grant, lock, db } = vi.hoisted(() => ({
+const { created, beta, flags, grant, lock, db, verification } = vi.hoisted(() => ({
+  /** SCAN-1008: the Space's 501(c)(3) verification status, which picks the Network base item. */
+  verification: { status: null as string | null },
   /** SCAN-539: the Space row's own customer id (null forces the OWNER profile read), and whether that
    *  owner read fails. A PostgREST failure arrives in `error`, not as a throw. */
   db: {
@@ -130,6 +132,10 @@ vi.mock('@/lib/pricing/beta', async (importOriginal) => ({
 
 vi.mock('@/lib/profiles/account-email', () => ({ profileAccountEmail: () => Promise.resolve('owner@example.com') }))
 
+vi.mock('@/lib/spaces/nonprofit-verification', () => ({
+  getSpaceVerification: () => Promise.resolve(verification.status ? { status: verification.status } : null),
+}))
+
 import { createSpaceLoadoutCheckout } from './space-plan-checkout'
 
 const prices = () => created.at(-1)!.line_items.map((l) => l.price)
@@ -139,6 +145,7 @@ beforeEach(() => {
   beta.active = true
   grant.granted = false
   lock.priceId = null
+  verification.status = null
   db.spaceCustomerId = 'cus_1'
   db.ownerCustomerId = 'cus_owner'
   db.ownerReadError = null
@@ -184,7 +191,7 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     beta.active = false // the window is SHUT, which is the only world the grant exists for
   })
 
-  it('WITHOUT the grant: Business resolves the LIST key; a Collective loadout bills the FOUNDING collective_base key (ADR-1751)', async () => {
+  it('WITHOUT the grant: Business resolves the LIST key; a Collective loadout bills the FOUNDING collective_base key (ADR-1760)', async () => {
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month_list'])
     // Collective keeps its Founding intro open after the cutover (FOUNDING_OPEN_ITEMS): $99 under $149.
@@ -297,5 +304,35 @@ describe('createSpaceLoadoutCheckout — on-page checkout (LIVE-359)', () => {
       space_id: 'space-1',
       plan: 'business',
     })
+  })
+})
+
+// SCAN-1008 (owner ruling 2026-10-19, "Build both"): a verified 501(c)(3) pays the non profit Network
+// rate. The status is read from the verification record inside the checkout, so a client-chosen loadout
+// cannot claim it, and an unverified or pending Space keeps the full rate.
+describe('the Network checkout bills nonprofit_network only for a verified 501(c)(3)', () => {
+  it('bills network_base without a verified record, including a pending one', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'network', interval: 'month' })
+    expect(prices()).toEqual(['price_network_base_month'])
+    verification.status = 'pending'
+    await createSpaceLoadoutCheckout('space-1', { plan: 'network', interval: 'year' })
+    expect(prices()).toEqual(['price_network_base_year'])
+  })
+
+  it('bills nonprofit_network once verified, on both intervals, and stamps plan network', async () => {
+    verification.status = 'verified'
+    await createSpaceLoadoutCheckout('space-1', { plan: 'network', interval: 'month' })
+    expect(prices()).toEqual(['price_nonprofit_network_month'])
+    expect(created.at(-1)!.metadata).toMatchObject({ plan: 'network' })
+    await createSpaceLoadoutCheckout('space-1', { plan: 'network', interval: 'year' })
+    expect(prices()).toEqual(['price_nonprofit_network_year'])
+  })
+
+  it('a verified record never changes what Collective or Business bill', async () => {
+    verification.status = 'verified'
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
+    expect(prices()).toEqual(['price_collective_base_month'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
+    expect(prices()).toEqual(['price_business_base_month'])
   })
 })

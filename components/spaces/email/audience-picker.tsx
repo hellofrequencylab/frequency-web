@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { previewSpaceAudience } from '@/lib/spaces/campaigns-actions'
 import { createSpaceSegment, updateSpaceSegment, deleteSpaceSegment } from '@/lib/spaces/segments-actions'
-import { unavailableAudienceEligibility, type AudienceEligibilitySummary } from '@/lib/spaces/audience-eligibility'
+import { audiencePreviewReady, unavailableAudienceEligibility, type AudienceEligibilitySummary } from '@/lib/spaces/audience-eligibility'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { isError } from '@/lib/action-result'
 
@@ -93,7 +93,7 @@ export function AudiencePicker({
         const next = await previewSpaceAudience(spaceId, filter, pickedTopic)
         if (cancelled) return
         setPreview(next)
-        onCountChange?.(next.state === 'available' ? next.eligible : 0)
+        onCountChange?.(audiencePreviewReady(next) ? next.eligible : 0)
       } catch {
         if (cancelled) return
         setPreview(unavailableAudienceEligibility(pickedTopic))
@@ -234,7 +234,7 @@ export function AudiencePicker({
         <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         {pending || preview == null ? (
           <span>Checking eligibility&hellip;</span>
-        ) : preview?.state !== 'available' || count == null ? (
+        ) : !audiencePreviewReady(preview) || count == null ? (
           <span>Audience eligibility could not be checked. Try again before sending.</span>
         ) : (
           <span>
@@ -250,8 +250,14 @@ export function AudiencePicker({
         </Button>
       )}
 
-      {preview?.state === 'available' && !pending && (
+      {preview && audiencePreviewReady(preview) && !pending && (
         <div className="text-meta text-subtle" aria-label="Audience exclusions">
+          {preview.state === 'capped' && preview.cappedAt != null && preview.spaceContacts != null && (
+            <p className="text-muted">
+              This space has {preview.spaceContacts.toLocaleString()} contacts. One send reads the first{' '}
+              {preview.cappedAt.toLocaleString()}, so these counts cover those.
+            </p>
+          )}
           <p>{preview.matched.toLocaleString()} matching contacts. Counts can change before delivery.</p>
           {Object.entries(preview.excluded).filter(([, value]) => value > 0).map(([reason, value]) => (
             <p key={reason}>{value.toLocaleString()} excluded: {EXCLUSION_LABELS[reason as keyof AudienceEligibilitySummary['excluded']]}</p>

@@ -226,10 +226,10 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(byId.business!.betaNote).toBeNull()
   })
 
-  it('every Space-plan price a visitor is quoted is the LIST price, exactly and only (Collective: its open Founding intro, ADR-1751)', () => {
+  it('every Space-plan price a visitor is quoted is the LIST price, exactly and only (Collective: its open Founding intro, ADR-1760)', () => {
     const { labels, cents } = spacePlanQuotes(WINDOW_SHUT)
     expect(labels).toEqual([
-      '$1,490', // Collective list, the struck yearly anchor over the open Founding intro (ADR-1751)
+      '$1,490', // Collective list, the struck yearly anchor over the open Founding intro (ADR-1760)
       '$149', // Collective list, the struck monthly anchor
       '$39', // Non Profit, flat, never had a beta rate
       '$39/mo',

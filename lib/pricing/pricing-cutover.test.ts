@@ -33,7 +33,7 @@ const BASE_ITEM: Record<string, CatalogItemKey> = {
 
 /** What the CHECKOUT charges for a plan at an interval, in cents: the founding price key during the
  *  beta window, the list price key after it, unless the item's Founding intro is held open
- *  (FOUNDING_OPEN_ITEMS, ADR-1751). This is resolveLoadoutPriceId's rule, in amounts. */
+ *  (FOUNDING_OPEN_ITEMS, ADR-1760). This is resolveLoadoutPriceId's rule, in amounts. */
 function checkoutCents(plan: string, interval: 'month' | 'year', betaActive: boolean): number {
   const item = BASE_ITEM[plan]!
   const amounts = catalog[item][interval]

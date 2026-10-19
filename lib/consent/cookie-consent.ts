@@ -30,7 +30,7 @@
 // same law across the full matrix, so a copy that drifts fails the build (the method
 // lib/theme/mode.test.ts established for the pre-paint bootstrap).
 
-import { PIXEL_PATH_PREFIXES } from '@/lib/analytics/sanitize'
+import { PIXEL_PATH_PREFIXES, REDACTED_PAGE_TITLE } from '@/lib/analytics/sanitize'
 
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
@@ -150,8 +150,11 @@ export function gaBootstrapScript(gaId: string): string {
   const id = JSON.stringify(gaId)
   // LIVE-810: the first page view carries a redacted path, same rule as pixelSafePath.
   const prefixes = JSON.stringify(PIXEL_PATH_PREFIXES)
+  // SCAN-838: on a redacted path the title goes generic too, for the config and (gtag set) every later hit.
+  const generic = JSON.stringify(REDACTED_PAGE_TITLE)
   return `(function(){try{
-var ID=${id},started=false,P=${prefixes};
+var ID=${id},started=false,P=${prefixes},G=${generic};
+function title(p){return safe(p)===p?document.title:G;}
 function safe(p){for(var i=0;i<P.length;i++){var x=P[i]+'/';if(p.indexOf(x)===0){var r=p.slice(x.length),j=r.indexOf('/');if(!r||r.charAt(0)==='[')return p;return P[i]+'/[slug]'+(j<0?'':r.slice(j));}}return p;}
 window.__fqGa=function(){
 if(started)return;started=true;
@@ -159,7 +162,9 @@ window.dataLayer=window.dataLayer||[];
 function gtag(){window.dataLayer.push(arguments);}
 try{if(localStorage.getItem('freq-ga-optout')==='1'){window['ga-disable-'+ID]=true;}}catch(e){}
 gtag('js',new Date());
-gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname)});
+var T=title(location.pathname);
+gtag('set',{page_title:T});
+gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname),page_title:T});
 var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+ID;
 document.head.appendChild(s);
 };

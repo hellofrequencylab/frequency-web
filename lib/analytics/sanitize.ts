@@ -161,6 +161,16 @@ export function pixelSafePath(path: string): string {
   return pathname
 }
 
+/** The page_title a pixel receives for a path pixelSafePath redacts (SCAN-838). gtag.js attaches
+ *  document.title to every hit, and a Journey or Circle page is titled with its name, so the
+ *  redacted page_location alone still leaked the name. The site name says nothing about the person. */
+export const REDACTED_PAGE_TITLE = 'Frequency'
+
+/** The page_title for a path: the document title as given, or the generic one on a redacted path. */
+export function pixelSafeTitle(path: string, documentTitle: string): string {
+  return pixelSafePath(path) === path ? documentTitle : REDACTED_PAGE_TITLE
+}
+
 /** Path-shaped prop keys whose VALUE is rewritten through pixelSafePath. */
 const PATH_KEYS = new Set(['path', 'page', 'page_path', 'pagepath', 'page_location', 'url', 'href', 'from', 'to'])
 
