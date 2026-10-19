@@ -126,6 +126,24 @@ export function breadcrumbSchema(items: { name: string; path: string }[]) {
   }
 }
 
+// ── Site navigation (the footer's index) ─────────────────────────────────────
+
+/** The footer's index as SiteNavigationElement nodes, which is how a crawler or an answer engine learns the
+ *  site's main sections and what each is called. One node per distinct URL, in footer order, so the markup
+ *  can never name a link the page does not draw (LIVE-1030). A mailto or a bare hash is not a page: dropped. */
+export function siteNavigationSchema(columns: readonly { title: string; links: readonly { label: string; href: string }[] }[]) {
+  const seen = new Set<string>()
+  const elements: object[] = []
+  for (const col of columns) {
+    for (const l of col.links) {
+      if (!l.href.startsWith('/') || seen.has(l.href)) continue
+      seen.add(l.href)
+      elements.push({ '@type': 'SiteNavigationElement', name: l.label, url: abs(l.href), isPartOf: { '@id': WEBSITE_ID } })
+    }
+  }
+  return { '@context': 'https://schema.org', '@graph': elements }
+}
+
 // ── Event ─────────────────────────────────────────────────────────────────────
 // City-level location by default (addressLocality + city-level region/country, ADR-186). The exact
 // venue (name, street, postal code, geo point) is published ONLY when the caller passes it AND the

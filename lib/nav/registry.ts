@@ -13,6 +13,7 @@
 // capability, mirroring lib/nav-areas.ts::meetsAccess + meetsStaff EXACTLY (nav gating
 // is a READ-level unlock). Every surface collapses onto this single function.
 
+import { LEGAL_LINKS } from '@/lib/nav/legal-links'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavArea } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/core/roles'
 import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
@@ -326,6 +327,8 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'circles', label: 'Circles', href: '/circles', navKey: 'circles' },
       { id: 'channels', label: 'Channels', href: '/channels', navKey: 'channels' },
       { id: 'events', label: 'Events', href: '/events', navKey: 'events' },
+      { id: 'around-you', label: 'Around You', href: '/nearby', minAccess: 'visitor' },
+      { id: 'spaces-directory', label: 'Business Spaces', href: '/spaces/directory', minAccess: 'visitor' },
       { id: 'market', label: 'Classifieds', href: '/classifieds', navKey: 'market' },
       { id: 'housing', label: 'Housing', href: '/housing', navKey: 'housing' },
       // 🔴 NO navKey, ON PURPOSE (LIVE-250). This row carried `navKey: 'maker'` and there is
@@ -385,9 +388,8 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
   {
     title: 'Legal',
     links: [
-      { id: 'privacy', label: 'Privacy', href: '/privacy' },
-      { id: 'terms', label: 'Terms', href: '/terms' },
-      { id: 'guidelines', label: 'Guidelines', href: '/guidelines' },
+      // The legal set is ONE list (lib/nav/legal-links.ts), shared with every other footer.
+      ...LEGAL_LINKS.map((l) => ({ id: l.id, label: l.label, href: l.href })),
     ],
   },
 ] as const

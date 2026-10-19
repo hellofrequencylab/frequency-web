@@ -15,6 +15,7 @@
 // is "What's happening" (the prototype's "Your town's calendar"), and no line promises "every week".
 
 import type { FqIconName } from '@/components/frequency/icon'
+import { LEGAL_LINKS } from '@/lib/nav/legal-links'
 
 /** The design page each link was drawn against, and the route it lands on today. */
 export const ROUTES = {
@@ -327,6 +328,30 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: ROUTES.networks, label: 'Networks' },
     ],
   },
+  // THE FULL INDEX (LIVE-1030): the public directories and the marketplace, which the four columns above
+  // never linked from the footer. Plain, descriptive link text so a crawler or an answer engine reads what
+  // each page is, and every href is a route site-nav.test.ts finds in app/.
+  {
+    heading: 'Around you',
+    links: [
+      { href: '/discover/circles', label: 'Local Circles' },
+      { href: ROUTES.happening, label: 'Events near you' },
+      { href: ROUTES.directory, label: 'Business Spaces directory' },
+      { href: '/discover/topics', label: 'Topics' },
+      { href: '/discover/practices', label: 'Practices' },
+      { href: '/discover/journeys', label: 'Journeys' },
+      { href: '/discover/cities', label: 'Cities' },
+    ],
+  },
+  {
+    heading: 'Marketplace',
+    links: [
+      { href: '/market', label: 'Market' },
+      { href: '/classifieds', label: 'Classifieds' },
+      { href: '/housing', label: 'Housing' },
+      { href: '/store', label: 'Frequency Store' },
+    ],
+  },
   // The guides (SCAN-1017): the pillar pages had no site-wide link before this column, so the cluster
   // CONTENT-VOICE §7 describes was reachable only from inside itself.
   {
@@ -351,11 +376,8 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
   },
 ]
 
-export const FOOTER_LEGAL: SiteLink[] = [
-  { href: ROUTES.privacy, label: 'Privacy' },
-  { href: ROUTES.terms, label: 'Terms' },
-  { href: ROUTES.accessibility ?? ROUTES.help, label: 'Accessibility' },
-]
+/** The legal row: ONE list shared with the member site map and the mega footer (lib/nav/legal-links.ts). */
+export const FOOTER_LEGAL: SiteLink[] = LEGAL_LINKS.map((l) => ({ href: l.href, label: l.label }))
 
 /** Design links with no route of their own, and what each does meanwhile. Read by the test and the report. */
 export const UNROUTED: { design: string; meanwhile: string }[] = [
