@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E9",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED. Probe run as written: FAIL (check:loom-integrity is not a package.json script; zero hits under scripts/). lib/loom/ is the asset Loom (cover, icons, picker actions, recraft, authorized-image-upload); lib/apps/ is the app catalog and gate layer (app-registry.tsx, access.ts, catalog.ts), not a Layer-2 config editor, a per-surface settings console or a declarative composer. No operator can compose a function without a deploy."
-  }
-}
