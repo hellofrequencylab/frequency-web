@@ -7,6 +7,67 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-10-19 pass (scan nine: the 110 merges since scan eight, four sequential finders)
+
+Run against `origin/main` at `8ff11754`, 110 merges after scan eight's `77a9ac38`. Four finders ran one
+after another, each told to refute its own findings before reporting: the Network plan, chapters,
+partners and pricing; Space email, inbox addresses and conversations; the public and signed-out
+surfaces (events, /join, the Feed, search); and Space websites, the editor and themes, with a
+regression check on every row scan eight fixed or filed.
+
+**What the instruments say.** Per the box rules, no full `tsc`, build or test run. Every changed file
+lints clean and every test file touching a changed path passes (vitest per file); the one new test
+fails without its fix. `pnpm check:backlog`, `check:adr`, `check:one-list` and `check:schema-contract`
+are green. The local `node_modules` was behind the lockfile (Next 16.3.8 against 16.4.0, Stripe 22
+against 23), which made one done row's probe (SCAN-930) fail locally; `pnpm install --frozen-lockfile`
+fixed it. The Stripe 23 upgrade (#3425) was not type-checked here.
+
+**Findings.** 16 survived refutation: one high, the rest medium and low.
+
+**Fixed in this pass: 9 rows, `SCAN-999` to `SCAN-1007`.**
+- **High, `SCAN-1005`:** the Events page, its map and the new rail map plotted an event whose host hid
+  the address (ADR-825) at its exact point, and printed the venue line on every card, to signed-out
+  visitors too. `/events` is public, SCAN-975 made the map the head of the page, and SCAN-998's rail
+  map reads the same data through an unauthenticated server action. The loader now coarsens the pin
+  and shows the city line. `SCAN-1006` applies the same rule to event search.
+- A Network owner could not see the chapter report: SCAN-960 widened the policy but not the page
+  that renders it (`SCAN-999`).
+- The Collective Partners tab returned a 500 on every Collective while its migration is unapplied
+  (`SCAN-1000`).
+- A redelivered email to a Space inbox address opened a new, empty conversation each time
+  (`SCAN-1001`).
+- The apply-migration workflow counted an approval of an older commit (`SCAN-1002`).
+- Smaller: a false "contact list is full" on a race (`SCAN-1003`), the wrong sender name on the New
+  conversation card (`SCAN-1004`), and a per-mailbox throttle on the /join account check (`SCAN-1007`).
+
+**Filed with a probe: 9 rows, `SCAN-1008` to `SCAN-1016`.** 1 P2, 8 P3. Every probe exits 1 on this tree.
+- **P2, `SCAN-1008`:** the Network pricing copy promises a non profit price and paid extra chapters
+  that checkout cannot sell. A ruling: change the copy, or wire both.
+- Needing a migration: the Collective partner cap race (`SCAN-1010`), the /join account check walking
+  every auth user (`SCAN-1013`), and noindex on unlisted public event pages (`SCAN-1014`).
+- The Space inbox verify cron retries a failed address forever (`SCAN-1011`).
+
+**Owner rulings this pass asks for.** `SCAN-1008` (Network pricing copy), `SCAN-1009` (whether a
+Network's central admins may open the owner's billing; SCAN-983 says they cannot, the code lets
+them), `SCAN-1012` (whether inbox mail counts against the contact allowance), `SCAN-1015` (where the
+Manage panel's Web editor link goes), and `SCAN-1016` (whether re-running The Group's seed may
+overwrite page edits).
+
+**Scan eight's rows.** All twelve fixes still hold. Its seven open rows are still open and still
+fail their probes; open PRs #3506 and #3507 carry `SCAN-844` and `SCAN-845`. One row closed while
+incomplete: SCAN-960 (fixed here as `SCAN-999`).
+
+**Scorecard, honest gap to 10.**
+- **Security 6.** Unchanged. The hidden-address leak is closed, but scan eight's database doors
+  (`SCAN-827`, `SCAN-846`, `SCAN-848`) are still open, and two more close only when #3506 and #3507 merge.
+- **Wiring 8.** The chapter report and the Partners tab now connect; the Manage panel's Web editor
+  link and the editor's menu dialog (`SCAN-832`) still lead somewhere other than promised.
+- **Correctness 8.** The pricing copy and checkout disagree on two Network prices.
+- **SEO / GEO 8.** Unlisted event pages are indexable.
+- **DB⇄code 9.** Unchanged.
+- **Bookkeeping 10.** 18 rows, 18 probes; the ledger's 242 waiting fragments are folded in.
+- **Docs 9.**
+
 ## 2026-10-12 pass (scan eight: the 207 merges since scan seven, six sequential finders)
 
 Run against `origin/main` at `1e5b2a76`, 207 merges after scan seven's `1531d9b`. Six finders ran one

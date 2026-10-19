@@ -48,7 +48,11 @@ export function isPendingApproval(rsvp: AdmissionFields): boolean {
  *  this predicate serves (seeing the venue) because a waitlisted member has been let through the
  *  host's gate and is queued on CAPACITY, not on approval — the distinction ADR-825 draws is
  *  "registered", not "seated". Callers that need a confirmed seat specifically should test
- *  `status === 'going'` themselves in addition to this. */
+ *  `status === 'going'` themselves in addition to this.
+ *
+ *  SCAN-844: a caller-role INSERT on an approval-gated event cannot land as `none` (the write
+ *  guard requires `pending`), so "not pending" stays "the host decided" rather than "the member
+ *  skipped the queue". */
 export function isAdmitted(rsvp: AdmissionFields): boolean {
   if (isPendingApproval(rsvp)) return false
   return rsvp.status === 'going' || rsvp.status === 'waitlist'

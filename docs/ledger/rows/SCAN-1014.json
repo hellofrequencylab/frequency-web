@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-1014",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(public)/events/[slug]/page.tsx','utf8');const i=s.indexOf('export async function generateMetadata');const b=i<0?'':s.slice(i,i+3500);if(!/unlisted/.test(b)){console.error('SCAN-1014: an unlisted event page carries no noindex');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1751). PREMISE RE-TESTED: generateMetadata still set a canonical on every resolved event and only noindexed past and extra series dates, with no visibility to test. shareEventSeo reads visibility on the same service-role row the page already loaded for series facts. publicEventIndexPlan noindexes unlisted (index: false, follow: true) and omits the canonical; a public date keeps the past and series rules with a self-canonical. Fail-open when visibility cannot be read. Did not widen public_event_by_slug."
+  }
+}
