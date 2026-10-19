@@ -17,7 +17,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { enqueueEmail, emailShell, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { withVoice } from '@/lib/ai/voice'
@@ -115,7 +115,7 @@ function escapeHtml(s: string): string {
 
 /** The brief body. Inline styles for mail-client compatibility (email is not app UI; the rest of
  *  lib/email uses literal hex the same way). Plain, in voice, no dashes. */
-function briefHtml(intro: string, cards: TodayCard[], laterCount: number): string {
+export function briefHtml(intro: string, cards: TodayCard[], laterCount: number): string {
   const rows = cards
     .map(
       (c) => `
@@ -128,16 +128,14 @@ function briefHtml(intro: string, cards: TodayCard[], laterCount: number): strin
     )
     .join('')
   const later = laterCount > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:${palette.emailSubtle};">${laterCount} more are on the Later shelf.</p>` : ''
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:0 0 8px;">Vera · Today</p>
+  return `<p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">Vera · Today</p>
     <p style="font-size:16px;color:${palette.text};line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
     ${rows}
     ${later}
-    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/intelligence" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>
-  </div>`
+    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/intelligence" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>`
 }
 
-function briefText(intro: string, cards: TodayCard[], laterCount: number): string {
+export function briefText(intro: string, cards: TodayCard[], laterCount: number): string {
   const lines: string[] = [intro, '']
   for (const c of cards) {
     lines.push(`${c.name} (${c.context} · ${c.playbookName})`)
@@ -197,7 +195,7 @@ export async function sendOwnerBrief(
     await enqueueEmail({
       to: recipient.email,
       subject: brief.subject,
-      html: brief.html + unsubscribeFooterHtml(unsubscribeUrl),
+      html: ownerBriefEmailHtml(brief.html, unsubscribeUrl),
       text: brief.text + `\nUnsubscribe or manage emails: ${unsubscribeUrl}\n`,
       headers: listUnsubscribeHeaders(unsubscribeUrl),
       tags: [{ name: OWNER_BRIEF_TAG, value: '1' }],
@@ -208,11 +206,14 @@ export async function sendOwnerBrief(
   }
 }
 
-function unsubscribeFooterHtml(unsubscribeUrl: string): string {
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:0 24px 24px;">
-    <hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:8px 0 16px;"/>
-    <p style="font-size:12px;color:${palette.emailSubtle};">You're getting this because you run a community on Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Turn off the daily brief</a> or manage emails any time.</p>
-  </div>`
+/** The send-ready brief (EMAIL-027): the member shell around the body, with the per-recipient unsubscribe
+ *  in the footer line, where it used to be a bare div plus a hand-rolled footer with no wordmark or
+ *  address line. Exported for the stock catalog. */
+export function ownerBriefEmailHtml(bodyHtml: string, unsubscribeUrl: string): string {
+  return emailShell(bodyHtml, {
+    text: `You're getting this because you run a community on Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from the daily brief</a> or manage emails any time.`,
+    unsubscribe: false,
+  })
 }
 
 /** Count prior owner-brief emails to this address inside the frequency window (the per-day cap +

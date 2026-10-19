@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
 import {
   canRunNetworkTools, centralAdminReachesChapter, centralAdminSeatOpen, isNetworkChapter, networkEventShown,
-  networkToolsOpen, pendingNetworkEvents, type NetworkToolsSpace, type QueueCandidate,
+  networkToolsOpen, pendingNetworkEvents, approvalResetOnEdit, type NetworkToolsSpace, type QueueCandidate,
 } from './network-tools'
 
 const parent: NetworkToolsSpace = { id: 'p', plan: 'network', status: 'active', type: 'business', parent_id: null, owner_profile_id: 'owner' }
@@ -83,5 +83,20 @@ describe('the approval queue', () => {
       row('cancelled', '2026-11-03T09:00:00Z', { is_cancelled: true }),
     ], new Set(['decided']), new Set(['parent']), '2026-10-16T00:00:00Z')
     expect(out.map(r => r.id)).toEqual(['soon', 'later'])
+  })
+})
+
+describe('approvalResetOnEdit forgets a decision when what was approved changes (LIVE-939)', () => {
+  const was = { title: 'Feel Good Friday', starts_at: '2026-11-06T16:00:00Z', ends_at: null, location: 'Fox Point Farms' }
+  it('resets on a new title, time, end or place', () => {
+    expect(approvalResetOnEdit(was, { ...was, title: 'Feel Good Friday: Harvest' })).toBe(true)
+    expect(approvalResetOnEdit(was, { ...was, starts_at: '2026-11-06T17:00:00Z' })).toBe(true)
+    expect(approvalResetOnEdit(was, { ...was, ends_at: '2026-11-06T18:00:00Z' })).toBe(true)
+    expect(approvalResetOnEdit(was, { ...was, location: 'Moonlight Beach' })).toBe(true)
+  })
+  it('keeps the decision when only other fields change, and never fires without the prior row', () => {
+    expect(approvalResetOnEdit(was, { ...was })).toBe(false)
+    expect(approvalResetOnEdit({ ...was, ends_at: undefined as unknown as null }, { ...was, ends_at: null })).toBe(false)
+    expect(approvalResetOnEdit(null, was)).toBe(false)
   })
 })

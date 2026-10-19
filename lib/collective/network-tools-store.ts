@@ -130,6 +130,13 @@ export async function approvedNetworkEventIds(parentId: string, eventIds: string
   return out
 }
 
+/** Forgets every Network decision on an event (an edit changed what was approved). Best effort: the edit is saved
+ *  already, so a failure here is logged by the caller, never reported as a failed save. */
+export async function clearEventDecisions(eventId: string): Promise<boolean> {
+  const { error } = await db().from('network_event_approvals').delete().eq('event_id', eventId)
+  return !error
+}
+
 export async function writeEventDecision(parentId: string, chapterId: string, eventId: string, status: NetworkEventDecision, by: string): Promise<boolean> {
   const { error } = await db().from('network_event_approvals').upsert(
     { parent_space_id: parentId, event_id: eventId, chapter_space_id: chapterId, status, decided_by: by, decided_at: new Date().toISOString() },

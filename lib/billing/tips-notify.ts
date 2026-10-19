@@ -101,7 +101,7 @@ export async function notifyTipRecipient(tip: SucceededTip): Promise<void> {
 // imported from lib/email.ts. Only the BODY is composed here; `emailShell` supplies the doctype,
 // the head, the wordmark and the unsubscribe footer, exactly as it does for a ticket receipt.
 
-function tipEmailHtml(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
+export function tipEmailHtml(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
   const noteBlock = p.note
     ? `<p style="${EMAIL_P}color:${EMAIL_MUTED};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(p.note)}</p>`
     : ''
@@ -113,7 +113,7 @@ ${noteBlock}
 `)
 }
 
-function tipEmailText(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
+export function tipEmailText(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
   const lines = [
     `Hi ${p.recipientName},`,
     '',

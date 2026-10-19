@@ -176,8 +176,9 @@ export async function listRules(): Promise<AutomationRule[]> {
   })
 }
 
-/** The rule's email as a branded Frequency email with the unsubscribe footer (EMAIL-024). */
-function actorEmailMessage(body: string, unsubscribeUrl: string): { html: string; text: string } {
+/** The rule's email as a branded Frequency email with the unsubscribe footer (EMAIL-024). Exported for the
+ *  stock catalog (EMAIL-027). */
+export function actorEmailMessage(body: string, unsubscribeUrl: string): { html: string; text: string } {
   return plainTextEmail(body, { unsubscribeUrl, audienceLine: 'You are receiving this as a Frequency member.' })
 }
 

@@ -124,7 +124,8 @@ const ALLOWLIST = [
   //     under EMAIL-024, and the guard now holds them all. The files still here carry a hand-typed
   //     grey ramp and leave the list as they are moved.
   (p) => p === 'lib/email-studio/render.ts',
-  (p) => p.startsWith('lib/ai/vera/') && /(?:autonomous-send|execute|owner-brief)\.ts$/.test(p),
+  //     owner-brief.ts left under EMAIL-027 (it wears the member shell on the palette).
+  (p) => p.startsWith('lib/ai/vera/') && /(?:autonomous-send|execute)\.ts$/.test(p),
   // (2) GENERATED ASSETS rendered outside the DOM — OG/social rasters, QR codes, the print
   //     flyer, canvas/SVG exports. A canvas fillStyle cannot read a CSS variable.
   (p) => p.startsWith('lib/og/'),

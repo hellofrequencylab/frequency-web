@@ -86,7 +86,7 @@ function ImageSlot({
             {/* eslint-disable-next-line @next/next/no-img-element -- operator Loom asset URL, not a build asset */}
             <img src={url} alt={alt} className="max-h-72 w-full object-cover" />
             <span
-              className="absolute right-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-meta font-semibold opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+              className="absolute right-2 top-2 flex items-center gap-1 rounded-control px-2 py-1 text-meta font-semibold opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
               style={{ background: C.surface, color: C.text }}
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden /> Change
@@ -208,7 +208,7 @@ function CardsCanvas({ label, value, onChange }: { label: string; value: unknown
                 <EditableSlot value={text} placeholder="Card text" rich={false} onChange={(v) => patch(i, 'text', v)} />
               </div>
               {btnLabel && (
-                <span className="mt-2 inline-flex rounded-md px-3 py-1.5 text-meta font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+                <span className="mt-2 inline-flex rounded-control px-3 py-1.5 text-meta font-bold" style={{ background: C.primary, color: C.onPrimary }}>
                   {btnLabel}
                 </span>
               )}
@@ -393,7 +393,7 @@ export function CanvasBlock({
         return (
           <div key={key} className="flex">
             <span
-              className="inline-flex rounded-lg px-6 py-3 text-body-sm font-bold"
+              className="inline-flex rounded-control px-6 py-3 text-body-sm font-bold"
               style={{ background: C.primary, color: C.onPrimary }}
             >
               <EditableSlot value={value} placeholder={f.label} rich={false} onChange={set(key)} />

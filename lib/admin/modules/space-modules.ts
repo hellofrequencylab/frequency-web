@@ -41,6 +41,7 @@ import { programCatalogNote } from '@/lib/spaces/program-wall'
 import { reachCatalogNote } from '@/lib/spaces/reach-catalog-note'
 
 import { emailCatalogNote } from '@/lib/spaces/email-catalog-note'
+import { NETWORK_PLAN, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import type { AdminSlot } from './registry'
 
 // LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
@@ -320,6 +321,12 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
   { id: 'space.billing', label: 'Plan and billing', desc: 'Your plan and pricing, what it unlocks, usage, and billing.', Icon: CreditCard, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra', priority: 30, placement: 'bank', access: 'included', parent: 'space.basics' },
+  // Chapters (LIVE-939, handoff A6): the Network parent's Chapters area, until now reachable only from the
+  // network home's Manage chapters button. The catalog gates by function key, not plan, so the row is a
+  // Premium-badged link on every Space and the page itself answers by plan: a Network's owner and central
+  // admins run it, a Collective owner is sent to its member Spaces, and every other owner reads what the
+  // Network plan adds. A non-manager still gets a 404 there, as before.
+  { id: 'space.chapters', label: 'Chapters', desc: 'Your chapters and their leaders, the central admins who help run them, and chapter events waiting for a yes.', Icon: Network, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/chapters`, order: 91, tier: 'extra', priority: 31, access: 'premium', freeNote: `Included with ${SPACE_PLAN_LABEL.network}, ${NETWORK_PLAN.includedChapters} chapters`, parent: 'space.basics' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
   // The "Menu and features" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer

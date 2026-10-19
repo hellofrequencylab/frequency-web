@@ -140,7 +140,7 @@ function SpaceItemPicker({
       <p className="text-2xs leading-relaxed text-muted">{copy.help}</p>
 
       {selectedRef ? (
-        <div className="flex items-center gap-2 rounded-control border border-border bg-surface p-2">
+        <div className="flex items-center gap-2 rounded-card border border-border bg-surface p-2">
           {selectedImage ? (
             // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
             <img src={selectedImage} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
@@ -201,13 +201,13 @@ function SpaceItemPicker({
             </ul>
           )}
           {!space && !searching && query.trim().length >= 2 && spaces.length === 0 && (
-            <p className="rounded-control border border-dashed border-border px-2.5 py-3 text-center text-2xs text-muted">
+            <p className="rounded-card border border-dashed border-border px-2.5 py-3 text-center text-2xs text-muted">
               No Space matches that. Try another name.
             </p>
           )}
 
           {space && (
-            <div className="space-y-1.5 rounded-control border border-border bg-surface-elevated/40 p-2">
+            <div className="space-y-1.5 rounded-card border border-border bg-surface-elevated/40 p-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-2xs font-semibold text-text">{space.label}</p>
                 <button
@@ -260,7 +260,7 @@ function SpaceItemPicker({
       )}
 
       {error && (
-        <p className="rounded-control border border-danger/30 bg-danger-bg px-2.5 py-1.5 text-2xs text-danger" role="alert">
+        <p className="rounded-card border border-danger/30 bg-danger-bg px-2.5 py-1.5 text-2xs text-danger" role="alert">
           {error}
         </p>
       )}

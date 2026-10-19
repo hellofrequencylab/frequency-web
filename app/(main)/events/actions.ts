@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { approvalResetOnEdit } from '@/lib/collective/network-tools'
+import { clearEventDecisions } from '@/lib/collective/network-tools-store'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -776,12 +778,13 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
     .from('events')
     // host_id + the two Space axes come along for the payments gate below (LIVE-753): the tier that matters
     // is the PAYEE's, not the editor's (a cohost may edit an event they are not paid for).
-    .select('slug, parent_event_id, details, scope_type, host_id, space_id, host_space_id')
+    .select('slug, parent_event_id, details, scope_type, host_id, space_id, host_space_id, title, starts_at, ends_at, location')
     .eq('id', eventId)
     .maybeSingle()
   const evRow = ev as {
     slug: string; parent_event_id: string | null; details: unknown; scope_type: string | null
     host_id: string | null; space_id: string | null; host_space_id: string | null
+    title: string | null; starts_at: string | null; ends_at: string | null; location: string | null
   } | null
   const slug = evRow?.slug
   if (!slug) return fail('This event could not be found.')
@@ -862,6 +865,12 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   if (error) {
     console.error('updateEvent error', error)
     return fail('Could not save your changes. Please try again.')
+  }
+  // A Network's yes or no was given on the title, time and place the event had (SCAN-983). When an edit
+  // changes any of them the decision is forgotten and the event queues again (LIVE-939). Best effort:
+  // the save is done, so a miss here is logged, never a failed save. A chapter-less event has no rows.
+  if (approvalResetOnEdit(evRow, { title, starts_at: startsIso, ends_at: endsIso, location })) {
+    if (!(await clearEventDecisions(eventId))) console.error('[updateEvent] network decision reset failed', { eventId })
   }
 
   // RETIRE the dates the rule no longer produces, THEN materialise the ones it now does
