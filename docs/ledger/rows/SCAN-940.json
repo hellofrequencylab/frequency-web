@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-940",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-19",
+      "evidence": "Zap sheet renders the two-column quick actions, Mindless in-place card and the scan-poster/scan-card/log row; every target is >=44px (close 44x44), nothing past the right edge at 390 or 320; 3 jsdom behavioral tests pass. Re-verified 2026-10-19 on main after #3538 in a jsdom render of the real components with the compiled Frequency CSS and fonts, screenshotted in headless Chromium at 390x844 and 320x844, plus the focused vitest suites (50 files, 618 tests pass)."
+    }
+  },
+  "append": {
+    "detail": "\n\nRe-verified on phone renders and focused suites 2026-10-19 after #3538; closed in the mobile polish housekeeping PR."
+  }
+}

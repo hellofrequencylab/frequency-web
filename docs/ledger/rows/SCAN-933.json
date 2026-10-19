@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-933",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-19",
+      "evidence": "Breath rings measure 306px at 390 and 257px at 320 (fits the 272px column), square viewBox kept; setup/timer controls are min-h-11 and no under-44 targets were found on the breathe and setup renders. Re-verified 2026-10-19 on main after #3538 in a jsdom render of the real components with the compiled Frequency CSS and fonts, screenshotted in headless Chromium at 390x844 and 320x844, plus the focused vitest suites (50 files, 618 tests pass)."
+    }
+  },
+  "append": {
+    "detail": "\n\nRe-verified on phone renders and focused suites 2026-10-19 after #3538; closed in the mobile polish housekeeping PR."
+  }
+}
