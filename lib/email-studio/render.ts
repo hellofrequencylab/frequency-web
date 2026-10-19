@@ -282,6 +282,25 @@ function paragraph(text: string, style: BlockStyle | undefined, colors: EmailCol
   return `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.65`, ...parts])}>${body}</p>`
 }
 
+/** A plain-text body (blank lines between paragraphs) as Studio-styled paragraphs: every character escaped,
+ *  a single newline a <br>, the body ink and typeface the block renderer uses (EMAIL-024). The plain-text
+ *  campaign, drip, nurture, automation and agent senders render through this instead of seven private
+ *  `#333` templates. PURE. */
+export function plainTextBodyHtml(body: string, colors: EmailColors): string {
+  return (body ?? '')
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p${styleAttr([`margin:0 0 16px`, `font-family:${FONT_STACK}`, `font-size:15px`, `line-height:1.65`, `color:${colors.text}`])}>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('')
+}
+
+/** One muted line under a plain-text body saying why the reader got the email (EMAIL-024). PURE. */
+export function audienceLineHtml(text: string, colors: EmailColors): string {
+  if (!text) return ''
+  return `<p${styleAttr([`margin:24px 0 0`, `font-family:${FONT_STACK}`, `font-size:12px`, `line-height:1.6`, `color:${colors.subtle}`])}>${escapeHtml(text)}</p>`
+}
+
 function eyebrow(text: string, colors: EmailColors): string {
   if (!text) return ''
   return `<p${styleAttr([`margin:0 0 8px 0`, `font-family:${FONT_STACK}`, `font-size:11px`, `font-weight:700`, `letter-spacing:0.12em`, `text-transform:uppercase`, `color:${colors.primaryStrong}`])}>${escapeHtml(text)}</p>`

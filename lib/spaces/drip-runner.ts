@@ -30,14 +30,14 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   sendSpaceCampaignSystem,
-  SPACE_UNSUBSCRIBE_PLACEHOLDER,
   SPACE_NOT_ACTIVE_EMAIL_ERROR,
 } from '@/lib/spaces/email'
 import { normalizeDelayHours } from '@/lib/spaces/automation'
 import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
-import { postalFooterHtml } from '@/lib/email-studio/postal'
+import { spaceEmailBrand } from '@/lib/spaces/email-colors'
+import { renderCampaignHtml, type CampaignHtmlOptions } from '@/lib/spaces/campaign-html'
 
 /** How long a held enrollment (its Space is suspended or archived) waits before the runner looks at it
  *  again. Short enough that a reactivated Space resumes within the hour; long enough that a suspended
@@ -84,20 +84,21 @@ interface StepRow {
   enabled: boolean
 }
 
-// Render a plain-text step body to the minimal HTML the campaign composer uses, with the per-Space
-// unsubscribe placeholder the send seam swaps per recipient. Byte-compatible with campaigns-send-due.ts.
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-function renderStepHtml(body: string): string {
-  const paras = body
-    .split(/\n{2,}/)
-    .map(
-      (p) =>
-        `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
-    )
-    .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+/** The Space's email brand for a drip step (EMAIL-024): its palette, wordmark and logo. A failed read sends
+ *  the Frequency shell, never a held step. */
+async function dripBrand(spaceId: string): Promise<CampaignHtmlOptions> {
+  try {
+    const { data } = await createAdminClient()
+      .from('spaces')
+      .select('name, brand_name, brand_logo_url, brand_accent, preferences')
+      .eq('id', spaceId)
+      .maybeSingle()
+    const row = data as { name?: string | null; brand_name?: string | null; brand_logo_url?: string | null; brand_accent?: string | null; preferences?: unknown } | null
+    if (!row) return {}
+    return { brand: spaceEmailBrand({ name: row.name ?? '', brandName: row.brand_name, brandLogoUrl: row.brand_logo_url, brandAccent: row.brand_accent, preferences: row.preferences }) }
+  } catch {
+    return {}
+  }
 }
 
 /** The enabled steps of a sequence, ascending by order. */
@@ -218,7 +219,7 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
       if (!alreadySent) {
         const res = await sendSpaceCampaignSystem(row.space_id, {
           subject: step.subject,
-          html: renderStepHtml(step.body),
+          html: renderCampaignHtml(step.body, await dripBrand(row.space_id)),
           recipients: [{ contactId: row.contact_id, email: row.email }],
         })
         if (isError(res) && res.error === SPACE_NOT_ACTIVE_EMAIL_ERROR) {

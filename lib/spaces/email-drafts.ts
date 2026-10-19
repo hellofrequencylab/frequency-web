@@ -66,7 +66,7 @@ import { compileEmailDoc, type EmailBrand } from '@/lib/email-studio/shell'
 import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
-import { spaceEmailColors } from '@/lib/spaces/email-colors'
+import { spaceEmailBrand } from '@/lib/spaces/email-colors'
 import type { Space } from '@/lib/spaces/types'
 import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
 import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
@@ -108,18 +108,10 @@ function exampleMergeVars(): Record<string, string> {
   return Object.fromEntries(MERGE_TAG_VARIABLES.map((v) => [v.token, v.example]))
 }
 
-/** The email BRAND for a Space: its own palette (spaceEmailColors), wordmark, and logo, so a Space's emails
- *  render in the Space's identity, not the platform default. An http(s) logo only (a mail client cannot load a
- *  relative or data URL reliably). */
+/** The email BRAND for a Space (lib/spaces/email-colors.ts spaceEmailBrand, shared with the plain-text
+ *  campaign and drip sends since EMAIL-024). */
 function spaceBrand(space: Space): EmailBrand {
-  const logoUrl = typeof space.brandLogoUrl === 'string' && /^https?:\/\//.test(space.brandLogoUrl)
-    ? space.brandLogoUrl
-    : undefined
-  return {
-    colors: spaceEmailColors(space),
-    wordmark: space.brandName ?? space.name,
-    logoUrl,
-  }
+  return spaceEmailBrand(space)
 }
 
 // ── Shared authz ─────────────────────────────────────────────────────────────────────────────────────────

@@ -27,14 +27,15 @@ import { inheritedSpacePlan } from '@/lib/collective/member-spaces-store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TablesUpdate } from '@/lib/database.types'
 import { resolveAudiencePlan, definitionToFilter } from '@/lib/spaces/audiences'
-import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
 import { sendCampaignNow } from '@/lib/email-studio/send'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
-import { postalFooterHtml } from '@/lib/email-studio/postal'
-import { frequencyFooterHtml } from '@/lib/spaces/campaign-footer'
+import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
+import { spaceEmailBrand } from '@/lib/spaces/email-colors'
+import { renderCampaignHtml, type CampaignHtmlOptions } from '@/lib/spaces/campaign-html'
 
 /** What one scheduled-send pass reports. */
 interface SendDueResult {
@@ -70,31 +71,25 @@ interface LedgerRecipients {
  *  and a truncated read would resume-send to people who already got it). */
 const LEDGER_PAGE = 1000
 
-// Render a plain-text body to the same minimal HTML the interactive composer uses, with the per-Space
-// unsubscribe placeholder the send seam swaps per recipient. Inline styles + hex are correct here (an
-// email renders in mail clients, outside the DAWN shell). Kept byte-compatible with campaigns.ts.
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-function renderCampaignHtml(body: string, footerHtml: string = ''): string {
-  const paras = body
-    .split(/\n{2,}/)
-    .map(
-      (p) =>
-        `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
-    )
-    .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>${footerHtml}<p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
-}
-
-/** The Frequency footer for a free Space's campaign (LIVE-751), '' on a paid plan or a failed read. */
-async function footerForSpace(spaceId: string | null): Promise<string> {
-  if (!spaceId) return ''
+/** How a Space's plain-text campaign wears its brand (EMAIL-024): the Space's palette, wordmark and logo, and
+ *  on a free plan (the inherited plan, LIVE-751) the "Sent with Frequency" line. A failed read sends the
+ *  Frequency shell with no footer line, never a held campaign. */
+async function spaceSendBrand(spaceId: string | null): Promise<CampaignHtmlOptions> {
+  if (!spaceId) return {}
   try {
-    const { data } = await createAdminClient().from('spaces').select('plan').eq('id', spaceId).maybeSingle()
-    return frequencyFooterHtml(await inheritedSpacePlan(spaceId, (data as { plan: string | null } | null)?.plan ?? null))
+    const { data } = await createAdminClient()
+      .from('spaces')
+      .select('name, plan, brand_name, brand_logo_url, brand_accent, preferences')
+      .eq('id', spaceId)
+      .maybeSingle()
+    const row = data as { name?: string | null; plan?: string | null; brand_name?: string | null; brand_logo_url?: string | null; brand_accent?: string | null; preferences?: unknown } | null
+    if (!row) return {}
+    return {
+      brand: spaceEmailBrand({ name: row.name ?? '', brandName: row.brand_name, brandLogoUrl: row.brand_logo_url, brandAccent: row.brand_accent, preferences: row.preferences }),
+      sentWithFrequency: campaignCarriesFrequencyFooter(await inheritedSpacePlan(spaceId, row.plan ?? null)),
+    }
   } catch {
-    return ''
+    return {}
   }
 }
 
@@ -244,7 +239,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
       const res = await sendSpaceCampaignSystem(row.space_id, {
         campaignId: row.id,
         subject: row.subject,
-        html: renderCampaignHtml(row.body ?? '', await footerForSpace(row.space_id)),
+        html: renderCampaignHtml(row.body ?? '', await spaceSendBrand(row.space_id)),
         topic: plan.topic,
         recipients,
       })

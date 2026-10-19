@@ -19,6 +19,7 @@
 // because a mail client cannot resolve CSS variables (mirrors lib/email-studio/render.ts DEFAULT_EMAIL_COLORS).
 
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
+import type { EmailBrand } from '@/lib/email-studio/shell'
 
 /** A 6-digit hex (`#rrggbb`). The only shape the brand color picker emits and the only shape this module
  *  derives from or stores, so the client, the server gate, and the renderer agree. */
@@ -170,4 +171,25 @@ export function spaceEmailColors(space: SpaceEmailColorInput | null | undefined)
  *  last tuned value. PURE. */
 export function spaceEmailColorDefaults(space: SpaceEmailColorInput | null | undefined): EmailColors {
   return { ...DEFAULT_EMAIL_COLORS, ...brandEmailColors(space?.brandAccent) }
+}
+
+interface SpaceEmailBrandInput extends SpaceEmailColorInput {
+  name: string
+  brandName?: string | null
+  brandLogoUrl?: string | null
+}
+
+/** The email BRAND for a Space: its own palette (spaceEmailColors), wordmark, and logo, so a Space's emails
+ *  render in the Space's identity, not the platform default. An http(s) logo only (a mail client cannot load a
+ *  relative or data URL reliably). Shared by the Studio drafts, the plain-text campaign composer, the
+ *  scheduled-send cron and the drip cron (EMAIL-024). PURE. */
+export function spaceEmailBrand(space: SpaceEmailBrandInput): EmailBrand {
+  const logoUrl = typeof space.brandLogoUrl === 'string' && /^https?:\/\//.test(space.brandLogoUrl)
+    ? space.brandLogoUrl
+    : undefined
+  return {
+    colors: spaceEmailColors(space),
+    wordmark: space.brandName ?? space.name,
+    logoUrl,
+  }
 }

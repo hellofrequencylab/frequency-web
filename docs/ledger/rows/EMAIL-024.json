@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-024",
+  "title": "Every plain-text campaign, drip, broadcast, nurture, automation and agent email wears the Studio shell, and a Space's wears the Space brand",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/email-studio/shell.ts",
+    "ref": "ADR-1767; owner 2026-10-19 in the project chat: improve and evolve the email templates to best practice strategy and design; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-19 from the email scan. THE CONSEQUENCE: seven senders each hand-rolled the same bare template (a div, #333 paragraphs, an #eee rule, a #999 unsubscribe line, the postal paragraph): the Space campaign composer (lib/spaces/campaigns.ts), its scheduled-send cron (campaigns-send-due.ts, a byte-for-byte duplicate), the drip cron (drip-runner.ts), the event broadcast (through the composer's render), Studio campaigns (lib/studio/campaigns.ts), the agent (lib/studio/agent.ts), automations (lib/automations.ts) and plain-body nurture steps (lib/nurture/runner.ts). None had a doctype, a wordmark, a preheader slot, a manage-emails link or the Privacy, Terms and Help row the block shell prints, and a Space's plain-text campaign went out with no Space brand at all, contradicting the 2026-10-12 ruling that a message a Space sends must look like the Space's. THE FIX: plainTextEmail in lib/email-studio/shell.ts renders escaped paragraphs inside emailDocumentShell (the block shell's header, palette and CAN-SPAM footer, the free-plan 'Sent with Frequency' line, a muted audience line) and returns the text part with the unsubscribe URL and the postal line. lib/spaces/campaign-html.ts is the one Space render (the unsubscribe placeholder the send seam swaps per recipient); the composer passes spaceEmailBrand(space), the two crons read the Space's brand columns, the broadcast keeps the Frequency shell. spaceEmailBrand moves to lib/spaces/email-colors.ts and the Studio drafts share it. frequencyFooterHtml is gone (the shell's sentWithFrequency is the line). The seven files leave the token guard's waiver list.\n\nBuilt 2026-10-19: plainTextEmail in the Studio shell, renderCampaignHtml for Space sends, spaceEmailBrand shared, frequencyFooterHtml retired",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-shells.mjs",
+    "note": "PASS 2026-10-19: the probe reads the eight senders for the shell seam and typed hex, the guard for the removed waivers, and the Space senders for the brand read; pnpm check:tokens green."
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
