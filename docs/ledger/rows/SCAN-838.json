@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-838",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/page_title/.test(r('lib/consent/cookie-consent.ts'))){console.error('SCAN-838: GA hits on a redacted Journey or Circle page still carry its name as page_title');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19. PREMISE RE-TESTED on main: the bootstrap config and the in-app page_view set page_location only, and the Vercel beforeSend kept the query string. FIX: pixelSafeTitle (lib/analytics/sanitize.ts) returns the generic REDACTED_PAGE_TITLE wherever pixelSafePath redacts the path. The GA bootstrap passes page_title in its config and gtag('set') for every later hit on the page; the in-app page_view (components/analytics/track-provider.tsx) does the same on each route change; the Vercel beforeSend drops the query string and hash. Tests: lib/consent/cookie-consent.test.ts runs the real head script on /journeys/grief-walks and reads the config and set calls; lib/analytics/sanitize.test.ts; components/analytics/vercel-analytics.test.tsx."
+  }
+}
