@@ -59,7 +59,11 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     ? [
         {
           q: 'What is Collective?',
-          a: `${PLAN_STORY.collective} It is ${collective.monthly}${extraSpace ? `, and a member Space past the ones included is ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
+          // The price reads the offering: the Founding intro under its struck list anchor while the intro
+          // is open (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), one price otherwise. The extra member Space
+          // belongs to Collectives that already hold member Spaces (the 2026-10-16 split moved chapters to
+          // Network), so it reads as the grandfathering fact it is.
+          a: `${PLAN_STORY.collective} It is ${collective.monthly}${collective.listAnchor ? ` as a Founding price under the ${collective.listAnchor} list, and the Founding price is yours for as long as you keep the plan` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
         },
       ]
     : []

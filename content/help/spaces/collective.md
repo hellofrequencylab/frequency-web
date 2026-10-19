@@ -4,7 +4,7 @@ description: What the Collective plan is for, what it includes beyond Business, 
 category: spaces
 order: 5
 published: 2026-10-06
-updated: 2026-10-16
+updated: 2026-10-19
 audience: member
 featureKeys: [billing, collective]
 status: published
@@ -15,15 +15,15 @@ that run their own, Collective links you up while each group keeps its own Space
 
 If one organization runs many chapters, that is [Network](/help/spaces/network) instead.
 
-It sits at the top of the Space ladder: members join, Crew hosts, a Space runs, Business sells, and
-Collective connects.
+It sits above Business on the Space ladder: members join, Crew hosts, a Space runs, Business sells,
+Collective connects, and Network unites.
 
 ## What Collective includes
 
 Everything Business does, plus:
 
-- **Member Spaces.** Five member Spaces are included, each with the Business tools. You can add more
-  at the extra-Space price on the [pricing page](/pricing).
+- **A partner hub.** Invite up to ten Spaces you do not own to partner with yours. Each keeps its
+  own members, payouts and settings.
 - **Vera AI included**, with no separate add-on.
 - **A lower network fee** on customers the network introduces. Your own people and your tips stay at
   **0%**, as they are on every plan.
@@ -35,10 +35,15 @@ Everything Business does, plus:
 
 Each of these is explained below.
 
-The price, the yearly price, and the extra-Space price are all on the [pricing page](/pricing). Paying
-yearly gives you two months free, the same as every plan.
+The price and the yearly price are on the [pricing page](/pricing). While the Founding intro is open,
+a new Collective starts on the Founding price under the list price and keeps it for as long as it
+keeps the plan. Paying yearly gives you two months free, the same as every plan.
 
 ## Manage your member Spaces
+
+Member Spaces are for Collectives that already ran them before chapters moved to
+[Network](/help/spaces/network). If yours does, everything below still works; a new Collective
+partners instead, and one organization with chapters takes Network.
 
 Open **Plan and usage** on your Collective, then find **Member Spaces**. Choose a Space you own
 and select **Attach Space**. You must own both Spaces. A Space already attached elsewhere or
@@ -58,7 +63,7 @@ plans. A member Space that already has a paid plan keeps that plan.
 
 ## Your network page
 
-Your Collective gets a **Network** tab on its Space page. It shows:
+A Collective that runs member Spaces keeps a **Network** tab on its Space page (a Collective that partners has a **Partners** tab instead). It shows:
 
 - **Member Spaces**, each as a card that opens that Space.
 - **Up next**, the next few events from across the network.
@@ -138,8 +143,9 @@ The price you start at holds while it lands. We will tell you when it goes live.
 
 - If you run **one** community, a studio, or a business, take [Business](/help/spaces/plans-and-pricing).
   It does everything you need to sell.
-- If you run **several** groups and want them to feel like one network, take Collective.
-- If you are a verified nonprofit running several groups, ask about **Non Profit Collective**, which
+- If you and other owners run **separate** groups and want to partner, take Collective.
+- If **one** organization runs several chapters, take [Network](/help/spaces/network).
+- If you are a verified nonprofit partnering with others, ask about **Non Profit Collective**, which
   carries no network fee.
 
 You can move between Business and Collective whenever you like. See [Billing](/help/spaces/billing).

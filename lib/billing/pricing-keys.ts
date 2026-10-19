@@ -547,13 +547,16 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
   }
 }
 
-// The CLEAN catalog (ADR-460; the five-tier ladder ADR-1709). Monthly amounts: Business $49 (selling
-// starts here), Collective $149 with five member Spaces included, an extra member Space $29, Non Profit
-// $39 FLAT, Non Profit Collective $119, Independent $249 hand-sold, Vera AI +$20 (included in
-// Collective), operator seats $12. Yearly derives as two months free. Every item carries founding ==
-// list (no beta rate): the $19/$49 beta anchors closed on 2026-08-17 (ADR-1060, ADR-1067), and a
-// founding amount here would mint a second, immutable Stripe Price. The marketing/team/branding
-// add-on items stay RETIRED (their depth folds into the Business base, ADR-472).
+// The CLEAN catalog (ADR-460; the five-tier ladder ADR-1709; the Collective / Network split 2026-10-16).
+// Monthly amounts: Business $49 (selling starts here), Collective $149 list with a $99 Founding intro
+// (owner 2026-10-19, a standing per-item offer: lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), an extra
+// member Space $29 for Collectives that already run member Spaces, Non Profit $39 FLAT, Non Profit
+// Collective $119, Network from $599 (lib/pricing/plans.ts NETWORK_PLAN), Independent $249 hand-sold,
+// Vera AI +$20 (included in Collective and Network), operator seats $12. Yearly derives as two months
+// free. Every item but Collective carries founding == list (no beta rate): the $19/$49 beta anchors
+// closed on 2026-08-17 (ADR-1060, ADR-1067), and a founding amount here mints a second, immutable
+// Stripe Price. The marketing/team/branding add-on items stay RETIRED (their depth folds into the
+// Business base, ADR-472).
 const CATALOG: Record<CatalogItemKey, CatalogItem> = {
   business_base: {
     key: 'business_base',
@@ -577,15 +580,17 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     ...amountsFromMonthly(4900, 4900), // $49/mo, no founding rate (ADR-1438, kept by ADR-1709)
   },
   collective_base: {
-    // COLLECTIVE (ADR-1709): the rung above Business for groups of groups. Five member Spaces are
-    // included (more ride `collective_space`), Vera AI is included, the network fee is the 3% rung.
-    // Re-opened at $149 after ADR-1438 retired the old $79 item; Stripe Prices are immutable, so the
-    // sync mints new prices at this amount and the old ones stay resolvable for reconciliation.
-    // Sold only while `plan_collective_enabled` is on (Founding Collective, OWN-096).
+    // COLLECTIVE (ADR-1709; split 2026-10-16): the rung above Business for separate groups that
+    // partner (a partner hub, a shared calendar, cross-listing). Vera AI is included, the network fee
+    // is the 3% rung. A Collective that already ran member Spaces keeps them (more ride
+    // `collective_space`). Re-opened at $149 after ADR-1438 retired the old $79 item; Stripe Prices
+    // are immutable, so the sync mints new prices at this amount and the old ones stay resolvable for
+    // reconciliation. Sold only while `plan_collective_enabled` is on (OWN-096). The $99 Founding
+    // intro is charged while `collective_base` sits in FOUNDING_OPEN_ITEMS (lib/pricing/beta.ts).
     key: 'collective_base',
     label: 'Frequency Collective',
     perSeat: false,
-    ...amountsFromMonthly(14900, 9900), // $149/mo list, $99 Founding Collective (owner 2026-10-06), 5 member Spaces included
+    ...amountsFromMonthly(14900, 9900), // $149/mo list, $99 Founding intro (owner 2026-10-06, confirmed 2026-10-19)
   },
   collective_space: {
     // An extra member Space under a Collective beyond the five included (ADR-1709). Per Space, so a
