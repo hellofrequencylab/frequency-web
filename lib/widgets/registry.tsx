@@ -226,7 +226,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // '/spaces/*' set the profile never mounted. entity-cta stays bound because the Book tab renders
   // <EntityCta> directly — the binding is what lets a future <PageModules> mount adopt it.
   'entity-cta': EntityCta,
-  // Pages workspace (/pages) — the page index: every page, most important first (ADR-1760).
+  // Pages workspace (/pages) — the page index: every page, most important first (ADR-1763).
   'pages-marketing': PagesSite,
   'pages-lead-seo': PagesLeadSeo,
   'pages-splash-funnels': PagesSplashFunnels,

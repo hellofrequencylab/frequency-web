@@ -6,7 +6,7 @@ import { PageModules } from '@/components/widgets/page-modules'
 export const dynamic = 'force-dynamic'
 
 // The Pages workspace — the page index: every page the platform serves, most important first, with
-// what produces each one and the one action that is true for it (ADR-1760). MODULE-DRIVEN
+// what produces each one and the one action that is true for it (ADR-1763). MODULE-DRIVEN
 // (ADR-270/294): the five lists (Site pages, Lead and SEO pages, Funnels, In-app pages, System pages)
 // are self-fetching layout modules (lib/widgets/modules.ts → registry) laid out by
 // <PageModules route="/pages">; operators arrange them from the on-page Settings → Layout panel (the

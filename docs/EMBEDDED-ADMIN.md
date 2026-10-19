@@ -433,7 +433,7 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > on-page shell-rail control was the wrong layer and was pulled. The interior sections are staged "Next"
 > until their engines land (see below).
 >
-> ✅ **One editable page Library (ADR-262), now the page index (ADR-1760).** `/pages` lists every page
+> ✅ **One editable page Library (ADR-262), now the page index (ADR-1763).** `/pages` lists every page
 > in five lists, most important first (Site pages, Lead and SEO pages, Funnels, In-app pages, System
 > pages; `lib/pages/index-catalog.ts`). An **In-app pages** row (`MANAGED_ROUTES`) opens the real page;
 > staff edit its header, SEO and (on a module route) layout from the page's own Settings button. The

@@ -133,7 +133,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // registration went. check:module-reachability proves the difference rather than assuming it.
   { id: 'entity-cta', label: 'Book', description: 'The primary action. Book a session at an open time.' },
 
-  // ── Pages workspace blocks (/pages) — the page index (ADR-1760). `pages-marketing` keeps its id
+  // ── Pages workspace blocks (/pages) — the page index (ADR-1763). `pages-marketing` keeps its id
   // (saved layouts name it) and now draws the Site pages list; `pages-in-app-focus` was folded into
   // `pages-in-app-member`, which draws every in-app page in one list.
   { id: 'pages-marketing', label: 'Site pages', description: 'The pages the site menu and footer link to, with what produces each and its publish status.' },
@@ -584,7 +584,7 @@ const CHALLENGES_MODULE_IDS = ['challenges-season'] as const
 // (Epic 1.7); check:module-reachability fails a set without one.
 
 // The Pages workspace (/pages), in default render order — the page index, most important first
-// (ADR-1760): the site's own pages, then the lead and SEO pages, the Funnels, the in-app pages, and
+// (ADR-1763): the site's own pages, then the lead and SEO pages, the Funnels, the in-app pages, and
 // the system pages last. Every list renders for every operator (admin+); the Edit buttons inside the
 // public lists and the Funnels card self-gate to janitor. Order here is the default stack when no
 // layout is saved; operators rearrange it in the Layout editor.
