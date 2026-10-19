@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-846",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270317000000'&&/posts: insert/.test(r('supabase/migrations/'+f))&&/post_type\\s+in\\s*\\(/.test(r('supabase/migrations/'+f)))){console.error('SCAN-846: the posts insert policy accepts any post_type and any parent');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19. PREMISE RE-TESTED on main: the 20270317000000 policy still has no post_type or parent_id term, and every app write to posts goes through the admin client. Migration 20270346009700 recreates \"posts: insert (crew+ in scope)\" with the same arms plus post_type in ('feed','note') and parent_id is null. pgTAP (supabase/tests/posts_insert_member_guard.test.sql): a member's direct 'system', 'announcement', 'space_update' and parented inserts are 42501; a plain public post still lands; a trusted role still writes a reply. Apply with execute_sql then schema_migrations at 20270346009700."
+  }
+}

@@ -687,6 +687,35 @@ The owner ruling of 2026-10-12: every account that messages through Frequency ca
 
 **When a row sticks in `pending`.** Read the row (service role): `select state, dns_written_at, updated_at, dns_records, provider_domain_id from space_inbox_addresses where space_id = ...`. (1) `dns_written_at` null and `updated_at` moving every 15 minutes: the zone write is being refused on every run. Search the runtime logs for `[vercel-domains] zone DNS record write failed`; the line carries the zone, the record name and Vercel's code AND message (`forbidden: You do not have permission...`), which names the fix (the token's team does not hold the zone, the zone is not `frequencylocal.com`, a record name Vercel rejects). Fix the cause; the next run writes the records. (2) `dns_written_at` set and the row still `pending` after an hour: the records are in the zone and Resend has not verified. Confirm with `dig MX <slug>.space.frequencylocal.com` and `dig TXT resend._domainkey.<slug>.space.frequencylocal.com` against `ns1.vercel-dns.com`; if they answer, open the domain in the Resend dashboard, which says which record it is still waiting on. If they do not answer, compare `dns_records` on the row with the zone in the Vercel dashboard. (3) `updated_at` not moving at all: the cron is not running. Check `cron.run` lines for `space-inbox-verify` and the switch in Production. Pressing Check again on the card runs the same check by hand.
 
+### House conversation email bridge (ADR-814)
+
+`CONVERSATION_EMAIL_BRIDGE` defaults off. It is an on/off env switch (`envFlag`: `1` / `true` / `on`). It gates only whether a new member reply is forwarded to the assigned agent's (else owner's) real inbox. A valid house reply-address is always honored: an agent's reply to an in-flight forward still routes outbound if the switch is later unset (`lib/comms/inbound.ts`). Spec: [`COMMS-SYSTEM.md`](COMMS-SYSTEM.md) "Email bridge".
+
+**Gate before turning it on**, in order. All **owner** unless tagged.
+
+1. Inbound receiving is live: `RESEND_INBOUND_WEBHOOK_SECRET` set, MX for `CONVERSATION_REPLY_DOMAIN` (default `reply.frequencylocal.com`) pointing at Resend, and a signed webhook delivery has already threaded a member reply into Conversations. **agent** can confirm `/api/webhooks/inbound-email` answers 401 without the secret.
+2. `CONVERSATION_TOKEN_SECRET` is set in Production (32+ random bytes). Without it production refuses to sign a house Reply-To, so the forward is skipped.
+3. One controlled proof on a staff-owned thread: a member reply arrives, the assigned agent receives the forward, they reply from their mail app, the member gets the house outbound, and the thread in `/admin/crm/conversations` shows both.
+
+Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production and redeploy. **owner**
+
+**Turn it off.** Unset. New member replies stop being forwarded. Issued house addresses still route.
+
+### SMS provisioning (ADR-256)
+
+`SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `SMS_A2P_BRAND_ID`, `SMS_A2P_CAMPAIGN_ID` and `TWILIO_MESSAGING_SERVICE_SID`. Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md).
+
+**Gate before turning it on**, in order. All **owner** unless tagged.
+
+1. Brand and campaign approved in Twilio (A2P-REGISTRATION §3–§4). Carrier review is 10 to 15 days. Do not set the switch to try a send.
+2. Migration `20260626010000` applied (`sms_consent` exists). **agent** can confirm with a read of `pg_tables`.
+3. The four provisioning vars plus `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` set in Vercel Production. `/admin/sms` shows presence of the four, never the values.
+4. The platform `sms_enabled` switch at `/admin/sms` stays off until a consented test send is ready.
+
+Then set `SMS_PROVISIONING_ENABLED` to `1`, `true` or `on` and redeploy. The first send is a consented test to a staff number. TCPA statutory damages are $500 to $1,500 per unconsented US text; this switch is the legal lock, not a feature flag.
+
+**Turn it off.** Unset. Every `sendSms()` returns `not_provisioned`. In-flight Twilio posts that already left are not recalled.
+
 ## Local public-site draft projection
 
 For an explicitly reviewed local Group preview, `LOCAL_SITE_CONTENT_PROJECTION` may point to an absolute local JSON manifest. The read seam activates only when `VERCEL_ENV=development` and `NEXT_PUBLIC_SITE_URL` names `localhost`, `127.0.0.1`, or `[::1]`. The Group's exact Space ID and slug, current public-document hash, reviewed-operations hash, authored names, replacement values and permitted public document paths must all match. A refusal stops that local render instead of silently applying drifted edits.
