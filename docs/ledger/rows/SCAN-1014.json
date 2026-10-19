@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-1014",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(public)/events/[slug]/page.tsx','utf8');const i=s.indexOf('export async function generateMetadata');const b=i<0?'':s.slice(i,i+3500);if(!/unlisted/.test(b)){console.error('SCAN-1014: an unlisted event page carries no noindex');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1751). PREMISE RE-TESTED: generateMetadata always set a canonical and only noindexed past and extra series dates; public_event_by_slug still admits unlisted and still does not return visibility. The anon enrichment read can see an unlisted row (RLS admits it; the column grant remains) but did not project visibility and generateMetadata never called it. Fix is a cookie-free service-role read (lib/events/public-indexability.ts), not a DROP + CREATE of the anon DEFINER. Unlisted share pages set robots index:false follow:true, omit the canonical, and omit Event JSON-LD. The share card still renders. No migration."
+  }
+}

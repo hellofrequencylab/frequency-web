@@ -45,6 +45,10 @@ vi.mock('@/lib/events/series-seo', () => ({
 vi.mock('@/lib/events/series-config', () => ({
   getSeriesDisplayConfig: async () => ({ indexedOccurrences: 0 }),
 }))
+vi.mock('@/lib/events/public-indexability', () => ({
+  getPublicEventLinkVisibility: async () => 'public',
+  UNLISTED_EVENT_ROBOTS: { index: false, follow: true },
+}))
 
 async function render(): Promise<string> {
   const { default: PublicEventPage } = await import('./page')

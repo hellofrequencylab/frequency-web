@@ -21,6 +21,7 @@ import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
+import { getPublicEventLinkVisibility, UNLISTED_EVENT_ROBOTS } from '@/lib/events/public-indexability'
 
 // Public share URL for an event (SCAN-636 / ADR-1440). Same ISR window and
 // column-safe RPC as /discover/events/[slug]. Auth during render is a dynamic
@@ -41,7 +42,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const event = await getPublicEventBySlug(slug)
+  const [event, visibility] = await Promise.all([getPublicEventBySlug(slug), getPublicEventLinkVisibility(slug)])
   if (!event) return { title: 'Event not found' }
 
   const where = event.city ? ` in ${event.city}` : ''
@@ -57,12 +58,16 @@ export async function generateMetadata({
   // name: its stored start is the first meeting, not the next one.
   const title = facts.isAnchor ? event.title : `${event.title} · ${formatEventDate(event.starts_at)}`
   const ogTitle = `${title} · ${SITE_NAME}`
+  // Unlisted is a link, not a listing (ADR-202). The RPC admits it by slug and does not return
+  // visibility, so this read is the share page's indexability gate (SCAN-1014). It beats past and
+  // series robots: an unlisted date must never become indexable just because it is upcoming.
+  const unlisted = visibility === 'unlisted'
   const pastRobots = ended && !suppressPastNoindex(facts) ? ({ index: false, follow: true } as const) : undefined
-  const robots = pastRobots ?? seriesRobots(facts, indexedOccurrences)
+  const robots = unlisted ? UNLISTED_EVENT_ROBOTS : (pastRobots ?? seriesRobots(facts, indexedOccurrences))
   return {
     title,
     description,
-    alternates: { canonical: `/events/${event.slug}` },
+    ...(unlisted ? {} : { alternates: { canonical: `/events/${event.slug}` } }),
     ...(robots ? { robots } : {}),
     openGraph: {
       ...OG_SITE,
@@ -89,11 +94,13 @@ export default async function PublicEventPage({
   // The join door (lib/events/public-join-door.ts): guest RSVP or guest ticket, decided with the
   // member page's own signed-out rules from cookie-free reads. Null when it could not be read, which
   // keeps the plain sign-up card below.
-  const [enrichment, venue, joined] = await Promise.all([
+  const [enrichment, venue, joined, visibility] = await Promise.all([
     getEventEnrichment(slug),
     getPublicEventVenue(slug),
     loadPublicJoinDoor(event.id),
+    getPublicEventLinkVisibility(slug),
   ])
+  const unlisted = visibility === 'unlisted'
   const hasEnded = hasEventEnded(event)
   // The where-line (ADR-1744, owner-ruled 2026-10-14): the venue and street plus the city when the
   // host left the address visible, the city alone otherwise. Same server-side read as the JSON-LD,
@@ -109,7 +116,7 @@ export default async function PublicEventPage({
     location: venue.venue?.location,
   })
 
-  const structuredData = (
+  const structuredData = unlisted ? null : (
     <JsonLd
       data={[
         eventSchema({

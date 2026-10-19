@@ -344,6 +344,15 @@ describe('event page robots wiring', () => {
     expect(share).toContain('canonical: `/events/${event.slug}`')
   })
 
+  it('noindexes an unlisted share page and drops its canonical (SCAN-1014, ADR-202)', () => {
+    const share = sourceWithoutComments(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), {
+      imports: true,
+    })
+    expect(share).toContain("visibility === 'unlisted'")
+    expect(share).toContain('UNLISTED_EVENT_ROBOTS')
+    expect(share).toContain('unlisted ? {} : { alternates: { canonical:')
+  })
+
   // The /discover/events/<slug> twin carried the same two rules until SCAN-672 retired it (a 308 to
   // /events/<slug> in next.config.ts), so there is no second public page left to pin.
 })
