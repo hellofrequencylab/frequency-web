@@ -25,8 +25,8 @@ export function ChoosePlanButton({
   label,
 }: {
   slug: string
-  /** The loadout plan to buy: Business (LIVE-228) or Network (SCAN-980). */
-  plan: 'business' | 'network'
+  /** The loadout plan to buy: Business (LIVE-228), Collective (OWN-096) or Network (SCAN-980). */
+  plan: 'business' | 'collective' | 'network'
   /** The button label, e.g. "Choose Business". */
   label: string
 }) {

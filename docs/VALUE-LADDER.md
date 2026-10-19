@@ -24,7 +24,7 @@ Business. Tips are the only money a free tier receives, and they are 0% on every
 
 | | Member | Crew | Space (free) | Business | Collective | Non Profit |
 |---|---|---|---|---|---|---|
-| **Price** | free | contribute what you want | free | catalog | catalog, 5 member Spaces | catalog |
+| **Price** | free | contribute what you want | free | catalog | catalog: list, with a Founding intro (`FOUNDING_OPEN_ITEMS`) | catalog |
 | **Hosts** | 1 Circle, 2 Events | host kit | every hosting tool, launch limits | higher limits | highest limits | Business limits |
 | **Tips** | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% |
 | **Sells** (tickets, memberships, donations, shop, deposits) | ⛔ | ⛔ | ⛔ | ✅ | ✅ | ✅ |

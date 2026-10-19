@@ -4,7 +4,7 @@ description: Where your plan, payments, and invoices live, how a cash agreement 
 category: spaces
 order: 3
 published: 2026-07-27
-updated: 2026-10-13
+updated: 2026-10-19
 audience: member
 featureKeys: [billing]
 status: published
@@ -45,8 +45,10 @@ Pick the plan you want on the billing page. The card fields open under the butto
   booking deposits open at Business. Tips are open on every plan. Everything else is an allowance:
   a free Space has every hosting tool with room to start, and Business and Collective raise the limits.
   When an allowance is full, only the next new thing waits. Nothing you made is hidden or locked.
-- Collective is Business for a group of groups: it includes member Spaces and a lower network fee.
-  See [Collective](/help/spaces/collective).
+- Collective is Business for separate groups that partner: a hub linking partner Spaces, a shared
+  calendar, cross-listing and a lower network fee, with each partner keeping its own Space. See
+  [Collective](/help/spaces/collective). One organization with chapters takes
+  [Network](/help/spaces/network) instead.
 - Your plan is not the only switch. You can also turn a feature off for your own Space in **Manage,
   then Menu and features**, and it stays off whether or not your plan pays for it. So if billing
   says a tool is included and you still cannot find it, look there before you look at your plan.

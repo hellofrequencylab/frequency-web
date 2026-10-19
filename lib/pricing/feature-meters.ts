@@ -202,7 +202,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     allowanceTextByTier: {
       free: '1 seat included (the owner)',
       business: '2 seats included, add more per seat',
-      collective: '3 seats included, plus 2 per member Space',
+      collective: '3 seats included, add more per seat',
     },
   },
   space_multi_pipeline: {
