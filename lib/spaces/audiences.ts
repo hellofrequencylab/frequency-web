@@ -291,38 +291,61 @@ interface SpaceContact {
   consentState: string | null
 }
 
+/** PostgREST hands back at most 1,000 rows per response (supabase/config.toml max_rows and the hosted
+ *  default), so the contact read walks pages of this size instead of asking for MAX_RECIPIENTS at once. */
+const CONTACT_PAGE = 1000
+
+type ContactRow = { id: string; email: string | null; profile_id?: string | null; consent_state?: string | null }
+type ContactPage = { data: ContactRow[] | null; error: unknown; count?: number | null }
+
 /** A Space's contacts, service-role, FAIL-SAFE to []. Filters `space_id = spaceId` so a caller never
  *  reaches another Space's contacts. Drops rows with no usable email. Carries `profile_id` (for the
- *  place-tree + advanced-facet member joins) and `consent_state` (for the consent facet). */
-async function readSpaceContacts(spaceId: string, strict = false): Promise<SpaceContact[]> {
+ *  place-tree + advanced-facet member joins) and `consent_state` (for the consent facet).
+ *
+ *  SCAN-829: read in id-ordered pages of CONTACT_PAGE up to MAX_RECIPIENTS. One `.limit(5000)` request
+ *  came back capped at 1,000 rows, so a strict preview over 1,000 contacts never matched its exact
+ *  count and a send quietly reached only the first 1,000. `total` is the Space's exact contact count
+ *  (strict only); above MAX_RECIPIENTS the preview reports it as capped. */
+async function readSpaceContacts(
+  spaceId: string,
+  strict = false,
+): Promise<{ contacts: SpaceContact[]; total: number | null }> {
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
-        select: (c: string) => {
+        select: (c: string, o?: { count: 'exact' }) => {
           eq: (col: string, val: string) => {
-            limit: (
-              n: number,
-            ) => Promise<{
-              data:
-                | { id: string; email: string | null; profile_id?: string | null; consent_state?: string | null }[]
-                | null
-              error: unknown
-            }>
+            order: (col: string, o: { ascending: boolean }) => {
+              range: (from: number, to: number) => Promise<ContactPage>
+            }
           }
         }
       }
     }
-    const result = strict
-      ? await createAdminClient().from('contacts').select('id, email, profile_id, consent_state', { count: 'exact' }).eq('space_id', spaceId).limit(MAX_RECIPIENTS)
-      : await db.from('contacts').select('id, email, profile_id, consent_state').eq('space_id', spaceId).limit(MAX_RECIPIENTS)
-    const { data, error } = result
-    if (error || !data) {
-      if (strict) throw new Error('Audience contacts unavailable')
-      return []
+    const rows: ContactRow[] = []
+    let total: number | null = null
+    for (let from = 0; from < MAX_RECIPIENTS; from += CONTACT_PAGE) {
+      const to = Math.min(from + CONTACT_PAGE, MAX_RECIPIENTS) - 1
+      const page = await db
+        .from('contacts')
+        .select('id, email, profile_id, consent_state', strict && from === 0 ? { count: 'exact' } : undefined)
+        .eq('space_id', spaceId)
+        .order('id', { ascending: true })
+        .range(from, to)
+      if (page.error || !page.data) {
+        if (strict) throw new Error('Audience contacts unavailable')
+        return { contacts: [], total: null }
+      }
+      if (strict && from === 0) {
+        if (typeof page.count !== 'number') throw new Error('Audience preview incomplete')
+        total = page.count
+      }
+      rows.push(...page.data)
+      if (page.data.length < to - from + 1) break
     }
-    if (strict && (!('count' in result) || result.count !== data.length)) throw new Error('Audience preview incomplete')
+    if (strict && rows.length !== Math.min(total ?? -1, MAX_RECIPIENTS)) throw new Error('Audience preview incomplete')
     const out: SpaceContact[] = []
-    for (const c of data) {
+    for (const c of rows) {
       if (c.id) {
         out.push({
           id: c.id,
@@ -332,10 +355,10 @@ async function readSpaceContacts(spaceId: string, strict = false): Promise<Space
         })
       }
     }
-    return out
+    return { contacts: out, total }
   } catch (error) {
     if (strict) throw error
-    return []
+    return { contacts: [], total: null }
   }
 }
 
@@ -492,10 +515,12 @@ async function resolveCandidatesFromEffective(
   spaceId: string,
   effective: AudienceFilter,
   strict = false,
+  meta?: { total: number | null },
 ): Promise<SpaceContact[]> {
   const tag = normalizeTag(effective.tag)
 
-  const contacts = await readSpaceContacts(spaceId, strict)
+  const { contacts, total } = await readSpaceContacts(spaceId, strict)
+  if (meta) meta.total = total
   if (contacts.length === 0) return []
 
   // Narrow to the tagged subset when a tag is given. A contact that isn't linked to a tagged
@@ -628,10 +653,14 @@ export async function resolveAudiencePlan(
  * duplicate rows remain here so their exclusions can be counted; send resolvers still remove them. */
 export async function resolveAudienceCandidatePlan(
   spaceId: string, filter: AudienceFilter = {}, pickedTopic?: unknown,
-): Promise<{ contacts: SpaceContact[]; topic: NotificationTopic }> {
+): Promise<{ contacts: SpaceContact[]; topic: NotificationTopic; cappedAt: number | null; spaceContacts: number | null }> {
   if (!spaceId) throw new Error('Missing Space')
   const effective = await effectiveFilter(spaceId, filter, true)
-  return { contacts: await resolveCandidatesFromEffective(spaceId, effective, true), topic: topicForAudience(pickedTopic, effective) }
+  const meta: { total: number | null } = { total: null }
+  const contacts = await resolveCandidatesFromEffective(spaceId, effective, true, meta)
+  // Over the cap, the preview and the send both read the first MAX_RECIPIENTS contacts; say so.
+  const over = meta.total != null && meta.total > MAX_RECIPIENTS
+  return { contacts, topic: topicForAudience(pickedTopic, effective), cappedAt: over ? MAX_RECIPIENTS : null, spaceContacts: meta.total }
 }
 
 /** How many recipients an audience resolves to (the composer's live count). FAIL-SAFE to 0. A thin
