@@ -13,6 +13,9 @@ const { PageHeading } = await import('./page-heading')
 const { DashboardTemplate } = await import('./dashboard-template')
 const { DetailTemplate } = await import('./detail-template')
 const { WizardShell, wizardPrimaryClass, wizardSecondaryClass } = await import('./wizard-shell')
+const { IndexTemplate } = await import('./index-template')
+const { MarketHero } = await import('@/components/marketplace/market-hero')
+const { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } = await import('@/components/marketplace/hero-buttons')
 const { EntityCard } = await import('@/components/cards/entity-card')
 const { RowCard } = await import('@/components/cards/row-card')
 
@@ -95,5 +98,36 @@ describe('SectionHeader is the kit .sec-h', () => {
     expect(s.className).toBe('sec-h')
     expect(s.querySelector('a.mu-sec-link h2.h2')?.firstChild?.textContent).toBe('Your codes')
     expect(s.querySelector('h2 .meta')?.textContent).toBe('4')
+  })
+})
+
+// LIVE-1012: hub pages (Business Spaces, Members, Channels and every overlay index) open on the plain
+// kit head that Around You and Events use. No photo band, and the actions are the kit's own buttons.
+describe('browse headers carry no photo band', () => {
+  it('drops the overlay hero on an index page and keeps its title, copy and action', () => {
+    const h = doc(
+      <IndexTemplate heroOverlay heroImage="/images/site/x.jpg" title="Members" description="Everyone." action={<button>Invite</button>}>
+        <p>body</p>
+      </IndexTemplate>,
+    )
+    expect(h.querySelector('img')).toBeNull()
+    expect(h.querySelector('.head .h1')?.textContent).toBe('Members')
+    expect(h.querySelector('.head .meta')?.textContent).toBe('Everyone.')
+    expect(h.querySelector('.head .mu-actions button')?.textContent).toBe('Invite')
+  })
+
+  it('renders MarketHero as the kit head with the search on its own row', () => {
+    const h = doc(
+      <MarketHero image="/images/site/x.jpg" eyebrow="Directory" title="Business Spaces" subtitle="Find one." search={<input aria-label="Search" />} action={<button>Create</button>} />,
+    )
+    expect(h.querySelector('img')).toBeNull()
+    expect(h.querySelector('.head .k')?.textContent).toBe('Directory')
+    expect(h.querySelector('.head .h1')?.textContent).toBe('Business Spaces')
+    expect(h.querySelector('.mu-toolbar input')).not.toBeNull()
+  })
+
+  it('gives the header actions the kit pill buttons', () => {
+    expect(HERO_PRIMARY_BTN).toBe('btn pa sm')
+    expect(HERO_SECONDARY_BTN).toBe('btn sm')
   })
 })

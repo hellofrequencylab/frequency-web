@@ -1,5 +1,13 @@
 import { PageHero } from '@/components/templates/page-hero'
+import { PageHeading } from '@/components/templates/page-heading'
 import type { PageHeroSize, PageHeroVariant } from '@/components/templates'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (LIVE-1012, owner 2026-10-19: "remove the header image, make sure all buttons are cleanly
+// represented"): a browse page opens on the same plain header as Around You and Events, the kit `.head`
+// (kicker, title, one line, the actions on the right), with the search on its own row beneath. No photo
+// band. The caller still draws its own Settings divider, so this heading draws none. DAWN is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // MARKET HERO — the commerce/browse section header (Classifieds / Market / Frequency Store / Housing,
 // and the browse indexes that adopted it). It is now a THIN wrapper over the canonical PageHero (the one
@@ -36,6 +44,14 @@ export function MarketHero({
   /** Draw the ink overlay (scrim). Default on. */
   overlay?: boolean
 }) {
+  if (FREQUENCY) {
+    return (
+      <div>
+        <PageHeading eyebrow={eyebrow} title={title} description={subtitle} actions={action} adminBar={false} />
+        {search && <div className="mu-toolbar">{search}</div>}
+      </div>
+    )
+  }
   return (
     <PageHero
       coverImage={image}
