@@ -18,8 +18,7 @@ import { SpaceCrmPrompt } from '@/components/connections/space-crm-prompt'
 import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
 import { GoogleImportBanner, type GoogleImportOutcome } from '@/components/connections/google-import-banner'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
-import { NetworkTabs } from '@/components/people/network-tabs'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { NetworkHubBar } from '@/components/people/network-hub-bar'
 import type { NetworkContactListItem } from '@/lib/connections/types'
 
 const IMPORT_OUTCOMES = ['done', 'cancelled', 'error', 'unavailable'] as const
@@ -98,24 +97,15 @@ export default async function ConnectionsPage({
     listDueReminders(ownerId),
   ])
   const rows = all.filter((c) => matches(c, facet, q))
-  // The overlay hero band (PROG-P4, lib/layout/index-hero.ts) — the same band /network above it in
-  // the tab strip already wears, so the three Network surfaces read as one hub instead of one hero
-  // page and two bare headings. A private book is a UTILITY surface, so the route map hands it the
-  // SHORT band and no section cover; an operator who uploads a header image in Settings gets it
-  // here without a deploy.
-  const hero = await resolveIndexHero('/network/contacts')
-
   return (
     <div className="mx-auto max-w-5xl">
-      {/* Hub tab strip: Members · Friends · My Contacts read as one Network hub. */}
-      <NetworkTabs active="/network/contacts" />
       {/* Mobile header is COMPACT: the H1 drops the icon and the description
           shrinks to one line to save vertical space. sm+ keeps the full header.
           The icon inherits the lockup's colour rather than naming one — inside the hero the copy
           resolves to `text-on-ink` over the scrim, and a hardcoded `text-primary-strong` would be
           the one dark glyph on a dark band. */}
       <IndexTemplate
-        {...hero}
+        eyebrow="Your network"
         title={
           <span className="flex items-center gap-2">
             <Contact className="hidden h-5 w-5 sm:block" />
@@ -153,6 +143,8 @@ export default async function ConnectionsPage({
           </div>
         }
         toolbar={
+          <>
+          <NetworkHubBar active="/network/contacts" />
           <div className="flex flex-wrap items-end justify-between gap-3">
             <UnderlineTabs
               activeHref={buildHref(facet, q, sort)}
@@ -178,6 +170,7 @@ export default async function ConnectionsPage({
               </form>
             </div>
           </div>
+          </>
         }
       >
       {importOutcome && (
