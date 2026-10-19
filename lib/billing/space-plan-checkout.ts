@@ -27,6 +27,7 @@ import { receiptEmailFor } from './receipt-address'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { routeSpaceSubscription } from './space-subscriptions'
+import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -196,7 +197,10 @@ async function resolveLoadoutPriceId(
  *  The Business base is the full depth; the AI add-on layers on top. NOTHING here is per-seat: Nonprofit
  *  is a FLAT plan (ADR-811), not a per-seat charge, so it bills quantity 1 like the Business base. The
  *  `nonprofit_seat` catalog key is a legacy name (the item is flat); see pricing-catalog.test.ts. */
-function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
+function catalogKeysForLoadout(
+  loadout: SpaceLoadout,
+  opts: { nonprofitVerified?: boolean } = {},
+): { key: CatalogItemKey; perSeat: boolean }[] {
   // OPERATOR SEATS (ADR-799): a per-seat add-on available on ANY paid plan. Included only when the owner
   // buys extra operator seats (seatQuantity > 0); the checkout sets this item's quantity to the seat
   // count. The owner's own seat is the free base allowance, so this bills only the ADDITIONAL operators.
@@ -207,8 +211,12 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   // Collective (ADR-1709) bills its own base; Vera AI is included, so no add-on line rides on it.
   if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }, ...operatorSeat]
   if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }, ...operatorSeat]
-  // Network (SCAN-980) bills its own base with ten chapters and Vera AI included. A chapter past ten
-  // rides `network_chapter`, which first checkout never adds.
+  // Network (SCAN-980) bills its own base with ten chapters and Vera AI included. A verified 501(c)(3)
+  // bills `nonprofit_network` instead (SCAN-1008, owner ruling 2026-10-19 "Build both"): the plan is
+  // still `network`, only the base differs, so the reconciler maps both to the `network` item. A chapter
+  // past the included ten rides `network_chapter`, bought after checkout on the billing page
+  // (lib/collective/extra-space-billing.ts), never on first checkout.
+  if (loadout.plan === 'network' && opts.nonprofitVerified) return [{ key: 'nonprofit_network', perSeat: false }, ...operatorSeat]
   if (loadout.plan === 'network') return [{ key: 'network_base', perSeat: false }, ...operatorSeat]
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
@@ -317,11 +325,16 @@ export async function createSpaceLoadoutCheckout(
   // request with 42703 and take every checkout down — the exact bug the `profiles.email` comment above
   // records. FAIL-SAFE FALSE: unreadable means charge list, never under-charge.
   const hasBetaGrant = await spaceHasBetaPriceGrant(spaceId)
+  // THE NON PROFIT NETWORK RATE (SCAN-1008). Read from the verification record, never from the caller:
+  // the loadout is client-chosen, and a verified status is the only thing that earns the lower base.
+  // FAIL-SAFE to the full rate: an unreadable record charges network_base, never under-charges.
+  const nonprofitVerified =
+    loadout.plan === 'network' ? (await getSpaceVerification(spaceId).catch(() => null))?.status === 'verified' : false
   // Build one line item per catalog item, charging the locked / founding / list price per
   // `resolveLoadoutPriceId`. Seat items carry the chosen quantity. An item with no synced price is
   // skipped (never charged at the wrong price).
   const lineItems: { price: string; quantity: number }[] = []
-  for (const { key, perSeat } of catalogKeysForLoadout(loadout)) {
+  for (const { key, perSeat } of catalogKeysForLoadout(loadout, { nonprofitVerified })) {
     const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant)
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
@@ -332,7 +345,8 @@ export async function createSpaceLoadoutCheckout(
         key === 'nonprofit_seat' ||
         key === 'collective_base' ||
         key === 'nonprofit_collective' ||
-        key === 'network_base'
+        key === 'network_base' ||
+        key === 'nonprofit_network'
       )
         return null
       continue
