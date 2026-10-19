@@ -9,7 +9,8 @@ import { canBePartner, canRespondToPartnerInvite, isPartnerHub, LIVE_PARTNER_STA
 import { PARTNER_COLS, PARTNER_SPACE_COLS, partnershipRows, partnerSpacesById, type PartnerSpaceRow } from './partners-live-store'
 
 // Cross-owner invites (SCAN-982). The hub owner invites; only the partner Space's owner accepts.
-// Either side can withdraw or leave. The database trigger re-checks owners at commit.
+// Either side can withdraw or leave. The database trigger re-checks owners and the ten-partner
+// cap at commit (SCAN-1010), so two invites at once cannot both pass.
 async function ownsSpace(spaceId: string, callerId: string): Promise<boolean> {
   const space = await getSpaceById(spaceId)
   return !!space && space.ownerProfileId === callerId && spaceFunctionAccess(space, 'profile', 'admin')
