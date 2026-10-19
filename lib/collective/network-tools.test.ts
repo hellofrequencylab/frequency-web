@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
 import {
-  canRunNetworkTools, centralAdminReachesChapter, centralAdminSeatOpen, isNetworkChapter, networkEventShown,
+  canRunNetworkTools, centralAdminReachesChapter, centralAdminSeatOpen, isNetworkChapter, networkEventShown, networkFeedRows,
   networkToolsOpen, pendingNetworkEvents, approvalResetOnEdit, type NetworkToolsSpace, type QueueCandidate,
 } from './network-tools'
 
@@ -98,5 +98,18 @@ describe('approvalResetOnEdit forgets a decision when what was approved changes 
     expect(approvalResetOnEdit(was, { ...was })).toBe(false)
     expect(approvalResetOnEdit({ ...was, ends_at: undefined as unknown as null }, { ...was, ends_at: null })).toBe(false)
     expect(approvalResetOnEdit(null, was)).toBe(false)
+  })
+})
+
+describe('networkFeedRows (ADR-1773)', () => {
+  const anchor = { id: 'a', parent_event_id: null }
+  const child = { id: 'a-1', parent_event_id: 'a' }
+  const stray = { id: 'b', parent_event_id: null }
+  it('a Network feed carries an approved event and the occurrences of an approved series, nothing undecided', () => {
+    expect(networkFeedRows([anchor, child, stray], { network: true, approved: new Set(['a']) })).toEqual([anchor, child])
+    expect(networkFeedRows([anchor, child, stray], { network: true, approved: new Set() })).toEqual([])
+  })
+  it('a Collective feed carries every member Space row', () => {
+    expect(networkFeedRows([anchor, child, stray], { network: false, approved: new Set() })).toEqual([anchor, child, stray])
   })
 })

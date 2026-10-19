@@ -17,6 +17,7 @@ import {
 import { FunctionGrid, type FunctionRow } from '@/components/admin/spaces/function-grid'
 import { SpaceLifecyclePanel, type OwnerCandidate } from '@/components/admin/spaces/space-lifecycle-panel'
 import { ManualAgreementPanel } from '@/components/admin/spaces/manual-agreement-panel'
+import { SpacePlanPanel } from '@/components/admin/spaces/space-plan-panel'
 import { activeAgreementForSpace } from '@/lib/billing/manual-agreements'
 import {
   BetaPriceGrantPanel,
@@ -198,6 +199,14 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
           description="Turn the tools this space uses on or off, and set the lowest role that can use each one. An operator switch beats the plan."
         >
           <FunctionGrid spaceId={space.id} rows={functionRows} />
+        </AdminSection>
+      )}
+      {hasOwnerBackEnd && (
+        <AdminSection
+          title="Plan"
+          description="Set the plan this space is on. Use it for a deal closed off Stripe or a plan Frequency is giving a community (The Group's Network, for example); a Space that checks out sets its own plan."
+        >
+          <SpacePlanPanel spaceId={space.id} plan={space.plan ?? null} />
         </AdminSection>
       )}
       {hasOwnerBackEnd && (
