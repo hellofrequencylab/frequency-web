@@ -22,7 +22,9 @@ import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
+import { hasNativeNodeStorage, legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
+import { sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
@@ -92,14 +94,20 @@ async function saveSpaceProfileLayout(
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return fail('You do not have permission to edit this space.')
 
-  const compatibilityError = legacySpaceLayoutWriteError(layout, space.preferences)
+  // THE FIRST REAL BRANCH POINT OF render_path_space_profile (ADR-1834). Switched on, a NATIVE node
+  // document is accepted and stored as nodes; everything else keeps the LIVE-887 refusal, so a stale
+  // legacy save can still never overwrite stored nodes. Switched off, or on any read error, nothing changes.
+  const nativeWrite = hasNativeNodeStorage(layout) && (await renderPathEnabled('space_profile'))
+  const compatibilityError = nativeWrite ? null : legacySpaceLayoutWriteError(layout, space.preferences)
   if (compatibilityError) return fail(compatibilityError)
 
   // Never trust the wire. A grid write (freeform ROWS from the in-rail builder, ADR-516 Phase D, or the
   // legacy template / slots) sanitizes to unified space ids; a flat S3 write sanitizes to ProfileBlockIds.
   // `node` is the value stored at preferences.profileLayout, or null to clear it.
   let node: Record<string, unknown> | null
-  if (layout && (layout.rows || layout.template || layout.slots || layout.content || layout.style)) {
+  if (nativeWrite) {
+    node = sanitizeNodeLayout(layout, 'space') as Record<string, unknown> | null
+  } else if (layout && (layout.rows || layout.template || layout.slots || layout.content || layout.style)) {
     node = sanitizeEntityLayout(layout, 'space') as Record<string, unknown> | null
   } else {
     const order = sanitizeIds(layout?.order)
@@ -129,8 +137,11 @@ async function saveSpaceProfileLayout(
   // `hidden` where the seed path strips it — two encodings of one arrangement that could never
   // match as bytes. Drafts only; a write to the PUBLISHED node is the owner's explicit act and is
   // never second-guessed.
-  if (target === 'profileLayoutDraft' && layoutRendersSame(node, current.profileLayout ?? null, 'space')) {
-    delete current.profileLayoutDraft
+  // A native draft is never auto-cleared: layoutRendersSame compares type-keyed documents (ADR-1834).
+  if (!nativeWrite) {
+    if (target === 'profileLayoutDraft' && layoutRendersSame(node, current.profileLayout ?? null, 'space')) {
+      delete current.profileLayoutDraft
+    }
   }
 
   if (!(await updateSpacePreferences(space.id, current))) {
@@ -189,7 +200,11 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return { error: 'You do not have permission to edit this space.' }
 
-  const compatibilityError = legacySpaceLayoutWriteError(undefined, space.preferences)
+  // Promoting or discarding copies or drops stored bytes and never downgrades them, so with the space
+  // render path switched on it is safe over native storage (ADR-1834).
+  const compatibilityError = (await renderPathEnabled('space_profile'))
+    ? null
+    : legacySpaceLayoutWriteError(undefined, space.preferences)
   if (compatibilityError) return { error: compatibilityError }
 
   // Merge into the existing preferences blob, preserving every other key (non-destructive, ADR-246).
@@ -240,7 +255,11 @@ export async function discardSpaceProfileDraft(slug: string): Promise<{ error?: 
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return { error: 'You do not have permission to edit this space.' }
 
-  const compatibilityError = legacySpaceLayoutWriteError(undefined, space.preferences)
+  // Promoting or discarding copies or drops stored bytes and never downgrades them, so with the space
+  // render path switched on it is safe over native storage (ADR-1834).
+  const compatibilityError = (await renderPathEnabled('space_profile'))
+    ? null
+    : legacySpaceLayoutWriteError(undefined, space.preferences)
   if (compatibilityError) return { error: compatibilityError }
 
   const current =

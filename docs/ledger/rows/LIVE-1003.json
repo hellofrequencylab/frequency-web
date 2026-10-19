@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1003",
+  "title": "Editor E0 task 14, Space slice: the Space page writer stores node documents when render_path_space_profile is on",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 7; §8 task 14"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19. saveSpaceProfileLayout reads renderPathEnabled('space_profile'): on, an incoming native node document is sanitized with sanitizeNodeLayout and stored as nodes; publish and discard no longer refuse over stored nodes. Off, or a stale legacy save over stored nodes, keeps the LIVE-887 refusal. Honest gaps: nothing sends a node document yet (the store and Space canvas still send type-keyed rows), and a native draft equal to the published page is not auto-cleared.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/settings/profile/actions.ts','utf8');const bad=[];if(!s.includes(\\\"renderPathEnabled('space_profile')\\\"))bad.push('writer does not read the flag');if(!s.includes('sanitizeNodeLayout(layout'))bad.push('native branch does not sanitize');if(bad.length){console.error('LIVE-1003: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the Space writer stops reading the flag or stops sanitizing a native document. Behavior is actions.render-path.test.ts.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}
