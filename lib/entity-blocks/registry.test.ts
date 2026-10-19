@@ -54,10 +54,10 @@ describe('unified entity-block registry', () => {
       // A form posts into a Space's CRM, so there is no member or email equivalent to share it with.
       'contactForm',
     ])
-    // Email-only content blocks (Phase 4): the data-bound `productCard` resolves live commerce data at send
-    // time, so it belongs only to the email kind (a Space already shows its catalog via the `offerings` data
-    // block on the web).
-    const emailOnly = new Set(['productCard'])
+    // Email-only content blocks: the data-bound `productCard` (Phase 4) and its `eventCard` / `circleCard`
+    // siblings (EMAIL-025) resolve live rows at send time, so they belong only to the email kind (a Space
+    // already shows its catalog, events and circles via the web data blocks).
+    const emailOnly = new Set(['productCard', 'eventCard', 'circleCard'])
     for (const b of ENTITY_BLOCKS.filter((x) => x.category === 'content')) {
       expect(b.kinds.length).toBeGreaterThan(0)
       if (emailOnly.has(b.id)) {

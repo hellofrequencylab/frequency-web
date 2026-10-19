@@ -656,6 +656,7 @@ app/unsubscribe/actions.ts
 app/unsubscribe/page.tsx
 components/admin/admin-info-rail.tsx
 components/admin/crm/member-composer-actions.ts
+components/admin/email-studio/data-picker-actions.ts
 components/admin/email-studio/product-picker-actions.ts
 components/admin/modules/circle-journey-run-actions.ts
 components/admin/vera-ai/help-gaps-tab.tsx
@@ -823,10 +824,10 @@ lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
 lib/collective/network-report.ts
 lib/collective/network-store.ts
+lib/collective/network-tools-store.ts
 lib/collective/partners-actions.ts
 lib/collective/partners-live-store.ts
 lib/collective/partners-store.ts
-lib/collective/network-tools-store.ts
 lib/collective/shared-membership.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts
@@ -914,6 +915,7 @@ lib/digest.ts
 lib/dispatches.ts
 lib/elements/store.ts
 lib/email-studio/analytics.ts
+lib/email-studio/data-blocks.ts
 lib/email-studio/loom-actions.ts
 lib/email-studio/send.ts
 lib/engagement/capture.ts

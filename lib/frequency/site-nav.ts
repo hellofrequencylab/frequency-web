@@ -37,6 +37,8 @@ export const ROUTES = {
   help: '/help',
   privacy: '/privacy',
   terms: '/terms',
+  /** The Network plan's page (SCAN-961), Frequency-only like /vision. */
+  networks: '/networks',
   /** Help.html#accessibility: the plain-language statement on the Help front page (frequency-help.tsx). */
   accessibility: '/help#accessibility' as string | null,
   /** "What we believe" in the footer. */
@@ -223,7 +225,7 @@ export const WING_MENUS: WingMenu[] = [
         heading: 'Start',
         links: [
           { href: ROUTES.spaces, label: 'Grow your community', hint: 'What the network does for you', icon: 'space' },
-          { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, hosts, venues, non-profits', icon: 'contacts' },
+          { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, hosts, venues, Non Profits', icon: 'contacts' },
           { href: featureHref('doorqr'), label: 'Remember who came', hint: 'Door QR and contacts', icon: 'qr' },
         ],
       },
@@ -231,7 +233,7 @@ export const WING_MENUS: WingMenu[] = [
         heading: 'Trust',
         links: [
           { href: featureHref('standing'), label: 'Standing', hint: 'Earned by gathering, never sold', icon: 'standing' },
-          { href: `${ROUTES.pricing}#spaces`, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
+          { href: `${ROUTES.pricing}#spaces`, label: 'Pricing', hint: 'Free, Business, Collective, Network', icon: 'tip' },
           { href: ROUTES.stories, label: 'Space stories', hint: 'In their own words', icon: 'message' },
         ],
       },
@@ -269,12 +271,13 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.home, label: 'Home', hint: 'Gather like it matters', icon: 'circle' },
   { href: ROUTES.people, label: 'For people', hint: 'Find your Circle', icon: 'circle' },
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
-  { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Non-profit', icon: 'tip' },
+  { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Collective, Network', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
   { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
   { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect', icon: 'checkin' },
   { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
-  { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, non-profits', icon: 'contacts' },
+  { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, Non Profits', icon: 'contacts' },
+  { href: ROUTES.networks, label: 'Networks', hint: 'One organization, every chapter', icon: 'space' },
 ]
 
 /** IDX: the pages, then every feature as "<side> · <job>", in megamenu.js order. Routed items only. */
@@ -319,6 +322,19 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: `${ROUTES.spaces}#types`, label: 'For your type' },
       { href: ROUTES.features ? `${ROUTES.features}#spaces` : null, label: 'Features for Spaces' },
       { href: ROUTES.pricing, label: 'Pricing' },
+      { href: ROUTES.networks, label: 'Networks' },
+    ],
+  },
+  // The guides (SCAN-1017): the pillar pages had no site-wide link before this column, so the cluster
+  // CONTENT-VOICE §7 describes was reachable only from inside itself.
+  {
+    heading: 'Guides',
+    links: [
+      { href: '/loneliness', label: 'Lonely but not alone' },
+      { href: '/friendship-as-an-adult', label: 'Friends as an adult' },
+      { href: '/how-to-start-a-circle', label: 'Start a Circle' },
+      { href: '/how-to-build-community', label: 'Build community' },
+      { href: '/vs', label: 'Frequency vs the rest' },
     ],
   },
   {

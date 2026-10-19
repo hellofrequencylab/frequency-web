@@ -40,9 +40,11 @@ export const FREQUENCY_PAGE_SEO = {
   // what the WebPage node and the share card would say and match that route's defaults.
   home: {
     path: '/',
-    title: 'Frequency · Community Collective',
+    // Owner ruling 2026-10-19 (SCAN-1017): the title tag carries the search words; "Community Collective"
+    // stays the words under the mark (SITE_TAGLINE) and the logo lockup, not the <title>.
+    title: 'Frequency · Local groups and events near you',
     description: SITE_DESCRIPTION,
-    shareTitle: 'Frequency · Community Collective',
+    shareTitle: 'Frequency · Local groups and events near you',
     headline: 'Find local groups and events near you.',
     lede: 'A hundred contacts. No one to call on a Tuesday. Frequency is where you find the people near you, and keep finding them, around something you like doing. Free to join, and built to get you off your phone.',
     crumbs: [],
@@ -73,9 +75,10 @@ export const FREQUENCY_PAGE_SEO = {
   // and descriptions they shipped with; the entry adds the WebPage node their visible hero supports.
   features: {
     path: '/features',
-    title: 'Features',
+    // Not the bare word (SCAN-678): 'Features · Frequency' names nothing a query contains.
+    title: 'Features: everything it takes to gather',
     description:
-      'Everything Frequency does for people and Spaces, from the town calendar to door check-in, programs and payouts.',
+      'Everything Frequency does for people and Spaces: the town calendar, Circles, Events, door check-in, programs, tickets and memberships.',
     shareTitle: 'Features · Frequency',
     headline: 'Everything it takes to gather.',
     lede: 'Every feature, for both sides of the door. Open one to see how it works.',

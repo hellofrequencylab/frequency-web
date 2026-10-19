@@ -21,9 +21,9 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
-import { crewFloorPrice, PRICING_DEFAULTS, type PricingDefaults } from './defaults'
+import { crewFloorPrice, planPriceFromAmounts, PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 import { networkTakeRateFromStored, type StoredTakeRateFields } from '@/lib/billing/pricing-keys'
-import { asPwywConfig, PWYW_CONFIG_KEY } from './catalog-config'
+import { asPwywConfig, catalogConfigKey, PWYW_CONFIG_KEY, resolveCatalogItem } from './catalog-config'
 import {
   asHouseholdBundleConfig,
   HOUSEHOLD_BUNDLE_DEFAULT,
@@ -138,7 +138,17 @@ export async function getPricingValues(): Promise<PricingDefaults> {
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
       nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
       independent: pick('plan.independent', PRICING_DEFAULTS.plan.independent),
-      collective: pick('plan.collective', PRICING_DEFAULTS.plan.collective),
+      // 🔴 COLLECTIVE IS DERIVED FROM THE CATALOG, like Crew above, not picked from `plan.collective`.
+      // Production stored {14900, 149000} with no list anchor in that row, written before the Founding
+      // intro (ADR-1709 §7, owner 2026-10-19: $149 list, $99 Founding). Picking it would quote $149 on
+      // /pricing while the checkout bills the $99 founding key, the exact display-vs-charge split the
+      // beta machinery exists to prevent. The operator's control is the catalog row
+      // (`catalog.collective_base`, edited at /admin/pricing), the same row the checkout resolves, so
+      // the two numbers cannot disagree; the stale `plan.collective` row is ignored, not migrated.
+      collective: planPriceFromAmounts(
+        resolveCatalogItem('collective_base', raw[catalogConfigKey('collective_base')]).month,
+        resolveCatalogItem('collective_base', raw[catalogConfigKey('collective_base')]).year,
+      ),
       nonprofit_collective: pick('plan.nonprofit_collective', PRICING_DEFAULTS.plan.nonprofit_collective),
     },
     // Merge each bps field over the default so a legacy DB row (written before `free_bps` existed) still

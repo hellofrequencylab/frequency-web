@@ -95,10 +95,15 @@ export function siteName(src) {
 // there is no page to hold metadata, so there is nothing to exclude.
 const INTENTIONALLY_EXCLUDED = new Map([
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
+  ['/subscribe', 'robots noindex (SCAN-1017): the newsletter form is reached from the footer, not from search; the index keeps the 24 pages that earn a visit'],
   // PARKED, not live: next.config.ts answers /stories with a temporary 302 to /the-community before the
   // filesystem router runs (owner ruling 2026-10-14, ADR-1747), so no visitor or crawler reaches this
   // page until three real stories exist. The file is kept so it can come back by deleting that rule.
   ['/stories', 'hidden behind a temporary 302 until three real stories exist (ADR-1747); page kept to return'],
+  // MERGED (SCAN-1017): each page.tsx is a permanentRedirect stub kept only because two launch probes
+  // (LIVE-912, LIVE-913) read the file by path, and a next.config rule would shadow a live route.
+  ['/what-is-frequency', 'permanentRedirect stub to /about (SCAN-1017); file kept for the LIVE-912 probe'],
+  ['/tools-for-community-builders', 'permanentRedirect stub to /how-to-build-community (SCAN-1017); file kept for the LIVE-912 probe'],
 ])
 
 // ── Route helpers ─────────────────────────────────────────────────────────────

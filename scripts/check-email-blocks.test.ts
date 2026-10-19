@@ -25,6 +25,7 @@ const live: Record<string, string> = Object.fromEntries(
     LAYOUT,
     BLOCK_CONTENT,
     'lib/email-studio/product-block.ts',
+    'lib/email-studio/data-blocks.ts',
     'lib/email-studio/shell.ts',
     'lib/email-studio/send.ts',
     'lib/nurture/runner.ts',
@@ -129,7 +130,7 @@ describe('check-email-blocks assertions, each proven on the real tree', () => {
   })
 
   it('E8: a cron that stops reaching the renderer, and a renderer that reads live', () => {
-    const detached = mutate('lib/nurture/runner.ts', "import { compileEmailDoc } from '@/lib/email-studio/shell'", "import { compileEmailDoc } from '@/lib/email-studio/other'")
+    const detached = mutate('lib/nurture/runner.ts', "import { compileEmailDoc, plainTextEmail } from '@/lib/email-studio/shell'", "import { compileEmailDoc, plainTextEmail } from '@/lib/email-studio/other'")
     expect(emailBlockProblems(treeWith({ 'lib/nurture/runner.ts': detached }))).toEqual([expect.stringContaining('E8 lib/nurture/runner.ts: no longer imports compileEmailDoc')])
     // The specifier is assembled so this fixture never itself reads as a service-role import (check:admin-client).
     const adminModule = ['@/lib', 'supabase', 'admin'].join('/')

@@ -119,16 +119,11 @@ const ALLOWLIST = [
   //     strip <style> entirely), so the medium REQUIRES literal hex in inline styles. The literal
   //     comes from lib/theme/palette.ts (`${palette.x}`), never typed by hand: lib/email.ts,
   //     lib/comms/email-template.ts, outbound-batch.ts, waitlist-notify.ts, this-week.ts and the
-  //     event-reminders cron left this list under EMAIL-023 and the guard now holds them. The
-  //     files still here carry a hand-typed grey ramp and leave the list as they are moved.
+  //     event-reminders cron left this list under EMAIL-023, the seven plain-text senders (Space
+  //     campaigns, the scheduled and drip crons, Studio campaigns, nurture, automations, the agent)
+  //     under EMAIL-024, and the guard now holds them all. The files still here carry a hand-typed
+  //     grey ramp and leave the list as they are moved.
   (p) => p === 'lib/email-studio/render.ts',
-  (p) => p === 'lib/automations.ts',
-  (p) => p === 'lib/nurture/runner.ts',
-  (p) => p === 'lib/studio/agent.ts',
-  (p) => p === 'lib/studio/campaigns.ts',
-  (p) => p === 'lib/spaces/campaigns.ts',
-  (p) => p === 'lib/spaces/campaigns-send-due.ts',
-  (p) => p === 'lib/spaces/drip-runner.ts',
   (p) => p.startsWith('lib/ai/vera/') && /(?:autonomous-send|execute|owner-brief)\.ts$/.test(p),
   // (2) GENERATED ASSETS rendered outside the DOM — OG/social rasters, QR codes, the print
   //     flyer, canvas/SVG exports. A canvas fillStyle cannot read a CSS variable.
