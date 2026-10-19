@@ -32,7 +32,8 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
         <QrCode className="h-4 w-4 text-primary-strong" aria-hidden /> Check-in code
       </h3>
       <p className="mt-0.5 text-meta text-muted">
-        Print it at your door. Every scan records a check-in on the roster below.
+        Print it at your door, or write the same link to an NFC tag so a phone checks in with a tap (LIVE-940). Every scan
+        or tap records a check-in on the roster below.
       </p>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div

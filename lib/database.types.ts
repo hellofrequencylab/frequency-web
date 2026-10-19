@@ -379,6 +379,173 @@ export type Database = {
           },
         ]
       }
+      space_loyalty_programs: {
+        Row: {
+          created_at: string
+          geofence: boolean
+          reward_note: string | null
+          reward_title: string
+          reward_value_cents: number
+          space_id: string
+          stamps_required: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          welcome_stamps: number
+        }
+        Insert: {
+          created_at?: string
+          geofence?: boolean
+          reward_note?: string | null
+          reward_title?: string
+          reward_value_cents?: number
+          space_id: string
+          stamps_required?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          welcome_stamps?: number
+        }
+        Update: {
+          created_at?: string
+          geofence?: boolean
+          reward_note?: string | null
+          reward_title?: string
+          reward_value_cents?: number
+          space_id?: string
+          stamps_required?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          welcome_stamps?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_loyalty_programs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_loyalty_programs_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_stamps: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          profile_id: string
+          reward_id: string | null
+          space_id: string
+          visit_day: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          profile_id: string
+          reward_id?: string | null
+          space_id: string
+          visit_day: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          profile_id?: string
+          reward_id?: string | null
+          space_id?: string
+          visit_day?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_stamps_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_stamps_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_stamps_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards: {
+        Row: {
+          code: string
+          earned_at: string
+          id: string
+          profile_id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+          reward_title: string
+          reward_value_cents: number
+          space_id: string
+        }
+        Insert: {
+          code: string
+          earned_at?: string
+          id?: string
+          profile_id: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          reward_title: string
+          reward_value_cents?: number
+          space_id: string
+        }
+        Update: {
+          code?: string
+          earned_at?: string
+          id?: string
+          profile_id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          reward_title?: string
+          reward_value_cents?: number
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_rewards_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_rewards_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_editor_presence: {
         Row: {
           space_id: string

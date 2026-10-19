@@ -5,12 +5,15 @@
 
 import { getMyProfileId } from '@/lib/auth'
 import { captureNode } from '@/lib/engagement/capture'
+import type { LoyaltyVisitOutcome } from '@/lib/loyalty/program'
 
 export interface ClaimResult {
   ok: boolean
   reason?: string
   zapsAwarded?: number
   offerTitle?: string | null
+  /** The member's Regulars card after a Space check-in (LIVE-940). */
+  loyalty?: LoyaltyVisitOutcome | null
 }
 
 export async function claimNode(
@@ -39,5 +42,6 @@ export async function claimNode(
     reason: result.reason,
     zapsAwarded: result.zapsAwarded,
     offerTitle: result.offerTitle,
+    loyalty: result.loyalty ?? null,
   }
 }
