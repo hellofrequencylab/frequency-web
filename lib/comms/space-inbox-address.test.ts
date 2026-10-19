@@ -5,6 +5,8 @@ const state = vi.hoisted(() => ({
   row: null as Record<string, unknown> | null,
   space: { id: 's1', slug: 'labs', name: 'Labs', brand_name: 'Labs Collective', owner_profile_id: 'owner1' } as Record<string, unknown> | null,
   contacts: [] as Record<string, unknown>[],
+  contactAllowed: true,
+  triggers: [] as unknown[][],
   createCount: 0,
   listed: null as { id: string } | null,
   providerStatus: 'verified',
@@ -94,12 +96,14 @@ vi.mock('./conversations', () => ({
   appendConversationMessage: async (input: Record<string, unknown>) => { state.appended.push(input); return state.appendResult },
 }))
 vi.mock('./tenant-reply-alias', () => ({ quarantineTenantReplyAlias: vi.fn(async () => undefined) }))
+vi.mock('@/lib/crm/contact-allowance', () => ({ canAddSpaceContact: async () => state.contactAllowed }))
+vi.mock('@/lib/spaces/drip-enroll', () => ({ fireSpaceTrigger: vi.fn(async (...args: unknown[]) => { state.triggers.push(args) }) }))
 
 import { provisionSpaceInboxAddress, checkSpaceInboxAddress, resolveSpaceInboxFrom, resolveSpaceInboxRoute, recordSpaceInboxMessage, listSpaceInboxAddressesToFinish } from './space-inbox-address'
 import { providerRecordHost, providerRecordsToZoneRecords, spaceInboxZone } from './space-inbox-address-core'
 
 beforeEach(() => {
-  state.row = null; state.contacts = []; state.createCount = 0; state.listed = null; state.providerStatus = 'verified'; state.providerThrows = false
+  state.row = null; state.contacts = []; state.contactAllowed = true; state.triggers = []; state.createCount = 0; state.listed = null; state.providerStatus = 'verified'; state.providerThrows = false
   state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.seenMessages = {}; state.appended = []; state.appendResult = { id: 'msg1' }; state.records = null
   state.listRows = []; state.listCalls = []; state.listFails = false; state.writeCount = 0
   state.space = { id: 's1', slug: 'labs', name: 'Labs', brand_name: 'Labs Collective', owner_profile_id: 'owner1' }
@@ -336,6 +340,23 @@ describe('resolveSpaceInboxRoute + recordSpaceInboxMessage', () => {
     // A second mail from the same person reuses the contact and does not create another.
     await recordSpaceInboxMessage(route, parsed)
     expect(state.contacts).toHaveLength(1)
+    // The new contact fired contact.created once, like the console path (SCAN-1012).
+    expect(state.triggers).toEqual([['s1', 'contact.created', { contactId: 'c1' }]])
+  })
+  it('counts a new sender against the contact allowance: past it the mail still lands, with no contact row (SCAN-1012)', async () => {
+    await provisionSpaceInboxAddress('s1')
+    const route = await resolveSpaceInboxRoute(['hello@labs.frequencylocal.com'])
+    if (route.kind !== 'ready') throw new Error('expected ready')
+    state.contactAllowed = false
+    expect(await recordSpaceInboxMessage(route, parsed)).toEqual({ status: 'recorded', conversationId: 'conv1', ref: '77' })
+    expect(state.contacts).toEqual([])
+    expect(state.triggers).toEqual([])
+    expect(state.opened[0]).toMatchObject({ kind: 'crm', spaceId: 's1', contactId: null, externalEmail: 'person@example.org' })
+    expect(state.appended[0]).toMatchObject({ authorKind: 'contact', authorContactId: null, mirror: undefined })
+    // A sender who is already a contact is never metered.
+    state.contacts.push({ id: 'c9', profile_id: null, email: 'person@example.org', space_id: 's1' })
+    await recordSpaceInboxMessage(route, parsed)
+    expect(state.opened[1]).toMatchObject({ contactId: 'c9' })
   })
   it('asks for redelivery on an append fault, acks a duplicate, and refuses a Space with no owner', async () => {
     await provisionSpaceInboxAddress('s1')

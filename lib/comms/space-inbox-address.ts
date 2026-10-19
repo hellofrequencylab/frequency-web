@@ -32,6 +32,8 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { envFlag, envStringOrNull } from '@/lib/env/string'
 import { escapeLike } from '@/lib/search-sanitize'
+import { canAddSpaceContact } from '@/lib/crm/contact-allowance'
+import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
 import { upsertZoneDnsRecords, vercelDomainsConfigured } from '@/lib/sites/vercel-domains'
 import {
   createEmailProviderInboxDomain,
@@ -342,12 +344,18 @@ export async function quarantineSpaceInboxMessage(reason: string, recipients: st
 }
 
 /** The sender as one of THIS Space's contacts, created with consent unknown when new. Null on a fault. */
-async function ensureSpaceContact(spaceId: string, email: string): Promise<{ contactId: string; profileId: string | null } | null> {
+/** The sender as a contact of the Space. A known address returns its row. A new address counts against
+ *  the Space's contact allowance (SCAN-1012, owner ruling 2026-10-19 "Count it"): inside it, the row is
+ *  inserted and `contact.created` fires like the console path; past it, no row is written and the
+ *  message still lands (contactId null), so an inbound mail is never dropped by a meter. Null only on
+ *  a read or write failure. */
+async function ensureSpaceContact(spaceId: string, email: string): Promise<{ contactId: string | null; profileId: string | null } | null> {
   const needle = email.trim().toLowerCase()
   if (!needle.includes('@')) return null
   const found = await table('contacts').select('id, profile_id').eq('space_id', spaceId).ilike('email', escapeLike(needle)).limit(1).maybeSingle()
   if (found.error) return null
   if (found.data) return { contactId: String(found.data.id), profileId: (found.data.profile_id as string | null) ?? null }
+  if (!(await canAddSpaceContact(spaceId))) return { contactId: null, profileId: null }
   const nowIso = new Date().toISOString()
   const inserted = await table('contacts')
     .insert({ email: needle, space_id: spaceId, consent_state: 'unknown', source: 'space_inbox', last_seen_at: nowIso })
@@ -359,7 +367,9 @@ async function ensureSpaceContact(spaceId: string, email: string): Promise<{ con
     return { contactId: String(again.data.id), profileId: (again.data.profile_id as string | null) ?? null }
   }
   if (inserted.error || !inserted.data) return null
-  return { contactId: String(inserted.data.id), profileId: (inserted.data.profile_id as string | null) ?? null }
+  const contactId = String(inserted.data.id)
+  void fireSpaceTrigger(spaceId, 'contact.created', { contactId })
+  return { contactId, profileId: (inserted.data.profile_id as string | null) ?? null }
 }
 
 type SpaceInboxRecordStatus =
@@ -414,14 +424,15 @@ export async function recordSpaceInboxMessage(
     inReplyTo: parsed.inReplyTo,
     referencesIds: parsed.referencesIds,
     metadata: { source: 'space_inbox', from: parsed.from, to: route.address },
-    mirror: {
+    // A sender past the contact allowance has no CRM row to mirror onto; the thread itself still records the mail.
+    mirror: contact.profileId || contact.contactId ? {
       ownerProfileId: route.ownerProfileId,
       subjectKind: contact.profileId ? 'profile' : 'contact',
-      subjectId: contact.profileId ?? contact.contactId,
+      subjectId: contact.profileId ?? contact.contactId!,
       spaceId: route.spaceId,
       subject,
       scope: null,
-    },
+    } : undefined,
   })
   if (appended === null) return { status: 'error' }
   if ('duplicate' in appended) return { status: 'duplicate', conversationId: conv.id, ref: conv.ref }

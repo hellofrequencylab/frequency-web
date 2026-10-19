@@ -16,13 +16,16 @@ export function isChapterParentPlan(plan: string | null | undefined): boolean {
   return isNetworkPlan(plan) || isCollectivePlan(plan)
 }
 
-/** Only live purchased collective_space quantity expands the included five. A Network holds its included
- *  chapters; more than that is a quote, so no self-serve quantity applies to it. */
+/** Only live purchased quantity expands what a plan includes: collective_space past a Collective's five,
+ *  network_chapter past a Network's ten (SCAN-1008). A Network never exceeds NETWORK_PLAN.maxChapters
+ *  through self-serve; past that is a quote. */
 export function memberSpaceCapacity(items: readonly { item_key: string; status: string; quantity: number }[], plan?: string | null): number {
-  if (isNetworkPlan(plan)) return NETWORK_PLAN.includedChapters
-  return INCLUDED_MEMBER_SPACES + items.reduce((n, item) =>
-    item.item_key === 'collective_space' && ['active', 'trialing', 'past_due'].includes(item.status)
+  const network = isNetworkPlan(plan)
+  const extraKey = network ? 'network_chapter' : 'collective_space'
+  const extra = items.reduce((n, item) =>
+    item.item_key === extraKey && ['active', 'trialing', 'past_due'].includes(item.status)
       && Number.isSafeInteger(item.quantity) && item.quantity > 0 ? n + item.quantity : n, 0)
+  return network ? Math.min(NETWORK_PLAN.maxChapters, NETWORK_PLAN.includedChapters + extra) : INCLUDED_MEMBER_SPACES + extra
 }
 
 /** Inheritance is read-time only. Detach or a parent's downgrade restores the child's own plan. */

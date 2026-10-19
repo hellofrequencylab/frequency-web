@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { ArrowUpRight, Globe, LayoutDashboard, PencilRuler, SlidersHorizontal } from 'lucide-react'
+import { ArrowUpRight, Globe, Hammer, LayoutDashboard, PencilRuler, SlidersHorizontal } from 'lucide-react'
 import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
+import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 
 // THE MANAGE QUICK LINKS (SCAN-971, owner ask 2026-10-16: "When a user hits Manage on their space, I want
 // it to open panel management, with links to everything including website and web editor"). One row of
@@ -8,9 +9,12 @@ import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
 // full-console door shows only in the in-place panel (on /manage you are already there). The website door
 // opens the live site in a new tab once it is published; before that it opens the Profile & Settings tab,
 // where the Website card publishes it. The board renders this only after its manage gate passes.
+// The Website builder door (SCAN-1015, owner ruling 2026-10-19 "Add builder") opens the site's own editor
+// through the leadership handoff; Web editor keeps opening the Space page's sidebar, which is the page
+// editor (SCAN-971's door).
 
 export type ManageQuickLink = {
-  key: 'console' | 'editor' | 'website' | 'menu'
+  key: 'console' | 'editor' | 'builder' | 'website' | 'menu'
   label: string
   href: string
   external?: boolean
@@ -31,6 +35,7 @@ export function manageQuickLinks({
   const links: ManageQuickLink[] = []
   if (inPanel) links.push({ key: 'console', label: 'Full console', href: `/spaces/${slug}/manage` })
   links.push({ key: 'editor', label: 'Web editor', href: `/spaces/${slug}/edit-page` })
+  links.push({ key: 'builder', label: 'Website builder', href: siteAdminHandoffPath(slug, 'editor') })
   links.push(
     published
       ? { key: 'website', label: 'Website', href: siteUrl, external: true }
@@ -43,6 +48,7 @@ export function manageQuickLinks({
 const ICONS = {
   console: LayoutDashboard,
   editor: PencilRuler,
+  builder: Hammer,
   website: Globe,
   menu: SlidersHorizontal,
 } as const
