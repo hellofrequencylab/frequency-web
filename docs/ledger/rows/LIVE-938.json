@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-938",
+  "title": "Frequency design areas 3a (Feed kit port), 3b (Circle), 4 (Settings, Vault, Journey, admin widgets), 6 (push error position, Start a Circle icon) and the members-ui.css bridge cleanup",
+  "status": "open",
+  "priority": "P2",
+  "size": "L",
+  "lane": "live",
+  "wave": "W7",
+  "detail": "Parked 2026-10-14, active 2026-10-19. OWNER STEP FIRST: the handoff doc (\"Frequency design system: build handoff\", 2026-10-14) is not in design_handoff/ or /mnt/project-files; its scope survives only in /mnt/project-files/merge-order/queue-2026-10-14.md. The owner re-attaches it, then the Mac session splits this into one row per area. Today feed-body.tsx:19 imports loadGameStats from components/sidebar/right-sidebar and app/(main)/feed/page.tsx imports components/feed/*.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Filed 2026-10-19 from the full scan. Probe to write as a cmd before the first PR: the Frequency Feed, Circle and Settings bodies import no components/feed, components/circles or components/settings DAWN modules, and app/themes/frequency/members-ui.css part 2 (the bridge) is removed",
+    "checked": "2026-10-19"
+  }
+}

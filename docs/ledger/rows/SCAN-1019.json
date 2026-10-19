@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1019",
+  "title": "The marketing home scrolls clunkily on a phone: per-frame scale on the fold photos and hero, and a stepping grain film",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/home/home-motion.tsx",
+    "ref": "Owner report 2026-10-19 in the project chat ('The homepage scroll experience is a little clunky'), thread 'Mobile and design polish'."
+  },
+  "detail": "FILED 2026-10-19. THE CONSEQUENCE: on a phone, the home page's pinned fold (\u00a702) wrote a new scale() to six drifting photos and to the hero's text and backdrop on every scroll frame. Each photo carries a blurred box-shadow, so Chrome re-rasterized seven shadowed layers at a fresh scale per frame while the fixed full-screen grain film restarted its steps(6) animation every 1.2s on top. Together they read as a stutter and a jam. THE FIX, phones only (max-width:760px), desktop unchanged: the fold's photos and the hero keep translate and opacity but drop the per-frame scale, so each layer is rasterized once and its light shadow costs nothing per frame; the grain film keeps its texture but stops stepping. The 400vh pin and the light photo shadow SCAN-959 measures are unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const k=fs.readFileSync('app/themes/frequency/kit-site.css','utf8');const m=fs.readFileSync('components/frequency/site/pages/home/home-motion.tsx','utf8');const gated=(m.match(/phone \\? '' : /g)||[]).length;const ok=/max-width:760px\\)\\{[^@]*\\.tx-film\\{animation:none\\}/.test(k)&&m.includes(\\\"matchMedia('(max-width:760px)')\\\")&&m.includes('if (!phone) hb.forEach')&&gated>=2;process.exit(ok?0:1)\""
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

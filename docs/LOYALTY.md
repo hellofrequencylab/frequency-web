@@ -1,7 +1,7 @@
 # Regulars: the Space loyalty, check-in and hunt program
 
 **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json), not here.** This document explains
-how the program works and why. Whether a phase shipped is a backlog row (`LIVE-940` to `LIVE-945`).
+how the program works and why. Whether a phase shipped is a backlog row (`LIVE-940` to `LIVE-946`).
 Decision record: ADR-1780.
 
 A Space with a physical location can run **Regulars**: members check in at the door code, earn
@@ -69,9 +69,9 @@ coordinates and a 200 m radius through the proximity check the capture path alre
 | Row | PR | What ships |
 | :--- | :--- | :--- |
 | `LIVE-940` | 1 | Program table, RPC, `space_checkin` Zaps. Owner panel "Regulars" under Money (turn on, reward, value, stamps, welcome stamps, geofence). The check-in result shows the card. The member's cards and codes at `/rewards`. Owner hands out a reward from the roster. Gate: plan at or above Business and a mappable location. |
-| `LIVE-941` | 2 | Hunts: host creates, invites Spaces, stops accept, public hunt page with the route, progress on the check-in result, completion reward and Zaps. |
-| `LIVE-942` | 3 | Surprise stamp, Regular badge, weekly streak with a skip, the "one stamp away" nudge through the notification router, the three owner numbers (new vs returning, rewards handed out and their cost, neighbors who sent people). |
-| `LIVE-943` | 4 | Discovery: nearby Regulars Spaces and live hunts on `/rewards` and the map, the "Check in with Frequency" CTA on Space websites, the marketing page section. |
+| `LIVE-942` | 2 | Hunts: host creates, invites Spaces, stops accept, public hunt page with the route, progress on the check-in result, completion reward and Zaps. |
+| `LIVE-943` | 3 | Surprise stamp, Regular badge, weekly streak with a skip, the "one stamp away" nudge through the notification router, the three owner numbers (new vs returning, rewards handed out and their cost, neighbors who sent people). |
+| `LIVE-944` | 4 | Discovery: nearby Regulars Spaces and live hunts on `/rewards` and the map, the "Check in with Frequency" CTA on Space websites, the marketing page section. |
 
 ## 6. Tap, three ways (owner ask 2026-10-19)
 
@@ -80,8 +80,8 @@ One tap system, all in the web app, before the iOS app:
 | Mode | How it works | Row |
 | :--- | :--- | :--- |
 | **Tap to check in for loyalty** | The door code is already a signed `/n/<node>?s=` link. Written to an NFC tag (NDEF URL record) it opens on iPhone and Android with no app and lands on the same check-in that stamps the card and pays 25 Zaps. Phase 1 says so next to the door code. | `LIVE-940` |
-| **Tap to check in for events** | The host gets a signed event check-in link to write to a tag or print. A tap runs `checkInEvent` (window, RSVP, host switch all unchanged), which pays `event_attend`. | `LIVE-944` |
-| **Tap phones in the wild** | A web page cannot read or emit NFC on iOS, so true phone-to-phone NFC waits for the iOS app. The web version is **Tap to meet**: one member shows a 60-second code (QR, or a sticker tag on their case that resolves to it), the other opens it, and both are paid `meetup_tap` Zaps. Once per pair per week, three a day, both members signed in, both present (the code never leaves the screen). | `LIVE-945` |
+| **Tap to check in for events** | The host gets a signed event check-in link to write to a tag or print. A tap runs `checkInEvent` (window, RSVP, host switch all unchanged), which pays `event_attend`. | `LIVE-945` |
+| **Tap phones in the wild** | A web page cannot read or emit NFC on iOS, so true phone-to-phone NFC waits for the iOS app. The web version is **Tap to meet**: one member shows a 60-second code (QR, or a sticker tag on their case that resolves to it), the other opens it, and both are paid `meetup_tap` Zaps. Once per pair per week, three a day, both members signed in, both present (the code never leaves the screen). | `LIVE-946` |
 
 Every phase reads `envFlag('LOYALTY_ENABLED')` until the launch switch is thrown; the gate lives in
 `docs/RUNBOOKS.md`.

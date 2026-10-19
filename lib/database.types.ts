@@ -488,10 +488,175 @@ export type Database = {
           },
         ]
       }
+      loyalty_hunt_completions: {
+        Row: {
+          completed_on: string
+          created_at: string
+          hunt_id: string
+          profile_id: string
+          reward_id: string | null
+        }
+        Insert: {
+          completed_on: string
+          created_at?: string
+          hunt_id: string
+          profile_id: string
+          reward_id?: string | null
+        }
+        Update: {
+          completed_on?: string
+          created_at?: string
+          hunt_id?: string
+          profile_id?: string
+          reward_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_hunt_completions_hunt_id_fkey"
+            columns: ["hunt_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_hunts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_hunt_completions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_hunt_completions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_hunt_stops: {
+        Row: {
+          hunt_id: string
+          invited_at: string
+          position: number
+          responded_at: string | null
+          responded_by: string | null
+          space_id: string
+          status: string
+        }
+        Insert: {
+          hunt_id: string
+          invited_at?: string
+          position?: number
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id: string
+          status?: string
+        }
+        Update: {
+          hunt_id?: string
+          invited_at?: string
+          position?: number
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_hunt_stops_hunt_id_fkey"
+            columns: ["hunt_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_hunts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_hunt_stops_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_hunt_stops_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_hunts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_on: string
+          host_space_id: string
+          id: string
+          reward_note: string | null
+          reward_title: string
+          reward_value_cents: number
+          slug: string
+          starts_on: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_on: string
+          host_space_id: string
+          id?: string
+          reward_note?: string | null
+          reward_title: string
+          reward_value_cents?: number
+          slug: string
+          starts_on: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_on?: string
+          host_space_id?: string
+          id?: string
+          reward_note?: string | null
+          reward_title?: string
+          reward_value_cents?: number
+          slug?: string
+          starts_on?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_hunts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_hunts_host_space_id_fkey"
+            columns: ["host_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_rewards: {
         Row: {
           code: string
           earned_at: string
+          hunt_id: string | null
           id: string
           profile_id: string
           redeemed_at: string | null
@@ -503,6 +668,7 @@ export type Database = {
         Insert: {
           code: string
           earned_at?: string
+          hunt_id?: string | null
           id?: string
           profile_id: string
           redeemed_at?: string | null
@@ -514,6 +680,7 @@ export type Database = {
         Update: {
           code?: string
           earned_at?: string
+          hunt_id?: string | null
           id?: string
           profile_id?: string
           redeemed_at?: string | null
@@ -523,6 +690,13 @@ export type Database = {
           space_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_hunt_id_fkey"
+            columns: ["hunt_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_hunts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "loyalty_rewards_profile_id_fkey"
             columns: ["profile_id"]
