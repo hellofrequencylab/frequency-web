@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-943",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-19",
+      "evidence": "Search overlay renders the Commons composition at 390 and 320: glass panel, pill input (17px, 55px tall), horizontally scrolling dark category chips, display heading, grouped results and directory doors; no overflow. Re-verified 2026-10-19 on main after #3538 in a jsdom render of the real components with the compiled Frequency CSS and fonts, screenshotted in headless Chromium at 390x844 and 320x844, plus the focused vitest suites (50 files, 618 tests pass)."
+    }
+  },
+  "append": {
+    "detail": "\n\nRe-verified on phone renders and focused suites 2026-10-19 after #3538; closed in the mobile polish housekeeping PR."
+  }
+}
