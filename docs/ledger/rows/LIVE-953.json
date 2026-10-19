@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-953",
+  "title": "A Network's calendar feed carries its approved chapter events, an operator sets a Space's plan from the console, and the Network copy stops saying Talk to us",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "closed": "2026-10-19",
+  "source": {
+    "file": "app/spaces/[slug]/calendar.ics/route.ts",
+    "ref": "The Group handoff (2026-10-19) task A7: a network-wide .ics feed, an admin control that sets a Space's plan, and the help and pricing copy that still says Talk to us."
+  },
+  "detail": "The parent's public calendar feed reads every chapter with the same anon-safe RPC, in batches of four, and folds in the rows the Network tab would show: on a Network only events the owner or a central admin approved, with a series' occurrences riding on the anchor's decision (networkFeedRows, pure and tested); a Collective parent carries every member Space row. A chapter's own feed is unchanged. The console page for a Space gains a Plan section whose janitor-gated, audited action goes through setSpacePlan with force, so the billing entitlements are set exactly as checkout sets them, and the manual billing panel's 'set separately' now has a place. The Network help page says how to start a Network (Start a Network, then Network on the billing page) and reserves Talk to us for more than 25 chapters, and names the network-wide feed; the pricing page's Network column reads Start a Network while networkCheckoutOpen is true and falls back to Talk to us by itself if the Stripe price is ever removed. ADR-1773.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const r=fs.readFileSync('app/spaces/[slug]/calendar.ics/route.ts','utf8');for(const k of ['listPublicCollectiveMembers(parent)','approvedNetworkEventIds(space.id','networkFeedRows(chapterRows','collectiveNetworkOpen(parent)'])if(!r.includes(k))bad.push('feed route lost '+k);const t=fs.readFileSync('lib/collective/network-tools.ts','utf8');if(!/export function networkFeedRows/.test(t))bad.push('networkFeedRows missing');const a=fs.readFileSync('app/(main)/admin/spaces/[id]/plan-actions.ts','utf8');if(!/requireAdmin\\('janitor'\\)/.test(a)||!/setSpacePlan\\(parsed.spaceId, parsed.plan, \\{ force: true \\}\\)/.test(a)||!/action: 'space.plan'/.test(a))bad.push('plan action is not janitor-gated, forced and audited');const pg=fs.readFileSync('app/(main)/admin/spaces/[id]/page.tsx','utf8');if(!pg.includes('<SpacePlanPanel spaceId={space.id}'))bad.push('admin page has no plan panel');const h=fs.readFileSync('content/help/spaces/network.md','utf8');if(/select \\*\\*Talk to us\\*\\*, and tell us/.test(h))bad.push('help still sends every Network to Talk to us');if(!h.includes('calendar.ics'))bad.push('help does not name the network-wide feed');const p=fs.readFileSync('lib/pricing/pricing-page.ts','utf8');if(!/network: networkCheckoutOpen\\(\\) \\?/.test(p))bad.push('pricing CTA does not read networkCheckoutOpen');if(bad.length){console.error('LIVE-953: '+bad.join('; '));process.exit(1)}\""
+  }
+}

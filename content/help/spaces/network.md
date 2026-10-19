@@ -4,7 +4,7 @@ description: What the Network plan is for, how it differs from Collective, what 
 category: spaces
 order: 6
 published: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-19
 audience: member
 featureKeys: [billing, collective]
 status: published
@@ -47,5 +47,12 @@ Nothing it has built is deleted or moved.
 
 ## Set up a Network
 
-Network is set up with you. Open the [Networks page](/networks) and select **Talk to us**, and tell us
-how many chapters you run.
+Open the [Networks page](/networks) and select **Start a Network**: you create or pick the Space that
+will be the parent, choose Network on its billing page, then add your chapters. Running more than 25
+chapters is a quote, so select **Talk to us** there instead and tell us how many chapters you run.
+
+## Subscribe to the whole Network's calendar
+
+A Network's calendar feed is network-wide. Add `webcal://frequencylocal.com/spaces/<your-slug>/calendar.ics`
+to Google Calendar or Apple Calendar once and every approved chapter event arrives with the parent's own.
+A chapter's feed carries only that chapter.

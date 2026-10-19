@@ -31,7 +31,7 @@ import {
   formatLoadoutCents,
   type LoadoutTotal,
 } from './loadout'
-import { ADDON_ENTITLEMENT_KEYS, NETWORK_PLAN, SPACE_PLAN_LABEL, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
+import { ADDON_ENTITLEMENT_KEYS, NETWORK_PLAN, SPACE_PLAN_LABEL, networkCheckoutOpen, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
 import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts, foundingOpenFor } from './beta'
@@ -251,13 +251,14 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
     'Everything in Business for verified nonprofits, with donations built in and no network fee. Flat, never per seat.',
 }
 
-/** The CTA per tier. Copy + route only. */
+/** The CTA per tier. Copy + route only. Network sells through checkout once its Stripe price exists
+ *  (networkCheckoutOpen, SCAN-980); until then the column says Talk to us, like the Networks page. */
 const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   free: { label: 'Start free', href: '/spaces' },
   business: { label: 'Start with Business', href: '/spaces' },
   collective: { label: 'Start a Collective', href: '/spaces' },
   nonprofit: { label: 'Get verified', href: '/spaces' },
-  network: { label: 'Talk to us', href: '/networks' },
+  network: networkCheckoutOpen() ? { label: 'Start a Network', href: '/networks' } : { label: NETWORK_PLAN.quoteLabel, href: '/networks' },
 }
 
 /** Build the public Space tier columns: Free Space FIRST (the first level of Space, where the core
