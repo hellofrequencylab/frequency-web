@@ -152,6 +152,7 @@ vi.mock('./product-block', () => ({
   resolveProductRefs: async (layout: unknown) => layout,
   productVarsFromLayout: () => ({}),
 }))
+vi.mock('./data-blocks', () => ({ resolveDataBlockRefs: async (layout: unknown) => layout }))
 
 import { sendCampaignNow, sendStoppedCopy, sentUnrecordedCopy, ledgerUnreadableCopy } from './send'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'

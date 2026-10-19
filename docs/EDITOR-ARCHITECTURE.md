@@ -99,12 +99,13 @@ Folding it in naively **loses per-module role visibility** — a regression, not
 
 ### 2.2 Email is the working proof, and the constraint
 
-`EntityKind` includes `email`. 14 of the 36 entity blocks declare it; `EMAIL_PALETTE_BLOCK_IDS` is
-also exactly 14, so the offer and the renderer are locked to each other.
+`EntityKind` includes `email`. 16 of the 41 entity blocks declare it; `EMAIL_PALETTE_BLOCK_IDS` is
+also exactly 16, so the offer and the renderer are locked to each other.
 
 - 6 blocks are member + space + email: `heading`, `text`, `image`, `quote`, `divider`, `button`
 - 7 are space + email: `callout`, `features`, `photoHero`, `editorial`, `cardGrid`, `displayHeading`, `prose`
-- 1 is email-only: `productCard`
+- 3 are email-only: `productCard`, and its siblings `eventCard` and `circleCard` (EMAIL-025, the same
+  reads-live + `resolveAt: 'send'` contract, resolved in `lib/email-studio/data-blocks.ts`)
 - **Zero `data`-category blocks support email**
 
 That last line is the real invariant separating email from web, and it is not a density level. It is
