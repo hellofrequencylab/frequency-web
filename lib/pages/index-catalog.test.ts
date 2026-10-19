@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CODED_UNDER_FREQUENCY, FREQUENCY_ONLY_PATHS, PAGE_INDEX } from './index-catalog'
@@ -18,9 +18,11 @@ const ALL = PAGE_INDEX.flatMap((s) => s.pages)
 function routePaths(): Set<string> {
   const out = new Set<string>()
   const walk = (dir: string, segs: string[]) => {
-    for (const name of readdirSync(dir)) {
+    // One filesystem ask per directory (ADR-1185): the dirent carries the type.
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const name = entry.name
       const full = join(dir, name)
-      if (statSync(full).isDirectory()) {
+      if (entry.isDirectory()) {
         if (name.startsWith('@')) continue // a parallel slot, not a segment
         if (name.startsWith('(')) walk(full, segs)
         else walk(full, [...segs, name])
