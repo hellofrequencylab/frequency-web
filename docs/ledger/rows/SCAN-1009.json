@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1009",
+  "title": "Decide whether a Network's central admins may open the owner's billing, and make the code and SCAN-983 say the same",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/billing/actions.ts",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "SCAN-983 (#3502) says central admins are real admins of the Network parent but 'never isOwner, so billing stays the owner's'. The Space billing actions gate on caps.isAdmin only, so a central admin can open the owner's Stripe billing portal (cancel, change card), change operator seats (a prorated charge) and start a loadout checkout. The ADRs say Space admins manage billing, so this follows the existing design; the false promise is the problem. Ruling: gate openSpaceBillingPortal, setOperatorSeats and startSpaceLoadoutCheckout on caps.isOwner, or correct SCAN-983 and the help text.",
+  "ownerAction": "ruling",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/settings/billing/actions.ts','utf8');if(!/isOwner/.test(s)){console.error('SCAN-1009: the Space billing actions admit any admin, including a Network central admin');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

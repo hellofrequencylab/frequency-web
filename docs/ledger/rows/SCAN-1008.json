@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1008",
+  "title": "The Network pricing copy promises a non profit price and paid extra chapters that checkout cannot sell",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/networks/frequency-networks.tsx",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "The Networks page and the pricing grid (lib/pricing/pricing-grid.ts) say each extra chapter is NETWORK_PLAN.extraChapterCents a month up to NETWORK_PLAN.maxChapters, and that verified non profits pay NETWORK_PLAN.nonprofitMonthlyCents. lib/billing/space-plan-checkout.ts always bills network_base whatever the Space's verification, nothing ever sells nonprofit_network or network_chapter, and the chapter RPC in 20270346009000_network_chapters.sql caps chapters at 10 ('Talk to us to add more'). A verified 501(c)(3) that chooses Network is charged the full price and the network rung's fee. SCAN-980's own detail says both are not offered yet. Ruling: change the copy to 'talk to us' for non profits and past the included chapters, or wire nonprofit_network for verified Spaces and a network_chapter quantity.",
+  "ownerAction": "ruling",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const page=fs.readFileSync('components/frequency/site/pages/networks/frequency-networks.tsx','utf8'),grid=fs.readFileSync('lib/pricing/pricing-grid.ts','utf8'),co=fs.readFileSync('lib/billing/space-plan-checkout.ts','utf8');const promises=/nonprofitMonthlyCents/.test(page+grid)||/extraChapterCents/.test(page+grid);const sells=/nonprofit_network/.test(co)&&/network_chapter/.test(co);if(promises&&!sells){console.error('SCAN-1008: the Network pricing copy promises a non profit price and extra chapters that checkout does not sell');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-1014",
+  "title": "A public event page for an unlisted event tells search engines not to index it",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(public)/events/[slug]/page.tsx",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "public_event_by_slug admits visibility in ('public','unlisted') (20270124000000_public_events_narrow.sql), and ADR-202 says an unlisted event is a link, not a listing. generateMetadata sets robots only for past and series pages and always declares a canonical, so an unlisted event becomes indexable once a crawler sees the shared link, now that SCAN-867/876 made it a full page with a guest join box. The page has no visibility to test: the RPC does not return it and the anon enrichment read cannot see an unlisted row. Fix: return visibility from public_event_by_slug (a migration) or read it server-side, and set robots { index: false, follow: true } with no canonical for an unlisted event.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(public)/events/[slug]/page.tsx','utf8');const i=s.indexOf('export async function generateMetadata');const b=i<0?'':s.slice(i,i+3500);if(!/unlisted/.test(b)){console.error('SCAN-1014: an unlisted event page carries no noindex');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

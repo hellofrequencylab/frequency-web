@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-1013",
+  "title": "The /join account check asks for one address instead of walking every auth user",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/join/(induction)/actions.ts",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "joinEmailHasAccount (SCAN-906) answers an anonymous yes/no by paging admin.auth.admin.listUsers 1,000 at a time, up to 50 pages per call, so each check costs up to 50 admin API reads and grows with the user count, and a throttle that is open when Upstash is unconfigured leaves that cost unbounded. SCAN-1007 added the per-mailbox throttle. Fix: one indexed lookup, for example a SECURITY DEFINER auth_email_exists(text) granted only to service_role. Needs a migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/join/(induction)/actions.ts','utf8');const i=s.indexOf('export async function joinEmailHasAccount');const b=i<0?'':s.slice(i,i+2000);if(/listUsers\\\\(/.test(b)){console.error('SCAN-1013: the /join account check walks the auth user table page by page');process.exit(1)}\""
+  },
+  "wave": "W7"
+}
