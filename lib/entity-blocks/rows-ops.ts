@@ -1,13 +1,14 @@
 import { entityBlockById, blocksForKind, type EntityKind } from './registry'
 import { normalizeRowMargin, normalizeRowTitle, type RowDef, type RowColumns, type RowRatio } from './layout'
 import type { BlockStyle, MarginStep } from './block-content'
+import { typeLimiter } from './block-limits'
 
 // PURE ROWS MUTATION HELPERS for the on-page Profile page builder (ADR-516 Phase C → ADR-542). Every
 // function is IMMUTABLE (returns a fresh BuilderLayout, never mutates its input) and TOTAL (a bad index /
 // unknown id is a no-op, never a throw), and every result is re-run through `normalize` so the invariants
 // always hold: at most MAX_ROWS rows; each row's `columns` in {1,2,3,4} with `cells.length === columns`;
-// each column a STACK of KNOWN registry block ids (ADR-542), capped at MAX_STACK; a block id appears at
-// most once across ALL rows; each row id a safe generated token, unique. Framework-free (no React / Next /
+// each column a STACK of KNOWN registry block ids (ADR-542), capped at MAX_STACK; each block TYPE within
+// its per-type cap across ALL rows (E0 task 10, block-limits.ts); each row id a safe generated token, unique. Framework-free (no React / Next /
 // Supabase), so the builder, the live grid, and the unit test share one source and it is trivially testable.
 //
 // The BENCH ("not shown") is DERIVED, never stored: palette − placed − hidden. `hidden` is the set of
@@ -44,12 +45,12 @@ export function genRowId(taken: Iterable<string> = []): string {
 
 /**
  * Re-establish every invariant on a (possibly hand-mutated) layout. Total: clamps the row count, fixes
- * each row's `columns`/`cells` length, caps each column stack to MAX_STACK, drops unknown or duplicate
- * block ids, and regenerates any unsafe or duplicate row id. The hidden set is filtered to known ids and
+ * each row's `columns`/`cells` length, caps each column stack to MAX_STACK, drops unknown block ids and any
+ * placement past its type's cap, and regenerates any unsafe or duplicate row id. The hidden set is filtered to known ids and
  * deduped. Used as the final step of every mutation so the ops below can be written straightforwardly.
  */
 export function normalize(layout: BuilderLayout): BuilderLayout {
-  const seenBlocks = new Set<string>()
+  const admit = typeLimiter()
   const seenRowIds = new Set<string>()
   const rows: RowDef[] = []
   for (const raw of layout.rows.slice(0, MAX_ROWS)) {
@@ -58,10 +59,7 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
     for (let i = 0; i < columns; i++) {
       const stack: string[] = []
       for (const s of (raw.cells?.[i] ?? []).slice(0, MAX_STACK)) {
-        if (typeof s === 'string' && entityBlockById(s) !== null && !seenBlocks.has(s)) {
-          seenBlocks.add(s)
-          stack.push(s)
-        }
+        if (typeof s === 'string' && entityBlockById(s) !== null && admit(s)) stack.push(s)
       }
       cells.push(stack)
     }

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-960",
+  "title": "Editor E0 task 10: one per-type block limit replaces the six dedupe sets, so two Text blocks coexist and a second Offerings is refused",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.3 and §8 task 10"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19 (owner: \"Fan out and start building everything\"; ADR-1325 sequence: 9 → 10 → 11). lib/entity-blocks/block-limits.ts holds the one policy, ported from lib/page-editor/block-limits.ts: a data block appears once per document, a design block (DESIGN_ENTITY_BLOCK_IDS) three times, every other content block without limit. typeLimiter() returns a per-document admit(id) predicate and the six former dedupe sites call it: rows-ops normalize, layout parseRows, sanitizeRows, sanitizeEntityLayout, mergeEntityLayout and resolveRows. mergeEntityLayout keeps a presence set only so a fresh default id is appended when the author placed none of that type. components/entity-blocks/entity-grid.tsx keys each block by position so two siblings of one type never collide. block-limits.test.ts proves the §8 gate at every site; rows-ops.test.ts and layout.test.ts pin that a data block still lands once. Still keyed by type until task 11: a legacy document's content and style bags (two Text blocks share one bag) and hidden. No editor exposes a duplicate yet (pickers offer palette minus placed; placeBlock moves by id); that is task 12.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.readFileSync(f,'utf8');const bad=[];const b=r('lib/entity-blocks/block-limits.ts');if(!/export function typeLimiter/.test(b)||!/export function entityBlockLimit/.test(b))bad.push('no per-type policy');const l=r('lib/entity-blocks/layout.ts');const o=r('lib/entity-blocks/rows-ops.ts');if((l.match(/typeLimiter\\(\\)/g)||[]).length<5)bad.push('layout.ts sites do not all read the limiter');if(!/typeLimiter\\(\\)/.test(o))bad.push('normalize does not read the limiter');if(/const seen = new Set<string>\\(\\)|const seenBlocks = new Set<string>\\(\\)|const placed = new Set<string>\\(\\)/.test(l+o))bad.push('a dedupe set is back');if(bad.length){console.error('LIVE-960: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the policy module is gone, when a former dedupe site stops reading typeLimiter(), or when a global seen set returns. The two-text-two-offerings gate at each site is lib/entity-blocks/block-limits.test.ts, in the test job (a row probe may not spawn a test runner, LIVE-034).",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}
