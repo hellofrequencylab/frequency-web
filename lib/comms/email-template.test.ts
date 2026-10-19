@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { palette } from '@/lib/theme/palette'
 import { renderReplyEmail, renderCoalescedEmail, wrapEmailHtml } from './email-template'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 import type { EmailBrand } from './email-brand'
@@ -51,7 +52,7 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
   it('without a logo or accent: the name alone in the default ink', () => {
     const { html } = renderReplyEmail('Hello', null, { ...BRAND, logoUrl: null, accent: null })
     expect(html).not.toContain('<img')
-    expect(html).toContain('color:#111827">Riverside Makers</div>')
+    expect(html).toContain(`color:${palette.text}">Riverside Makers</div>`)
   })
 
   it('footer is one small "Sent with Frequency" line plus the Space page, in html and text', () => {

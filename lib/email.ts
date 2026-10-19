@@ -18,7 +18,7 @@ import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/comms/email-delivery-contract'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { envString } from '@/lib/env/string'
-import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
+import { EMAIL_TAGLINE, PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 import type { ThisWeekEvent } from '@/lib/this-week'
@@ -322,9 +322,9 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
       <a href="${joinUrl}" style="${btnStyle}">Join us here →</a>
     </p>
     <p style="${pStyle}margin-bottom:8px;">Frequency™</p>
-    <p style="${pStyle}font-size:13px;color:#888;">
+    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       Button not working? Paste this into your browser:<br>
-      <a href="${joinUrl}" style="color:#888;">${joinUrl}</a>
+      <a href="${joinUrl}" style="color:${palette.emailSubtle};">${joinUrl}</a>
     </p>
   `, footer)
 }
@@ -384,9 +384,9 @@ function signupRecoveryHtml({ firstName, resumeUrl }: { firstName: string | null
     <p style="margin:0 0 28px;">
       <a href="${resumeUrl}" style="${btnStyle}">Finish signing up</a>
     </p>
-    <p style="${pStyle}font-size:13px;color:#888;">
+    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       Button not working? Paste this into your browser:<br>
-      <a href="${resumeUrl}" style="color:#888;">${resumeUrl}</a>
+      <a href="${resumeUrl}" style="color:${palette.emailSubtle};">${resumeUrl}</a>
     </p>
   `, footer)
 }
@@ -1062,7 +1062,7 @@ Add this ticket to an account: ${claimUrl}
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
       <p style="${pStyle}">${escapeHtml(greeting)}${intro}</p>
       <p style="${pStyle}">
-        <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+        <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
       </p>
       <a href="${eventUrl}" style="${btnStyle}">View event →</a>${accountOfferHtml}
       <hr style="${dividerStyle}">
@@ -1376,15 +1376,15 @@ function guestBookingConfirmHtml(p: {
     <p style="${pStyle}">Hi ${escapeHtml(p.guestName)}, we are holding this time for you. Confirm it below and it is yours.</p>
     <p style="${pStyle}">
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
-      <span style="color:#777;">${p.durationMinutes} minute session with ${escapeHtml(p.spaceName)}</span>
+      <span style="color:${palette.emailSubtle};">${p.durationMinutes} minute session with ${escapeHtml(p.spaceName)}</span>
     </p>
     <p style="margin:0 0 28px;">
       <a href="${p.confirmUrl}" style="${btnStyle}">Confirm my booking</a>
     </p>
-    <p style="${pStyle}font-size:13px;color:#888;">
+    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       The hold lasts ${p.holdMinutes} minutes. After that the time opens up again and you can book a fresh one.<br>
       If the button doesn't work, paste this into your browser:<br>
-      <a href="${p.confirmUrl}" style="color:#888;">${p.confirmUrl}</a>
+      <a href="${p.confirmUrl}" style="color:${palette.emailSubtle};">${p.confirmUrl}</a>
     </p>
   `, guestBookingFooter(p.spaceName))
 }
@@ -1437,12 +1437,12 @@ function bookingConfirmationHtml(p: {
     <p style="${pStyle}">${intro}</p>
     <p style="${pStyle}">
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
-      <span style="color:#777;">${p.durationMinutes} minute session</span>
+      <span style="color:${palette.emailSubtle};">${p.durationMinutes} minute session</span>
     </p>
     <a href="${p.manageUrl}" style="${btnStyle}">View booking &rarr;</a>
     ${
       p.madeWith
-        ? `<p style="font-size:12px;color:#999;margin:28px 0 0;"><a href="${p.madeWith.url}" style="color:#999;">${escapeHtml(p.madeWith.label)}</a></p>`
+        ? `<p style="font-size:12px;color:${palette.emailFaint};margin:28px 0 0;"><a href="${p.madeWith.url}" style="color:${palette.emailFaint};">${escapeHtml(p.madeWith.label)}</a></p>`
         : ''
     }
   `)
@@ -1785,9 +1785,9 @@ function optinConfirmHtml({ confirmUrl, firstName }: { confirmUrl: string; first
     <p style="margin:0 0 28px;">
       <a href="${confirmUrl}" style="${btnStyle}">Confirm my email</a>
     </p>
-    <p style="${pStyle}font-size:13px;color:#888;">
+    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       If the button doesn't work, paste this into your browser:<br>
-      <a href="${confirmUrl}" style="color:#888;">${confirmUrl}</a>
+      <a href="${confirmUrl}" style="color:${palette.emailSubtle};">${confirmUrl}</a>
     </p>
     <hr style="${dividerStyle}">
     <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};margin-bottom:0;">
@@ -1960,7 +1960,7 @@ export function emailShell(content: string, footer?: string | EmailFooter): stri
   <div style="${containerStyle}">
     <div style="${cardStyle}">
       <a href="${BASE_URL}" style="${logoStyle}">frequency</a>
-      <p style="${taglineStyle}">The community collective</p>
+      <p style="${taglineStyle}">${EMAIL_TAGLINE}</p>
       ${content}
     </div>
     <div style="${footerStyle}">
@@ -2195,7 +2195,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
             <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${e.title}</p>
-            <p style="margin:0;font-size:13px;color:#777;">
+            <p style="margin:0;font-size:13px;color:${palette.emailSubtle};">
               ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}
             </p>
           </td>
@@ -2215,7 +2215,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
             <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${escapeHtml(e.title)}</p>
-            <p style="margin:0;font-size:13px;color:#777;">
+            <p style="margin:0;font-size:13px;color:${palette.emailSubtle};">
               ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${escapeHtml(e.location)}` : ''}
             </p>
           </td>
@@ -2228,7 +2228,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   ` : ''
 
   const statusHtml = (topStreak || rank) ? `
-    <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;margin:24px 0;">
+    <div style="background:${palette.emailSurfaceElevated};border-radius:10px;padding:14px 16px;margin:24px 0;">
       <p style="margin:0;font-size:11px;font-weight:800;color:${palette.emailSubtle};text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
       ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:${palette.text};">⚡ <strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
       ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:${palette.text};">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
@@ -2346,7 +2346,7 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
       Hi ${escapeHtml(recipientName)}, your event is ${escapeHtml(whenLabel)}.
     </p>
     <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
     </p>
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
@@ -2420,8 +2420,8 @@ function rsvpConfirmationHtml({
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
     <p style="${pStyle}">${intro}</p>
     <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:${palette.emailSubtle};">${hostLine}</span>` : ''}
     </p>
     ${calendarBlock}
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
@@ -2546,8 +2546,8 @@ function guestRsvpConfirmationHtml({
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
     <p style="${pStyle}">${intro}</p>
     <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:${palette.emailSubtle};">${hostLine}</span>` : ''}
     </p>
     ${calendarBlock}
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
@@ -2718,9 +2718,9 @@ function ticketReceiptHtml(
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
     <p style="${pStyle}">${intro}</p>
     <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
-      <br><span style="color:#777;">${escapeHtml(ticketCountLine(qty, amountLabel, tierName))}</span>
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:${palette.emailSubtle};">${hostLine}</span>` : ''}
+      <br><span style="color:${palette.emailSubtle};">${escapeHtml(ticketCountLine(qty, amountLabel, tierName))}</span>
     </p>
     ${addressLine}
     <a href="${eventUrl}" style="${btnStyle}">View event &rarr;</a>
