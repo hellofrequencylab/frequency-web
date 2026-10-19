@@ -52,11 +52,11 @@ describe('genRowId', () => {
 })
 
 describe('normalize (invariants)', () => {
-  it('dedupes a block across the layout, drops unknown ids, and fixes bad columns', () => {
+  it('holds a data block to one placement, drops unknown ids, and fixes bad columns', () => {
     const out = normalize({
       rows: [
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { id: 'r0', columns: 2, cells: [['about'], ['about']] } as any, // dup -> second dropped
+        { id: 'r0', columns: 2, cells: [['about'], ['about']] } as any, // data block: second placement dropped
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { id: 'r1', columns: 9 as any, cells: [['nope', 'stats']] }, // bad columns -> 1; unknown 'nope' dropped
       ],
@@ -66,6 +66,21 @@ describe('normalize (invariants)', () => {
     expect(out.rows[1].columns).toBe(1)
     expect(out.rows[1].cells).toEqual([['stats']]) // 'nope' unknown, dropped; 'stats' kept
     expect(out.hidden).toEqual(['links'])
+  })
+
+  it('keeps two content blocks and three design blocks, and refuses the fourth design block (E0 task 10)', () => {
+    const out = normalize({
+      rows: [
+        row('r0', 1, ['text']),
+        row('r1', 2, ['text', 'heading']),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { id: 'r2', columns: 1, cells: [['zigzag', 'zigzag', 'zigzag', 'zigzag']] } as any,
+      ],
+      hidden: [],
+    })
+    expect(out.rows[0].cells).toEqual([['text']])
+    expect(out.rows[1].cells).toEqual([['text'], ['heading']])
+    expect(out.rows[2].cells).toEqual([['zigzag', 'zigzag', 'zigzag']])
   })
 
   it('caps a column stack at 12 boxes', () => {

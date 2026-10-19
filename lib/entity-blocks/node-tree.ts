@@ -36,8 +36,9 @@
 //   `defineBlock`; minting `v: 1` on 226 nodes today would be a constant nobody can verify and a
 //   migration nobody can run — shape, not truth. The slot is added when there is a version to put
 //   in it.
-// · **No per-type limits.** That is task 10, and it needs `deriveBench` split first. This function
-//   is an UPGRADE: it re-expresses what is stored, it does not re-decide what is legal.
+// · **No per-type limits.** Those live in `block-limits.ts` (task 10) and are applied by the parse,
+//   sanitize, merge, resolve and mutation paths. This function is an UPGRADE: it re-expresses what
+//   is stored, it does not re-decide what is legal.
 // · **No dropping of unknown types.** `parseRows` drops a placement whose id left the registry.
 //   ADR-978 settled that a loader must never discard an author's document over an unknown type, so
 //   the upgrade PRESERVES it and leaves legality to `sanitizeRows` / `resolveRows`, which run after

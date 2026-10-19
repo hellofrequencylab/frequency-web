@@ -133,9 +133,9 @@ export const PALETTES: Record<DesignId, Palette> = {
     ink: '#0A0612', // token-ok: palette source, mirrors the Frequency export
     inkElevated: '#140B22', // token-ok: palette source, mirrors the Frequency export
     onInk: '#F6F0FF', // token-ok: palette source, mirrors the Frequency export
-    primary: '#5B3FD0', // token-ok: palette source, mirrors the Frequency export
-    primaryBg: '#ECE6FF', // token-ok: palette source, mirrors the Frequency export
-    onPrimary: '#FFFFFF', // token-ok: palette source, mirrors the Frequency export
+    primary: '#1E1B18', // token-ok: palette source, the Commons ink; the solid violet was retired (LIVE-961)
+    primaryBg: '#F2E9DC', // token-ok: palette source, the Commons sunken sand
+    onPrimary: '#FAF4EA', // token-ok: palette source, the Commons canvas on ink
     signal: '#17788A', // token-ok: palette source, mirrors the Frequency export
     broadcast: '#B0287F', // token-ok: palette source, mirrors the Frequency export
     danger: '#C2362B', // token-ok: palette source, mirrors the Frequency export
@@ -145,12 +145,12 @@ export const PALETTES: Record<DesignId, Palette> = {
     emailHeading: '#1E1B18', // token-ok: palette source, mirrors the Frequency export
     emailSubtle: '#675E56', // token-ok: palette source, mirrors the Frequency export
     emailFaint: '#8F857B', // token-ok: palette source, mirrors the Frequency export
-    emailPrimaryStrong: '#4A31B8', // token-ok: palette source, mirrors the Frequency export
+    emailPrimaryStrong: '#1E1B18', // token-ok: palette source, ink (LIVE-961)
     emailSuccess: '#2F7F5A', // token-ok: palette source, mirrors the Frequency export
     emailInfo: '#2F6F8F', // token-ok: palette source, mirrors the Frequency export
     emailAlert: '#C2362B', // token-ok: palette source, mirrors the Frequency export
-    ogAccent: '#8B5CFF', // token-ok: palette source, mirrors the Frequency export
-    ogAccentSoft: '#ECE6FF', // token-ok: palette source, mirrors the Frequency export
+    ogAccent: '#A3D4FF', // token-ok: palette source, the --fq-pa sky stop (LIVE-961)
+    ogAccentSoft: '#E8F4FF', // token-ok: palette source, the sky stop lightened for text on the ink card
     walletBackground: '#0A0612', // token-ok: palette source, mirrors the Frequency export
   },
 }

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-991",
+  "title": "Marketing copy polish from the 2026-10-19 scan: the pricing FAQ stops repeating the seat line and names Network on Vera, /spaces says where selling starts, the home H1 reads as two sentences, a directory card shows a Space's kind once, and the sign-in title is sentence case",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "app/(marketing)/pricing/pricing-faq.ts",
+    "ref": "Full scan 2026-10-19 (/mnt/project-files/scan/2026-10-19-full-scan/marketing-and-mobile-detail.md P2 8, P3 12, 16, 17, 20). Owner ruling 2026-10-19: fan out and build everything."
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. PREMISE RE-TESTED on main: of the scan's P3 copy items, the Networks nav link, the Non Profit spelling, the \"No add-on menu\" clause, \"once payouts are ready\" and the beta date were already fixed by earlier PRs; this row carries what was still live. The seats FAQ said \"Your own seat is included on every plan\" twice (the FAQ and seats.detail); the Vera FAQ said only Collective includes it while the table shows Network included; the /spaces \"What does it cost?\" answer never named a paid plan; the home H1's two sides rendered with no space between them, so crawlers read one run-on sentence; a directory card showed the Space's kind in the where line and again as the pill; the sign-in title was Title Case. Still open for the owner: the Network trial line on /pricing (scan P3 21) and whether Non Profit Collective is retired (scan P2 7).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const faq=r('app/(marketing)/pricing/pricing-faq.ts');if(/Your own seat is included on every plan\\\\. \\\\$\\\\{seats/.test(faq))miss.push('the seats FAQ repeats the seat line');if(!/Collective and Network include it/.test(faq))miss.push('the Vera FAQ leaves out Network');if(!/takes Network/.test(r('components/frequency/site/pages/spaces/frequency-spaces.tsx')))miss.push('/spaces cost answer names no plan');if(!/className=\\\"p-only\\\">\\\\{p\\\\}<\\\\/span>\\\\{' '\\\\}/.test(r('components/frequency/site/pages/home/frequency-home.tsx')))miss.push('home H1 sides run together');const d=r('components/frequency/site/pages/shared/data.ts');if(!/hasUpcoming \\\\? s\\\\.kindLabel : null/.test(d))miss.push('directory card shows the kind twice');if(!/title: 'Sign in'/.test(r('app/sign-in/page.tsx')))miss.push('sign-in title is Title Case');if(miss.length){console.error('LIVE-991: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}

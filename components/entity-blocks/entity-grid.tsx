@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
-import { rowShowsHeader, type RowDef } from '@/lib/entity-blocks/layout'
-import { marginBottomClass, marginTopClass } from '@/lib/entity-blocks/block-content'
+import { rowShowsHeader } from '@/lib/entity-blocks/layout'
+import { marginBottomClass, marginTopClass, type MarginStep } from '@/lib/entity-blocks/block-content'
 
 // The presentational interior GRID for the unified entity-block renderers (ADR-508 → ADR-516 Phase A).
 // DATA-DRIVEN: it renders a freeform RowDef[] (the source of truth going forward) instead of switching on
@@ -11,6 +11,11 @@ import { marginBottomClass, marginTopClass } from '@/lib/entity-blocks/block-con
 // sizes to where it lands and the columns collapse to one on small screens. Presentational + server-safe
 // (no hooks / no 'use client'), so a Server Component renderer drops it in directly. Fail-safe by
 // construction: an empty cell (null slot) or an id the caller does not know renders nothing.
+//
+// GENERIC OVER THE CELL ITEM (E0 task 12). The grid never reads a cell item; it only hands each one to
+// `renderBlock`. So the same component renders the legacy `RowDef` (cells of block ids) and the node
+// rows `resolveNodeRowsFor` yields (cells of `BlockNode`, each with its own content and style). The
+// markup is identical either way: the item type changes what the caller renders, not what the grid emits.
 
 /** Column class per row width: stack on mobile, N-up at the sm/lg breakpoint (capped at 4). */
 const GRID_COLS: Record<number, string> = {
@@ -41,27 +46,40 @@ function RowHeader({ title }: { title: string }) {
 
 /** Whether a row holds at least one placed block id (any column). A header over a row with no blocks reads
  *  as a bug (ADR-562), so the header is suppressed for an empty row even when toggled on. */
-function rowHasBlocks(row: RowDef): boolean {
+function rowHasBlocks(row: GridRow<unknown>): boolean {
   return row.cells.some((stack) => stack.length > 0)
 }
 
 /** The per-row MARGIN classes (ADR-569 C3), or '' when the row sets none. A set margin wraps the row so the
  *  extra space above / below the band renders; the common no-margin row keeps its bare fast path. */
-function rowMarginClass(row: RowDef): string {
+function rowMarginClass(row: GridRow<unknown>): string {
   return [marginTopClass(row.mt), marginBottomClass(row.mb)].filter(Boolean).join(' ')
 }
 
-export function EntityGrid({
+/** What the grid reads of a row: its geometry and header / margin meta. `RowDef` (cells of ids) and
+ *  `ResolvedNodeRow` (cells of nodes) both satisfy it; the cell item `T` is opaque to the grid. */
+export interface GridRow<T> {
+  id: string
+  columns: number
+  cells: T[][]
+  ratio?: string
+  title?: string
+  headerOn?: boolean
+  mt?: MarginStep
+  mb?: MarginStep
+}
+
+export function EntityGrid<T = string>({
   rows,
   renderBlock,
   wrapRow,
   className = 'space-y-8',
 }: {
-  /** The effective freeform rows (from resolveRows). */
-  rows: RowDef[]
-  /** Render a single block by its id (returns null / empty when the caller does not render it). The
-   *  returned node MUST carry its own React key (the callers wrap each block in a keyed <Suspense>). */
-  renderBlock: (blockId: string) => ReactNode
+  /** The effective freeform rows (from resolveRows, or resolveNodeRowsFor for a node render). */
+  rows: GridRow<T>[]
+  /** Render a single cell item, a block id or a node (returns null / empty when the caller does not render
+   *  it). The returned node MUST carry its own React key (the callers wrap each block in a keyed <Suspense>). */
+  renderBlock: (item: T) => ReactNode
   /** OPTIONAL per-row wrapper (the Space website's full-width section bands). It receives the row's id
    *  and its rendered node and MUST key what it returns on that id. Omitted = every row renders bare. */
   wrapRow?: (rowId: string, node: ReactNode) => ReactNode
@@ -77,7 +95,15 @@ export function EntityGrid({
     </div>
   )
 
-  function renderRow(row: RowDef): ReactNode {
+  // One column's stack. Each block is keyed by POSITION (row, column, index), not by its id: since E0
+  // task 10 a content block may be placed more than once (lib/entity-blocks/block-limits.ts), and two
+  // siblings keyed by the same id would collide. The caller's own key on the returned node is scoped
+  // inside the positional Fragment, so nothing the callers do changes; a Fragment adds no DOM.
+  function renderStack(rowId: string, col: number, stack: T[]): ReactNode {
+    return stack.map((item, j) => <Fragment key={`${rowId}-${col}-${j}`}>{renderBlock(item)}</Fragment>)
+  }
+
+  function renderRow(row: GridRow<T>): ReactNode {
     // The optional LIVE row header (Fix 5): shown only when the toggle is on, the title is non-blank,
     // AND the row actually holds blocks (never a lone header over an empty row).
     const showHeader = rowShowsHeader(row) && rowHasBlocks(row)
@@ -93,11 +119,11 @@ export function EntityGrid({
     if (row.columns === 1) {
       const stack = row.cells[0] ?? []
       // Keyed Fragment, not a bare array: the outer rows.map needs a key on every row, and a Fragment adds no DOM.
-      if (!wrap) return <Fragment key={row.id}>{stack.map((id) => renderBlock(id))}</Fragment>
+      if (!wrap) return <Fragment key={row.id}>{renderStack(row.id, 0, stack)}</Fragment>
       return (
         <section key={row.id} className={`space-y-8 ${mCls}`.trim()}>
           {showHeader && <RowHeader title={row.title!} />}
-          {stack.map((id) => renderBlock(id))}
+          {renderStack(row.id, 0, stack)}
         </section>
       )
     }
@@ -105,7 +131,7 @@ export function EntityGrid({
       <div className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
         {row.cells.map((stack, i) => (
           <div key={`${row.id}-${i}`} className="@container space-y-8">
-            {stack.map((id) => renderBlock(id))}
+            {renderStack(row.id, i, stack)}
           </div>
         ))}
       </div>
@@ -117,7 +143,7 @@ export function EntityGrid({
         <div key={row.id} className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
           {row.cells.map((stack, i) => (
             <div key={`${row.id}-${i}`} className="@container space-y-8">
-              {stack.map((id) => renderBlock(id))}
+              {renderStack(row.id, i, stack)}
             </div>
           ))}
         </div>

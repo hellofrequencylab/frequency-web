@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-948",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-19",
+      "evidence": "Create dialog, Search panel and Zap sheet render on the shared 96% card material with blur over a busy Feed; text stays full-opacity and readable at 390 and 320; token/adoption gates pass. Re-verified 2026-10-19 on main after #3538 in a jsdom render of the real components with the compiled Frequency CSS and fonts, screenshotted in headless Chromium at 390x844 and 320x844, plus the focused vitest suites (50 files, 618 tests pass)."
+    }
+  },
+  "append": {
+    "detail": "\n\nRe-verified on phone renders and focused suites 2026-10-19 after #3538; closed in the mobile polish housekeeping PR."
+  }
+}

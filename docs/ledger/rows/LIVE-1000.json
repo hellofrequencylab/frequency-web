@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1000",
+  "title": "Editor E0 task 11: node ops, a per-node write guard and a node render resolver, pure and proven, before any writer switches",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 steps 5 and 8; §8 task 11"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19 (owner: \"Fan out and start building everything\"; ADR-1325 sequence 9 → 10 → 11). lib/entity-blocks/node-ops.ts: the rows-ops mutations performed on nodes by nid (addNode from the palette refusing an unknown type or a type at its cap; placeNode, nudgeNode, benchNode to the stored bench with bags intact, hideNode/unhideNode for one node, removeNode, setNodeContent/setNodeStyle), every result re-run through normalizeNodeLayout (deterministic re-mint of a missing or duplicate nid from coordinates, positional row-id regeneration, per-type cap across placed rows, bench cap). sanitizeNodeLayout(raw, kind) reads any shape through upgradeLayout, rewrites each known node's bags through its own sanitizeBlockContent/sanitizeBlockStyle, drops a wrong-kind known type, preserves an unknown type byte-for-byte (ADR-978), folds too-wide rows onto the kind maximum. resolveNodeRows is the node-shaped resolveRows. There is no Record keyed by nid anywhere, so no user-originated write key (EDITOR-E0 §1.2, CodeQL js/remote-property-injection). No writer, renderer or editor switches: the LIVE-875/877/887 boundaries stand until task 12 and task 14 adopt these behind render_path.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/entity-blocks/node-ops.ts','utf8');const bad=[];for(const f of ['normalizeNodeLayout','addNode','placeNode','nudgeNode','benchNode','hideNode','unhideNode','removeNode','setNodeContent','setNodeStyle','sanitizeNodeLayout','resolveNodeRows'])if(!s.includes('export function '+f+'('))bad.push('missing '+f);if(!s.includes('sanitizeBlockContent(node.type'))bad.push('known bags are not sanitized per node');if(/Record<\\s*string,\\s*BlockNode\\s*>/.test(s))bad.push('a node map keyed by id is back');if(!fs.existsSync('lib/entity-blocks/node-ops.test.ts'))bad.push('no test');if(bad.length){console.error('LIVE-1000: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a node op, the write guard or the resolver is gone, when known bags stop going through the per-type field sanitizer, or when a Record keyed by node id appears. The behaviour (bags travel, unknown types round-trip, corpus identities survive) is node-ops.test.ts in the test job.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}

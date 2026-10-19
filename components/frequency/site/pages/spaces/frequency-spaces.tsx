@@ -56,7 +56,7 @@ const GUIDES: { href: string; icon: FqIconName; title: string; body: string }[] 
 
 const QUESTIONS: [string, string][] = [
   ['Another tool?', 'It replaces the six you’re juggling: calendar, door list, contacts, email, tickets and memberships.'],
-  ['What does it cost?', 'Nothing until you charge. Your regulars are 0%, plus card processing. When someone we bring you buys, we take a small share.'],
+  ['What does it cost?', 'Nothing until you charge. Your regulars are 0%, plus card processing. When someone we bring you buys, we take a small share. Selling starts at Business. Separate groups that partner take Collective, and one organization with chapters takes Network. The full ladder is on the Pricing page.'],
   ['Will you sell my members?', 'Never. Your contacts are yours.'],
   ['How do I rank higher?', 'Gather more often. Standing comes from how often you meet and who’s in the room, never from money.'],
 ]

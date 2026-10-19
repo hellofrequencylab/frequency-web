@@ -166,17 +166,20 @@ export interface RankedSpaces {
 export async function getRankedSpaces(limit = 6): Promise<RankedSpaces> {
   try {
     const all = await listNetworkedSpaces({ sort: 'standing' })
-    const spaces = all.slice(0, limit).map(
-      (s, i): SiteSpace => ({
+    const spaces = all.slice(0, limit).map((s, i): SiteSpace => {
+      const hasUpcoming = !!s.upcomingEventCount && s.upcomingEventCount > 0
+      return {
         id: s.id,
         href: `/spaces/${s.slug}`,
         name: s.name,
-        where: [s.city, s.kindLabel].filter(Boolean).join(' · '),
+        // The kind appears ONCE: in the where line when the pill carries the upcoming count, else as the
+        // pill itself. Both at once read "Carlsbad · Business" beside a second "Business" tag.
+        where: [s.city, hasUpcoming ? s.kindLabel : null].filter(Boolean).join(' · '),
         city: s.city ?? null,
-        tag: s.upcomingEventCount && s.upcomingEventCount > 0 ? `${s.upcomingEventCount} upcoming` : s.kindLabel,
+        tag: hasUpcoming ? `${s.upcomingEventCount} upcoming` : s.kindLabel,
         rank: i + 1,
-      }),
-    )
+      }
+    })
     return { ok: true, spaces, city: mode(all.map((s) => s.city)) }
   } catch {
     return { ok: false, spaces: [], city: null }

@@ -119,6 +119,8 @@ export const FEATURE_FALLBACK: Record<string, string> = {
   tickets: '/help/spaces/get-paid',
   memberships: '/help/spaces/get-paid',
   tips: '/help/spaces/get-paid',
+  partners: '/help/spaces/collective',
+  chapters: '/help/spaces/network',
 }
 
 /** Features.html#f-<id>, or the feature's fallback if /features has no route. */

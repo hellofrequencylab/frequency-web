@@ -51,7 +51,16 @@ and — newly measured — in **35 authored content bags that no cell references
 
 ### 1.1 What is actually true today
 
-`lib/entity-blocks/rows-ops.ts:52` opens `normalize()` with `const seenBlocks = new Set<string>()`
+✅ **Task 10 landed 2026-10-19** ([ADR-1830](DECISIONS.md), LIVE-960): the six `seen` sets below are
+gone. Every site asks `typeLimiter()` from `lib/entity-blocks/block-limits.ts`, which caps a `data`
+block at one, a design block at three, and leaves authored content blocks unlimited. Two `text`
+blocks coexist and a second `offerings` is refused at parse, sanitize (twice), merge, resolve and
+every mutation, and `entity-grid.tsx` keys each block by position. The paragraphs below describe the
+tree as it was. What they say about `content` / `style` and `hidden` being keyed by type is still
+true until task 11: two Text blocks share one authored bag and the pickers still offer
+"palette minus placed", so no editor exposes a duplicate yet.
+
+`lib/entity-blocks/rows-ops.ts:52` opened `normalize()` with `const seenBlocks = new Set<string>()`
 and `:61` refuses any block id already in it. **The same dedupe is implemented five more times,
 independently:**
 
@@ -566,9 +575,9 @@ Sequenced by hard dependency, not by size. One PR per row unless noted.
 | **7** | Drop `published_data` from the read path, then the schema | 6, +1 release | S | Zero readers remain |
 | **8** | ✅ **DONE — [ADR-1129](DECISIONS.md).** `BlockNode` + `upgradeLayout()` in `lib/entity-blocks/node-tree.ts` — pure, total, idempotent, deterministic ids, and the bench partition §1.2 was missing. NOT in any read path | 4 | M | `upgrade(upgrade(x)) === upgrade(x)` over the 37 frozen `EntityLayout` shapes; `benchLoss()` empty on every one |
 | **9** | Call `upgradeLayout` in `parseEntityLayout` — readers node-shaped, nothing written | 8 | S | Full suite green; visual diff zero. Backlog `LIVE-119` |
-| **10** | Delete the five dedupe sets; per-type limits; `bench` becomes stored | 9 | M | Two `text` blocks coexist; two `offerings` refused |
-| **11** | `rows-ops.ts` → node ops; content/style fold in; per-node sanitize | 10 | M | CodeQL clean; no user-originated write key anywhere |
-| **12** | Renderers + editor — `renderNode`, the 13 files, `selectedNid` | 11 | M | old ⇄ new `renderToStaticMarkup` equal per block |
+| **10** | ✅ **DONE 2026-10-19 — [ADR-1830](DECISIONS.md), LIVE-960.** The six dedupe sets are deleted and `lib/entity-blocks/block-limits.ts` holds the one per-type policy. The stored `bench` already exists on the node tree (`NodeLayout.bench`, task 8); the legacy writers reach it at task 11 | 9 | M | Two `text` blocks coexist; two `offerings` refused |
+| **11** | ✅ **DONE 2026-10-19 — [ADR-1831](DECISIONS.md), LIVE-1000.** `lib/entity-blocks/node-ops.ts`: the rows-ops mutations on nodes by `nid`, `sanitizeNodeLayout` (per-node `sanitizeBlockContent`, unknown types preserved, rows folded to the kind maximum) and `resolveNodeRows`. Pure; no writer or renderer switched (that is 12 and 14) | 10 | M | CodeQL clean; no user-originated write key anywhere |
+| **12** | ⏳ **HALF DONE 2026-10-19 — [ADR-1832](DECISIONS.md), LIVE-1001.** READ half landed: `EntityGrid` is generic over its cell item, `resolveNodeRowsFor` in node-ops, and the member + Space profile renderers render nodes, proven byte-identical by goldens frozen before the switch. EDIT half (LIVE-1002): the store (`selectedId` → `selectedNid`), `live-profile-grid`, `profile-page-builder`, `space-canvas/*`, `admin/email-studio/*`, the two owner previews | 11 | M | old ⇄ new `renderToStaticMarkup` equal per block |
 | **13** | 🔴 **Email path** — `render.ts` + 6 siblings | 12 | M | **Email golden strings land first.** 19 live documents on 3 crons |
 | **14** | Actions, routes, importer, AI — 12 route/action + 8 lib files | 12 | M | `check:doc-safety` green on the corpus |
 | **15** | Backfill `scripts/upgrade-entity-layouts.mjs` — dry-run, per-row diff, snapshot first | 14 | S | 41 rows normalized; re-run is a no-op |

@@ -389,6 +389,7 @@ export type Database = {
           space_id: string
           stamps_required: number
           status: string
+          surprise_odds: number
           updated_at: string
           updated_by: string | null
           welcome_stamps: number
@@ -402,6 +403,7 @@ export type Database = {
           space_id: string
           stamps_required?: number
           status?: string
+          surprise_odds?: number
           updated_at?: string
           updated_by?: string | null
           welcome_stamps?: number
@@ -415,6 +417,7 @@ export type Database = {
           space_id?: string
           stamps_required?: number
           status?: string
+          surprise_odds?: number
           updated_at?: string
           updated_by?: string | null
           welcome_stamps?: number
@@ -18521,6 +18524,7 @@ export type Database = {
         Args: { p_feature?: string | null; p_space?: string | null }
         Returns: number
       }
+      auth_email_exists: { Args: { p_email: string }; Returns: boolean }
       award_zaps_atomic: {
         Args: {
           _action: string

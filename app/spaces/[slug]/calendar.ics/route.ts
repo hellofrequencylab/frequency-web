@@ -8,19 +8,33 @@
 //
 // Gating: we resolve the slug to the space and refuse a private/suspended space (no public feed for a
 // walled-off space) BEFORE reading its events, then hand the space_id to the feed RPC.
+//
+// A Network or Collective parent's feed is network-wide (ADR-1773): it carries its chapters' public
+// events the way the Space's Network tab does (lib/collective/network-store.ts loadCollectiveNetworkWindow),
+// so one subscription follows the whole Network. On a Network only approved chapter events ride along
+// (SCAN-983); a chapter's own feed is unchanged. The same anon-safe RPC reads every source.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildVevent, icsEventInstants, icsLocalWallTimes, planCalendarFeed, renderCalendar } from '@/lib/events/ics'
 import { resolveZone } from '@/lib/time/zone'
+import { collectiveNetworkOpen, type NetworkParent } from '@/lib/collective/network'
+import { listPublicCollectiveMembers } from '@/lib/collective/network-store'
+import { approvedNetworkEventIds } from '@/lib/collective/network-tools-store'
+import { networkFeedRows } from '@/lib/collective/network-tools'
+import { isNetworkPlan } from '@/lib/collective/member-spaces'
 
 export const dynamic = 'force-dynamic'
 
 type SpaceRow = {
   id: string
+  slug: string
   name: string | null
   visibility: string | null
   status: string | null
+  plan: string | null
+  network_connected: boolean | null
+  owner_profile_id: string | null
 }
 
 // The feed RPC (space_public_calendar_feed) carries recurrence_type/recurrence_until/recurrence_rule/parent_event_id as
@@ -88,7 +102,7 @@ export async function GET(
   // directly via PostgREST and must not depend on this route to stay safe.
   const { data: spaceRaw } = await admin
     .from('spaces')
-    .select('id, name, visibility, status')
+    .select('id, slug, name, visibility, status, plan, network_connected, owner_profile_id')
     .eq('slug', slug)
     .maybeSingle()
   const space = spaceRaw as unknown as SpaceRow | null
@@ -107,6 +121,27 @@ export async function GET(
   }
 
   const rows = data as unknown as FeedRow[]
+
+  // Network-wide: the chapters' rows, read with the same RPC in small batches (a large purchased
+  // network must not open one request per chapter at once), deduped by id against the parent's own.
+  const parent: NetworkParent = { id: space.id, slug: space.slug, status: (space.status ?? 'active') as NetworkParent['status'], plan: space.plan, networkConnected: space.network_connected === true, ownerProfileId: space.owner_profile_id }
+  if (collectiveNetworkOpen(parent)) {
+    const members = await listPublicCollectiveMembers(parent)
+    const chapterRows: FeedRow[] = []
+    for (let offset = 0; offset < members.length; offset += 4) {
+      const batch = await Promise.all(members.slice(offset, offset + 4).map((m) => rpc.rpc('space_public_calendar_feed', { _space_id: m.id })))
+      for (const result of batch) if (!result.error && Array.isArray(result.data)) chapterRows.push(...(result.data as FeedRow[]))
+    }
+    const network = isNetworkPlan(space.plan)
+    const approved = network ? await approvedNetworkEventIds(space.id, [...new Set(chapterRows.flatMap((r) => [r.id, r.parent_event_id ?? r.id]))]) : new Set<string>()
+    const seen = new Set(rows.map((r) => r.id))
+    for (const row of networkFeedRows(chapterRows, { network, approved })) {
+      if (seen.has(row.id)) continue
+      seen.add(row.id)
+      rows.push(row)
+    }
+    rows.sort((a, b) => a.starts_at.localeCompare(b.starts_at) || a.id.localeCompare(b.id))
+  }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const spaceName = space.name?.trim() || 'Frequency'
 

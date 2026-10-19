@@ -15,6 +15,7 @@ import { EventMemberViewer } from './event-member-viewer'
 import { EventBroadcastSection } from './broadcast-section'
 import { RefundsOwedNotice } from './refunds-owed'
 import { EventDangerZone } from './event-danger-zone'
+import { EventDoorSection } from './door-section'
 import {
   HomeStatsStrip,
   RsvpBreakdownSection,
@@ -147,6 +148,10 @@ export default async function ManageEventPage({
           </Suspense>
           <Suspense fallback={<Skeleton className="h-20 rounded-xl" />}>
             <HomeStatsStrip eventId={event.id} slug={event.slug} />
+          </Suspense>
+          {/* The door code (LIVE-945): print it or write it to a tag; a tap is the check-in. */}
+          <Suspense fallback={<Skeleton className="h-40 rounded-card" />}>
+            <EventDoorSection eventId={event.id} title={event.title} />
           </Suspense>
           <section>
             {/* The multi-channel broadcast composer (ADR-827 ruling 3): one message to the

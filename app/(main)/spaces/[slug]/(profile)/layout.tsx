@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -29,6 +30,7 @@ import { activeBoostIds } from '@/lib/crew/boost'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
+import { RegularsNote } from '@/components/spaces/regulars-note'
 import { isFollowing } from '@/lib/spaces/follows'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
@@ -808,6 +810,10 @@ export default async function SpaceProfileChromeLayout({
           }
           notices={manage.canManage && !isNetwork ? <SpacePrivateNotice spaceId={space.id} /> : null}
         >
+          {/* The Regulars line (LIVE-944): what a full card here earns. Empty unless the program is on. */}
+          <Suspense fallback={null}>
+            <RegularsNote spaceId={space.id} />
+          </Suspense>
           {children}
         </FqSpaceChrome>
       </>
@@ -821,6 +827,9 @@ export default async function SpaceProfileChromeLayout({
         {/* Owner guardrail: a private Space is hidden from the directory, search, and shared links, so a
             manager viewing their own private page gets a one-click Make public assist (server re-gates). */}
         {manage.canManage && !isNetwork && <SpacePrivateNotice spaceId={space.id} />}
+        <Suspense fallback={null}>
+          <RegularsNote spaceId={space.id} />
+        </Suspense>
         {children}
       </DetailTemplate>
       {/* The owner Customize rail is now the STANDARDIZED admin bar (mounted site-wide by the shell), opened

@@ -1,4 +1,5 @@
 import { entityBlockById, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
+import { typeLimiter } from './block-limits'
 import { upgradeLayout, type NodeLayout } from './node-tree'
 import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle, type MarginStep } from './block-content'
 import {
@@ -38,8 +39,8 @@ function isKnownSlotId(id: string): boolean {
 // single block id (or is empty). It is POSITIONAL (row index + column index), so unlike the legacy
 // `slots` map it needs no string slot-key allowlist — a slot key can never reach an object property.
 // The SHAPE is validated instead (bounded row count, columns in {1..4}, each cell a known block id or
-// null, block ids deduped across all rows). `inactive` (blocks not placed on the page) is DERIVED, never
-// stored: palette − (blocks in rows) − hidden.
+// null, each block TYPE within its per-type cap, lib/entity-blocks/block-limits.ts). `inactive` (blocks not
+// placed on the page) is DERIVED, never stored: palette − (blocks in rows) − hidden.
 
 /** A row's column count. Equal columns by default; the renderer stacks them on mobile and lays them N-up
  *  at lg. A 2-column row may carry a `ratio` to make the first column wider (see RowRatio). */
@@ -53,7 +54,8 @@ export type RowRatio = 'even' | 'lead' | 'trail'
 
 /** One row of the freeform layout: `columns` columns, each a STACK of block ids (ADR-542). Invariant:
  *  `cells.length === columns`; each `cells[i]` is the ordered box ids stacked top-to-bottom in column i
- *  (an empty column is `[]`). A block id appears at most once across the WHOLE layout (global dedup). `id`
+ *  (an empty column is `[]`). A block TYPE appears at most its per-type cap times across the WHOLE layout
+ *  (E0 task 10, lib/entity-blocks/block-limits.ts: data blocks once, design blocks thrice, content freely). `id`
  *  is a safe generated token (see ROW_ID_RE), never used as an object key. `ratio` only applies when
  *  `columns === 2` (a wider lead column); absent means an even split.
  *
@@ -212,13 +214,13 @@ function rawCells(o: { cells?: unknown; slots?: unknown }): unknown[][] {
  * Fail-safe read of a saved `rows` array. Validates the SHAPE (positional, so no slot-key allowlist):
  * clamps to MAX_ROWS; drops a row whose `columns` is not in {1,2,3,4}; clamps each row's stacks to its
  * `columns` and each stack to MAX_STACK; keeps a box only when it is a KNOWN registry block id (kind-
- * agnostic here — kind filtering is applied in sanitize/resolve); dedupes a block id across ALL rows (a
- * later repeat is dropped); and regenerates any id that is not a safe token. Accepts the legacy `slots`
+ * agnostic here — kind filtering is applied in sanitize/resolve); holds each block TYPE to its per-type cap
+ * across ALL rows (a repeat past the cap is dropped, E0 task 10); and regenerates any id that is not a safe token. Accepts the legacy `slots`
  * shape (one id per column) via rawCells. Returns null when nothing usable survives.
  */
 function parseRows(raw: unknown): RowDef[] | null {
   if (!Array.isArray(raw)) return null
-  const seen = new Set<string>()
+  const admit = typeLimiter()
   const out: RowDef[] = []
   for (const r of raw.slice(0, MAX_ROWS)) {
     if (!r || typeof r !== 'object' || Array.isArray(r)) continue
@@ -240,10 +242,7 @@ function parseRows(raw: unknown): RowDef[] | null {
     for (let i = 0; i < columns; i++) {
       const stack: string[] = []
       for (const s of Array.isArray(raws[i]) ? raws[i].slice(0, MAX_STACK) : []) {
-        if (typeof s === 'string' && entityBlockById(s) !== null && !seen.has(s)) {
-          seen.add(s)
-          stack.push(s)
-        }
+        if (typeof s === 'string' && entityBlockById(s) !== null && admit(s)) stack.push(s)
       }
       cells.push(stack)
     }
@@ -267,12 +266,12 @@ function clampRowColumns(row: RowDef, max: RowColumns): RowDef {
   return withRowMeta(base, row.title, row.headerOn, row.mt, row.mb)
 }
 
-/** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-dedupe, and clamp
+/** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-apply the per-type cap, and clamp
  *  each row to the kind's max columns so a member layout is single-column and a space at most two). Total. */
 function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | undefined {
   if (!rows || !rows.length) return undefined
   const max = maxColumnsForKind(kind)
-  const seen = new Set<string>()
+  const admit = typeLimiter()
   const out: RowDef[] = []
   for (const raw of rows.slice(0, MAX_ROWS)) {
     const row = clampRowColumns(raw, max)
@@ -280,13 +279,9 @@ function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | 
     for (let i = 0; i < row.columns; i++) {
       const stack: string[] = []
       for (const s of (row.cells[i] ?? []).slice(0, MAX_STACK)) {
-        if (typeof s === 'string' && !seen.has(s)) {
-          const block = entityBlockById(s)
-          if (block !== null && blockSupportsKind(block, kind)) {
-            seen.add(s)
-            stack.push(s)
-          }
-        }
+        if (typeof s !== 'string') continue
+        const block = entityBlockById(s)
+        if (block !== null && blockSupportsKind(block, kind) && admit(s)) stack.push(s)
       }
       cells.push(stack)
     }
@@ -401,11 +396,15 @@ export function mergeEntityLayout(
   const savedSlots: Record<string, string[]> =
     saved?.slots ?? (saved?.order ? { [def]: saved.order } : {})
 
-  const placed = new Set<string>()
+  // Saved placements are admitted up to each type's cap (E0 task 10). `placedTypes` is NOT a dedupe
+  // set: step 3 reads it so a default id is appended only when the author placed none of that type,
+  // never beside a placement they already have.
+  const admit = typeLimiter()
+  const placedTypes = new Set<string>()
   const out: Record<string, string[]> = {}
   const place = (slot: string, id: string) => {
-    if (placed.has(id) || hidden.has(id) || !validSet.has(id)) return
-    placed.add(id)
+    if (hidden.has(id) || !validSet.has(id) || !admit(id)) return
+    placedTypes.add(id)
     ;(out[slot] ??= []).push(id)
   }
 
@@ -416,8 +415,8 @@ export function mergeEntityLayout(
     if (templateSlots.includes(slot)) continue
     for (const id of ids) place(def, id)
   }
-  // 3. Append any remaining valid default id (new / untouched, not hidden) to the default slot.
-  for (const id of valid) place(def, id)
+  // 3. Append any default id the author never placed (new / untouched, not hidden) to the default slot.
+  for (const id of valid) if (!placedTypes.has(id)) place(def, id)
 
   // Carry the per-block content + style through unchanged (ADR-528): they were validated on save and are
   // keyed by block id, independent of slot placement, so a renderer reads them off the effective grid.
@@ -428,21 +427,18 @@ export function mergeEntityLayout(
 }
 
 /**
- * Server-side WRITE guard: keep only ids valid for the kind (drop a retired / wrong-kind id), de-duped
- * across the whole layout so a block never lands in two slots. Mirrors the S3 action's sanitizeIds but
+ * Server-side WRITE guard: keep only ids valid for the kind (drop a retired / wrong-kind id), each type
+ * held to its per-type cap across the whole layout (E0 task 10) so a data section never lands twice. Mirrors the S3 action's sanitizeIds but
  * slot-aware. Returns null when nothing usable survives (the caller clears the saved node). Never trusts
  * the wire.
  */
 export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayout | null {
   const parsed = parseEntityLayout(raw)
   if (!parsed) return null
-  const seen = new Set<string>()
+  const admit = typeLimiter()
   const keep = (id: string): boolean => {
-    if (seen.has(id)) return false
     const block = entityBlockById(id)
-    if (block === null || !blockSupportsKind(block, kind)) return false
-    seen.add(id)
-    return true
+    return block !== null && blockSupportsKind(block, kind) && admit(id)
   }
   const out: EntityLayout = {}
   const rows = sanitizeRows(parsed.rows, kind)
@@ -457,13 +453,13 @@ export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayo
     }
     if (Object.keys(slots).length) out.slots = slots
   }
-  // `order` shares the same de-dupe universe as slots (it is an alternate placement source).
+  // `order` shares the same per-type counter as slots (it is an alternate placement source).
   if (parsed.order) {
     const clean = parsed.order.filter(keep)
     if (clean.length) out.order = clean
   }
   if (parsed.hidden) {
-    // Hidden ids are validated independently (they are not placements, so they do not consume `seen`).
+    // Hidden ids are validated independently (they are not placements, so they do not count toward a cap).
     const clean = parsed.hidden.filter((id) => {
       const block = entityBlockById(id)
       return block !== null && blockSupportsKind(block, kind)
@@ -664,7 +660,7 @@ export function starterRows(kind: EntityKind, id: StarterId): RowDef[] {
 
 /**
  * Resolve the EFFECTIVE rows a surface renders (ADR-516 Phase A). The single read entry the renderer uses:
- *   • `layout.rows` present → validate it (drop hidden / retired / wrong-kind ids, re-dedupe) and use it;
+ *   • `layout.rows` present → validate it (drop hidden / retired / wrong-kind ids, re-apply the per-type cap) and use it;
  *   • else a legacy `template` + `slots` (or a flat `order`) → templateToRows over the effective slots;
  *   • else (no usable layout) → the `basic` starter for the kind.
  * A brand-new registry block is NEVER auto-placed onto a rows layout (it falls to the derived inactive
@@ -676,7 +672,7 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
   const max = maxColumnsForKind(kind)
   if (layout?.rows && layout.rows.length) {
     const hidden = new Set(layout.hidden ?? [])
-    const seen = new Set<string>()
+    const admit = typeLimiter()
     const out: RowDef[] = []
     for (const raw of layout.rows.slice(0, MAX_ROWS)) {
       const row = clampRowColumns(raw, max)
@@ -684,13 +680,9 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
       for (let i = 0; i < row.columns; i++) {
         const stack: string[] = []
         for (const s of (row.cells[i] ?? []).slice(0, MAX_STACK)) {
-          if (typeof s === 'string' && !hidden.has(s) && !seen.has(s)) {
-            const block = entityBlockById(s)
-            if (block !== null && blockSupportsKind(block, kind)) {
-              seen.add(s)
-              stack.push(s)
-            }
-          }
+          if (typeof s !== 'string' || hidden.has(s)) continue
+          const block = entityBlockById(s)
+          if (block !== null && blockSupportsKind(block, kind) && admit(s)) stack.push(s)
         }
         cells.push(stack)
       }
