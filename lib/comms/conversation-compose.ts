@@ -46,8 +46,17 @@ export function spaceConversationFrom(brandName: string): string {
  *  against plan and provider verification; THROWS member-safe copy when the chosen sender is held, so
  *  the caller refuses rather than quietly switching a thread back to the Frequency address. */
 export async function resolveSpaceConversationFrom(spaceId: string, brandName: string): Promise<string> {
+  return (await resolveSpaceConversationSender(spaceId, brandName)).from
+}
+
+/** The same resolution, with the custom identity's id when the From is one (SCAN-828): a reply held in
+ *  the batch window carries that id so the flush can resolve the sender AGAIN at send time; a Frequency
+ *  or Space-inbox From carries null and the flush sends it as stamped. */
+export async function resolveSpaceConversationSender(
+  spaceId: string, brandName: string,
+): Promise<{ from: string; identityId: string | null }> {
   const identity = await resolveSpaceEmailDefaultIdentity(spaceId, 'conversation')
-  return identity?.from ?? spaceConversationFrom(brandName)
+  return identity ? { from: identity.from, identityId: identity.identityId ?? null } : { from: spaceConversationFrom(brandName), identityId: null }
 }
 
 /** The refusal copy for a held sender: the resolver's own member-safe sentence, or a generic one. */
@@ -64,6 +73,8 @@ export interface StartConversationMessageInput {
   actorAuthorKind: 'staff' | 'leader'
   /** The full From line (person or brand — the caller resolves identity). */
   from: string
+  /** The custom Space identity `from` came from, when it did (SCAN-828): re-resolved at batch flush. */
+  identityId?: string | null
   /** The sender's signature (renderReplyEmail appends it; batching stamps it at flush). */
   signature: string | null
   /** The recipient. */
@@ -143,6 +154,7 @@ export async function startConversationMessage(
     const queued = await queueOutboundMessage({
       conversationId: conv.id,
       from: input.from,
+      identityId: input.identityId ?? null,
       to: email,
       body,
       html: input.bodyHtml ?? rendered.html,
