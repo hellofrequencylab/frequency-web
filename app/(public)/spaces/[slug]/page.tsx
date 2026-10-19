@@ -28,6 +28,8 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
 import { FqSpaceFacts } from '@/components/frequency/members/space/space-facts'
 import { readPublicSpaceFacts } from '@/lib/spaces/public-facts'
+import { foundingBadgeForSpace } from '@/lib/founding/status'
+import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 
 // Public share URL for a networked Space (SCAN-644 / ADR-1465). Auth during
 // render is a dynamic API and would void ISR; signed-in members rewrite to
@@ -259,7 +261,11 @@ export default async function PublicSpacePage({
   // page, and `aside` is the key-facts column (where, when, contact, follow or book, coming up). The
   // facts are read with no viewer (lib/spaces/public-facts.ts), so this document stays cacheable.
   if (SITE_DESIGN === 'frequency') {
-    const facts = await readPublicSpaceFacts(space, { tagline })
+    // The Founding mark (LIVE-1019): a service-role read of SPACE data, no viewer, so ISR is untouched.
+    const [facts, founding] = await Promise.all([
+      readPublicSpaceFacts(space, { tagline }),
+      foundingBadgeForSpace(space.id),
+    ])
     const calendarHref = tabs.find((t) => t.href === `/spaces/${space.slug}/calendar`)?.href ?? null
     return (
       <>
@@ -270,6 +276,7 @@ export default async function PublicSpacePage({
           coverImage={coverSrc}
           coverFocus={coverFocus}
           name={brandName}
+          coverBadge={founding?.isFounding ? <FounderMark /> : null}
           tagline={tagline ? <p className="fqs-tagline">{tagline}</p> : null}
           nav={menu}
           aside={

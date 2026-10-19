@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1019",
+  "title": "The Founding Business mark is a Frequency pill inside the Space's cover photo, and the three founding Spaces carry it",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1848"
+  },
+  "detail": "Owner 2026-10-19 (item 8): the beige Founding Business chip crowded the Space title. FounderMark (components/frequency/members/space/founder-mark.tsx) is the design's pastel --pa pill with ink type and a gem, drawn in the chrome's new coverBadge slot at the cover photo's top-left on both Space trees (member profile and signed-out share page; the share page reads foundingBadgeForSpace, a service-role read, so ISR is untouched). Boosted stays beside the name. Data: /mnt/project-files/founding/founding-badge-three-spaces.sql inserts active business rows in founding_members for House of Fates, Shannon Rose and Daniel Tyack with both rate columns null, so billing is untouched; it is a paste for the owner. Honest gap: the Spaces directory card still draws the old tag, because the directory rebuild (LIVE-1018) owns the cards and can import FounderMark.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const l=fs.readFileSync('app/(main)/spaces/[slug]/(profile)/layout.tsx','utf8');const p=fs.readFileSync('app/(public)/spaces/[slug]/page.tsx','utf8');if(!l.includes('coverBadge={isFoundingBusiness'))bad.push('member profile does not put the mark on the cover');if(!p.includes('foundingBadgeForSpace'))bad.push('share page does not read founding status');if(!fs.readFileSync('app/themes/frequency/space-page.css','utf8').includes('.fq-founder'))bad.push('sheet lost the mark');if(bad.length){console.error('LIVE-1019: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when either Space tree stops drawing the Founding mark in the cover. The data paste is evidence on the row, not a probe.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
