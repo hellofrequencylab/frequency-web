@@ -337,7 +337,7 @@ async function createSpaceCounterpart(
     if (!(await canAddSpaceContact(spaceId))) return null
     const db = createAdminClient()
     const nowIso = new Date().toISOString()
-    const { data: inserted } = await db
+    const { data: inserted, error } = await db
       .from('contacts')
       .insert({
         space_id: spaceId,
@@ -350,6 +350,9 @@ async function createSpaceCounterpart(
       })
       .select('id, profile_id')
       .maybeSingle()
+    // SCAN-1003: a unique-key race (a double send, or the contact arriving between the lookup and this insert)
+    // is not a full contact list. Re-read the contact that won, as ensureSpaceContact does for the inbox.
+    if (error?.code === '23505') return await resolveSpaceCounterpart(spaceId, email)
     if (!inserted) return null
     const contactId = String(inserted.id)
     // AUTOMATION TRIGGER (ADR-561): a contact just entered this Space's CRM. Fire-and-forget; it never throws.
