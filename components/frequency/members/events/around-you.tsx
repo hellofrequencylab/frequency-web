@@ -14,9 +14,9 @@ import { FqMapTile } from './events-map-lightbox'
 // ... feature either the latest upcoming, or what they've RSVPd to ... a dynamic ticker list, a few event
 // cards, a map"). It replaces the For you lane and the Your week panel with one smart feature:
 //
-//   ┌ Around you ─────────────────────────────── pulse strip (live, starting soon, filling up) ┐
-//   │ SPOTLIGHT: your next event, or your best pick      │ MAP TILE (opens the lightbox)      │
+//   ┌ SPOTLIGHT: your next event, or your best pick      │ MAP TILE (opens the lightbox)      ┐
 //   │ three cards: the balance of yours, picks, filling up                                    │
+//   │ Around you line + pulse strip (live, starting soon, filling up), compact (LIVE-1014)    │
 //   │ TICKER: Yours · For you · Week · Near, one horizontal strip                             │
 //   └─────────────────────────────────────────────────────────────────────────────────────────┘
 //
@@ -78,18 +78,6 @@ export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; m
 
   return (
     <section className="ay" aria-labelledby="ay-h">
-      <div className="ay-h">
-        <div className="stack fqm-gap-sm">
-          <h2 id="ay-h" className="h2">
-            <span className="orb ev-orb" aria-hidden="true" />
-            Around you
-          </h2>
-          <span className="t2">{summaryLine(plan, !!myProfileId, homeLabel)}</span>
-        </div>
-      </div>
-
-      <AyPulse items={plan.pulse} />
-
       <div className="ay-top">
         <article className={`ay-spot ${plan.spotlight.reason}`}>
           <Link
@@ -167,6 +155,17 @@ export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; m
         </ul>
       )}
 
+      {/* LIVE-1014: the Around you line and its pulse sit UNDER the feature and the map (owner, 2026-10-19), one
+          compact row, so the spotlight leads the page. */}
+      <div className="ay-line">
+        <h2 id="ay-h" className="h3">
+          <span className="orb ev-orb" aria-hidden="true" />
+          Around you
+        </h2>
+        <span className="t2">{summaryLine(plan, !!myProfileId, homeLabel)}</span>
+      </div>
+      <AyPulse items={plan.pulse} />
+
       {plan.defaultTab && <AyTicker tabs={plan.tabs} defaultTab={plan.defaultTab} />}
     </section>
   )
@@ -196,9 +195,6 @@ function AyCard({ item, tag }: { item: AyItem; tag: AyTag }) {
 export function FqAroundYouFrame() {
   return (
     <section className="ay" aria-busy="true" aria-label="Loading what is around you">
-      <div className="ay-h">
-        <span className="ev-skel-bar tall w30" />
-      </div>
       <div className="ay-top">
         <div className="ay-spot">
           <span className="ay-spot-cover" />

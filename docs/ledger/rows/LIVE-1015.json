@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1015",
+  "title": "Events: a modern filter bar with a date picker, removable active-filter chips, a result count and Clear all",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/UX-MATURITY-PLAN.md",
+    "ref": "Owner design changes list 2026-10-19, Events items 9 to 12 (plan: changed-plan/build-plan-2026-10-19.md, Phase 2)"
+  },
+  "detail": "Owner list 2026-10-19 item 10. The library bar keeps the category tabs and facet menus and gains a segmented date picker (Any time, Today, This week, This weekend, This month) in place of the Date menu on desktop, and an active-filter row on every width: the result count, one removable chip per search word and filter, and Clear all. Every control stays a URL, so any view is shareable. Phone keeps the Filters sheet and quick chips (month added).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const b=fs.readFileSync('components/frequency/members/events/events-body.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/members-events.css','utf8');if(!b.includes('ev-datepick'))bad.push('no date picker');if(!b.includes('ev-active'))bad.push('no active-filter row');if(!b.includes('remove filter'))bad.push('chips are not removable');if(bad.length){console.error('LIVE-1015: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the date picker or the removable active-filter row leaves the Events library bar.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W5"
+}
