@@ -4,7 +4,7 @@ interface ReportEarnings { grossCents: number; feeCents: number; netCents: numbe
 type NetworkReport = { status: 'denied' } | { status: 'unavailable' } | {
   status: 'complete'; spaces: { id: string; name: string; slug: string }[]; members: number; events: number; earnings: ReportEarnings
 }
-function ownerCollective(parent: ReportSpace | null, caller: string | null): parent is ReportSpace {
+function ownerCollective(parent: ReportSpace | null, caller: string | null): boolean {
   return !!parent && !!caller && parent.owner_profile_id === caller && parent.status === 'active'
     && parent.type !== 'root' && ['collective', 'nonprofit_collective', 'network'].includes(parent.plan ?? '')
 }
