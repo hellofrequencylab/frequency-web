@@ -26,6 +26,9 @@
 # editor-page rechecks the current owner/member capability before reading private drafts.
 # authorization rechecks the host/pass/current membership before every CAS save or site-scoped
 # presence operation; both RPCs and the presence table deny browser-role access in SQL.
+# SCAN-827: lib/spaces/private-state.ts reads space_private_state (website drafts and the
+# Executive Overview). The table revokes browser roles and has RLS on with no policies, so a
+# session client cannot see it. Callers already re-check manager or host-bound editor access.
 # Shared Loom image upload pipeline accepts already-authorized owner/Space identity.
 # Frequency picker and host-bound website media actions resolve permission before
 # calling it; Storage upload, library insertion and failure cleanup share one path.
@@ -1195,6 +1198,7 @@ lib/spaces/my-memberships.ts
 lib/spaces/nonprofit-verification.ts
 lib/spaces/operated.ts
 lib/spaces/profile-settings.ts
+lib/spaces/private-state.ts
 lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts

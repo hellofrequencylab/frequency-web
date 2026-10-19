@@ -37,7 +37,7 @@ import {
   type ConversationRow,
 } from '@/lib/comms/conversations'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
-import { renderReplyEmail } from '@/lib/comms/email-template'
+import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { envFlag } from '@/lib/env/string'
 import { buildSpaceConversationReplyAddress, resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
@@ -500,12 +500,8 @@ function bridgeReplySubject(subject: string | null): string {
   return s.toLowerCase().startsWith('re:') ? s.slice(0, 200) : `Re: ${s}`.slice(0, 200)
 }
 
-/** Plain-text → minimal safe HTML (mirrors the reply actions' bodyToHtml). */
-function bridgeBodyToHtml(text: string): string {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
-  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
-}
+/** Plain-text → minimal safe HTML: the shared copy (lib/comms/email-template.ts, EMAIL-023). */
+const bridgeBodyToHtml = bodyToHtml
 
 /** The member-facing body of a bridged reply. A Space's thread wears the Space's brand (owner ruling
  *  2026-10-12, LIVE-898) through the shared reply template; a platform thread, or a brand read fault,

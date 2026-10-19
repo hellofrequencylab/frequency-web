@@ -16,7 +16,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
 import { buildSpaceConversationReplyAddress } from '@/lib/comms/tenant-reply-alias'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
-import { renderCoalescedEmail } from '@/lib/comms/email-template'
+import { bodyToHtml, renderCoalescedEmail } from '@/lib/comms/email-template'
+import { palette } from '@/lib/theme/palette'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { resolveSpaceEmailIdentity } from '@/lib/spaces/email-identity-registry'
 import {
@@ -53,12 +54,7 @@ function defaultConversationFrom(): string {
   return conversationFrom(null)
 }
 
-/** Plain-text reply → minimal safe HTML (mirrors the reply actions' bodyToHtml). No external template. */
-function bodyToHtml(text: string): string {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
-  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
-}
+// bodyToHtml comes from lib/comms/email-template.ts (EMAIL-023): one copy, palette ink.
 
 /** `Re:`-prefix a subject once (mirrors the reply actions). */
 function replySubject(subject: string | null): string {
@@ -532,10 +528,9 @@ function digestText(rows: DigestConvRow[]): string {
 
 function digestHtml(rows: DigestConvRow[]): string {
   const items = rows.map((r) => digestLine(r).html).join('')
-  // token-ok: inline styles in a server-rendered email body (no CSS vars available in email)
-  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">
+  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:${palette.text}">
   <p>New replies are waiting in your Conversations inbox:</p>
   <ul style="padding-left:18px;margin:12px 0">${items}</ul>
-  <p><a href="${APP_URL}" style="color:#4f46e5">Open Frequency to reply</a></p>
+  <p><a href="${APP_URL}" style="color:${palette.emailPrimaryStrong}">Open Frequency to reply</a></p>
 </div>`
 }

@@ -360,7 +360,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'menu', href: '/admin/menu', label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', icon: 'Menu', min: 'janitor',
     world: 'platform', worldLabel: 'Menu', worldOrder: 0,
     adminNav: { section: 'operations', heading: 'Configuration' } },
-  { id: 'pages', href: '/pages', label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing pages + beta induction too.', icon: 'FileText', min: 'admin',
+  { id: 'pages', href: '/pages', label: 'Pages', desc: 'The page index: every site, lead, in-app and system page, with what produces each and where to edit it.', icon: 'FileText', min: 'admin',
     world: 'platform', worldLabel: 'Pages', worldOrder: 1 },
   { id: 'page-layout', href: '/admin/page-layout', label: 'Page layout', desc: "Frame each route's right rail: Global, Scoped, or full-width Focus.", icon: 'LayoutPanelLeft', min: 'admin',
     world: 'platform', worldLabel: 'Page layout', worldOrder: 2,

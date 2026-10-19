@@ -120,6 +120,8 @@ space_email_reply_aliases
 space_email_reply_quarantine
 # EMAIL-022: the Space inbox address carries provider ids and written DNS; service-only, read by the inbound webhook.
 space_inbox_addresses
+# SCAN-827: website drafts, review comments and the Executive Overview; service-only, no browser role.
+space_private_state
 # EMAIL-012: operation leases/ownership nonces are service-only; migration078 explicitly revokes browser roles.
 space_email_domain_operations
 

@@ -264,7 +264,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // premium badge + freeNote mark the plan story (presentation only; the surface gates server-side).
   { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: programCatalogNote(), parent: 'space.content' },
   // Leadership (LIVE-862): the yearly calendar over the program's seasons and signs, and the executive
-  // overview the Space's leaders work from (preferences.programOverview, never public). A TOOL inside the
+  // overview the Space's leaders work from (space_private_state, never public). A TOOL inside the
   // Gather box beside Program. Ungated by a function: it is a page of the console, so the console's own
   // manager gate is its gate, and the Space website's Admin link opens it.
   { id: 'space.leadership', label: 'Leadership', desc: 'Your yearly calendar and the executive overview, for the people who run your space.', Icon: Compass, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/manage/leadership`, order: 57.8, tier: 'primary', priority: 33.85, access: 'included', parent: 'space.content' },

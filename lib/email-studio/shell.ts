@@ -6,7 +6,7 @@ import type { EmailRenderLayout } from './render-layout'
 // 102 KB clip. Pure + framework-free; voice canon (no em dashes in the copy it emits).
 
 import { DEFAULT_EMAIL_COLORS, escapeHtml, type EmailColors } from './render'
-import { PLATFORM_POSTAL_LINE } from './postal'
+import { EMAIL_TAGLINE, PLATFORM_POSTAL_LINE } from './postal'
 
 const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
@@ -17,7 +17,7 @@ export interface EmailBrand {
   wordmark?: string
   /** An absolute logo image URL. When present it renders instead of the wordmark text. */
   logoUrl?: string
-  /** Small uppercase tagline under the wordmark (default 'The community collective'). Pass '' to hide. */
+  /** Small uppercase tagline under the wordmark (default EMAIL_TAGLINE). Pass '' to hide. */
   tagline?: string
   /** The physical mailing address shown in the footer (CAN-SPAM). Falls back to the platform postal address. */
   address?: string
@@ -33,9 +33,9 @@ const DEFAULT_BASE_URL = 'https://frequencylocal.com'
  *  email shell stays framework-free (importing lib/site pulls the whole nav registry). */
 const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
 
-/** The default brand tagline / one-line sender description. Mirrors lib/site.ts SITE_TAGLINE (ADR-811);
- *  kept LOCAL so the email shell stays framework-free (see ORG_LEGAL_NAME). A Space send can override it. */
-const DEFAULT_TAGLINE = 'Community collective'
+/** The default brand tagline: the one every Frequency shell prints (lib/email-studio/postal.ts). A Space
+ *  send can override it. */
+const DEFAULT_TAGLINE = EMAIL_TAGLINE
 
 /** The brand + unsubscribe inputs shared by the full shell and the standalone footer builder, so the on-canvas
  *  editor and the sent email read from ONE footer source of truth. */
@@ -174,7 +174,7 @@ export function emailDocumentShell(input: EmailDocumentShellInput): string {
 
 // ── compileEmailDoc: render + shell in one call ─────────────────────────────────────────────────────────
 
-import { renderEmailLayout, type RenderEmailOptions } from './render'
+import { audienceLineHtml, plainTextBodyHtml, renderEmailLayout, type RenderEmailOptions } from './render'
 import type { EmailDoc } from './types'
 
 interface CompileEmailOptions extends RenderEmailOptions {
@@ -210,4 +210,36 @@ export function compileEmailDoc(
   if (opts.sentWithFrequency) footerLines.push('Sent with Frequency.')
   const footerText = footerLines.length ? `\n\n---\n${footerLines.join('\n')}` : ''
   return { html, text: `${text}${footerText}`, subject: doc.subject, preheader: doc.preheader }
+}
+
+interface PlainTextEmailOptions extends EmailFooterInput {
+  /** One muted line under the body saying why the reader got the email. */
+  audienceLine?: string
+  preheader?: string
+}
+
+/**
+ * A plain-text body as a send-ready branded email (EMAIL-024): the Studio shell (wordmark or the Space's
+ * logo, the palette, the CAN-SPAM footer with the unsubscribe and manage links, the "Sent with Frequency"
+ * line on a free Space) around escaped paragraphs. The text part carries the body, the unsubscribe URL and
+ * the postal line. The seven plain-text senders (Space campaigns, drips, the event broadcast, Studio
+ * campaigns, nurture, automations, the agent) used to each hand-roll a `#333` template with no doctype,
+ * wordmark or address line; this is the one render they share. PURE.
+ */
+export function plainTextEmail(body: string, opts: PlainTextEmailOptions = {}): { html: string; text: string } {
+  const colors = opts.brand?.colors ?? DEFAULT_EMAIL_COLORS
+  const html = emailDocumentShell({
+    body: `${plainTextBodyHtml(body, colors)}${audienceLineHtml(opts.audienceLine ?? '', colors)}`,
+    preheader: opts.preheader,
+    unsubscribeUrl: opts.unsubscribeUrl,
+    manageUrl: opts.manageUrl,
+    brand: opts.brand,
+    sentWithFrequency: opts.sentWithFrequency,
+  })
+  const footerLines: string[] = []
+  if (opts.unsubscribeUrl) footerLines.push(`Unsubscribe: ${opts.unsubscribeUrl}`)
+  if (opts.manageUrl) footerLines.push(`Manage emails: ${opts.manageUrl}`)
+  if (opts.sentWithFrequency) footerLines.push('Sent with Frequency.')
+  footerLines.push(opts.brand?.address ?? PLATFORM_POSTAL_LINE)
+  return { html, text: `${(body ?? '').trim()}\n\n---\n${footerLines.join('\n')}` }
 }

@@ -265,11 +265,11 @@ describe('shell + compileEmailDoc', () => {
   it('renders a full CAN-SPAM legal footer (sender, address, copyright, real routes)', () => {
     const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
     // Sender identity + one-line description (the site tagline). Asserted against SITE_TAGLINE
-    // rather than a literal, because shell.ts keeps its own LOCAL copy on purpose (importing
-    // lib/site would pull the whole nav registry into the framework-free email shell). A local
-    // copy is a copy that can drift — ADR-944 renamed the tagline and this assertion was the only
-    // thing standing between that and an email footer quietly disagreeing with the logo.
-    expect(html).toContain(SITE_TAGLINE.charAt(0) + SITE_TAGLINE.slice(1).toLowerCase())
+    // rather than a literal, because the shells keep a LOCAL copy on purpose (importing lib/site
+    // would pull the whole nav registry into the framework-free email shell). A local copy is a
+    // copy that can drift; EMAIL-023 made it ONE copy (EMAIL_TAGLINE in postal.ts), spelled
+    // exactly like the site's, so this is now an equality rather than a case-folded match.
+    expect(html).toContain(SITE_TAGLINE)
     // Physical mailing-address line: the real CAN-SPAM postal address plus the legal org.
     expect(html).toContain('Frequency Labs Holdings')
     expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')

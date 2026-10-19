@@ -137,6 +137,35 @@ export type Database = {
           },
         ]
       }
+      space_private_state: {
+        Row: {
+          space_id: string
+          website_editor: Json | null
+          program_overview: string | null
+          updated_at: string
+        }
+        Insert: {
+          space_id: string
+          website_editor?: Json | null
+          program_overview?: string | null
+          updated_at?: string
+        }
+        Update: {
+          space_id?: string
+          website_editor?: Json | null
+          program_overview?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_private_state_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_budget_reservations: {
         Row: {
           id: string

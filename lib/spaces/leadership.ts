@@ -6,11 +6,10 @@ import { mensworkSeason, mensworkSignStarting, type MensworkSeason, type Menswor
 // overview (owner-written Markdown on the Space) and the yearly calendar (the Space's own events laid over
 // the program's seasons and signs).
 //
-// 🔴 THE OVERVIEW IS PRIVATE TO THE SPACE'S MANAGERS. It lives on `spaces.preferences.programOverview`,
-// and preferences ride the Space row every public surface reads (the website's cached row, the Space page).
-// Nothing public reads the key, `withoutLeadershipPreferences` strips it from the public profile
-// projection (lib/spaces/profile-modules.ts toProfileContext), and lib/spaces/leadership.test.ts freezes
-// the set of files allowed to name it.
+// 🔴 THE OVERVIEW IS PRIVATE TO THE SPACE'S MANAGERS. It lives on `space_private_state.program_overview`
+// (SCAN-827). `spaces.preferences` is anon-readable, so the overview must not ride that row.
+// `withoutLeadershipPreferences` still strips a leftover `programOverview` key from any public
+// projection, and lib/spaces/leadership.test.ts freezes the set of files allowed to name it.
 
 /** The preferences key holding the executive overview Markdown. */
 export const PROGRAM_OVERVIEW_KEY = 'programOverview'
@@ -24,9 +23,10 @@ function asRecord(preferences: unknown): Record<string, unknown> | null {
     : null
 }
 
-/** The overview Markdown on a Space's preferences, or '' when it has none. */
-export function readProgramOverview(preferences: unknown): string {
-  const v = asRecord(preferences)?.[PROGRAM_OVERVIEW_KEY]
+/** The overview Markdown: a stored string, or the leftover preferences key, or '' when it has none. */
+export function readProgramOverview(source: unknown): string {
+  if (typeof source === 'string') return source
+  const v = asRecord(source)?.[PROGRAM_OVERVIEW_KEY]
   return typeof v === 'string' ? v : ''
 }
 

@@ -1,6 +1,6 @@
 // THE EXECUTIVE OVERVIEW, READ AS THE DESIGN SYSTEM'S DOCUMENT (LIVE-864). PURE.
 //
-// The overview is owner-written Markdown on the Space (`preferences.programOverview`, lib/spaces/leadership.ts).
+// The overview is owner-written Markdown on space_private_state (SCAN-827; lib/spaces/leadership.ts).
 // The website's /admin/overview page draws it as the Hearts on Fire design system's Executive Overview
 // template, so this module reads the Markdown into the template's parts by their SHAPE, never by their words:
 //

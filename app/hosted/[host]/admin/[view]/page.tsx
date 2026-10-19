@@ -9,6 +9,7 @@ import { mensworkAccentVars, mensworkSeason, mensworkSign } from '@/lib/theme/me
 import { SITE_ADMIN_COOKIE, siteAdminHandoffPath, siteAdminView } from '@/lib/sites/site-admin-pass'
 import { readSiteAdminAuthor, readSiteAdminYear, siteAdminAllowed } from '@/lib/sites/site-admin'
 import { buildProgramYear, programHolidays, readProgramOverview } from '@/lib/spaces/leadership'
+import { readSpacePrivateState } from '@/lib/spaces/private-state'
 import { readOverviewDoc } from '@/lib/spaces/leadership-overview'
 import { SiteOverview } from '@/components/sites/admin/site-overview'
 import { SiteCalendar } from '@/components/sites/admin/site-calendar'
@@ -87,7 +88,8 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
   )
 
   if (view === 'overview') {
-    const doc = readOverviewDoc(readProgramOverview(space.preferences))
+    const privateState = await readSpacePrivateState(space.id)
+    const doc = readOverviewDoc(readProgramOverview(privateState.programOverview || space.preferences))
     return inChrome(
       <SiteOverview
         brandName={brandName}

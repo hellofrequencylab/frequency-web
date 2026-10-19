@@ -7,7 +7,7 @@ vi.mock('@/lib/sites/site-admin', () => ({ siteAdminAllowed: async () => mocks.a
 vi.mock('@/lib/loom/authorized-image-upload', () => ({ uploadAuthorizedLoomImage: mocks.upload }))
 vi.mock('@/lib/library/store', () => ({ notExpiredOr: () => 'expires_at.is.null', toPickAsset: (value: unknown) => value }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (table: string) => {
-  if (table === 'spaces') return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { preferences: {}, owner_profile_id: 'owner' }, error: null }) }) }) }
+  if (table === 'spaces' || table === 'space_private_state') return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: table === 'spaces' ? { preferences: {}, owner_profile_id: 'owner' } : { website_editor: null }, error: null }) }) }) }
   mocks.query(table)
   const query = { select: vi.fn(), eq: vi.fn(), neq: vi.fn(), or: vi.fn(), ilike: vi.fn(), contains: vi.fn(), order: vi.fn(), limit: async () => ({ data: [{ id: 'image', title: 'Original', url: 'https://images.example/original.jpg', tags: ['original'], is_protected: false }, { id: 'private', url: 'https://images.example/master.jpg', is_protected: true }], error: null }) }
   for (const method of ['select', 'eq', 'neq', 'or', 'ilike', 'contains', 'order'] as const) query[method].mockReturnValue(query)

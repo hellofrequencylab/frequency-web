@@ -8,6 +8,7 @@
 // (getLedCircles is keyed to their stewardship), so a leader can only ever reach their own people.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { bodyToHtml } from '@/lib/comms/email-template'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 import { resolveSegment, type Recipient } from '@/lib/studio/campaigns'
 import { resolveSendGate } from '@/lib/comms/send-gate'
@@ -70,12 +71,7 @@ async function profileDisplayName(profileId: string): Promise<string | null> {
   }
 }
 
-/** Plain-text body → minimal safe HTML (escaped, newlines to <br>). No external template. */
-function bodyToHtml(text: string): string {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
-  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
-}
+// bodyToHtml comes from lib/comms/email-template.ts (EMAIL-023): one copy, palette ink.
 
 /**
  * Send a message from a leader to their whole downline, AS THEMSELVES, fanning out into one tracked
