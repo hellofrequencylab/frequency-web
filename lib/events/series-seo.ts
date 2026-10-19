@@ -180,6 +180,42 @@ export function suppressPastNoindex(facts: SeriesSeoFacts): boolean {
   return facts.isAnchor && facts.seriesLive
 }
 
+const NOINDEX_FOLLOW = { index: false, follow: true } as const
+
+/**
+ * Crawl plan for the public share page (SCAN-1014 / ADR-1751). PURE.
+ *
+ * An unlisted event is a link, not a listing (ADR-202). The page itself must stay live for anyone
+ * holding that link (guest RSVP, OG preview), but it must not enter the index: generateMetadata
+ * used to set a canonical and only noindex past and extra series dates, so a crawler that followed
+ * a shared unlisted URL could keep it.
+ *
+ * Unlisted wins over the past and series rules. Those still apply to public pages. No canonical
+ * on unlisted: a self-canonical would still name the URL as the document for this content. The
+ * past-event pairing (noindex + self-canonical) stays for public dates that have ended.
+ *
+ * Fail-open when visibility could not be read: a missed noindex on one unlisted page is quieter
+ * than noindexing every public event because the admin read failed.
+ */
+export function publicEventIndexPlan(opts: {
+  visibility: string | null
+  ended: boolean
+  facts: SeriesSeoFacts
+  indexedOccurrences: number
+}): {
+  robots: { index: false; follow: true } | undefined
+  canonical: boolean
+} {
+  if (opts.visibility === 'unlisted') {
+    return { robots: NOINDEX_FOLLOW, canonical: false }
+  }
+  const pastRobots = opts.ended && !suppressPastNoindex(opts.facts) ? NOINDEX_FOLLOW : undefined
+  return {
+    robots: pastRobots ?? seriesRobots(opts.facts, opts.indexedOccurrences),
+    canonical: true,
+  }
+}
+
 /**
  * Facts about one event's place in its series, for `generateMetadata`.
  *
@@ -231,25 +267,38 @@ export async function seriesSeoFacts(row: SeriesSeoRow): Promise<SeriesSeoFacts>
   }
 }
 
+export type ShareEventSeo = {
+  facts: SeriesSeoFacts
+  /** `events.visibility`, or null when the row could not be read. */
+  visibility: string | null
+}
+
 /**
- * `seriesSeoFacts` for a caller that does NOT already hold the recurrence columns — today only the
- * /discover twin, which reads through the `public_event_by_slug` RPC and cannot see them. One extra
- * row read on a page that is already canonicalised elsewhere; the hot /events/[slug] path uses the
- * row form above and pays nothing.
+ * Series facts plus visibility for the public share page. One admin read: the page's
+ * `generateMetadata` already paid for the series columns, and SCAN-1014 needs `visibility` which
+ * `public_event_by_slug` does not return. Widening that SECURITY DEFINER RPC (granted to anon)
+ * is a DROP + CREATE; this read is the same service-role path `seriesSeoFactsBySlug` already used,
+ * plus one column. Fail-open to a one-off with unknown visibility.
  */
-export async function seriesSeoFactsBySlug(slug: string): Promise<SeriesSeoFacts> {
+export async function shareEventSeo(slug: string): Promise<ShareEventSeo> {
   try {
     const admin = createAdminClient()
     const { data } = await admin
       .from('events')
-      .select(`id, starts_at, ${SERIES_COLUMNS}`)
+      .select(`id, starts_at, visibility, ${SERIES_COLUMNS}`)
       .eq('slug', slug)
       .maybeSingle()
-    if (!data) return ONE_OFF_FACTS
-    return await seriesSeoFacts(data as SeriesSeoRow)
+    if (!data) return { facts: ONE_OFF_FACTS, visibility: null }
+    const row = data as SeriesSeoRow & { visibility: string | null }
+    return { facts: await seriesSeoFacts(row), visibility: row.visibility }
   } catch {
-    return ONE_OFF_FACTS
+    return { facts: ONE_OFF_FACTS, visibility: null }
   }
+}
+
+/** Series facts for a caller that does not already hold the recurrence columns. */
+export async function seriesSeoFactsBySlug(slug: string): Promise<SeriesSeoFacts> {
+  return (await shareEventSeo(slug)).facts
 }
 
 /**
