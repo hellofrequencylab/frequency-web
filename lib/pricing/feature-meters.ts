@@ -203,6 +203,7 @@ const RAW_METERS: Record<string, RawMeter> = {
       free: '1 seat included (the owner)',
       business: '2 seats included, add more per seat',
       collective: '3 seats included, add more per seat',
+      network: '10 seats included, one per central admin, add more per seat',
     },
   },
   space_multi_pipeline: {
@@ -611,6 +612,17 @@ export function currentMeterStepIndex(ladder: FeatureMeterLadder, tier: string):
     if (tierRankOnAxis(ladder.axis, ladder.steps[i]!.tier) <= rank) idx = i
   }
   return idx
+}
+
+/** A SIBLING plan's own allowance line on a meter, when the row names the plan (space_qr: Non Profit 5;
+ *  space_team: Network 10), else null so the caller falls back to the rung. Siblings are not rungs
+ *  (orderedTiers), so the ladder's steps never carry their number; the pricing table reads this so a
+ *  Non Profit or Network column shows the number the checkout and the gate actually use. PURE. */
+export function siblingAllowanceText(featureKey: string, tier: string): string | null {
+  const raw = RAW_METERS[featureKey]
+  if (!raw || !SIBLING_PLAN_TIERS.includes(tier) || !(tier in raw.allowances)) return null
+  const allowance = raw.allowances[tier] ?? null
+  return raw.allowanceTextByTier?.[tier] ?? allowanceLabel(allowance, raw.unit, raw.period)
 }
 
 /** The allowance a tier gets on a feature's meter (a cap, or null = unlimited). Null when the feature is

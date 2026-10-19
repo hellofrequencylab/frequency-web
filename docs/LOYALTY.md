@@ -71,7 +71,7 @@ coordinates and a 200 m radius through the proximity check the capture path alre
 | `LIVE-940` | 1 | Program table, RPC, `space_checkin` Zaps. Owner panel "Regulars" under Money (turn on, reward, value, stamps, welcome stamps, geofence). The check-in result shows the card. The member's cards and codes at `/rewards`. Owner hands out a reward from the roster. Gate: plan at or above Business and a mappable location. |
 | `LIVE-942` | 2 | Hunts: host creates, invites Spaces, stops accept, public hunt page with the route, progress on the check-in result, completion reward and Zaps. |
 | `LIVE-943` | 3 | Surprise stamp, Regular badge, weekly streak with a skip, the "one stamp away" nudge through the notification router, the three owner numbers (new vs returning, rewards handed out and their cost, neighbors who sent people). |
-| `LIVE-944` | 4 | Discovery: nearby Regulars Spaces and live hunts on `/rewards` and the map, the "Check in with Frequency" CTA on Space websites, the marketing page section. |
+| `LIVE-944` | 4 | Discovery: nearby Regulars Spaces and live hunts on `/rewards`, the Regulars line on the Space page, the "Check in with Frequency" door on Space websites, a member help article. The map keeps its city centroids (no Space pins, ADR-1783) and the marketing section is operator content. |
 
 ## 6. Tap, three ways (owner ask 2026-10-19)
 
