@@ -1,0 +1,92 @@
+/* THE EVENTS MAP DOOR AND LIGHTBOX (SCAN-975 drew them on /events; SCAN-998 gives them their own sheet).
+   The map tile and the list-plus-map lightbox load in two places: the Around you feature on /events
+   (members-events.css carries only its .ay-top placement), and the right rail's Around you panel on every
+   other member page, which opens the same lightbox in place. A sheet of their own keeps the rail from
+   loading the whole Events page sheet. The lightbox borrows two small pieces of the Events kit, the round
+   close button and the Going tag, so those are repeated here under .evm-dlg.
+   Surface, text, ink and accent tokens only, so the light canvas and the night room both read. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .evm-tile{position:relative;display:flex;flex-direction:column;justify-content:flex-end;width:100%;min-height:210px;padding:18px;border:none;border-radius:24px;overflow:hidden;text-align:left;cursor:pointer;background:radial-gradient(120% 90% at 20% 10%,var(--fq-pa-soft),transparent 60%),var(--fq-bg-sunken);box-shadow:inset 0 0 0 1px var(--fq-border-hair);transition:box-shadow var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .evm-tile:hover,[data-design="frequency"] [data-kit="members"] .evm-tile:focus-visible{box-shadow:0 24px 44px -30px color-mix(in oklab,var(--fq-x-violet-deep) 55%,transparent),inset 0 0 0 1.5px color-mix(in oklab,var(--fq-x-violet-neon) 80%,transparent)}
+[data-design="frequency"] [data-kit="members"] .evm-tile:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] [data-kit="members"] .evm-tile-map{position:absolute;inset:0;width:100%;height:100%;background-image:linear-gradient(var(--fq-border-hair) 1px,transparent 1px),linear-gradient(90deg,var(--fq-border-hair) 1px,transparent 1px);background-size:28px 28px}
+[data-design="frequency"] [data-kit="members"] .evm-halo{fill:color-mix(in oklab,var(--fq-x-violet-neon) 30%,transparent)}
+[data-design="frequency"] [data-kit="members"] .evm-dot{fill:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .evm-tile-b{position:relative;display:flex;flex-direction:column;gap:4px;max-width:calc(100% - 120px);padding:12px 14px;border-radius:16px;background:color-mix(in oklab,var(--fq-surface-raised) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+[data-design="frequency"] [data-kit="members"] .evm-tile-k{display:inline-flex;align-items:center;gap:6px;font:500 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .evm-tile-k .fq-icon{width:13px;height:13px;color:var(--fq-presence)}
+[data-design="frequency"] [data-kit="members"] .evm-tile-t{font:500 18px/1.15 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evm-tile-go{position:absolute;right:18px;bottom:18px;height:40px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border-radius:var(--fq-radius-orb);background:var(--fq-text-strong);color:var(--fq-surface-card);font:600 14px/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .evm-tile-go .fq-icon{width:15px;height:15px}
+[data-design="frequency"] [data-kit="members"] .evm-dlg{width:min(1240px,calc(100vw - 48px));max-width:none;height:min(860px,calc(100dvh - 48px));max-height:none;margin:auto;padding:0;border:none;border-radius:28px;overflow:hidden;background:var(--fq-surface-card);color:var(--fq-text-body);box-shadow:0 40px 100px -40px color-mix(in oklab,var(--fq-th-void) 70%,transparent)}
+[data-design="frequency"] [data-kit="members"] .evm-dlg[open]{animation:evm-in var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .evm-dlg::backdrop{background:color-mix(in oklab,var(--fq-th-void) 55%,transparent);backdrop-filter:blur(4px)}
+@keyframes evm-in{from{opacity:0;transform:scale(.98)}}
+[data-design="frequency"] [data-kit="members"] .evm-panel{height:100%;display:flex;flex-direction:column;min-height:0}
+[data-design="frequency"] [data-kit="members"] .evm-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px 12px}
+[data-design="frequency"] [data-kit="members"] .evm-head .h3{margin:0;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evm-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 24px 10px}
+[data-design="frequency"] [data-kit="members"] .evm-search{flex:1 1 260px;min-width:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-4);cursor:text}
+[data-design="frequency"] [data-kit="members"] .evm-search:focus-within{box-shadow:0 0 0 2px var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="members"] .evm-search>.fq-icon{width:17px;height:17px;flex:none;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .evm-search input{flex:1;min-width:0;height:100%;border:none;background:none;outline:none;font:500 15px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evm-seg{display:flex;gap:2px;padding:3px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-4);overflow-x:auto;scrollbar-width:none}
+[data-design="frequency"] [data-kit="members"] .evm-seg button{flex:none;height:38px;padding:0 12px;border:none;border-radius:var(--fq-radius-orb);background:none;font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .evm-seg button:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evm-seg button[aria-pressed="true"]{background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 1px 2px var(--fqm-ink-6),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .evm-seg button:focus-visible,[data-design="frequency"] [data-kit="members"] .evm-chips button:focus-visible,[data-design="frequency"] [data-kit="members"] .evm-locate:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:1px}
+[data-design="frequency"] [data-kit="members"] .evm-chips{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 24px 14px;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .evm-chips::-webkit-scrollbar{display:none}
+[data-design="frequency"] [data-kit="members"] .evm-chips .chip{flex:none;height:36px;padding:0 14px}
+[data-design="frequency"] [data-kit="members"] .evm-chips .chip .fq-icon{width:14px;height:14px}
+[data-design="frequency"] [data-kit="members"] .evm-chips .chip .ev-n-tag{font:500 12px/1 var(--fq-font-sans);opacity:.6}
+[data-design="frequency"] [data-kit="members"] .evm-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .evm-list{min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:8px 12px 16px;list-style:none;border-right:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .evm-list li{position:relative;border-radius:16px}
+[data-design="frequency"] [data-kit="members"] .evm-list li.on{background:var(--fq-pa-soft)}
+[data-design="frequency"] [data-kit="members"] .evm-list a{display:flex;gap:12px;padding:10px 44px 10px 8px;border-radius:16px}
+[data-design="frequency"] [data-kit="members"] .evm-list a:hover .evm-row-t{color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .evm-thumb{flex:none;position:relative;width:72px;height:72px;border-radius:14px;background:var(--fq-bg-sunken) center/cover}
+[data-design="frequency"] [data-kit="members"] .evm-thumb b{position:absolute;left:5px;bottom:5px;padding:4px 6px;border-radius:8px;background:color-mix(in oklab,var(--fq-surface-raised) 94%,transparent);font:600 13px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evm-row-b{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .evm-row-t{font:600 15px/1.25 var(--fq-font-sans);color:var(--fq-text-strong);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .evm-row-s{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font:500 13px/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .evm-locate{position:absolute;z-index:1;right:8px;top:10px;width:32px;height:32px;display:grid;place-items:center;border:none;border-radius:50%;background:var(--fqm-ink-4);color:var(--fq-text-muted);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .evm-locate:hover{background:var(--fqm-ink-8);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .evm-locate .fq-icon{width:15px;height:15px}
+[data-design="frequency"] [data-kit="members"] .evm-empty{display:flex;flex-direction:column;gap:6px;padding:32px 12px;text-align:center}
+[data-design="frequency"] [data-kit="members"] .evm-map{position:relative;min-height:0;display:flex;flex-direction:column;background:var(--fq-bg-sunken)}
+[data-design="frequency"] [data-kit="members"] .evm-canvas,[data-design="frequency"] [data-kit="members"] .evm-ph{flex:1;min-height:0;width:100%}
+[data-design="frequency"] [data-kit="members"] .evm-note{position:absolute;left:12px;right:12px;bottom:12px;margin:0;padding:8px 12px;border-radius:12px;background:color-mix(in oklab,var(--fq-surface-raised) 90%,transparent);pointer-events:none}
+[data-design="frequency"] [data-kit="members"] .evm-dlg .evf-x{width:40px;height:40px;display:grid;place-items:center;border:none;border-radius:50%;background:var(--fqm-ink-4);color:var(--fq-text-strong);cursor:pointer}
+[data-design="frequency"] [data-kit="members"] .evm-dlg .evf-x .fq-icon{width:18px;height:18px}
+[data-design="frequency"] [data-kit="members"] .evm-dlg .ay-sig{flex:none;height:24px;display:inline-flex;align-items:center;padding:0 9px;border-radius:var(--fq-radius-orb);font:600 13px/1 var(--fq-font-sans);background:var(--fq-pa-soft);color:var(--fq-text-strong);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .evm-dlg .ay-sig.live{background:color-mix(in oklab,var(--fq-live) 18%,transparent);color:var(--fq-text-strong)}
+/* The rail's door: the rail is narrow, so the label takes the full width above the Open map button. */
+[data-design="frequency"] [data-kit="members"] .evm-tile.rail{min-height:176px;padding:14px;border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .evm-tile.rail .evm-tile-b{max-width:none;margin-bottom:50px;padding:10px 12px}
+[data-design="frequency"] [data-kit="members"] .evm-tile.rail .evm-tile-t{font-size:16px}
+[data-design="frequency"] [data-kit="members"] .evm-tile.rail .evm-tile-go{right:14px;bottom:14px}
+[data-design="frequency"] [data-kit="members"] .evm-tile.wait{cursor:default}
+@media (max-width:767.98px){
+[data-design="frequency"] [data-kit="members"] .evm-tile{border-radius:20px;padding:14px}
+[data-design="frequency"] [data-kit="members"] .evm-tile-t{font-size:16px}
+[data-design="frequency"] [data-kit="members"] .evm-tile-b .t2{display:none}
+[data-design="frequency"] [data-kit="members"] .evm-tile-go{right:14px;bottom:14px}
+[data-design="frequency"] [data-kit="members"] .evm-dlg{width:100vw;height:100dvh;border-radius:0}
+[data-design="frequency"] [data-kit="members"] .evm-head,[data-design="frequency"] [data-kit="members"] .evm-tools{padding-left:16px;padding-right:16px}
+[data-design="frequency"] [data-kit="members"] .evm-chips{padding-left:16px;padding-right:16px}
+[data-design="frequency"] [data-kit="members"] .evm-body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(220px,42%) minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .evm-map{order:-1}
+[data-design="frequency"] [data-kit="members"] .evm-list{border-right:none}
+[data-design="frequency"] [data-kit="members"] .evm-note{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+[data-design="frequency"] [data-kit="members"] .evm-tile{transition:none}
+[data-design="frequency"] [data-kit="members"] .evm-dlg[open]{animation:none}
+}
+[data-design="frequency"]:has([data-kit="members"] .evm-dlg[open]){overflow:hidden}
+}
+@layer utilities {
+[data-design="frequency"] [data-kit="members"] .evm-search input::placeholder{color:var(--fq-text-faint)}
+}

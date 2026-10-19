@@ -11,6 +11,8 @@
 //   Your week        the member's own Going / waitlist RSVPs for the seven days from their today.
 //                    Only when there is a plan, and only the days that carry one: an empty
 //                    seven-row calendar up top was the owner's complaint (2026-10-14)
+//   Around you       rail-events-map.tsx: a map door of the events near the member that opens the
+//                    Events page's list-plus-map lightbox in place (SCAN-998; not on /events itself)
 //   Your Circles     season Zaps among Circle-mates, cooperative, opt-out honoured
 //   People to know   lib/people-suggestions.ts
 //   ── the platform's own panels, restyled (.fqm-legacy) ──
@@ -19,7 +21,7 @@
 //   a sparkline and links to /practices, where the full chart lives)
 //   Invite a friend · Report a bug
 //
-// SITE-WIDE, all six, on purpose. A layout does not re-render on client navigation, so a panel
+// SITE-WIDE, all seven, on purpose. A layout does not re-render on client navigation, so a panel
 // keyed to /feed would vanish for anyone who landed elsewhere first and stay for anyone who left the
 // Feed: the rail would answer for the page the member first loaded, not the one they are on. The
 // design's panels are about the member, not the page, so they ride on every route; the page panels
@@ -45,6 +47,7 @@ import { BETA_CTA_HREF } from '@/lib/site'
 import { AddToggle } from '../shared/toggles'
 import { avatarBg } from './avatar'
 import { GetStarted } from './get-started'
+import { RailEventsMap } from './rail-events-map'
 import { RailStats } from './rail-stats'
 import { ReportBugButton } from './report-bug-button'
 
@@ -233,6 +236,7 @@ export function FrequencyRightRail({ profileId, role, pathname, stats }: Frequen
       <Suspense fallback={null}>
         <YourWeekPanel profileId={profileId} stats={stats} />
       </Suspense>
+      <RailEventsMap />
       <Suspense fallback={null}>
         <BoardPanel profileId={profileId} />
       </Suspense>
