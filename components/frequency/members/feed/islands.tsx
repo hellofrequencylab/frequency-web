@@ -10,6 +10,7 @@ import type { NeedItem } from '@/lib/feed/frequency-home'
 import { fqToast } from '../shared/toast'
 import { FqAvatar } from '../shared/avatar'
 import { NEAR_EVENT } from './planner'
+import { SystemNotice } from '../shared/system-notice'
 
 // The Feed's small client islands. Each replaces one of the prototype's inline handlers with
 // component state; every action that changes something is the platform's real one.
@@ -153,7 +154,17 @@ export function NeedsYou({ items }: { items: NeedItem[] }) {
           )
         })}
       </div>
-      {left.length === 0 && <div className="fa-allclear fa-serif18">All clear. Nobody’s waiting on you.</div>}
+      {left.length === 0 && (
+        <SystemNotice
+          icon="check"
+          title="All clear. Nobody’s waiting on you."
+          body="Reach out to someone, or put something on the calendar."
+          actions={[
+            { href: '/connections', label: 'Your contacts' },
+            { href: '/events/new', label: 'Add an event', primary: true },
+          ]}
+        />
+      )}
     </>
   )
 }
