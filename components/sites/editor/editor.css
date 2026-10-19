@@ -10,7 +10,7 @@
   --surface-card:#FFFEFC;--surface-raised:#FFFFFF;--bg-canvas:#FAF4EA;
   --text-strong:#34312E;--text-body:#4D4945;--text-muted:#7C766F;--text-faint:#A59F98;
   --border-hair:rgba(30,27,24,.07);--border-strong:rgba(30,27,24,.2);--track:rgba(30,27,24,.06);
-  --x-violet-deep:#5B3FD0;--x-lilac:#C4B8FF;--accent-soft:#ECE6FF;--focus-ring:#5B3FD0;--text-link:#5B3FD0;
+  --x-violet-deep:var(--text-strong);--x-lilac:#C4B8FF;--accent-soft:rgba(30,27,24,.07);--focus-ring:var(--text-strong);--text-link:var(--text-strong);
   --live:#B0287F;--live-soft:#FBE3F1;--reward:#9A6200;--reward-soft:#FFF0D6;
   --success:#2F7F5A;--warning:#A86A00;--danger:#C2362B;--tip-bg:rgba(52,49,46,.92);
   --pa:linear-gradient(120deg,#EEC1EC 0%,#C4B8FF 36%,#A3D4FF 68%,#8FE9FF 100%);
