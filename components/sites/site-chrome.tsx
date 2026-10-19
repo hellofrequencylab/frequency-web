@@ -95,6 +95,7 @@ export function SiteChrome({
   look = {},
   member = null,
   footer = null,
+  checkIn = null,
   children,
 }: {
   brandName: string
@@ -133,6 +134,9 @@ export function SiteChrome({
   /** The Space's own footer columns, line, note and copyright suffix (lib/sites/site-footer.ts), or null
    *  for the skin's default footer. */
   footer?: SiteFooter | null
+  /** The "Check in with Frequency" door beside the Partner badge, when the Space runs Regulars (LIVE-944): a
+   *  labeled Frequency CTA, the one kind of link back into the app a website carries. Null otherwise. */
+  checkIn?: { href: string; line: string } | null
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
@@ -239,6 +243,7 @@ export function SiteChrome({
         </span>
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
+        {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
         <PartnerBadge />
       </footer>
       </div>
@@ -259,6 +264,21 @@ export function PartnerBadge() {
       </svg>
       <span>
         Frequency <b>Partner</b>
+      </span>
+    </a>
+  )
+}
+
+/** The "Check in with Frequency" door a Regulars Space's website carries (LIVE-944), styled as the Partner
+ *  badge so it reads as the same Frequency mark. `line` is what a full card earns, as the title. */
+function CheckInBadge({ href, line }: { href: string; line: string }) {
+  return (
+    <a href={href} className="hs-partner" data-checkin-badge="" title={line}>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden focusable="false">
+        <path d="M9.2 1 3 9.1h4.3L6.4 15 13 6.6H8.6L9.2 1Z" fill="currentColor" />
+      </svg>
+      <span>
+        Check in with <b>Frequency</b>
       </span>
     </a>
   )

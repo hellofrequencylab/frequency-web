@@ -47,20 +47,20 @@ html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
 // canvas's own controls (the same buttons, the same handlers), reading the --fq-* tokens attach() carries in.
 // Appended after CANVAS_CSS only when SITE_DESIGN is frequency.
 const FQ_CANVAS_CSS = `
-.we-section:hover{outline:1.5px dashed color-mix(in oklab,var(--fq-x-violet-deep) 45%,transparent);outline-offset:-1.5px}
-.we-section[data-selected=true]{outline:2px solid var(--fq-x-violet-deep);outline-offset:-2px}
+.we-section:hover{outline:1.5px dashed color-mix(in oklab,var(--fq-focus-ring) 45%,transparent);outline-offset:-1.5px}
+.we-section[data-selected=true]{outline:2px solid var(--fq-focus-ring);outline-offset:-2px}
 .we-section[data-hidden=true]{opacity:.35;filter:grayscale(.6)}
-.we-section-label{left:10px;right:auto;top:10px;height:28px;padding:0 10px;border-radius:999px;background:var(--fq-x-violet-deep);color:var(--fq-surface-raised);font:600 12px/1 var(--fq-font-sans);box-shadow:0 8px 20px -10px var(--fq-x-violet-deep)}
+.we-section-label{left:10px;right:auto;top:10px;height:28px;padding:0 10px;border-radius:999px;background:var(--fq-focus-ring);color:var(--fq-surface-raised);font:600 12px/1 var(--fq-font-sans);box-shadow:0 8px 20px -10px var(--fq-focus-ring)}
 .we-micro{margin:0 10px -46px auto;padding:4px;gap:2px;border:0;border-radius:14px;background:color-mix(in oklab,var(--fq-text-strong) 90%,transparent);color:var(--fq-surface-raised);box-shadow:0 14px 30px -14px var(--fq-text-strong);backdrop-filter:blur(10px)}
 .we-micro button,.we-typography summary{border-radius:10px;color:inherit}
 .we-micro button:hover{background:color-mix(in oklab,var(--fq-surface-raised) 14%,transparent)}
 .we-typography-panel{border:0;border-radius:16px;background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 30px 60px -30px var(--fq-text-strong)}
 .we-insert{color:transparent;font:600 12px/1 var(--fq-font-sans);border-radius:999px}
-.we-insert:hover,.we-insert:focus-visible{outline:0;color:var(--fq-surface-raised);background:var(--fq-x-violet-deep);clip-path:inset(0 calc(50% - 64px) round 999px)}
+.we-insert:hover,.we-insert:focus-visible{outline:0;color:var(--fq-surface-raised);background:var(--fq-focus-ring);clip-path:inset(0 calc(50% - 64px) round 999px)}
 .we-section-label .fq-icon{width:14px;height:14px}.we-micro .fq-icon{width:16px;height:16px}
 .we-micro-div{width:1px;margin:6px 2px;align-self:stretch;background:color-mix(in oklab,var(--fq-surface-raised) 18%,transparent)}
 .we-chrome-edit{border:0;border-radius:999px;padding:6px 12px;background:var(--fq-surface-raised);color:var(--fq-text-strong);font:600 12px/1 var(--fq-font-sans);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
-@media(pointer:coarse){.we-insert{color:var(--fq-x-violet-deep);background:color-mix(in oklab,var(--fq-x-violet-deep) 9%,transparent);clip-path:inset(0 calc(50% - 64px) round 999px)}.we-section-label{height:44px}.we-chrome-edit{min-height:44px}}
+@media(pointer:coarse){.we-insert{color:var(--fq-focus-ring);background:color-mix(in oklab,var(--fq-focus-ring) 9%,transparent);clip-path:inset(0 calc(50% - 64px) round 999px)}.we-section-label{height:44px}.we-chrome-edit{min-height:44px}}
 `
 
 function inlineMarkdown(node: Node): string {
