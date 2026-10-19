@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-863",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "source": {
+      "file": "components/market/listing-owner-controls.tsx",
+      "ref": "Site scan 2026-10-14 (scan nine). The orphan listing-claim-link.tsx was deleted; this is the remaining caller that dropped the dead claimShareUrl branch."
+    },
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((fs.existsSync('components/marketplace/listing-claim-link.tsx')===false)?0:1)\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1752). PREMISE RE-TESTED: listing-claim-link.tsx still had zero importers, and ListingOwnerControls.claimShareUrl was still never passed from listing-builder.tsx. Deleted the orphan and the dead prop branch. Staff share from ListingShareButton on the same Manage block. No migration."
+  }
+}

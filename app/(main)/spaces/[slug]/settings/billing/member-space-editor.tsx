@@ -34,13 +34,16 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
         const result = await setCollectiveExtraSpaces(parentId, extra, quote.priceId, quote.unitCents)
         if ('error' in result) setError(result.error)
         else { setSaved(extra); router.refresh() }
-      } catch { setError('Could not update extra Spaces. Refresh before trying again.') }
+      } catch { setError(`Could not update extra ${many}. Refresh before trying again.`) }
     })
   }
   // A Network's children are its chapters (SCAN-960); a Collective's stay member Spaces.
   const net = management.network
   const one = net ? 'chapter' : 'member Space'
+  const many = net ? 'chapters' : 'Spaces'
   const group = net ? 'Network' : 'Collective'
+  // The self-serve ceiling (SCAN-1008): a Network sells chapters up to NETWORK_PLAN.maxChapters, then quotes.
+  const atMax = !!quote && quote.maxQuantity !== null && extra >= quote.maxQuantity
   const money = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
   return (
     <section className="rounded-card border border-border bg-surface px-5 py-4 space-y-4">
@@ -69,17 +72,18 @@ export function MemberSpaceEditor({ parentId, management, quote = null }: { pare
       )}
       {management.active && quote && (
         <div className="space-y-3 border-t border-border pt-4">
-          <label htmlFor="collective-extra-spaces" className="text-body-sm text-text">Extra Spaces beyond the five included</label>
-          <Input id="collective-extra-spaces" type="number" min={quote.minQuantity} step={1} value={extra} disabled={pending}
+          <label htmlFor="collective-extra-spaces" className="text-body-sm text-text">Extra {many} beyond the {net ? 'ten' : 'five'} included</label>
+          <Input id="collective-extra-spaces" type="number" min={quote.minQuantity} max={quote.maxQuantity ?? undefined} step={1} value={extra} disabled={pending}
             onChange={e => setExtra(Number(e.target.value))} />
-          <p className="text-meta text-muted">{extra} extra Spaces x {money(quote.unitCents)} = {money(quote.unitCents * extra)} per {quote.interval === 'year' ? 'year' : 'month'}. Changes are prorated on your next invoice.</p>
-          {quote.minQuantity > 0 && <p className="text-meta text-muted">Detach member Spaces before reducing below {quote.minQuantity} extra Spaces.</p>}
-          <Button disabled={pending || !Number.isSafeInteger(extra) || extra < quote.minQuantity || extra === (saved ?? quote.quantity)} onClick={saveExtraSpaces}>Save extra Spaces</Button>
-          {saved !== null && <p role="status" className="text-meta text-muted">Extra Spaces updated. Your invoice reflects the prorated change.</p>}
+          <p className="text-meta text-muted">{extra} extra {many} x {money(quote.unitCents)} = {money(quote.unitCents * extra)} per {quote.interval === 'year' ? 'year' : 'month'}. Changes are prorated on your next invoice.</p>
+          {quote.minQuantity > 0 && <p className="text-meta text-muted">Detach {net ? 'chapters' : 'member Spaces'} before reducing below {quote.minQuantity} extra {many}.</p>}
+          {quote.maxQuantity !== null && <p className="text-meta text-muted">Up to {quote.included + quote.maxQuantity} chapters in all. Past that we write you a quote.</p>}
+          <Button disabled={pending || !Number.isSafeInteger(extra) || extra < quote.minQuantity || (quote.maxQuantity !== null && extra > quote.maxQuantity) || extra === (saved ?? quote.quantity)} onClick={saveExtraSpaces}>{net ? 'Save extra chapters' : 'Save extra Spaces'}</Button>
+          {saved !== null && <p role="status" className="text-meta text-muted">Extra {many} updated. Your invoice reflects the prorated change.</p>}
         </div>
       )}
-      {management.active && !quote && !net && <p className="text-body-sm text-muted">Extra-Space billing is available once your paid Collective subscription and its prices are ready.</p>}
-      {management.active && management.members.length >= management.capacity && <p className="text-body-sm text-muted">{net ? `Your Network has all ${management.capacity} included chapters. Talk to us to add more.` : 'Your Collective is full. Add another Space to your plan before attaching one.'}</p>}
+      {management.active && !quote && <p className="text-body-sm text-muted">Extra-{net ? 'chapter' : 'Space'} billing is available once your paid {group} subscription and its prices are ready.</p>}
+      {management.active && management.members.length >= management.capacity && <p className="text-body-sm text-muted">{net ? (atMax ? `Your Network has all ${management.capacity} chapters it can hold. Talk to us about more.` : `Your Network has all ${management.capacity} chapters it pays for. Add extra chapters above before attaching one.`) : 'Your Collective is full. Add another Space to your plan before attaching one.'}</p>}
       {!management.active && <p className="text-body-sm text-muted">Your {group} is inactive. {net ? 'Chapters' : 'Member Spaces'} now use their own plans, and you can still detach them.</p>}
       {error && <p role="alert" className="text-body-sm text-text">{error}</p>}
     </section>
