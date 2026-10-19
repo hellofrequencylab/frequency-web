@@ -18346,6 +18346,7 @@ export type Database = {
         Args: { p_feature?: string | null; p_space?: string | null }
         Returns: number
       }
+      auth_email_exists: { Args: { p_email: string }; Returns: boolean }
       award_zaps_atomic: {
         Args: {
           _action: string
