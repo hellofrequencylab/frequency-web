@@ -13,8 +13,14 @@ export async function loadPartnersMonth(slug: string, year: number, month1: numb
   if (!month || typeof slug !== 'string' || !slug || slug.length > 253) return []
   const hub = await getVisibleSpaceBySlug(slug, await getMyProfileId())
   if (!hub || spacePlanTab(hub) !== 'partners') return []
-  const view = await loadPartnersView(hub.id)
-  if (!view) return []
-  const window = monthGridWindow(month.year, month.month1)
-  return loadPartnersCalendarWindow(view, window.fromDay, window.toDay)
+  try {
+    const view = await loadPartnersView(hub.id)
+    if (!view) return []
+    const window = monthGridWindow(month.year, month.month1)
+    return await loadPartnersCalendarWindow(view, window.fromDay, window.toDay)
+  } catch (error) {
+    // SCAN-1000: an unreadable partners table leaves the month empty rather than throwing to the calendar.
+    console.error('[partners] a calendar month could not be read', error)
+    return []
+  }
 }

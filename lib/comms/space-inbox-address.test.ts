@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   upsertFails: false,
   notifications: [] as Record<string, unknown>[],
   opened: [] as Record<string, unknown>[],
+  seenMessages: {} as Record<string, Record<string, unknown>>,
   appended: [] as Record<string, unknown>[],
   appendResult: { id: 'msg1' } as Record<string, unknown> | null,
   records: null as Record<string, unknown>[] | null,
@@ -65,6 +66,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
       if (name === 'spaces') return { data: state.space && (!filter.id || state.space.id === filter.id) ? state.space : null, error: null }
       if (name === 'space_inbox_addresses') { const r = state.row; return { data: r && Object.entries(filter).every(([k, v]) => r[k] === v) ? r : null, error: null } }
       if (name === 'contacts') { const c = state.contacts.find(c => c.space_id === filter.space_id && c.email === filter.email); return { data: c ?? null, error: null } }
+      if (name === 'comms_messages') return { data: state.seenMessages[String(filter.external_message_id)] ?? null, error: null }
       return { data: null, error: null }
     },
   }
@@ -88,7 +90,7 @@ import { providerRecordHost, providerRecordsToZoneRecords, spaceInboxZone } from
 
 beforeEach(() => {
   state.row = null; state.contacts = []; state.createCount = 0; state.listed = null; state.providerStatus = 'verified'; state.providerThrows = false
-  state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.appended = []; state.appendResult = { id: 'msg1' }; state.records = null
+  state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.seenMessages = {}; state.appended = []; state.appendResult = { id: 'msg1' }; state.records = null
   state.listRows = []; state.listCalls = []; state.listFails = false
   state.space = { id: 's1', slug: 'labs', name: 'Labs', brand_name: 'Labs Collective', owner_profile_id: 'owner1' }
   vi.stubEnv('SPACE_INBOX_ADDRESSES_ENABLED', '1'); vi.stubEnv('SPACE_EMAIL_INBOX_ROOT', 'frequencylocal.com')
@@ -284,6 +286,16 @@ describe('resolveSpaceInboxRoute + recordSpaceInboxMessage', () => {
     state.appendResult = { duplicate: true }
     expect(await recordSpaceInboxMessage(route, parsed)).toMatchObject({ status: 'duplicate' })
     expect(await recordSpaceInboxMessage({ ...route, ownerProfileId: null }, parsed)).toEqual({ status: 'no_owner' })
+  })
+  it('acks a redelivered message before opening a thread, so a retry leaves no empty conversation (SCAN-1001)', async () => {
+    await provisionSpaceInboxAddress('s1')
+    const route = await resolveSpaceInboxRoute(['hello@labs.frequencylocal.com'])
+    if (route.kind !== 'ready') throw new Error('expected ready')
+    state.seenMessages['<m1@example.org>'] = { conversation_id: 'conv0' }
+    expect(await recordSpaceInboxMessage(route, parsed)).toEqual({ status: 'duplicate', conversationId: 'conv0' })
+    expect(state.opened).toEqual([])
+    expect(state.appended).toEqual([])
+    expect(state.contacts).toEqual([])
   })
 })
 

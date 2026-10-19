@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E5",
-  "wave": "W7",
-  "append": {
-    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY (website slice only). Exists: the website inspector derives its fields from a schema (components/sites/editor/inspector.tsx:22 reads lib/page-editor/config.tsx components[type].fields into FieldsSchema and renders components/page-editor/mobile/field-form), per-device section overrides with inherit semantics (lib/sites/editor/state.ts:176 sectionDisplay(doc, id, device) and :197 updateSectionDisplay; device = desktop | tablet | phone), a real iframe viewport per device (canvas.tsx:255), a desktop/mobile shell split (shell.tsx:41 readMobileViewport) and the pre-contract bottom sheet (components/page-editor/mobile/bottom-sheet.tsx). Missing: the schema is the Puck-style config, not the E1 Zod contract; overrides carry no provenance (which breakpoint authored a value); no container queries (zero @container hits under lib/sites/editor or components/sites/editor); every-control-by-touch is a browser gate. Stays manual."
-  }
-}

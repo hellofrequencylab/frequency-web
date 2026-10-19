@@ -82,7 +82,7 @@ export default async function SpaceConversationsPage({
       back={{ href: `/spaces/${space.slug}/manage?section=resonance`, label: 'Back to Resonance' }}
       actions={
         canManage ? (
-          <SpaceConversationCompose startAction={startSpaceConversationAction.bind(null, space.slug)} senderName={space.name} />
+          <SpaceConversationCompose startAction={startSpaceConversationAction.bind(null, space.slug)} senderName={space.brandName ?? space.name} />
         ) : undefined
       }
       banner={staffViewing ? <StaffPreviewBanner spaceName={space.brandName ?? space.name} /> : undefined}
