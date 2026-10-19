@@ -13,6 +13,7 @@ import { ANNUAL_MONTHS_FREE } from '@/lib/billing/pricing-keys'
 import { formatPriceCents } from '@/lib/commerce/types'
 import type { PricingDefaults, TierPrice } from './settings'
 import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
+import { foundingOpenForPlan } from './beta'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 
 /** The paid Space plans we ADVERTISE, in ladder order (ADR-811). `free` is the baseline, not a paid
@@ -143,8 +144,10 @@ export function effectiveTierPrice(price: TierPrice, betaActive: boolean): TierP
  *  is only "list is above monthly", which stays permanently true after the cutover while the checkout
  *  has already moved to list. Pass the SAME answer the checkout asks (isBetaPricingActive()). */
 export function spacePlanRows(values: PricingDefaults, betaActive: boolean): PriceRow[] {
+  // Per plan, not per page: Collective's Founding intro stays open after the beta window closes
+  // (foundingOpenForPlan), so its row keeps the struck list anchor while Business reads list alone.
   return ADVERTISED_SPACE_PLANS.map((plan) =>
-    priceRow(plan, SPACE_PLAN_LABEL[plan], effectiveTierPrice(values.plan[plan], betaActive)),
+    priceRow(plan, SPACE_PLAN_LABEL[plan], effectiveTierPrice(values.plan[plan], foundingOpenForPlan(plan, betaActive))),
   )
 }
 

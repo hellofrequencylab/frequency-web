@@ -47,12 +47,13 @@ export const PLAN_STORY = {
    *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
    *  above keeps them too, because the home document's hero is the spine verbatim. */
   lines: 'People join free. Businesses host free. You pay when you start charging.',
-  /** The ladder in one line: five tiers, one verb each (ADR-1709). */
-  ladder: 'Five tiers, one verb each. Members join. Crew hosts. A Space runs. Business sells. Collective connects.',
+  /** The ladder in one line: six tiers, one verb each (ADR-1709; Network added by the 2026-10-16 split). */
+  ladder:
+    'Six tiers, one verb each. Members join. Crew hosts. A Space runs. Business sells. Collective connects. Network unites.',
   /** WHY a plan, in the model's own terms: free hosting is the point, and a plan is what you take when
    *  you start charging. Every surface interpolates this instead of arguing it again. */
   paid:
-    'Hosting is free, and that is the point, not a teaser. A free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging, and Collective is Business for a group of groups.',
+    'Hosting is free, and that is the point, not a teaser. A free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
   /** The selling line: where taking money starts, and the one kind of money every tier receives. */
   selling:
     'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no platform fee, only card processing.',
@@ -66,14 +67,20 @@ export const PLAN_STORY = {
   /** Crew in one breath: support plus a host kit, in the canon's words (ADR-1084). */
   crew:
     'Crew is how a member backs the community and hosts a little more. You contribute what you want, and every amount buys the same Crew: more Circles, Events and Journeys, and a monthly Boost for a Circle or Space you love.',
-  /** Collective in one breath: groups of groups. */
+  /** Collective in one breath: separate groups that partner (the 2026-10-16 split; Network is the
+   *  one-owner-with-chapters plan). */
   collective:
-    'Collective is for groups of groups: several member Spaces under one account, each with the Business tools, and Vera AI included.',
-  /** The honest yearly framing. It used to carry the Opening Beta line ("beta rates hold through the
+    'Collective is for separate groups that partner: a hub that links partner Spaces, cross-listed Circles and Journeys, a shared calendar, and Vera AI included. Each partner keeps its own members and payouts.',
+  /** Network in one breath: one organization, many chapters. */
+  network:
+    'Network is for one organization with chapters: one membership that works in every chapter, central admins who see the whole network, chapter leaders who run their own, one network calendar and home, and a roll-up report.',
+  /** The honest price framing. It used to carry the Opening Beta line ("beta rates hold through the
    *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
-   *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
-   *  months free on the year. */
-  founding: 'Every plan is one price, the same whenever you start, and paying for the year is two months free.',
+   *  (ADR-1060), and then said "every plan is one price", which stopped being true when Collective got a
+   *  standing Founding intro (ADR-1709 §7, owner 2026-10-19). What is true: a price you take is yours for
+   *  as long as you keep the plan, and the year is two months free. */
+  founding:
+    'The price you start on is yours for as long as you keep the plan, and paying for the year is two months free.',
   /** CARD PROCESSING (LIVE-913, docs/VALUE-LADDER.md §2). Stripe's processing fee is always passed
    *  through, so no surface says "0%" or "no fee" without these words beside it, and none says "you keep
    *  100%" without saying of what. Two fragments, not sentences, because the caveat belongs INSIDE the

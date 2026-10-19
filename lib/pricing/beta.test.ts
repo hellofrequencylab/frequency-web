@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { BETA_PRICING_ENDS_AT, isBetaPricingActive, effectiveCatalogAmounts } from './beta'
+import {
+  BETA_PRICING_ENDS_AT,
+  FOUNDING_OPEN_ITEMS,
+  foundingOpenFor,
+  foundingOpenForPlan,
+  isBetaPricingActive,
+  effectiveCatalogAmounts,
+} from './beta'
 
 // Beta pricing window (ADR-811): the $19 Business / $49 Collective anchors auto-revert to list on the
 // cutover. These are the PURE helpers behind that; the checkout key switch + the display are wired on top.
@@ -60,5 +67,28 @@ describe('effectiveCatalogAmounts', () => {
   it('a flat item (founding == list) is unchanged in both windows', () => {
     expect(effectiveCatalogAmounts(flat, true)).toEqual(flat)
     expect(effectiveCatalogAmounts(flat, false)).toEqual(flat)
+  })
+})
+
+describe('foundingOpenFor (ADR-1750: a per-item Founding intro that outlives the beta window)', () => {
+  it('while the window is open every item is founding', () => {
+    expect(foundingOpenFor('business_base', true)).toBe(true)
+    expect(foundingOpenFor(null, true)).toBe(true)
+  })
+
+  it('after the cutover only FOUNDING_OPEN_ITEMS stay on the founding price', () => {
+    expect([...FOUNDING_OPEN_ITEMS]).toEqual(['collective_base'])
+    expect(foundingOpenFor('collective_base', false)).toBe(true)
+    expect(foundingOpenFor('business_base', false)).toBe(false)
+    expect(foundingOpenFor('nonprofit_collective', false)).toBe(false)
+    expect(foundingOpenFor(null, false)).toBe(false)
+    expect(foundingOpenFor(undefined, false)).toBe(false)
+  })
+
+  it('maps a Space plan to its catalog item: Collective open, Business and Network not', () => {
+    expect(foundingOpenForPlan('collective', false)).toBe(true)
+    expect(foundingOpenForPlan('business', false)).toBe(false)
+    expect(foundingOpenForPlan('network', false)).toBe(false)
+    expect(foundingOpenForPlan('free', false)).toBe(false)
   })
 })

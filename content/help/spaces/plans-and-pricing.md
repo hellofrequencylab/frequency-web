@@ -4,7 +4,7 @@ description: What each Space plan is for, what it turns on, and how to pick the 
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-10-16
+updated: 2026-10-19
 audience: member
 featureKeys: [billing]
 status: published
@@ -21,11 +21,11 @@ and every rate straight from the plan catalog, so it is always the number you wi
 article deliberately does not repeat them: a number copied here would go stale the day the catalog
 moved, and the pricing page cannot.
 
-## Five tiers, one verb each
+## Six tiers, one verb each
 
-Members join. Crew hosts. A Space runs. Business sells. Collective connects.
+Members join. Crew hosts. A Space runs. Business sells. Collective connects. Network unites.
 
-Two of those are personal and three are for Spaces.
+Two of those are personal and four are for Spaces.
 
 | Tier | Who it is for |
 | --- | --- |
@@ -33,7 +33,8 @@ Two of those are personal and three are for Spaces.
 | **Crew** | Members who want to back the community and host more. Contribute what you want |
 | **Space** (the free plan) | Running a community, a studio, or a business page, with every hosting tool |
 | **Business** | The day you start charging. Selling opens here |
-| **Collective** | A group of groups: Business, plus member Spaces and a lower network fee |
+| **Collective** | Separate groups that partner: a hub linking partner Spaces, a shared calendar, cross-listing, Vera AI, and a lower network fee. Each partner keeps its own Space |
+| **Network** | One organization with chapters: one membership in every chapter, central admins, chapter leaders, a network calendar and a roll-up report |
 
 Two more plans sit beside the ladder:
 
@@ -42,8 +43,9 @@ Two more plans sit beside the ladder:
 - **Independent** is white label, run on your own terms, off the shared network. It is arranged
   directly rather than bought from this page, so if that is what you need, [ask us](/help).
 
-Every plan is one price, the same whenever you start. Paying yearly gives you **two months free**: a
-yearly plan is ten months of the monthly price.
+The price you start on is yours for as long as you keep the plan. Collective has a Founding price
+under its list price while the intro is open, and a Collective that starts on it keeps it. Paying
+yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
 ## What a free Space gives you
 

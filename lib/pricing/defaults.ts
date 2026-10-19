@@ -22,6 +22,7 @@ import {
   catalogItem,
   yearlyFromMonthly,
   NETWORK_TAKE_RATE_DEFAULT,
+  type CatalogAmounts,
   type CatalogItemKey,
 } from '@/lib/billing/pricing-keys'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
@@ -90,6 +91,13 @@ export interface PricingDefaults {
  *  discount the catalog does not carry. PURE. THE single conversion from catalog to settings shape. */
 function planPrice(item: CatalogItemKey): TierPrice {
   const { month, year } = catalogItem(item)
+  return planPriceFromAmounts(month, year)
+}
+
+/** The same conversion from a RESOLVED pair of amount grids (the operator's catalog config over the code
+ *  item). Exported so the settings layer can derive a plan row from the catalog the checkout bills
+ *  from, the way it derives Crew from the PWYW floor. PURE. */
+export function planPriceFromAmounts(month: CatalogAmounts, year: CatalogAmounts): TierPrice {
   const price: TierPrice = { monthly_cents: month.foundingCents, annual_cents: year.foundingCents }
   return month.listCents > month.foundingCents ? { ...price, list_cents: month.listCents } : price
 }

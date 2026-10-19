@@ -110,7 +110,7 @@ function CatalogSection({
 
       <FormSection
         title="Collective"
-        description="Groups of groups (ADR-1709): five member Spaces and Vera AI included, extra member Spaces billed per Space, and Non Profit Collective for verified 501(c)(3)s. Sold only while the Collective switch is on. Run the catalog sync after changing an amount."
+        description="Separate groups that partner (ADR-1709, split 2026-10-16): a partner hub, a shared calendar, cross-listing and Vera AI included. The Founding amount is what a new Collective is charged while the intro is open (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS); the list amount is the struck anchor. Existing Collectives keep their member Spaces, billed per extra Space. Non Profit Collective is for verified 501(c)(3)s. Sold only while the Collective switch is on. Run the catalog sync after changing an amount."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.collective_base} />
@@ -256,9 +256,9 @@ function CatalogItemRow({
 
       <div className={`flex flex-wrap items-end gap-3 ${enabled ? '' : 'opacity-50'}`}>
         <Field label="List $ / mo" value={monthlyList} onChange={setMonthlyList} />
-        <Field label="Opening Beta $ / mo" value={monthlyFounding} onChange={setMonthlyFounding} />
+        <Field label="Founding $ / mo" value={monthlyFounding} onChange={setMonthlyFounding} />
         <Field label="List $ / yr" value={yearlyList} onChange={setYearlyList} placeholder="2 mo free" />
-        <Field label="Opening Beta $ / yr" value={yearlyFounding} onChange={setYearlyFounding} placeholder="2 mo free" />
+        <Field label="Founding $ / yr" value={yearlyFounding} onChange={setYearlyFounding} placeholder="2 mo free" />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
           <Button size="sm" variant="secondary" onClick={save} disabled={pending}>

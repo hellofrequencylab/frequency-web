@@ -33,7 +33,7 @@ function gatedFeatureKeys(): string[] {
 }
 
 import { catalogItem, yearlyFromMonthly, type CatalogItemKey } from '@/lib/billing/pricing-keys'
-import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
+import { effectiveCatalogAmounts, foundingOpenForPlan, isBetaPricingActive } from './beta'
 import { featureMeter } from './feature-meters'
 import { formatCents } from './display'
 import { PRICING_DEFAULTS } from './defaults'
@@ -149,12 +149,16 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
   it('beta-vs-list is one shape, not a per-tier patch: every plan resolves both sides of the cutover', () => {
     for (const plan of SPACE_PLANS) {
       const amounts = SPACE_PLAN_PRICE_CENTS[plan]
-      // During beta a plan is charged its founding amount; after the cutover the list becomes the price.
+      // During beta a plan is charged its founding amount; after the cutover the list becomes the price,
+      // except for a plan whose Founding intro is held open by FOUNDING_OPEN_ITEMS (Collective, ADR-1750).
+      const afterCutover = foundingOpenForPlan(plan, false) ? amounts.foundingCents : amounts.listCents
       expect(spacePlanPriceCents(plan, true), plan).toBe(amounts.foundingCents)
-      expect(spacePlanPriceCents(plan, false), plan).toBe(amounts.listCents)
+      expect(spacePlanPriceCents(plan, false), plan).toBe(afterCutover)
       expect(tierPriceCents('plan', plan, true), plan).toBe(amounts.foundingCents)
-      expect(tierPriceCents('plan', plan, false), plan).toBe(amounts.listCents)
+      expect(tierPriceCents('plan', plan, false), plan).toBe(afterCutover)
     }
+    expect(foundingOpenForPlan('collective', false)).toBe(true)
+    expect(SPACE_PLAN_PRICE_CENTS.collective).toEqual({ listCents: 14900, foundingCents: 9900 })
     // LIVE-228: every plan is flat (founding == list); no beta anchor on any tier.
     expect(SPACE_PLAN_PRICE_CENTS.business.foundingCents).toBe(SPACE_PLAN_PRICE_CENTS.business.listCents)
     expect(SPACE_PLAN_PRICE_CENTS.nonprofit.foundingCents).toBe(SPACE_PLAN_PRICE_CENTS.nonprofit.listCents)
@@ -164,7 +168,7 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
   it('a ladder rung quotes the price the checkout charges TODAY, matching /pricing', () => {
     const beta = isBetaPricingActive()
     for (const plan of SPACE_PLANS) {
-      const charged = effectiveCatalogAmounts(SPACE_PLAN_PRICE_CENTS[plan], beta).foundingCents
+      const charged = effectiveCatalogAmounts(SPACE_PLAN_PRICE_CENTS[plan], foundingOpenForPlan(plan, beta)).foundingCents
       expect(tierPriceLabel('plan', plan), plan).toBe(charged === 0 ? 'Free' : `${formatCents(charged)}/mo`)
     }
   })

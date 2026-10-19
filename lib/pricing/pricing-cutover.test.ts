@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 // drift between the operator-editable pricing values the page reads and the catalog the checkout bills.
 
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
-import { effectiveCatalogAmounts, isBetaPricingActive, BETA_PRICING_ENDS_AT } from './beta'
+import { effectiveCatalogAmounts, foundingOpenFor, isBetaPricingActive, BETA_PRICING_ENDS_AT } from './beta'
 import { ADVERTISED_SPACE_PLANS, effectiveTierPrice, spacePlanRows } from './display'
 import { spaceOfferings, type PricingGridInput } from './pricing-grid'
 import { PRICING_DEFAULTS } from './settings'
@@ -32,10 +32,12 @@ const BASE_ITEM: Record<string, CatalogItemKey> = {
 }
 
 /** What the CHECKOUT charges for a plan at an interval, in cents: the founding price key during the
- *  beta window, the list price key after it. This is resolveLoadoutPriceId's rule, in amounts. */
+ *  beta window, the list price key after it, unless the item's Founding intro is held open
+ *  (FOUNDING_OPEN_ITEMS, ADR-1750). This is resolveLoadoutPriceId's rule, in amounts. */
 function checkoutCents(plan: string, interval: 'month' | 'year', betaActive: boolean): number {
-  const amounts = catalog[BASE_ITEM[plan]!][interval]
-  return effectiveCatalogAmounts(amounts, betaActive).foundingCents
+  const item = BASE_ITEM[plan]!
+  const amounts = catalog[item][interval]
+  return effectiveCatalogAmounts(amounts, foundingOpenFor(item, betaActive)).foundingCents
 }
 
 const input = (betaActive: boolean): PricingGridInput => ({

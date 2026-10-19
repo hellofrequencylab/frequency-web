@@ -8,14 +8,19 @@
 > (rows `LIVE-747` to `LIVE-767`, `HYG-165`, `OWN-094` to `OWN-096`).
 >
 > 1. **The tiers.** Personal: **Member** (free) and **Crew** (contribute what you want). Space plans:
->    **Space** (the free plan), **Business**, and **Collective** (5 member Spaces included). Beside the
->    ladder: **Non Profit**, **Non Profit Collective**, and **Independent** (hand-sold, off the network,
->    never on a public surface). `ADVERTISED_SPACE_PLANS` (`lib/pricing/display.ts`) is business,
->    collective, nonprofit.
+>    **Space** (the free plan), **Business**, **Collective** (separate groups that partner, since the
+>    2026-10-16 split) and **Network** (one organization with chapters, SCAN-956). Beside the ladder:
+>    **Non Profit**, **Non Profit Collective**, and **Independent** (hand-sold, off the network, never
+>    on a public surface). `ADVERTISED_SPACE_PLANS` (`lib/pricing/display.ts`) is business, collective,
+>    network, nonprofit.
 > 2. **Prices are catalog data, never copy** (ADR-916). The figures here are the record of the ruling,
->    not a source: Business 4900 cents a month, Collective 14900 (`collective_base`, re-opened), an extra
->    member Space 2900 (`collective_space`), Non Profit 3900, Non Profit Collective 11900, Independent
->    24900, Vera AI 2000 (included in Collective), operator seats 1200. Yearly is ten months.
+>    not a source: Business 4900 cents a month, Collective 14900 list with a 9900 **Founding intro**
+>    (`collective_base`; the intro is a standing per-item offer, `FOUNDING_OPEN_ITEMS` in
+>    `lib/pricing/beta.ts`, owner 2026-10-19, locked for the life of a subscription that takes it), an
+>    extra member Space 2900 (`collective_space`, for Collectives that already run member Spaces), Non
+>    Profit 3900, Non Profit Collective 11900, Network from 59900 with 4900 per extra chapter and 47900
+>    for a verified nonprofit (`NETWORK_PLAN`), Independent 24900, Vera AI 2000 (included in Collective
+>    and Network), operator seats 1200. Yearly is ten months.
 > 3. **Selling is what Business is for.** The `space_payments` gate (Business floor, `LIVE-753`) guards
 >    paid tickets, paid memberships, donations, shop checkout and booking deposits. Personal selling is
 >    off on every personal tier. The gate does not wait for `beta_grace`. A refusal is never a dead end:

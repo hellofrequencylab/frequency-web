@@ -560,7 +560,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your community starts charging for memberships, that is Business, and when you run several groups together, that is Collective.'),
+    intro: pricingIntro('When your community starts charging for memberships, that is Business. When separate groups partner, that is Collective, and when one organization runs chapters, that is Network.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -575,7 +575,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When you run several groups together, Collective connects them under one account, at ${P.collective} a month.`,
+        ` When separate groups partner, Collective links them while each keeps its own Space, members and payouts: ${P.collectiveFounding} a month as a Founding price, yours for as long as you keep the plan, under the ${P.collectiveList} list.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },

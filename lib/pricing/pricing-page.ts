@@ -34,7 +34,7 @@ import {
 import { ADDON_ENTITLEMENT_KEYS, NETWORK_PLAN, SPACE_PLAN_LABEL, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
 import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
-import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
+import { isBetaPricingActive, effectiveCatalogAmounts, foundingOpenFor } from './beta'
 import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 // The approved copy spine, which deliberately lives in a LEAF module (ADR-1368). Imported here only
 // so this module can read it (pricingLadderSummary) and re-export it for existing callers.
@@ -76,8 +76,13 @@ interface PriceStrings {
    *  constant away from re-opening, but NO copy surface may quote it while `isBetaPricingActive()` is
    *  false: a sentence that offers a founding rate the checkout refuses. */
   businessBeta: string
-  /** Collective flat (ADR-1709), e.g. "$149". */
+  /** The Collective price a new buyer is charged (ADR-1709 §7: the Founding intro while it is open),
+   *  e.g. "$99". Same figure as `collectiveFounding`; kept for callers that quote one number. */
   collective: string
+  /** The Collective Founding intro, e.g. "$99" (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS). */
+  collectiveFounding: string
+  /** The Collective list price the Founding intro sits under, e.g. "$149". */
+  collectiveList: string
   /** Non Profit flat, e.g. "$39". */
   nonprofit: string
   /** The Vera AI add-on monthly, e.g. "$20". */
@@ -108,7 +113,13 @@ export function priceStringsFrom(cat: Record<CatalogItemKey, ResolvedCatalogItem
   return {
     businessList: formatLoadoutCents(cat.business_base.month.listCents),
     businessBeta: formatLoadoutCents(cat.business_base.month.foundingCents),
+    // Collective carries TWO numbers (ADR-1709 §7, owner 2026-10-19): the $149 list and the $99 Founding
+    // intro the checkout bills (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS). `collective` stays the charged
+    // (founding) figure for callers that quote one number; a sentence that quotes it uses
+    // `collectiveIntroPhrase` so the intro is never read as the list price.
     collective: formatLoadoutCents(cat.collective_base.month.foundingCents),
+    collectiveFounding: formatLoadoutCents(cat.collective_base.month.foundingCents),
+    collectiveList: formatLoadoutCents(cat.collective_base.month.listCents),
     nonprofit: formatLoadoutCents(cat.nonprofit_seat.month.foundingCents),
     veraAi: formatLoadoutCents(cat.addon_ai.month.foundingCents),
     veraAiYear: formatLoadoutCents(cat.addon_ai.year.foundingCents),
@@ -232,8 +243,10 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
     'Selling opens: paid tickets, paid memberships, donations, shop checkout and booking deposits. The limits lift, and you get your own website, team seats, automations, Programs, and hosting Collaborator Spaces.',
   collective:
     'Everything in Business for separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, more team seats, and Vera AI included. Each partner keeps its own members and payouts.',
+  // "Everything in Business", not "in Collective": a Network has no partner hub or cross-listing
+  // (lib/collective/partners.ts, one tab never both), so the superset claim would be untrue.
   network:
-    'Everything in Collective for one organization with chapters: chapter leaders, central admins, one membership in every chapter, one network calendar and home, and a roll-up report.',
+    'Everything in Business for one organization with chapters: chapter leaders, central admins, one membership in every chapter, one network calendar and home, a roll-up report, and Vera AI included.',
   nonprofit:
     'Everything in Business for verified nonprofits, with donations built in and no network fee. Flat, never per seat.',
 }
@@ -287,8 +300,10 @@ export function pricingTiers(
   // BETA AUTO-REVERT (ADR-811): during beta, a plan with a beta anchor shows it struck under the list;
   // once beta ends the list becomes the price (no strike, no beta caption).
   // effectiveCatalogAmounts mirrors what the checkout charges, so the table never quotes a price the
-  // checkout won't honor.
-  const eff = (a: CatalogAmounts) => effectiveCatalogAmounts(a, betaActive)
+  // checkout won't honor. An item whose Founding intro is held open (Collective, ADR-1750) keeps its
+  // struck list anchor after the cutover, exactly as the checkout keeps billing its founding key.
+  const eff = (a: CatalogAmounts, item: CatalogItemKey | null) =>
+    effectiveCatalogAmounts(a, foundingOpenFor(item, betaActive))
 
   // Free has no catalog item ($0 is not a Stripe price); a zeroed DualPrice renders as "Free".
   const zero: CatalogAmounts = { listCents: 0, foundingCents: 0 }
@@ -305,7 +320,7 @@ export function pricingTiers(
       name: offeringLadderLabel(o),
       tagline: o.tagline,
       priceKind: network ? 'from' : 'flat',
-      price: network ? { month: from, year: fromYear } : item ? { month: eff(item.month), year: eff(item.year) } : { month: zero, year: zero },
+      price: network ? { month: from, year: fromYear } : item ? { month: eff(item.month, TIER_ITEM[id]), year: eff(item.year, TIER_ITEM[id]) } : { month: zero, year: zero },
       featured: o.featured,
       forWho: o.forWho,
       billing: o.billing,

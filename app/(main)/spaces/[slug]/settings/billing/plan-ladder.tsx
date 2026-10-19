@@ -2,7 +2,7 @@ import { Check, ShieldCheck, Globe, Users, Network } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
-import { isBetaPricingActive } from '@/lib/pricing/beta'
+import { FOUNDING_RATE_NOTE } from '@/lib/pricing/beta'
 import { ChoosePlanButton } from './choose-plan'
 
 // THE COMMUNITY COLLECTIVE plan ladder — the tier map on the Space billing surface, on the five-tier
@@ -39,7 +39,7 @@ const RUNGS: Rung[] = [
   {
     plan: 'collective',
     icon: Users,
-    blurb: 'For groups of groups: member Spaces under one account, each with the Business tools, more seats, and Vera AI included.',
+    blurb: 'For separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, more seats, and Vera AI included. Each partner keeps its own members and payouts.',
   },
   {
     plan: 'network',
@@ -105,13 +105,14 @@ function priceLabel(plan: SpacePlan): string {
   return cents > 0 ? `${formatCents(cents)}/mo` : 'Free'
 }
 
-/** The Opening Beta note for a rung currently under its list price, else null. Derived, so a plan that
- *  is not actually discounted can never advertise a discount, and every discounted plan says so rather
- *  than only the one somebody remembered to hand-write a note for. */
-function betaNote(plan: SpacePlan): string | null {
+/** The Founding note for a rung currently charged under its list price, else null. Derived through the
+ *  same predicate the checkout bills on (spacePlanPriceCents → foundingOpenForPlan), so a plan that is
+ *  not actually discounted can never advertise a discount, and every discounted plan says so rather than
+ *  only the one somebody remembered to hand-write a note for. */
+function foundingNote(plan: SpacePlan): string | null {
   const list = SPACE_PLAN_PRICE_CENTS[plan]?.listCents ?? 0
   const now = spacePlanPriceCents(plan)
-  return list > now ? `Opening Beta ${formatCents(now)}/mo, list ${formatCents(list)}/mo` : null
+  return list > now ? `Founding ${formatCents(now)}/mo, list ${formatCents(list)}/mo. ${FOUNDING_RATE_NOTE}` : null
 }
 
 /**
@@ -131,9 +132,9 @@ export function PlanLadder({
   sellable?: Partial<Record<SpacePlan, boolean>>
   isFree?: boolean
 }) {
-  // The beta anchor note ("Beta $49/mo") only shows while the beta window is open; it auto-clears when
-  // beta ends (2026-09-01, lib/pricing/beta.ts), the same instant the checkout starts charging list.
-  const betaActive = isBetaPricingActive()
+  // The Founding note shows exactly while a rung is charged under its list (foundingNote reads the same
+  // predicate the checkout bills on, lib/pricing/beta.ts foundingOpenFor), so it clears the instant the
+  // checkout starts charging list for that plan, with no clock of its own here.
   // The Independent rung only appears for a Space already ON it, so the ladder can mark its current
   // plan. It is not an upgrade path and carries no Choose action (LIVE-227).
   const rungs = currentPlan === 'independent' ? [...RUNGS, CURRENT_PLAN_ONLY_RUNG] : RUNGS
@@ -154,12 +155,13 @@ export function PlanLadder({
           const state = rungState(rung.plan, currentPlan, sellable)
           const chip = STATE_CHIP[state]
           const Icon = rung.icon
-          // A FREE Space gets a one-click Choose on the one sellable higher flat rung (Collective).
-          // Business keeps its richer CTA below; Non Profit routes through verification, not a direct
-          // buy; Independent is sold by hand and is never offered here (LIVE-227).
-          // Network (SCAN-980) gets the same one-click Choose once it sells. Only a FREE Space: a paid
-          // Space already holds a subscription, and a second checkout would bill it twice.
-          const choosable = rung.plan === 'business' || rung.plan === 'network' ? rung.plan : null
+          // A FREE Space gets a one-click Choose on every sellable flat rung: Business, Collective
+          // (the Founding intro, OWN-096) and Network (SCAN-980). Non Profit routes through
+          // verification, not a direct buy; Independent is sold by hand and is never offered here
+          // (LIVE-227). Only a FREE Space: a paid Space already holds a subscription, and a second
+          // checkout would bill it twice.
+          const choosable =
+            rung.plan === 'business' || rung.plan === 'collective' || rung.plan === 'network' ? rung.plan : null
           const canChoose = isFree && !!slug && !!choosable && !!sellable[choosable]
           return (
             <li
@@ -173,8 +175,8 @@ export function PlanLadder({
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="text-body-sm font-bold text-text">{SPACE_PLAN_LABEL[rung.plan]}</span>
                   <span className="text-body-sm font-semibold text-text">{priceLabel(rung.plan)}</span>
-                  {(rung.note ?? betaNote(rung.plan)) && betaActive && (
-                    <span className="text-2xs font-medium text-primary-strong">{rung.note ?? betaNote(rung.plan)}</span>
+                  {(rung.note ?? foundingNote(rung.plan)) && (
+                    <span className="text-2xs font-medium text-primary-strong">{rung.note ?? foundingNote(rung.plan)}</span>
                   )}
                 </div>
                 <p className="mt-0.5 text-meta leading-relaxed text-muted">{rung.blurb}</p>

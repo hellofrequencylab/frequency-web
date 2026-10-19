@@ -9,7 +9,7 @@
 // monthly price, so they are shown but excluded from the subscription total. No em dashes.
 
 import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
-import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
+import { effectiveCatalogAmounts, foundingOpenFor, isBetaPricingActive } from './beta'
 import { ADDON_KEYS } from './plans'
 
 /** One feature row: what a business gets from Frequency, the separate tool they would otherwise buy, and
@@ -49,7 +49,7 @@ export interface ComparisonGroup {
 /** The whole-dollar monthly price of a catalog item, resolved through the beta window (the Opening Beta
  *  rate while it is open, the list price after). PURE. */
 function monthlyDollars(item: CatalogItemKey, betaActive: boolean = isBetaPricingActive()): number {
-  return Math.round(effectiveCatalogAmounts(catalogItem(item).month, betaActive).foundingCents / 100)
+  return Math.round(effectiveCatalogAmounts(catalogItem(item).month, foundingOpenFor(item, betaActive)).foundingCents / 100)
 }
 
 /** The Business plan's monthly price, in whole dollars, as the stack is set against it. */

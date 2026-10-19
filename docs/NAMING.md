@@ -639,13 +639,19 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   **Collective** ($79) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
   space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
-  - 🔴 **AMENDED ([ADR-1709](DECISIONS.md), 2026-10-06): the live ladder is five tiers, one verb each.**
-    **Member** (free, personal: joins) · **Crew** (personal, contribute what you want: hosts) · **Space**
-    (the free Space plan: runs) · **Business** (sells) · **Collective** (connects). Collective is a live
-    Space plan again, the rung above Business, for groups of groups with member Spaces included; it is no
-    longer merged into Business, and member copy names it from LIVE-759 on. **Non Profit** (and Non Profit
-    Collective) sit beside the ladder; **Independent** is kept and hand-sold, never on a public pricing
-    surface (LIVE-227). The public Space ladder is `ADVERTISED_SPACE_PLANS` in `lib/pricing/display.ts`.
+  - 🔴 **AMENDED ([ADR-1709](DECISIONS.md), 2026-10-06; the Collective / Network split, 2026-10-16): the
+    live ladder is six tiers, one verb each.** **Member** (free, personal: joins) · **Crew** (personal,
+    contribute what you want: hosts) · **Space** (the free Space plan: runs) · **Business** (sells) ·
+    **Collective** (connects) · **Network** (unites). **Collective** is many separate owners partnering:
+    a partner hub, a shared calendar and cross-listing, each partner keeping its own Space, members and
+    payouts; it has a **Founding price** (the $99 intro, locked for as long as the plan is kept) under its
+    $149 list (owner 2026-10-19; `FOUNDING_OPEN_ITEMS` in `lib/pricing/beta.ts`). Never "a group of
+    groups" or "member Spaces under one account": that is **Network**, one owner running chapters (its
+    chapters are member Spaces; a Collective that already ran member Spaces keeps them). A Network
+    **chapter** is a member Space of a Network; a Program **Chapter** (above) is still a Circle, and the
+    two never share a sentence. **Non Profit** (and Non Profit Collective) sit beside the ladder;
+    **Independent** is kept and hand-sold, never on a public pricing surface (LIVE-227). The public
+    Space ladder is `ADVERTISED_SPACE_PLANS` in `lib/pricing/display.ts`.
     The commercial law is still three lines, [CORE-MODEL.md](CORE-MODEL.md) §1: people join free,
     businesses host free, you pay when you start charging. Prices are read from the catalog, never typed
     into copy (ADR-916); the figures in the bullet above are the record of an earlier decision, not a

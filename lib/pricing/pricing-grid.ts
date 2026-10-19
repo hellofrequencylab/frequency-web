@@ -62,7 +62,7 @@ import {
   type PriceRow,
 } from './display'
 import { allowanceLabel, currentMeterStepIndex, featureMeter } from './feature-meters'
-import { isBetaPricingActive } from './beta'
+import { FOUNDING_RATE_NOTE, isBetaPricingActive } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 import { planTakesPayments } from './payments-plan'
 import { PLAN_STORY } from './plan-story'
@@ -157,9 +157,10 @@ export interface Offering {
   cta: { label: string; href: string }
 }
 
-/** The member Spaces a Collective includes before the extra-Space add-on (ADR-1709, the
- *  `collective_space` catalog item). A quantity, not a price, and the one place the copy reads it. */
-const COLLECTIVE_INCLUDED_SPACES = 5
+/** The partner Spaces a Collective hub links (the 2026-10-16 split; the cap is enforced in
+ *  lib/collective/partners.ts COLLECTIVE_PARTNER_CAP, which is server code this pure module does not
+ *  import). A quantity, not a price, and the one place the public copy reads it. */
+const COLLECTIVE_PARTNER_CAP = 10
 
 /** The plain who-it-is-for + tagline copy per offering. Copy only, never a number: every figure on an
  *  offering is read from the config below. */
@@ -190,7 +191,9 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   // is one owner running many groups. The cards say which one a reader is.
   collective: {
     tagline: 'Grow together without giving anything up.',
-    forWho: `Separate groups that partner: a hub that links partner Spaces, cross-listed Circles and Journeys, a shared calendar and Vera AI included. Each partner keeps its own members and payouts. Existing Collectives keep their ${COLLECTIVE_INCLUDED_SPACES} member Spaces.`,
+    // The "existing Collectives keep their member Spaces" note is a grandfathering fact, so it lives in
+    // the FAQ (pricing-faq.ts), not on the card a new buyer reads.
+    forWho: `Separate groups that partner: a hub that links up to ${COLLECTIVE_PARTNER_CAP} partner Spaces, cross-listed Circles and Journeys, a shared calendar and Vera AI included. Each partner keeps its own members and payouts.`,
   },
   network: {
     tagline: 'Run every chapter as one organization.',
@@ -217,7 +220,9 @@ function pricedOffering(
     monthlyCents: row.monthlyCents,
     yearly: row.annual != null && (row.annualCents ?? 0) > 0 ? `${row.annual}/yr` : null,
     listAnchor: row.list,
-    betaNote: row.list ? BETA_RATE_NOTE : null,
+    // Collective's struck anchor is its standing Founding intro (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS),
+    // not a beta rate, so it reads the Founding sentence; any other anchor is the beta window's.
+    betaNote: row.list ? (row.key === 'collective' ? FOUNDING_RATE_NOTE : BETA_RATE_NOTE) : null,
   }
 }
 

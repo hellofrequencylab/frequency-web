@@ -51,7 +51,7 @@ function routeExists(href: string): boolean {
 //   * the page source contains no hard-coded dollar figure at all.
 
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored, yearlyFromMonthly } from '@/lib/billing/pricing-keys'
-import { isBetaPricingActive } from './beta'
+import { FOUNDING_RATE_NOTE, isBetaPricingActive } from './beta'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 import { ADVERTISED_SPACE_PLANS, QUOTED_SPACE_PLANS, formatCents } from './display'
 import { FEATURE_GATES, meetsGate } from './gates'
@@ -161,7 +161,9 @@ describe('offerings: every sellable tier is on the page', () => {
         continue
       }
       const price = PRICING_DEFAULTS.plan[o.tier as Exclude<SpacePlan, 'free' | 'network'>]
-      const charged = betaActive ? price.monthly_cents : Math.max(price.monthly_cents, price.list_cents ?? 0)
+      // Collective's Founding intro stays open after the cutover (ADR-1750), so it is charged founding.
+      const charged =
+        betaActive || o.tier === 'collective' ? price.monthly_cents : Math.max(price.monthly_cents, price.list_cents ?? 0)
       expect(o.monthly).toBe(`${formatCents(charged)}/mo`)
       // Two months free, from the ONE piece of annual math the catalog itself uses. Reading
       // `price.annual_cents` would only be right in the window it was authored for.
@@ -240,10 +242,17 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     // crossed-out $29 beside a charged $29, or a "Beta rate" line beside a rate that is no longer a beta
     // rate, is a false claim on the page that sells the plan. Swept across EVERY offering, not just the
     // two that moved, so the idiom cannot come back on a column nobody thought to check.
+    // Collective is the one exception: its Founding intro is held open by FOUNDING_OPEN_ITEMS (ADR-1750),
+    // so it keeps the $149 anchor over $99 and the FOUNDING_RATE_NOTE, which says "Founding", never "beta".
     for (const o of allOfferings(closed)) {
-      expect(o.listAnchor, `${o.id} must carry no struck anchor once the window is closed`).toBeNull()
-      expect(o.betaNote, `${o.id} must carry no beta caption once the window is closed`).toBeNull()
-      const copy = `${o.monthly} ${o.yearly ?? ''} ${o.billing} ${o.tagline} ${o.forWho} ${o.takeRate}`
+      if (o.id === 'collective') {
+        expect(o.listAnchor).not.toBeNull()
+        expect(o.betaNote).toBe(FOUNDING_RATE_NOTE)
+      } else {
+        expect(o.listAnchor, `${o.id} must carry no struck anchor once the window is closed`).toBeNull()
+        expect(o.betaNote, `${o.id} must carry no beta caption once the window is closed`).toBeNull()
+      }
+      const copy = `${o.monthly} ${o.yearly ?? ''} ${o.billing} ${o.tagline} ${o.forWho} ${o.takeRate} ${o.betaNote ?? ''}`
       expect(copy, `${o.id}`).not.toContain(BETA_RATE_NOTE)
       expect(copy, `${o.id} must not frame its price as a beta rate`).not.toMatch(/beta/i)
     }
@@ -259,10 +268,12 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     // Asserted in the OPEN window: with the window shut every anchor is null, so this would pass by
     // having nothing to say. The rule under test is the pairing, and only an open window exercises it.
     for (const o of allOfferings(open)) {
-      expect(o.betaNote).toBe(o.listAnchor ? BETA_RATE_NOTE : null)
+      const note = o.id === 'collective' ? FOUNDING_RATE_NOTE : BETA_RATE_NOTE
+      expect(o.betaNote).toBe(o.listAnchor ? note : null)
     }
     // The lock is the grandfather promise, not a countdown or a scarcity line.
     expect(BETA_RATE_NOTE).toMatch(/as long as you keep the plan/)
+    expect(FOUNDING_RATE_NOTE).toMatch(/as long as you keep the plan/)
   })
 
   it('invents no beta rate for the free Space or Non Profit (single price, no strike)', () => {

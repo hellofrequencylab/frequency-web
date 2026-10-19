@@ -21,7 +21,7 @@ import {
   type SpacePlanKey,
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
-import { isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
+import { foundingOpenFor, isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
 import { spaceHasBetaPriceGrant } from './space-beta-grant'
 import { receiptEmailFor } from './receipt-address'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
@@ -180,9 +180,11 @@ async function resolveLoadoutPriceId(
 ): Promise<string | null> {
   const itemKey = itemKeyForCatalogKey(catalogKey)
   const locked = itemKey ? await readLockedPriceId(spaceId, itemKey) : null
+  // Per item: Collective's Founding intro is open on its own terms (foundingOpenFor), so a new
+  // Collective bills the founding key while every other item follows the beta window alone.
   const arm = loadoutChargeArm({
     lockedPriceId: locked,
-    betaActive: isBetaPricingActive(),
+    betaActive: foundingOpenFor(catalogKey, isBetaPricingActive()),
     spaceHasBetaGrant: hasBetaGrant,
   })
   // The lock is a concrete price id, not a catalog key, so it returns straight out.

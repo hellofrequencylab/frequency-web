@@ -116,7 +116,7 @@ const TAKE = input.values.take_rate
 /** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
 const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(TAKE)))
 const BUSINESS_RATE = SPACE_RATE('business')
-const NETWORK_RATES = `Business ${BUSINESS_RATE}, Collective ${SPACE_RATE('collective')}, Non Profit ${SPACE_RATE('nonprofit')}`
+const NETWORK_RATES = `Business ${BUSINESS_RATE}, Collective ${SPACE_RATE('collective')}, Network ${SPACE_RATE('network')}, Non Profit ${SPACE_RATE('nonprofit')}`
 /** What a tier that takes no payments carries instead of a rate. */
 const TIPS_NOTE = 'Tips only, no platform fee, plus card processing'
 /** The 0%-forever half of the model, stated the same way everywhere it appears. */
@@ -137,9 +137,10 @@ const SPACE_TIER_ROWS: Partial<Record<(typeof ADVERTISED_SPACE_PLANS)[number], A
   },
   collective: {
     name: SPACE_PLAN_LABEL.collective,
-    price: `${P.collective}/mo`,
-    note: `${SPACE_RATE('collective')} network only`,
-    who: 'Groups of groups: several member Spaces under one account, each with the Business tools, and Vera AI included.',
+    // The Founding intro under its list (ADR-1709 §7): the price a new Collective pays, named as such.
+    price: `${P.collectiveFounding}/mo`,
+    note: `Founding price, list ${P.collectiveList}/mo. ${SPACE_RATE('collective')} network only`,
+    who: 'Separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, and Vera AI included. Each partner keeps its own members and payouts.',
   },
   nonprofit: {
     name: SPACE_PLAN_LABEL.nonprofit,
