@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const state = vi.hoisted(() => ({ contacts: [{ id: 'c1', email: 'a@example.org', profileId: null, consentState: 'subscribed' }], topic: 'marketing', failCandidates: false, failTable: '', calls: [] as { table: string; filters: Record<string, unknown> }[], suppressed: [] as { email: string; space_id: string | null }[], preferences: [] as { email: string; space_id: string; topic: string; channel: string; state: string }[] }))
+const state = vi.hoisted(() => ({ contacts: [{ id: 'c1', email: 'a@example.org', profileId: null, consentState: 'subscribed' }], topic: 'marketing', failCandidates: false, capped: false, failTable: '', calls: [] as { table: string; filters: Record<string, unknown> }[], suppressed: [] as { email: string; space_id: string | null }[], preferences: [] as { email: string; space_id: string; topic: string; channel: string; state: string }[] }))
 vi.mock('@/lib/spaces/audiences', () => ({ resolveAudienceCandidatePlan: async (_spaceId: string, _filter: unknown, pickedTopic: string) => {
   if (state.failCandidates) throw new Error('unavailable')
-  return { contacts: state.contacts, topic: pickedTopic === 'member-override' ? 'marketing' : pickedTopic ?? state.topic }
+  return { contacts: state.contacts, topic: pickedTopic === 'member-override' ? 'marketing' : pickedTopic ?? state.topic, cappedAt: state.capped ? 5000 : null, spaceContacts: state.capped ? 5001 : 1 }
 } }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from(table: string) {
   const filters: Record<string, unknown> = {}
@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from(table:
   return chain
 } }) }))
 import { readAudienceEligibility } from './audience-readiness'
-beforeEach(() => { state.contacts = [{ id: 'c1', email: 'a@example.org', profileId: null, consentState: 'subscribed' }]; state.failCandidates = false; state.failTable = ''; state.calls = []; state.suppressed = []; state.preferences = [] })
+beforeEach(() => { state.contacts = [{ id: 'c1', email: 'a@example.org', profileId: null, consentState: 'subscribed' }]; state.failCandidates = false; state.capped = false; state.failTable = ''; state.calls = []; state.suppressed = []; state.preferences = [] })
 describe('read-only audience eligibility', () => {
   it('includes global and current-Space suppression, never another tenant suppression', async () => {
     state.suppressed = [{ email: 'a@example.org', space_id: 'space-B' }]
@@ -45,6 +45,10 @@ describe('read-only audience eligibility', () => {
       state.failTable = table
       expect((await readAudienceEligibility('space-A')).state).toBe('unavailable')
     }
+  })
+  it('reports a Space over the send cap as capped, with the counts it can read', async () => {
+    state.capped = true
+    expect(await readAudienceEligibility('space-A')).toMatchObject({ state: 'capped', eligible: 1, cappedAt: 5000, spaceContacts: 5001 })
   })
   it('candidate failures cannot be shown as an available empty audience', async () => {
     state.failCandidates = true
