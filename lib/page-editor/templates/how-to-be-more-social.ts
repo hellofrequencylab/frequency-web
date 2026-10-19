@@ -222,10 +222,6 @@ export const spec: ArticleSpec = {
       a: 'Because staying home is the easy default and being social asks for a decision every single time. Wanting connection and choosing the couch are not a contradiction, they are just two different moments: the wanting happens in the abstract, the choosing happens when you are tired at 6pm. The fix is to remove the nightly decision by committing to one thing on a fixed day, so showing up becomes the default instead of the exception.',
     },
     {
-      q: 'How can I be more social as an introvert?',
-      a: 'Build on structure and repetition instead of forcing yourself to be outgoing. Introverts do not need to become extroverts to have a full social life, they need rooms that do not depend on working a crowd. A small group built around a shared activity is ideal, because the thing itself carries the interaction, you see the same few faces each time, and you can leave when you are spent. Depth over volume is a feature, not a problem.',
-    },
-    {
       q: 'How do I feel less awkward in groups?',
       a: 'Go back to the same small group more than once and let the activity carry the talking. Awkward is mostly the feeling of being unfamiliar, and familiarity is the only real cure. Pick one group built around an activity, show up twice, and let the second visit feel different on its own. You cannot talk yourself out of feeling awkward, but you can lower the stakes of any single night.',
     },
@@ -256,10 +252,6 @@ export const spec: ArticleSpec = {
     {
       q: 'Where do sober-curious people actually meet friends?',
       a: 'In recurring, activity-first rooms, the same places anyone meets lasting friends, just without the bar at the centre. Think standing interest groups, movement and wellbeing circles, daytime meetups, community meals, and creative sessions that gather the same people week after week. You are not looking for a special sober scene so much as ordinary gatherings organized around a shared thing, where whether or not you drink is beside the point.',
-    },
-    {
-      q: 'What should I do if I am out of practice socially?',
-      a: 'Start with one low-stakes recurring room and let your social muscle warm up over weeks, not in one night. If it has been a while, the rust is normal and it fades fast with reps. Do not throw yourself at a huge party to prove something. Go to the same small group a few times in a row, where nobody expects a performance and familiarity builds on its own. Being out of practice is temporary; the only cure is gentle, repeated showing up.',
     },
     {
       q: 'Is it too late to be more social as an adult?',

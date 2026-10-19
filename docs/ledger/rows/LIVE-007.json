@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-007",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const D='lib/page-editor/data.ts',A='lib/page-editor/templates/article.ts';if(!fs.existsSync(D)||!fs.existsSync(A))process.exit(79);const s=fs.readFileSync(D,'utf8');const i=s.indexOf('EDITABLE_PAGES');if(i<0)process.exit(79);const o=s.indexOf('= [',i),c=s.indexOf(']',o);if(o<0||c<0)process.exit(79);const seg=s.slice(o,c);if(seg.indexOf('home')<0)process.exit(79);const need=['calm-down-fast','friendship-as-an-adult','how-to-be-more-social','how-to-build-community','how-to-start-a-circle','loneliness'];const q=String.fromCharCode(39);const miss=need.filter(function(x){return seg.indexOf(q+x+q)<0});if(miss.length){console.error('not yet in EDITABLE_PAGES: '+miss.join(', '));process.exit(1)}process.exit(0)\""
+    }
+  },
+  "append": {
+    "detail": "\n\nRE-SCOPED 2026-10-19 (SCAN-1017, ADR-1761): the owner retired two of the eight articles as pages. /what-is-frequency merged into /about and /tools-for-community-builders into /how-to-build-community, both 308s, so their slugs left EDITABLE_PAGES with the routes. The probe now pins the six articles that are still pages; the two retired specs stay in lib/page-editor/templates as source."
+  },
+  "wave": "W7"
+}

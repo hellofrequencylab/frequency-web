@@ -585,10 +585,12 @@ const nextConfig: NextConfig = {
       { source: '/feel-less-awkward-in-groups', destination: '/how-to-be-more-social', permanent: true },
       { source: '/find-like-minded-people', destination: '/friendship-as-an-adult', permanent: true },
       { source: '/host-a-recurring-gathering', destination: '/how-to-build-community', permanent: true },
-      { source: '/how-it-works', destination: '/what-is-frequency', permanent: true },
+      // /what-is-frequency merged into /about (SCAN-1017), so this lands on the survivor, not on a chain.
+      { source: '/how-it-works', destination: '/about', permanent: true },
       { source: '/how-to-reconnect-with-old-friends', destination: '/friendship-as-an-adult', permanent: true },
       { source: '/how-to-run-a-community-space', destination: '/how-to-build-community', permanent: true },
-      { source: '/lead-funnel-kit', destination: '/tools-for-community-builders', permanent: true },
+      // /tools-for-community-builders merged into /how-to-build-community (SCAN-1017): no chain.
+      { source: '/lead-funnel-kit', destination: '/how-to-build-community', permanent: true },
       { source: '/life-after-the-feed', destination: '/loneliness', permanent: true },
       { source: '/meet-people-new-city', destination: '/friendship-as-an-adult', permanent: true },
       // Re-pointed past /the-quest (merged 2026-10-14), so the old slug takes one hop, not two.
