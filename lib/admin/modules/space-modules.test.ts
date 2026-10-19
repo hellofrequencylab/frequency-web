@@ -283,6 +283,7 @@ describe('the five boxes (ADR-1432)', () => {
       'space.layout': 'space.basics',
       'space.reviews': 'space.basics',
       'space.billing': 'space.basics',
+      'space.chapters': 'space.basics',
       'space.collaborators': 'space.people',
       'space.crm': 'space.people',
       'space.conversations': 'space.people',
@@ -360,6 +361,7 @@ describe('the five boxes (ADR-1432)', () => {
       'space.layout',
       'space.reviews',
       'space.billing',
+      'space.chapters',
       'space.danger',
     ])
   })

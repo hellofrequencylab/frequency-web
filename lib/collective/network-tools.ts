@@ -94,3 +94,11 @@ export function pendingNetworkEvents(candidates: readonly QueueCandidate[], deci
     return true
   }).sort((a, b) => a.starts_at.localeCompare(b.starts_at) || a.id.localeCompare(b.id)).slice(0, limit)
 }
+
+/** The fields a central admin approved an event on. When any of them changes the decision no longer stands
+ *  (handoff A6, 2026-10-19): the event goes back to the queue, so an edit never carries an old yes or no. PURE. */
+type ApprovedEventFacts = { title: string | null; starts_at: string | null; ends_at: string | null; location: string | null }
+export function approvalResetOnEdit(before: ApprovedEventFacts | null | undefined, after: ApprovedEventFacts): boolean {
+  if (!before) return false
+  return (['title', 'starts_at', 'ends_at', 'location'] as const).some(key => (before[key] ?? null) !== (after[key] ?? null))
+}
