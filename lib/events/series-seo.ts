@@ -267,7 +267,7 @@ export async function seriesSeoFacts(row: SeriesSeoRow): Promise<SeriesSeoFacts>
   }
 }
 
-export type ShareEventSeo = {
+type ShareEventSeo = {
   facts: SeriesSeoFacts
   /** `events.visibility`, or null when the row could not be read. */
   visibility: string | null
