@@ -41,6 +41,11 @@ export type CircleCardData = {
    *  the reader knows before they click. OPTIONAL: a surface that does not read `circles.access`
    *  (the /circles index) behaves exactly as it did. */
   access?: CircleAccess | string | null
+  /** Which shelf the Circles index puts it on (lib/circles/kind.ts). Absent on Starters. */
+  kind?: 'frequency' | 'community' | 'business'
+  /** Where it meets, for ranking near the viewer. */
+  latitude?: number | null
+  longitude?: number | null
 }
 
 // Circle card — renders through the shared EntityCard so circles read identically

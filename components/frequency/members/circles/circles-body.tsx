@@ -12,6 +12,9 @@ import { hubLinks } from '@/components/frequency/members/shell/nav'
 import { templatesEnabled } from '@/lib/circles/templates-data'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
+import type { CircleKind } from '@/lib/circles/kind'
+import { distanceLabel, milesBetween } from '@/lib/feed/home-rank'
+import { SystemNotice } from '@/components/frequency/members/shared/system-notice'
 
 // CIRCLES, FREQUENCY BODY (templates/members/Circles.html). The head with Start a Circle, the
 // viewer's own Circles as photo cards, then everything else under "Near you" with the Channel chips.
@@ -85,15 +88,128 @@ async function CirclesHubLinks() {
   )
 }
 
+const SHELF_CAP = 6
+
+export interface FeaturedSpace {
+  slug: string
+  name: string
+  tagline: string | null
+  coverUrl: string | null
+  logoUrl: string | null
+}
+
+/** In-person circles with a location, nearest first, within 40 miles of home. No home, no shelf. */
+function nearestTo(cards: CircleCardData[], home: { lat: number; lng: number } | null): CircleCardData[] {
+  if (!home) return []
+  return cards
+    .filter((c) => c.type === 'in-person' && c.latitude != null && c.longitude != null)
+    .map((c) => ({ c, mi: milesBetween(home, { lat: c.latitude as number, lng: c.longitude as number }) }))
+    .filter((x) => x.mi <= 40)
+    .sort((a, b) => a.mi - b.mi || b.c.member_count - a.c.member_count)
+    .map((x) => ({ ...x.c, context: [x.c.context, distanceLabel(x.mi)].filter(Boolean).join(' · ') }))
+}
+
+/** One titled shelf: the first six cards, the rest behind a native Show more (no script). */
+function Shelf({
+  id,
+  title,
+  note,
+  circles,
+  lead,
+  empty,
+}: {
+  id: string
+  title: string
+  note: string
+  circles: CircleCardData[]
+  lead?: React.ReactNode
+  empty?: React.ReactNode
+}) {
+  if (circles.length === 0 && !empty) return null
+  const more = circles.slice(SHELF_CAP)
+  return (
+    <section className="sec" id={id} aria-labelledby={`${id}-h`}>
+      <div className="sec-h">
+        <span id={`${id}-h`} className="h2">{title}</span>
+        <span className="meta">{note}</span>
+      </div>
+      {lead}
+      {circles.length === 0 ? (
+        empty
+      ) : (
+        <>
+          <div className="g3">
+            {circles.slice(0, SHELF_CAP).map((c) => (
+              <CircleTile key={c.id} c={c} />
+            ))}
+          </div>
+          {more.length > 0 && (
+            <details className="fqm-more">
+              <summary className="btn sm">Show {more.length} more</summary>
+              <div className="g3">
+                {more.map((c) => (
+                  <CircleTile key={c.id} c={c} />
+                ))}
+              </div>
+            </details>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+/** The sticky section index: anchors to each shelf that is on the page. */
+function ShelfIndex({ shelves }: { shelves: { id: string; label: string }[] }) {
+  return (
+    <nav className="chips fqm-shelf-index" aria-label="Sections">
+      {shelves.map((s) => (
+        <a key={s.id} className="chip" href={`#${s.id}`}>
+          {s.label}
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+/** A few top Business Spaces, above the shelves: a window onto the directory, not a circle shelf. */
+function FeaturedBusinessStrip({ spaces }: { spaces: FeaturedSpace[] }) {
+  return (
+    <section className="sec" aria-labelledby="fq-featured-spaces">
+      <div className="sec-h">
+        <span id="fq-featured-spaces" className="h2">Businesses worth a visit</span>
+        <Link href="/spaces" className="meta">All Business Spaces</Link>
+      </div>
+      <div className="g3">
+        {spaces.map((sp) => (
+          <Link key={sp.slug} className="card fqm-card" href={`/spaces/${sp.slug}`}>
+            <span className="ph" style={sp.coverUrl ? { backgroundImage: `url('${sp.coverUrl}')` } : undefined} />
+            <span className="fqm-card-b">
+              <span className="h3">{sp.name}</span>
+              {sp.tagline && <span className="t2">{sp.tagline}</span>}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function FqCirclesBody({
   data,
   params,
   nextMeetups,
+  home = null,
+  featuredSpaces = [],
 }: {
   data: CirclesIndexData
   params: Params
   /** The viewer's own Circles' next meetup, by Circle id (lib/circles/next-meetups.ts). */
   nextMeetups?: Map<string, string>
+  /** The viewer's home base, for ranking circles by distance. */
+  home?: { lat: number; lng: number } | null
+  /** A few top Spaces for the Featured strip (lib/spaces/discovery, earned standing order). */
+  featuredSpaces?: FeaturedSpace[]
 }) {
   const {
     cards,
@@ -117,7 +233,22 @@ export function FqCirclesBody({
   const yours = cards.filter((c) => mine.has(c.id))
   const starters = cards.filter((c) => c.isStarter && !mine.has(c.id))
   const near = cards.filter((c) => !c.isStarter && !mine.has(c.id))
-  const featured = filtering ? [] : near.filter((c) => c.isFeatured).slice(0, 3)
+  const shelfOf = (k: CircleKind) => near.filter((c) => c.kind === k)
+  const resonant = nearestTo(near.filter((c) => c.kind !== 'business'), home).slice(0, 12)
+  const resonantIds = new Set(resonant.map((c) => c.id))
+  const gathering = [...near.filter((c) => c.kind !== 'business' && !resonantIds.has(c.id))].sort((a, b) => b.member_count - a.member_count).slice(0, 12)
+  const frequencyShelf = shelfOf('frequency')
+  const communityShelf = shelfOf('community')
+  const businessShelf = shelfOf('business')
+  const shelfIndex = [
+    yours.length > 0 && { id: 'your-circles', label: 'Yours' },
+    { id: 'near-you', label: 'Near you' },
+    starters.length > 0 && { id: 'starters', label: 'Starters' },
+    gathering.length > 0 && { id: 'gathering', label: 'Gathering' },
+    frequencyShelf.length > 0 && { id: 'frequency', label: 'Frequency' },
+    { id: 'community', label: 'Community' },
+    businessShelf.length > 0 && { id: 'business', label: 'Business' },
+  ].filter((x): x is { id: string; label: string } => !!x)
   const anyFilter = filtering || !!params.sort
 
   const body = (
@@ -174,8 +305,10 @@ export function FqCirclesBody({
       </div>
       {showMap && <FqCirclesMapBanner />}
 
+      {!filtering && <ShelfIndex shelves={shelfIndex} />}
+
       {yours.length > 0 ? (
-        <div className="g3">
+        <div className="g3" id="your-circles">
           {yours.map((c) => (
             <CircleTile key={c.id} c={c} next={nextMeetups?.get(c.id)} />
           ))}
@@ -193,19 +326,8 @@ export function FqCirclesBody({
         )
       )}
 
-      {featured.length > 0 && (
-        <div className="sec">
-          <div className="sec-h">
-            <span className="h2">Featured</span>
-            <span className="meta">Picked by the people who run this community</span>
-          </div>
-          <div className="g3">
-            {featured.map((c) => (
-              <CircleTile key={c.id} c={c} />
-            ))}
-          </div>
-        </div>
-      )}
+
+      {!filtering && featuredSpaces.length > 0 && <FeaturedBusinessStrip spaces={featuredSpaces} />}
 
       {signedIn && nearlyFullCount > 0 && (
         <div className="soft row wrap sec">
@@ -222,6 +344,42 @@ export function FqCirclesBody({
         </div>
       )}
 
+
+      {!filtering && (
+        <>
+          <Shelf id="near-you" title="Resonant near you" note="The closest circles meeting in person" circles={resonant} empty={
+            <SystemNotice
+              icon="pin"
+              title={home ? 'No circles meet close to you yet.' : 'Set a home base to see circles close to you.'}
+              body={home ? 'Start one and your neighbors can find it.' : 'We only use it to measure distance.'}
+              actions={home ? [{ href: '/circles/new', label: 'Start a Circle', primary: true }] : [{ href: '/settings/profile', label: 'Set your home base', primary: true }]}
+            />
+          } />
+          {starters.length > 0 && <Shelf id="starters" title="Starter Circles" note="Ready-made Circles waiting for someone to start them near you" circles={starters} />}
+          <Shelf id="gathering" title="Where people are gathering" note="Circles with the most members right now" circles={gathering} />
+          <Shelf id="frequency" title="Frequency Circles" note="Run by the platform, open to everyone" circles={frequencyShelf} />
+          <Shelf id="community" title="Community Circles" note="Started by members, for members" circles={communityShelf} lead={
+            <nav className="chips fqm-chips" aria-label="Channels">
+              {channelLinks.map((l) => (
+                <Link key={l.href} href={l.href} className={l.active ? 'chip on' : 'chip'} aria-current={l.active ? 'page' : undefined}>
+                  {l.label === 'All' ? 'Anything' : l.label}
+                </Link>
+              ))}
+            </nav>
+          } empty={
+            <SystemNotice icon="circle" title="No community circles yet." body="Be the first to start one." actions={[{ href: '/circles/new', label: 'Start a Circle', primary: true }]} />
+          } />
+          <Shelf id="business" title="Business Circles" note="Run by Business and Non Profit Spaces" circles={businessShelf} />
+          {hitFetchCap && (
+            <p className="t2 fqm-cap">
+              Showing the first {fetchLimit} Circles. Search or filter to find what you are looking for.
+            </p>
+          )}
+        </>
+      )}
+
+      {filtering && (
+        <>
       {starters.length > 0 && (
         <section className="sec" aria-labelledby="fq-starter-circles">
           <div className="sec-h">
@@ -280,6 +438,9 @@ export function FqCirclesBody({
           </div>
         )}
       </div>
+
+        </>
+      )}
 
       {nexuses.length > 0 && (
         <div className="sec">

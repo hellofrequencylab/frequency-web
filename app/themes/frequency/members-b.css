@@ -370,3 +370,13 @@
 }
 /* SCAN-955: on a phone the quiet Directions link keeps the 36px touch target SCAN-945 gave it. */
 @media (max-width:640px){[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{display:inline-flex;align-items:center;min-height:36px}}
+
+/* Circles shelves (LIVE-1020): the section index, and Show more */
+[data-design="frequency"] [data-kit="members"] .fqm-shelf-index{position:sticky;top:72px;z-index:5;margin:0 0 24px;padding:8px 0;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;background:color-mix(in oklab,var(--fq-bg-canvas) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+[data-design="frequency"] [data-kit="members"] .fqm-shelf-index .chip{flex:none;text-decoration:none}
+[data-design="frequency"] [data-kit="members"] .sec[id]{scroll-margin-top:132px}
+[data-design="frequency"] [data-kit="members"] .fqm-more{margin-top:16px}
+[data-design="frequency"] [data-kit="members"] .fqm-more>summary{display:inline-flex;cursor:pointer;list-style:none}
+[data-design="frequency"] [data-kit="members"] .fqm-more>summary::-webkit-details-marker{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-more[open]>summary{display:none}
+[data-design="frequency"] [data-kit="members"] .fqm-more>.g3{margin-top:0}
