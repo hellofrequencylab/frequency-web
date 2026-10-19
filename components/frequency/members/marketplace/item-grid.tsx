@@ -27,6 +27,12 @@ export interface FqGridItem {
   cta: string
   /** A corner tag on the photo ("Unclaimed", "Verified"). */
   tag?: string | null
+  /** The seller's category, offered as a filter chip when two or more exist. */
+  category?: string | null
+  /** Price in cents for the price sorts; null/absent sinks to the end. */
+  cents?: number | null
+  /** ISO created time for Newest. */
+  at?: string | null
   lat?: number | null
   lng?: number | null
 }
@@ -36,6 +42,14 @@ interface FqGridSection {
   seeAll?: string
   items: FqGridItem[]
 }
+
+type Sort = 'top' | 'new' | 'low' | 'high'
+const SORTS: { key: Sort; label: string }[] = [
+  { key: 'top', label: 'Top picks' },
+  { key: 'new', label: 'Newest' },
+  { key: 'low', label: 'Price low' },
+  { key: 'high', label: 'Price high' },
+]
 
 function miles(km: number): string {
   const mi = km / 1.609344
@@ -58,20 +72,31 @@ export function FqItemGrid({
   const [query, setQuery] = useState('')
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
+  const [category, setCategory] = useState<string | null>(null)
+  const [sort, setSort] = useState<Sort>('top')
   const q = query.trim().toLowerCase()
+  const categories = useMemo(() => {
+    const seen = new Map<string, number>()
+    for (const s of sections) for (const i of s.items) if (i.category) seen.set(i.category, (seen.get(i.category) ?? 0) + 1)
+    return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c)
+  }, [sections])
+  const sortable = sections.some((s) => s.items.some((i) => i.cents != null || i.at))
 
   const shown = useMemo(
     () =>
       sections.map((s) => {
-        const matched = q ? s.items.filter((i) => i.text.toLowerCase().includes(q)) : s.items
+        const matched = s.items.filter((i) => (!q || i.text.toLowerCase().includes(q)) && (!category || i.category === category))
         const rows = matched.map((i) => ({
           i,
           km: coords && i.lat != null && i.lng != null ? distanceKm(coords.lat, coords.lng, i.lat, i.lng) : null,
         }))
         if (coords) rows.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity))
+        else if (sort === 'new') rows.sort((a, b) => (b.i.at ?? '').localeCompare(a.i.at ?? ''))
+        else if (sort === 'low') rows.sort((a, b) => (a.i.cents ?? Infinity) - (b.i.cents ?? Infinity))
+        else if (sort === 'high') rows.sort((a, b) => (b.i.cents ?? -1) - (a.i.cents ?? -1))
         return { ...s, rows }
       }),
-    [sections, q, coords],
+    [sections, q, coords, category, sort],
   )
   const total = shown.reduce((n, s) => n + s.rows.length, 0)
 
@@ -102,7 +127,40 @@ export function FqItemGrid({
         {before}
       </div>
 
-      {q && total === 0 && <p className="why">No matches for “{query}”.</p>}
+      {(categories.length > 1 || sortable) && (
+        <div className="fqm-tools">
+          {categories.length > 1 && (
+            <div className="chips" role="group" aria-label="Category">
+              <button type="button" className={category ? 'chip' : 'chip on'} aria-pressed={!category} onClick={() => setCategory(null)}>
+                All categories
+              </button>
+              {categories.map((c) => (
+                <button key={c} type="button" className={category === c ? 'chip on' : 'chip'} aria-pressed={category === c} onClick={() => setCategory(category === c ? null : c)}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+          {sortable && (
+            <div className="chips fqm-end" role="group" aria-label="Sort">
+              {SORTS.map((o) => (
+                <button key={o.key} type="button" className={sort === o.key && !coords ? 'chip on' : 'chip'} aria-pressed={sort === o.key && !coords} onClick={() => { setSort(o.key); setCoords(null) }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {(q || category) && total === 0 && (
+        <p className="why">
+          {q ? `No matches for “${query}”.` : 'Nothing in this category yet.'}{' '}
+          <button type="button" className="chip" onClick={() => { setQuery(''); setCategory(null) }}>
+            Clear filters
+          </button>
+        </p>
+      )}
 
       {shown.map((s, si) =>
         s.rows.length === 0 ? null : (
