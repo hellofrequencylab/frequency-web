@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-830",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270346007800'&&/space_email_domain_operations/.test(r('supabase/migrations/'+f))&&/unique\\\\s*\\\\(\\\\s*space_id\\\\s*,\\\\s*domain\\\\s*\\\\)|drop constraint/i.test(r('supabase/migrations/'+f)))){console.error('SCAN-830: an unproven email domain operation still holds the domain for every Space');process.exit(1)}\"",
+      "checked": "2026-10-19",
+      "note": "Closed 2026-10-19 (ADR-1821). Passes when a migration after 20270346007800 drops the global unique on space_email_domain_operations.domain or adds unique(space_id, domain)."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1821). PREMISE RE-TESTED on main: space_email_domain_operations.domain was still the inline global unique from 20270346007800, and prepareEmailDomainSetup still inserts the row before the TXT proof. Migration 20270346011100 drops space_email_domain_operations_domain_key and adds space_email_domain_operations_space_domain_key unique(space_id, domain). The global claim stays on space_email_domains (domain and provider_domain_id unique), written only after the proof. The lease function and lib/spaces/email-domain-onboarding.ts are unchanged: they already read the operation by (space_id, domain, owner_profile_id). pgTAP: two Spaces can each open an operation for the same unproven domain, one Space still gets one row per domain, and the proven table still refuses a second owner. Apply with execute_sql then schema_migrations at 20270346011100."
+  }
+}
