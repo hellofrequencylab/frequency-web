@@ -1003,6 +1003,24 @@ export const designComponents: Record<string, ComponentConfig> = {
           title: { type: 'text', label: 'Title' },
           body: { type: 'textarea', label: 'Text' },
           by: { type: 'text', label: 'Attribution (testimonial)' },
+          href: { type: 'text', label: 'Card link (optional)' },
+          // The stat box and the separate button the renderer already draws (email overhaul, GridCard above).
+          stat: {
+            type: 'object',
+            label: 'Stat (shown when there is no photo)',
+            objectFields: {
+              value: { type: 'text', label: 'Number' },
+              label: { type: 'text', label: 'Label' },
+            },
+          },
+          button: {
+            type: 'object',
+            label: 'Button (optional)',
+            objectFields: {
+              label: { type: 'text', label: 'Button label' },
+              href: { type: 'text', label: 'Button link' },
+            },
+          },
         },
       },
       browseLabel: { type: 'text', label: 'Browse link label (optional)' },

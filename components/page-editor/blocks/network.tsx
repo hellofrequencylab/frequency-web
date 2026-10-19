@@ -839,8 +839,9 @@ export const networkComponents: Record<string, ComponentConfig> = {
   NetworkEvents: block('Events list and calendar (live)', {
     anchor, ...head, ...action, max: { type: 'number', label: 'How many to list', min: 1, max: 24 },
     chapters: { type: 'array', label: 'Chapter filters', hint: 'Each becomes a filter chip over the list.', arrayFields: { label: text('Chapter'), spaceId: text('Hosting Space ID', 'Optional. Matches the event’s declared hosting Space before any title or place words.'), match: text('Matches events containing', 'Legacy match when no hosting Space mapping is available. Words in the title or place, separated by |.') } },
+    allLabel: text('All chapters filter', 'The first filter chip, which shows every chapter. Defaults to All chapters.'),
     moreLabel: text('More events link'), moreHref: text('More events link: where it goes'), empty: text('Message when nothing is scheduled'),
-  }, { anchor: '', eyebrow: 'Events', title: 'Find a group. *Or fill one.*', lead: '', actionLabel: '', actionHref: '', max: 6, chapters: [], moreLabel: 'See more events', moreHref: '', empty: '' }, NetworkEventsBlock),
+  }, { anchor: '', eyebrow: 'Events', title: 'Find a group. *Or fill one.*', lead: '', actionLabel: '', actionHref: '', max: 6, chapters: [], allLabel: '', moreLabel: 'See more events', moreHref: '', empty: '' }, NetworkEventsBlock),
   NetworkSteps: block('Numbered steps', { anchor, ...head, steps: { type: 'array', label: 'Steps', arrayFields: { title: text('Title'), body: area('Body text'), ctaLabel: text('Button', 'Optional.'), ctaHref: text('Button link') } } }, { anchor: '', eyebrow: 'Your first visit', title: '', lead: '', steps: [] }, NetworkStepsBlock),
   NetworkChapters: block('Chapters band', {
     anchor, ...head,

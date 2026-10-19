@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-929",
+  "title": "Every key The Group's website blocks read is editable in the block editor",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-19",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const n=fs.readFileSync('components/page-editor/blocks/network.tsx','utf8');const d=fs.readFileSync('components/page-editor/blocks/design.tsx','utf8');const g=d.slice(d.indexOf('  CardGrid: {'),d.indexOf('  Zigzag: {'));const miss=[[/allLabel: text\\(/.test(n),'NetworkEvents allLabel field'],[/href: \\{ type: 'text', label: 'Card link/.test(g),'CardGrid card href field'],[/stat: \\{/.test(g),'CardGrid card stat field'],[/button: \\{/.test(g),'CardGrid card button field'],[fs.existsSync('components/page-editor/blocks/the-group-fields.test.tsx'),'the read-key coverage suite']].filter(([ok])=>!ok).map(([,m])=>m);if(miss.length){console.error('LIVE-929: renderer keys without an editor field: '+miss.join(', '));process.exit(1)}\""
+  },
+  "detail": "Owner ask 2026-10-19: make sure all the edit blocks on the website are fully featured in the block editor. Audited every block The Group's published pages store (the Network family on the website pages; PhotoHero, EditorialSection, CardGrid, Zigzag, AccentBeat, SpaceEvents, SpaceCommunity, SpaceOfferings and SpaceTeam on the custom tabs) against both render paths: the block's own render and the website's site page section (components/sites/menswork-page.tsx). Three reads had no field, so only the seed or raw JSON could set them: NetworkEvents allLabel (the All chapters filter chip), CardGrid cards[].href (stored on the chapter and membership grids, read as the whole-card link) and the CardGrid stat box and button (cards[].stat, cards[].button, read by CardGridBlock). Each is now a field in the file's idiom. Every block is in the website palette (palette-scope website categories blocks, profile and network); the website inspector reads config fields directly with no resolveFields, and the mobile field form renders every field type these blocks use. components/page-editor/blocks/the-group-fields.test.tsx renders each block against recording props in every variant its fields can pick, through both render paths, and fails on any read key the block's fields do not declare. Two documented exceptions: the shared website photo row reads Gallery's items before a Card grid's cards, and SpaceOfferings reads catalog keys (price, deposit, length, listing) that come from the Space services catalog, which replaces the inline rows whenever it has any. Noted, not changed: NetworkSplit declares a lead field its renderer never reads (the first body line is the lead); PhotoHero note and AccentBeat second button are fields the generic render ignores and only the website section draws. No stored document is migrated; the new fields are additive and default empty."
+}
