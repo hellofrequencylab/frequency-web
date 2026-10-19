@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-938",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('app/themes/frequency/members-shell.css','utf8');const h=fs.readFileSync('components/frequency/members/shell/header.tsx','utf8');const ok=c.includes('.fqm-tb-orb{top:-22px}')&&!c.includes('.fqm-tb-orb{position:static')&&c.includes('.ap-me[data-photo] .fqm-header-initials{display:none}')&&h.includes('data-photo=')&&/max-width:380px\\)\\{[^@]*\\.ap-hdr \\.ap-logo\\{width:112px\\}/.test(c);process.exit(ok?0:1)\""
+    }
+  },
+  "append": {
+    "detail": "\n\nOwner ruling 2026-10-19 from the rendered before/after at 390 and 320: keep the 144px wordmark; the phone account button is the iridescent circle with the member's initials over it (a photo replaces both, data-photo); the raised Zap orb from the first bar returns, lifted to top:-22px so it clears its label; below 380px the wordmark steps to 112px and the controls to 40px so the four controls no longer slide under the account button. Rendered with the repo's components and CSS at 390 and 320: no horizontal overflow, controls end at 268px with the account button at 272-312 on a 320 screen."
+  }
+}
