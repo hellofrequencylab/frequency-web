@@ -602,11 +602,11 @@ const DRAWER_TILES: readonly {
   label: string
   href: string
   icon: FqIconName
-  tone: 'violet' | 'aqua' | 'sun' | 'magenta'
+  tone: 'ink' | 'aqua' | 'sun' | 'magenta'
   navKey?: string
   badge?: 'messages'
 }[] = [
-  { label: 'Circles', href: '/circles', icon: 'circle', tone: 'violet', navKey: 'circles' },
+  { label: 'Circles', href: '/circles', icon: 'circle', tone: 'ink', navKey: 'circles' },
   { label: 'Messages', href: '/messages', icon: 'message', tone: 'aqua', navKey: 'messageBoards', badge: 'messages' },
   { label: 'My Quest', href: '/crew', icon: 'standing', tone: 'sun', navKey: 'quest' },
   // Spaces took Mindless's tile (owner, 2026-10-16: "Replace mindless with spaces in the ios menu"). It
@@ -615,7 +615,7 @@ const DRAWER_TILES: readonly {
   { label: 'Spaces', href: '/spaces/directory', icon: 'space', tone: 'magenta' },
   { label: 'Journeys', href: '/journeys', icon: 'program', tone: 'aqua', navKey: 'journeys' },
   { label: 'Practices', href: '/practices', icon: 'checkin', tone: 'sun', navKey: 'practices' },
-  { label: 'Members', href: '/network', icon: 'contacts', tone: 'violet', navKey: 'people' },
+  { label: 'Members', href: '/network', icon: 'contacts', tone: 'ink', navKey: 'people' },
   { label: 'Around You', href: '/nearby', icon: 'pin', tone: 'magenta', navKey: 'nearby' },
 ]
 

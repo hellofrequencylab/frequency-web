@@ -25,7 +25,7 @@ import { usePathname } from 'next/navigation'
 type Energy = 'still' | 'flow' | 'charge'
 
 const H = {
-  v: 'var(--fq-x-violet-neon)',
+  v: 'var(--fq-x-sky-neon)',
   m: 'var(--fq-x-magenta-neon)',
   a: 'var(--fq-x-aqua-neon)',
   s: 'var(--fq-x-sun-neon)',
