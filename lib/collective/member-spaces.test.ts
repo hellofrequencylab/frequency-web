@@ -50,6 +50,12 @@ describe('Network chapters (SCAN-960)', () => {
     expect(memberSpaceCapacity([{ item_key: 'collective_space', quantity: 3, status: 'active' }], 'network')).toBe(10)
     expect(memberSpaceCapacity([], 'collective')).toBe(5)
   })
+  it('adds live purchased chapters up to 25 and never counts them for a Collective (SCAN-1008)', () => {
+    expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'active' }], 'network')).toBe(13)
+    expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'canceled' }], 'network')).toBe(10)
+    expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 40, status: 'active' }], 'network')).toBe(25)
+    expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'active' }], 'collective')).toBe(5)
+  })
   it('grants Business to a free same-owner chapter of an active Network', () => {
     expect(memberSpacePlan('free', { plan: 'network', status: 'active' }, relation)).toBe('business')
     expect(memberSpacePlan('free', { plan: 'network', status: 'suspended' }, relation)).toBe('free')

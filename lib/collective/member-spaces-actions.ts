@@ -19,7 +19,7 @@ export async function setCollectiveMemberSpace(parentId: string, childId: string
     { p_parent_id: parentId, p_child_id: childId, p_owner_id: caller.id, p_attach: attach } as never)
   if (error) {
     if (error.message.includes('collective_full')) return fail(parent.plan === 'network'
-      ? 'Your Network has all its included chapters. Talk to us to add more.'
+      ? 'Your Network has all the chapters it pays for. Add extra chapters to your plan before attaching one; past 25 chapters, talk to us.'
       : 'Your Collective is full. Add another Space to your plan before attaching one.')
     return fail('Could not update this member Space. Check that you own both Spaces and try again.')
   }
