@@ -57,9 +57,15 @@
   --color-ink: var(--fq-uv-void);
   --color-ink-elevated: var(--fq-uv-900);
   --color-ink-border: var(--fq-uv-700);
-  --color-on-ink: #F6F0FF;        /* Stage --text-strong */
-  --color-on-ink-muted: #D9CFEA;  /* Stage --text-body */
-  --color-on-ink-subtle: #A89BC2; /* Stage --text-muted */
+  --color-on-ink: #F2F5FA;        /* Stage --text-strong */
+  --color-on-ink-muted: #C9D3E0;  /* Stage --text-body */
+  --color-on-ink-subtle: #98A6BC; /* Stage --text-muted */
+
+  /* The Indigo rank ramp, cooled to slate blue: the violet family is retired on Frequency (LIVE-962, ADR-1792).
+     DAWN keeps its own ramp in app/globals.css. */
+  --rank-indigo: #6F8FB8; /* token-ok: Frequency rank ramp, slate blue */
+  --rank-indigo-deep: #3B5878; /* token-ok: Frequency rank ramp */
+  --rank-indigo-bright: #B0C8E4; /* token-ok: Frequency rank ramp */
 
   /* ── Crossover hues by meaning: violet act, magenta live, aqua presence, sun reward ── */
   --color-primary: var(--fq-action-primary);
@@ -212,7 +218,7 @@
 :root[data-design="frequency"] [data-surface="stage"],
 :root[data-design="frequency"][data-surface="stage"],
 :root[data-design="frequency"] [data-time="night"]:not([data-night="thermal"]) {
-  --fq-text-faint: #877C9D; /* export Stage / UV night faint #7A6E93 (4.07 on the UV card): 4.9 */
+  --fq-text-faint: #8B9BB2; /* export Stage / UV night faint #7E8DA6 (4.07 on the UV card): 4.9 */
 }
 :root[data-design="frequency"] [data-time="night"][data-night="thermal"] {
   --fq-text-faint: #908170; /* export Thermal faint #857767, lifted as the night room's is: 4.9 */
@@ -341,7 +347,7 @@
    Two moves, both from the export's own colours. The members room's living background (data-energy="flow") led with
    the peach-pink haze; it now leads with the export's sky haze and seaglass, keeping the haze as the quiet third stop.
    The primary-action gradient (--fq-pa, every iridescent button and active pill) dropped its opening orchid stop and
-   now runs violet to sky to aqua: the export's own --fq-pa stops #C4B8FF, #A3D4FF and #8FE9FF. */
+   now runs violet to sky to aqua: the export's --fq-pa stops (lilac, sky, aqua). */
 [data-design="frequency"] [data-energy="flow"] {
   --fq-aura-1: var(--fq-sky-haze);
   --fq-aura-2: var(--fq-seaglass);
@@ -361,9 +367,9 @@
    cool off-white, the Stage's purple-black to blue-black). The export's own aqua, sky and seaglass carry it, so the
    brand still reads as Frequency. */
 :root[data-design="frequency"] {
-  --fq-iridescent-sweep: linear-gradient(100deg, #8FE9FF 0%, #A3D4FF 20%, #C4B8FF 34%, #8FE9FF 52%, #A3E8D4 72%, #A3D4FF 88%, #8FE9FF 100%); /* export sweep stops #8FE9FF aqua, #A3D4FF sky, #C4B8FF violet; seaglass #A3E8D4 */
-  --fq-iridescent-sweep-deep: linear-gradient(100deg, #2C93A3 0%, #5A9FD0 26%, #8F84D6 44%, #2C93A3 64%, #3C9C8C 82%, #2C93A3 100%); /* export deep stops --fq-x-aqua-deep #17788A, --fq-x-violet-deep #5B3FD0 */
-  --fq-iridescent: conic-gradient(from 200deg, #8FE9FF, #A3D4FF, #C4B8FF, #A3E8D4, #8FE9FF); /* export conic stops, pink dropped */
+  --fq-iridescent-sweep: linear-gradient(100deg, #8FE9FF 0%, #A3D4FF 20%, #A3D4FF 34%, #8FE9FF 52%, #A3E8D4 72%, #A3D4FF 88%, #8FE9FF 100%); /* export sweep stops #8FE9FF aqua, #A3D4FF sky, #A3D4FF violet; seaglass #A3E8D4 */
+  --fq-iridescent-sweep-deep: linear-gradient(100deg, #2C93A3 0%, #5A9FD0 26%, #5A9FD0 44%, #2C93A3 64%, #3C9C8C 82%, #2C93A3 100%); /* deep stops: aqua-deep, sky and seaglass, no violet */
+  --fq-iridescent: conic-gradient(from 200deg, #8FE9FF, #A3D4FF, #A3D4FF, #A3E8D4, #8FE9FF); /* export conic stops, pink dropped */
   --fq-pa: linear-gradient(120deg, #A3D4FF 0%, #8FE9FF 60%, #A3E8D4 100%); /* export --fq-pa stops #A3D4FF, #8FE9FF */
   --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #CFE6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* export --fq-pa-orb, periwinkle centre */
   --fq-pa-soft: linear-gradient(120deg, rgba(163, 212, 255, .24), rgba(143, 233, 255, .2) 50%, rgba(163, 232, 212, .2)); /* export --fq-pa-soft at sky and aqua */

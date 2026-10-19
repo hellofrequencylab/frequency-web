@@ -37,7 +37,7 @@
 [data-design="frequency"] [data-kit="admin"] .adp .input.adp-search{max-width:280px;height:44px;border-radius:var(--fq-radius-orb)}
 
 /* Memberships: plan cards, the most-picked ring (design: 0 0 0 2px of the violet light, from the violet hue). */
-[data-design="frequency"] [data-kit="admin"] .adp .panel.adp-pick{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px color-mix(in oklab,var(--fq-x-violet-neon) 45%,transparent)}
+[data-design="frequency"] [data-kit="admin"] .adp .panel.adp-pick{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px color-mix(in oklab,var(--fq-x-sky-neon) 45%,transparent)}
 [data-design="frequency"] [data-kit="admin"] .adp .num.adp-num{font-size:32px}
 
 /* Standing / Moderation: the tabs row sits flat inside a section head, and above the queue. */
@@ -230,8 +230,8 @@
 }
 /* A selected outline reads as the kit's pick ring (Memberships' most-picked plan), not saturated violet. */
 [data-design="frequency"] [data-kit="admin"] .ad-main :is(.border-primary, .border-primary\/40, .border-primary\/50, .ring-primary):not(:is([data-space-theme], [data-space-page]) *) {
-  border-color: color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent);
-  --tw-ring-color: color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent);
+  border-color: color-mix(in oklab, var(--fq-x-sky-neon) 45%, transparent);
+  --tw-ring-color: color-mix(in oklab, var(--fq-x-sky-neon) 45%, transparent);
 }
 
 /* The same on hover: a row or tile that lights up lights with the kit's wash and ring. */
@@ -239,7 +239,7 @@
   background: var(--fq-pa-soft);
 }
 [data-design="frequency"] [data-kit="admin"] .ad-main [class*="hover:border-primary"]:hover:not(:is([data-space-theme], [data-space-page]) *) {
-  border-color: color-mix(in oklab, var(--fq-x-violet-neon) 45%, transparent);
+  border-color: color-mix(in oklab, var(--fq-x-sky-neon) 45%, transparent);
 }
 
 /* ── Actions and selection: never a solid saturated violet ─────────────────────────────────────────── */

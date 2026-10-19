@@ -41,7 +41,7 @@ function checkScope(source) {
   const root = {}; const container = {}; let accent = '#3a8c99'
   const { tokenColor } = evaluate(`${source}\nexports.tokenColor = tokenColor`, {
     document: { documentElement: root },
-    getComputedStyle: (element) => ({ getPropertyValue: () => element === container ? accent : '#5b3fd0' }),
+    getComputedStyle: (element) => ({ getPropertyValue: () => element === container ? accent : '#1E1B18' }),
   })
   assert.equal(tokenColor(container, '--design-map-pin', 'fallback'), '#3a8c99')
   accent = '#8fe9ff'

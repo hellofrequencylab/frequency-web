@@ -15,7 +15,7 @@ export const contentType = OG_CONTENT_TYPE
 // Per-pillar dynamic OG image for /discover/practices/pillar/[slug].
 // Falls back to a generic branded card when the pillar isn't found.
 // Visual language mirrors app/discover/events/[slug]/opengraph-image.tsx:
-// near-black gradient ground, indigo brand bar (#6366f1), white display type.
+// near-black gradient ground, amber brand bar (#E2912F), white display type.
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
