@@ -41,7 +41,7 @@ export function ShowMeetCode({ initial }: { initial: ShownMeetCode }) {
   return (
     <div className="rounded-card border border-border bg-surface p-5 text-center lift-1">
       <div className="mx-auto w-56 max-w-full [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: shown.svg }} />
-      <p className="mt-4 font-mono text-h3 font-bold tracking-widest text-text">{formatMeetCode(shown.code)}</p>
+      <p className="mt-4 font-mono text-lead font-bold tracking-widest text-text">{formatMeetCode(shown.code)}</p>
       <p className="mt-1 text-meta text-muted" aria-live="polite">
         {pending ? 'New code on its way.' : `Fresh for ${left}s.`}
       </p>

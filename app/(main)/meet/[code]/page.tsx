@@ -41,7 +41,7 @@ export default async function MeetCodePage({ params }: { params: Promise<{ code:
         <EmptyState icon={Handshake} title="Tap to meet is not open yet." description="It opens with Regulars." />
       ) : (
         <div className="space-y-4">
-          <p className="text-center font-mono text-h3 font-bold tracking-widest text-text">{formatMeetCode(code)}</p>
+          <p className="text-center font-mono text-lead font-bold tracking-widest text-text">{formatMeetCode(code)}</p>
           <TapMeetButton code={code} />
           <p className="text-center text-meta text-muted">
             <Link href="/meet" className="underline">Show your own code instead</Link>
