@@ -3,7 +3,7 @@ import { Flag, Gift } from 'lucide-react'
 import { formatCode } from '@/lib/loyalty/program'
 import { huntLine, type HuntProgress } from '@/lib/loyalty/hunts'
 
-// HUNT PROGRESS (LIVE-941, docs/LOYALTY.md). One presentational list, no hooks, rendered by the check-in
+// HUNT PROGRESS (LIVE-942, docs/LOYALTY.md). One presentational list, no hooks, rendered by the check-in
 // result (client) and the /rewards page (server). Each hunt counts DOWN ("2 stops to go") and prints the
 // completion code the host hands the reward out against. Tokens only, no hardcoded hex. No em dashes.
 

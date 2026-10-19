@@ -123,7 +123,7 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   library_collections: 'operator-authored (library)',
   library_versions: 'operator-authored (library)',
   space_venue_holds: 'a Space-side scheduling record, not a member post',
-  loyalty_hunts: 'owner-authored (a Space hosting a Regulars hunt, LIVE-941), written by the service role behind the loyalty owner gate; never a member post',
+  loyalty_hunts: 'owner-authored (a Space hosting a Regulars hunt, LIVE-942), written by the service role behind the loyalty owner gate; never a member post',
   space_calendar_entries: 'operator-authored private calendar layer (ADR-1385), team-only and never public',
   space_plans:
     'operator-authored planning record (ADR-1386), team-only and never public; a Plan reaches the\n     public only by a person pressing publish in the event Spark, which is a `events` write and IS covered',

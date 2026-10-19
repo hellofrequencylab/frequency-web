@@ -12,7 +12,7 @@ import { answerHuntInvite, createHunt, inviteHuntStop, setHuntStatus } from '@/l
 import { HUNT_COMPLETE_ZAPS, HUNT_LIMITS, huntLiveBlocker, huntWindow, type LoyaltyHunt } from '@/lib/loyalty/hunts'
 import { formatRewardValue } from '@/lib/loyalty/program'
 
-// HUNTS, the owner side (LIVE-941, docs/LOYALTY.md). Inside the Check-in panel under Regulars. The host
+// HUNTS, the owner side (LIVE-942, docs/LOYALTY.md). Inside the Check-in panel under Regulars. The host
 // names the hunt, sets its window and reward, invites Spaces by their link, and takes it live once three
 // stops said yes. An invited Space answers here too. Copy obeys CONTENT-VOICE, no em dashes.
 

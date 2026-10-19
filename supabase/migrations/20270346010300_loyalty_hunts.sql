@@ -1,4 +1,4 @@
--- Regulars, phase 2: Hunts. Spaces running Regulars run a scavenger hunt together (LIVE-941, ADR-1781).
+-- Regulars, phase 2: Hunts. Spaces running Regulars run a scavenger hunt together (LIVE-942, ADR-1781).
 -- See docs/BUILD-BACKLOG.json for status and docs/LOYALTY.md for the program; this file explains the
 -- schema, it does not track the work.
 --
@@ -50,7 +50,7 @@ create index if not exists loyalty_hunts_created_by_idx on public.loyalty_hunts(
 alter table public.loyalty_hunts enable row level security;
 revoke all on table public.loyalty_hunts from public, anon, authenticated;
 grant all on public.loyalty_hunts to service_role;
-comment on table public.loyalty_hunts is 'LIVE-941 Regulars hunts: one hunt hosted by a Space, a 2 to 10 week window, a completion reward. Service role only; lib/loyalty/hunt-store.ts writes it after the owner gate.';
+comment on table public.loyalty_hunts is 'LIVE-942 Regulars hunts: one hunt hosted by a Space, a 2 to 10 week window, a completion reward. Service role only; lib/loyalty/hunt-store.ts writes it after the owner gate.';
 
 create table if not exists public.loyalty_hunt_stops (
   hunt_id uuid not null references public.loyalty_hunts(id) on delete cascade,
@@ -67,7 +67,7 @@ create index if not exists loyalty_hunt_stops_responded_by_idx on public.loyalty
 alter table public.loyalty_hunt_stops enable row level security;
 revoke all on table public.loyalty_hunt_stops from public, anon, authenticated;
 grant all on public.loyalty_hunt_stops to service_role;
-comment on table public.loyalty_hunt_stops is 'LIVE-941: a Space invited to a hunt; accepted stops count toward completion. The host is an accepted stop from the start. Service role only.';
+comment on table public.loyalty_hunt_stops is 'LIVE-942: a Space invited to a hunt; accepted stops count toward completion. The host is an accepted stop from the start. Service role only.';
 
 create table if not exists public.loyalty_hunt_completions (
   hunt_id uuid not null references public.loyalty_hunts(id) on delete cascade,
@@ -82,7 +82,7 @@ create index if not exists loyalty_hunt_completions_reward_idx on public.loyalty
 alter table public.loyalty_hunt_completions enable row level security;
 revoke all on table public.loyalty_hunt_completions from public, anon, authenticated;
 grant all on public.loyalty_hunt_completions to service_role;
-comment on table public.loyalty_hunt_completions is 'LIVE-941: one row per member per hunt, the exactly-once guard on the completion reward. Service role only.';
+comment on table public.loyalty_hunt_completions is 'LIVE-942: one row per member per hunt, the exactly-once guard on the completion reward. Service role only.';
 
 alter table public.loyalty_rewards add column if not exists hunt_id uuid references public.loyalty_hunts(id) on delete set null;
 create index if not exists loyalty_rewards_hunt_idx on public.loyalty_rewards(hunt_id) where hunt_id is not null;
@@ -154,7 +154,7 @@ end;
 $$;
 
 comment on function public.loyalty_hunt_progress(uuid, uuid, date) is
-  'LIVE-941 Regulars hunts: after a stamp at a Space, count the member''s stops on every live hunt the Space belongs to, mint the completion reward once when every stop is done. Called by lib/loyalty/hunts-visit.ts through the service-role admin client only.';
+  'LIVE-942 Regulars hunts: after a stamp at a Space, count the member''s stops on every live hunt the Space belongs to, mint the completion reward once when every stop is done. Called by lib/loyalty/hunts-visit.ts through the service-role admin client only.';
 
 revoke execute on function public.loyalty_hunt_progress(uuid, uuid, date) from public, anon, authenticated;
 grant execute on function public.loyalty_hunt_progress(uuid, uuid, date) to service_role;

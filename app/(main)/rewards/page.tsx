@@ -14,8 +14,8 @@ export const dynamic = 'force-dynamic'
 
 // MY REWARDS (LIVE-940, docs/LOYALTY.md): every Regulars card the member holds, with any reward code
 // waiting to be collected. A member page behind sign-in: noindex, the global rail (railFor falls through).
-// Hunts the member has started sit under the cards (LIVE-941); nearby Spaces and live hunts join in
-// LIVE-943. No em dashes.
+// Hunts the member has started sit under the cards (LIVE-942); nearby Spaces and live hunts join in
+// LIVE-944. No em dashes.
 export const metadata: Metadata = {
   title: 'Rewards',
   robots: { index: false },

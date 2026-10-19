@@ -1,4 +1,4 @@
-// REGULARS HUNTS, the pure half (LIVE-941, ADR-1781, docs/LOYALTY.md). Types, limits and the progress
+// REGULARS HUNTS, the pure half (LIVE-942, ADR-1781, docs/LOYALTY.md). Types, limits and the progress
 // math the host editor, the public hunt page, the check-in result and /rewards all share. No Supabase,
 // no Next: unit-tested in lib/loyalty/hunts.test.ts. The IO lives in ./hunt-store.ts and ./hunts-visit.ts.
 //

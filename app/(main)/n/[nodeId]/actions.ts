@@ -15,7 +15,7 @@ export interface ClaimResult {
   offerTitle?: string | null
   /** The member's Regulars card after a Space check-in (LIVE-940). */
   loyalty?: LoyaltyVisitOutcome | null
-  /** Live hunts this check-in moved (LIVE-941). */
+  /** Live hunts this check-in moved (LIVE-942). */
   hunts?: HuntProgress[]
 }
 

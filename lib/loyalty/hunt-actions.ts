@@ -1,6 +1,6 @@
 'use server'
 
-// REGULARS HUNT actions (LIVE-941, ADR-1781). Every write runs behind the owner gate inside ./hunt-store.ts:
+// REGULARS HUNT actions (LIVE-942, ADR-1781). Every write runs behind the owner gate inside ./hunt-store.ts:
 // the HOST's owner creates, edits, invites and changes status; an INVITED Space's owner answers its
 // invite. Input is validated by the pure normalizer first.
 

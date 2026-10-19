@@ -38,7 +38,7 @@ export interface CaptureResult {
   offerTitle?: string | null
   /** The member's Regulars card after a Space check-in, when the Space runs the program (LIVE-940). */
   loyalty?: LoyaltyVisitOutcome | null
-  /** Every live hunt this check-in moved, with the completion code when it finished one (LIVE-941). */
+  /** Every live hunt this check-in moved, with the completion code when it finished one (LIVE-942). */
   hunts?: HuntProgress[]
 }
 
@@ -156,7 +156,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     const visit = await recordLoyaltyVisit(node.space_id, attempt.actorProfileId, day)
     loyalty = visit.outcome
     amount += visit.zapsAwarded
-    // 4c) HUNTS (LIVE-941): the same stamp may be a stop on a live hunt; the one SQL writer counts the
+    // 4c) HUNTS (LIVE-942): the same stamp may be a stop on a live hunt; the one SQL writer counts the
     //     member's stops and mints the completion reward once. Only after a stamp landed.
     if (loyalty) {
       const progress = await recordHuntProgress(node.space_id, attempt.actorProfileId, day)

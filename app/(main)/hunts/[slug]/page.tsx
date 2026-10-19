@@ -11,9 +11,9 @@ import { formatRewardValue } from '@/lib/loyalty/program'
 
 export const dynamic = 'force-dynamic'
 
-// THE HUNT PAGE (LIVE-941, docs/LOYALTY.md): the route a host shares. Every stop, the window, the finish
+// THE HUNT PAGE (LIVE-942, docs/LOYALTY.md): the route a host shares. Every stop, the window, the finish
 // reward, and the viewer's own progress when signed in. Public (a hunt exists to be passed around), but
-// noindex until discovery lands in LIVE-943. A draft 404s like a missing hunt. No em dashes.
+// noindex until discovery lands in LIVE-944. A draft 404s like a missing hunt. No em dashes.
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

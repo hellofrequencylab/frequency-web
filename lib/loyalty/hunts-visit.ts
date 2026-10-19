@@ -1,4 +1,4 @@
-// REGULARS HUNTS, the step on a check-in (LIVE-941, ADR-1781). Called by lib/engagement/capture.ts right
+// REGULARS HUNTS, the step on a check-in (LIVE-942, ADR-1781). Called by lib/engagement/capture.ts right
 // after recordLoyaltyVisit stamped the member's card for the day, so this module never verifies anything:
 // it asks the one writer, loyalty_hunt_progress(), which hunts the stamp moved, pays the hunt_complete
 // Zaps when a hunt finished, and returns the progress list for the claim result. Best-effort: a failure

@@ -42,7 +42,7 @@ export const ZAP_AMOUNTS = {
   // Regulars (LIVE-940, docs/LOYALTY.md): a check-in at a Space running the program, once a day per
   // Space; zap_config caps it at 75 a day (three Spaces). Paid by lib/loyalty/visit.ts.
   space_checkin: 25,
-  // Regulars hunts (LIVE-941): checked in at every stop of a live hunt; once per hunt, 100 a day.
+  // Regulars hunts (LIVE-942): checked in at every stop of a live hunt; once per hunt, 100 a day.
   hunt_complete: 100,
   program_run: 30,
   // Entry Points (ADR-126): reward setting up a funnel (capped in app to the first

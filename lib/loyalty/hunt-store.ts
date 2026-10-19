@@ -1,4 +1,4 @@
-// REGULARS HUNTS, the IO half (LIVE-941, ADR-1781, docs/LOYALTY.md). Reads and writes on loyalty_hunts,
+// REGULARS HUNTS, the IO half (LIVE-942, ADR-1781, docs/LOYALTY.md). Reads and writes on loyalty_hunts,
 // loyalty_hunt_stops and loyalty_hunt_completions through the service-role admin client; every table is
 // service-role only (scripts/table-grants.txt `internal`), so THIS file is the tenancy wall: the public
 // read is by slug and shows only what the hunt page prints, every other read is scoped to one Space or
