@@ -73,6 +73,7 @@ const sends: {
   replyTo?: string
   headers?: Record<string, string>
   outreachSendId?: string
+  identityId?: string
   __kind?: string
   __lane?: string
   __runAfter?: Date
@@ -309,6 +310,9 @@ function outreachBuilder() {
 
 const identity = vi.hoisted(() => ({ resolve: vi.fn(async (): Promise<{ identityId: string; from: string } | null> => null) }))
 vi.mock('./email-domain-onboarding', () => ({ resolveSpaceEmailDefaultIdentity: identity.resolve }))
+// SCAN-828: the drain resolves a custom identity again at send time through the registry.
+const registry = vi.hoisted(() => ({ resolve: vi.fn(async (_spaceId: string, identityId: string) => ({ identityId, from: 'River Studio <hello@river.studio>' })) }))
+vi.mock('./email-identity-registry', () => ({ resolveSpaceEmailIdentity: registry.resolve }))
 const inbox = vi.hoisted(() => ({ from: vi.fn(async (): Promise<string | null> => null) }))
 vi.mock('@/lib/comms/space-inbox-address', () => ({ resolveSpaceInboxFrom: inbox.from }))
 
@@ -550,6 +554,38 @@ describe('sendSpaceCampaign: the owner-chosen Campaigns sender (EMAIL-011/012)',
     const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
     expect('error' in r && r.error).toMatch(/not verified yet/)
     expect(sends).toHaveLength(0)
+  })
+
+  // SCAN-828: the From is resolved once at enqueue, but campaign jobs are dripped over hours, so the
+  // drain resolves the identity AGAIN right before the provider call.
+  it('carries the identity id on every queued job so the drain can re-check it', async () => {
+    identity.resolve.mockResolvedValueOnce({ identityId: 'i1', from: 'River Studio <hello@river.studio>' })
+    await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com', 'c@d.com') })
+    expect(sends.map((s) => s.identityId)).toEqual(['i1', 'i1'])
+  })
+
+  it('carries no identity id when the Frequency sender is used', async () => {
+    await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect(sends[0]!.identityId).toBeUndefined()
+  })
+
+  it('the drain re-resolves the identity and sends from its CURRENT From', async () => {
+    registry.resolve.mockResolvedValueOnce({ identityId: 'i1', from: 'River Studio <renamed@river.studio>' })
+    db.outreach.push(seedQueuedRow('send-i1'))
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', from: 'River Studio <hello@river.studio>', identityId: 'i1', spaceId: 'space-A', outreachSendId: 'send-i1' })
+    expect(registry.resolve).toHaveBeenCalledWith('space-A', 'i1')
+    expect(rawSends[0]!.from).toBe('River Studio <renamed@river.studio>')
+    expect(db.outreach.find((o) => o.id === 'send-i1')?.status).toBe('sent')
+  })
+
+  it('the drain fails the row visibly when the identity is held at send time, and never sends', async () => {
+    registry.resolve.mockRejectedValueOnce(new Error('This sender is paused or its domain is not verified yet. Nothing was sent.'))
+    db.outreach.push(seedQueuedRow('send-i2'))
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', from: 'River Studio <hello@river.studio>', identityId: 'i1', spaceId: 'space-A', outreachSendId: 'send-i2' })
+    expect(rawSends).toHaveLength(0)
+    const row = db.outreach.find((o) => o.id === 'send-i2')
+    expect(row?.status).toBe('failed')
+    expect(row?.error).toMatch(/held at send time.*not verified yet/)
   })
 })
 

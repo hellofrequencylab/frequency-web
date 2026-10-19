@@ -50,7 +50,7 @@ import { canEmailContact } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { brandSignature } from '@/lib/comms/signature'
-import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
+import { startConversationMessage, resolveSpaceConversationSender, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import { campaignStatusToMessaging } from '@/lib/messaging/status'
@@ -627,9 +627,9 @@ export async function sendSpaceEmailDraftAsConversations(
   }
 
   const brandName = space.brandName ?? space.name
-  let from: string
+  let sender: { from: string; identityId: string | null }
   try {
-    from = await resolveSpaceConversationFrom(spaceId, brandName)
+    sender = await resolveSpaceConversationSender(spaceId, brandName)
   } catch (err) {
     return fail(brandSenderUnavailable(err))
   }
@@ -670,7 +670,8 @@ export async function sendSpaceEmailDraftAsConversations(
       ownerProfileId: space.ownerProfileId ?? actorProfileId,
       actorProfileId,
       actorAuthorKind: 'staff',
-      from,
+      from: sender.from,
+      identityId: sender.identityId,
       signature,
       email,
       contactId: counterpart.contactId,

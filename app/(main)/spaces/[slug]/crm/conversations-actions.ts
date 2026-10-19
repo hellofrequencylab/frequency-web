@@ -35,7 +35,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { brandSignature } from '@/lib/comms/signature'
-import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
+import { startConversationMessage, resolveSpaceConversationSender, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { withDisplayName } from '@/lib/comms/from-address'
@@ -125,8 +125,9 @@ export async function sendSpaceConversationReplyAction(
   }
 
   let from: string
+  let identityId: string | null
   try {
-    from = await resolveSpaceConversationFrom(gate.spaceId, gate.brandName)
+    ;({ from, identityId } = await resolveSpaceConversationSender(gate.spaceId, gate.brandName))
   } catch (err) {
     return fail(brandSenderUnavailable(err))
   }
@@ -153,6 +154,7 @@ export async function sendSpaceConversationReplyAction(
     const queued = await queueOutboundMessage({
       conversationId: conv.id,
       from,
+      identityId,
       to: conv.externalEmail,
       body,
       html: storedHtml,
@@ -412,9 +414,9 @@ export async function startSpaceConversationAction(
 
   // The shared compose primitive (ADR-821): open the ticket + send the first message through the ONE
   // pipeline replies use — reply-token, Message-ID, renderReplyEmail + brand signature, batching.
-  let from: string
+  let sender: { from: string; identityId: string | null }
   try {
-    from = await resolveSpaceConversationFrom(gate.spaceId, gate.brandName)
+    sender = await resolveSpaceConversationSender(gate.spaceId, gate.brandName)
   } catch (err) {
     return fail(brandSenderUnavailable(err))
   }
@@ -422,7 +424,8 @@ export async function startSpaceConversationAction(
     ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
     actorProfileId: gate.viewerProfileId,
     actorAuthorKind: 'staff',
-    from,
+    from: sender.from,
+    identityId: sender.identityId,
     signature: brandSignature(gate.brandName),
     email,
     contactId: counterpart.contactId,

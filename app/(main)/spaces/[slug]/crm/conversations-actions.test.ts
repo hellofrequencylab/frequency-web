@@ -42,6 +42,7 @@ vi.mock('@/lib/comms/outbound-batch', () => ({ conversationBatchWindowMinutes: (
 vi.mock('@/lib/comms/signature', () => ({ brandSignature: (name: string) => `Warmly,\n${name}` }))
 vi.mock('@/lib/comms/conversation-compose', () => ({
   resolveSpaceConversationFrom: async (_id: string, brand: string) => `${brand} <people@people.test>`,
+  resolveSpaceConversationSender: async (_id: string, brand: string) => ({ from: `${brand} <people@people.test>`, identityId: null }),
   brandSenderUnavailable: () => 'unavailable',
   startConversationMessage: vi.fn(),
 }))

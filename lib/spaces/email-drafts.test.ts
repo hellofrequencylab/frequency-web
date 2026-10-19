@@ -35,6 +35,8 @@ vi.mock('@/lib/comms/conversation-compose', () => ({
     return true
   },
   spaceConversationFrom: (name: string) => name,
+  resolveSpaceConversationSender: async (_id: string, name: string) => ({ from: name, identityId: null }),
+  brandSenderUnavailable: (err: unknown) => (err instanceof Error ? err.message : 'unavailable'),
 }))
 // The draft read is the first IO past the gate: record that it was reached, and return no draft.
 const tablesRead: string[] = []
