@@ -1,4 +1,4 @@
--- pgTAP behavioural guard for migration 20270346009700 (SCAN-848).
+-- pgTAP behavioural guard for migration 20270346009900 (SCAN-848).
 --
 -- The host/guide/mentor update policy on circles checks identity alone, so before
 -- SCAN-848 a host (or any guide) could PATCH status from 'draft' to 'active'

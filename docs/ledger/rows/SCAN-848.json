@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-19 (ADR-1754). PREMISE RE-TESTED on main: the host/guide/mentor update policy still has no column limits, and no later migration refused old.status = draft. Migration 20270346009700: BEFORE UPDATE trigger guard_circle_draft_status refuses a caller-role leave-draft. Trusted writers (service_role, postgres, supabase_admin) stay exempt. pgTAP: host and guide PATCH to active or forming is 42501; draft rename and live status change still land; service_role can publish. Apply with execute_sql then schema_migrations at 20270346009700."
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1758). PREMISE RE-TESTED on main: the host/guide/mentor update policy still has no column limits, and no later migration refused old.status = draft. Migration 20270346009900: BEFORE UPDATE trigger guard_circle_draft_status refuses a caller-role leave-draft. Trusted writers (service_role, postgres, supabase_admin) stay exempt. pgTAP: host and guide PATCH to active or forming is 42501; draft rename and live status change still land; service_role can publish. Apply with execute_sql then schema_migrations at 20270346009900."
   }
 }

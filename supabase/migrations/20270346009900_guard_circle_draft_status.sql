@@ -20,7 +20,7 @@
 -- still change status.
 --
 -- Apply with execute_sql, then insert supabase_migrations.schema_migrations at version
--- 20270346009700. Do not apply_migration. Do not db push.
+-- 20270346009900. Do not apply_migration. Do not db push.
 --
 -- ROLLBACK:
 --   drop trigger if exists guard_circle_draft_status on public.circles;
