@@ -77,6 +77,14 @@ export function EntityGrid({
     </div>
   )
 
+  // One column's stack. Each block is keyed by POSITION (row, column, index), not by its id: since E0
+  // task 10 a content block may be placed more than once (lib/entity-blocks/block-limits.ts), and two
+  // siblings keyed by the same id would collide. The caller's own key on the returned node is scoped
+  // inside the positional Fragment, so nothing the callers do changes; a Fragment adds no DOM.
+  function renderStack(rowId: string, col: number, stack: string[]): ReactNode {
+    return stack.map((id, j) => <Fragment key={`${rowId}-${col}-${j}`}>{renderBlock(id)}</Fragment>)
+  }
+
   function renderRow(row: RowDef): ReactNode {
     // The optional LIVE row header (Fix 5): shown only when the toggle is on, the title is non-blank,
     // AND the row actually holds blocks (never a lone header over an empty row).
@@ -93,11 +101,11 @@ export function EntityGrid({
     if (row.columns === 1) {
       const stack = row.cells[0] ?? []
       // Keyed Fragment, not a bare array: the outer rows.map needs a key on every row, and a Fragment adds no DOM.
-      if (!wrap) return <Fragment key={row.id}>{stack.map((id) => renderBlock(id))}</Fragment>
+      if (!wrap) return <Fragment key={row.id}>{renderStack(row.id, 0, stack)}</Fragment>
       return (
         <section key={row.id} className={`space-y-8 ${mCls}`.trim()}>
           {showHeader && <RowHeader title={row.title!} />}
-          {stack.map((id) => renderBlock(id))}
+          {renderStack(row.id, 0, stack)}
         </section>
       )
     }
@@ -105,7 +113,7 @@ export function EntityGrid({
       <div className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
         {row.cells.map((stack, i) => (
           <div key={`${row.id}-${i}`} className="@container space-y-8">
-            {stack.map((id) => renderBlock(id))}
+            {renderStack(row.id, i, stack)}
           </div>
         ))}
       </div>
@@ -117,7 +125,7 @@ export function EntityGrid({
         <div key={row.id} className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
           {row.cells.map((stack, i) => (
             <div key={`${row.id}-${i}`} className="@container space-y-8">
-              {stack.map((id) => renderBlock(id))}
+              {renderStack(row.id, i, stack)}
             </div>
           ))}
         </div>

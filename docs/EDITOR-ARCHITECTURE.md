@@ -257,9 +257,11 @@ type BlockNode = {
 
 Three hard requirements this fixes:
 
-- 🔴 **`rows-ops.ts:61` dedupes block ids globally**, and `content`/`style` are keyed by *block id*.
-  **You cannot put two text blocks on one page today.** Acceptable for a profile, fatal for a Site.
-  Key by node id instead. This is a storage-shape migration, not a UI change.
+- ⏳ **`rows-ops.ts:61` deduped block ids globally**, and `content`/`style` are keyed by *block id*.
+  **Half closed 2026-10-19** ([ADR-1830](DECISIONS.md), LIVE-960): the six dedupe sets are gone and
+  `lib/entity-blocks/block-limits.ts` holds one per-type policy, so two text blocks parse, sanitize,
+  merge, resolve and render. The bags are still keyed by type until E0 task 11 keys them by node id.
+  That half is a storage-shape migration, not a UI change.
 - ✅ **CLOSED by [ADR-978](DECISIONS.md).** `isRenderable()` discarded the whole document if any block
   type was unknown, so renaming a block silently reverted every page using it to a code template and
   destroyed the author's work. Now split into `isWellFormed` (never discard) / `isFullyKnown` (seed
