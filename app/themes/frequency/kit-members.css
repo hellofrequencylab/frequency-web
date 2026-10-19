@@ -158,7 +158,7 @@
 [data-design="frequency"] [data-kit="members"] .rr-week span{display:flex;flex-direction:column;align-items:center;gap:5px;font:400 11px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .rr-week i{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(30,27,24,.14)}
 [data-design="frequency"] [data-kit="members"] .rr-week .on i{background:var(--fq-pa);box-shadow:var(--fq-pa-glow)}
-[data-design="frequency"] [data-kit="members"] .rr-week .today i{background:#fff;box-shadow:0 0 0 2px #C4B8FF}
+[data-design="frequency"] [data-kit="members"] .rr-week .today i{background:#fff;box-shadow:0 0 0 2px #A3D4FF}
 [data-design="frequency"] [data-kit="members"] .rr-fold{position:absolute;left:-18px;top:18px;transform:rotate(-90deg)}
 [data-design="frequency"] [data-kit="members"] .ap-shell.rf .rr-fold{transform:rotate(90deg);left:16px}
 [data-design="frequency"] [data-kit="members"] .ap-shell.rf .rr-scroll, [data-design="frequency"] [data-kit="members"] .ap-shell.rf .rr-dock-panel, [data-design="frequency"] [data-kit="members"] .ap-shell.rf .rr-dock-head b, [data-design="frequency"] [data-kit="members"] .ap-shell.rf .rr-dock-head s, [data-design="frequency"] [data-kit="members"] .ap-shell.rf .rr-dock-head svg{display:none}
@@ -280,12 +280,12 @@
 [data-design="frequency"] [data-kit="members"] .sel>*:hover{background:rgba(255,255,255,.45)}
 [data-design="frequency"] [data-kit="members"] .sel>.on{background:rgba(255,255,255,.8);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"]{scroll-behavior:smooth;scroll-padding-top:96px}
-[data-design="frequency"] [data-kit="members"] ::selection{background:rgba(196,184,255,.45)}
+[data-design="frequency"] [data-kit="members"] ::selection{background:rgba(163,212,255,.45)}
 [data-design="frequency"] [data-kit="members"] :focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px;border-radius:10px}
 [data-design="frequency"] [data-kit="members"] .h1, [data-design="frequency"] [data-kit="members"] .h2, [data-design="frequency"] [data-kit="members"] .h3{text-wrap:balance}
 [data-design="frequency"] [data-kit="members"] .body, [data-design="frequency"] [data-kit="members"] .t2, [data-design="frequency"] [data-kit="members"] .why{text-wrap:pretty}
 [data-design="frequency"] [data-kit="members"] a.card, [data-design="frequency"] [data-kit="members"] a.panel{transition:transform var(--fq-dur-base) var(--fq-ease-out),box-shadow var(--fq-dur-base) var(--fq-ease-out)}
-[data-design="frequency"] [data-kit="members"] a.card:hover, [data-design="frequency"] [data-kit="members"] a.panel:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(30,27,24,.04),0 30px 60px -36px rgba(120,150,225,.55),inset 0 0 0 1px rgba(196,184,255,.6)}
+[data-design="frequency"] [data-kit="members"] a.card:hover, [data-design="frequency"] [data-kit="members"] a.panel:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(30,27,24,.04),0 30px 60px -36px rgba(120,150,225,.55),inset 0 0 0 1px rgba(163,212,255,.6)}
 [data-design="frequency"] [data-kit="members"] a.card .ph{transition:transform var(--fq-dur-slow) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] a.card:hover .ph{transform:scale(1.03)}
 [data-design="frequency"] [data-kit="members"] .list>a{border-radius:14px;margin:0 -10px;padding-left:10px;padding-right:10px;transition:background var(--fq-dur-fast)}
