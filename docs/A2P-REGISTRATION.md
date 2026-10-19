@@ -18,9 +18,9 @@
 | 5. Wait out carrier review (~10 to 15 days) | — | ⏳ |
 | 6. Set the env flags in Vercel (§5), gate flips open | Eng | ⏳ |
 
-The gate is **fail-closed**: `sendSms()` refuses every send until all of
-`SMS_PROVISIONING_ENABLED`, `SMS_A2P_BRAND_ID`, `SMS_A2P_CAMPAIGN_ID`, and
-`TWILIO_MESSAGING_SERVICE_SID` are present (§5). Nothing the operator does in Twilio
+The gate is **fail-closed**: `sendSms()` refuses every send until `SMS_PROVISIONING_ENABLED`,
+`TWILIO_MESSAGING_SERVICE_SID` and one registration (`SMS_A2P_BRAND_ID` + `SMS_A2P_CAMPAIGN_ID`,
+or `SMS_TOLLFREE_VERIFICATION_SID`, §8) are present (§5). Nothing the operator does in Twilio
 sends a message until those flags land.
 
 ## 1. Why this is mandatory, and the one-brand decision
@@ -169,14 +169,15 @@ send once the gate is open.
 | `SMS_PROVISIONING_ENABLED` | Vercel (Production) | `1`, `true` or `on` (`envFlag`) | The master kill-switch. Absent or any other value = SMS stays fully gated. Gate: [`RUNBOOKS.md`](RUNBOOKS.md) "SMS provisioning". |
 | `SMS_A2P_BRAND_ID` | Vercel (Production) | Brand SID from §3 | Proves an EIN-backed brand exists. |
 | `SMS_A2P_CAMPAIGN_ID` | Vercel (Production) | Campaign SID from §4 | Proves an approved use-case exists. |
+| `SMS_TOLLFREE_VERIFICATION_SID` | Vercel (Production) | Toll-free verification SID from §8 | The alternative to the two A2P ids (ADR-1790): one verified toll-free number instead of a brand and campaign. |
 | `TWILIO_MESSAGING_SERVICE_SID` | Vercel (Production) | Messaging Service SID from §4 | The service the campaign maps to; the send target. |
 | `TWILIO_ACCOUNT_SID` | Vercel (Production) | Twilio account SID | Provider credential for the eventual sender. |
 | `TWILIO_AUTH_TOKEN` | Vercel (Production, **secret**) | Twilio auth token | Provider credential; never logged, never client-exposed. |
 
 Notes:
-- `isSmsProvisioned()` requires **all four** of the top group simultaneously
-  (`envFlag('SMS_PROVISIONING_ENABLED')` AND the three SIDs non-empty). Setting only some of
-  them keeps the gate closed by design.
+- `isSmsProvisioned()` requires the switch, the Messaging Service SID and **one registration**:
+  the 10DLC brand + campaign pair, or the toll-free verification SID (ADR-1790). Setting only
+  part of a registration keeps the gate closed by design.
 - Even with all flags set, a send still has to pass the per-member gates (consent ledger →
   `notification_preferences` → quiet hours, `evaluateSmsGate`). The env flags only unblock
   the registration gate, not consent.
@@ -217,6 +218,25 @@ Once the campaign is approved and the §5 flags are set in Vercel:
 Nothing else in the platform depends on this; the gate is the single seam (`lib/comms/sms.ts`,
 ADR-256). Approve the brand and campaign, set the flags, and SMS flips from refuse-first to
 live, still subject to per-member consent.
+
+## 8. The toll-free path (the alternative to §3 and §4, ADR-1790)
+
+A verified **toll-free number** (8XX) is the other US registration Twilio accepts. It needs no
+EIN-backed brand, no campaign and no TCR fees: Twilio charges nothing for the verification
+itself, only the number's monthly rent. Review is carrier-run and usually takes one to three
+weeks. An unverified toll-free number cannot send to US numbers at all, so the gate stays closed
+until the verification is **Approved**. Volume is capped well above launch needs.
+
+Path: **Twilio Console → Phone Numbers → Buy a number → Toll-free**, then **Messaging →
+Regulatory Compliance → Toll-Free Verification → Submit a request** for that number.
+
+- [ ] Buy one toll-free number and add it to the Messaging Service's sender pool (§4).
+- [ ] Submit the verification with the §2 business facts, the §4a sample messages, the §4b
+      opt-in description, a screenshot of the opt-in checkbox on `/settings`, and the privacy
+      and terms URLs. Use-case: account notifications and group messages members asked for.
+- [ ] On approval, record the verification SID (`HH…`) → `SMS_TOLLFREE_VERIFICATION_SID` (§5)
+      and leave `SMS_A2P_BRAND_ID` / `SMS_A2P_CAMPAIGN_ID` unset.
+- [ ] Switching to 10DLC later is additive: set the two A2P ids and the gate prefers them.
 
 ## Related docs
 

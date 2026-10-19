@@ -31,7 +31,10 @@
 //                               The master kill-switch; absent/anything-else = off.
 //   SMS_A2P_BRAND_ID          — the registered A2P 10DLC brand id (EIN-backed).
 //   SMS_A2P_CAMPAIGN_ID       — the approved A2P 10DLC campaign/use-case id.
-//   TWILIO_MESSAGING_SERVICE_SID — the Twilio Messaging Service the campaign maps to.
+//     OR, instead of the two A2P ids (ADR-1790):
+//   SMS_TOLLFREE_VERIFICATION_SID — the approved Twilio toll-free verification for the
+//                               sender number in the Messaging Service.
+//   TWILIO_MESSAGING_SERVICE_SID — the Twilio Messaging Service the registration maps to.
 //   TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN — provider credentials (for the eventual sender).
 // When these exist AND the per-member gates pass, the send path is wired here
 // (today it is intentionally absent — there is no provider call in this file).
@@ -102,16 +105,32 @@ export function evaluateSmsGate(state: SmsGateState): SmsGateDecision {
   return { allowed: true, reason: 'ok', gated: false }
 }
 
+/** Which US carrier registration the sender rides (ADR-1790). */
+type SmsSenderRegistration = 'a2p_10dlc' | 'toll_free'
+
 /**
- * Are the A2P 10DLC brand/campaign env flags set? This is the legal kill-switch:
- * until the EIN -> A2P 10DLC -> Twilio Messaging Service track is complete and
- * these are populated, EVERY send is refused. Today it returns false.
+ * The carrier registration the env describes, or null when neither is complete. A2P
+ * 10DLC needs BOTH the brand and the campaign id; a toll-free sender needs the approved
+ * toll-free verification id instead (one number, one verification, no brand or campaign).
+ * When both are set the 10DLC pair wins, since that is the registration a Messaging
+ * Service with a local number rides.
+ */
+export function smsSenderRegistration(): SmsSenderRegistration | null {
+  if (process.env.SMS_A2P_BRAND_ID && process.env.SMS_A2P_CAMPAIGN_ID) return 'a2p_10dlc'
+  if (process.env.SMS_TOLLFREE_VERIFICATION_SID) return 'toll_free'
+  return null
+}
+
+/**
+ * Is the sender legally registered and the provider wired? This is the legal
+ * kill-switch: until a carrier registration (an A2P 10DLC brand + campaign, or an
+ * approved toll-free verification, ADR-1790) and the Twilio Messaging Service exist
+ * and the master switch is on, EVERY send is refused.
  */
 export function isSmsProvisioned(): boolean {
   return (
     envFlag('SMS_PROVISIONING_ENABLED') &&
-    !!process.env.SMS_A2P_BRAND_ID &&
-    !!process.env.SMS_A2P_CAMPAIGN_ID &&
+    smsSenderRegistration() !== null &&
     !!process.env.TWILIO_MESSAGING_SERVICE_SID
   )
 }
