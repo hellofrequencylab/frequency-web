@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSendGate } from '@/lib/comms/send-gate'
-import { enqueueEmail, listUnsubscribeHeaders, sendGuestRsvpConfirmationEmail } from '@/lib/email'
+import { enqueueEmail, emailShell, listUnsubscribeHeaders, sendGuestRsvpConfirmationEmail } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { sendPushToProfile } from '@/lib/push'
@@ -274,10 +274,11 @@ function hostLine(hostName: string | null, circleName: string | null): string | 
   return null
 }
 
-function promotedSeatHtml(p: PromotedSeatEmailParts): string {
+/** The "you're in" email's HTML (EMAIL-027: the member shell around the body, where it used to be a bare
+ *  div with no doctype, wordmark or address line). Exported for the stock catalog. */
+export function promotedSeatHtml(p: PromotedSeatEmailParts): string {
   const host = hostLine(p.hostName, p.circleName)
-  return `
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:${palette.text};">
+  return emailShell(`
   <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:0 0 8px;">You're in</p>
   <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">${escapeHtml(p.eventTitle)}</h1>
   <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(PROMOTED_SEAT_LINE)} You were on the waitlist for this one and a seat just freed up, so it is yours. We'll send a reminder as it gets close.</p>
@@ -294,10 +295,10 @@ function promotedSeatHtml(p: PromotedSeatEmailParts): string {
   </p>
   <p style="font-size:14px;line-height:1.5;color:${palette.textMuted};margin:24px 0 0;">Plans changed? Open the event and tap Going again to give the seat back.</p>
   <p style="font-size:12px;color:${palette.emailSubtle};margin:32px 0 0;"><a href="${p.unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a></p>
-</div>`.trim()
+`, { text: "You're receiving this because you joined the waitlist for this event.", unsubscribe: false })
 }
 
-function promotedSeatText(p: PromotedSeatEmailParts): string {
+export function promotedSeatText(p: PromotedSeatEmailParts): string {
   const host = hostLine(p.hostName, p.circleName)
   return [
     `Hi ${p.recipientName}, ${PROMOTED_SEAT_LINE}`,

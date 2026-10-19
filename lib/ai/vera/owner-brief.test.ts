@@ -18,7 +18,8 @@ let spacesRows: unknown[] = []
 
 vi.mock('./today', () => ({ buildTodayCards: (...a: unknown[]) => buildTodayCards(...a) }))
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: (...a: unknown[]) => resolveSendGate(...a) }))
-vi.mock('@/lib/email', () => ({
+vi.mock('@/lib/email', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/email')>()),
   enqueueEmail: (...a: unknown[]) => enqueueEmail(...a),
   listUnsubscribeHeaders: () => ({}),
 }))

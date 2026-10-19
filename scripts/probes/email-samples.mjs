@@ -29,7 +29,7 @@ assert.ok(/vi\.mock\('@\/lib\/queue\/outbox'/.test(test), 'the catalog test does
 assert.ok(/EMAIL_SAMPLES_OUT/.test(test), 'the catalog test cannot write the rendered set')
 
 const script = readFileSync('scripts/email-samples.mjs', 'utf8')
-assert.ok(/api\.resend\.com\/emails/.test(script) && /EMAIL_SAMPLES_OUT/.test(script), 'scripts/email-samples.mjs does not render then send')
+assert.ok(script.includes('https://api.resend.com/emails') && script.includes('EMAIL_SAMPLES_OUT'), 'scripts/email-samples.mjs does not render then send')
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
 assert.equal(pkg.scripts['email:samples'], 'node scripts/email-samples.mjs', 'package.json has no email:samples script')
 

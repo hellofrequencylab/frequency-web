@@ -27,7 +27,7 @@ function esc(s: string): string {
 const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
 /** Plain text → escaped inner HTML (newlines to <br>). */
-export function textToInnerHtml(text: string): string {
+function textToInnerHtml(text: string): string {
   return esc((text ?? '').trim()).replace(/\n/g, '<br>')
 }
 

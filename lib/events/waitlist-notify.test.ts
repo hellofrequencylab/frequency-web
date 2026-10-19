@@ -71,7 +71,8 @@ vi.mock('@/lib/comms/send-gate', () => ({
   },
 }))
 
-vi.mock('@/lib/email', () => ({
+vi.mock('@/lib/email', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/email')>()),
   enqueueEmail: async (payload: Record<string, unknown>) => { emailsEnqueued.push(payload) },
   listUnsubscribeHeaders: (url: string) => ({ 'List-Unsubscribe': `<${url}>` }),
   sendGuestRsvpConfirmationEmail: async (params: Record<string, unknown>) => { guestEmails.push(params) },
