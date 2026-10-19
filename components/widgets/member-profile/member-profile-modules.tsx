@@ -1,7 +1,9 @@
 import { Suspense } from 'react'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { defaultMemberLayout } from '@/lib/entity-blocks/context'
-import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import type { BlockNode } from '@/lib/entity-blocks/node-tree'
+import { resolveNodeRowsFor } from '@/lib/entity-blocks/node-ops'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
@@ -36,6 +38,12 @@ import { DividerBlock } from './divider'
 // THE LIVE ENGINE (ADR-522 follow-up): this module/grid render now drives BOTH the in-app profile
 // (profile-spotlight-blocks) AND the public /spotlight/<handle> mini-site. The Puck Spotlight render is
 // retired — the grid is the single engine end to end.
+//
+// NODE RENDER (E0 task 12, ADR-1832): the grid path renders NODES. Each placement is a `BlockNode` whose
+// own `content` and `style` the block reads, so two Text blocks on one page each draw their own words.
+// The flat path and the editor's render-all-once node map still address a block by its registry id, so
+// they wrap the id in a transient node carrying the type's bag from the sibling maps; those two paths
+// move to nodes with the store and the live grid (task 12b).
 
 type MemberBlockComponent = (props: MemberBlockProps) => React.ReactNode
 
@@ -56,20 +64,32 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   divider: DividerBlock,
 }
 
-/** Render ONE member block by id, wrapped in its per-block STYLE frame (ADR-528/529). A CONTENT block whose
- *  authored bag is set (from the layout's `content`) renders the operator's inline content; otherwise the
+/** A block addressed by registry id (the flat path, the editor's node map) as a node: the type's bag from
+ *  the legacy sibling maps, and the id for its key. The LIVE-875 boundary still holds those paths to the
+ *  type-keyed document, so one bag per type is exactly what they mean. */
+function transientNode(id: string, layout: EntityLayout | null): BlockNode {
+  const node: BlockNode = { nid: id, type: id }
+  const content = layout?.content?.[id]
+  if (content) node.content = content
+  const style = layout?.style?.[id]
+  if (style) node.style = style
+  return node
+}
+
+/** Render ONE member block NODE, wrapped in its per-block STYLE frame (ADR-528/529). A CONTENT block whose
+ *  authored bag is set (the node's own `content`) renders the operator's inline content; otherwise the
  *  member component renders (legacy / data-backed). `styled=false` (the live-preview node map) leaves the
- *  style frame to LiveProfileGrid so a style edit shows instantly. Unknown id → null. */
-function renderMemberBlock(
-  id: string,
+ *  style frame to LiveProfileGrid so a style edit shows instantly. Unknown type → null. */
+function renderMemberNode(
+  node: BlockNode,
   identity: ReturnType<typeof toMemberEntity>,
   data: ReturnType<typeof resolveMemberBlockData>,
-  layout: EntityLayout | null,
   styled = true,
 ): React.ReactNode {
+  const id = node.type
   const block = entityBlockById(id)
-  const style = layout?.style?.[id]
-  const contentProps = layout?.content?.[id]
+  const style = node.style
+  const contentProps = node.content
 
   let inner: React.ReactNode
   if (block && block.category === 'content' && hasContent(id, contentProps)) {
@@ -81,7 +101,7 @@ function renderMemberBlock(
   }
   const body = styled ? <BlockStyleFrame style={style}>{inner}</BlockStyleFrame> : inner
   return (
-    <Suspense key={id} fallback={null}>
+    <Suspense key={node.nid} fallback={null}>
       {body}
     </Suspense>
   )
@@ -102,7 +122,7 @@ export function renderMemberBlockNodes(
   const data = resolveMemberBlockData(member)
   const nodes: Record<string, React.ReactNode> = {}
   for (const id of Object.keys(MEMBER_PROFILE_BLOCKS)) {
-    nodes[id] = renderMemberBlock(id, identity, data, layout, false)
+    nodes[id] = renderMemberNode(transientNode(id, layout), identity, data, false)
   }
   return nodes
 }
@@ -137,28 +157,31 @@ export function MemberProfileModules({
   const data = resolveMemberBlockData(member)
   const gridLayout = grid ?? null
 
-  const renderBlock = (id: string) => {
-    const node = renderMemberBlock(id, identity, data, gridLayout, true)
-    if (node === null) return null
+  const renderNode = (node: BlockNode) => {
+    const rendered = renderMemberNode(node, identity, data, true)
+    if (rendered === null) return null
     // OWNER wrap (fail-safe): with `editHref` set, sheathe the block in the click-to-edit frame, which
     // collapses itself on an honest-empty block so no phantom pencil floats over blank space. Absent
     // (visitor / non-owner), the block returns exactly as before. The `key` moves to the outermost node.
+    // The frame and the editor href still address the block by TYPE: the rail builder is type-keyed
+    // until task 12b hands it `selectedNid`.
+    const id = node.type
     return editHref ? (
-      <OwnerBlockFrame key={id} blockId={id} editHref={editHref(id)} label={id}>
-        {node}
+      <OwnerBlockFrame key={node.nid} blockId={id} editHref={editHref(id)} label={id}>
+        {rendered}
       </OwnerBlockFrame>
     ) : (
-      node
+      rendered
     )
   }
 
-  // GRID path (ADR-516): resolve the effective freeform rows and render them. Entered whenever the caller
-  // supplies the `grid` prop at all (including `null` — resolveRows then yields the default starter). This
-  // is the ONE in-app engine the owner preview and the visitor view share. Fail-safe: unknown ids drop.
+  // GRID path (ADR-516): resolve the effective rows AS NODES and render them. Entered whenever the caller
+  // supplies the `grid` prop at all (including `null` — the resolver then yields the default starter). This
+  // is the ONE in-app engine the owner preview and the visitor view share. Fail-safe: unknown types drop.
   if (grid !== undefined) {
     return (
       <div className="@container/profile">
-        <EntityGrid rows={resolveRows(grid, 'member')} renderBlock={renderBlock} />
+        <EntityGrid rows={resolveNodeRowsFor(grid, 'member')} renderBlock={renderNode} />
       </div>
     )
   }
@@ -166,5 +189,5 @@ export function MemberProfileModules({
   // Flat single-column fallback (U2a). `@container/profile`: blocks size to THIS slot's width, not the
   // viewport, so the module render drops cleanly into any column.
   const resolved = layout ?? defaultMemberLayout()
-  return <div className={className}>{resolved.map(renderBlock)}</div>
+  return <div className={className}>{resolved.map((id) => renderNode(transientNode(id, gridLayout)))}</div>
 }
