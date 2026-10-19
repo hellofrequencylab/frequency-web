@@ -53,10 +53,13 @@ const INSTAGRAM = 'https://www.instagram.com/thegroupsd/'
 const EMAIL = 'June@thegroupcoastal.com'
 const PHONE = '858-997-5951'
 const DIRECTIONS = 'https://share.google/Pwn7yM4FAS1VedbL7'
-const PITCH_SIGNUP = 'https://www.thegroupcoastal.com/pitchfest2026'
+// The brief allows no link to the old site (handoff H, 2026-10-19): a pitch sign-up, a speaker ask and an event
+// submission all land on Frequency. Sign-ups and speaker asks go to the contact page until a form block exists;
+// an event is created on Frequency, where a chapter event waits for a central admin's yes (SCAN-983).
+const PITCH_SIGNUP = PAGE('contact')
 const PITCH_PARTY = 'https://partiful.com/e/9B3VudHuElBPDiShN2Tj'
-const SPEAKER_FORM = 'https://www.thegroupcoastal.com/featuredspeaker-1'
-const EVENT_SUBMIT = 'https://www.thegroupcoastal.com/events-and-workshop-submission'
+const SPEAKER_FORM = PAGE('contact')
+const EVENT_SUBMIT = '/events/new'
 const START_CIRCLE = '/sign-in?next=%2Fcircles%2Fnew'
 const PODCAST = 'https://www.youtube.com/@heartofthematterpod'
 // TODO [confirm]: the podcast channel URL is not in the handoff (it names YouTube and Spotify only). The
@@ -117,7 +120,7 @@ export const CHAPTERS: Chapter[] = [
     // TODO [confirm]: North Park's day, time and place (the portal lists Team Up Tuesday at Maya Moon).
     key: 'north-park', code: 'np', short: 'North Park', meeting: 'Team Up Tuesday', when: 'Tuesdays, 9:00–10:10 AM', where: 'Maya Moon, 3349 Adams Ave, San Diego, CA 92116', icon: 'building', city: 'San Diego',
     tagline: 'Team Up Tuesday at Maya Moon',
-    about: 'Come join the Tuesday Normal Heights chapter at Maya Moon. A weekday morning with your people, close to home.',
+    about: 'Come join the Tuesday North Park chapter at Maya Moon. A weekday morning with your people, close to home.',
     image: PHOTO('patio-coffee'),
   },
   {
@@ -387,7 +390,7 @@ const eventsBlock = (id: string, extra: Record<string, unknown> = {}): Block => 
 export function buildWebsiteDocs(): Record<string, unknown> {
   const home = doc([
     { type: 'NetworkHero', props: { id: 'tg-home-hero', eyebrow: 'Every Friday · 9 AM · Fox Point Farms, Encinitas', title: 'The non‑networking *networking* group.', lead: 'No pressure. No pitch. Just good energy, meaningful conversations, and a community where you can show up as yourself.', primaryLabel: 'Come this Friday', primaryHref: PAGE('fridays'), secondaryLabel: 'Get coffee with June', secondaryHref: CALENDLY, image: PHOTO('hero-market'), alt: 'The Group in a circle at a Friday gathering', focus: '50% 52%', crop: 'leaf', featureMatch: 'Feel Good Friday', featureNote: 'June An & Carol Yeh-Garner', featureCta: 'RSVP', proof: '8,500+ members · 300+ every week', proofNote: 'Chapters from Oceanside to North Park', faces: FACES, layout: desktop } },
-    { type: 'NetworkStats', props: { id: 'tg-home-stats', items: [{ icon: 'users', value: '8,500+', label: 'active members' }, { icon: 'calendar', value: '300+', label: 'weekly attendees' }, { icon: 'eye', value: '100,000+', label: 'monthly profile views' }], layout: desktop } },
+    { type: 'NetworkStats', props: { id: 'tg-home-stats', items: [{ icon: 'briefcase', value: 'Nearly 100', label: 'businesses launched' }, { icon: 'pin', value: `${CHAPTERS.length}`, label: 'chapters and growing' }, { icon: 'sun', value: 'Every Friday', label: 'rain or shine' }], layout: desktop } },
     { type: 'NetworkSplit', props: { id: 'tg-home-fridays', anchor: 'fridays', eyebrow: 'Feel Good Fridays', title: 'Start your Friday *with good people.*', body: "After a full week of building, creating, and showing up for your goals, Friday morning is your chance to exhale. A weekly ritual where conversations flow easily, new friendships form naturally, and familiar faces remind you that you're part of something bigger.", image: PHOTO('courtyard-group'), alt: 'A Friday morning circle at Fox Point Farms', mediaSide: 'left', band: 'sand', facts: [{ icon: 'pin', label: 'Where', value: 'Fox Point Farms', note: '1200 Fox Point Farms Ln, Encinitas' }, { icon: 'clock', label: 'When', value: 'Every Friday', note: '9:00–10:10 AM' }], quote: '', quoteBy: '', primaryLabel: 'Get directions', primaryHref: DIRECTIONS, secondaryLabel: 'See the calendar', secondaryHref: '#events', layout: desktop } },
     { type: 'NetworkBand', props: { id: 'tg-home-pitchfest', anchor: 'pitchfest', eyebrow: 'PitchFest 2026', title: 'Bring your idea. *Bring your people.*', body: 'Sign up to pitch in front of the community, then celebrate together at the 2nd annual Presentations & Party, Wednesday, October 21, 5:30–8 PM at C3 Bank Encinitas.', countdownTo: '2026-10-21T17:30', timeZone: TZ, countdownLabel: 'Time until the PitchFest Party', image: PHOTO('hall-selfie'), alt: 'Members celebrating together', primaryLabel: 'Sign up to pitch', primaryHref: PITCH_SIGNUP, secondaryLabel: 'RSVP to the party', secondaryHref: PITCH_PARTY, layout: desktop } },
     eventsBlock('tg-home-events'),
@@ -662,7 +665,7 @@ export const SITE_HERO = {
 export const SITE_FOOTER = {
   columns: [
     { title: 'Locations', links: [{ label: 'Encinitas', href: PAGE('fridays') }, ...CHAPTERS.map((c) => ({ label: c.short, href: `/spaces/${chapterSlug(c)}` }))] },
-    { title: 'Explore', links: [{ label: 'Feel Good Fridays', href: PAGE('fridays') }, { label: 'Events calendar', href: `/spaces/${SLUG}/calendar` }, { label: 'Incubator Studios', href: PAGE('studio') }, { label: 'Creative Collective', href: 'https://www.thegroupcoastal.com/creative-collective' }, { label: 'Merch', href: PAGE('shop') }, { label: 'Members portal', href: 'https://thegroupportal.com' }] },
+    { title: 'Explore', links: [{ label: 'Feel Good Fridays', href: PAGE('fridays') }, { label: 'Events calendar', href: `/spaces/${SLUG}/calendar` }, { label: 'Incubator Studios', href: PAGE('studio') }, { label: 'Merch', href: PAGE('shop') }, { label: 'Members portal', href: 'https://thegroupportal.com' }] },
     { title: 'Contact', links: [{ label: EMAIL, href: PAGE('contact') }, { label: PHONE, href: PAGE('contact') }, { label: 'Instagram', href: INSTAGRAM }, { label: 'Get coffee with June', href: CALENDLY }] },
   ],
   blurb: 'Together, we are stronger.',
@@ -676,7 +679,7 @@ const PROFILE_DATA = {
   about: ABOUT,
   email: EMAIL,
   phone: PHONE,
-  website: 'https://www.thegroupcoastal.com',
+  website: 'https://thegrouplocal.com',
   address: '1200 Fox Point Farms Ln, Encinitas, CA 92024',
   hours: 'Feel Good Fridays · every Friday, 9:00–10:10 AM',
   socials: [
