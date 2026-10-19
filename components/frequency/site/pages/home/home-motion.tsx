@@ -46,6 +46,10 @@ export function HomeMotion() {
       //   • every frame wrote the fold's styles and then read the hero's box, forcing a second layout.
       //     All reads now come first, then all writes.
       //   • the fold and hero were rewritten every frame, even offscreen or unchanged. Now only on change.
+      // PHONES (owner report 2026-10-19: the scroll still felt clunky, SCAN-1019). A per-frame scale() on a
+      // composited layer makes Chrome re-rasterize it at the new scale every frame: six photos and the hero
+      // text, on every scroll event. Phones get translate and opacity only; desktop keeps the scale.
+      const phone = window.matchMedia('(max-width:760px)').matches
       let vh = stage?.offsetHeight || window.innerHeight
       let lastP = -1
       let lastK = -1
@@ -60,7 +64,7 @@ export function HomeMotion() {
           lastP = p
           for (const el of ph) {
             const d = Number(el.dataset.d)
-            el.style.transform = `translate3d(0,${((0.08 - p) * d * vh * 0.55).toFixed(1)}px,0) scale(${(1 + p * d * 0.06).toFixed(4)})`
+            el.style.transform = `translate3d(0,${((0.08 - p) * d * vh * 0.55).toFixed(1)}px,0)${phone ? '' : ` scale(${(1 + p * d * 0.06).toFixed(4)})`}`
             el.style.opacity = String(1 - range(p, 0.55, 0.7) * 0.85)
           }
           for (const el of tx) {
@@ -86,9 +90,9 @@ export function HomeMotion() {
           lastK = k
           if (hw) {
             hw.style.opacity = String(1 - k)
-            hw.style.transform = `translate3d(0,${(-y * 0.35).toFixed(1)}px,0) scale(${1 - k * 0.06})`
+            hw.style.transform = `translate3d(0,${(-y * 0.35).toFixed(1)}px,0)${phone ? '' : ` scale(${1 - k * 0.06})`}`
           }
-          hb.forEach((b) => (b.style.transform = `scale(${1 + k * 0.12})`))
+          if (!phone) hb.forEach((b) => (b.style.transform = `scale(${1 + k * 0.12})`))
         }
       }
       let queued = false
