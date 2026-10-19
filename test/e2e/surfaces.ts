@@ -1164,6 +1164,12 @@ export const VISUAL_MASK_SITES: readonly {
   },
   {
     value: 'rail-panel',
+    file: 'components/frequency/members/shell/rail-events-map.tsx',
+    kind: 'live',
+    why: 'The rail’s Around you map (SCAN-998): a live count and pin preview of upcoming events near the member.',
+  },
+  {
+    value: 'rail-panel',
     file: 'components/frequency/members/shell/rail-stats.tsx',
     kind: 'live',
     why: 'Stats and streaks at the top of the Frequency right rail: the streak and today’s state, the seven-day strip, Zaps, Gems, rank, practices today and an eight-week activity sparkline, all the member’s own readings.',

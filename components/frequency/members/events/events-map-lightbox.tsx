@@ -4,6 +4,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import '@/app/themes/active/events-map'
 import { FqIcon } from '@/components/frequency/icon'
 import { Input } from '@/components/ui/field'
 import type { MapPin } from '@/components/maps/types'
@@ -14,7 +15,9 @@ import type { AyMapItem } from './around-you-items'
 // someone clicks it, it's a pop up lightbox experience ... with sorting, search and controls").
 //
 // THE TILE is the map's door inside Around you: a still preview of where the pins fall, drawn as an SVG
-// from the same privacy-safe points (no map engine, so the list view still ships none). THE LIGHTBOX is a
+// from the same privacy-safe points (no map engine, so the list view still ships none). The right rail's
+// Around you panel (shell/rail-events-map.tsx, SCAN-998) draws the same tile at its own width and mounts its
+// own copy of this lightbox on every page but /events, so the two never open together. THE LIGHTBOX is a
 // native modal <dialog> (showModal: the page behind goes inert, focus moves in and stays, Escape closes it,
 // focus returns to the door), holding search, a when band, category chips, a Going toggle and the sort over
 // a results list beside the live map. Picking a pin lights its row; every row links to its event.
@@ -78,8 +81,8 @@ function matchesWhen(i: AyMapItem, when: When): boolean {
   return i.daysOut >= 0 && i.daysOut < 7 && (i.dow === 5 || i.dow === 6 || i.dow === 0)
 }
 
-/** The tile: a still preview of the pins, and the door into the lightbox. */
-export function FqMapTile({ items, homeLabel }: { items: AyMapItem[]; homeLabel: string | null }) {
+/** The tile: a still preview of the pins, and the door into the lightbox. `rail` is the rail's narrow face. */
+export function FqMapTile({ items, homeLabel, rail = false }: { items: AyMapItem[]; homeLabel: string | null; rail?: boolean }) {
   const dots = useMemo(() => {
     if (items.length === 0) return []
     const lats = items.map((i) => i.lat)
@@ -102,7 +105,7 @@ export function FqMapTile({ items, homeLabel }: { items: AyMapItem[]; homeLabel:
   const going = items.filter((i) => i.going).length
 
   return (
-    <button type="button" className="evm-tile" onClick={openEventsMap} aria-haspopup="dialog">
+    <button type="button" className={rail ? 'evm-tile rail' : 'evm-tile'} onClick={openEventsMap} aria-haspopup="dialog">
       <svg className="evm-tile-map" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         {dots.map((d) => (
           <g key={`${d.x}-${d.y}`}>
@@ -132,7 +135,7 @@ export function FqMapTile({ items, homeLabel }: { items: AyMapItem[]; homeLabel:
   )
 }
 
-/** The lightbox itself. Rendered once by the page body; opens on `?map=1`. */
+/** The lightbox itself. Rendered once by the page body, or by the rail off /events; opens on `?map=1`. */
 export function FqEventsMapLightbox({
   items,
   signedIn,
