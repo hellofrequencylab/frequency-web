@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1004",
+  "title": "The New conversation card names the sender the email actually goes out as, the Space's brand name",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "XS",
+  "closed": "2026-10-19",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/crm/conversations/page.tsx",
+    "ref": "Scan nine (2026-10-19 weekly meta scan), docs/META-SCAN-STATUS.md"
+  },
+  "detail": "The Space Conversations page passed senderName={space.name} to the New conversation card, while the send path (gateSpace, resolveSpaceConversationFrom) uses brandName ?? name. A Space with a brand name saw 'From <space name>' on the card while the email went out under its brand. The card now reads the same brandName ?? name.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/crm/conversations/page.tsx','utf8');if(!s.includes('senderName={space.brandName ?? space.name}')){console.error('SCAN-1004: the New conversation card names the Space, not the brand the email is sent as');process.exit(1)}\""
+  },
+  "wave": "W7"
+}
