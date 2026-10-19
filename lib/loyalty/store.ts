@@ -54,7 +54,9 @@ export async function loyaltyEligibility(space: Space): Promise<'no_location' | 
   return 'plan'
 }
 
-async function ownerGate(spaceId: string): Promise<{ space: Space; callerId: string } | null> {
+/** The owner gate every loyalty write runs behind: canEditProfile on the Space, or a janitor. Shared with
+ *  ./hunt-store.ts so hunts and cards answer to one gate. */
+export async function loyaltyOwnerGate(spaceId: string): Promise<{ space: Space; callerId: string } | null> {
   const caller = await getCallerProfile()
   if (!caller) return null
   const space = await getSpaceById(spaceId)
@@ -185,7 +187,7 @@ export async function listMyLoyaltyCards(profileId: string): Promise<LoyaltyCard
 export async function listRewardsToHandOut(
   spaceId: string,
 ): Promise<(LoyaltyReward & { profileId: string; name: string })[]> {
-  if (!(await ownerGate(spaceId))) return []
+  if (!(await loyaltyOwnerGate(spaceId))) return []
   try {
     const db = createAdminClient()
     const { data } = await db
@@ -210,7 +212,7 @@ export async function listRewardsToHandOut(
  *  Gated on the owner gate. FAIL-SAFE to zeros. */
 export async function loyaltyOwnerCounts(spaceId: string): Promise<{ stampsThisMonth: number; earned: number; handedOut: number }> {
   const zero = { stampsThisMonth: 0, earned: 0, handedOut: 0 }
-  if (!(await ownerGate(spaceId))) return zero
+  if (!(await loyaltyOwnerGate(spaceId))) return zero
   try {
     const db = createAdminClient()
     const monthStart = new Date()
@@ -232,7 +234,7 @@ export async function loyaltyOwnerCounts(spaceId: string): Promise<{ stampsThisM
 /** Save the Space's program. Replace-by-space. Refuses (null) on a gate miss or an ineligible Space
  *  turning the program ON; a draft may be saved OFF on any Space. */
 export async function writeLoyaltyProgram(spaceId: string, input: LoyaltyProgramInput): Promise<LoyaltyProgram | null> {
-  const gate = await ownerGate(spaceId)
+  const gate = await loyaltyOwnerGate(spaceId)
   if (!gate) return null
   if (input.status === 'on' && (await loyaltyEligibility(gate.space)) !== null) return null
   const { data, error } = await createAdminClient()
@@ -264,7 +266,7 @@ export async function writeRewardHandedOut(
   spaceId: string,
   code: string,
 ): Promise<'done' | 'already' | 'unknown' | null> {
-  const gate = await ownerGate(spaceId)
+  const gate = await loyaltyOwnerGate(spaceId)
   if (!gate) return null
   const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, '')
   if (clean.length !== 6) return 'unknown'

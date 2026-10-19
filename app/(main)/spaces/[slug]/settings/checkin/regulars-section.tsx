@@ -1,9 +1,11 @@
-import { Gift, Stamp, Ticket } from 'lucide-react'
+import { Flag, Gift, Stamp, Ticket } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoyaltyProgramForm } from '@/components/spaces/loyalty/program-form'
 import { HandoutRoster } from '@/components/spaces/loyalty/handout-roster'
+import { HuntsPanel } from '@/components/spaces/loyalty/hunts-panel'
+import { listHuntsForSpace } from '@/lib/loyalty/hunt-store'
 import {
   getLoyaltyProgram,
   listRewardsToHandOut,
@@ -33,11 +35,12 @@ export async function RegularsSection({ space, staffViewing }: { space: Space; s
     )
   }
 
-  const [program, blocker, counts, rewards] = await Promise.all([
+  const [program, blocker, counts, rewards, hunts] = await Promise.all([
     getLoyaltyProgram(space.id),
     loyaltyEligibility(space),
     loyaltyOwnerCounts(space.id),
     listRewardsToHandOut(space.id),
+    listHuntsForSpace(space.id),
   ])
 
   return (
@@ -61,6 +64,16 @@ export async function RegularsSection({ space, staffViewing }: { space: Space; s
         <SectionHeader title="Rewards to hand out" count={rewards.length} />
         <fieldset disabled={staffViewing} className="contents">
           <HandoutRoster spaceId={space.id} rewards={rewards} />
+        </fieldset>
+      </section>
+
+      <section>
+        <SectionHeader title="Hunts" count={hunts.length} />
+        <p className="mb-4 flex items-center gap-1.5 text-body-sm text-muted">
+          <Flag className="h-4 w-4" aria-hidden /> A scavenger hunt across neighboring Spaces: members check in at every stop inside the window to earn the host&apos;s reward.
+        </p>
+        <fieldset disabled={staffViewing} className="contents">
+          <HuntsPanel spaceId={space.id} hunts={hunts} canHost={program.status === 'on' && blocker === null} />
         </fieldset>
       </section>
     </>

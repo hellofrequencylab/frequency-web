@@ -351,3 +351,6 @@ network_event_approvals              internal
 space_loyalty_programs               internal
 loyalty_stamps                       internal
 loyalty_rewards                      internal
+loyalty_hunts                        internal
+loyalty_hunt_stops                   internal
+loyalty_hunt_completions             internal
