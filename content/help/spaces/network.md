@@ -25,7 +25,9 @@ Ask who owns the Spaces.
 
 ## What Network includes
 
-Everything Collective does, plus:
+Everything Collective does except Partners, plus the chapter tools below. A Network is one owner, so the
+Spaces under it are chapters you own rather than partners; a chapter lists its Circles and Journeys with
+the parent and with other chapters the same way a Collective's member Spaces do.
 
 - **Chapters.** Ten chapters are included, each with the Business tools. More chapters are priced on
   the [pricing page](/pricing).
