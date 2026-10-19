@@ -935,3 +935,42 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
     --fq-menu-surface: color-mix(in oklab, var(--fq-surface-card) 96%, transparent);
   }
 }
+
+/* THE BOTTOM-RIGHT CHAT PANEL, IN THE FREQUENCY LOOK (LIVE-1025).
+   The panel itself is the shared one (components/vera/vera-launcher.tsx); these hooks (.fqd-*) only
+   restyle it. The closed tab is NOT touched here: it is the rail's .fqm-vera-btn, pinned by its own
+   test. The orb carries the view: Vera blue, Support green, Messages pink. It flickers while a reply
+   is arriving (data-busy), and sits still under reduced motion. */
+[data-design="frequency"] .fqd-panel{
+  background:var(--fq-surface-card);border:none;border-radius:var(--fq-radius-xl);
+  box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 24px 60px -24px rgba(30,27,24,.35);
+  color:var(--fq-text-body)}
+[data-design="frequency"] .fqd-panel [class*="bg-surface"],
+[data-design="frequency"] .fqd-panel [class*="bg-canvas"]{background:transparent}
+[data-design="frequency"] .fqd-head{
+  background:var(--fq-pa-soft),var(--fq-surface-card);border-bottom:1px solid var(--fq-border-hair);padding:14px 16px}
+[data-design="frequency"] .fqd-head .fqd-ic{display:none}
+[data-design="frequency"] .fqd-head #vera-launcher-title{font:600 var(--fq-text-body) var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] .fqd-panel :is(input,textarea){border-radius:var(--fq-radius-orb)}
+[data-design="frequency"] .fqd-panel :is(button,a)[class*="rounded-pill"]{border-radius:var(--fq-radius-orb)}
+[data-design="frequency"] .fqd-panel button[class*="bg-primary"]:not([class*="bg-primary-bg"]){
+  background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow)}
+
+[data-design="frequency"] .fqd-orb{
+  display:inline-flex;flex:none;width:36px;height:36px;border-radius:50%;
+  --orb:radial-gradient(circle at 35% 30%,#fff 0,#CFE2FF 26%,#8DB4FF 58%,#6FD8FF 100%);
+  background:var(--orb);box-shadow:0 0 18px color-mix(in oklab,var(--orb-glow,#6FA8FF) 55%,transparent)}
+[data-design="frequency"] .fqd-orb.is-sm{width:18px;height:18px}
+[data-design="frequency"] .fqd-orb[data-mode="vera"]{--orb-glow:#6FA8FF}
+[data-design="frequency"] .fqd-orb[data-mode="support"]{
+  --orb:radial-gradient(circle at 35% 30%,#fff 0,#D5F5DC 26%,#8FDDA6 58%,#5CCB9A 100%);--orb-glow:#5CCB9A}
+[data-design="frequency"] .fqd-orb[data-mode="messages"]{
+  --orb:radial-gradient(circle at 35% 30%,#fff 0,#FADCEB 26%,#F2A6CF 58%,#E985B8 100%);--orb-glow:#E985B8}
+[data-design="frequency"] .fqd-orb{transition:background .3s ease,box-shadow .3s ease}
+[data-design="frequency"] .fqd-orb[data-busy="true"]{animation:fqd-flicker 1.1s steps(1,end) infinite}
+@keyframes fqd-flicker{
+  0%{opacity:1;transform:scale(1)}18%{opacity:.55;transform:scale(.94)}
+  32%{opacity:1;transform:scale(1.04)}51%{opacity:.7;transform:scale(.97)}
+  68%{opacity:1;transform:scale(1.06)}84%{opacity:.6;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){
+  [data-design="frequency"] .fqd-orb[data-busy="true"]{animation:none;opacity:.8}}
