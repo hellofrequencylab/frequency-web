@@ -89,11 +89,13 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .fl-fork .h-l{margin-top:clamp(8px,2vh,18px)!important}
 @media (max-height:700px){[data-design="frequency"] [data-kit="site"] .pa-home .fl-fork .h-l{font-size:clamp(28px,6vh,44px)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd .dp{display:none}}
-@media (max-width:760px){[data-design="frequency"] [data-kit="site"] .pa-home .fold{height:400vh}
+/* SCAN-1019, phones: a shorter pin (320vh, was 400vh) so the story is not four screens of a stuck page, and no blurred
+   shadow on the drifting photos, which the per-frame transform would re-rasterize. */
+@media (max-width:760px){[data-design="frequency"] [data-kit="site"] .pa-home .fold{height:320vh}
 [data-design="frequency"] [data-kit="site"] .pa-home .pds{grid-template-columns:1fr;gap:10px}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd{min-height:clamp(130px,22vh,200px)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd .dp{display:none}
-[data-design="frequency"] [data-kit="site"] .pa-home .fl-ph{opacity:.5;box-shadow:0 14px 32px -18px color-mix(in oklab,var(--fq-uv-void) 90%,transparent)}
+[data-design="frequency"] [data-kit="site"] .pa-home .fl-ph{opacity:.5;box-shadow:none}
 [data-design="frequency"] [data-kit="site"] .pa-home .fold-stage>.tx-field .tx-jewel{display:none}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pa-home .pdw{opacity:1!important;transform:none!important}
 [data-design="frequency"] [data-kit="site"] .pa-home .pdg{opacity:.26!important;animation:none!important}

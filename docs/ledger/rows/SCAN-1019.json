@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1019",
+  "title": "The marketing home scrolls clunkily on a phone: per-frame scale on the fold photos and hero, a 400vh pin, and a stepping grain film",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/home/home-motion.tsx",
+    "ref": "Owner report 2026-10-19 in the project chat ('The homepage scroll experience is a little clunky'), thread 'Mobile and design polish'."
+  },
+  "detail": "FILED 2026-10-19. THE CONSEQUENCE: on a phone, the home page's pinned fold (§02) wrote a new scale() to six drifting photos and to the hero's text and backdrop on every scroll frame. Each photo carried a large blurred box-shadow, so Chrome re-rasterized seven shadowed layers at a fresh scale per frame while the fixed full-screen grain film restarted its steps(6) animation every 1.2s on top. The 400vh pin also held the thumb on one section for four screens. Together they read as a stutter and a jam. THE FIX, phones only (max-width:760px), desktop unchanged: the fold's photos and the hero keep translate and opacity but drop the per-frame scale; the photos lose their blurred shadow; the grain film keeps its texture but stops stepping; the pin shortens from 400vh to 320vh (reversible in site-pages-a.css if the story reads too fast).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('app/themes/frequency/site-pages-a.css','utf8');const k=fs.readFileSync('app/themes/frequency/kit-site.css','utf8');const m=fs.readFileSync('components/frequency/site/pages/home/home-motion.tsx','utf8');const ok=a.includes('.pa-home .fold{height:320vh}')&&a.includes('.fl-ph{opacity:.5;box-shadow:none}')&&/max-width:760px\\)\\{[^@]*\\.tx-film\\{animation:none\\}/.test(k)&&m.includes(\\\"matchMedia('(max-width:760px)')\\\")&&m.includes('if (!phone) hb.forEach');process.exit(ok?0:1)\""
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
