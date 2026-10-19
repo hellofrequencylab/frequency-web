@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PLATFORM_POSTAL_LINE, postalFooterHtml } from './postal'
-import { emailFooterHtml } from './shell'
+import { emailFooterHtml, plainTextEmail } from './shell'
 
 // LIVE-728 (ADR-1663): every commercial Frequency email footer prints ONE postal line. The block shell and
 // the plain-text renderers read it from lib/email-studio/postal.ts. A blanked or reshaped address fails here
@@ -38,16 +38,24 @@ describe('one source', () => {
     expect(html).not.toContain(PLATFORM_POSTAL_LINE)
   })
 
-  // These three render their footer in a module-private template; read the source instead of exporting a
-  // helper only a test would name.
-  it.each(['lib/nurture/runner.ts', 'lib/automations.ts', 'lib/studio/agent.ts'])(
-    '%s appends the postal paragraph after its unsubscribe link',
+  // The plain-text senders (Space campaigns and drips, Studio campaigns, nurture, automations, the agent)
+  // render through plainTextEmail (EMAIL-024), whose footer is the block shell's: read the source to
+  // hold each one on that seam, and the seam itself for the line.
+  it.each(['lib/nurture/runner.ts', 'lib/automations.ts', 'lib/studio/agent.ts', 'lib/studio/campaigns.ts', 'lib/spaces/campaign-html.ts'])(
+    '%s renders through plainTextEmail',
     (file) => {
       const src = readFileSync(join(process.cwd(), file), 'utf8')
-      expect(src).toContain('Unsubscribe</a>.</p>${postalFooterHtml()}</div>')
-      expect(src).not.toContain('Unsubscribe</a>.</p></div>')
+      expect(src).toContain('plainTextEmail(')
+      expect(src).not.toContain('postalFooterHtml')
     },
   )
+  it('plainTextEmail prints the line after the unsubscribe link, in the html and the text part', () => {
+    const { html, text } = plainTextEmail('Hello there.', { unsubscribeUrl: 'https://frequencylocal.com/u/abc' })
+    expect(html).toContain(PLATFORM_POSTAL_LINE)
+    expect(html.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(html.indexOf('/u/abc'))
+    expect(text).toContain(PLATFORM_POSTAL_LINE)
+    expect(text.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(text.indexOf('/u/abc'))
+  })
 
   // Vera's two outbound shells (a human-approved send to a CRM contact, an autonomous lifecycle email to a
   // member) carry a List-Unsubscribe and a lifecycle token, so they are commercial too (SCAN-648).

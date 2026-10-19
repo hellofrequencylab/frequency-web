@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ImagePlus, Package, Pencil } from 'lucide-react'
+import { CalendarDays, ImagePlus, Package, Pencil, Users } from 'lucide-react'
 import { fieldsForBlock, featureLayout, gridColumns, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS as C } from '@/lib/email-studio/render'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
@@ -259,6 +259,48 @@ function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
   )
 }
 
+/** The Event and Circle card previews (EMAIL-025): read-only on the canvas like the Product card; the pick
+ *  and the button label live in the rail. */
+function DataCardCanvas({ props, kind }: { props: Record<string, unknown>; kind: 'eventCard' | 'circleCard' }) {
+  const isEvent = kind === 'eventCard'
+  const title = str(props, 'title')
+  const image = str(props, 'image')
+  const lines = (isEvent ? [str(props, 'when'), str(props, 'where')] : [str(props, 'blurb')]).filter(Boolean)
+  const cta = str(props, 'ctaLabel') || (isEvent ? 'RSVP' : 'Join the circle')
+  const ref = props[isEvent ? 'event' : 'circle']
+  const hasPick = !!(ref && typeof ref === 'object')
+  const Icon = isEvent ? CalendarDays : Users
+  if (!hasPick && !title && !image) {
+    return (
+      <div
+        className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-4 py-8 text-center"
+        style={{ borderColor: C.border, color: C.subtle }}
+      >
+        <Icon className="h-5 w-5" aria-hidden />
+        <p className="text-body-sm font-medium">Pick {isEvent ? 'an event' : 'a circle'} in this block&rsquo;s settings.</p>
+        <p className="text-meta">Search a Space, then choose one of its {isEvent ? 'upcoming events' : 'circles'}.</p>
+      </div>
+    )
+  }
+  return (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', background: C.surface }}>
+      {image && (
+        // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
+        <img src={image} alt={title} style={{ display: 'block', width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+      )}
+      <div style={{ padding: 16 }}>
+        <div className="text-body-lg font-bold" style={{ color: C.text }}>{title || (isEvent ? 'Event title' : 'Circle name')}</div>
+        {lines.map((line, i) => (
+          <div key={i} className="text-body-sm" style={{ color: C.muted }}>{line}</div>
+        ))}
+        <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+          {cta}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function CanvasBlock({
   id,
   props,
@@ -277,6 +319,9 @@ export function CanvasBlock({
   // The Product card is DATA-BOUND: it renders a read-only preview here and is edited entirely in the rail.
   if (id === 'productCard') {
     return <ProductCardCanvas props={props} />
+  }
+  if (id === 'eventCard' || id === 'circleCard') {
+    return <DataCardCanvas props={props} kind={id} />
   }
 
   const fields = fieldsForBlock(id)

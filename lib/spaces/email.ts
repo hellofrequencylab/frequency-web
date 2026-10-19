@@ -50,6 +50,7 @@ import { randomUUID } from 'crypto'
 import { briefError, log } from '@/lib/log'
 import { envString } from '@/lib/env/string'
 import { resolveSpaceEmailDefaultIdentity } from './email-domain-onboarding'
+import { resolveSpaceEmailIdentity } from './email-identity-registry'
 
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
@@ -543,9 +544,14 @@ async function deliverSpaceCampaign(
   // against plan and provider verification. A held sender stops the send rather than quietly falling
   // back to Frequency (email-identity-policy.ts); no choice means the Frequency sender, as before.
   let fromLine = spaceFromLine(space.brandName ?? space.name, fallbackFrom)
+  // The custom identity behind fromLine, carried on every job so the drain resolves it AGAIN (SCAN-828).
+  let identityId: string | null = null
   try {
     const identity = await resolveSpaceEmailDefaultIdentity(spaceId, 'marketing')
-    if (identity) fromLine = identity.from
+    if (identity) {
+      fromLine = identity.from
+      identityId = identity.identityId ?? null
+    }
   } catch (err) {
     return fail(err instanceof Error ? err.message : 'Your campaign sender is unavailable. Nothing was sent.')
   }
@@ -652,6 +658,7 @@ async function deliverSpaceCampaign(
           subject,
           html: personalizedHtml,
           from: fromLine,
+          ...(identityId ? { identityId } : {}),
           ...(replyTo ? { replyTo } : {}),
           headers,
           // The ledger row this job must move on at drain time (runSpaceCampaignEmail below). The
@@ -829,13 +836,30 @@ export const runSpaceCampaignEmail: JobHandler = async (p, context) => {
     await cancelQueuedSend(p.outreachSendId, SPACE_NOT_ACTIVE_DRAIN_NOTE)
     return
   }
+  // SCAN-828: a job that was queued under a custom Space identity resolves it AGAIN right here, against
+  // the plan, the pause flag and the provider's verification as they stand at send time. Campaign jobs
+  // are dripped over hours (bulkRunAfter), so a downgrade, a pause or a lost DNS record mid-campaign must
+  // stop the rest of it. A held identity fails the row visibly; it never sends from the stale From and
+  // never falls back to the Frequency address (email-identity-policy.ts).
+  let from = typeof p.from === 'string' ? p.from : undefined
+  if (!accepted && typeof p.identityId === 'string' && p.identityId) {
+    try {
+      if (!spaceId) throw new Error('This Space could not be found. Nothing was sent.')
+      from = (await resolveSpaceEmailIdentity(spaceId, p.identityId)).from
+    } catch (err) {
+      const reason = err instanceof Error && err.message ? err.message : 'Your campaign sender is unavailable. Nothing was sent.'
+      log.warn('space_email.drain_skipped_sender_held', { spaceId, outreachSendId: p.outreachSendId, identityId: p.identityId, reason })
+      await cancelQueuedSend(p.outreachSendId, `Sender held at send time: ${reason}`)
+      return
+    }
+  }
   const { id } = accepted ?? await sendRawEmail({
     deliveryContext: readEmailDeliveryContext(p.deliveryContext),
     to: p.to as string,
     subject: p.subject as string,
     html: (p.html as string) ?? '',
     headers: (p.headers as Record<string, string> | undefined) ?? undefined,
-    from: typeof p.from === 'string' ? p.from : undefined,
+    from,
     replyTo: typeof p.replyTo === 'string' ? p.replyTo : undefined,
   }, context)
   try {

@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-025",
+  "title": "The email editor carries Event and Circle cards an operator picks from a Space, refreshed from the live row at send like the Product card",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/email-studio/data-blocks.ts",
+    "ref": "owner 2026-10-19 in the project chat: a block editor for the email system tied into our editing system, with auto data blocks like products, events and circles; ADR-977 T-2; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-19 from the email scan. THE CONSEQUENCE: the email palette had one data-bound block (the Product card) and no way to drop an event or a circle into an email; an operator announcing a workshop or inviting people to a circle typed the title, date, venue and link by hand into a Callout, and that copy went stale the moment the event moved. The web's `events` and `circles` data blocks read live at render, which EDITOR-ARCHITECTURE T-2 forbids in email. THE FIX: `eventCard` and `circleCard` join the registry and EMAIL_PALETTE_BLOCK_IDS on the Product card's contract (content category, email-only, a ref plus a snapshot). lib/email-studio/data-blocks.ts is the one live read: resolveDataBlockRefs runs in the send compile after resolveProductRefs and refreshes every placed card from the live event (title, date line in the event's zone, venue or city, hero, link) or circle (name, bounded blurb, image, link); a gone row keeps the last-known snapshot. The rail's search-a-Space picker (components/admin/email-studio/data-picker) lists a Space's upcoming events or live circles; the canvas previews both; the renderer draws both through one dataCard in the Product card's frame.\n\nBuilt 2026-10-19: eventCard and circleCard on the Product card contract; resolveDataBlockRefs at send; search-a-Space pickers; ADR-1754",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-data-blocks.mjs",
+    "note": "PASS 2026-10-19: the probe reads the registry and palette for the two email-only cards, the field schema for the refs, the renderer for both cases and for no live read, data-blocks.ts for the server-only resolver, send.ts for the compile seam, the canvas, the rail, the writer-gated actions and the doc count."
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

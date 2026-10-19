@@ -27,7 +27,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { resolveSignature } from '@/lib/comms/signature'
-import { renderReplyEmail } from '@/lib/comms/email-template'
+import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
 import { withDisplayName } from '@/lib/comms/from-address'
 import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
@@ -314,12 +314,7 @@ function replySubject(subject: string | null): string {
   return s.toLowerCase().startsWith('re:') ? s.slice(0, 200) : `Re: ${s}`.slice(0, 200)
 }
 
-/** Plain-text reply → minimal safe HTML (escaped, newlines to <br>). No external template. */
-function bodyToHtml(text: string): string {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  // token-ok: inline style in a server-rendered HTML message body (no CSS vars available in email)
-  return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
-}
+// bodyToHtml comes from lib/comms/email-template.ts (EMAIL-023): one copy, palette ink.
 
 /**
  * Start a NEW ticketed conversation with a member or contact and send the first message (the

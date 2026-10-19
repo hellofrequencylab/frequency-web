@@ -131,6 +131,7 @@ describe('the executive overview', () => {
     expect(nextProgramOverviewPreferences(saved.preferences, '   ')).toEqual({ preferences: current })
     expect(nextProgramOverviewPreferences(current, 'x'.repeat(PROGRAM_OVERVIEW_MAX + 1))).toHaveProperty('error')
     expect(readProgramOverview(null)).toBe('')
+    expect(readProgramOverview('## From the private row')).toBe('## From the private row')
   })
 })
 

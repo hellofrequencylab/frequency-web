@@ -57,6 +57,9 @@ export const MIN_BLOCKS = 20
  *  pure (it reads `props.title/price/image/url` and nothing else) and the read happens upstream. */
 export const SEND_RESOLVERS = {
   productCard: { file: 'lib/email-studio/product-block.ts', symbol: 'resolveProductRefs' },
+  // EMAIL-025: the Event and Circle cards snapshot the live row at send through the one data-block resolver.
+  eventCard: { file: 'lib/email-studio/data-blocks.ts', symbol: 'resolveDataBlockRefs' },
+  circleCard: { file: 'lib/email-studio/data-blocks.ts', symbol: 'resolveDataBlockRefs' },
 }
 
 /** E8. Each hop is `file` importing `symbol` from a module whose specifier ends with `from`, and (when

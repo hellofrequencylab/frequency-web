@@ -119,7 +119,7 @@ describe('frequencyPageMetadata', () => {
   })
 
   it('opts the home title out of the site template', () => {
-    expect(frequencyPageMetadata(FREQUENCY_PAGE_SEO.home).title).toEqual({ absolute: 'Frequency · Community Collective' })
+    expect(frequencyPageMetadata(FREQUENCY_PAGE_SEO.home).title).toEqual({ absolute: 'Frequency · Local groups and events near you' })
   })
 })
 

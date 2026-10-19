@@ -20,7 +20,7 @@ type Row = {
 }
 
 let rows: Row[] = []
-const sent: { to: string; text: string; messageId: string }[] = []
+const sent: { to: string; from?: string; text: string; messageId: string }[] = []
 const warnings: string[] = []
 
 /** A tiny PostgREST-shaped fake: filters accumulate, the operation runs when the chain is awaited. */
@@ -91,8 +91,8 @@ function from(table: string) {
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (t: string) => from(t) }) }))
 vi.mock('@/lib/email', () => ({
-  enqueueEmail: async (p: { to: string; text: string; headers?: Record<string, string> }) => {
-    sent.push({ to: p.to, text: p.text, messageId: p.headers?.['Message-ID'] ?? '' })
+  enqueueEmail: async (p: { to: string; from?: string; text: string; headers?: Record<string, string> }) => {
+    sent.push({ to: p.to, from: p.from, text: p.text, messageId: p.headers?.['Message-ID'] ?? '' })
   },
 }))
 vi.mock('@/lib/comms/conversations', () => ({
@@ -112,6 +112,17 @@ vi.mock('@/lib/comms/tenant-reply-alias', () => ({
 }))
 vi.mock('@/lib/comms/email-template', () => ({
   renderCoalescedEmail: (text: string, html: string) => ({ text, html }),
+  bodyToHtml: (text: string) => `<div>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\n/g, '<br>')}</div>`,
+}))
+// SCAN-828: a burst stamped with a custom Space identity is resolved again at flush.
+const registryCalls: unknown[][] = []
+let registryHeld = false
+vi.mock('@/lib/spaces/email-identity-registry', () => ({
+  resolveSpaceEmailIdentity: async (...args: unknown[]) => {
+    registryCalls.push(args)
+    if (registryHeld) throw new Error('This sender is paused or its domain is not verified yet. Nothing was sent.')
+    return { identityId: args[1], from: 'River Studio <renamed@river.studio>' }
+  },
 }))
 
 import { flushConversationBatches, BATCH_CLAIM_STALE_MINUTES } from './outbound-batch'
@@ -137,6 +148,8 @@ beforeEach(() => {
   warnings.length = 0
   aliasCalls.length = 0
   aliasFails = false
+  registryCalls.length = 0
+  registryHeld = false
   vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
     warnings.push(args.map(String).join(' '))
   })
@@ -220,6 +233,33 @@ describe('flushConversationBatches — the Space reply route (EMAIL-013)', () =>
     expect(res.emails).toBe(0)
     expect(sent).toHaveLength(0)
     expect(rows[0].delivery_status).toBe('queued')
+  })
+})
+
+describe('flushConversationBatches — the custom sender is re-checked at send time (SCAN-828)', () => {
+  it('a burst stamped with no identity sends as stamped and never asks the registry', async () => {
+    rows = [queued('m1', 'first', 12, { batch_from: 'River Studio <people@people.test>' })]
+    await flushConversationBatches()
+    expect(registryCalls).toEqual([])
+    expect(sent[0]?.from).toBe('River Studio <people@people.test>')
+  })
+
+  it('a burst stamped with a custom identity resolves it again and sends from its CURRENT From', async () => {
+    rows = [queued('m1', 'first', 12, { batch_from: 'River Studio <hello@river.studio>', batch_identity_id: 'i1' })]
+    await flushConversationBatches()
+    expect(registryCalls).toEqual([['space-1', 'i1']])
+    expect(sent[0]?.from).toBe('River Studio <renamed@river.studio>')
+    expect(rows[0].delivery_status).toBe('sent')
+  })
+
+  it('a held identity fails the burst visibly, sends nothing, and never falls back to Frequency', async () => {
+    registryHeld = true
+    rows = [queued('m1', 'first', 12, { batch_from: 'River Studio <hello@river.studio>', batch_identity_id: 'i1' }), queued('m2', 'second', 11, { batch_from: 'River Studio <hello@river.studio>', batch_identity_id: 'i1' })]
+    const res = await flushConversationBatches()
+    expect(res.emails).toBe(0)
+    expect(sent).toHaveLength(0)
+    expect(rows.map((r) => r.delivery_status)).toEqual(['failed', 'failed'])
+    expect(warnings.some((w) => /held/.test(w) && /not verified yet/.test(w))).toBe(true)
   })
 })
 

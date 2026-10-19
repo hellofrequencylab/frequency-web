@@ -230,7 +230,7 @@ export function renderThisWeek(input: RenderThisWeekInput): RenderedThisWeek {
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
             <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${escapeHtml(e.title)}</p>
-            <p style="margin:0;font-size:13px;color:#777;">
+            <p style="margin:0;font-size:13px;color:${palette.emailSubtle};">
               ${escapeHtml(formatThisWeekWhen(e.startsAt, e.timeZone))}${e.where ? ` · ${escapeHtml(e.where)}` : ''}
             </p>
           </td>

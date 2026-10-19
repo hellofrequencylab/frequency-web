@@ -120,6 +120,8 @@ space_email_reply_aliases
 space_email_reply_quarantine
 # EMAIL-022: the Space inbox address carries provider ids and written DNS; service-only, read by the inbound webhook.
 space_inbox_addresses
+# SCAN-827: website drafts, review comments and the Executive Overview; service-only, no browser role.
+space_private_state
 # EMAIL-012: operation leases/ownership nonces are service-only; migration078 explicitly revokes browser roles.
 space_email_domain_operations
 
@@ -129,3 +131,8 @@ event_revenue_splits
 # SCAN-983: Network central admins and chapter event approvals are written and read only by server actions that re-check the Network owner or a central admin; service-only, no browser role.
 network_central_admins
 network_event_approvals
+
+# LIVE-940 Regulars: programs, stamps and rewards are written by lib/loyalty server actions after the owner gate and read by server components; service-only, no browser role.
+space_loyalty_programs
+loyalty_stamps
+loyalty_rewards

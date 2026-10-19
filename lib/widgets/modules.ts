@@ -133,11 +133,14 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // registration went. check:module-reachability proves the difference rather than assuming it.
   { id: 'entity-cta', label: 'Book', description: 'The primary action. Book a session at an open time.' },
 
-  // ── Pages workspace blocks (/pages) — the operator's "find any page and edit it" surface ──
-  { id: 'pages-in-app-member', label: 'In-app pages / Member', description: 'Every member-facing page, opened in place with edit mode on.' },
-  { id: 'pages-in-app-focus', label: 'In-app pages / Focus surfaces', description: 'The focused in-app surfaces (boards, timers, scanner), opened in place with edit mode on.' },
+  // ── Pages workspace blocks (/pages) — the page index (ADR-1763). `pages-marketing` keeps its id
+  // (saved layouts name it) and now draws the Site pages list; `pages-in-app-focus` was folded into
+  // `pages-in-app-member`, which draws every in-app page in one list.
+  { id: 'pages-marketing', label: 'Site pages', description: 'The pages the site menu and footer link to, with what produces each and its publish status.' },
+  { id: 'pages-lead-seo', label: 'Lead and SEO pages', description: 'The pages reached from search, a share or a campaign, which the site menu does not link.' },
   { id: 'pages-splash-funnels', label: 'Funnels', description: 'A card into the Funnels library: the sign-up front door and its audience Funnels (janitor only).' },
-  { id: 'pages-marketing', label: 'Marketing pages', description: 'The public, editor-backed marketing pages with their publish status (janitor only).' },
+  { id: 'pages-in-app-member', label: 'In-app pages', description: 'Every member-facing page, with what its on-page Settings button edits.' },
+  { id: 'pages-system', label: 'System pages', description: 'Sign-in, legal and email pages: fixed copy, view only.' },
 
   // ── Marketing analytics blocks (/admin/marketing/analytics) — read-models off the event backbone ──
   { id: 'marketing-analytics-northstar', label: 'Verified practice', description: 'The verified-practice band: weekly active members, practices this week, activation, and new members.' },
@@ -580,15 +583,17 @@ const CHALLENGES_MODULE_IDS = ['challenges-season'] as const
 // '/spaces/*' set is only honest alongside a real <PageModules route={`/spaces/${slug}`}> mount
 // (Epic 1.7); check:module-reachability fails a set without one.
 
-// The Pages workspace (/pages), in default render order — the one place to find any page and
-// open it ready to edit. The two in-app blocks render for every operator (admin+); the splash
-// and marketing blocks self-gate to janitor, so a Site Admin sees only the in-app areas. Order
-// here is the default stack when no layout is saved; operators rearrange them in the Layout editor.
+// The Pages workspace (/pages), in default render order — the page index, most important first
+// (ADR-1763): the site's own pages, then the lead and SEO pages, the Funnels, the in-app pages, and
+// the system pages last. Every list renders for every operator (admin+); the Edit buttons inside the
+// public lists and the Funnels card self-gate to janitor. Order here is the default stack when no
+// layout is saved; operators rearrange it in the Layout editor.
 const PAGES_MODULE_IDS = [
-  'pages-in-app-member',
-  'pages-in-app-focus',
-  'pages-splash-funnels',
   'pages-marketing',
+  'pages-lead-seo',
+  'pages-splash-funnels',
+  'pages-in-app-member',
+  'pages-system',
 ] as const
 
 // Every circle DETAIL page (/circles/<slug>) shares one layout, keyed at the '/circles/*' section

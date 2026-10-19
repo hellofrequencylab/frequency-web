@@ -17,6 +17,11 @@ const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 /** "Frequency Labs Holdings, 802 Caminito Azul, Carlsbad, CA 92011": the line a footer prints verbatim. */
 export const PLATFORM_POSTAL_LINE = `${ORG_LEGAL_NAME}, ${POSTAL_ADDRESS}`
 
+/** The tagline under the wordmark in every Frequency email shell. Mirrors lib/site.ts SITE_TAGLINE
+ *  (ADR-811; lib/site.test.ts pins the two equal), kept LOCAL for the same reason as ORG_LEGAL_NAME.
+ *  Three shells used to spell it three ways (EMAIL-023). */
+export const EMAIL_TAGLINE = 'Community Collective'
+
 /** The postal line as a muted footer paragraph for the plain-text email renderers. Inline styles + hex are
  *  correct here: the email renders in mail clients, outside the DAWN shell, where CSS tokens do not resolve.
  *  The constant carries no HTML-special characters, so it is printed as is. */

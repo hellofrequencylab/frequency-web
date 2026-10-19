@@ -11,7 +11,7 @@ import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
-import { postalFooterHtml } from '@/lib/email-studio/postal'
+import { plainTextEmail } from '@/lib/email-studio/shell'
 import {
   LAPSE_DAYS,
   deterministicWinback,
@@ -150,12 +150,13 @@ export async function executeAction(id: string): Promise<{ ok: boolean; error?: 
     const gate = p.profileId ? await resolveSendGate(p.profileId, 'email', 'lifecycle') : null
     if (p.profileId && p.email && gate?.allowed) {
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: p.profileId, category: 'lifecycle' })
-      const safe = (p.body || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
+      // The branded Frequency shell with the unsubscribe footer (EMAIL-024).
+      const message = plainTextEmail(p.body || '', { unsubscribeUrl, audienceLine: 'You are receiving this as a Frequency member.' })
       await enqueueEmail({
         to: p.email,
         subject: p.subject || 'A note from Frequency',
-        html: `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`,
-        text: `${p.body || ''}\n\nUnsubscribe: ${unsubscribeUrl}`,
+        html: message.html,
+        text: message.text,
         headers: listUnsubscribeHeaders(unsubscribeUrl),
       })
     }

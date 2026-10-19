@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-828",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/resolveSpaceEmailIdentity/.test(r('lib/spaces/email.ts'))||!/resolveSpaceEmailIdentity/.test(r('lib/comms/outbound-batch.ts'))){console.error('SCAN-828: queued custom-sender sends never re-resolve the identity at dispatch');process.exit(1)}\"",
+      "checked": "2026-10-19",
+      "evidence": "PASS. runSpaceCampaignEmail (lib/spaces/email.ts) and flushConversationBatches (lib/comms/outbound-batch.ts) call resolveSpaceEmailIdentity on a job or burst that carries identityId / batch_identity_id; lib/spaces/email.test.ts and lib/comms/outbound-batch-claim.test.ts pin the re-resolve, the current From, and the visible failure on a held sender."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19. A campaign job and a batched reply now carry the custom identity id (identityId on the job payload, batch_identity_id in the message metadata). The drain and the flush call resolveSpaceEmailIdentity right before the provider call, send from the identity's CURRENT From, and on a hold (downgrade, pause, lost verification) fail the row or burst visibly (outreach_sends.error 'Sender held at send time: ...', comms_messages.delivery_status failed) without sending and without falling back to the Frequency address. Owner revocation (pauseSpaceEmailIdentity) still has no caller; that is EMAIL-011's open work."
+  }
+}

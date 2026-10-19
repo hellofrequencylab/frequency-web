@@ -107,6 +107,37 @@ describe('renderEmailLayout', () => {
     expect(renderEmailLayout(layout).html).toBe('')
   })
 
+  // EMAIL-025: the Event and Circle cards render from their (send-refreshed) snapshot, like the Product card.
+  it('renders a data-bound eventCard and circleCard from their snapshot fields', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['eventCard', 'circleCard']] }],
+      content: {
+        eventCard: { event: { id: 'e1' }, title: 'River walk', when: 'Sat, Nov 7, 9:00 AM', where: 'Moonlight Beach, Encinitas', image: 'https://img.example.com/e1.jpg', url: 'https://frequencylocal.com/events/river-walk' },
+        circleCard: { circle: { id: 'c1' }, title: 'Dawn swimmers', blurb: 'We swim at first light.', url: 'https://frequencylocal.com/circles/dawn-swimmers', ctaLabel: 'Come swim' },
+      },
+    }
+    const { html, text } = renderEmailLayout(layout)
+    expect(html).toContain('River walk')
+    expect(html).toContain('Sat, Nov 7, 9:00 AM')
+    expect(html).toContain('Moonlight Beach, Encinitas')
+    expect(html).toContain('href="https://frequencylocal.com/events/river-walk"')
+    expect(html).toContain('>RSVP</a>')
+    expect(html).toContain('Dawn swimmers')
+    expect(html).toContain('We swim at first light.')
+    expect(html).toContain('>Come swim</a>')
+    expect(html).not.toContain('class=')
+    expect(text).toContain('River walk\nSat, Nov 7, 9:00 AM\nMoonlight Beach, Encinitas\nRSVP: https://frequencylocal.com/events/river-walk')
+    expect(text).toContain('Dawn swimmers')
+  })
+
+  it('renders nothing for an empty eventCard or circleCard (graceful fallback)', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['eventCard', 'circleCard']] }],
+      content: { eventCard: { event: { id: 'gone' } }, circleCard: { circle: { id: 'gone' } } },
+    }
+    expect(renderEmailLayout(layout).html).toBe('')
+  })
+
   it('drops non-palette blocks (a data block renders nothing)', () => {
     const layout: EntityLayout = {
       rows: [{ id: 'r0', columns: 1, cells: [['offerings', 'text']] }],
@@ -265,11 +296,11 @@ describe('shell + compileEmailDoc', () => {
   it('renders a full CAN-SPAM legal footer (sender, address, copyright, real routes)', () => {
     const html = emailDocumentShell({ body: '<p>hi</p>', unsubscribeUrl: 'https://x/u' })
     // Sender identity + one-line description (the site tagline). Asserted against SITE_TAGLINE
-    // rather than a literal, because shell.ts keeps its own LOCAL copy on purpose (importing
-    // lib/site would pull the whole nav registry into the framework-free email shell). A local
-    // copy is a copy that can drift — ADR-944 renamed the tagline and this assertion was the only
-    // thing standing between that and an email footer quietly disagreeing with the logo.
-    expect(html).toContain(SITE_TAGLINE.charAt(0) + SITE_TAGLINE.slice(1).toLowerCase())
+    // rather than a literal, because the shells keep a LOCAL copy on purpose (importing lib/site
+    // would pull the whole nav registry into the framework-free email shell). A local copy is a
+    // copy that can drift; EMAIL-023 made it ONE copy (EMAIL_TAGLINE in postal.ts), spelled
+    // exactly like the site's, so this is now an equality rather than a case-folded match.
+    expect(html).toContain(SITE_TAGLINE)
     // Physical mailing-address line: the real CAN-SPAM postal address plus the legal org.
     expect(html).toContain('Frequency Labs Holdings')
     expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')
@@ -319,8 +350,11 @@ describe('email palette contract', () => {
     expect(ids).not.toContain('offerings')
     // The new Button is present.
     expect(ids).toContain('button')
-    // The data-bound Product card is the sanctioned email product block (Phase 4).
+    // The data-bound Product card is the sanctioned email product block (Phase 4); the Event and Circle
+    // cards are its siblings (EMAIL-025).
     expect(ids).toContain('productCard')
+    expect(ids).toContain('eventCard')
+    expect(ids).toContain('circleCard')
   })
 })
 

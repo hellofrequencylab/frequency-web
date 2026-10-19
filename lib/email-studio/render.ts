@@ -282,6 +282,25 @@ function paragraph(text: string, style: BlockStyle | undefined, colors: EmailCol
   return `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.65`, ...parts])}>${body}</p>`
 }
 
+/** A plain-text body (blank lines between paragraphs) as Studio-styled paragraphs: every character escaped,
+ *  a single newline a <br>, the body ink and typeface the block renderer uses (EMAIL-024). The plain-text
+ *  campaign, drip, nurture, automation and agent senders render through this instead of seven private
+ *  `#333` templates. PURE. */
+export function plainTextBodyHtml(body: string, colors: EmailColors): string {
+  return (body ?? '')
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p${styleAttr([`margin:0 0 16px`, `font-family:${FONT_STACK}`, `font-size:15px`, `line-height:1.65`, `color:${colors.text}`])}>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('')
+}
+
+/** One muted line under a plain-text body saying why the reader got the email (EMAIL-024). PURE. */
+export function audienceLineHtml(text: string, colors: EmailColors): string {
+  if (!text) return ''
+  return `<p${styleAttr([`margin:24px 0 0`, `font-family:${FONT_STACK}`, `font-size:12px`, `line-height:1.6`, `color:${colors.subtle}`])}>${escapeHtml(text)}</p>`
+}
+
 function eyebrow(text: string, colors: EmailColors): string {
   if (!text) return ''
   return `<p${styleAttr([`margin:0 0 8px 0`, `font-family:${FONT_STACK}`, `font-size:11px`, `font-weight:700`, `letter-spacing:0.12em`, `text-transform:uppercase`, `color:${colors.primaryStrong}`])}>${escapeHtml(text)}</p>`
@@ -514,6 +533,57 @@ function productCard(props: Record<string, unknown>, style: BlockStyle | undefin
   return { html: wrapped, text }
 }
 
+/** The shared card body for the Product card's two siblings (EMAIL-025): a cover on top, a bold title that
+ *  links out, up to two muted detail lines, and the CTA button. Same frame and radii as the Product card so
+ *  the three read as one family. Fail-safe: nothing to show renders nothing. */
+function dataCard(
+  { title, lines, img, url, cta }: { title: string; lines: string[]; img: string; url: string; cta: string },
+  style: BlockStyle | undefined,
+  colors: EmailColors,
+): Rendered {
+  const detail = lines.filter(Boolean)
+  if (!title && !img && detail.length === 0) return { html: '', text: '' }
+  const media = img ? `${image(img, title, 8)}<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>` : ''
+  const titleInner = escapeHtml(title)
+  const titleNode = url
+    ? `<a href="${escapeHtml(url)}"${styleAttr([`color:${colors.text}`, `text-decoration:none`])}>${titleInner}</a>`
+    : titleInner
+  const h = title
+    ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:17px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>`
+    : ''
+  const d = detail
+    .map((line) => `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.5`, `color:${colors.muted}`])}>${escapeHtml(line)}</p>`)
+    .join('')
+  const btn = title || img
+    ? `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>${ctaButton(cta, url, 'left', colors)}`
+    : ''
+  const inner = `${media}${h}${d}${btn}`
+  const wrapped = style?.background === false
+    ? inner
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:16px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:16px`])}>${inner}</td></tr></table>`
+  const text = [title, ...detail, url && `${cta}: ${url}`].filter(Boolean).join('\n')
+  return { html: wrapped, text }
+}
+
+/** The data-bound EVENT CARD (EMAIL-025): cover, title, the date line and the venue line, an RSVP button.
+ *  The bag is refreshed from the live event at send (lib/email-studio/data-blocks.ts). */
+function eventCard(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
+  return dataCard(
+    { title: s(props, 'title'), lines: [s(props, 'when'), s(props, 'where')], img: safeImageUrl(props.image), url: safeUrl(s(props, 'url')), cta: s(props, 'ctaLabel') || 'RSVP' },
+    style,
+    colors,
+  )
+}
+
+/** The data-bound CIRCLE CARD (EMAIL-025): photo, name, a short blurb, a join button. */
+function circleCard(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
+  return dataCard(
+    { title: s(props, 'title'), lines: [s(props, 'blurb')], img: safeImageUrl(props.image), url: safeUrl(s(props, 'url')), cta: s(props, 'ctaLabel') || 'Join the circle' },
+    style,
+    colors,
+  )
+}
+
 function callout(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   const title = s(props, 'title')
   const body = s(props, 'body')
@@ -621,6 +691,10 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
       return cardGrid(props, style, colors)
     case 'productCard':
       return productCard(props, style, colors)
+    case 'eventCard':
+      return eventCard(props, style, colors)
+    case 'circleCard':
+      return circleCard(props, style, colors)
     case 'callout':
       return callout(props, style, colors)
     case 'photoHero':

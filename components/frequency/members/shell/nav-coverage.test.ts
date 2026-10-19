@@ -85,7 +85,6 @@ type Dest = { href: string; gate: Gate; from: string }
 const DAWN_LITERALS: readonly { href: string; file: string; snippet: string; gate?: Gate }[] = [
   // Phone drawer foot (app-shell.tsx MobileDrawer).
   { href: '/about', file: 'components/layout/app-shell.tsx', snippet: 'href="/about"' },
-  { href: '/what-is-frequency', file: 'components/layout/app-shell.tsx', snippet: 'href="/what-is-frequency"' },
   { href: '/terms', file: 'components/layout/app-shell.tsx', snippet: 'href="/terms"' },
   { href: '/guidelines', file: 'components/layout/app-shell.tsx', snippet: 'href="/guidelines"' },
   { href: '/privacy', file: 'components/layout/app-shell.tsx', snippet: 'href="/privacy"' },

@@ -110,6 +110,11 @@ ${M} .mw-tag-chev{align-self:flex-start;${LABEL};padding:6px 18px 6px 10px;backg
 ${M} .mw-path-grid>li:nth-child(3) .mw-tag-chev{background:var(--mw-summer);color:var(--mw-charcoal)}
 
 ${M} .mw-parts-top{display:flex;align-items:center;justify-content:space-between}
+${M} .mw-parts-stat{display:flex;flex-direction:column;gap:4px;margin:8px 0 4px}
+${M} .mw-parts-stat strong{font-size:2.25rem;line-height:1;color:var(--color-primary-strong)}
+${M} .mw-parts-link{color:inherit;text-decoration:none}
+${M} .mw-parts-link:hover{color:var(--color-primary-strong)}
+${M} .mw-parts-sec li .mw-textlink{display:inline-block;margin-top:12px}
 ${M} .mw-hero-stack+.mw-parts-sec{position:relative;z-index:1;margin-top:-104px;padding-top:0}
 ${M} .mw-hero-stack:has(+.mw-parts-sec) .mw-hero-photo{margin-bottom:0}
 

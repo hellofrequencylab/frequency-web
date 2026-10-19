@@ -186,6 +186,11 @@ export type FieldType =
   // (lib/email-studio/product-block.ts) resolves the live image / title / price / link from that id at send
   // time so the card never goes stale. Distinct from `picker` (a multi-select of a Space's own live items).
   | 'product'
+  // The EVENT and CIRCLE references (EMAIL-025): the Product card's two siblings. Same `{ id, ownerId? }` ref
+  // shape (sanitizeProductRef), set by the search-a-Space pickers (components/admin/email-studio/data-picker)
+  // and refreshed from the live event / circle row at send time (lib/email-studio/data-blocks.ts).
+  | 'event'
+  | 'circle'
   | 'toggle'
   // ADR-569 C6 primitives (attached to a block by a feature agent; validated against `options` / enum):
   | 'segmented'
@@ -564,6 +569,27 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     { key: 'url', label: 'Link', type: 'url', placeholder: 'https://' },
     { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'View product' },
+  ],
+  // EVENT CARD and CIRCLE CARD (EMAIL-025): the Product card's siblings. The `event` / `circle` ref is set by
+  // the search-a-Space picker; the other fields hold the SNAPSHOT taken at pick time (so the canvas reads at
+  // once and a removed row still renders its last-known card), and lib/email-studio/data-blocks.ts refreshes
+  // them from the live row at send time.
+  eventCard: [
+    { key: 'event', label: 'Event', type: 'event' },
+    { key: 'title', label: 'Title', type: 'text', placeholder: 'Pick an event to fill this in' },
+    { key: 'when', label: 'When', type: 'text', placeholder: 'Pulled from the event' },
+    { key: 'where', label: 'Where', type: 'text', placeholder: 'Pulled from the event' },
+    { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
+    { key: 'url', label: 'Link', type: 'url', placeholder: 'https://' },
+    { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'RSVP' },
+  ],
+  circleCard: [
+    { key: 'circle', label: 'Circle', type: 'circle' },
+    { key: 'title', label: 'Name', type: 'text', placeholder: 'Pick a circle to fill this in' },
+    { key: 'blurb', label: 'About', type: 'text', placeholder: 'Pulled from the circle' },
+    { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
+    { key: 'url', label: 'Link', type: 'url', placeholder: 'https://' },
+    { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'Join the circle' },
   ],
   zigzag: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
@@ -1407,8 +1433,11 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
         if (items.length) out[field.key] = items
         break
       }
-      case 'product': {
-        // A single data-bound product reference (Email Studio Phase 4). Kept only when it carries an id.
+      case 'product':
+      case 'event':
+      case 'circle': {
+        // A single data-bound reference (the Product card, Phase 4; its Event and Circle siblings, EMAIL-025).
+        // Kept only when it carries an id.
         const ref = sanitizeProductRef(v)
         if (ref) out[field.key] = ref
         break
