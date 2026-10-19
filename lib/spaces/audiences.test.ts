@@ -65,9 +65,23 @@ function segmentsBuilder() {
   return api
 }
 
-// contacts builder: .select(cols).eq('space_id', v).limit(n) -> { data, error }
+// contacts builder: .select(cols).eq('space_id', v).order('id').range(from, to) -> { data, count, error }.
+// Like PostgREST, one response carries at most POSTGREST_MAX_ROWS rows whatever range is asked for.
+const POSTGREST_MAX_ROWS = 1000
+const contactCountOverride: { value: number | null } = { value: null }
 function contactsBuilder() {
   const filters: { space_id?: string } = {}
+  const rows = () => db.contacts.filter((c) => c.space_id === filters.space_id)
+  const shape = (data: ContactRow[]) => ({
+    data: data.map((c) => ({
+      id: c.id,
+      email: c.email,
+      profile_id: c.profile_id ?? null,
+      consent_state: c.consent_state ?? null,
+    })),
+    count: contactCountOverride.value ?? rows().length,
+    error: null,
+  })
   const api = {
     select() {
       return api
@@ -76,20 +90,15 @@ function contactsBuilder() {
       if (col === 'space_id') filters.space_id = val
       return api
     },
+    order() {
+      return api
+    },
+    async range(from: number, to: number) {
+      const sorted = [...rows()].sort((a, b) => a.id.localeCompare(b.id))
+      return shape(sorted.slice(from, Math.min(to + 1, from + POSTGREST_MAX_ROWS)))
+    },
     async limit(n: number) {
-      const data = db.contacts
-        .filter((c) => c.space_id === filters.space_id)
-        .slice(0, n)
-      return {
-        data: data.map((c) => ({
-          id: c.id,
-          email: c.email,
-          profile_id: c.profile_id ?? null,
-          consent_state: c.consent_state ?? null,
-        })),
-        count: db.contacts.filter(c => c.space_id === filters.space_id).length,
-        error: null,
-      }
+      return shape(rows().slice(0, Math.min(n, POSTGREST_MAX_ROWS)))
     },
   }
   return api
@@ -234,6 +243,7 @@ import {
 } from './audiences'
 
 beforeEach(() => {
+  contactCountOverride.value = null
   db.contacts = []
   db.tags = []
   db.segments = []
@@ -578,10 +588,26 @@ describe('read-only campaign candidates', () => {
     expect(await resolveAudience('space-A')).toEqual([{ contactId: 'one', email: 'a@example.org' }])
   })
   it('refuses incomplete counts and missing/cross-Space saved audiences in preview', async () => {
-    db.contacts = Array.from({ length: 5001 }, (_, i) => ({ id: `c${i}`, email: `c${i}@example.org`, space_id: 'space-A' }))
+    db.contacts = Array.from({ length: 30 }, (_, i) => ({ id: `c${i}`, email: `c${i}@example.org`, space_id: 'space-A' }))
+    contactCountOverride.value = 31
     await expect(resolveAudienceCandidatePlan('space-A')).rejects.toThrow('incomplete')
+    contactCountOverride.value = null
     db.contacts = []
     db.segments = [{ id: 'foreign', space_id: 'space-B', definition: {} }]
     await expect(resolveAudienceCandidatePlan('space-A', { segmentId: 'foreign' })).rejects.toThrow('unavailable')
+  })
+  // SCAN-829: one response is capped at 1,000 rows, so the read pages with .range().
+  it('previews and sends to a Space with more than 1,000 contacts', async () => {
+    db.contacts = Array.from({ length: 2500 }, (_, i) => ({ id: `c${String(i).padStart(4, '0')}`, email: `c${i}@example.org`, space_id: 'space-A' }))
+    const plan = await resolveAudienceCandidatePlan('space-A')
+    expect(plan.contacts).toHaveLength(2500)
+    expect(plan.cappedAt).toBeNull()
+    expect(await resolveAudience('space-A')).toHaveLength(2500)
+  })
+  it('reports a Space over the send cap as capped, reading the first 5,000', async () => {
+    db.contacts = Array.from({ length: 5001 }, (_, i) => ({ id: `c${String(i).padStart(4, '0')}`, email: `c${i}@example.org`, space_id: 'space-A' }))
+    const plan = await resolveAudienceCandidatePlan('space-A')
+    expect(plan.contacts).toHaveLength(5000)
+    expect(plan).toMatchObject({ cappedAt: 5000, spaceContacts: 5001 })
   })
 })
