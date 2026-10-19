@@ -312,7 +312,8 @@ export function pricingTiers(
     const id = o.id as PricingTier['id']
     // Network is quoted (SCAN-961): no catalog item, a "from" price read off NETWORK_PLAN, a year at the house rate (two months free).
     const network = id === 'network'
-    const item = id === 'free' || id === 'network' ? null : cat[TIER_ITEM[id]]
+    const itemKey = id === 'free' || id === 'network' ? null : TIER_ITEM[id]
+    const item = itemKey ? cat[itemKey] : null
     const from: CatalogAmounts = { listCents: NETWORK_PLAN.monthlyCents, foundingCents: NETWORK_PLAN.monthlyCents }
     const fromYear: CatalogAmounts = { listCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents), foundingCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents) }
     return {
@@ -320,7 +321,7 @@ export function pricingTiers(
       name: offeringLadderLabel(o),
       tagline: o.tagline,
       priceKind: network ? 'from' : 'flat',
-      price: network ? { month: from, year: fromYear } : item ? { month: eff(item.month, TIER_ITEM[id]), year: eff(item.year, TIER_ITEM[id]) } : { month: zero, year: zero },
+      price: network ? { month: from, year: fromYear } : item ? { month: eff(item.month, itemKey), year: eff(item.year, itemKey) } : { month: zero, year: zero },
       featured: o.featured,
       forWho: o.forWho,
       billing: o.billing,
