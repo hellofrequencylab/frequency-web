@@ -10,12 +10,14 @@
 -- transition.
 --
 -- THE FIX. A BEFORE UPDATE trigger refuses old.status = 'draft' and new.status <>
--- 'draft' unless the caller is a trusted writer (service_role, postgres,
--- supabase_admin). Session-client edits that stay on draft still land. Live Circles
--- can still change status. publishCircle and the other app writers already use the
--- admin client, so they stay exempt. SECURITY INVOKER so current_user still names
--- the caller (a definer body would read its owner and exempt every write). There is
--- no member-facing DEFINER RPC that updates circles.status.
+-- 'draft' when the JWT role is authenticated or anon. The JWT role is what matters
+-- (auth.role()), not current_user: pgTAP's throws_ok and any SECURITY DEFINER door
+-- run as postgres, and a current_user check would see the owner and exempt the
+-- write (the SCAN-845 lesson; CI 39278455526 proved it). publishCircle and the
+-- other app writers already use the admin client (service_role). A statement with
+-- no JWT (the migration runner, a postgres seed) is not a browser caller and stays
+-- allowed. Session-client edits that stay on draft still land. Live Circles can
+-- still change status.
 --
 -- Apply with execute_sql, then insert supabase_migrations.schema_migrations at version
 -- 20270346009700. Do not apply_migration. Do not db push.
@@ -32,17 +34,14 @@ begin;
 create or replace function public.guard_circle_draft_status()
 returns trigger
 language plpgsql
-security invoker
+security definer
 set search_path = public, pg_temp
 as $$
 begin
-  -- Trusted writers: the admin client, the migration runner, and every SECURITY DEFINER
-  -- door (which runs as its owner). They are the only writers of a leave-draft move.
-  if current_user in ('service_role', 'postgres', 'supabase_admin') then
-    return new;
-  end if;
-
-  if old.status = 'draft' and new.status <> 'draft' then
+  -- Only a browser caller (PostgREST authenticated / anon) is refused. service_role
+  -- is the admin client. A null JWT is the migration runner or a postgres seed.
+  if old.status = 'draft' and new.status <> 'draft'
+     and auth.role() in ('authenticated', 'anon') then
     raise exception 'circles: a draft leaves draft only through publish'
       using errcode = '42501';
   end if;
@@ -52,7 +51,7 @@ end;
 $$;
 
 comment on function public.guard_circle_draft_status() is
-  'BEFORE UPDATE on public.circles (SCAN-848). Under a caller role a draft Circle may not change status. Exempt: service_role, postgres, supabase_admin (the admin client and the migration runner). SECURITY INVOKER by design: a definer body would read its owner as current_user and exempt every write.';
+  'BEFORE UPDATE on public.circles (SCAN-848). Refuses a leave-draft when auth.role() is authenticated or anon, so a host cannot PATCH a draft live through PostgREST. service_role (the admin client) and a null JWT (the migration runner) stay allowed. SECURITY DEFINER so auth.role() is readable; not an RPC.';
 
 drop trigger if exists guard_circle_draft_status on public.circles;
 create trigger guard_circle_draft_status

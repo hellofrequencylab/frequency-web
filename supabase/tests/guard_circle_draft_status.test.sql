@@ -11,7 +11,7 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(10);
+select plan(11);
 
 -- ── Seed (as postgres, which RLS does not bind) ─────────────────────────────────────────────────
 
@@ -70,6 +70,16 @@ select throws_ok(
   '42501',
   'circles: a draft leaves draft only through publish',
   'a host cannot PATCH a draft Circle to forming');
+
+reset role;
+select is(
+  (select status from public.circles where id = '00000000-0000-4000-c848-000000000001'),
+  'draft',
+  'the draft is still a draft after the refused host writes');
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', '00000000-0000-4000-a848-000000000001', 'role', 'authenticated')::text, true);
 
 select lives_ok(
   $$ update public.circles set name = 'Draft Room edited'
