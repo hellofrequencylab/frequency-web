@@ -942,7 +942,7 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
    is arriving (data-busy), and sits still under reduced motion. */
 [data-design="frequency"] .fqd-panel{
   background:var(--fq-surface-card);border:none;border-radius:var(--fq-radius-xl);
-  box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 24px 60px -24px rgba(30,27,24,.35);
+  box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 24px 60px -24px color-mix(in oklab,var(--fq-ink) 35%,transparent);
   color:var(--fq-text-body)}
 [data-design="frequency"] .fqd-panel [class*="bg-surface"],
 [data-design="frequency"] .fqd-panel [class*="bg-canvas"]{background:transparent}
@@ -955,16 +955,17 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] .fqd-panel button[class*="bg-primary"]:not([class*="bg-primary-bg"]){
   background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow)}
 
+/* token-ok: the three mode colours (Vera blue, Support green, Messages pink) are the owner's ruling for the dock orb; the design export has no tokens for them. */
+[data-design="frequency"] .fqd-orb[data-mode="vera"]{--orb-hi:#CFE2FF;--orb-mid:#8DB4FF;--orb-lo:#6FD8FF;--orb-glow:#6FA8FF}
+/* token-ok: Support green. */
+[data-design="frequency"] .fqd-orb[data-mode="support"]{--orb-hi:#D5F5DC;--orb-mid:#8FDDA6;--orb-lo:#5CCB9A;--orb-glow:#5CCB9A}
+/* token-ok: Messages pink. */
+[data-design="frequency"] .fqd-orb[data-mode="messages"]{--orb-hi:#FADCEB;--orb-mid:#F2A6CF;--orb-lo:#E985B8;--orb-glow:#E985B8}
 [data-design="frequency"] .fqd-orb{
   display:inline-flex;flex:none;width:36px;height:36px;border-radius:50%;
-  --orb:radial-gradient(circle at 35% 30%,#fff 0,#CFE2FF 26%,#8DB4FF 58%,#6FD8FF 100%);
-  background:var(--orb);box-shadow:0 0 18px color-mix(in oklab,var(--orb-glow,#6FA8FF) 55%,transparent)}
+  background:radial-gradient(circle at 35% 30%,var(--fq-surface-card) 0,var(--orb-hi) 26%,var(--orb-mid) 58%,var(--orb-lo) 100%);
+  box-shadow:0 0 18px color-mix(in oklab,var(--orb-glow) 55%,transparent)}
 [data-design="frequency"] .fqd-orb.is-sm{width:18px;height:18px}
-[data-design="frequency"] .fqd-orb[data-mode="vera"]{--orb-glow:#6FA8FF}
-[data-design="frequency"] .fqd-orb[data-mode="support"]{
-  --orb:radial-gradient(circle at 35% 30%,#fff 0,#D5F5DC 26%,#8FDDA6 58%,#5CCB9A 100%);--orb-glow:#5CCB9A}
-[data-design="frequency"] .fqd-orb[data-mode="messages"]{
-  --orb:radial-gradient(circle at 35% 30%,#fff 0,#FADCEB 26%,#F2A6CF 58%,#E985B8 100%);--orb-glow:#E985B8}
 [data-design="frequency"] .fqd-orb{transition:background .3s ease,box-shadow .3s ease}
 [data-design="frequency"] .fqd-orb[data-busy="true"]{animation:fqd-flicker 1.1s steps(1,end) infinite}
 @keyframes fqd-flicker{
