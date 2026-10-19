@@ -30,7 +30,7 @@
   --fqm-white-60:color-mix(in oklab,var(--fq-surface-raised) 60%,transparent);
   --fqm-white-75:color-mix(in oklab,var(--fq-surface-raised) 75%,transparent);
   --fqm-white-90:color-mix(in oklab,var(--fq-surface-raised) 90%,transparent);
-  --fqm-lilac-22:color-mix(in oklab,var(--fq-x-violet-neon) 18%,transparent);
+  --fqm-lilac-22:color-mix(in oklab,var(--fq-x-sky-neon) 18%,transparent);
   --fqm-float:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent);
   --fqm-glass-chip:linear-gradient(150deg,var(--fqm-white-75),color-mix(in oklab,var(--fq-surface-raised) 35%,transparent));
   --fqm-glass-tab:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 86%,transparent),color-mix(in oklab,var(--fq-surface-card) 62%,transparent));
@@ -263,7 +263,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-vault-week i{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--fqm-ink-14)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="on"] i{background:var(--fq-pa);box-shadow:var(--fq-pa-glow)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="frozen"] i{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1.5px var(--fq-x-aqua-neon)}
-[data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="today"] i{background:var(--fq-surface-raised);box-shadow:0 0 0 2px var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-week [data-s="today"] i{background:var(--fq-surface-raised);box-shadow:0 0 0 2px var(--fq-x-sky-neon)}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card .fqm-bar{height:4px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-6);overflow:hidden}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card .btn.pa{align-self:stretch}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong)}
@@ -354,7 +354,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-goal:hover{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-goal-t{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 15px/1.2 var(--fq-font-sans)}
 [data-design="frequency"] [data-kit="members"] .fqm-goal-t small{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap}
-[data-design="frequency"] [data-kit="members"] .fqm-goal-t svg{width:18px;height:18px;flex:none;color:var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-goal-t svg{width:18px;height:18px;flex:none;color:var(--fq-x-sky-neon)}
 [data-design="frequency"] [data-kit="members"] .fqm-goal.done .fqm-goal-t>span{font-weight:400;color:var(--fq-text-faint);text-decoration:line-through}
 
 /* Stats and streaks (rail-stats.tsx): the streak in Unbounded with today's state as a kit tag, the
@@ -363,7 +363,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-stats-streak{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-stats-streak:hover{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-stats-num{display:flex;align-items:baseline;gap:8px;min-width:0}
-[data-design="frequency"] [data-kit="members"] .fqm-stats-num svg{width:22px;height:22px;flex:none;align-self:center;color:var(--fq-x-violet-neon)}
+[data-design="frequency"] [data-kit="members"] .fqm-stats-num svg{width:22px;height:22px;flex:none;align-self:center;color:var(--fq-x-sky-neon)}
 [data-design="frequency"] [data-kit="members"] .fqm-stats-num b{font:500 34px/1 var(--fq-font-display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
 [data-design="frequency"] [data-kit="members"] .fqm-stats-num small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqm-stats-line{margin:-6px 0 0;font:400 var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
@@ -600,7 +600,7 @@
     transition:transform var(--fq-dur-base) var(--fq-ease-out)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg{width:24px;height:24px;transition:transform var(--fq-dur-base) var(--fq-ease-out)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:active .fqm-tb-orb{transform:scale(.97)}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:hover .fqm-tb-orb{box-shadow:0 0 0 5px color-mix(in oklab,var(--fq-surface-card) 92%,transparent),0 18px 34px -14px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent)}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-zap:hover .fqm-tb-orb{box-shadow:0 0 0 5px color-mix(in oklab,var(--fq-surface-card) 92%,transparent),0 18px 34px -14px color-mix(in oklab,var(--fq-x-sky-neon) 70%,transparent)}
   [data-design="frequency"] [data-kit="members"] .fqm-tb-zap.on .fqm-tb-orb svg{transform:rotate(90deg)}
 
   /* The page clears the bar: the content column and the footer end above the lane. */
@@ -634,7 +634,7 @@
 [data-design="frequency"] [data-kit="members"] [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-deep)}
 /* At night the Menu sheet is the dark canvas (SCAN-917), where the deep tones sink: its stat tiles and icon
    chips take the export's neon tones instead, so each glyph reads and its tinted ground stays a dark tile. */
-.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="violet"]{--fqm-tone:var(--fq-x-violet-neon)}
+.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="violet"]{--fqm-tone:var(--fq-x-sky-neon)}
 .dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="aqua"]{--fqm-tone:var(--fq-x-aqua-neon)}
 .dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="sun"]{--fqm-tone:var(--fq-x-sun-neon)}
 .dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-neon)}
@@ -764,7 +764,7 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] [data-kit="members"] .fqm-rmi{color:var(--fq-text-muted);border-radius:18px;gap:5px;transition:color var(--fq-dur-fast),background var(--fq-dur-fast)}
 [data-design="frequency"] [data-kit="members"] .fqm-rmi:hover{color:var(--fq-text-strong)}
 /* The header Zap's hover glow (Members.dc.html). */
-[data-design="frequency"] [data-kit="members"] .ap-zap:hover{box-shadow:0 18px 34px -14px color-mix(in oklab,var(--fq-x-violet-neon) 70%,transparent)}
+[data-design="frequency"] [data-kit="members"] .ap-zap:hover{box-shadow:0 18px 34px -14px color-mix(in oklab,var(--fq-x-sky-neon) 70%,transparent)}
 }
 
 /* ── Right-rail panels sit on the canvas (owner, 2026-10-14) ───────────────────────────────────────────
