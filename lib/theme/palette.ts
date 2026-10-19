@@ -113,8 +113,8 @@ const DAWN: Palette = {
 
   // DAWN's raster cards still carry the pre-DAWN events indigo; kept byte-identical here so a
   // Frequency deploy can replace it in one place.
-  ogAccent: '#6366f1', // token-ok: palette source, raster cards
-  ogAccentSoft: '#c7d2fe', // token-ok: palette source, raster cards
+  ogAccent: '#E2912F', // token-ok: palette source, raster cards
+  ogAccentSoft: '#FBEFD9', // token-ok: palette source, raster cards
 
   walletBackground: '#0f172a', // token-ok: palette source, Google Wallet payload
 }
@@ -130,9 +130,9 @@ export const PALETTES: Record<DesignId, Palette> = {
     border: '#E6E1DA', // token-ok: palette source, mirrors the Frequency export
     text: '#38322D', // token-ok: palette source, mirrors the Frequency export
     textMuted: '#675E56', // token-ok: palette source, mirrors the Frequency export
-    ink: '#0A0612', // token-ok: palette source, mirrors the Frequency export
-    inkElevated: '#140B22', // token-ok: palette source, mirrors the Frequency export
-    onInk: '#F6F0FF', // token-ok: palette source, mirrors the Frequency export
+    ink: '#070B14', // token-ok: palette source, mirrors the Frequency export
+    inkElevated: '#0C1424', // token-ok: palette source, mirrors the Frequency export
+    onInk: '#F2F5FA', // token-ok: palette source, mirrors the Frequency export
     primary: '#1E1B18', // token-ok: palette source, the Commons ink; the solid violet was retired (LIVE-961)
     primaryBg: '#F2E9DC', // token-ok: palette source, the Commons sunken sand
     onPrimary: '#FAF4EA', // token-ok: palette source, the Commons canvas on ink
@@ -151,7 +151,7 @@ export const PALETTES: Record<DesignId, Palette> = {
     emailAlert: '#C2362B', // token-ok: palette source, mirrors the Frequency export
     ogAccent: '#A3D4FF', // token-ok: palette source, the --fq-pa sky stop (LIVE-961)
     ogAccentSoft: '#E8F4FF', // token-ok: palette source, the sky stop lightened for text on the ink card
-    walletBackground: '#0A0612', // token-ok: palette source, mirrors the Frequency export
+    walletBackground: '#070B14', // token-ok: palette source, mirrors the Frequency export
   },
 }
 
