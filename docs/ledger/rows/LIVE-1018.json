@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1018",
+  "title": "Business Spaces directory: modern search, filters, kind strip, Featured and Founding rows, Show more, no photo band",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "/mnt/project-files/changed-plan/build-plan-2026-10-19.md",
+    "ref": "Phase 4; items 5, 7, 26 (feature area), 27, 28"
+  },
+  "detail": "Under the Frequency design /spaces/directory renders FqSpacesBody: the kit head (kicker, title, one line, Create and Manage), one find row (search, Subject, City, Has events, Following, Sort), a kind strip with real counts that wraps instead of clipping, removable active-filter chips, a Featured row (operator picks via preferences.directoryFeatured, set from /admin/spaces/[id] > Directory, else the most active three), a Founding Businesses row, a results grid truncated at 12 with Show more, an empty-search state offering the kinds, and a Run something in town prompt. Sections come from lib/spaces/directory-sections.ts. Founding status stays a badge and a row, never a ranking input. Not in this row: type-ahead suggestions and an open-now filter (no open-hours data on a Space); the shared index header (LIVE-1012) is adopted when it merges; the cover-image Founding badge is LIVE-1019. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const a=fs.readFileSync('app/(main)/spaces/directory/page.tsx','utf8');if(!a.includes('FqSpacesBody'))bad.push('directory page lost FqSpacesBody');const b=fs.readFileSync('lib/spaces/directory-sections.ts','utf8');for(const t of ['directoryFeatured','featuredPicked','showLimit'])if(!b.includes(t))bad.push('missing '+t);const c=fs.readFileSync('app/(main)/admin/spaces/[id]/featured-actions.ts','utf8');if(!c.includes(\\\"requireAdmin('janitor')\\\"))bad.push('featured switch lost its janitor gate');if(bad.length){console.error('LIVE-1018: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the directory stops rendering the Frequency body, loses the featured-row rules, or the featured switch loses its admin gate. Behavior is lib/spaces/directory-sections.test.ts.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
