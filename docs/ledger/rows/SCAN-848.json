@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-848",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345000000'&&/on public\\\\.circles/.test(r('supabase/migrations/'+f))&&/old\\\\.status\\\\s*=\\\\s*'draft'/.test(r('supabase/migrations/'+f)))){console.error('SCAN-848: a draft Circle can go live through a direct update');process.exit(1)}\"",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1754). PREMISE RE-TESTED on main: the host/guide/mentor update policy still has no column limits, and no later migration refused old.status = draft. Migration 20270346009700: BEFORE UPDATE trigger guard_circle_draft_status refuses a caller-role leave-draft. Trusted writers (service_role, postgres, supabase_admin) stay exempt. pgTAP: host and guide PATCH to active or forming is 42501; draft rename and live status change still land; service_role can publish. Apply with execute_sql then schema_migrations at 20270346009700."
+  }
+}
