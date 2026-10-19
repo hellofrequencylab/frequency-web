@@ -124,7 +124,7 @@ export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, ren
           case 'path':
             return <Path key={key} p={props} grid={p.grid} />
           case 'parts':
-            return <Parts key={key} p={props} />
+            return <Parts key={key} p={props} ctx={ctx} />
           case 'lists':
             return <Lists key={key} p={props} />
           case 'photos':
@@ -411,8 +411,22 @@ function Path({ p, grid }: { p: Props; grid: boolean }) {
   )
 }
 
-function Parts({ p }: { p: Props }) {
-  const cards = arr(p.cards).map((c, i) => ({ n: String(i + 1).padStart(2, '0'), icon: ICONS[str(c.icon).toLowerCase()], title: str(c.title), body: str(c.body) }))
+/** A card's link: through the site's link map, or, for a Frequency path to another Space, circle, event or
+ *  listing (a chapter's page, say), to the app at the site's origin, the way the Network blocks' links go. */
+function cardHref(raw: string, ctx: Ctx): { href: string; external: boolean } | null {
+  const local = siteLocalHref(raw, ctx.links)
+  if (local) return local
+  return /^\/(?:spaces|circles|events|market)(?:\/|[?#]|$)/.test(raw) ? { href: `${ctx.links.origin}${raw}`, external: false } : null
+}
+
+function Parts({ p, ctx }: { p: Props; ctx: Ctx }) {
+  // A card's link, stat box and button (the Card grid's editable extras) draw here too, so the published
+  // website shows what the editor lets the owner set.
+  const cards = arr(p.cards).map((c, i) => {
+    const stat = c.stat && typeof c.stat === 'object' ? (c.stat as Props) : {}
+    const button = c.button && typeof c.button === 'object' ? (c.button as Props) : {}
+    return { n: String(i + 1).padStart(2, '0'), icon: ICONS[str(c.icon).toLowerCase()], title: str(c.title), body: str(c.body), to: cardHref(str(c.href), ctx), statValue: str(stat.value), statLabel: str(stat.label), buttonLabel: str(button.label), buttonTo: cardHref(str(button.href), ctx) }
+  })
   if (cards.length === 0) return null
   // Whole rows only: six cards sit 3 by 2, never 5 and 1.
   const n = cards.length
@@ -427,8 +441,15 @@ function Parts({ p }: { p: Props }) {
               <span className="mw-label">{c.n}</span>
               {c.icon && <c.icon className="h-5 w-5 mw-icon" aria-hidden />}
             </span>
-            <h3 className="mw-display mw-xs">{c.title}</h3>
+            {(c.statValue || c.statLabel) && (
+              <span className="mw-parts-stat">
+                {c.statValue && <strong className="mw-display">{c.statValue}</strong>}
+                {c.statLabel && <span className="mw-label">{c.statLabel}</span>}
+              </span>
+            )}
+            <h3 className="mw-display mw-xs">{c.to ? <a href={c.to.href} className="mw-parts-link" {...(c.to.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{c.title}</a> : c.title}</h3>
             <Paras text={c.body} className="mw-small" />
+            {c.buttonLabel && c.buttonTo && <a href={c.buttonTo.href} className="mw-textlink" {...(c.buttonTo.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{c.buttonLabel}</a>}
           </li>
         ))}
       </ul>
