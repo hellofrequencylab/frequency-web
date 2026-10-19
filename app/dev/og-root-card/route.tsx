@@ -125,7 +125,7 @@ export async function GET() {
               width: 84,
               height: 8,
               borderRadius: 9999,
-              backgroundColor: "#6366f1",
+              backgroundColor: "#E2912F",
               marginBottom: 28,
             }}
           />

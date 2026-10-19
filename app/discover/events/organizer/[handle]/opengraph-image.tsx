@@ -15,8 +15,8 @@ export const contentType = OG_CONTENT_TYPE
 // Per-host dynamic OG card for /discover/events/organizer/[handle] (SCAN-202): a sitemapped,
 // self-canonical profile page that was sharing the generic brand card. Falls back to a generic
 // branded card when the host isn't found. Visual language mirrors
-// app/discover/partners/[slug]/opengraph-image.tsx: near-black gradient ground, indigo brand bar
-// (#6366f1 — Satori has no access to the CSS token system, so the literal mirrors the root image),
+// app/discover/partners/[slug]/opengraph-image.tsx: near-black gradient ground, amber brand bar
+// (#E2912F — Satori has no access to the CSS token system, so the literal mirrors the root image),
 // white display type.
 //
 // Reads the SAME RPC the page reads (public_organizer_events, ADR-899), so no new query shape

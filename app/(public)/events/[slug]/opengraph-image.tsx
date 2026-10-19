@@ -41,7 +41,7 @@ export const contentType = OG_CONTENT_TYPE
 // from this select, and ADR-1179 is the record.
 //
 // Satori has NO access to the CSS token system, so the few colors it needs are literals mirroring the
-// existing event cards (the shared module + the claim card): events indigo #6366f1 accent,
+// existing event cards (the shared module + the claim card): the amber accent #E2912F,
 // near-black ground, white display type.
 const INDIGO = palette.ogAccent
 

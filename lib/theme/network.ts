@@ -90,7 +90,7 @@ const NETWORK_POPS: Record<NetworkSchemeId, [pop: string, pop2: string, pop3: st
 
 /** Tag colors for up to five sub-groups beside the hero color (the handoff's chapter colors), as edges and
  *  dots only. */
-const NETWORK_TAGS = ['#3B7EA1', '#7A5BA6', '#2F8A7A', '#B5762A', '#4E6A3A'] as const
+const NETWORK_TAGS = ['#3B7EA1', '#A04D6B', '#2F8A7A', '#B5762A', '#4E6A3A'] as const
 
 /** The warm neutral counterpoint every scheme shares: date tiles, distance tags, card footers. */
 export const NETWORK_SAND = { sand: '#F4EFE6', sandLine: '#E6DED0' } as const

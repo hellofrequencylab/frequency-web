@@ -214,7 +214,7 @@
 [data-design="frequency"] [data-kit="editor"] .opts button i{width:26px;height:16px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(30,27,24,.15)}
 [data-design="frequency"] [data-kit="editor"] .opts button.on{box-shadow:inset 0 0 0 2px var(--fq-focus-ring);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="editor"] .range{display:flex;align-items:center;gap:12px}
-[data-design="frequency"] [data-kit="editor"] .range input{flex:1;accent-color:#7C6CF0}
+[data-design="frequency"] [data-kit="editor"] .range input{flex:1;accent-color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="editor"] .range output{font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-strong);min-width:42px;text-align:right}
 [data-design="frequency"] [data-kit="editor"] .tg{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
 [data-design="frequency"] [data-kit="editor"] .tg span{font:500 14px/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}

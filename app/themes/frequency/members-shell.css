@@ -628,13 +628,12 @@
 [data-design="frequency"] [data-kit="members"] .fqm-standing svg{width:16px;height:16px;color:var(--fqm-tone)}
 [data-design="frequency"] [data-kit="members"] .fqm-standing b{font:600 var(--fq-text-h4)/1 var(--fq-font-display);letter-spacing:-.02em}
 [data-design="frequency"] [data-kit="members"] .fqm-standing small{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="members"] [data-tone="violet"]{--fqm-tone:var(--fq-x-violet-deep)}
+[data-design="frequency"] [data-kit="members"] [data-tone="ink"]{--fqm-tone:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] [data-tone="aqua"]{--fqm-tone:var(--fq-x-aqua-deep)}
 [data-design="frequency"] [data-kit="members"] [data-tone="sun"]{--fqm-tone:var(--fq-x-sun-deep)}
 [data-design="frequency"] [data-kit="members"] [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-deep)}
 /* At night the Menu sheet is the dark canvas (SCAN-917), where the deep tones sink: its stat tiles and icon
    chips take the export's neon tones instead, so each glyph reads and its tinted ground stays a dark tile. */
-.dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="violet"]{--fqm-tone:var(--fq-x-sky-neon)}
 .dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="aqua"]{--fqm-tone:var(--fq-x-aqua-neon)}
 .dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="sun"]{--fqm-tone:var(--fq-x-sun-neon)}
 .dark[data-design="frequency"] [data-kit="members"] .fqm-drawer [data-tone="magenta"]{--fqm-tone:var(--fq-x-magenta-neon)}

@@ -113,8 +113,8 @@ const DAWN: Palette = {
 
   // DAWN's raster cards still carry the pre-DAWN events indigo; kept byte-identical here so a
   // Frequency deploy can replace it in one place.
-  ogAccent: '#6366f1', // token-ok: palette source, raster cards
-  ogAccentSoft: '#c7d2fe', // token-ok: palette source, raster cards
+  ogAccent: '#E2912F', // token-ok: palette source, raster cards
+  ogAccentSoft: '#FBEFD9', // token-ok: palette source, raster cards
 
   walletBackground: '#0f172a', // token-ok: palette source, Google Wallet payload
 }
