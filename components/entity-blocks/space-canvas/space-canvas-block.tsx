@@ -15,7 +15,7 @@ import {
 } from '@/lib/entity-blocks/block-content'
 import { ContentBlockView, hasContent } from '../content-block-view'
 import { BlockIcon } from '../block-icon'
-import { useProfileLayout } from '../profile-layout-context'
+import { useEditorBinding } from '../editor-binding'
 import { SpaceEditableSlot } from './space-editable-slot'
 import { SpaceImagePopup } from './space-image-popup'
 import { assetRefUrl, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
@@ -627,12 +627,16 @@ function FeaturesItemsCanvas({
 
 export function SpaceCanvasBlock({
   id,
+  nid,
   props,
   node,
   loomScope,
   onField,
 }: {
   id: string
+  /** The node id of this placement, when the page is on the node render path. Selection is keyed by it, so
+   *  two Text blocks are two selections; absent (the live type-keyed grid), selection is keyed by `id`. */
+  nid?: string
   props: Record<string, unknown>
   /** The REAL published server node for this block (threaded by LiveProfileGrid). A DATA block renders THIS
    *  read-only so the edit surface is identical to the live page; absent (the /manage/layout editor) it falls
@@ -643,7 +647,7 @@ export function SpaceCanvasBlock({
   /** Persist one content field; an empty value clears it. */
   onField: (key: string, value: unknown) => void
 }) {
-  const store = useProfileLayout()
+  const store = useEditorBinding()
   const block = entityBlockById(id)
   if (!block) return null
   if (id === 'divider') {
@@ -744,7 +748,7 @@ export function SpaceCanvasBlock({
           frame={frame}
           selectedIndex={store?.selectedItemIndex ?? null}
           onSelectItem={(i) => {
-            store?.select(id)
+            store?.select(nid ?? id)
             store?.selectItem(i)
           }}
           onChange={(v) => onField('cards', v)}
@@ -766,7 +770,7 @@ export function SpaceCanvasBlock({
           label={block.label.toLowerCase()}
           selectedIndex={store?.selectedItemIndex ?? null}
           onSelectItem={(i) => {
-            store?.select(id)
+            store?.select(nid ?? id)
             store?.selectItem(i)
           }}
           onChange={(v) => onField('items', v)}
@@ -878,7 +882,7 @@ export function SpaceCanvasBlock({
           value={props[f.key]}
           selectedIndex={store?.selectedItemIndex ?? null}
           onSelectItem={(i) => {
-            store?.select(id)
+            store?.select(nid ?? id)
             store?.selectItem(i)
           }}
           onChange={(v) => onField(f.key, v)}
