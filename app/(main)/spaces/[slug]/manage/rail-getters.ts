@@ -25,6 +25,7 @@ import {
 } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
+import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { listSpaceMembers } from '@/lib/spaces/membership'
 import { listSpaceAvailability } from '@/lib/spaces/booking'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
@@ -820,15 +821,10 @@ export async function getSpaceQrSummary(slug: string): Promise<{ count: number; 
 // the bank). Each function-gated tile (Members/Pipeline) drops to null when the viewer cannot use that
 // tool, so the Hub shows only the stats this viewer can source. READ-ONLY.
 
-/** The billing-plan label seam (spaces.plan → a member-facing label). A small map, since there is no
- *  existing Space-tier label helper (the plan feeds gates, not copy). Unknown/absent plan reads "Free". */
-const SPACE_PLAN_LABEL: Record<string, string> = {
-  free: 'Free',
-  practitioner: 'Practitioner',
-  business: 'Business',
-  organization: 'Organization',
-  whitelabel: 'White label',
-}
+/** The billing-plan label seam (spaces.plan → a member-facing label): the one plan label table
+ *  (lib/pricing/plans.ts), so the Hub never prints a retired plan word and a Collective, Network or
+ *  Non Profit Space reads as what it is (SCAN-1017). Unknown/absent plan reads "Free". */
+const PLAN_LABEL: Record<string, string> = SPACE_PLAN_LABEL
 
 export interface SpaceHubData {
   slug: string
@@ -862,6 +858,6 @@ export async function getSpaceHubData(slug: string): Promise<SpaceHubData | null
     pipeline: pipeline?.count ?? null,
     services: services?.count ?? null,
     published: readWebsitePublished(space.preferences),
-    planLabel: SPACE_PLAN_LABEL[(space.plan ?? 'free').toLowerCase()] ?? 'Free',
+    planLabel: PLAN_LABEL[(space.plan ?? 'free').toLowerCase()] ?? 'Free',
   }
 }

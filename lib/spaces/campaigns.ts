@@ -28,34 +28,18 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { resolveAudiencePlan, type AudienceFilter } from '@/lib/spaces/audiences'
-import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import { sendSpaceCampaign as sendViaSeam } from '@/lib/spaces/email'
 import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import type { NotificationTopic } from '@/lib/notification-preferences'
-import { postalFooterHtml } from '@/lib/email-studio/postal'
-import { frequencyFooterHtml } from '@/lib/spaces/campaign-footer'
+import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
+import { spaceEmailBrand } from '@/lib/spaces/email-colors'
+import { renderCampaignHtml as renderBrandedCampaignHtml } from '@/lib/spaces/campaign-html'
 import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
 
-// Render a plain-text campaign body to a minimal HTML email with a Space-appropriate footer. Inline
-// styles + hex are correct here (an email renders in mail clients, OUTSIDE the DAWN shell, where CSS
-// tokens are unavailable, exactly like lib/studio/campaigns.ts campaignEmail). The unsubscribe href is
-// the SPACE_UNSUBSCRIBE_PLACEHOLDER, which the send seam swaps for each recipient's own one-click URL.
-// Under it sits the platform postal line (lib/email-studio/postal.ts), the CAN-SPAM address every
-// commercial Frequency footer prints (LIVE-728, ADR-1663).
-function escapeCampaignHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-/** Exported for the event broadcast action (the event hub's Email channel rides this same
- *  campaign render + send seam, so a campaign body looks identical whichever surface sent it). */
-export function renderCampaignHtml(body: string, footerHtml: string = ''): string {
-  const paras = body
-    .split(/\n{2,}/)
-    .map(
-      (p) =>
-        `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeCampaignHtml(p).replace(/\n/g, '<br/>')}</p>`,
-    )
-    .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>${footerHtml}<p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
-}
+// The plain-text body's render lives in lib/spaces/campaign-html.ts (EMAIL-024): the Studio shell wearing the
+// Space's brand, the per-Space unsubscribe placeholder the send seam swaps per recipient, the CAN-SPAM postal
+// line. Re-exported for the event broadcast action, which rides this same render + send seam.
+export { renderCampaignHtml } from '@/lib/spaces/campaign-html'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -446,10 +430,16 @@ export async function sendSpaceCampaign(
   // off), the per-Space daily cap, suppression filtering, the per-recipient RFC 8058 one-click
   // unsubscribe, and the outreach_sends ledger. The body's SPACE_UNSUBSCRIBE_PLACEHOLDER is swapped
   // for each recipient's own unsubscribe URL inside the seam.
+  // The body wears the Space's brand (its palette, wordmark and logo) and, on a free plan, the quiet
+  // "Sent with Frequency" line (EMAIL-024).
+  const sender = await getSpaceById(spaceId)
   const res = await sendViaSeam(spaceId, {
     campaignId: id,
     subject: existing.subject,
-    html: renderCampaignHtml(existing.body ?? '', frequencyFooterHtml((await getSpaceById(spaceId))?.plan)),
+    html: renderBrandedCampaignHtml(existing.body ?? '', {
+      brand: sender ? spaceEmailBrand(sender) : undefined,
+      sentWithFrequency: campaignCarriesFrequencyFooter(sender?.plan),
+    }),
     topic,
     recipients,
   })

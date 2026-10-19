@@ -208,7 +208,7 @@ function breakEvenCaption(keep: string): string {
  *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
  *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
+  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} One price, and the fee is only on the customers we introduce.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
@@ -526,15 +526,15 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your community page, your Circles, and your memberships, ready in a few minutes. Free to start, always.' },
       { title: 'Bring your people in.', body: 'Import your list or share your Frequency card. Everyone lands in Contacts.' },
-      { title: 'Open your Circles.', body: 'Run Circles and Runs, and let the right members find each other. Paid memberships open on Business.' },
+      { title: 'Open your Circles.', body: 'Run standing Circles and multi-week programs, and let the right members find each other. Paid memberships open on Business.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
   features: [
     {
       icon: 'contact',
-      title: 'Circles, Runs, and memberships, in one place.',
-      body: "Host standing Circles and Runs, add paid memberships with recurring billing on Business, and keep a member list that knows who's who.",
+      title: 'Circles, programs, and memberships, in one place.',
+      body: "Host standing Circles and programs, add paid memberships with recurring billing on Business, and keep a member list that knows who's who.",
     },
     {
       icon: 'spark',
@@ -601,16 +601,16 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   archetypes: ['network_steward'],
   nonprofit: true,
   hero: {
-    eyebrow: 'For nonprofits and 501(c)(3) organizations',
+    eyebrow: 'For Non Profits and 501(c)(3) organizations',
     h1: 'Raise more. We take no cut.',
-    seoTitle: 'Donations + supporter software for nonprofits',
+    seoTitle: 'Donations + supporter software for Non Profits',
     subhead:
       'Donations, supporters, and your programs, together in one place. Frequency holds your supporters, so giving repeats and the word travels to the next donor. Start free.',
     microcopy: 'No card. You pay when you start charging.',
     trustLine: 'No network fee on what you raise, plus card processing.',
   },
   metaDescription:
-    'Frequency gives nonprofits donations, a supporter CRM, and program enrollment in one place, with no take-rate on what you raise. Free to start, no card.',
+    'Frequency gives Non Profits donations, a supporter list, and program enrollment in one place, with no network fee on what you raise. Free to start, no card.',
   problem: {
     header: 'The mission is clear. The tools take a cut and a toll.',
     body: 'Donations run through one processor, supporters live in a spreadsheet, and program sign-ups in a form. Every tool takes a fee, and the recurring donor who lapsed slips by unnoticed. The money and the hours belong with the mission, not the software.',

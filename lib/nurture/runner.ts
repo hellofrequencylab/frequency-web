@@ -10,8 +10,7 @@ import { isSuppressed } from '@/lib/suppression'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
 import { parseEmailRenderLayout, type EmailRenderLayout } from '@/lib/email-studio/render-layout'
-import { compileEmailDoc } from '@/lib/email-studio/shell'
-import { postalFooterHtml } from '@/lib/email-studio/postal'
+import { compileEmailDoc, plainTextEmail } from '@/lib/email-studio/shell'
 import { applyMergeTags } from '@/lib/email-studio/render'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 
@@ -37,10 +36,9 @@ interface NurtureRunResult {
   cancelled: number
 }
 
-// Same lightweight template as the automations email, with a lead-flavoured footer.
-function renderEmail(body: string, unsubscribeUrl: string): string {
-  const safe = body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this because you signed up at Frequency. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+/** A plain-body step as a branded Frequency email with the lead unsubscribe footer (EMAIL-024). */
+function renderPlainStep(body: string, unsubscribeUrl: string): { html: string; text: string } {
+  return plainTextEmail(body, { unsubscribeUrl, audienceLine: 'You are receiving this because you signed up at Frequency.' })
 }
 
 function toStep(r: StepRow): NurtureStep {
@@ -196,11 +194,7 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     const block = blockByStepId.get(step.id) ?? null
     const message = block
       ? renderBlockStep(block, step.subject, mergeVarsFor(contact.display_name, e.email), unsubscribeUrl)
-      : {
-          subject: step.subject,
-          html: renderEmail(step.body, unsubscribeUrl),
-          text: `${step.body}\n\nUnsubscribe: ${unsubscribeUrl}`,
-        }
+      : { subject: step.subject, ...renderPlainStep(step.body, unsubscribeUrl) }
     // A drip step is BULK mail: scheduled marketing to a list, not a message someone is waiting
     // on. The lane keeps it behind transactional sends when the daily quota is tight (LIVE-091).
     await enqueueEmail(

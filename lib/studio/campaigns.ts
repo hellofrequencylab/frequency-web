@@ -12,7 +12,7 @@ import {
   type PlaceType,
 } from '@/lib/messaging/place-tree'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
-import { postalFooterHtml, PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
+import { plainTextEmail } from '@/lib/email-studio/shell'
 
 /** A built-in audience, a trait segment (`seg:<slug>`), a place-tree selector
  *  (`circle:<id>` / `hub:<id>` / `nexus:<id>`, CRM Phase 5), an event RSVP audience
@@ -304,20 +304,7 @@ export async function listCampaigns(limit = 50): Promise<CampaignRow[]> {
   }))
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-/** Wrap a plain-text campaign body in a minimal email + unsubscribe footer. */
+/** A plain-text campaign body as a branded Frequency email with the unsubscribe footer (EMAIL-024). */
 export function campaignEmail(body: string, unsubscribeUrl: string): { html: string; text: string } {
-  const paras = body
-    .split(/\n{2,}/)
-    .map(
-      (p) =>
-        `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
-    )
-    .join('')
-  const html = `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
-  const text = `${body}\n\n---\nUnsubscribe: ${unsubscribeUrl}\n${PLATFORM_POSTAL_LINE}`
-  return { html, text }
+  return plainTextEmail(body, { unsubscribeUrl, audienceLine: 'You are receiving this as a Frequency member.' })
 }

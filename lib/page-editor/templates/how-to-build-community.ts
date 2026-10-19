@@ -236,7 +236,7 @@ export const spec: ArticleSpec = {
         eyebrow: 'The rails',
         title: 'What do I do if I have never run a group before?',
         kicker: 'You set out the chairs. The format does the rest.',
-        body: 'You do not start from a blank page. A Circle on Frequency comes with the rails: a format, a first-night script, a standing rhythm, and backup when you need it. The Circle runs the same shape each time, so the host is never improvising the night.\n\nYou do not need to be a natural leader. You need to set out the chairs and be the reason your people have somewhere to go. When you want the tooling that carries the admin, the [community builder toolkit](/tools-for-community-builders) is the whole kit in one place.',
+        body: 'You do not start from a blank page. A Circle on Frequency comes with the rails: a format, a first-night script, a standing rhythm, and backup when you need it. The Circle runs the same shape each time, so the host is never improvising the night.\n\nYou do not need to be a natural leader. You need to set out the chairs and be the reason your people have somewhere to go. When you want the tooling that carries the admin, a free [Space](/spaces) holds the whole kit in one place.',
         side: 'right',
         ctaLabel: 'Or start a Circle with the format built in',
         ctaHref: '/how-to-start-a-circle',
@@ -246,12 +246,21 @@ export const spec: ArticleSpec = {
       question: 'Do I have to do this alone?',
       answer:
         'No, and you should not. You step up exactly as far as you want, and every rung has the one above it for backup.',
-      body: 'The path goes Member, then Host, then Guide, then Mentor. You show up to a Circle as a Member, and learn the format by being in the room. You hold one Circle as a Host, with the script and the backup handed to you. A Guide looks after the Hosts nearby, so nobody runs a room alone, and a Mentor keeps the Guides steady across a whole local community. Take whichever rung feels right, and step back any time.\n\nThat is the point of the structure: it is leaderful, not leader-dependent. Take any one person out and it keeps running, because the people and the rhythm were the thing all along. Frequency is built to support every community effort and help everyone in it succeed together, so the rails are shared, not something you assemble alone.',
+      body: 'You show up to a Circle as a member and learn the format by being in the room. Then you hold one Circle yourself, with the script and the backup handed to you. Later, if you want to, you help the next person hold theirs, so nobody runs a room alone. Take whichever step feels right, and step back any time.\n\nThat is the point of the structure: it is leaderful, not leader-dependent. Take any one person out and it keeps running, because the people and the rhythm were the thing all along. Frequency is built to support every community effort and help everyone in it succeed together, so the rails are shared, not something you assemble alone.',
       beat: {
         kind: 'statement',
         text: 'Groups do not die from low numbers. They die from chaos and burnout.',
         accent: 'They die from chaos and burnout.',
       },
+    },
+    // The four jobs, absorbed from the retired /tools-for-community-builders page (SCAN-1017): the
+    // reader who searches "how to build community" is the one who needs this list, in plain nouns.
+    {
+      question: 'What tools does a community builder need?',
+      answer:
+        'Four things: a way in so new people can find you, a place to gather on a rhythm, a way to stay in touch between meetings, and a little recognition so people feel seen and come back. Everything else is optional.',
+      body: 'Most builders end up with a chat app, a calendar, a spreadsheet of members and a payment link that none of them talk to, then spend their energy being the glue. A public page is the tool most communities skip, and it is why they stall at the same twelve people: a private group chat has no way in for a stranger. On Frequency the four jobs live in one free Space: a page in Discover that the neighbors who care about the same thing can find, Circles and Events on the calendar your town reads, a message to everyone who came, and check-in at the door that notices the regulars. One place, one login, one room.',
+      links: [{ label: 'Open your Space', href: '/spaces', variant: 'secondary' }],
     },
     {
       question: 'Where do I start?',
@@ -275,10 +284,6 @@ export const spec: ArticleSpec = {
       a: 'Start with one small Circle, not a whole community. Pick something you already care about, name a standing day and place, and invite a few people near you. You do not need a plan for everything. You need one regular night and a format you can run without inventing it. Frequency hands you that format, the first-night script, and a person to call.',
     },
     {
-      q: 'How many people do I need to start?',
-      a: 'You can start with three or four. Small is a feature, not a failure: a handful of people who keep coming back beats a big launch that never meets again. A small room that fills feels warm; a big one that half-empties feels like a flop even when good people came. Protect the rhythm at small numbers and the group fills in over time.',
-    },
-    {
       q: 'How do I host a recurring gathering?',
       a: 'Pick a cadence you can keep, lock the same time and spot, write a simple run-of-show, and send a reminder before every meeting. A recurring gathering is a logistics job, not a charisma job. Get the time fixed, the format repeatable, and the reminder automatic, and the event keeps happening whether or not any single night is magical.',
     },
@@ -299,8 +304,8 @@ export const spec: ArticleSpec = {
       a: 'No. A living room, a park, a hall, a cafe corner, or a video call all work. Most community spaces run in a room someone borrows. What makes it a community space is the standing rhythm and the regulars, not the lease. Start with a time and a spot you can keep getting, and worry about walls much later, if ever.',
     },
     {
-      q: 'What tools do I need to keep a group going?',
-      a: 'Enough to hold the rhythm without it living in your head: a place people can see when you meet, a reminder that goes out every time, a way to message the group, and a simple record of who comes. Frequency bundles these into a Space so you are not stitching together four apps to run one room.',
+      q: 'What tools do community builders need?',
+      a: 'Four things: a way in so new people can find and join you, a place to gather on a rhythm, a way to stay in touch between meetings, and a little recognition so people feel seen and come back. Frequency bundles these into one free Space so you are not stitching together four apps to run one room.',
     },
     {
       q: 'What if I host something and nobody comes back?',
@@ -308,7 +313,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'Do I have to do this alone?',
-      a: 'No. On Frequency you host one Circle on a path that goes Member, Host, Guide, Mentor, and every rung has the one above it for backup. You hold the room; a Guide looks after the Hosts nearby. You bring the people and the willingness to show up, and the structure carries the rest.',
+      a: 'No. On Frequency you host one Circle with the format and the first-night script handed to you, and someone who has done it before to call. You hold the room and bring the willingness to show up, and the structure carries the rest.',
     },
     {
       q: 'How do I keep a community group going long-term?',

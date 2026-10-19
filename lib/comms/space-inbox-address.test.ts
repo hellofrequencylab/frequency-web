@@ -23,6 +23,7 @@ const state = vi.hoisted(() => ({
   listRows: [] as Record<string, unknown>[],
   listCalls: [] as Record<string, unknown>[],
   listFails: false,
+  writeCount: 0,
 }))
 const RECORDS = [
   { record: 'Receiving', type: 'MX', name: '@', value: 'inbound-smtp.resend.com', priority: 10, ttl: 'Auto', status: 'pending' },
@@ -42,9 +43,17 @@ const providerRecords = () => state.records ?? RECORDS
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name: string) => {
   const filter: Record<string, unknown> = {}; let insert: Record<string, unknown> | null = null; let upsert: Record<string, unknown> | null = null; let update: Record<string, unknown> | null = null
   const q = {
-    select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: (n: number) => { state.listCalls.push({ limit: n }); return q },
+    select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; if (k === 'state') state.listCalls.push({ eq: [k, v] }); return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: (n: number) => { state.listCalls.push({ limit: n }); return q },
+    gte: (k: string, v: unknown) => { filter[`${k}_gte`] = v; state.listCalls.push({ gte: [k, v] }); return q },
     or: (f: string) => { state.listCalls.push({ or: f }); return q }, order: (k: string, o: Record<string, unknown>) => { state.listCalls.push({ order: `${k} ${JSON.stringify(o)}` }); return q },
-    then: (resolve: (v: { data: unknown; error: unknown }) => unknown) => Promise.resolve(resolve(state.listFails ? { data: null, error: { message: 'list down' } } : { data: state.listRows, error: null })),
+    then: (resolve: (v: { data: unknown; error: unknown }) => unknown) => {
+      if (state.listFails) return Promise.resolve(resolve({ data: null, error: { message: 'list down' } }))
+      let rows = state.listRows
+      if (filter.state) rows = rows.filter((row) => row.state === filter.state)
+      const since = filter.updated_at_gte
+      if (typeof since === 'string') rows = rows.filter((row) => String(row.updated_at ?? '') >= since)
+      return Promise.resolve(resolve({ data: rows, error: null }))
+    },
     insert: (v: Record<string, unknown>) => { insert = v; return q }, update: (v: Record<string, unknown>) => { update = v; return q }, upsert: (v: Record<string, unknown>) => { upsert = v; return q },
     single: async () => {
       if (name === 'space_inbox_addresses') {
@@ -54,9 +63,11 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
         if (upsert && !('domain' in upsert)) return { data: null, error: { code: '23502', message: 'null value in column "domain" of relation "space_inbox_addresses" violates not-null constraint' } }
         if (update && !upsert) {
           if (!state.row || state.row.space_id !== filter.space_id) return { data: null, error: { code: 'PGRST116', message: 'no row' } }
+          state.writeCount += 1
           state.row = { ...state.row, ...update }
           return { data: state.row, error: null }
         }
+        state.writeCount += 1
         state.row = { id: 'row1', local_part: 'hello', verified_at: null, dns_records: [], ...state.row, ...upsert }
         return { data: state.row, error: null }
       }
@@ -95,7 +106,7 @@ import { providerRecordHost, providerRecordsToZoneRecords, spaceInboxZone } from
 beforeEach(() => {
   state.row = null; state.contacts = []; state.contactAllowed = true; state.triggers = []; state.createCount = 0; state.listed = null; state.providerStatus = 'verified'; state.providerThrows = false
   state.dnsOk = true; state.dnsCalls = []; state.upsertFails = false; state.notifications = []; state.opened = []; state.seenMessages = {}; state.appended = []; state.appendResult = { id: 'msg1' }; state.records = null
-  state.listRows = []; state.listCalls = []; state.listFails = false
+  state.listRows = []; state.listCalls = []; state.listFails = false; state.writeCount = 0
   state.space = { id: 's1', slug: 'labs', name: 'Labs', brand_name: 'Labs Collective', owner_profile_id: 'owner1' }
   vi.stubEnv('SPACE_INBOX_ADDRESSES_ENABLED', '1'); vi.stubEnv('SPACE_EMAIL_INBOX_ROOT', 'frequencylocal.com')
 })
@@ -223,20 +234,70 @@ describe('checkSpaceInboxAddress', () => {
     await provisionSpaceInboxAddress('s1'); state.providerThrows = true
     expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: false })
   })
+  it('does not restamp updated_at when a failed row is still failed (SCAN-1011)', async () => {
+    state.providerStatus = 'failed'
+    await provisionSpaceInboxAddress('s1')
+    const firstUpdated = state.row?.updated_at
+    const writesAfterProvision = state.writeCount
+    expect(firstUpdated).toBeTruthy()
+    expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: true, state: 'failed' })
+    expect(state.row?.updated_at).toBe(firstUpdated)
+    expect(state.writeCount).toBe(writesAfterProvision)
+  })
+  it('still writes when a failed row becomes verified', async () => {
+    state.providerStatus = 'failed'
+    await provisionSpaceInboxAddress('s1')
+    const writesAfterProvision = state.writeCount
+    state.providerStatus = 'verified'
+    expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: true, state: 'verified' })
+    expect(state.writeCount).toBeGreaterThan(writesAfterProvision)
+    expect(state.row?.verified_at).toBeTruthy()
+  })
+})
+
+describe('provisionSpaceInboxAddress failure clock (SCAN-1011)', () => {
+  it('does not restamp an already-failed row on a cron retry, and the owner button does', async () => {
+    state.providerStatus = 'failed'
+    await provisionSpaceInboxAddress('s1')
+    const firstUpdated = state.row?.updated_at
+    const writesAfterFirst = state.writeCount
+    await provisionSpaceInboxAddress('s1')
+    expect(state.row?.updated_at).toBe(firstUpdated)
+    expect(state.writeCount).toBe(writesAfterFirst)
+    await provisionSpaceInboxAddress('s1', { restartFailureWindow: true })
+    expect(state.writeCount).toBeGreaterThan(writesAfterFirst)
+  })
 })
 
 describe('listSpaceInboxAddressesToFinish', () => {
-  it('asks for pending rows and recent failures, oldest first, within the limit, and throws on a read fault', async () => {
-    state.listRows = [{ id: 'r1', space_id: 's1', state: 'pending', dns_written_at: null }]
+  it('asks for pending rows first, then recent failures, oldest first, within the limit, and throws on a read fault', async () => {
+    state.listRows = [
+      { id: 'r-fail', space_id: 's-fail', state: 'failed', updated_at: '2026-10-12T13:00:00.000Z' },
+      { id: 'r1', space_id: 's1', state: 'pending', dns_written_at: null, updated_at: '2026-10-12T14:00:00.000Z' },
+      { id: 'r-old', space_id: 's-old', state: 'failed', updated_at: '2026-10-01T00:00:00.000Z' },
+    ]
     const rows = await listSpaceInboxAddressesToFinish({ limit: 25, failedSince: '2026-10-12T12:00:00.000Z' })
-    expect(rows).toEqual([expect.objectContaining({ space_id: 's1' })])
+    expect(rows.map((row) => row.space_id)).toEqual(['s1', 's-fail'])
     expect(state.listCalls).toEqual([
-      { or: 'state.eq.pending,and(state.eq.failed,updated_at.gte.2026-10-12T12:00:00.000Z)' },
+      { eq: ['state', 'pending'] },
       { order: 'updated_at {"ascending":true}' },
       { limit: 25 },
+      { eq: ['state', 'failed'] },
+      { gte: ['updated_at', '2026-10-12T12:00:00.000Z'] },
+      { order: 'updated_at {"ascending":true}' },
+      { limit: 24 },
     ])
     state.listFails = true
     await expect(listSpaceInboxAddressesToFinish({ limit: 25, failedSince: '2026-10-12T12:00:00.000Z' })).rejects.toThrow('list down')
+  })
+  it('does not fetch failed rows when pending already fills the budget', async () => {
+    state.listRows = [
+      { id: 'p1', space_id: 'p1', state: 'pending', updated_at: '2026-10-12T14:00:00.000Z' },
+      { id: 'f1', space_id: 'f1', state: 'failed', updated_at: '2026-10-12T13:00:00.000Z' },
+    ]
+    const rows = await listSpaceInboxAddressesToFinish({ limit: 1, failedSince: '2026-10-12T12:00:00.000Z' })
+    expect(rows.map((row) => row.space_id)).toEqual(['p1'])
+    expect(state.listCalls.some((call) => 'gte' in call)).toBe(false)
   })
 })
 
