@@ -688,14 +688,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 309,
+      "baseline": 308,
       "frozen": {
-        "at": "2026-10-13",
-        "value": 309,
+        "at": "2026-10-19",
+        "value": 308,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-button-bg sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 402
+        "reason": "LIVE-993 removed the operator-seat editor and picker from the Space billing page",
+        "from": 309
       },
       "history": [
         {
@@ -879,6 +879,13 @@
           "to": 309,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): raw-button-bg sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-19",
+          "from": 309,
+          "to": 308,
+          "direction": "lowered",
+          "reason": "LIVE-993 removed the operator-seat editor and picker from the Space billing page"
         }
       ]
     },
