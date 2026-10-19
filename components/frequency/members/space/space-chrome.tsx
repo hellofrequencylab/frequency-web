@@ -3,9 +3,10 @@ import type { ReactNode } from 'react'
 import '@/app/themes/active/kit-members'
 import '@/app/themes/active/space-page'
 
-// THE SPACE PAGE, FREQUENCY CHROME (ADR-1737). Space pages have no design reference, so this is the
-// entity grammar of templates/members/Circle.html and Event.html applied to a Space: a cover CARD with
-// the identity and the actions on it, the kit's underline tab row, then the page body. Both Space trees
+// THE SPACE PAGE, FREQUENCY CHROME (ADR-1737; LIVE-1029). The default Header size is DAWN's layout, the one
+// the owner asked back (2026-10-19): a clean cover band, the logo chip hanging off it, one identity row under
+// it with the buttons at the right. The Hero size keeps the identity on the photo as a cover CARD
+// (templates/members/Circle.html and Event.html), then the kit's underline tab row, then the page body. Both Space trees
 // render it: the member profile's (profile) layout and the signed-out share page. Every read and gate
 // stays with the caller; this file only places what it is handed.
 //
@@ -34,6 +35,7 @@ export function FqSpaceChrome({
   eyebrow,
   name,
   badges,
+  coverBadge,
   tagline,
   actions,
   nav,
@@ -54,8 +56,10 @@ export function FqSpaceChrome({
   /** The owner's optional kicker above the name. */
   eyebrow?: string | null
   name: string
-  /** The Founding Business and Boosted marks. */
+  /** The Founding Business and Boosted marks, beside the name. */
   badges?: ReactNode
+  /** Marks drawn inside the cover photo's top-left corner (Header size only; the Hero size uses `badges`). */
+  coverBadge?: ReactNode
   /** The tagline, or the owner's "add a tagline" prompt. */
   tagline?: ReactNode
   /** The cover's buttons: the primary action, QR and Connect, the owner's Edit. */
@@ -70,6 +74,21 @@ export function FqSpaceChrome({
   aside?: ReactNode
   children: ReactNode
 }) {
+  // The name block: shared by both sizes. On the Hero size the logo chip leads it; on the Header size the
+  // chip hangs off the cover instead.
+  const identity = (
+    <div className="fqs-id">
+      {tall && logo}
+      <div className="stack">
+        {eyebrow && <span className="fqs-k">{eyebrow}</span>}
+        {/* header-ok: the cover IS this route group's header, so the chrome owns the page's one h1
+            (the precedent the DAWN profile layout and DetailTemplate's `band` slot follow). */}
+        <h1 className="h1">{name}</h1>
+        {badges}
+        {tagline}
+      </div>
+    </div>
+  )
   const pane = (
     <div className="fqs-pane" data-space-page="">
       {children}
@@ -82,25 +101,37 @@ export function FqSpaceChrome({
           ← {back.label}
         </Link>
       )}
-      <section
-        className={tall ? 'ph fqs-hero tall' : 'ph fqs-hero'}
-        style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
-      >
-        <div className="fqs-hero-in">
-          <div className="fqs-id">
-            {logo}
-            <div className="stack">
-              {eyebrow && <span className="fqs-k">{eyebrow}</span>}
-              {/* header-ok: the cover IS this route group's header, so the chrome owns the page's one h1
-                  (the precedent the DAWN profile layout and DetailTemplate's `band` slot follow). */}
-              <h1 className="h1">{name}</h1>
-              {badges}
-              {tagline}
-            </div>
+      {tall ? (
+        // HERO SIZE: the identity sits on the photo, over the scrim.
+        <section
+          className="ph fqs-hero tall"
+          style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
+        >
+          <div className="fqs-hero-in">
+            {identity}
+            {actions && <div className="fqs-acts">{actions}</div>}
           </div>
-          {actions && <div className="fqs-acts">{actions}</div>}
-        </div>
-      </section>
+        </section>
+      ) : (
+        // HEADER SIZE (the default, DAWN's grammar): a clean cover band, the logo hanging off its bottom
+        // edge, then one identity row on the page ground with the buttons at its right.
+        <>
+          <div className="fqs-cover">
+            <div
+              className="fqs-cover-img"
+              role="img"
+              aria-label=""
+              style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
+            />
+            {coverBadge && <div className="fqs-cover-badge">{coverBadge}</div>}
+            {logo && <div className="fqs-cover-logo">{logo}</div>}
+          </div>
+          <div className={logo ? 'fqs-ident has-logo' : 'fqs-ident'}>
+            {identity}
+            {actions && <div className="fqs-acts">{actions}</div>}
+          </div>
+        </>
+      )}
       {nav}
       <div className="fqs-notices">{notices}</div>
       {aside ? (
