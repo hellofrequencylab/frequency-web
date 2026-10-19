@@ -701,16 +701,30 @@ Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production
 
 **Turn it off.** Unset. New member replies stop being forwarded. Issued house addresses still route.
 
-### SMS provisioning (ADR-256)
+### Regulars (LIVE-940, ADR-1780)
 
-`SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `SMS_A2P_BRAND_ID`, `SMS_A2P_CAMPAIGN_ID` and `TWILIO_MESSAGING_SERVICE_SID`. Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md).
+`LOYALTY_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`). Off, a Space check-in records as it always has but writes no stamp and pays no `space_checkin` Zaps, and the owner's Check-in panel says Regulars is not open. The program and its tables ship dark so owners can be set up before launch.
 
 **Gate before turning it on**, in order. All **owner** unless tagged.
 
-1. Brand and campaign approved in Twilio (A2P-REGISTRATION §3–§4). Carrier review is 10 to 15 days. Do not set the switch to try a send.
-2. Migration `20260626010000` applied (`sms_consent` exists). **agent** can confirm with a read of `pg_tables`.
-3. The four provisioning vars plus `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` set in Vercel Production. `/admin/sms` shows presence of the four, never the values.
-4. The platform `sms_enabled` switch at `/admin/sms` stays off until a consented test send is ready.
+1. Migration `20270346010200` applied (`space_loyalty_programs`, `loyalty_stamps`, `loyalty_rewards`, `loyalty_record_visit`). **agent** confirms from `pg_tables` and `pg_proc`.
+2. `zap_config` holds `space_checkin` at 25 with `daily_cap` 75 (the migration seeds it; `/admin/gamification` shows it).
+3. One staff Space with a map pin and a Business plan has saved a program ON, and a staff member has checked in at its door code twice on two days: the second check-in shows two stamps and 25 Zaps once a day.
+4. The NFC tag at that door carries the same signed link as the QR and opens the check-in on an iPhone and an Android phone.
+
+Then set `LOYALTY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset it. Earned rewards stay readable on `/rewards` and in the owner roster; nothing is deleted.
+
+### SMS provisioning (ADR-256)
+
+`SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `TWILIO_MESSAGING_SERVICE_SID` and one carrier registration: either `SMS_A2P_BRAND_ID` + `SMS_A2P_CAMPAIGN_ID` (A2P 10DLC) or `SMS_TOLLFREE_VERIFICATION_SID` (a verified toll-free number, ADR-1790). Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md) (§8 is the toll-free path).
+
+**Gate before turning it on**, in order. All **owner** unless tagged.
+
+1. The registration approved in Twilio: a 10DLC brand and campaign (A2P-REGISTRATION §3–§4, 10 to 15 days) or a toll-free verification (§8, usually one to three weeks). Do not set the switch to try a send.
+2. Migration `20260626010000` applied (`sms_consent` exists; applied in production 2026-10-19). **agent** can confirm with a read of `pg_tables`.
+3. The switch, the registration id(s) and `TWILIO_MESSAGING_SERVICE_SID`, plus `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`, set in Vercel Production. `/admin/sms` shows presence of each, never the values.
+4. The Messaging Service's inbound webhook points at `https://frequencylocal.com/api/webhooks/twilio` (STOP writes the global opt-out, START lifts it) and its status callback at the same URL.
+5. The platform `sms_enabled` switch at `/admin/sms` stays off until a consented test send is ready.
 
 Then set `SMS_PROVISIONING_ENABLED` to `1`, `true` or `on` and redeploy. The first send is a consented test to a staff number. TCPA statutory damages are $500 to $1,500 per unconsented US text; this switch is the legal lock, not a feature flag.
 

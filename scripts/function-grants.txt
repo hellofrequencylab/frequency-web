@@ -108,6 +108,7 @@ circle_templates_touch_updated_at    public
 circles_near                         public
 circles_space_primary_guard          internal
 claim_founder_flags                  internal
+claim_loyalty_reward                 internal
 claim_guest_rsvps                    authenticated
 claim_guest_tickets                  authenticated
 claim_guest_orders                   authenticated
@@ -146,6 +147,7 @@ friendships_freeze_identity          internal
 funnel_rollup                        authenticated
 get_my_group_ids                     internal
 gift_gems_atomic                     internal
+guard_circle_draft_status            internal
 guard_event_rsvp_member_write        internal
 handle_is_available                  public
 handle_new_auth_user                 internal
@@ -320,3 +322,4 @@ invalidate_collective_partners internal
 validate_collective_partner internal
 add_network_central_admin internal
 clear_network_tools_on_space_change internal
+loyalty_record_visit internal

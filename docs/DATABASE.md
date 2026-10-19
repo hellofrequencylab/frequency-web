@@ -207,7 +207,7 @@ ADR-201)
 > client RLS policies), like `contacts` / `qr_codes`.
 
 **Partners & captures (in-person earning)**
-`partners`, `partner_offers`, `partner_redemptions`, `nodes`, `captures`
+`partners`, `partner_offers`, `partner_redemptions`, `nodes`, `captures`. A loyalty-card claim is `claim_loyalty_reward` (SCAN-841, ADR-1766): service-role, advisory-locked per (member, card), so two taps cannot both insert.
 
 **Engagement & intelligence (PI.1 to PI.5)**
 `engagement_events` (semantic), `interaction_events` (wide firehose, 90-day purge),
@@ -491,7 +491,7 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | `spaces.type` | `root`, `practitioner`, `business`, `organization`, `coaching`, `event_space`, `lab`, `partner` (`text` + CHECK; the role axis that selects a profile blueprint, ADR-323; `event_space` added in migration `20260711040000_spaces_type_event_space.sql`, ADR-325) |
 | `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026, see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
-| `group_status` | `forming`, `active`, `inactive`, `archived` |
+| `group_status` | `draft`, `forming`, `active`, `inactive`, `archived` (`draft` added in `20260803000000`; a caller-role UPDATE may not leave `draft`, `20270346009900` / SCAN-848) |
 | `channel_content_type` | `group`, `event`, `thread` |
 | dispatch type | `post`, `poll`, `challenge`, `article` |
 | recurrence type | `none`, `daily`, `weekly`, `monthly` |
@@ -504,6 +504,9 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
   See [ARCHITECTURE.md](ARCHITECTURE.md#authorization-model--read-this-first).
 - **Role escalation:** trigger `prevent_role_self_escalation` blocks
   `profiles.community_role` changes except by the service role.
+- **Circle publish:** trigger `guard_circle_draft_status` refuses a caller-role
+  UPDATE that leaves `circles.status = 'draft'`. Publish goes through the admin
+  client (`publishCircle`). Session-client edits that stay on draft still land.
 - **Soft-hide:** posts/dispatches use `hidden_at` / `hidden_by`. Member-facing
   list queries MUST filter `.is('hidden_at', null)`; admin views intentionally
   don't.

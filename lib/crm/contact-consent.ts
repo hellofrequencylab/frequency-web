@@ -208,3 +208,51 @@ export async function recordGlobalStop(input: GlobalStopInput): Promise<GlobalSt
 
   return result
 }
+
+// ── SMS START — the carrier re-subscribe keyword (ADR-1790) ───────────────────────────────────────
+
+interface SmsRestartInput {
+  /** The phone that texted START / UNSTOP (E.164, as Twilio delivers it). */
+  phone: string
+  /** Where it came from (audit), e.g. 'sms_webhook'. */
+  source?: string
+}
+
+/**
+ * Record a re-subscribe for a phone that texted START. A member who opted out keeps their
+ * verified number on the ledger, so START appends a fresh `opted_in` row for every member whose
+ * LATEST row on that phone is `opted_out`. Anyone never opted in on the phone stays as they are:
+ * START is not consent, it only lifts a STOP, so a member who was `pending_verification` has to
+ * finish verifying in Settings. Idempotent (a member already opted in gets no new row).
+ * Fail-safe: any read or write error returns 0.
+ */
+export async function recordSmsRestart(input: SmsRestartInput): Promise<number> {
+  const phone = input.phone.trim()
+  if (!phone) return 0
+  try {
+    const db = createAdminClient()
+    const { data } = await db
+      .from('sms_consent')
+      .select('profile_id, status, created_at')
+      .eq('phone', phone)
+      .order('created_at', { ascending: false })
+    const latest = new Map<string, string>()
+    for (const row of data ?? []) {
+      if (row.profile_id && !latest.has(row.profile_id)) latest.set(row.profile_id, row.status)
+    }
+    const profileIds = [...latest.entries()].filter(([, status]) => status === 'opted_out').map(([id]) => id)
+    if (profileIds.length === 0) return 0
+    const { error } = await db.from('sms_consent').insert(
+      profileIds.map((profileId) => ({
+        profile_id: profileId,
+        phone,
+        status: 'opted_in',
+        source: input.source ?? 'sms_start',
+        note: 'start_reply',
+      })),
+    )
+    return error ? 0 : profileIds.length
+  } catch {
+    return 0
+  }
+}
