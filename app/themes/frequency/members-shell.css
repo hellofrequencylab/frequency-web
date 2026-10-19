@@ -880,8 +880,8 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 
 /* SCAN-938: one compact phone header. Owner ruling 2026-10-19, from the before/after render: keep the
    144px wordmark, draw the account button as the iridescent circle WITH the member's initials over it (a
-   photo, when there is one, replaces both), and keep the first bar's raised Zap orb, lifted 6px further so
-   it no longer sits on its own label. Below 380px the wordmark and the controls step down a size again so
+   photo, when there is one, replaces both), and keep the first bar's raised Zap orb, a size smaller (48px) and
+   lifted so it clears its own label without towering over the bar (owner, after the first render: too big, too high). Below 380px the wordmark and the controls step down a size again so
    the four controls never slide under the account button (the 767px rules here used to outrank the 380px
    block above). */
 @layer components {
@@ -898,7 +898,8 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
   [data-design="frequency"] [data-kit="members"] .ap-hdr-r{flex:0 0 auto;padding:0;width:auto}
   [data-design="frequency"] [data-kit="members"] :is(.ap-hdr .ap-ic,.ap-hdr .ap-me,.ap-hdr .ap-search){width:44px;height:44px;min-width:44px}
   [data-design="frequency"] [data-kit="members"] .fqm-tabbar{height:68px}
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb{top:-22px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb{top:-14px;width:48px;height:48px;margin-left:-24px}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg{width:22px;height:22px}
 }
 @media (max-width:380px){
   [data-design="frequency"] [data-kit="members"] .ap-hdr-l{flex-basis:112px}
