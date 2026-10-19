@@ -1,9 +1,9 @@
-import { Check, ShieldCheck, Globe, Users, Network } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
 import { FOUNDING_RATE_NOTE } from '@/lib/pricing/beta'
-import { ChoosePlanButton } from './choose-plan'
+import { yearlyFromMonthly, type BillingInterval } from '@/lib/billing/pricing-keys'
+import { PlanLadderRungs, type LadderRung, type RungIcon } from './plan-ladder-rungs'
 
 // THE COMMUNITY COLLECTIVE plan ladder — the tier map on the Space billing surface, on the five-tier
 // ladder (ADR-1709). It shows where a Space sits and what each rung is for, leading with the promise
@@ -11,7 +11,9 @@ import { ChoosePlanButton } from './choose-plan'
 // in. The network fee is an introduction fee on the plans that sell, never a reason to take a plan.
 //
 // Business carries the inline Choose action for a FREE Space (gated on billingLive + its per-plan
-// switch) and keeps its richer CTA below (GoBusinessCta, with the seat picker). Collective is the rung
+// switch) and keeps its richer CTA below (GoBusinessCta, with the seat picker). The rows themselves are
+// drawn by PlanLadderRungs (client), which holds the Monthly / Yearly choice (LIVE-990): this file
+// resolves both intervals' prices on the server and hands them over as plain strings. Collective is the rung
 // above it for groups of groups: "Available" once its per-plan switch is on, else "Coming soon",
 // truthful, not a dark pattern. Prices come from the ONE placeholder map (feature-tiers), never
 // hardcoded here. Non Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain,
@@ -24,7 +26,7 @@ type RungState = 'current' | 'available' | 'soon' | 'verify'
 
 interface Rung {
   plan: SpacePlan
-  icon: typeof Check
+  icon: RungIcon
   blurb: string
   /** An optional secondary price note (e.g. the beta anchor). */
   note?: string
@@ -33,22 +35,22 @@ interface Rung {
 const RUNGS: Rung[] = [
   {
     plan: 'business',
-    icon: Check,
+    icon: 'check',
     blurb: 'Selling starts here: paid tickets, memberships, donations, your shop and booking deposits. Higher limits, your own website, two seats, and Collaborator hosting.',
   },
   {
     plan: 'collective',
-    icon: Users,
+    icon: 'users',
     blurb: 'For separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, more seats, and Vera AI included. Each partner keeps its own members and payouts.',
   },
   {
     plan: 'network',
-    icon: Network,
+    icon: 'network',
     blurb: 'One organization with chapters: ten chapters included, one membership that works in every chapter, central admins and a roll-up report.',
   },
   {
     plan: 'nonprofit',
-    icon: ShieldCheck,
+    icon: 'shield',
     blurb: 'Everything Business does, for verified 501(c)(3) organizations, with no network fee.',
   },
 ]
@@ -65,7 +67,7 @@ const RUNGS: Rung[] = [
 // blurb states what the Space has rather than selling it. Do not add it to RUNGS.
 const CURRENT_PLAN_ONLY_RUNG: Rung = {
   plan: 'independent',
-  icon: Globe,
+  icon: 'globe',
   blurb: 'Your own brand and domain, standalone. Outside the collective, on your existing agreement.',
 }
 
@@ -100,19 +102,53 @@ function rungState(
  *  authoritative. Collective had been patched around with a one-off beta constant; Business never was,
  *  which is exactly what an ad-hoc patch buys you. `spacePlanPriceCents` resolves through the same beta
  *  window the checkout does, so this rung and the marketing page cannot disagree again. */
-function priceLabel(plan: SpacePlan): string {
+function priceLabel(plan: SpacePlan, interval: BillingInterval = 'month'): string {
   const cents = spacePlanPriceCents(plan)
-  return cents > 0 ? `${formatCents(cents)}/mo` : 'Free'
+  if (cents <= 0) return 'Free'
+  return interval === 'year' ? `${formatCents(yearlyFromMonthly(cents))}/yr` : `${formatCents(cents)}/mo`
 }
 
 /** The Founding note for a rung currently charged under its list price, else null. Derived through the
  *  same predicate the checkout bills on (spacePlanPriceCents → foundingOpenForPlan), so a plan that is
  *  not actually discounted can never advertise a discount, and every discounted plan says so rather than
  *  only the one somebody remembered to hand-write a note for. */
-function foundingNote(plan: SpacePlan): string | null {
+function foundingNote(plan: SpacePlan, interval: BillingInterval = 'month'): string | null {
   const list = SPACE_PLAN_PRICE_CENTS[plan]?.listCents ?? 0
   const now = spacePlanPriceCents(plan)
-  return list > now ? `Founding ${formatCents(now)}/mo, list ${formatCents(list)}/mo. ${FOUNDING_RATE_NOTE}` : null
+  if (list <= now) return null
+  return interval === 'year'
+    ? `Founding ${formatCents(yearlyFromMonthly(now))}/yr, list ${formatCents(yearlyFromMonthly(list))}/yr. ${FOUNDING_RATE_NOTE}`
+    : `Founding ${formatCents(now)}/mo, list ${formatCents(list)}/mo. ${FOUNDING_RATE_NOTE}`
+}
+
+/** The plain rows PlanLadderRungs draws: every price and note resolved for BOTH intervals here, on the
+ *  server, so the client island never computes a price. PURE given its inputs. */
+export function ladderRungs(
+  rungs: Rung[],
+  currentPlan: SpacePlan,
+  sellable: Partial<Record<SpacePlan, boolean>>,
+  isFree: boolean,
+  hasSlug: boolean,
+): LadderRung[] {
+  return rungs.map((rung) => {
+    const state = rungState(rung.plan, currentPlan, sellable)
+    const choosable =
+      rung.plan === 'business' || rung.plan === 'collective' || rung.plan === 'network' ? rung.plan : null
+    const canChoose = isFree && hasSlug && !!choosable && !!sellable[choosable]
+    return {
+      plan: rung.plan,
+      icon: rung.icon,
+      label: SPACE_PLAN_LABEL[rung.plan],
+      blurb: rung.blurb,
+      price: { month: priceLabel(rung.plan, 'month'), year: priceLabel(rung.plan, 'year') },
+      note: {
+        month: rung.note ?? foundingNote(rung.plan, 'month'),
+        year: rung.note ?? foundingNote(rung.plan, 'year'),
+      },
+      chip: canChoose ? null : STATE_CHIP[state],
+      choose: canChoose ? choosable : null,
+    }
+  })
 }
 
 /**
@@ -150,52 +186,12 @@ export function PlanLadder({
         introduces, once.
       </p>
 
-      <ul className="mt-4 space-y-2.5">
-        {rungs.map((rung) => {
-          const state = rungState(rung.plan, currentPlan, sellable)
-          const chip = STATE_CHIP[state]
-          const Icon = rung.icon
-          // A FREE Space gets a one-click Choose on every sellable flat rung: Business, Collective
-          // (the Founding intro, OWN-096) and Network (SCAN-980). Non Profit routes through
-          // verification, not a direct buy; Independent is sold by hand and is never offered here
-          // (LIVE-227). Only a FREE Space: a paid Space already holds a subscription, and a second
-          // checkout would bill it twice.
-          const choosable =
-            rung.plan === 'business' || rung.plan === 'collective' || rung.plan === 'network' ? rung.plan : null
-          const canChoose = isFree && !!slug && !!choosable && !!sellable[choosable]
-          return (
-            <li
-              key={rung.plan}
-              className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated/40 px-4 py-3"
-            >
-              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-bg/40">
-                <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-body-sm font-bold text-text">{SPACE_PLAN_LABEL[rung.plan]}</span>
-                  <span className="text-body-sm font-semibold text-text">{priceLabel(rung.plan)}</span>
-                  {(rung.note ?? foundingNote(rung.plan)) && (
-                    <span className="text-2xs font-medium text-primary-strong">{rung.note ?? foundingNote(rung.plan)}</span>
-                  )}
-                </div>
-                <p className="mt-0.5 text-meta leading-relaxed text-muted">{rung.blurb}</p>
-              </div>
-              {canChoose ? (
-                <ChoosePlanButton
-                  slug={slug}
-                  plan={choosable ?? 'business'}
-                  label={`Choose ${SPACE_PLAN_LABEL[rung.plan]}`}
-                />
-              ) : (
-                <span className={`shrink-0 self-center rounded-md px-2 py-0.5 text-2xs font-bold uppercase tracking-wide ${chip.className}`}>
-                  {chip.label}
-                </span>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+      {/* The rows and the Monthly / Yearly switch (LIVE-990). A FREE Space gets a one-click Choose on
+          every sellable flat rung: Business, Collective (the Founding intro, OWN-096) and Network
+          (SCAN-980). Non Profit routes through verification, not a direct buy; Independent is sold by
+          hand and is never offered here (LIVE-227). Only a FREE Space: a paid Space already holds a
+          subscription, and a second checkout would bill it twice. */}
+      <PlanLadderRungs slug={slug} rungs={ladderRungs(rungs, currentPlan, sellable, isFree, !!slug)} />
     </section>
   )
 }
