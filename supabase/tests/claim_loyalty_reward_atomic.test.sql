@@ -1,4 +1,4 @@
--- pgTAP behavioural guard for claim_loyalty_reward (migration 20270346009600, SCAN-841):
+-- pgTAP behavioural guard for claim_loyalty_reward (migration 20270346010100, SCAN-841):
 -- a filled loyalty card is claimed once, even from two taps in the same sitting.
 --
 -- WHY THIS FILE EXISTS. The TypeScript side pins the WIRING (the action calls the RPC,

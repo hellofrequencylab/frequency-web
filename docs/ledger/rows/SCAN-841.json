@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-19 (ADR-1753). PREMISE RE-TESTED on main: claimLoyaltyReward still reads progress then inserts partner_redemptions with source loyalty, and 20270346002600 still adds only an index. Migration 20270346009600: claim_loyalty_reward takes pg_advisory_xact_lock per (member, card), re-checks visits since the last loyalty claim of this card, and inserts only when still earned. The action calls the RPC; a missing RPC fails closed. pgTAP: second claim of the same cycle is P0001 not_earned; a later cycle still claims; anon and authenticated cannot execute. Apply with execute_sql then schema_migrations at 20270346009600."
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1766). PREMISE RE-TESTED on main: claimLoyaltyReward still reads progress then inserts partner_redemptions with source loyalty, and 20270346002600 still adds only an index. Migration 20270346010100: claim_loyalty_reward takes pg_advisory_xact_lock per (member, card), re-checks visits since the last loyalty claim of this card, and inserts only when still earned. The action calls the RPC; a missing RPC fails closed. pgTAP: second claim of the same cycle is P0001 not_earned; a later cycle still claims; anon and authenticated cannot execute. Apply with execute_sql then schema_migrations at 20270346010100."
   }
 }

@@ -42,7 +42,7 @@ export async function claimLoyaltyReward(offerId: string): Promise<ActionResult<
     return fail(`Visit ${row.visits_required - (progress?.visits ?? 0)} more time${row.visits_required - (progress?.visits ?? 0) === 1 ? '' : 's'} to earn this one.`)
   }
 
-  // Claim ATOMICALLY: claim_loyalty_reward (migration 20270346009600) takes
+  // Claim ATOMICALLY: claim_loyalty_reward (migration 20270346010100) takes
   // pg_advisory_xact_lock on (member, card), rechecks visits since the last loyalty
   // claim of THIS card, and inserts only if the card is still earned, closing the
   // read-then-insert double-claim the pre-check above cannot close (SCAN-841).

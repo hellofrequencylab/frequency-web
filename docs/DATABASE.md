@@ -207,7 +207,7 @@ ADR-201)
 > client RLS policies), like `contacts` / `qr_codes`.
 
 **Partners & captures (in-person earning)**
-`partners`, `partner_offers`, `partner_redemptions`, `nodes`, `captures`. A loyalty-card claim is `claim_loyalty_reward` (SCAN-841, ADR-1753): service-role, advisory-locked per (member, card), so two taps cannot both insert.
+`partners`, `partner_offers`, `partner_redemptions`, `nodes`, `captures`. A loyalty-card claim is `claim_loyalty_reward` (SCAN-841, ADR-1766): service-role, advisory-locked per (member, card), so two taps cannot both insert.
 
 **Engagement & intelligence (PI.1 to PI.5)**
 `engagement_events` (semantic), `interaction_events` (wide firehose, 90-day purge),

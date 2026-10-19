@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 
-const MIGRATION = 'supabase/migrations/20270346009600_claim_loyalty_reward_atomic.sql'
+const MIGRATION = 'supabase/migrations/20270346010100_claim_loyalty_reward_atomic.sql'
 const PGTAP = 'supabase/tests/claim_loyalty_reward_atomic.test.sql'
 
 const h = vi.hoisted(() => {
@@ -69,7 +69,7 @@ const PROFILE = h.state.PROFILE
 const OFFER = h.state.OFFER
 const PARTNER = h.state.PARTNER
 
-describe('claim_loyalty_reward migration (20270346009600)', () => {
+describe('claim_loyalty_reward migration (20270346010100)', () => {
   const sql = readFileSync(MIGRATION, 'utf8')
   const code = sql
     .split('\n')
@@ -101,7 +101,7 @@ describe('claim_loyalty_reward migration (20270346009600)', () => {
       .filter((f) => f.endsWith('.sql'))
       .filter((f) => /claim_loyalty_reward/.test(readFileSync(`supabase/migrations/${f}`, 'utf8')))
       .sort()
-    expect(touching[touching.length - 1]).toBe('20270346009600_claim_loyalty_reward_atomic.sql')
+    expect(touching[touching.length - 1]).toBe('20270346010100_claim_loyalty_reward_atomic.sql')
 
     const tap = readFileSync(PGTAP, 'utf8')
     expect(tap).toMatch(/not_earned/)
