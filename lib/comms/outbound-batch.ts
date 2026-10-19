@@ -18,6 +18,7 @@ import { buildSpaceConversationReplyAddress } from '@/lib/comms/tenant-reply-ali
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { renderCoalescedEmail } from '@/lib/comms/email-template'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
+import { resolveSpaceEmailIdentity } from '@/lib/spaces/email-identity-registry'
 import {
   getConversationById,
   appendConversationMessage,
@@ -88,6 +89,8 @@ export function coalesceBodies(messages: { body: string; bodyHtml?: string | nul
 export async function queueOutboundMessage(input: {
   conversationId: string
   from: string
+  /** The custom Space identity `from` was resolved from, if any (SCAN-828): the flush resolves it again. */
+  identityId?: string | null
   to: string
   body: string
   html: string
@@ -107,7 +110,12 @@ export async function queueOutboundMessage(input: {
     body: input.body,
     bodyHtml: input.html,
     deliveryStatus: 'queued',
-    metadata: { batch_from: input.from, batch_to: input.to, batch_signature: input.signature ?? null },
+    metadata: {
+      batch_from: input.from,
+      batch_to: input.to,
+      batch_signature: input.signature ?? null,
+      ...(input.identityId ? { batch_identity_id: input.identityId } : {}),
+    },
     mirror: input.mirror ?? null,
   })
   return !!appended && 'id' in appended
@@ -305,7 +313,28 @@ export async function flushConversationBatches(
     const signature = firstBatchSignature(ordered)
     const brand = await resolveSpaceEmailBrand(conv.spaceId)
     const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature, brand)
-    const from = firstBatchFrom(ordered) ?? defaultConversationFrom()
+    // SCAN-828: a burst stamped with a custom Space identity is resolved AGAIN here, against the plan,
+    // the pause flag and the provider's verification as they are now, not as they were when the reply
+    // was queued. A held identity fails the burst visibly (delivery_status 'failed'); it never sends
+    // from the stamped From and never falls back to the Frequency address (email-identity-policy.ts).
+    let from = firstBatchFrom(ordered) ?? defaultConversationFrom()
+    const identityId = firstBatchIdentityId(ordered)
+    if (identityId) {
+      try {
+        if (!conv.spaceId) throw new Error('This sender belongs to a Space, and this thread has none.')
+        from = (await resolveSpaceEmailIdentity(conv.spaceId, identityId)).from
+      } catch (err) {
+        console.warn(
+          `[comms] flushConversationBatches held: custom sender ${identityId} on conversation ${cid} is unavailable (${err instanceof Error ? err.message : String(err)})`,
+        )
+        try {
+          await db.from('comms_messages').update({ delivery_status: 'failed' }).in('id', ids)
+        } catch {
+          /* best-effort */
+        }
+        continue
+      }
+    }
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
@@ -345,6 +374,15 @@ function firstBatchSignature(ordered: QueuedRow[]): string | null {
   for (const m of ordered) {
     const s = m.metadata && typeof m.metadata === 'object' ? (m.metadata as Record<string, unknown>).batch_signature : null
     if (typeof s === 'string' && s.trim()) return s
+  }
+  return null
+}
+
+/** The `batch_identity_id` stamped on the oldest queued message that carries one (SCAN-828). */
+function firstBatchIdentityId(ordered: QueuedRow[]): string | null {
+  for (const m of ordered) {
+    const v = m.metadata && typeof m.metadata === 'object' ? (m.metadata as Record<string, unknown>).batch_identity_id : null
+    if (typeof v === 'string' && v.trim()) return v
   }
   return null
 }

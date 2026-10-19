@@ -8,7 +8,8 @@ import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { loadMensworkLive } from '@/lib/sites/menswork-data'
-import { readWebsiteEditor, RESERVED_WEBSITE_SLUGS, type WebsiteEditorState } from '@/lib/sites/editor/state'
+import { overlayWebsiteEditor, readWebsiteEditor, RESERVED_WEBSITE_SLUGS, type WebsiteEditorState } from '@/lib/sites/editor/state'
+import { readSpacePrivateState } from '@/lib/spaces/private-state'
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { seedWebsiteHome, withWebsiteIds, initialWebsiteTheme } from '@/lib/sites/editor/seed'
@@ -27,7 +28,8 @@ export async function WebsiteEditorPage({ host, space: cached, token }: { host: 
   if (!pass || pass.staff) notFound()
   const { data } = await createAdminClient().from('spaces').select('preferences, owner_profile_id').eq('id', cached.id).maybeSingle()
   if (!data || !(await siteAdminAllowed(token, host, { id: cached.id, ownerProfileId: data.owner_profile_id }))) notFound()
-  const space = { ...cached, preferences: data.preferences }
+  const privateState = await readSpacePrivateState(cached.id)
+  const space = { ...cached, preferences: overlayWebsiteEditor(data.preferences, privateState.websiteEditor) as Space['preferences'] }
   setActiveSpace(space)
   const brandName = space.brandName?.trim() || space.name
   const [chrome, live, content, person] = await Promise.all([
