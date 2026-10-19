@@ -39,9 +39,12 @@ import {
   sendEventReminderEmail,
   sendGuestEventReminderEmail,
   enqueueEmail,
+  emailShell,
   escapeHtml,
   listUnsubscribeHeaders,
+  EMAIL_P,
 } from '@/lib/email'
+import { palette } from '@/lib/theme/palette'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
@@ -589,27 +592,31 @@ async function sendWeekAheadEmail(params: {
   const proofLine = warmProof ? `${warmProof} so far. You're in good company.` : ''
   const whereLine = location ? `Where: ${location}` : ''
 
-  const html = `
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4f46e5;margin:28px 0 8px;">
+  // EMAIL-023: the member shell and the palette, like every other reminder lib/email.ts sends. This
+  // body used to be a bare fragment in the pre-DAWN indigo with no doctype, wordmark or footer.
+  const html = emailShell(
+    `
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
       A week to go
     </p>
-    <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;color:#111;">${escapeHtml(eventTitle)}</h1>
-    <p style="font-size:16px;line-height:1.6;color:#333;margin:0 0 16px;">
+    <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;color:${palette.text};">${escapeHtml(eventTitle)}</h1>
+    <p style="${EMAIL_P}color:${palette.textMuted};">
       Hi ${escapeHtml(recipientName)}, just a gentle note that we'll see you in about a week. No need to do anything now; we're looking forward to having you there.
     </p>
-    <p style="font-size:16px;line-height:1.6;color:#333;margin:0 0 16px;">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+    <p style="${EMAIL_P}color:${palette.text};">
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
     </p>
-    ${proofLine ? `<p style="font-size:15px;line-height:1.6;color:#555;margin:0 0 16px;">${escapeHtml(proofLine)}</p>` : ''}
-    <a href="${eventUrl}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">View event →</a>
-    <hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
-    <p style="font-size:13px;color:#999;">
-      You're receiving this because you RSVP'd to attend. Plans change, and that's okay.
-      <a href="${eventUrl}" style="color:#999;">Update your RSVP</a> any time.
-      <a href="${appUrl}/settings#notifications" style="color:#999;">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event reminders</a>.
+    ${proofLine ? `<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(proofLine)}</p>` : ''}
+    <a href="${eventUrl}" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">View event</a>
+    <hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:28px 0;">
+    <p style="font-size:13px;color:${palette.emailFaint};">
+      Plans change, and that's okay. <a href="${eventUrl}" style="color:${palette.emailFaint};">Update your RSVP</a> any time.
+      <a href="${appUrl}/settings#notifications" style="color:${palette.emailFaint};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.emailFaint};">Unsubscribe from event reminders</a>.
     </p>
-  `
+  `,
+    "You're receiving this because you RSVP'd to attend.",
+  )
 
   const text = `A week to go: ${eventTitle}
 
@@ -628,7 +635,7 @@ Unsubscribe from event reminders: ${unsubscribeUrl}
 
   await enqueueEmail({
     to,
-    subject: `✨ A week to go: ${eventTitle}`,
+    subject: `A week to go: ${eventTitle}`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html,
     text,

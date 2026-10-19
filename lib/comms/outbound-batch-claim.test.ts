@@ -112,6 +112,7 @@ vi.mock('@/lib/comms/tenant-reply-alias', () => ({
 }))
 vi.mock('@/lib/comms/email-template', () => ({
   renderCoalescedEmail: (text: string, html: string) => ({ text, html }),
+  bodyToHtml: (text: string) => `<div>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\n/g, '<br>')}</div>`,
 }))
 // SCAN-828: a burst stamped with a custom Space identity is resolved again at flush.
 const registryCalls: unknown[][] = []

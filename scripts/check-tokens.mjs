@@ -65,7 +65,6 @@ const ALLOWLIST = [
   (p) => p === 'components/spaces/space-form.tsx',
   // server-rendered standalone HTML / transactional email: inline hex is required
   // (email clients + pre-CSS documents don't resolve CSS custom properties).
-  (p) => p === 'app/api/cron/event-reminders/route.ts',
   (p) => p === 'app/u/scan/route.ts',
   // directory prefixes
   (p) => p.startsWith('lib/theme/'),
@@ -117,14 +116,12 @@ const ALLOWLIST = [
   // the exemption is reviewable and a NEW hardcoded color elsewhere in lib/ still fails.
   //
   // (1) TRANSACTIONAL EMAIL HTML. Email clients do not resolve CSS custom properties (and many
-  //     strip <style> entirely), so the medium REQUIRES literal hex in inline styles. Changing
-  //     these to tokens would ship colorless mail.
-  (p) => p === 'lib/email.ts',
+  //     strip <style> entirely), so the medium REQUIRES literal hex in inline styles. The literal
+  //     comes from lib/theme/palette.ts (`${palette.x}`), never typed by hand: lib/email.ts,
+  //     lib/comms/email-template.ts, outbound-batch.ts, waitlist-notify.ts, this-week.ts and the
+  //     event-reminders cron left this list under EMAIL-023 and the guard now holds them. The
+  //     files still here carry a hand-typed grey ramp and leave the list as they are moved.
   (p) => p === 'lib/email-studio/render.ts',
-  (p) => p === 'lib/comms/email-template.ts',
-  (p) => p === 'lib/comms/outbound-batch.ts',
-  (p) => p === 'lib/events/waitlist-notify.ts', // the promoted-seat email (ADR-1208), same medium
-  (p) => p === 'lib/this-week.ts', // the Thursday This-week email body (LIVE-806), same medium
   (p) => p === 'lib/automations.ts',
   (p) => p === 'lib/nurture/runner.ts',
   (p) => p === 'lib/studio/agent.ts',
