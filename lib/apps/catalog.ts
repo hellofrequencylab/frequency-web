@@ -21,6 +21,8 @@
 
 import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES, ROUTE_MODULE_IDS } from '@/lib/widgets/modules'
+import type { TemplateId } from '@/lib/widgets/templates'
+import { defaultLayoutFor } from '@/lib/page-settings/default-layouts'
 import type { ElementRegistry, PillarSlug } from '@/lib/library/element-catalog'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
 import { STUDIO_LEAVES } from '@/lib/nav/studio'
@@ -70,6 +72,17 @@ for (const [key, ids] of Object.entries(ROUTE_MODULE_IDS)) {
   }
 }
 
+/** Where a page block sits by default: the slot the coded route default places it in, else the
+ *  engine's own fallback for an unplaced module (the registry template's first slot). */
+function pageBinding(id: string, routeKeys: readonly string[]): { defaultTemplate: TemplateId; defaultSlot: string } {
+  for (const key of routeKeys) {
+    const layout = defaultLayoutFor(key)
+    const slot = layout && Object.entries(layout.slots).find(([, c]) => c.order.includes(id))
+    if (layout && slot) return { defaultTemplate: layout.template, defaultSlot: slot[0] }
+  }
+  return { defaultTemplate: 'single', defaultSlot: 'main' }
+}
+
 const PAGE_APPS: App[] = LAYOUT_MODULES.map((m): App => ({
   id: m.id,
   label: m.label,
@@ -79,7 +92,7 @@ const PAGE_APPS: App[] = LAYOUT_MODULES.map((m): App => ({
   scopes: (ROUTE_KEYS_BY_MODULE.get(m.id) ?? []).map((key) => ({ on: 'route' as const, key })),
   // Blocks self-gate (return null when empty) and re-check server-side; the catalog gate is 'none'.
   gate: { system: 'none' },
-  surfaces: { page: {} },
+  surfaces: { page: pageBinding(m.id, ROUTE_KEYS_BY_MODULE.get(m.id) ?? []) },
   themeable: true,
   status: 'final',
   version: 1,
