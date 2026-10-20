@@ -18,8 +18,10 @@
 >    (`collective_base`; the intro is a standing per-item offer, `FOUNDING_OPEN_ITEMS` in
 >    `lib/pricing/beta.ts`, owner 2026-10-19, locked for the life of a subscription that takes it), an
 >    extra member Space 2900 (`collective_space`, for Collectives that already run member Spaces), Non
->    Profit 3900, Non Profit Collective 11900, Network from 59900 with 4900 per extra chapter and 47900
->    for a verified nonprofit (`NETWORK_PLAN`), Independent 24900, Vera AI 2000 (included in Collective
+>    Profit 3900, Non Profit Collective 11900, Network 14900 plus 5900 per chapter with three chapters to start (32600 at three; nonprofit 11900 plus
+>    4700), a Founding year of nine months for the first year, and a yearly package of ten chapters for the price
+>    of eight (621000; nonprofit 495000), ADR-1815 (`NETWORK_PLAN`); the Independent Network is a sales call from
+>    $30,000 a year plus $5,000 setup, Independent 24900, Vera AI 2000 (included in Collective
 >    and Network). Operator seats are included per tier and never sold (ADR-1810). Yearly is ten months.
 > 3. **Selling is what Business is for.** The `space_payments` gate (Business floor, `LIVE-753`) guards
 >    paid tickets, paid memberships, donations, shop checkout and booking deposits. Personal selling is

@@ -22,6 +22,8 @@ import {
   NETWORK_PLAN,
   networkCheckoutOpen,
   networkMonthlyCents,
+  networkFoundingYearCents,
+  networkPackageYearCents,
 } from './plans'
 import {
   deriveGamificationAccess,
@@ -43,27 +45,44 @@ import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 describe('the Network plan (SCAN-956): one owner running many chapters, quote only', () => {
   it('carries the approved numbers', () => {
     expect(SPACE_PLAN_LABEL.network).toBe('Network')
-    expect(NETWORK_PLAN.monthlyCents).toBe(59_900)
-    expect(NETWORK_PLAN.nonprofitMonthlyCents).toBe(47_900)
-    expect(NETWORK_PLAN.includedChapters).toBe(10)
-    expect(NETWORK_PLAN.extraChapterCents).toBe(4_900)
+    // $149 plus $59 a chapter, three chapters to start (owner 2026-10-20).
+    expect(NETWORK_PLAN.baseCents).toBe(14_900)
+    expect(NETWORK_PLAN.chapterCents).toBe(5_900)
+    expect(NETWORK_PLAN.monthlyCents).toBe(32_600)
+    expect(NETWORK_PLAN.nonprofitMonthlyCents).toBe(26_000)
+    expect(NETWORK_PLAN.includedChapters).toBe(3)
+    expect(NETWORK_PLAN.extraChapterCents).toBe(5_900)
+    expect(NETWORK_PLAN.nonprofitExtraChapterCents).toBe(4_700)
     expect(NETWORK_PLAN.maxChapters).toBe(25)
     expect(NETWORK_PLAN.networkFeeBps).toBe(200)
     expect(NETWORK_PLAN.centralAdmins).toBe(10)
     expect(PLACEHOLDER_METER_LIMITS.space_crm_resonance_ai!.network).toBe(NETWORK_PLAN.veraMonthlyMatches)
   })
 
-  it('prices chapters: ten included, $49 each up to 25, then a quote', () => {
-    expect(networkMonthlyCents(3)).toBe(59_900)
-    expect(networkMonthlyCents(10)).toBe(59_900)
-    expect(networkMonthlyCents(11)).toBe(64_800)
-    expect(networkMonthlyCents(25)).toBe(59_900 + 15 * 4_900)
+  it('prices chapters: three to start, $59 each, up to 25, then a quote', () => {
+    expect(networkMonthlyCents(1)).toBe(32_600) // never below the three included
+    expect(networkMonthlyCents(3)).toBe(32_600)
+    expect(networkMonthlyCents(4)).toBe(38_500)
+    expect(networkMonthlyCents(10)).toBe(73_900)
+    expect(networkMonthlyCents(25)).toBe(14_900 + 25 * 5_900)
     expect(networkMonthlyCents(26)).toBeNull()
-    expect(networkMonthlyCents(10, { nonprofit: true })).toBe(47_900)
+    expect(networkMonthlyCents(3, { nonprofit: true })).toBe(26_000)
+    expect(networkMonthlyCents(10, { nonprofit: true })).toBe(11_900 + 10 * 4_700)
+  })
+
+  it('founding and package: nine months for a year, and ten chapters for the price of eight', () => {
+    expect(networkFoundingYearCents(3)).toBe(9 * 32_600)
+    expect(networkFoundingYearCents(26)).toBeNull()
+    expect(networkPackageYearCents()).toBe(621_000)
+    expect(networkPackageYearCents({ nonprofit: true })).toBe(495_000)
+    // The package bills the base plus seven chapters, less two chapters at the yearly chapter price.
+    const yearly = (cents: number) => cents * 10
+    const billed = yearly(NETWORK_PLAN.monthlyCents) + 7 * yearly(NETWORK_PLAN.chapterCents) - 2 * yearly(NETWORK_PLAN.chapterCents)
+    expect(billed).toBe(networkPackageYearCents() + 0)
   })
 
   it('opens checkout once a Stripe price id exists, and says Talk to us without one (SCAN-980)', () => {
-    expect(NETWORK_PLAN.stripePriceId).toBe('price_1UREmtPhyalyRPP1cFZwkpf0')
+    expect(NETWORK_PLAN.stripePriceId).toBe('price_1USlPEPhyalyRPP1XtS07x5C')
     expect(networkCheckoutOpen()).toBe(true)
     expect(networkCheckoutOpen(null)).toBe(false)
     expect(networkCheckoutOpen('price_x')).toBe(true)

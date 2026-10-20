@@ -81,9 +81,9 @@ higher allowances, and a lower network fee. See [Collective](/help/spaces/collec
 ## What Network turns on
 
 **Network is for one organization with chapters.** It includes everything Collective does except
-Partners (your chapters are Spaces you own), plus ten chapters, one membership across every chapter,
-central admins, a network calendar, a roll-up report, and the lowest network fee. It is set up with
-you. See [Network](/help/spaces/network).
+Partners (your chapters are Spaces you own), plus three chapters to start (up to 25), one membership across
+every chapter, central admins, a network calendar, a roll-up report, and the lowest network fee. You can
+start it yourself with the 14 day trial. See [Network](/help/spaces/network).
 
 ## What Frequency takes
 

@@ -26,6 +26,7 @@ export function ChoosePlanButton({
   plan,
   label,
   interval = 'month',
+  networkPackage = false,
 }: {
   slug: string
   /** The loadout plan to buy: Business (LIVE-228), Collective (OWN-096), Network (SCAN-980) or Non Profit (LIVE-994, verified Spaces only). */
@@ -34,6 +35,8 @@ export function ChoosePlanButton({
   label: string
   /** Monthly or yearly billing, as picked on the ladder's switch. Default monthly. */
   interval?: BillingInterval
+  /** Network, yearly only: ten chapters, pay for eight (owner 2026-10-20). */
+  networkPackage?: boolean
 }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -44,7 +47,7 @@ export function ChoosePlanButton({
     setSession(null)
     setError('Opening secure checkout…')
     start(async () => {
-      const res = await startSpaceLoadoutCheckout(slug, { plan, interval, forceHosted: true })
+      const res = await startSpaceLoadoutCheckout(slug, { plan, interval, networkPackage, forceHosted: true })
       if (!isError(res) && res.data.url) window.location.href = res.data.url
       else setError('Could not start checkout. Please try again.')
     })
@@ -58,7 +61,7 @@ export function ChoosePlanButton({
     }
     start(async () => {
       warmStripeBrowser()
-      const res = await startSpaceLoadoutCheckout(slug, { plan, interval })
+      const res = await startSpaceLoadoutCheckout(slug, { plan, interval, networkPackage })
       if (isError(res)) setError(res.error)
       else if (res.data.clientSecret) {
         setSession({ clientSecret: res.data.clientSecret, sessionId: res.data.sessionId ?? null })

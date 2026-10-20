@@ -81,6 +81,8 @@ export async function startSpaceLoadoutCheckout(
     plan?: string
     addons?: string[]
     interval?: BillingInterval
+    /** Network, yearly only: ten chapters, pay for eight (owner 2026-10-20). */
+    networkPackage?: boolean
     forceHosted?: boolean
   },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
@@ -103,7 +105,7 @@ export async function startSpaceLoadoutCheckout(
   const checkout = await viaStripe('spaces/billing startSpaceLoadoutCheckout', () =>
     createSpaceLoadoutCheckout(
       auth.spaceId,
-      { plan, addons, interval },
+      { plan, addons, interval, networkPackage: plan === 'network' && input.networkPackage === true },
       { ui },
     ),
   )
