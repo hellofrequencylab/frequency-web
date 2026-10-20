@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1070",
+  "title": "Events: the Add an event box is last, a member at their allowance gets an upgrade door, and the grid and Up next follow the centre column's width",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/UX-MATURITY-PLAN.md",
+    "ref": "Owner design changes list 2026-10-19, item 12, audited 2026-10-20"
+  },
+  "detail": "Follow-up to LIVE-1016. The box now renders after the More in Events row, so it closes the page. It reads the same event_create allowance createEvent enforces (memberAtEventCap in events/actions.ts, wrapping the unchanged check), behind Suspense so the page does not wait. A member at their cap sees Join Crew (/upgrade) with the cap message instead of a New event that rejects them; visitors keep Sign up to host and Log in. The three-wide library and the Up next spotlight now answer to the centre column's width (container query on .ev-lib and .ay), not the window: with both rails open the column is about 540px at 1280, so the grid drops to two and the spotlight stacks, which stops the clipped Up next title and the 3 and 4 line card titles.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const d='components/frequency/members/events/';const b=fs.readFileSync(d+'events-body.tsx','utf8');const x=fs.readFileSync(d+'events-add-box.tsx','utf8');const a=fs.readFileSync('app/(main)/events/actions.ts','utf8');if(b.indexOf('<EventsAddBoxSlot')<b.indexOf('<HubLinks'))bad.push('Add an event box is above the hub links, not last');if(!x.includes('memberAtEventCap')||!x.includes('/upgrade'))bad.push('a member at their cap gets no upgrade door');if(!/export async function memberAtEventCap[\\s\\S]*memberEventAllowanceOk/.test(a))bad.push('the box and createEvent read different allowance checks');const c=fs.readFileSync('app/themes/frequency/members-events.css','utf8');if(!/@container evc \\\\(max-width:760px\\\\)/.test(c)||!c.includes('container:evc/inline-size'))bad.push('grid and Up next no longer follow the column width');if(bad.length){console.error('LIVE-1070: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the box moves above the hub links, a capped member gets no upgrade door, the page and createEvent read different allowance checks, or the grid and Up next stop following the centre column's width.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W5"
+}

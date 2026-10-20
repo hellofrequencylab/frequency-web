@@ -11,6 +11,7 @@ for (const f of ['islands.tsx', 'planner.tsx', 'posts.tsx']) {
   if (!r(base + f).includes('<SystemNotice')) bad.push(`${f} does not draw a SystemNotice for its empty state`)
 }
 if (/All clear\. Nobody’s waiting on you\.<\/div>/.test(r(base + 'islands.tsx'))) bad.push('Needs you is back to a bare italic line')
+if (!/Your people’s plans/.test(r(base + 'planner.tsx')) || !/None of your people have plans/.test(r(base + 'planner.tsx'))) bad.push('Your people’s plans vanishes when empty')
 if (!/<ExploreSection/.test(r(base + 'feed-body.tsx'))) bad.push('the Feed draws no Circles to explore band')
 if (!/loadCirclesToExplore/.test(r(base + 'explore.tsx'))) bad.push('the explore band reads no real Circles')
 if (bad.length) {

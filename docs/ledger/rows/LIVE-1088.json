@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1088",
+  "title": "The whole chat panel is rebuilt in the Frequency look: three tabs, person rows, bubbles, composer and Help, plus two Messages page fixes",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-1088.json",
+    "ref": "Daniel 2026-10-19 design changes list, item 14 (completely redesigned); plan thread audit 2026-10-20"
+  },
+  "detail": "Round two of item 14. LIVE-1025 only restyled the header. Now every surface of the bottom-right panel carries an .fqd-* hook and is drawn in the Frequency kit: a pastel header with the mode orb, a Messages / Vera / Help tab switch (hidden under DAWN, which keeps its Back button and footer link), person and room rows with a pastel unread pill, bubbles (pastel pill for the member, tinted for others) in direct, room, Vera and support threads, the composer and send button, Vera chips and proposal cards, and the Help search, Ask Vera card and links. Light and dark both read. Also fixes two Messages page gaps found by the plan thread: the Ask Vera header button no longer depends on a sheet that route does not load, and the inbox tabs no longer clip Rooms. The closed tab is untouched. Renders: /mnt/project-files/changed-plan/dock/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const css=fs.readFileSync('app/themes/frequency/members-shell.css','utf8');for(const k of ['.fqd-tabs','.fqd-row','.fqd-bub.is-mine','.fqd-bub.is-theirs','.fqd-compose','.fqd-chip','.fqd-askvera'])if(!css.includes(k))bad.push('css lacks '+k);const l=fs.readFileSync('components/vera/vera-launcher.tsx','utf8');if(!l.includes('fqd-tabs'))bad.push('launcher lacks the tab switch');if(!fs.readFileSync('components/messages/thread.tsx','utf8').includes('fqd-bub'))bad.push('thread bubbles lost the hook');if(!fs.readFileSync('components/messages/dock-chat.tsx','utf8').includes('fqd-row'))bad.push('dock rows lost the hook');if(fs.readFileSync('components/frequency/members/messages/messages-body.tsx','utf8').includes('btn glass'))bad.push('Messages Ask Vera depends on the events sheet again');if(bad.length){console.error('LIVE-1088: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the Frequency chat panel loses its tab switch, row, bubble, composer, chip or Ask Vera styles, a component loses its hook, or the Messages Ask Vera button goes back to the events-only glass class.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
