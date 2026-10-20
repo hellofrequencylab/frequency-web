@@ -52,7 +52,8 @@
 # /feed does not fail on debt that predates it.
 #
 # Secrets it needs: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, PW_MEMBER_EMAIL.
-# Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console).
+# Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console),
+# PW_SPOTLIGHT_HANDLE and PW_SITE_SLUG (add the editor's Spotlight and Site surfaces, PROG-E3).
 # Full procedure: test/e2e/README.md § The member shell.
 #
 # ── capture_shell ALSO CARRIES THE OPERATOR CONSOLE (ADR-1128) ────────────────────────────
@@ -498,6 +499,8 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
+          PW_SITE_SLUG: ${{ vars.PW_SITE_SLUG }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
@@ -792,6 +795,8 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
+          PW_SITE_SLUG: ${{ vars.PW_SITE_SLUG }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
@@ -1195,6 +1200,8 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
+          PW_SITE_SLUG: ${{ vars.PW_SITE_SLUG }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
@@ -1455,6 +1462,8 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
+          PW_SITE_SLUG: ${{ vars.PW_SITE_SLUG }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
