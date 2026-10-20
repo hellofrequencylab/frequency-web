@@ -73,11 +73,11 @@ function NodeStepBlockEditor({ stepId, subject, nodeLayout }: { stepId: string; 
       <NodeSeeder layout={nodeLayout} />
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Email design</p>
+          <p className="eyebrow text-muted">Email design</p>
           <button
             type="button"
             onClick={() => setPreviewOpen((v) => !v)}
-            className="rounded-md border border-border px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
+            className="rounded-control border border-border px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
             aria-pressed={previewOpen}
           >
             {previewOpen ? 'Hide preview' : 'Preview'}
@@ -143,11 +143,11 @@ function LegacyStepBlockEditor({ stepId, subject, initialLayout }: { stepId: str
       <LayoutSeeder layout={initialLayout} />
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Email design</p>
+          <p className="eyebrow text-muted">Email design</p>
           <button
             type="button"
             onClick={() => setPreviewOpen((v) => !v)}
-            className="rounded-md border border-border px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
+            className="rounded-control border border-border px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
             aria-pressed={previewOpen}
           >
             {previewOpen ? 'Hide preview' : 'Preview'}
