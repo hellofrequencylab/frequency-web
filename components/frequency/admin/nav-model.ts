@@ -90,3 +90,23 @@ export function itemBadge(item: AdminNavItem): number {
   if (item.badge) return item.badge
   return (item.children ?? []).reduce((sum, child) => sum + (child.badge ?? 0), 0)
 }
+
+/** One job group of a section's pages on the top menu: its heading and the pages under it. */
+interface AdminMenuGroup {
+  label: string
+  leaves: AdminNavLeaf[]
+}
+
+/** A section's pages grouped by the job heading each already carries (ADR-1745), in menu order. A section
+ *  whose pages carry no heading comes back as one unlabelled group. Every child lands in exactly one group,
+ *  so nothing the sidebar listed is lost. PURE. */
+export function menuGroups(item: AdminNavItem): AdminMenuGroup[] {
+  const out: AdminMenuGroup[] = []
+  for (const leaf of item.children ?? []) {
+    const label = leaf.group ?? ''
+    const last = out[out.length - 1]
+    if (last && last.label === label) last.leaves.push(leaf)
+    else out.push({ label, leaves: [leaf] })
+  }
+  return out
+}

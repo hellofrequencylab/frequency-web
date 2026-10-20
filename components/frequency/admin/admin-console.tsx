@@ -110,6 +110,7 @@ export async function FrequencyAdminConsole({ profileId, role, webRole, staffRol
         switchTo: contexts.available.flatMap((option) => option.kind === 'operator' ? [{ key: option.spaceId, label: option.label, href: option.href, avatarUrl: option.logoUrl }] : []),
       }}
       items={items}
+      topMenu
       links={[
         { key: 'feed', label: 'Feed', href: '/feed' },
         { key: 'site', label: 'Site home', href: '/?home' },

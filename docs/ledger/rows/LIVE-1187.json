@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1187",
+  "title": "Operator console shows each section's pages as a menu across the top",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/MENU-CONTRACT.md",
+    "ref": "§The consolidated IA (ADR-1745). Owner 2026-10-20 in the project thread: a sub menu across the top for each sidebar category."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. PREMISE RE-TESTED: on a wide screen the Frequency admin shell listed the active section's pages as a long column under its sidebar row (Platform ran 17 links deep) and drew no top menu; the phone strip existed only under 960px. Built: AdminTopMenu (components/frequency/admin/admin-nav.tsx), sticky under the top bar at every width, scrolling sideways with no bar. A section with job groups draws two rows: the section's home plus its groups (Platform: Site, Commerce, Accounts, Tools), then the pages of the group you are in; on the section home the second row lists every page under quiet group captions. The sidebar is one row per section. Every page the sidebar listed is on the menu, so none is lost; the Space console is unchanged (topMenu is off there). menuGroups in nav-model.ts is pure and tested. No catalog row, gate or page moved. Before/after at 1280 and 390 are in /mnt/project-files/admin-nav/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/admin-top-menu.mjs",
+    "note": "Fails when the top menu component, its grouping, its mount in the shell, the operator console's switch, or its sticky style goes, or when the sidebar stops yielding the pages to it."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
