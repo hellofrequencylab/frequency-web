@@ -152,17 +152,76 @@ export async function FeedStream({
     )
   }
 
+  // GROUPED, NOT FLAT (LIVE-1082). The stream used to interleave everything into one scroll, which is
+  // where the Feed fell off. It is now three short shelves that each say where the posts come from, a
+  // "Worth a look" band for the non-post cards, and the rest behind a native Show more. Each shelf is
+  // capped, and an empty one says so and points at the next step.
+  const inCircle = (p: FeedRow) => !!p.scope_id && mine.has(p.scope_id)
+  const fromCircles = rest.filter(inCircle)
+  const fromPeople = rest.filter((p) => !inCircle(p) && people.has(p.author.id))
+  const elsewhere = rest.filter((p) => !inCircle(p) && !people.has(p.author.id))
+  const extras = [
+    milestone && <MilestoneItem key="milestone" m={milestone} showWhy={showWhy} />,
+    journey && <JourneyRunItem key="journey" journey={journey} />,
+    classifieds.length >= 2 && <ClassifiedsItem key="classifieds" tiles={classifieds} />,
+    dispatch && <DispatchItemRow key="dispatch" d={dispatch} />,
+  ].filter(Boolean)
+  const lead = elsewhere.slice(0, 4)
+  const more = [...fromCircles.slice(3), ...fromPeople.slice(3), ...elsewhere.slice(4)]
+
   return (
-    <div data-visual-mask="feed-stream">
+    <div data-visual-mask="feed-stream" className="fa-groups">
       {pinned.map(render)}
-      {rest.slice(0, 2).map(render)}
-      {milestone && <MilestoneItem m={milestone} showWhy={showWhy} />}
-      {journey && <JourneyRunItem journey={journey} />}
-      {rest.slice(2, 5).map(render)}
-      {classifieds.length >= 2 && <ClassifiedsItem tiles={classifieds} />}
-      {dispatch && <DispatchItemRow d={dispatch} />}
-      {rest.slice(5).map(render)}
+      <StreamShelf title="From your Circles" note={mine.size > 0 ? 'The groups you belong to' : undefined} href="/circles" hrefLabel="Your Circles">
+        {fromCircles.length > 0 ? (
+          fromCircles.slice(0, 3).map(render)
+        ) : (
+          <SystemNotice
+            icon="circle"
+            title={mine.size > 0 ? 'Your Circles are quiet right now.' : 'You are not in a Circle yet.'}
+            body={mine.size > 0 ? 'Start the conversation: share something with them.' : 'Join one and what it shares lands here.'}
+            actions={mine.size > 0 ? [{ href: '/feed#compose', label: 'Share a moment', primary: true }] : [{ href: '/circles', label: 'Find a Circle', primary: true }]}
+          />
+        )}
+      </StreamShelf>
+      <StreamShelf title="From your people" note="People you are connected to" href="/network/friends" hrefLabel="Your people">
+        {fromPeople.length > 0 ? (
+          fromPeople.slice(0, 3).map(render)
+        ) : (
+          <SystemNotice
+            icon="contacts"
+            title="Nothing from your people yet."
+            body="Connect with a few members and their moments show up here."
+            actions={[{ href: '/network', label: 'Find people', primary: true }]}
+          />
+        )}
+      </StreamShelf>
+      {extras.length > 0 && <StreamShelf title="Worth a look">{extras}</StreamShelf>}
+      {lead.length > 0 && <StreamShelf title="Around the community">{lead.map(render)}</StreamShelf>}
+      {more.length > 0 && (
+        <details className="fqm-more fa-more-posts">
+          <summary className="btn sm">Show {more.length} more {more.length === 1 ? 'post' : 'posts'}</summary>
+          {more.map(render)}
+        </details>
+      )}
     </div>
+  )
+}
+
+/** One titled shelf of the stream, in the Feed's section-header idiom. */
+function StreamShelf({ title, note, href, hrefLabel, children }: { title: string; note?: string; href?: string; hrefLabel?: string; children: React.ReactNode }) {
+  return (
+    <section className="fa-shelf" aria-label={title}>
+      <div className="fa-sh">
+        <span className="fa-h18">{title}</span>
+        {href ? (
+          <Link href={href} className="fa-f13 fa-seeall">{hrefLabel ?? 'See all'}</Link>
+        ) : note ? (
+          <span className="fa-f13">{note}</span>
+        ) : null}
+      </div>
+      <div className="fa-shelf-body">{children}</div>
+    </section>
   )
 }
 
