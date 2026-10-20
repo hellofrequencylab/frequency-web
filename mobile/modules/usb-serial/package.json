@@ -1,0 +1,7 @@
+{
+  "name": "usb-serial",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android USB host serial (CH340) for Frequency Experience, wrapping usb-serial-for-android. Local Expo module.",
+  "main": "src/index.ts"
+}

@@ -4,8 +4,10 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { DeviceProvider } from '@/device/DeviceProvider'
 import { fontAssets } from '@/theme/fonts'
 import { ThemeProvider, fonts, useTheme } from '@/theme'
+import { FeedbackProvider } from '@/ui'
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
 
@@ -38,7 +40,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <Navigator />
+        <FeedbackProvider>
+          <DeviceProvider>
+            <Navigator />
+          </DeviceProvider>
+        </FeedbackProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   )
