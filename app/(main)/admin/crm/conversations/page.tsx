@@ -17,7 +17,7 @@ import {
 } from '@/lib/comms/workspace'
 import { OPEN_CONVERSATION_STATUSES } from '@/lib/comms/labels'
 import { ConversationWorkspace } from '@/components/admin/crm/conversation-workspace'
-import { SpaceConversationCompose } from '@/components/spaces/crm/space-conversation-compose'
+import { SpaceConversationCompose } from '@/modules/crm'
 import {
   draftConversationReply,
   summarizeConversation,

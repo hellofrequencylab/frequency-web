@@ -21,7 +21,7 @@ import {
   type ConversationScope,
 } from '@/lib/comms/workspace'
 import { ConversationWorkspace } from '@/components/admin/crm/conversation-workspace'
-import { SpaceConversationCompose } from '@/components/spaces/crm/space-conversation-compose'
+import { SpaceConversationCompose } from '@/modules/crm'
 import {
   sendSpaceConversationReplyAction,
   setSpaceConversationTriageAction,

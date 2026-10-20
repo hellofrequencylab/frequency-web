@@ -5,7 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { isSpaceTeamMember } from '@/lib/spaces/operated'
 import { listSpaceSharedContacts } from '@/app/(main)/connections/actions'
-import { SharedContactsView } from '@/components/spaces/crm/shared-contacts-view'
+import { SharedContactsView } from '@/modules/crm'
 
 // SHARED-WITH-SPACE contacts — the team read view for the 'shared' network-contact tier (ADR-778). A
 // member can share a contact's CARD with a Space's team (setVisibility 'shared', gated on operatesSpace);
