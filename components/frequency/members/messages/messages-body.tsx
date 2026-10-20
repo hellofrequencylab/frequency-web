@@ -10,6 +10,8 @@ import type { createClient } from '@/lib/supabase/server'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { FqToaster } from '../shared/toast'
 import { InboxList, type ThreadLite } from './inbox-list'
+import { AskVeraButton } from './ask-vera-button'
+import { PageHeading } from '@/components/templates/page-heading'
 
 // THE FREQUENCY MESSAGES BODY (design_handoff/frequency/templates/members/Messages.html): the
 // thread list on the left (340px), the open conversation in a glass pane on the right. /messages,
@@ -115,37 +117,93 @@ export async function FrequencyMessages({
       </div>
     ) : null
 
+  const newMessage = (
+    <Link href="/network" className="btn sm pa" aria-label="New message: pick someone from Members">
+      <FqIcon name="plus" />
+      New message
+    </Link>
+  )
+  const unreadLine =
+    totalUnread > 0
+      ? `${totalUnread > 99 ? '99+' : totalUnread} ${totalUnread === 1 ? 'conversation is' : 'conversations are'} waiting on you.`
+      : threads.length > 0
+        ? 'You are all caught up. Say hi to someone new, or open a room.'
+        : 'Your circles, hosts and friends all live here.'
+
   return (
-    <div className={pane ? 'ap-cols l fa-msg in-thread' : 'ap-cols l fa-msg'}>
-      <FqToaster />
-      <aside className="side">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h1 className="h2">
-            Messages{totalUnread > 0 ? <span className="meta">{` · ${totalUnread > 99 ? '99+' : totalUnread} new`}</span> : null}
-          </h1>
-          <span className="row fqm-gap-sm">
-            <NewRoomCompose buttonLabel="Room" buttonClass="btn sm" />
-            <Link href="/network" className="btn sm pa" aria-label="New message: pick someone from Members">
-              <FqIcon name="plus" />
-              New
-            </Link>
-          </span>
-        </div>
-        <InboxList threads={threads} activeKey={activeKey} />
-        {!pane && roomsToJoin && <div className="fqm-phone-only">{roomsToJoin}</div>}
-      </aside>
-      {pane ?? (
-        <section className="panel fa-pane" aria-label="Conversation">
-          <div className="fa-pane-empty">
-            <span className="ic" aria-hidden>
-              <FqIcon name="message" />
-            </span>
-            <span className="h3">Pick a conversation</span>
-            <span className="t2">Or start one from anyone’s profile.</span>
-          </div>
-          {roomsToJoin}
-        </section>
+    <div className={pane ? 'fa-msg-wrap in-thread' : 'fa-msg-wrap'}>
+      {/* The shared member header (kicker, title, one line, one action row; no photo), shown on the
+          inbox only: an open conversation gets the height back. */}
+      {!pane && (
+        <PageHeading
+          eyebrow="Your conversations"
+          title="Messages and rooms"
+          description={unreadLine}
+          actions={
+            <div className="fa-msg-actions">
+              {newMessage}
+              <NewRoomCompose buttonLabel="Start a room" buttonClass="btn sm" />
+              <AskVeraButton className="btn glass sm" />
+            </div>
+          }
+          divider={false}
+        />
       )}
+      <div className={pane ? 'ap-cols l fa-msg in-thread' : 'ap-cols l fa-msg'}>
+        <FqToaster />
+        <aside className="side">
+          {pane && (
+            <div className="row" style={{ justifyContent: 'space-between' }}>
+              <h1 className="h2">
+                Messages{totalUnread > 0 ? <span className="meta">{` · ${totalUnread > 99 ? '99+' : totalUnread} new`}</span> : null}
+              </h1>
+              <span className="row fqm-gap-sm">
+                <NewRoomCompose buttonLabel="Room" buttonClass="btn sm" />
+                <Link href="/network" className="btn sm pa" aria-label="New message: pick someone from Members">
+                  <FqIcon name="plus" />
+                  New
+                </Link>
+              </span>
+            </div>
+          )}
+          <InboxList threads={threads} activeKey={activeKey} unreadCount={totalUnread} />
+          {!pane && roomsToJoin && <div className="fqm-phone-only">{roomsToJoin}</div>}
+        </aside>
+        {pane ?? (
+          <section className="panel fa-pane" aria-label="Conversation">
+            <div className="fa-pane-empty">
+              <span className="ic" aria-hidden>
+                <FqIcon name="message" />
+              </span>
+              <span className="h3">Pick a conversation</span>
+              <span className="t2">Or start something new.</span>
+              <div className="fa-start">
+                <Link href="/network">
+                  <FqIcon name="user" />
+                  <span>
+                    <b>Message someone</b>
+                    <small>Pick anyone from Members.</small>
+                  </span>
+                </Link>
+                <Link href="/channels">
+                  <FqIcon name="circle" />
+                  <span>
+                    <b>Find a room</b>
+                    <small>Join the talk in a Channel.</small>
+                  </span>
+                </Link>
+                <AskVeraButton className="fa-start-vera">
+                  <span>
+                    <b>Ask Vera</b>
+                    <small>Help, events, a nudge.</small>
+                  </span>
+                </AskVeraButton>
+              </div>
+            </div>
+            {roomsToJoin}
+          </section>
+        )}
+      </div>
     </div>
   )
 }

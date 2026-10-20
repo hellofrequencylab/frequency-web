@@ -33,6 +33,7 @@ export interface ThreadLite {
 
 const TABS = [
   ['all', 'All'],
+  ['unread', 'Unread'],
   ['people', 'People'],
   ['rooms', 'Rooms'],
 ] as const
@@ -43,7 +44,7 @@ const SORTS = [
   ['az', 'A to Z'],
 ] as const
 
-export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activeKey: string | null }) {
+export function InboxList({ threads, activeKey, unreadCount = 0 }: { threads: ThreadLite[]; activeKey: string | null; unreadCount?: number }) {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>('all')
   const [sort, setSort] = useState<(typeof SORTS)[number][0]>('latest')
   const [find, setFind] = useState('')
@@ -51,7 +52,7 @@ export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activ
 
   const shown = useMemo(() => {
     const rows = threads
-      .filter((t) => tab === 'all' || (tab === 'rooms' ? t.kind === 'room' : t.kind !== 'room'))
+      .filter((t) => tab === 'all' || (tab === 'unread' ? t.unread > 0 : tab === 'rooms' ? t.kind === 'room' : t.kind !== 'room'))
       .filter((t) => !q || `${t.name} ${t.preview}`.toLowerCase().includes(q))
     if (sort === 'az') return [...rows].sort((a, b) => a.name.localeCompare(b.name))
     if (sort === 'unread') return [...rows].sort((a, b) => (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0) || a.order - b.order)
@@ -64,6 +65,7 @@ export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activ
         {TABS.map(([k, label]) => (
           <button key={k} type="button" className={tab === k ? 'on' : undefined} aria-pressed={tab === k} onClick={() => setTab(k)}>
             {label}
+            {k === 'unread' && unreadCount > 0 ? <span className="fa-count">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
           </button>
         ))}
       </div>
@@ -111,6 +113,8 @@ export function InboxList({ threads, activeKey }: { threads: ThreadLite[]; activ
                 Clear
               </button>
             </p>
+          ) : tab === 'unread' ? (
+            <p className="why fqm-pad">Nothing unread. You are all caught up.</p>
           ) : tab === 'rooms' ? (
             <p className="why fqm-pad">No rooms joined yet. Start one with Room, or join an open one.</p>
           ) : (
