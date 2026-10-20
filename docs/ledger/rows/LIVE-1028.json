@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1028",
+  "title": "Channels index rebuilt as a forum board: plain header, one toolbar, your Channels, this week's talk, and every Pillar as rows with the latest thread",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Daniel design changes 2026-10-19, item 29"
+  },
+  "detail": "Daniel 2026-10-19: the Channels page needs to be entirely rethought; remove the image header, standardize the header and sorting with the other pages, and show the features in a way that fits a modern forum. Under SITE_DESIGN frequency the page renders FqChannelsBody: the kit head (no photo), a toolbar (search, Pillar, Show, Sort as URL controls), Your Channels, a Talking about this week trio, a start-a-thread prompt, then each Pillar as board rows with art, description, latest public thread, tuned-in and Circle counts and the tune-in control. A search, Pillar or Show switches to one flat result list. Data: lib/channels/forum-index.ts reads only PUBLIC top-level posts scoped to each Channel, so the index shows no more than the Channel page does. DAWN keeps its tree. No migration. Header placement follows the shared index header (LIVE-1012, plan thread); this row does not edit market-hero, index-template or channels/loading.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/channels/page.tsx','utf8');const l=fs.readFileSync('lib/channels/forum-index.ts','utf8');const bad=[];if(!p.includes('FqChannelsBody'))bad.push('page lacks the forum board');if(!l.includes(\\\"eq('visibility', 'public')\\\"))bad.push('forum read is not limited to public posts');if(bad.length){console.error('LIVE-1028: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the Channels index stops rendering the forum board or its thread read leaves public posts.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

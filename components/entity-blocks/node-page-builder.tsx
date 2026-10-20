@@ -496,7 +496,7 @@ export function NodePageBuilder({
                   onKeyDown={(e) => rowHandleKey(e, row.id, index)}
                   aria-label={`Reorder row ${index + 1}. Press Enter to grab, then use the arrow keys.`}
                   aria-pressed={grabbed}
-                  className="shrink-0 cursor-grab rounded-md border border-border p-1 text-subtle transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text active:cursor-grabbing"
+                  className="shrink-0 cursor-grab rounded-control border border-border p-1 text-subtle transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text active:cursor-grabbing"
                 >
                   <GripVertical className="h-4 w-4" aria-hidden />
                 </button>
