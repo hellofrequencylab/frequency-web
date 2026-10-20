@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
 import { FqIcon } from '@/components/frequency/icon'
@@ -149,14 +150,14 @@ export function FqClassifiedsBody({
       </nav>
 
       {listings.length === 0 ? (
-        <div className="empty stack">
-          <span className="h3">{activeKind ? 'Nothing here yet' : 'Classifieds is just getting started'}</span>
-          <span className="t2">
-            {signedIn
+        <EmptyState
+          title={activeKind ? 'Nothing here yet' : 'Classifieds is just getting started'}
+          description={
+            signedIn
               ? 'Post the first listing. Offer something, give it away, or ask for what you need.'
-              : 'Sign in to post and respond to listings.'}
-          </span>
-        </div>
+              : 'Sign in to post and respond to listings.'
+          }
+        />
       ) : (
         <FqItemGrid sections={[{ items }]} placeholder="Search listings" nearMe={listings.some((l) => l.lat != null)} />
       )}
@@ -277,10 +278,10 @@ export function FqMarketBody({
       </nav>
 
       {empty ? (
-        <div className="empty stack">
-          <span className="h3">{group ? `No ${GROUP_LABEL[group].toLowerCase()} yet.` : 'Nothing in the Market yet.'}</span>
-          <span className="t2">When people and businesses publish to the Market, they show up here.</span>
-        </div>
+        <EmptyState
+          title={group ? `No ${GROUP_LABEL[group].toLowerCase()} yet.` : 'Nothing in the Market yet.'}
+          description="When people and businesses publish to the Market, they show up here."
+        />
       ) : (
         <FqItemGrid sections={sections} placeholder="Search the Market" />
       )}
