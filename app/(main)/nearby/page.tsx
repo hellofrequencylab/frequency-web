@@ -370,7 +370,7 @@ export default async function NearbyPage({
         <section aria-label="Circles forming">
           <SectionHeader title="Circles forming" href="/circles" />
           {newCircles.length > 0 ? (
-            <ModuleCard visualMask="nearby-new-circles">
+            <ModuleCard title="Newest first" visualMask="nearby-new-circles">
               <div className="space-y-0.5">
                 {newCircles.map((c) => (
                   <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated">
