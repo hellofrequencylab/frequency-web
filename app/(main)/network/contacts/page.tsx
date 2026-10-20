@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck, ShieldCheck, Download } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, Search, UserRoundCheck, ShieldCheck, Download } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { googleImportConfigured } from '@/lib/integrations/google/config'
 import { listContacts, listDueReminders, type ContactSort as ContactSortKey } from '@/lib/connections/store'
@@ -19,7 +19,20 @@ import { ContactSort, type ContactSortValue } from '@/components/connections/con
 import { GoogleImportBanner, type GoogleImportOutcome } from '@/components/connections/google-import-banner'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { NetworkHubBar } from '@/components/people/network-hub-bar'
+import { buttonClasses } from '@/components/ui/button'
+import { FqFacetMenu, FqFindField } from '@/components/frequency/members/shared/kit-tools'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import type { NetworkContactListItem } from '@/lib/connections/types'
+
+// FREQUENCY (LIVE-1086): the kit's `.btn` pills, `.tag` chips, find field and sort chip, so the page wears
+// the same controls Members and Friends do. Inlined at build; DAWN keeps its own.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+const SORT_OPTIONS = [
+  { value: 'recent', label: 'Recently added' },
+  { value: 'last_contacted', label: 'Last contacted' },
+  { value: 'follow_up', label: 'Follow-up due' },
+  { value: 'name', label: 'Name' },
+]
 
 const IMPORT_OUTCOMES = ['done', 'cancelled', 'error', 'unavailable'] as const
 
@@ -98,7 +111,7 @@ export default async function ConnectionsPage({
   ])
   const rows = all.filter((c) => matches(c, facet, q))
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       {/* Mobile header is COMPACT: the H1 drops the icon and the description
           shrinks to one line to save vertical space. sm+ keeps the full header.
           The icon inherits the lockup's colour rather than naming one — inside the hero the copy
@@ -109,12 +122,7 @@ export default async function ConnectionsPage({
         // IndexTemplate page to take a position on the hero band.
         heroOverlay={false}
         eyebrow="Your network"
-        title={
-          <span className="flex items-center gap-2">
-            <Contact className="hidden h-5 w-5 sm:block" />
-            My Contacts
-          </span>
-        }
+        title="My Contacts"
         description={
           <>
             <span className="sm:hidden">People you&rsquo;ve met, private to you.</span>
@@ -132,50 +140,75 @@ export default async function ConnectionsPage({
             {googleImportEnabled && (
               <Link
                 href="/api/integrations/google/start"
-                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
+                className={
+                  FREQUENCY
+                    ? buttonClasses('secondary', 'md')
+                    : 'inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2'
+                }
               >
                 <Download className="h-4 w-4" /> Import from Google
               </Link>
             )}
             <Link
               href="/connections/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
+              className={
+                FREQUENCY
+                  ? buttonClasses('primary', 'md')
+                  : 'inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2'
+              }
             >
               <Plus className="h-4 w-4" /> Add a contact
             </Link>
           </div>
         }
-        toolbar={
-          <>
-          <NetworkHubBar active="/network/contacts" />
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <UnderlineTabs
-              activeHref={buildHref(facet, q, sort)}
-              tabs={FACET_TABS.map((t) => ({
-                href: buildHref(t.key, q, sort),
-                label: t.label,
-                count: all.filter((c) => matches(c, t.key, q)).length,
-              }))}
-            />
-            <div className="flex flex-wrap items-end gap-2">
-              <ContactSort value={sort} />
-              <form className="relative pb-2" action="/network/contacts" method="get">
-                {facet !== 'all' && <input type="hidden" name="status" value={facet} />}
-                {sort !== 'recent' && <input type="hidden" name="sort" value={sort} />}
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-[calc(50%+4px)] text-subtle" />
-                <input
-                  name="q"
-                  defaultValue={q}
-                  aria-label="Search contacts"
-                  placeholder="Search…"
-                  className="w-44 rounded-control border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
-                />
-              </form>
-            </div>
-          </div>
-          </>
-        }
+        toolbar={<NetworkHubBar active="/network/contacts" />}
       >
+      {/* The filter row: facet tabs, then sort and search. Under the hub strip, the same slot on every device. */}
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <UnderlineTabs
+          activeHref={buildHref(facet, q, sort)}
+          tabs={FACET_TABS.map((t) => ({
+            href: buildHref(t.key, q, sort),
+            label: t.label,
+            count: all.filter((c) => matches(c, t.key, q)).length,
+          }))}
+        />
+        {FREQUENCY ? (
+          <div className="chips">
+            <FqFacetMenu
+              label="Sort"
+              paramKey="sort"
+              options={SORT_OPTIONS}
+              base="/network/contacts"
+              current={{ status: facet === 'all' ? undefined : facet, q: q || undefined, sort: sort === 'recent' ? undefined : sort }}
+              clearable={false}
+              icon="chart"
+            />
+            <FqFindField
+              action="/network/contacts"
+              value={q}
+              placeholder="Search contacts"
+              keep={{ status: facet === 'all' ? undefined : facet, sort: sort === 'recent' ? undefined : sort }}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-end gap-2">
+            <ContactSort value={sort} />
+            <form className="relative pb-2" action="/network/contacts" method="get">
+              {facet !== 'all' && <input type="hidden" name="status" value={facet} />}
+              {sort !== 'recent' && <input type="hidden" name="sort" value={sort} />}
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-[calc(50%+4px)] text-subtle" />
+              <input
+                name="q"
+                defaultValue={q}
+                aria-label="Search contacts"
+                placeholder="Search…"
+                className="w-44 rounded-control border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
+              />
+            </form>
+          </div>
+        )}
+      </div>
       {importOutcome && (
         <GoogleImportBanner outcome={importOutcome} added={importAdded} skipped={importSkipped} />
       )}
@@ -193,7 +226,11 @@ export default async function ConnectionsPage({
             all.length === 0 ? (
               <Link
                 href="/connections/new"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+                className={
+                  FREQUENCY
+                    ? buttonClasses('primary', 'md')
+                    : 'inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover'
+                }
               >
                 <Plus className="h-4 w-4" /> Add a contact
               </Link>
@@ -235,18 +272,18 @@ export default async function ConnectionsPage({
                 meta={
                   <>
                     {c.linkedProfileId && (
-                      <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success">
+                      <span className={FREQUENCY ? 'tag live' : 'inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success'}>
                         <UserRoundCheck className="h-3 w-3" /> On Frequency
                       </span>
                     )}
                     {/* Promoted into the shared marketing contacts DB (linked_contact_id), ADR-742. */}
                     {c.linkedContactId && (
-                      <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success">
+                      <span className={FREQUENCY ? 'tag live' : 'inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success'}>
                         <ShieldCheck className="h-3 w-3" /> In Frequency contacts
                       </span>
                     )}
                     {c.tags.slice(0, 3).map((t) => (
-                      <span key={t} className="rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">{t}</span>
+                      <span key={t} className={FREQUENCY ? 'tag' : 'rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong'}>{t}</span>
                     ))}
                     {c.tags.length > 3 && <span>+{c.tags.length - 3}</span>}
                     {c.city && (c.title || c.company) && (
