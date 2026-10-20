@@ -1,0 +1,5 @@
+{
+  "id": "PROG-E3",
+  "patch": { "status": "done", "closed": "2026-10-20" },
+  "append": { "detail": " 2026-10-20 split. Density is now a declared per-surface property (BlockSurfaceDisplay.density in define-block.ts) with its scale in lib/entity-blocks/density.ts, and the in-app profile and Spotlight stacks derive from it with no class change; the visual instrument is declared (LIVE-1157). What this row's probe measures is complete. The two remaining halves are carried by their own rows: the first Spotlight and Site pictures (LIVE-1170) and Site as a fourth surface with legality, column ceiling, palette allowlist and renderer (LIVE-1171)." }
+}

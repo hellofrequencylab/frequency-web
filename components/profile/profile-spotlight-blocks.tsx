@@ -34,7 +34,7 @@ export async function ProfileSpotlightBlocks({ handle }: { handle: string }) {
     <MemberProfileModules
       member={data}
       grid={data.grid}
-      className="@container/profile space-y-6"
+      density="compact"
     />
   )
 }

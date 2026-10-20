@@ -1,3 +1,5 @@
+import { stackClassFor } from '@/lib/entity-blocks/density'
+import type { BlockDensity } from '@/lib/entity-blocks/define-block'
 import { Suspense } from 'react'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { defaultMemberLayout } from '@/lib/entity-blocks/context'
@@ -132,7 +134,8 @@ export function MemberProfileModules({
   layout,
   grid,
   editHref,
-  className = '@container/profile space-y-14',
+  density = 'roomy',
+  className = `@container/profile ${stackClassFor(density)}`,
 }: {
   /** The member's already-resolved Spotlight (from getPublishedSpotlight — the ONE reader). */
   member: SpotlightData
@@ -148,8 +151,10 @@ export function MemberProfileModules({
    *  layout editor. When set, each block is wrapped in an OwnerBlockFrame that overlays a hover pencil
    *  linking there. Omitted (every visitor / non-owner render) leaves the render byte-identical. */
   editHref?: (blockId: string) => string
-  /** The FLAT-path wrapper classes. Defaults to the standalone Spotlight rhythm (`space-y-14`); a
-   *  caller embedding the blocks in a denser column (the in-app profile) passes a tighter gap. Must keep
+  /** The surface's density (E3, density.ts). Defaults to `roomy`, the standalone Spotlight rhythm; the in-app
+   *  profile asks for `compact`. Sets the flat-path stack unless `className` overrides it. */
+  density?: BlockDensity
+  /** The FLAT-path wrapper classes, overriding what `density` derives. Must keep
    *  `@container/profile` so blocks size to the column. Ignored on the grid path. */
   className?: string
 }) {
