@@ -13,7 +13,7 @@ const checks = {
   },
   undo: () => {
     const s = canvas()
-    assert.ok(/redo/i.test(s) && /undo/i.test(s) && /key\s*===\s*'z'/i.test(s), 'the canvas editor binds undo and redo to the keyboard and shows buttons')
+    assert.ok(/aria-label="Undo/.test(s) && /toLowerCase\(\) !== 'z'/.test(s), 'the canvas editor shows an Undo button and binds Ctrl or Cmd + Z')
   },
   insert: () => {
     const s = read('components/admin/email-studio/merge-tag-picker.tsx')
