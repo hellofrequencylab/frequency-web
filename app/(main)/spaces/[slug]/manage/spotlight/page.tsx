@@ -8,7 +8,10 @@ import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readTagline } from '@/lib/spaces/tagline'
-import { readSpaceSpotlight, spaceSpotlightGrid } from '@/lib/spaces/spotlight'
+import { readSpaceSpotlight, spaceSpotlightGrid, spaceSpotlightNodes } from '@/lib/spaces/spotlight'
+import { renderPathEnabled } from '@/lib/platform-flags'
+import { LiveNodeGrid } from '@/components/entity-blocks/live-node-grid'
+import { resolveNodeRows } from '@/lib/entity-blocks/node-ops'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
@@ -49,8 +52,17 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   if (!canManage && !staffViewing) notFound()
 
   const spotlight = readSpaceSpotlight(space.preferences)
-  const grid = spaceSpotlightGrid(spotlight)
-  const rows = resolveRows(grid, 'space')
+  // render_path_spotlight (ADR-1855): switched on, the editor and its preview run on nodes. Off, or on any
+  // read error (fail-closed), the type-keyed path below is untouched.
+  const nodePath = await renderPathEnabled('spotlight')
+  const nodes = nodePath ? spaceSpotlightNodes(spotlight) : null
+  // Data blocks draw their own authored header and body from a bag keyed by block type: the first placed
+  // node of each type supplies it. A Map, then fromEntries: a node type is never an assigned property name.
+  const nodeBags = new Map<string, Record<string, unknown>>()
+  for (const row of nodes ? resolveNodeRows(nodes, 'space') : [])
+    for (const n of row.cells.flat()) if (n.content && !nodeBags.has(n.type)) nodeBags.set(n.type, n.content)
+  const grid = nodes ? { rows: [], content: Object.fromEntries(nodeBags) } : spaceSpotlightGrid(spotlight)
+  const rows = nodes ? [] : resolveRows(grid, 'space')
   const context = toProfileContext(space)
 
   const [data, authored, tagline, pageRail, canSell, domain, counts, cards] = await Promise.all([
@@ -102,6 +114,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         content: grid.content ?? {},
         style: grid.style ?? {},
         customized: spotlight.layout != null,
+        ...(nodes ? { nodeLayout: nodes } : {}),
         lockedIds: pageRail.lockedIds,
         pickerData: pageRail.pickerData,
       }
@@ -112,12 +125,16 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       <div className="mx-auto max-w-xl rounded-card border border-border bg-canvas px-4 pb-10">
         <SpotlightHeader space={space} tagline={tagline} />
         <div className="@container/profile mt-8">
-          <LiveProfileGrid
-            nodes={renderSpaceBlockNodes(context, data, authored, grid)}
-            initialRows={rows}
-            initialContent={grid.content ?? {}}
-            initialStyle={grid.style ?? {}}
-          />
+          {nodes ? (
+            <LiveNodeGrid nodes={renderSpaceBlockNodes(context, data, authored, grid)} initialLayout={nodes} />
+          ) : (
+            <LiveProfileGrid
+              nodes={renderSpaceBlockNodes(context, data, authored, grid)}
+              initialRows={rows}
+              initialContent={grid.content ?? {}}
+              initialStyle={grid.style ?? {}}
+            />
+          )}
         </div>
       </div>
     </SpotlightAccent>
