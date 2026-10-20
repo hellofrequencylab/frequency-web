@@ -69,13 +69,14 @@ function renderSection(
   space: Space,
   viewerProfileId: string | null,
   staffViewing: boolean,
+  view?: string,
 ) {
   const common = { space, viewerProfileId, staffViewing }
   switch (anchor) {
     case 'availability':
       return <AvailabilitySection {...common} />
     case 'memberships':
-      return <MembershipsSection {...common} />
+      return <MembershipsSection {...common} view={view} />
     case 'donations':
       return <DonationsSection {...common} />
     default:
@@ -83,7 +84,7 @@ function renderSection(
   }
 }
 
-export async function OfferingsBody({ slug, tab }: { slug: string; tab?: string }) {
+export async function OfferingsBody({ slug, tab, view }: { slug: string; tab?: string; view?: string }) {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -128,7 +129,7 @@ export async function OfferingsBody({ slug, tab }: { slug: string; tab?: string 
           <OfferingsTabs active={active} />
           <div className="pt-6">
             <Suspense key={active} fallback={<SectionSkeleton />}>
-              {renderTab(active, space, viewerProfileId, staffViewing, channels)}
+              {renderTab(active, space, viewerProfileId, staffViewing, channels, view)}
             </Suspense>
           </div>
         </>
@@ -144,6 +145,7 @@ function renderTab(
   viewerProfileId: string | null,
   staffViewing: boolean,
   channels: PayoutChannel[],
+  view?: string,
 ) {
   if (tab === 'paid') return <PaidTab space={space} viewerProfileId={viewerProfileId} channels={channels} />
   if (tab === 'checkin') {
@@ -154,7 +156,7 @@ function renderTab(
   return (
     <section id={anchor} className="scroll-mt-24">
       <p className="mb-5 max-w-prose text-body-sm text-muted">{meta.blurb}</p>
-      {renderSection(anchor, space, viewerProfileId, staffViewing)}
+      {renderSection(anchor, space, viewerProfileId, staffViewing, view)}
     </section>
   )
 }

@@ -95,3 +95,21 @@ export function offeringTabForAnchor(anchor: string): OfferingTab | null {
   if (a === 'availability') return 'bookings'
   return OFFERING_TABS.find((t) => t.key === a)?.key ?? null
 }
+
+/** The views inside the Memberships tab, so plans, perks, circles, events and the member list are each a
+ *  short page of their own instead of one stack. `members` is left out under the Frequency design, where
+ *  the members table already leads the Plans view. PURE. */
+export const MEMBERSHIP_VIEWS = [
+  { key: 'plans', label: 'Plans' },
+  { key: 'benefits', label: 'Benefits' },
+  { key: 'circles', label: 'Circles' },
+  { key: 'events', label: 'Event access' },
+  { key: 'members', label: 'Members' },
+] as const
+
+export type MembershipView = (typeof MEMBERSHIP_VIEWS)[number]['key']
+
+/** Narrow a `?view=` value to a known Memberships view, defaulting to Plans. PURE. */
+export function asMembershipView(raw: string | null | undefined): MembershipView {
+  return MEMBERSHIP_VIEWS.find((v) => v.key === raw)?.key ?? MEMBERSHIP_VIEWS[0].key
+}
