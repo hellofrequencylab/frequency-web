@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { ExternalLink, QrCode } from 'lucide-react'
 import { EntityLayoutProvider, type SaveLayout } from '@/components/entity-blocks/profile-layout-context'
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
+import { NodeLayoutProvider, type SaveNodeLayout } from '@/components/entity-blocks/node-layout-store'
+import { NodeLinkListBuilder } from '@/components/entity-blocks/node-link-list-builder'
+import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { Switch } from '@/components/ui/switch'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
@@ -53,6 +56,13 @@ export function SpaceSpotlightEditor({
   clicks?: { label: string; count: number }[]
 }) {
   const save = useCallback<SaveLayout>((payload) => saveSpaceSpotlightLayout(slug, payload), [slug])
+  const saveNodes = useCallback<SaveNodeLayout>(
+    (layout) => saveSpaceSpotlightLayout(slug, layout as unknown as BuilderLayout),
+    [slug],
+  )
+  // The server page passes a node layout only while render_path_spotlight is on (ADR-1855): the editor then
+  // runs on the node store and saves the node document. Absent, nothing about the editor changes.
+  const nodePath = !!seed?.nodeLayout
   const loadRailData = useCallback(async () => seed, [seed])
   const [published, setPublished] = useState(initialPublished)
   const [error, setError] = useState<string | null>(null)
@@ -82,8 +92,7 @@ export function SpaceSpotlightEditor({
 
   const href = `/spaces/${slug}/spotlight`
 
-  return (
-    <EntityLayoutProvider kind="space" save={save}>
+  const body = (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
           <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Publish">
@@ -220,7 +229,10 @@ export function SpaceSpotlightEditor({
             </section>
           )}
 
-          {seed && (
+          {seed && nodePath && (
+            <NodeLinkListBuilder pageId={slug} loadRailData={loadRailData} seed={seed} paletteBlockIds={SPACE_SPOTLIGHT_BLOCK_IDS} />
+          )}
+          {seed && !nodePath && (
             <EntityPageBuilder
               pageId={slug}
               kind="space"
@@ -237,6 +249,15 @@ export function SpaceSpotlightEditor({
           {preview}
         </section>
       </div>
+  )
+
+  return nodePath ? (
+    <NodeLayoutProvider identity={`spotlight:${slug}`} save={saveNodes}>
+      {body}
+    </NodeLayoutProvider>
+  ) : (
+    <EntityLayoutProvider kind="space" save={save}>
+      {body}
     </EntityLayoutProvider>
   )
 }

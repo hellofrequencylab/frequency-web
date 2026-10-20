@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1054",
+  "title": "Editor E0 task 12b, Spotlight editor slice: the Spotlight editor and its console preview run on the node store behind the switch",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 6; §8 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. app/(main)/spaces/[slug]/manage/spotlight/page.tsx reads renderPathEnabled('spotlight'); on, it seeds the builder with the Spotlight as nodes (spaceSpotlightNodes) and draws the preview with LiveNodeGrid. SpaceSpotlightEditor mounts a NodeLayoutProvider that saves through saveSpaceSpotlightLayout and the NodeLinkListBuilder when the seed carries a node layout, else the legacy provider and EntityPageBuilder unchanged. Honest gap: the public Spotlight (app/spaces/[slug]/spotlight) and the website Spotlight still read the type-keyed projection, which is empty for a native document, so render_path_spotlight must stay off until LIVE-1055.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const rd=f=>fs.readFileSync(f,'utf8');const bad=[];const e=rd('components/spotlight/space-spotlight-editor.tsx');if(!e.includes('NodeLinkListBuilder')||!e.includes('NodeLayoutProvider'))bad.push('editor has no node path');if(!e.includes('EntityLayoutProvider'))bad.push('legacy path lost');if(!rd('app/(main)/spaces/[slug]/manage/spotlight/page.tsx').includes(\\\"renderPathEnabled('spotlight')\\\"))bad.push('page ignores the switch');if(bad.length){console.error('LIVE-1054: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the Spotlight editor loses its node path or its legacy path, or the console page stops following render_path_spotlight. Behavior is space-spotlight-editor.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}
