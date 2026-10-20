@@ -6,10 +6,19 @@
 
 // Compact on mobile (px-3 / text-meta) so a hero's two actions sit on ONE row instead of
 // wrapping to a second; full size from sm up. Keeps the four browse surfaces identical.
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (LIVE-1012): the browse headers are the plain kit `.head` (no photo band), so the actions sit
+// on the canvas, not on ink. They are the kit's own buttons: the pastel pill for the primary, the
+// hairline pill for the secondary. DAWN keeps the on-ink pair below.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
 /** The primary CTA on a hero band (Add Event / Create a space / Start a circle). */
-export const HERO_PRIMARY_BTN =
-  'inline-flex items-center gap-1.5 whitespace-nowrap rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-4 sm:text-body-sm'
+export const HERO_PRIMARY_BTN = FREQUENCY
+  ? 'btn pa sm'
+  : 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-4 sm:text-body-sm'
 
 /** The secondary, on-ink action riding the dark hero image (Manage / My drafts). */
-export const HERO_SECONDARY_BTN =
-  'inline-flex items-center gap-1.5 whitespace-nowrap rounded-control border border-on-ink/30 bg-on-ink/10 px-3 py-2 text-meta font-semibold text-on-ink transition-colors hover:bg-on-ink/20 sm:px-4 sm:text-body-sm'
+export const HERO_SECONDARY_BTN = FREQUENCY
+  ? 'btn sm'
+  : 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-control border border-on-ink/30 bg-on-ink/10 px-3 py-2 text-meta font-semibold text-on-ink transition-colors hover:bg-on-ink/20 sm:px-4 sm:text-body-sm'

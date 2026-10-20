@@ -17,6 +17,7 @@ import { buildCalendarMonth, resolveMonth } from './calendar-month'
 import { FqPeopleToMeet } from './events-lanes'
 import { FqAroundYou, FqAroundYouFrame } from './around-you'
 import { ayMapItems } from './around-you-items'
+import { EventsAddBox } from './events-add-box'
 import { FqEventsMapLightbox, FqMapButton } from './events-map-lightbox'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
@@ -26,7 +27,7 @@ import { hubLinks } from '@/components/frequency/members/shell/nav'
 // plain member header, the one sticky toolbar (search, Filters on a phone, List / Map / Calendar, More),
 // the Around you feature (SCAN-975: the member's next event or best pick, three balanced cards, the
 // pulse strip, the ticker and the map's door), People to meet, then the library: the category tabs and
-// facet row in one bar that sticks under the toolbar, and a truncated grid four wide that grows a page
+// facet row in one bar that sticks under the toolbar, and a truncated grid three wide that grows a page
 // at a time. Map is a lightbox over the page (events-map-lightbox.tsx), not a view of its own.
 //
 // EVERY CONTROL IS A URL. Search is a GET form, each tab / facet / sort / view / month is a link that
@@ -53,7 +54,7 @@ function asView(raw: string | undefined): ViewKey {
   return raw === 'calendar' ? raw : 'list'
 }
 
-/** The library's page: four across, three rows, then "Show more" adds a page, up to ROW_CAP. */
+/** The library's page: three across, four rows, then "Show more" adds a page, up to ROW_CAP. */
 const LIB_STEP = 12
 /** How many cards the grid draws before it hands off to the calendar. */
 const ROW_CAP = 60
@@ -154,9 +155,22 @@ export function FqEventsBody({
     </Link>
   ) : null
   // Quick picks on a phone: the common date bands, each a toggle link (SCAN-919).
-  const QUICK_DATES = ['today', 'week', 'weekend']
+  const QUICK_DATES = ['today', 'week', 'weekend', 'month']
   const dateFacet = facetBy('date')
   const activeCat = tabs.find((t) => t.value && t.value === params.category)
+  // LIVE-1015: every filter that is set, as a removable chip with its readable label, plus the search words.
+  const activeChips: { key: string; label: string }[] = [
+    ...(params.q ? [{ key: 'q', label: `\u201C${params.q}\u201D` }] : []),
+    ...sheetKeys
+      .filter((k) => !!params[k])
+      .map((k) => ({
+        key: k,
+        label:
+          k === 'category'
+            ? activeCat?.label ?? String(params[k])
+            : facetBy(k)?.options.find((o) => o.value === params[k])?.label ?? String(params[k]),
+      })),
+  ]
 
   return (
     <>
@@ -190,6 +204,20 @@ export function FqEventsBody({
         </div>
       </section>
 
+      {featured && (
+        <Suspense fallback={<FqAroundYouFrame />}>
+          <FqAroundYou data={data} mapItems={mapItems} />
+        </Suspense>
+      )}
+      {featured && myProfileId && (
+        <Suspense fallback={null}>
+          <FqPeopleToMeet viewerProfileId={myProfileId} eventIds={sortedEvents.map((e) => e.id)} />
+        </Suspense>
+      )}
+
+      {/* LIVE-1014 (owner, 2026-10-19): the search bar now sits UNDER the feature, the map and People to meet,
+          so the spotlight leads. Searching or filtering turns the feature off, so the bar then follows the
+          header directly. */}
       {/* THE ONE TOOLBAR (SCAN-919): search, then Filters (a phone's bottom sheet), then the view switch,
           then the host actions in one More menu. It sticks under the header so the controls stay one
           thumb away while the list scrolls. */}
@@ -335,17 +363,6 @@ export function FqEventsBody({
         {anyFilter && <FqClearLink base={hrefWith(base, keepView, {})} active />}
       </nav>
 
-      {featured && (
-        <Suspense fallback={<FqAroundYouFrame />}>
-          <FqAroundYou data={data} mapItems={mapItems} />
-        </Suspense>
-      )}
-      {featured && myProfileId && (
-        <Suspense fallback={null}>
-          <FqPeopleToMeet viewerProfileId={myProfileId} eventIds={sortedEvents.map((e) => e.id)} />
-        </Suspense>
-      )}
-
       {/* THE LIBRARY BAR (SCAN-975): the category tabs and the facet and sort menus in one bar that sticks
           under the toolbar while the library scrolls, so a sort is always one tap away. A phone keeps the
           Filters sheet instead (SCAN-919), so the bar draws nothing there. */}
@@ -372,7 +389,31 @@ export function FqEventsBody({
         </div>
 
         <div className="fqm-tools ev-facets">
-          {otherFacets.map((f) => (
+          {dateFacet && (
+            <nav className="evx-seg ev-datepick" aria-label="When">
+              <Link
+                href={hrefWith(base, params, { date: null, show: null })}
+                className={params.date ? undefined : 'on'}
+                aria-current={params.date ? undefined : 'true'}
+              >
+                Any time
+              </Link>
+              {dateFacet.options.map((o) => {
+                const on = params.date === o.value
+                return (
+                  <Link
+                    key={o.value}
+                    href={hrefWith(base, params, { date: on ? null : o.value, show: null })}
+                    className={on ? 'on' : undefined}
+                    aria-current={on ? 'true' : undefined}
+                  >
+                    {o.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          )}
+          {otherFacets.filter((f) => f.paramKey !== 'date').map((f) => (
             <FqFacetMenu
               key={f.paramKey}
               label={f.label}
@@ -384,7 +425,7 @@ export function FqEventsBody({
             />
           ))}
           <span className="fqm-end" />
-          {anyFilter && <FqClearLink base={hrefWith(base, keepView, {})} active />}
+          {anyFilter && activeChips.length === 0 && <FqClearLink base={hrefWith(base, keepView, {})} active />}
           {sortOptions.length > 1 && (
             <FqFacetMenu
               label="Sort"
@@ -397,6 +438,26 @@ export function FqEventsBody({
             />
           )}
         </div>
+
+        {activeChips.length > 0 && (
+          <div className="ev-active" role="group" aria-label="Active filters">
+            <span className="ev-active-n" aria-live="polite">
+              {sortedEvents.length} {sortedEvents.length === 1 ? 'event' : 'events'}
+            </span>
+            {activeChips.map((c) => (
+              <Link
+                key={c.key}
+                className="chip on"
+                href={hrefWith(base, params, { [c.key]: null, show: null })}
+                aria-label={`${c.label}, remove filter`}
+              >
+                {c.label}
+                <FqIcon name="close" />
+              </Link>
+            ))}
+            <FqClearLink base={hrefWith(base, keepView, {})} active />
+          </div>
+        )}
       </div>
 
       {calendar ? (
@@ -421,7 +482,7 @@ export function FqEventsBody({
               {params.q ? ` for “${params.q}”` : ''}
             </span>
           </div>
-          <div className="ev-list ev-list4">
+          <div className="ev-list ev-list3">
             {shown.length === 0 ? (
               <div className="ev-empty">
                 <span className="ic">
@@ -462,6 +523,8 @@ export function FqEventsBody({
           )}
         </section>
       )}
+
+      <EventsAddBox signedIn={!!myProfileId} userHasEvents={userHasEvents} />
 
       {/* The hub's own doors (New event, Drafts, Manage) close the page, full width, so no side column
           grows beside Around you (SCAN-997). */}

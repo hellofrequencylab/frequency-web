@@ -309,7 +309,7 @@
    · the map lightbox (.evm-dlg) and its .evm-tile door live in events-map.css (SCAN-998), so the right rail
      can open the same lightbox without loading this sheet.
    · .ev-libbar, the category tabs and the facet and sort menus in one bar that sticks under the toolbar
-     (.ev-tb is 64px tall) while the library scrolls; .ev-list4, the library four across.
+     (.ev-tb is 64px tall) while the library scrolls; .ev-list4, the library four across (the SCAN-975 probe pins it); .ev-list3, the library three across (LIVE-1014).
    Surface, text, ink and accent tokens only, so the light canvas and the night room both read. */
 @layer components {
 [data-design="frequency"] [data-kit="members"] .ay{display:flex;flex-direction:column;gap:18px;margin:8px 0 48px}
@@ -423,6 +423,34 @@
 @media (max-width:560px){
 [data-design="frequency"] [data-kit="members"] .ev-list4{grid-template-columns:minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .ay-spot-cover,[data-design="frequency"] [data-kit="members"] .ev-list4 .ev-cover{aspect-ratio:2/1}
+}
+[data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:900px){
+[data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+[data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .ev-list3 .ev-cover{aspect-ratio:2/1}
+}
+/* LIVE-1014 / 1015 / 1016: the Around you line under the feature, the date picker and active chips, the Add an event box. */
+[data-design="frequency"] [data-kit="members"] .ay-line{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin:0}
+[data-design="frequency"] [data-kit="members"] .ay-line .h3{display:inline-flex;align-items:center;gap:8px;margin:0}
+[data-design="frequency"] [data-kit="members"] .ay-line .t2{font-size:14px}
+[data-design="frequency"] [data-kit="members"] .ev-datepick{margin:0;flex:none}
+[data-design="frequency"] [data-kit="members"] .ev-datepick a{height:36px;padding:0 12px;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .ev-active{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0 0 12px}
+[data-design="frequency"] [data-kit="members"] .ev-active-n{font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);margin-right:4px}
+[data-design="frequency"] [data-kit="members"] .ev-active .chip .fq-icon{width:13px;height:13px}
+[data-design="frequency"] [data-kit="members"] .ev-add{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:center;margin:48px 0 32px;padding:32px;border-radius:28px;background:var(--fq-surface-raised);box-shadow:0 1px 2px var(--fqm-ink-4),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .ev-add-in{display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:0}
+[data-design="frequency"] [data-kit="members"] .ev-add-in .body{max-width:46ch;margin:0}
+[data-design="frequency"] [data-kit="members"] .ev-add-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+[data-design="frequency"] [data-kit="members"] .ev-add-steps{display:grid;gap:14px;margin:0;padding:0;list-style:none}
+[data-design="frequency"] [data-kit="members"] .ev-add-steps li{display:grid;grid-template-columns:36px minmax(0,1fr);column-gap:12px;align-items:center}
+[data-design="frequency"] [data-kit="members"] .ev-add-steps .ic{grid-row:1/3;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--fqm-ink-4);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .ev-add-steps .ic .fq-icon{width:18px;height:18px}
+@media (max-width:767.98px){
+[data-design="frequency"] [data-kit="members"] .ev-add{grid-template-columns:minmax(0,1fr);padding:22px;gap:20px;border-radius:22px;margin:36px 0 24px}
 }
 @media (prefers-reduced-motion:reduce){
 [data-design="frequency"] [data-kit="members"] .ay-pulse.moving .ay-pulse-row{animation:none}
