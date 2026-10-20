@@ -37,6 +37,8 @@ export interface LadderRung {
   chip: { label: string; className: string } | null
   /** The plan the Choose button buys, when this rung is choosable by this Space. */
   choose: 'business' | 'collective' | 'network' | null
+  /** Network only: the yearly package (ten chapters, pay for eight), offered on the yearly view. */
+  package?: { price: string; blurb: string } | null
 }
 
 export function PlanLadderRungs({
@@ -76,6 +78,14 @@ export function PlanLadderRungs({
                   {note && <span className="text-2xs font-medium text-primary-strong">{note}</span>}
                 </div>
                 <p className="mt-0.5 text-meta leading-relaxed text-muted">{rung.blurb}</p>
+                {rung.package && interval === 'year' && slug && (
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-control border border-border px-3 py-2">
+                    <p className="min-w-0 flex-1 text-meta leading-relaxed text-text">
+                      <span className="font-semibold">Yearly package {rung.package.price}.</span> {rung.package.blurb}
+                    </p>
+                    <ChoosePlanButton slug={slug} plan="network" interval="year" networkPackage label="Choose the package" />
+                  </div>
+                )}
               </div>
               {rung.choose && slug ? (
                 <ChoosePlanButton slug={slug} plan={rung.choose} interval={interval} label={`Choose ${rung.label}`} />

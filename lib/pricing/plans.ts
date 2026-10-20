@@ -85,14 +85,23 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
 
 /** The Network plan's catalog values. PURE data, the one place they are written down. */
 export const NETWORK_PLAN = {
-  /** From $599/mo for the included chapters. */
-  monthlyCents: 59_900,
-  /** Verified non profit rate. */
-  nonprofitMonthlyCents: 47_900,
-  /** Chapters included in the base price. */
-  includedChapters: 10,
-  /** Each chapter past the included ten. */
-  extraChapterCents: 4_900,
+  /** The Partner Network is priced as a base plus a price per chapter (owner 2026-10-20): $149 a month plus
+   *  $59 for each chapter. The base price a Space starts on includes the first three chapters. */
+  baseCents: 14_900,
+  /** Each chapter (owner 2026-10-20), counted from the first. */
+  chapterCents: 5_900,
+  /** Chapters included in the starting price: baseCents + 3 x chapterCents. */
+  includedChapters: 3,
+  /** From $326/mo for the included chapters. */
+  monthlyCents: 14_900 + 3 * 5_900,
+  /** Verified non profit rate: $119 plus $47 a chapter, about 20% under the Partner rate. */
+  nonprofitBaseCents: 11_900,
+  nonprofitChapterCents: 4_700,
+  nonprofitMonthlyCents: 11_900 + 3 * 4_700,
+  /** Each chapter past the included three. */
+  extraChapterCents: 5_900,
+  /** Each chapter past the included three, for a verified non profit. */
+  nonprofitExtraChapterCents: 4_700,
   /** The most chapters the plan sells; past this the plan is a quote. */
   maxChapters: 25,
   /** The fee on sales Frequency sends (bps). Own-audience sales stay 0%, like every plan. */
@@ -102,9 +111,27 @@ export const NETWORK_PLAN = {
   /** Resonance matches a month, Vera AI's metered depth: five times Collective's 10,000. */
   veraMonthlyMatches: 50_000,
   /** The live Stripe price for the monthly base (network_base_month). Null means quote only. */
-  stripePriceId: 'price_1UREmtPhyalyRPP1cFZwkpf0' as string | null,
+  stripePriceId: 'price_1USlPEPhyalyRPP1XtS07x5C' as string | null,
   /** What a surface says instead of a price button while there is no Stripe price. */
   quoteLabel: 'Talk to us',
+  /** The Founding offer (owner 2026-10-20): a year of Network costs nine months instead of ten, first year
+   *  only, through the same January 1 as Collective Founding. Applied as a one-time 10% coupon on the
+   *  first yearly invoice, so no second price is minted and the renewal is list. */
+  foundingYearMonths: 9,
+  /** The yearly package (owner 2026-10-20): ten chapters, pay for eight. Yearly only, no Founding stack.
+   *  Bought as the base plus seven chapters, less a coupon worth two chapters, so capacity and the billing
+   *  page's chapter editor work unchanged. */
+  packageChapters: 10,
+  packagePaidChapters: 8,
+  /** Independent Network (sales-led, ADR-1815): the yearly agreement starts here, plus a one-time setup and onboarding fee. */
+  independentYearFromCents: 3_000_000,
+  independentSetupCents: 500_000,
+  /** Stripe coupons (live account). Founding: 10% off the first yearly invoice, base item only, redeemable
+   *  until the Founding end instant. Package: two chapters off every yearly invoice, as an amount. */
+  couponFounding: 'network-founding-year',
+  couponNonprofitFounding: 'nonprofit-network-founding-year',
+  couponPackage: 'network-package-year',
+  couponNonprofitPackage: 'nonprofit-network-package-year',
 } as const
 
 /** Can a Network be bought through checkout? Only once a Stripe price id exists. PURE. */
@@ -112,13 +139,29 @@ export function networkCheckoutOpen(stripePriceId: string | null = NETWORK_PLAN.
   return typeof stripePriceId === 'string' && stripePriceId.length > 0
 }
 
-/** The monthly Network price for a chapter count: the base covers the included ten, each chapter past
- *  that adds $49, and more than 25 chapters is a quote (null). Non profit swaps the base. PURE. */
+/** The monthly Network price for a chapter count: the base plus the per-chapter price from the first
+ *  chapter, never less than the included three, and more than 25 chapters is a quote (null). Non profit
+ *  swaps both numbers. PURE. */
 export function networkMonthlyCents(chapters: number, opts: { nonprofit?: boolean } = {}): number | null {
   const n = Math.max(0, Math.trunc(Number.isFinite(chapters) ? chapters : 0))
   if (n > NETWORK_PLAN.maxChapters) return null
-  const base = opts.nonprofit ? NETWORK_PLAN.nonprofitMonthlyCents : NETWORK_PLAN.monthlyCents
-  return base + Math.max(0, n - NETWORK_PLAN.includedChapters) * NETWORK_PLAN.extraChapterCents
+  const base = opts.nonprofit ? NETWORK_PLAN.nonprofitBaseCents : NETWORK_PLAN.baseCents
+  const each = opts.nonprofit ? NETWORK_PLAN.nonprofitChapterCents : NETWORK_PLAN.chapterCents
+  return base + Math.max(NETWORK_PLAN.includedChapters, n) * each
+}
+
+/** The yearly price of the Network package: ten chapters, eight paid, ten months billed. PURE. */
+export function networkPackageYearCents(opts: { nonprofit?: boolean } = {}): number {
+  const base = opts.nonprofit ? NETWORK_PLAN.nonprofitBaseCents : NETWORK_PLAN.baseCents
+  const each = opts.nonprofit ? NETWORK_PLAN.nonprofitChapterCents : NETWORK_PLAN.chapterCents
+  return 10 * (base + NETWORK_PLAN.packagePaidChapters * each)
+}
+
+/** The first-year Founding price of a Network starting at `chapters` (at least three): nine months of the
+ *  monthly total instead of ten. PURE. Null past the 25-chapter ceiling. */
+export function networkFoundingYearCents(chapters: number, opts: { nonprofit?: boolean } = {}): number | null {
+  const monthly = networkMonthlyCents(chapters, opts)
+  return monthly === null ? null : NETWORK_PLAN.foundingYearMonths * monthly
 }
 
 // LEGACY -> NEW plan remap (ADR-552). The retired tier names narrow forward at READ time so a Space still

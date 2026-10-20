@@ -25,7 +25,7 @@ export default async function ChaptersPage({ params }: { params: Promise<{ slug:
   if (ownerBelowNetwork && isCollectivePlan(space.plan)) redirect(`/spaces/${slug}/settings/billing`)
   if (ownerBelowNetwork) {
     return (
-      <ConsoleFocusTemplate title="Chapters" description="Chapters come with the Network plan: up to ten member Spaces under one home, chapter leaders, central admins, one membership that works everywhere, and an approval queue before a chapter event goes network-wide."
+      <ConsoleFocusTemplate title="Chapters" description="Chapters come with the Network plan: three member Spaces to start, up to 25 under one home, chapter leaders, central admins, one membership that works everywhere, and an approval queue before a chapter event goes network-wide."
         back={{ href: `/spaces/${slug}/manage?section=settings`, label: 'Settings' }}>
         <p className="text-body-sm text-muted">Your Space is on the {SPACE_PLAN_LABEL[asSpacePlan(space.plan)]} plan. Pick Network under Plan and billing and your chapters appear here.</p>
         <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('primary', 'sm')}>See plans</Link>

@@ -31,10 +31,10 @@ import {
   formatLoadoutCents,
   type LoadoutTotal,
 } from './loadout'
-import { ADDON_ENTITLEMENT_KEYS, NETWORK_PLAN, SPACE_PLAN_LABEL, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
+import { ADDON_ENTITLEMENT_KEYS, NETWORK_PLAN, SPACE_PLAN_LABEL, networkCheckoutOpen, networkFoundingYearCents, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
 import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
-import { isBetaPricingActive, effectiveCatalogAmounts, foundingOpenFor } from './beta'
+import { isBetaPricingActive, effectiveCatalogAmounts, foundingOpenFor, networkFoundingOpen } from './beta'
 import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 // The approved copy spine, which deliberately lives in a LEAF module (ADR-1368). Imported here only
 // so this module can read it (pricingLadderSummary) and re-export it for existing callers.
@@ -257,7 +257,7 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   business: { label: 'Start with Business', href: '/spaces' },
   collective: { label: 'Start a Collective', href: '/spaces' },
   nonprofit: { label: 'Get verified', href: '/spaces' },
-  network: { label: 'Talk to us', href: '/networks' },
+  network: networkCheckoutOpen() ? { label: 'Start a Network', href: '/spaces' } : { label: 'Talk to us', href: '/networks' },
 }
 
 /** Build the public Space tier columns: Free Space FIRST (the first level of Space, where the core
@@ -315,7 +315,9 @@ export function pricingTiers(
     const itemKey = id === 'free' || id === 'network' ? null : TIER_ITEM[id]
     const item = itemKey ? cat[itemKey] : null
     const from: CatalogAmounts = { listCents: NETWORK_PLAN.monthlyCents, foundingCents: NETWORK_PLAN.monthlyCents }
-    const fromYear: CatalogAmounts = { listCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents), foundingCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents) }
+    // The yearly view strikes the list year while the Founding offer is open: nine months for the first year.
+    const foundingYear = networkFoundingOpen() ? networkFoundingYearCents(NETWORK_PLAN.includedChapters) : null
+    const fromYear: CatalogAmounts = { listCents: yearlyFromMonthly(NETWORK_PLAN.monthlyCents), foundingCents: foundingYear ?? yearlyFromMonthly(NETWORK_PLAN.monthlyCents) }
     return {
       id,
       name: offeringLadderLabel(o),
@@ -401,8 +403,8 @@ interface PersonaLoadout {
 
 /** The SIX persona doors (ADR-590; teachers added by the demographic canon, ADR-1715): one system, presented by who they are. Each resolves to Business,
  *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
- *  Engine on (Business + Resonance = $29 + $20/mo at list); studios and event hosts run on Business
- *  ($29/mo); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the catalog,
+ *  Engine on (Business + Resonance = $49 + $20/mo at list); studios and event hosts run on Business
+ *  ($49/mo); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the catalog,
  *  never hardcoded, so a catalog change reflows every figure — the figures here moved on their own when
  *  the owner closed the beta window (ADR-1060) and the strip flipped to list. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [

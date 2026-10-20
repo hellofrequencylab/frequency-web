@@ -114,6 +114,9 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([500, 1000, 2500])
     // The pre-selected suggestion must itself be a preset, or the picker opens on nothing.
     expect(PWYW_CONFIG_DEFAULT.presetCents).toContain(PWYW_CONFIG_DEFAULT.suggestedCents)
+    // The pre-selected amount is the MIDDLE preset (owner 2026-10-20).
+    const sorted = [...PWYW_CONFIG_DEFAULT.presetCents].sort((a, b) => a - b)
+    expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(sorted[Math.floor(sorted.length / 2)])
   })
   it('the crew_presets migration writes the same presets and suggestion as the code default', () => {
     const sql = readFileSync('supabase/migrations/20270346005600_crew_presets_five_dollars.sql', 'utf8')
