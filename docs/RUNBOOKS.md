@@ -709,7 +709,7 @@ Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production
 
 1. Migration `20270346010200` applied (`space_loyalty_programs`, `loyalty_stamps`, `loyalty_rewards`, `loyalty_record_visit`). **agent** confirms from `pg_tables` and `pg_proc`.
 2. `zap_config` holds `space_checkin` at 25 with `daily_cap` 75 (the migration seeds it; `/admin/gamification` shows it).
-3. One staff Space with a map pin and a Business plan has saved a program ON, and a staff member has checked in at its door code twice on two days: the second check-in shows two stamps and 25 Zaps once a day.
+3. One staff Space on a Business plan (a map pin is optional) has saved a program ON, and a staff member has checked in at its door code twice on two days: the second check-in shows two stamps and 25 Zaps once a day.
 4. The NFC tag at that door carries the same signed link as the QR and opens the check-in on an iPhone and an Android phone.
 5. Migrations `20270346010300` (hunts), `20270346010400` (surprise stamp, standing) and `20270346011300` (Tap to meet) applied; `zap_config` holds `hunt_complete` (100, cap 100) and `meetup_tap` (15, cap 45). **agent** confirms. The same switch opens hunts, the nearby list on `/rewards` and `/meet`.
 

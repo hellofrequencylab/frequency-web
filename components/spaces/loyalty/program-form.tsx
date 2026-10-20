@@ -24,11 +24,13 @@ export function LoyaltyProgramForm({
   spaceId,
   initial,
   blocker,
+  hasPin,
 }: {
   spaceId: string
   initial: LoyaltyProgram
   /** Why the Space cannot turn the program on yet, or null. The form still saves a draft. */
-  blocker: 'no_location' | 'plan' | null
+  blocker: 'plan' | null
+  hasPin: boolean
 }) {
   const router = useRouter()
   const [on, setOn] = useState(initial.status === 'on')
@@ -168,7 +170,8 @@ export function LoyaltyProgramForm({
         />
 
         <Checkbox
-          checked={geofence}
+          checked={geofence && hasPin}
+          disabled={!hasPin}
           onChange={(e) => {
             setGeofence(e.target.checked)
             touch()
@@ -176,6 +179,7 @@ export function LoyaltyProgramForm({
           label="Only count a check-in from inside the shop (within 200 m of your map pin)"
           wrapperClassName="flex"
         />
+        {!hasPin && <p className="text-meta text-muted">Add a map pin under Profile to use this. Check-ins work without one.</p>}
 
         <Checkbox
           checked={on}
@@ -187,9 +191,6 @@ export function LoyaltyProgramForm({
           label="Regulars is on"
           wrapperClassName="flex"
         />
-        {blocker === 'no_location' && (
-          <p className="text-meta text-muted">Add the street address and map pin under Profile first. Regulars needs a physical location.</p>
-        )}
         {blocker === 'plan' && (
           <p className="text-meta text-muted">Regulars is a Business feature. The draft saves now and turns on with the plan.</p>
         )}

@@ -2,9 +2,9 @@
 // verification surfaces: a Space owner submits their EIN + legal org name to request the discounted Non
 // Profit plan, and an operator approves or rejects it. Non Profit is the verified-501(c)(3) sibling of
 // Business (the SAME full depth, discounted per seat), so the ONLY difference from Business is price +
-// this human review. Approval marks the Space eligible and grants the plan through the EXISTING plan-set
-// path (setSpacePlan, lib/pricing/space-plan.ts) — this module never writes spaces.plan/entitlements
-// directly, so there is one plan-set path, not two.
+// this human review. Approval marks the Space verified, which unlocks the Choose Non Profit checkout
+// (LIVE-994): the plan is paid ($39 a month with the trial), never granted free. This module never
+// writes spaces.plan/entitlements; the checkout and its webhook are the one plan-set path.
 //
 // Backed by the service-role admin client (space_nonprofit_verifications is in the generated DB
 // types, so access is typed; mirrors lib/spaces/tickets.ts). The server is the authority for
@@ -21,7 +21,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { setSpacePlan } from '@/lib/pricing/space-plan'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { emitOrgVerified } from '@/lib/trust/emitters'
 
@@ -280,11 +279,10 @@ async function writeDecision(
 
 /**
  * APPROVE a verification (service-role; the route action gates the reviewer as staff/janitor). Marks the
- * row verified, then GRANTS the discounted Non Profit plan through the EXISTING plan-set path
- * (setSpacePlan with force:true — the explicit operator grant that stands regardless of the billing-live
- * switch, exactly what force is for). setSpacePlan writes spaces.plan = 'nonprofit' and set-to-targets
- * the billing entitlement namespace to the Non Profit depth (identical to Business). Idempotent-ish:
- * re-approving a verified row re-grants the same plan. Returns ActionResult.
+ * row verified, which UNLOCKS the Choose Non Profit checkout (LIVE-994, ADR-1811): a verified 501(c)(3)
+ * pays the flat Non Profit plan with the trial, same as every other paid plan. Approval no longer grants
+ * the plan free. startSpaceLoadoutCheckout already allows plan 'nonprofit' only for a verified Space.
+ * Re-approving a verified row is a no-op for the plan. Returns ActionResult.
  */
 export async function approveVerification(id: string, reviewerId: string): Promise<ActionResult> {
   if (!id) return fail('Missing verification.')
@@ -294,14 +292,6 @@ export async function approveVerification(id: string, reviewerId: string): Promi
   const dbErr = await writeDecision(id, { status: 'verified', reviewerId })
   if (dbErr) return fail('Could not approve the request. Try again.')
 
-  // Grant the Non Profit plan via the existing plan-set path. force:true because approval is the
-  // explicit operator grant and must take effect even while billing is OFF (setSpacePlan §force).
-  const grant = await setSpacePlan(row.spaceId, 'nonprofit', { force: true })
-  if (!grant.ok) {
-    // The decision is recorded, but the plan did not flip. Surface it so the operator can retry rather
-    // than believe the Space is on Non Profit when it is not.
-    return fail('Marked verified, but granting the Non Profit plan failed. Try again.')
-  }
   // A verified Non Profit is a trust credit for the member who submitted it (LIVE-679). Best-effort.
   await emitOrgVerified({ id, submittedBy: row.submittedBy, spaceId: row.spaceId })
   return ok()

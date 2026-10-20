@@ -4,7 +4,7 @@
 how the program works and why. Whether a phase shipped is a backlog row (`LIVE-940` to `LIVE-946`).
 Decision record: ADR-1780.
 
-A Space with a physical location can run **Regulars**: members check in at the door code, earn
+A Space on a Business plan can run **Regulars**: members check in at the door code, earn
 25 Zaps and one stamp per visit, and a full card earns a reward the owner chose and priced. Spaces
 can also run a **Hunt** together: a member who checks in at every stop in the window earns the
 hunt reward on top. Everything reuses the signed check-in node, the exactly-once engagement
@@ -18,7 +18,7 @@ ledger and the Zap ledger that already exist; no second scanning or points syste
 | Exactly-once ledger, one capture per member-local day on a repeatable node | `lib/engagement/capture.ts`, `engagement_events` | The stamp trigger. |
 | Zap ledger, `zap_config` amounts and daily caps, `award_zaps_atomic` | `lib/zaps.ts` | Pays the 25 Zaps. |
 | Partner offers and the persona loyalty card (`partner_offers.visits_required`) | `lib/partners/*` | Left as is. It hangs on a member persona and an admin-minted plaque, not on a Space, so it cannot be the Space program. It keeps working. |
-| Space location, `isMappable`, coarsened reads | `lib/spaces/location.ts` | The physical-location gate and the geofence source. |
+| Space location, `isMappable`, coarsened reads | `lib/spaces/location.ts` | The geofence source. A pin is optional (LIVE-948). |
 | Plan ladder and `featureAllowed` | `lib/pricing/gates.ts`, `lib/spaces/function-access.ts` | The Business-and-above gate. |
 | Space Resonance timeline, CRM | `recordSpaceMemberActivity` | Already logs every check-in; the owner numbers read it. |
 

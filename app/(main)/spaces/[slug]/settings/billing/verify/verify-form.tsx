@@ -62,7 +62,7 @@ export function VerifyForm({ slug, readOnly }: { slug: string; readOnly: boolean
         aria-hidden
         readOnly
         tabIndex={-1}
-        value="A person on our team checks your 501(c)(3) status against public records. You'll see the result here, usually within a few business days. Nothing changes on your plan until you're approved."
+        value="A person on our team checks your 501(c)(3) status against public records. You'll see the result here, usually within a few business days. Once you're approved, you can choose the Non Profit plan from Billing."
         className={`${fieldClasses} pointer-events-none resize-none text-meta text-muted`}
         rows={3}
       />

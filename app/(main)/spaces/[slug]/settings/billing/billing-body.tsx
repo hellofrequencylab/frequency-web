@@ -6,6 +6,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues, billingLive } from '@/lib/pricing/settings'
+import { ChoosePlanButton } from './choose-plan'
 import { spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
@@ -105,6 +106,7 @@ export async function BillingBody({ slug }: { slug: string }) {
     manualAgreement,
     collectiveSellable,
     networkSellable,
+    nonprofitSellable,
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
@@ -128,6 +130,8 @@ export async function BillingBody({ slug }: { slug: string }) {
     spaceLoadoutSellable('collective'),
     // Network (SCAN-980): sells once its Stripe price exists, on the Collective switch.
     spaceLoadoutSellable('network'),
+    // Non Profit checkout opens for a verified 501(c)(3) (LIVE-994): approval no longer grants it free.
+    spaceLoadoutSellable('nonprofit'),
   ])
 
   const memberSpaces = !staffViewing && viewerProfileId ? await loadMemberSpaceManagement(space.id, viewerProfileId) : null
@@ -271,15 +275,23 @@ export async function BillingBody({ slug }: { slug: string }) {
         {/* Non Profit is the verified-501(c)(3) sibling plan (ADR-811): everything Business does, with
             no network fee, at a flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives
             at settings/billing/verify: the owner submits their EIN + legal name, an operator reviews it,
-            and approval grants the Non Profit plan. We show the current request status if one exists,
+            and approval unlocks the Non Profit checkout (LIVE-994). We show the current request status if one exists,
             otherwise the "get verified" invite. */}
         <div className="rounded-card border border-border bg-surface px-5 py-4">
           <p className="text-body-sm font-semibold text-text">Non Profit</p>
           {verification?.status === 'verified' ? (
-            <p className="mt-0.5 text-meta leading-relaxed text-muted">
-              Verified 501(c)(3). This space is eligible for the Non Profit plan: everything Business
-              does, with no network fee, at one flat monthly price, never per seat.
-            </p>
+            <>
+              <p className="mt-0.5 text-meta leading-relaxed text-muted">
+                {currentPlan === 'nonprofit'
+                  ? 'Verified 501(c)(3). This space is on the Non Profit plan: everything Business does, with no network fee, at one flat monthly price, never per seat.'
+                  : `Verified 501(c)(3). Choose the Non Profit plan: everything Business does, with no network fee, at one flat monthly price, never per seat. Starts with a ${values.trial.days}-day free trial.`}
+              </p>
+              {!isPaid && !staffViewing && nonprofitSellable && (
+                <div className="mt-3">
+                  <ChoosePlanButton slug={space.slug} plan="nonprofit" label="Choose Non Profit" />
+                </div>
+              )}
+            </>
           ) : verification?.status === 'pending' ? (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">
               Your 501(c)(3) verification is in review.{' '}

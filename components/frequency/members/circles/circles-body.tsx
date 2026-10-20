@@ -405,7 +405,7 @@ export function FqCirclesBody({
 
       <div className="sec">
         <div className="sec-h">
-          <span className="h2">{filtering ? 'Results' : 'Near you'}</span>
+          <span className="h2">Results</span>
           <span className="meta">
             {near.length} {near.length === 1 ? 'Circle' : 'Circles'}
           </span>
@@ -435,15 +435,13 @@ export function FqCirclesBody({
           </div>
         ) : (
           <EmptyState
-            variant={filtering ? 'no-results' : 'first-use'}
-            title={filtering ? 'No Circles match these filters.' : 'Nothing here yet.'}
+            variant="no-results"
+            title="No Circles match these filters."
             description="Try another Channel, or start the Circle you were looking for."
             action={
-              filtering ? (
-                <Link className="btn sm" href="/circles">
-                  See every Circle
-                </Link>
-              ) : undefined
+              <Link className="btn sm" href="/circles">
+                See every Circle
+              </Link>
             }
           />
         )}

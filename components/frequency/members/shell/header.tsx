@@ -45,6 +45,7 @@ import { relativeTime, getInitials } from '@/lib/utils'
 import { isFullTakeover, isFullViewportEditor, isFullWidthEditor } from '@/lib/layout/page-chrome'
 import { FEED_HREF, FQ_ABOUT_LINKS, FQ_NAV, MESSAGES_HREF, SEARCH_HREF, FQ_SHORTCUTS, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqMenuGroup, type FqNavSection } from './nav'
 import { avatarBg } from './avatar'
+import { CircleMark } from './circle-mark'
 import { setThemeSkin } from '@/app/(main)/settings/appearance/actions'
 import { canChooseMode } from '@/lib/theme/mode'
 import { hasAccount, readStoredMode, syncMode, writeStoredMode, type ThemeMode } from '@/lib/theme/apply-mode'
@@ -61,6 +62,8 @@ interface FqDrawerCircle {
   label: string
   href: string
   notices: number
+  /** The Circle's picture, drawn as its mark like the left rail's (LIVE-1043). */
+  image?: string | null
 }
 
 interface FqHeaderProps {
@@ -538,7 +541,22 @@ function Drawer({
       {circles.length > 0 && (
         <div className="rl-g">
           <span className="rl-h">Your Circles</span>
-          {circles.map((c) => row(c.href, c.label, 'circle', c.notices))}
+          {circles.map((c) => {
+            const on = c.href === pathname
+            return (
+              <Link key={c.key} href={c.href} className={on ? 'rl-row on' : 'rl-row'} aria-current={on ? 'page' : undefined}>
+                <span className="fqm-circle-orb fqm-drawer-orb" aria-hidden>
+                  <CircleMark label={c.label} image={c.image} />
+                </span>
+                <span>{c.label}</span>
+                {c.notices > 0 && (
+                  <b className="rl-n" aria-label={`${c.notices} new`}>
+                    {c.notices}
+                  </b>
+                )}
+              </Link>
+            )
+          })}
         </div>
       )}
       {FQ_NAV.map((sec) => {
