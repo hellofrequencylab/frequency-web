@@ -727,19 +727,6 @@ Then set `LOYALTY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset i
 
 Then set `SCANNER_DEVICES_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset it. Scanners and cards stay in place and work again when it is turned back on; revoke them in the panel to retire them for good.
 
-### Internet relay (LIVE-1120)
-
-`DEVICE_RELAY_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`) and only means anything with `SCANNER_DEVICES_ENABLED` on. Off, `POST /api/v1/devices/realtime-token` answers 404 `not_enabled`, `GET /api/v1/me/devices` is empty with `relayAvailable: false`, and `PATCH /api/v1/me/devices/{id}` is `not_found`. Contract and trust model: `docs/LOYALTY.md` section 8, [ADR-1870](DECISIONS.md).
-
-**Gate before turning it on**, in order. All **owner** unless tagged.
-
-1. The counter scanner gate above is done (the relay reuses `scanner_devices` and its credential).
-2. Migration `20270346015000_device_relay.sql` applied: `device_relay_settings` (RLS on, anon and authenticated revoked), `public.relay_manageable_devices` (execute revoked from anon and authenticated), and four `realtime.messages` policies. **agent** confirms from `pg_tables`, `information_schema.role_table_grants`, `has_function_privilege` and `pg_policies`.
-3. `SUPABASE_JWT_SECRET` set in Production to the project's JWT secret (Settings > JWT). If the project has moved to asymmetric signing keys, the secret must still be an accepted shared-secret key, or Realtime refuses the device token; check this before step 4. Rotating it ends every device session within 15 minutes (they re-mint).
-4. On a preview with both switches on, with a registered CyberUnicorn: `PATCH /api/v1/me/devices/<id>` `{"relayEnabled":true}` as the Space owner; the device mints a token and joins `device:<id>`; the phone joins the same channel with its member session and `system.status` round-trips. Then confirm the refusals: a second member who does not manage the Space cannot join; a device token cannot join another device's topic; `{"relayEnabled":false}` makes the next mint answer `relay_disabled`.
-
-Then set `DEVICE_RELAY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset it, and no new token is minted (live joins end at token expiry, at most 15 minutes). For one device, the owner switches its relay off; revoking the scanner stops it everywhere.
-
 ### SMS provisioning (ADR-256)
 
 `SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `TWILIO_MESSAGING_SERVICE_SID` and one carrier registration: either `SMS_A2P_BRAND_ID` + `SMS_A2P_CAMPAIGN_ID` (A2P 10DLC) or `SMS_TOLLFREE_VERIFICATION_SID` (a verified toll-free number, ADR-1790). Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md) (§8 is the toll-free path).

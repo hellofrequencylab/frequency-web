@@ -227,7 +227,6 @@ qr_stats_summary                     internal
 read_guest_seat                      public
 recompute_community_level            internal
 record_qr_scan                       internal
-relay_manageable_devices             internal
 record_streak_tick                   internal
 record_ticket_seat                   internal
 redeem_store_item_atomic             internal

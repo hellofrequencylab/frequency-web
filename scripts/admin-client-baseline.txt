@@ -406,9 +406,6 @@
 # service-role only (no browser role), and the device side has no Frequency session at all: a scanner
 # authenticates with its own credential. Every device read is pinned to the device's space_id; every owner
 # read and write runs behind scannerOwnerGate (canEditProfile and the check-in function).
-# lib/devices/relay-store.ts (added 2026-10-19, LIVE-1120): internet relay. device_relay_settings is service-role
-# only. The device side reads its own row, pinned by the device credential; every member read and write first asks
-# public.relay_manageable_devices(caller), the same rule the realtime.messages policy applies at join.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -920,7 +917,6 @@ lib/dashboard/scores.ts
 lib/demo/decay.ts
 lib/demo/engine.ts
 lib/demo/generate.ts
-lib/devices/relay-store.ts
 lib/devices/store.ts
 lib/digest.ts
 lib/dispatches.ts

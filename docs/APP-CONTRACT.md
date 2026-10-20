@@ -171,8 +171,6 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `POST /api/v1/notifications/read` | bearer or cookie | Mark all read. |
 | `GET` / `PATCH /api/v1/profile` | bearer or cookie | The caller's own `ProfileView`. PATCH `{ displayName?, handle?, bio?, website?, city? }` edits through the web's `updateProfile`; a field left out keeps its value. A taken handle is `conflict`. |
 | `GET /api/v1/profile/{handle}` | bearer or cookie | A member's public profile (public fields only) with `blockedByMe`. |
-| `GET /api/v1/me/devices` | bearer or cookie | The devices the caller may control over the internet relay (they own it, or own or admin its Space), each with its private Realtime `channel`. Empty with `relayAvailable: false` while `DEVICE_RELAY_ENABLED` is off. |
-| `PATCH /api/v1/me/devices/{id}` | bearer or cookie | `{ relayEnabled?, allowedCmds?, owner?: "me" }`: switch one device's relay, narrow its command allow-list (never `cli.run`), or become its personal owner. A device the caller does not manage is `not_found`. |
 | `POST` / `DELETE /api/v1/push/devices` | bearer or cookie | Register `{ platform, provider, token, appVersion? }` or revoke `{ token }` the caller's device. Sends run after the same send gate as web push (`lib/push.ts`), so the member's notification settings apply. |
 
 Still filed as their own rows: push devices (`LIVE-720`) and in-app purchase.
