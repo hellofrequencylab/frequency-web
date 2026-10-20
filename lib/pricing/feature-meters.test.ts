@@ -184,12 +184,12 @@ describe('label + readout formatting', () => {
     expect(allowanceLabel(1, 'pipelines', null)).toBe('Up to 1 pipeline')
   })
 
-  it('the seats ladder says INCLUDED seats and the per-seat add-on, never a wall (ADR-799)', () => {
+  it('the seats ladder says INCLUDED seats, never a wall and never a per-seat add-on (ADR-1810)', () => {
     const seats = featureMeter('space_team')!
     const business = seats.steps.find((s) => s.tier === 'business')!
-    expect(business.allowanceText).toBe('2 seats included, add more per seat')
+    expect(business.allowanceText).toBe('2 seats included')
     const top = seats.steps[seats.steps.length - 1]!
-    expect(top.allowanceText).toBe('3 seats included, add more per seat')
+    expect(top.allowanceText).toBe('3 seats included')
   })
 
   it('allowanceReadout renders "X of N used" or the unlimited form; null for a non-metered feature', () => {

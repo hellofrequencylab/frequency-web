@@ -10,6 +10,15 @@ import {
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY, paidWalls } from '@/lib/pricing/pricing-page'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
+
+/** The seats every plan includes, read off the ONE meter map so the answer can never quote a number the
+ *  gate does not use. Seats are included per tier and never sold (ADR-1810). PURE. */
+function seatsAnswer(): string {
+  const seats = PLACEHOLDER_METER_LIMITS.space_team!
+  const n = (tier: string) => String(seats[tier] ?? 0)
+  return `Every plan includes its operator seats: ${n('free')} on Free (the owner), ${n('business')} on Business, ${n('collective')} on Collective plus two per member Space, and ${n('network')} on Network, one per central admin.`
+}
 
 /** The network fee on an offering that sells, as a bare figure ("5%"), read off the offering's own
  *  number. Never typed. */
@@ -25,7 +34,6 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
   const [member, crew] = memberOfferings(input)
   const extras = planExtras(input)
   const ai = extras.find((e) => e.key === 'ai')!
-  const seats = extras.find((e) => e.key === 'seats')!
   const ladder = spaces
     .map((s) => `${s.label} is ${s.monthly}${s.listAnchor ? ` at the beta rate, under ${s.listAnchor}` : ''}: ${s.tagline.toLowerCase()} ${s.forWho}`)
     .join(' ')
@@ -118,7 +126,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'How do team seats work?',
-      a: `${seats.detail} ${seats.availability} ${seats.price === 'Owner-priced today' ? 'Seats are owner-priced today, so you bring on the people you need without a locked public per-seat price.' : `Extra seats are ${seats.price}.`}`,
+      a: `${seatsAnswer()} Seats are never sold separately, and the plan price never multiplies by headcount.`,
     },
     {
       q: 'What is the Vera AI add-on?',

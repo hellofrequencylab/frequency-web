@@ -312,7 +312,6 @@ describe('SOURCE SHAPE: gating seams read featureGatesLive, charging seams read 
   const CHARGING_SEAMS = [
     '../billing/space-plan-checkout.ts',
     '../billing/space-membership-checkout.ts',
-    '../billing/operator-seats.ts',
     // '../founding/business-checkout.ts' was here until the Founding Business cohort was retired
     // (owner directive, 2026-07-31). The seam is deleted, not exempted: nothing sells that offer now.
     './space-plan.ts',

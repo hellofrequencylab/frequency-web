@@ -9,7 +9,7 @@ import { SPACE_KINDS, type SpaceKind } from './categories'
 //    be honest about it.
 //  - FOUNDING BUSINESSES is its own row, minus anything already featured.
 //  - The RESULTS are everything the server filters matched, narrowed by the two facets the discovery
-//    read does not carry (city, has-events), then windowed by `show` (Show more adds a page).
+//    read does not carry (city, has-events), minus the Spaces the lead rows already show, then windowed by `show` (Show more adds a page).
 //
 // Founding status is a badge and a row, never a ranking input (lib/spaces/discovery.ts).
 
@@ -94,15 +94,19 @@ export function buildDirectorySections(
     }
   }
 
+  // The lead rows are not repeated in the grid beneath them.
+  const leadIds = new Set([...featured, ...founding].map((s) => s.id))
+  const rest = narrowed.filter((s) => !leadIds.has(s.id))
+
   return {
     filtering,
     featured,
     featuredPicked,
     founding,
-    results: narrowed.slice(0, limit),
-    total: narrowed.length,
+    results: rest.slice(0, limit),
+    total: rest.length,
     limit,
-    hasMore: narrowed.length > limit && limit < SHOW_CAP,
+    hasMore: rest.length > limit && limit < SHOW_CAP,
     kindCounts: SPACE_KINDS.map((k) => ({ key: k.key, label: k.label, n: kindTally.get(k.key) ?? 0 })).filter(
       (k) => k.n > 0,
     ),

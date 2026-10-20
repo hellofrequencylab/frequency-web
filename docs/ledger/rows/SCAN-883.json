@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-883",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const bad=[];const ly=r('app/(main)/spaces/[slug]/(profile)/layout.tsx');const ch=r('components/frequency/members/space/space-chrome.tsx');const css=r('app/themes/frequency/space-page.css');const fx=r('lib/spaces/public-facts.ts');if(!ly.includes('public={signedOut}')||!ly.includes('<FqSpaceFacts'))bad.push('signed-out tabs not framed');if(!ch.includes('wrap fqs-wrap')||!ch.includes('fqs-cols'))bad.push('chrome opens no container');if(!css.includes('.fqs-cols{display:grid')||css.includes('fqs-public{background:transparent}'))bad.push('no two-column frame on the members ground');if(!fx)bad.push('public-facts missing');if(/supabase.server|cookies[(]|headers[(]/.test(fx))bad.push('facts reader touches the request');if(bad.length){console.error('SCAN-883: '+bad.join('; '));process.exit(1)}\"",
+      "note": "Same probe minus the one clause the owner reversed: the share root no longer draws a key-facts column (Daniel 2026-10-20, 'Make sure it is the Dawn layout', after seeing the render without it). Every other clause still holds; LIVE-1094 pins the new shape.",
+      "checked": "2026-10-20"
+    }
+  },
+  "append": {
+    "detail": "2026-10-20: the public share root dropped the key-facts band to match Dawn's page (LIVE-1094). The signed-out profile tabs and the chrome frame are unchanged."
+  }
+}

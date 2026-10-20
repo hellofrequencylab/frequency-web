@@ -80,6 +80,12 @@ export function FqSpaceChrome({
     <div className="fqs-id">
       {tall && logo}
       <div className="stack">
+        {/* The public page reads as DAWN's: cover, then the way back, then the name. */}
+        {back && isPublic && !tall && (
+          <Link className="meta fqs-back" href={back.href}>
+            ← {back.label}
+          </Link>
+        )}
         {eyebrow && <span className="fqs-k">{eyebrow}</span>}
         {/* header-ok: the cover IS this route group's header, so the chrome owns the page's one h1
             (the precedent the DAWN profile layout and DetailTemplate's `band` slot follow). */}
@@ -96,7 +102,7 @@ export function FqSpaceChrome({
   )
   const body = (
     <>
-      {back && (
+      {back && (tall || !isPublic) && (
         <Link className="meta fqs-back" href={back.href}>
           ← {back.label}
         </Link>

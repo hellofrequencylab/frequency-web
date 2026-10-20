@@ -91,7 +91,7 @@ interface RawMeter {
    *  the quantities live in ONE map. Number = cap, null = unlimited. Keys must be tiers on the axis. */
   allowances: Record<string, Allowance>
   /** OPTIONAL per-tier override for the plain allowance line, where the bare "Up to N" would misread
-   *  (e.g. Collective seats INCLUDE 3 and more are a per-seat add-on, never a wall · ADR-799). */
+   *  (e.g. Collective seats read "3 seats included" rather than a cap-shaped "Up to 3" · ADR-917). */
   allowanceTextByTier?: Record<string, string>
 }
 
@@ -194,16 +194,14 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'seats',
     period: null,
     // Free: 1 seat, the owner's. Business: 2 included. Collective: 3 (owner 2026-10-06), plus 2 per member Space
-    // (ADR-1709). Extra seats are the ADR-799 per-seat add-on.
-    //
-    // Extra seats are the ADR-799 per-seat add-on at the catalog amount (LIVE-229, $12/seat/mo).
-    // The catalog sync mints that price; `catalog_operator_seat_active` still gates checkout.
+    // (ADR-1709). Network: 10, one per central admin (LIVE-992). Seats are included per tier and never
+    // sold separately: the $12 operator-seat add-on was an old plan that crept back (ADR-1810).
     allowances: PLACEHOLDER_METER_LIMITS.space_team!,
     allowanceTextByTier: {
       free: '1 seat included (the owner)',
-      business: '2 seats included, add more per seat',
-      collective: '3 seats included, add more per seat',
-      network: '10 seats included, one per central admin, add more per seat',
+      business: '2 seats included',
+      collective: '3 seats included',
+      network: '10 seats included, one per central admin',
     },
   },
   space_multi_pipeline: {
