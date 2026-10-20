@@ -75,6 +75,9 @@
 [data-design="frequency"] [data-kit="members"] .fqm-item{gap:10px}
 [data-design="frequency"] [data-kit="members"] .fqm-item>.ph{aspect-ratio:4/5;border-radius:20px}
 [data-design="frequency"] [data-kit="members"] .fqm-item>.btn{align-self:flex-start}
+[data-design="frequency"] [data-kit="members"] .fqm-item-head{flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px}
+[data-design="frequency"] [data-kit="members"] .fqm-item-head>.grow{flex:1 1 9rem;min-width:0;overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqm-item-price{flex:0 1 auto;max-width:100%;overflow-wrap:anywhere}
 
 /* The find-and-filter row (components/frequency/members/shared/kit-tools.tsx): a white find pill, then
    each facet as a chip that opens a frosted menu. Native <details>, so it works without a script. */
