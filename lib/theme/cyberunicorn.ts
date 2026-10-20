@@ -39,7 +39,7 @@ export const CU_SCOPE_STYLE = {
 } as CSSProperties
 
 /** cyberHue(): full-saturation hue in degrees → RGB. Same sector maths as rainbow.cpp. */
-export function cyberHue(hue: number): RGB {
+function cyberHue(hue: number): RGB {
   let h = hue % 360
   if (h < 0) h += 360
   const s = Math.floor(h / 60)
@@ -61,11 +61,11 @@ export function cyberHue(hue: number): RGB {
 }
 
 /** Quantise to RGB565 and back: the colour the ILI9341 actually lights. */
-export function to565([r, g, b]: RGB): RGB {
+function to565([r, g, b]: RGB): RGB {
   return [(r & 0xf8) | (r >> 5), (g & 0xfc) | (g >> 6), (b & 0xf8) | (b >> 5)]
 }
 
-export function rgbCss([r, g, b]: RGB): string {
+function rgbCss([r, g, b]: RGB): string {
   return `rgb(${r},${g},${b})`
 }
 
@@ -247,7 +247,7 @@ const UNICORN_PALETTE: Record<string, RGB> = {
 }
 
 /** The boot unicorn's two gallop frames (assets/make_unicorn.py), 40×29 cells. 'R' is the mane. */
-export const CU_UNICORN_FRAMES = [
+const CU_UNICORN_FRAMES = [
   [
     '...................................H....',
     '..................................HhK...',
