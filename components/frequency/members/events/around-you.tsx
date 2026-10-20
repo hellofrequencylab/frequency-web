@@ -190,22 +190,3 @@ function AyCard({ item, tag }: { item: AyItem; tag: AyTag }) {
     </Link>
   )
 }
-
-/** The wait: the feature's own frame, so nothing jumps when the picks land. */
-export function FqAroundYouFrame() {
-  return (
-    <section className="ay" aria-busy="true" aria-label="Loading what is around you">
-      <div className="ay-top">
-        <div className="ay-spot">
-          <span className="ay-spot-cover" />
-          <div className="ay-spot-b">
-            <span className="ev-skel-bar w30" />
-            <span className="ev-skel-bar tall w60" />
-            <span className="ev-skel-bar w45" />
-          </div>
-        </div>
-        <span className="evm-tile" />
-      </div>
-    </section>
-  )
-}

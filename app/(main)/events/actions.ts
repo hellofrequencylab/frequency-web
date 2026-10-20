@@ -330,6 +330,14 @@ async function memberEventAllowanceOk(
   }
 }
 
+/** Whether the signed-in member is at their free event allowance (LIVE-1070): the Events page's Add an event box
+ *  shows an upgrade door instead of a New event that createEvent would reject. The same check createEvent runs. */
+export async function memberAtEventCap(): Promise<boolean> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return false
+  return !(await memberEventAllowanceOk(profileId)).ok
+}
+
 export async function createEvent(formData: FormData): Promise<ActionResult<{ slug: string }>> {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null

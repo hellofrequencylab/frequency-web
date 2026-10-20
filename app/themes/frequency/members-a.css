@@ -418,3 +418,5 @@
 [data-design="frequency"] [data-kit="members"] .fa-start small{display:block;margin-top:3px;font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fa-count{margin-left:6px;padding:0 6px;border-radius:var(--fq-radius-orb);background:var(--fq-pa);color:var(--fq-ink);font:600 var(--fq-text-meta)/1.5 var(--fq-font-sans)}
 @media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .fa-start{grid-template-columns:1fr}}
+[data-design="frequency"] [data-kit="members"] .fa-msg .tabs{gap:10px;justify-content:space-between;overflow:visible}
+[data-design="frequency"] [data-kit="members"] .fa-msg .tabs button{white-space:nowrap;flex:0 1 auto;min-width:fit-content}
