@@ -38,7 +38,7 @@ describe('the Frequency site map', () => {
     const root = process.cwd()
     const missing = [...mapped].filter((href) => {
       const seg = href.replace(/^\//, '').split(/[?#]/)[0]
-      return !['(main)', '(marketing)', '(help)'].some((g) => existsSync(join(root, 'app', g, seg, 'page.tsx')))
+      return !['(main)', '(main)/(marketplace)', '(marketing)', '(help)'].some((g) => existsSync(join(root, 'app', g, seg, 'page.tsx')))
     })
     expect(missing).toEqual([])
   })
