@@ -1,0 +1,10 @@
+{
+  "id": "PROG-A1",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20"
+  },
+  "append": {
+    "detail": "SLICE 1 SHIPPED 2026-10-20: modules/crm/index.ts (server) and modules/crm/client.ts (client-safe) are the CRM module's public API; the seven pages and components that reached into components/spaces/crm/* now import the barrel; eslint.config.mjs has a no-restricted-imports boundary that rejects components/spaces/crm/* and any modules/<app>/<file> except /client from outside the module. The probe passes. The rest of the generalization (booking, email-design and QR barrels, moving the CRM files under modules/crm, retiring check:crm-parity) is LIVE-1114."
+  }
+}
