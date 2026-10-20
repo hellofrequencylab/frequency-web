@@ -9,7 +9,7 @@ import type { MegaColumn, MegaCta } from './mega-footer'
 // design_handoff/frequency/templates/website/web/site.css): a dark band at the end of the page under an
 // iridescent rule, the wordmark, the area headings, the copyright and the legal row. Here the area headings
 // are tabs: one opens its area's mega panel UP out of the footer, over the page, the way a header tab drops
-// its panel down. The rail docks stay pinned to the window's bottom edge over the footer's two ends.
+// its panel down, over the rail docks that rest on the footer's top edge.
 //
 // Every panel is in the HTML with the footer closed (`hidden`), so a crawler reads the whole index. A tab is
 // a disclosure button: Escape or a click outside closes it and hands focus back, ArrowLeft and ArrowRight

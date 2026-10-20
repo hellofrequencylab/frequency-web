@@ -4,7 +4,10 @@
    and the legal row. The headings are tabs; each opens its area's mega panel up out of the footer, in the
    same band. The footer carries data-surface="stage", so the band's ink and text are the stage tokens.
    --fq- tokens only. An off-scale step left as a literal is the design's own value (token-ok). */
-[data-design="frequency"] .fq-mf{grid-column:1/-1;position:relative;margin:40px -40px 0;background:var(--fq-bg-canvas);color:var(--fq-text-body);font:400 var(--fq-text-body-s)/1.5 var(--fq-font-sans)}
+/* The footer follows the rail grid. The rails are sticky inside it, so their docks ride the window bottom
+   while the page scrolls and come to rest 24px above the closed footer's top edge. The footer is its own
+   layer above the page, so an open panel rises over the docks. */
+[data-design="frequency"] .fq-mf{position:relative;z-index:3;margin:24px 0 0;background:var(--fq-bg-canvas);color:var(--fq-text-body);font:400 var(--fq-text-body-s)/1.5 var(--fq-font-sans)}
 [data-design="frequency"] .fq-mf::before,[data-design="frequency"] .fq-mf-mega::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--fq-iridescent-sweep);background-size:220% 100%;opacity:.6;pointer-events:none}
 [data-design="frequency"] .fq-mf a{color:var(--fq-text-body);text-decoration:none}
 [data-design="frequency"] .fq-mf a:hover{color:var(--fq-text-strong)}
@@ -22,15 +25,14 @@
 [data-design="frequency"] .fq-mf-tabs svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.6;transition:transform 340ms var(--fq-ease-out)}
 [data-design="frequency"] .fq-mf-tabs button[aria-expanded="true"] svg{transform:rotate(180deg)}
 
-/* The bottom strip (.ft2-bot): the copyright and the legal row, kept clear of the two docks fixed over its
-   ends, at the docks' own height so the three read as one line at the end of the page. */
-[data-design="frequency"] .fq-mf-bot{display:flex;align-items:center;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;min-height:108px;margin-top:28px;padding-inline:calc(40px + var(--fqm-lw,0px) + 32px) calc(40px + var(--fqm-rw,0px) + 32px);border-top:1px solid var(--fq-border-hair);font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
+/* The bottom strip (.ft2-bot): the copyright and the legal row. */
+[data-design="frequency"] .fq-mf-bot{display:flex;align-items:center;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;margin-top:28px;padding-block:22px 28px;border-top:1px solid var(--fq-border-hair);font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
 [data-design="frequency"] .fq-mf-legal{display:flex;flex-wrap:wrap;gap:0 18px}
 [data-design="frequency"] .fq-mf-legal a{display:inline-flex;align-items:center;min-height:var(--fq-hit-min);color:var(--fq-text-faint)}
 
 /* A panel: the same band, rising out of the footer's top edge over the page (.ft2-top's grid inside). */
 @keyframes fq-mf-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-[data-design="frequency"] .fq-mf-mega{position:absolute;left:0;right:0;bottom:100%;z-index:3;max-height:calc(100dvh - 180px);overflow-y:auto;overscroll-behavior:contain;background:var(--fq-bg-canvas);box-shadow:0 -40px 80px -30px color-mix(in oklab,var(--fq-ink) 45%,transparent);animation:fq-mf-rise 340ms var(--fq-ease-out)}
+[data-design="frequency"] .fq-mf-mega{position:absolute;left:0;right:0;bottom:100%;z-index:1;max-height:calc(100dvh - 180px);overflow-y:auto;overscroll-behavior:contain;background:var(--fq-bg-canvas);box-shadow:0 -40px 80px -30px color-mix(in oklab,var(--fq-ink) 45%,transparent);animation:fq-mf-rise 340ms var(--fq-ease-out)}
 [data-design="frequency"] .fq-mf-mega[hidden]{display:none}
 [data-design="frequency"] .fq-mf-top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr);gap:clamp(32px,6vw,96px);padding-block:56px 40px}
 [data-design="frequency"] .fq-mf-brand{display:flex;flex-direction:column;gap:20px;align-items:flex-start}
@@ -45,7 +47,7 @@
 /* Phone: no docks (the tab bar replaces them). The headings wrap under the wordmark and a panel takes one
    column with two runs of links. */
 @media (max-width:767px){
-[data-design="frequency"] .fq-mf{margin:32px calc(-1 * var(--fq-gutter-mobile,16px)) -48px}
+[data-design="frequency"] .fq-mf{margin-top:0}
 [data-design="frequency"] .fq-mf-wrap{padding-inline:var(--fq-gutter-mobile,16px)}
 [data-design="frequency"] .fq-mf-row{flex-direction:column;align-items:flex-start;padding-top:32px}
 [data-design="frequency"] .fq-mf-logo{width:144px}

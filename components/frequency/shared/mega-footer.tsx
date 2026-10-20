@@ -7,13 +7,15 @@ import { siteNavigationSchema } from "@/lib/jsonld";
 
 // THE FREQUENCY MEGA FOOTER (LIVE-1030, LIVE-1154). The owner, 2026-10-20: "I want a FOOTER at the BOTTOM of
 // the page" that "looks like a footer menu, but has a mega menu that also opens up", with the left and right
-// docks always pinned to the bottom, and no round menu ("that's DAWN").
+// docks pinned to the bottom, resting on top of the closed footer and covered by an open mega menu, and no
+// round menu ("that's DAWN").
 //
 // So it is the design system's site footer (`.ft2`): a dark band in the page flow at the very end of the
 // page, under an iridescent rule, holding the wordmark, the area headings, the copyright and the legal row.
 // The headings are tabs (mega-footer-tabs.tsx, the one client island): each opens its area's mega panel up
-// out of the footer. The footer sits inside the rail grid's last row, full bleed, and the docks are fixed to
-// the window bottom (members-shell.css), so they rest over its two ends.
+// out of the footer, over the page and over the docks. The footer follows the rail grid, so
+// the sticky rails ride the window bottom while the page scrolls and their docks come to rest on the closed
+// footer's top edge.
 //
 // ONE SOURCE. The columns arrive as props from the registry (lib/nav/registry.ts footerColumns, gate-filtered
 // by lib/nav/footer-access.ts). Their Legal column is lib/nav/legal-links.ts, the list every footer shares
