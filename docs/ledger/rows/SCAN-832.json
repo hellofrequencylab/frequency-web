@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-832",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('lib/sites/editor').some(f=>/authorizeWebsiteEditor/.test(r('lib/sites/editor/'+f))&&/saveWebsiteMenu/.test(r('lib/sites/editor/'+f)))){console.error('SCAN-832: the menu editor mounted on the website host has no host-authorized actions');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nFIXED 2026-10-20. lib/sites/editor/menu-actions.ts holds the host-authorized twins (loadWebsiteMenu, saveWebsiteMenu, resetWebsiteMenu, saveWebsiteHeaderLogo, uploadWebsiteLogo), each gated by authorizeWebsiteEditor(host). The reads and writes are shared with the Space console through lib/spaces/site-menu-core.ts, and SiteMenuEditor takes its server calls from SiteMenuActionsProvider, which ConnectedWebsiteEditor fills with the host twins. Covered by lib/sites/editor/menu-actions.test.ts; the authenticated click-through on a site host is Daniel's look."
+  }
+}
