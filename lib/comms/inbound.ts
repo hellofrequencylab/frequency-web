@@ -38,7 +38,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
-import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
+import { resolveEmailOrigin, resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { envFlag } from '@/lib/env/string'
 import { buildSpaceConversationReplyAddress, resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
 import { quarantineSpaceInboxMessage, recordSpaceInboxMessage, resolveSpaceInboxRoute } from './space-inbox-address'
@@ -508,7 +508,8 @@ const bridgeBodyToHtml = bodyToHtml
  *  keeps the bare bridge body byte for byte. */
 async function bridgeMemberEmail(conv: ConversationRow, body: string): Promise<{ html: string; text: string }> {
   const brand = await resolveSpaceEmailBrand(conv.spaceId)
-  return brand ? renderReplyEmail(body, null, brand) : { html: bridgeBodyToHtml(body), text: body }
+  const origin = await resolveEmailOrigin(conv)
+  return brand || origin ? renderReplyEmail(body, null, brand, origin) : { html: bridgeBodyToHtml(body), text: body }
 }
 
 /** Resolve an agent profile's login email + display name (for the forward To + the outbound From).

@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Mail } from 'lucide-react'
 import { setScanInviteEnabled } from './actions'
+import { Switch } from '@/components/ui/switch'
 
 // Operator switch for the one-time scan-intro email (default off). Mirrors the AI
 // switch on /admin/ai; every flip is audited in platform_flag_events.
@@ -29,23 +30,7 @@ export function ScanInviteToggle({ enabled }: { enabled: boolean }) {
         </p>
       </div>
       {pending && <Loader2 className="h-4 w-4 animate-spin text-subtle" />}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        aria-label="Scan-intro emails"
-        disabled={pending}
-        onClick={toggle}
-        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-pill transition-colors disabled:opacity-60 ${
-          enabled ? 'bg-primary' : 'border border-border-strong bg-surface-elevated'
-        }`}
-      >
-        <span
-          className={`inline-block h-5 w-5 transform rounded-pill bg-surface shadow transition-transform ${
-            enabled ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </button>
+      <Switch checked={enabled} onCheckedChange={() => toggle()} aria-label="Scan-intro emails" pending={pending} />
     </div>
   )
 }

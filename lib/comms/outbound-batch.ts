@@ -18,7 +18,7 @@ import { buildSpaceConversationReplyAddress } from '@/lib/comms/tenant-reply-ali
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { bodyToHtml, renderCoalescedEmail } from '@/lib/comms/email-template'
 import { palette } from '@/lib/theme/palette'
-import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
+import { resolveEmailOrigin, resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { resolveSpaceEmailIdentity } from '@/lib/spaces/email-identity-registry'
 import {
   getConversationById,
@@ -308,7 +308,8 @@ export async function flushConversationBatches(
     // platform lane or a read fault, which means the plain wrapper, never a held burst.
     const signature = firstBatchSignature(ordered)
     const brand = await resolveSpaceEmailBrand(conv.spaceId)
-    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature, brand)
+    const origin = await resolveEmailOrigin(conv)
+    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature, brand, origin)
     // SCAN-828: a burst stamped with a custom Space identity is resolved AGAIN here, against the plan,
     // the pause flag and the provider's verification as they are now, not as they were when the reply
     // was queued. A held identity fails the burst visibly (delivery_status 'failed'); it never sends

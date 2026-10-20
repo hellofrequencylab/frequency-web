@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ atomic: vi.fn(), append: vi.fn(), mirror: vi.fn(), enqueue: vi.fn(), conversation: vi.fn(), brand: vi.fn() }))
-vi.mock('@/lib/comms/email-brand', () => ({ resolveSpaceEmailBrand: mocks.brand }))
+vi.mock('@/lib/comms/email-brand', () => ({ resolveSpaceEmailBrand: mocks.brand, resolveEmailOrigin: async () => null }))
 vi.mock('@/lib/comms/atomic-email-intent', () => ({ atomicBridgeEnabled: () => true, atomicBridgeMessageId: () => '<stable-fixture@frequencylocal.com>', enqueueAtomicConversationEmail: mocks.atomic }))
 vi.mock('@/lib/comms/conversations', () => ({ getConversationByRef: mocks.conversation, appendConversationMessage: mocks.append, mirrorConversationMessage: mocks.mirror, conversationScopeRef: () => null }))
 vi.mock('@/lib/email', () => ({ enqueueEmail: mocks.enqueue }))
