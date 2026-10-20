@@ -1,7 +1,0 @@
-{
-  "id": "PROG-E2",
-  "wave": "W7",
-  "append": {
-    "detail": "\n\n2026-10-20 (LIVE-1160). Step 1 of the census plan: the read-time alias layer exists and is empty. Still open: the target block set, folding the platform-only stores (pages, page_settings), the single-tenant Space blocks, and the eleven core Space blocks (each needs the owner's separate approval)."
-  }
-}
