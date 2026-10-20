@@ -9,7 +9,7 @@ import { it, vi } from 'vitest'
 vi.mock('next/image', () => ({ default: (p: Record<string, unknown>) => createElement('img', { src: p.src as string, alt: p.alt as string }) }))
 vi.mock('next/link', () => ({ default: (p: Record<string, unknown>) => createElement('a', { href: p.href as string, className: p.className as string }, p.children as never) }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push() {}, replace() {}, refresh() {} }), usePathname: () => '/', useSearchParams: () => new URLSearchParams() }))
-vi.mock('@/lib/site-design', async (orig) => ({ ...(await orig<object>()), SITE_DESIGN: 'frequency' }))
+vi.mock('@/lib/theme/design', async (orig) => ({ ...(await orig<object>()), SITE_DESIGN: 'frequency' }))
 
 const out = process.env.RENDER_OUT
 const people = [
@@ -30,11 +30,13 @@ it('renders the contacts workspace', async () => {
   }))
   const el = createElement(ContactsWorkspace, {
     members, loadDetail: async () => { throw new Error('fixture') }, messageScope: { spaceId: 's', slug: 'royal-temple' },
+    facets: [{ key: 'role', label: 'Role', options: [{ value: 'host', label: 'Host' }] }, { key: 'stage', label: 'Lifecycle', options: [{ value: 'engaged', label: 'Engaged' }] }],
+    sortOptions: [{ key: 'completeness', label: 'Most complete', spec: { key: 'completeness', direction: 'desc' } }, { key: 'recent', label: 'Newest', spec: { key: 'joined', direction: 'desc' } }],
   } as never)
   const { prelude } = await prerenderToNodeStream(el)
   const chunks: Buffer[] = []
   for await (const c of prelude) chunks.push(Buffer.from(c))
   const body = Buffer.concat(chunks).toString()
   writeFileSync(`${out}/contacts.html`,
-    `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"></head><body><div data-kit="members" data-energy="still"><div data-kit="admin"><div class="adp" data-kit="members" style="padding:24px">${body}</div></div></div></body></html>`)
+    `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"></head><body><div data-kit="members" data-energy="still"><div data-kit="admin"><div class="adp" data-kit="members" style="padding:24px">${body.replace('<details', process.env.RENDER_OPEN ? '<details open' : '<details')}</div></div></div></body></html>`)
 })

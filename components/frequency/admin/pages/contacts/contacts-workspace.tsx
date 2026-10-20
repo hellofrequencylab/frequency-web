@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { CrmMemberDetailPane } from '@/components/people/member-viewer/crm-member-detail'
 import type { CrmMemberDetail } from '@/components/people/member-viewer'
-import { applyQuery, type MemberDetail, type MemberSummary } from '@/lib/people/member-viewer'
+import { applyQuery, type Facet, type MemberDetail, type MemberSummary, type SortOption } from '@/lib/people/member-viewer'
 import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Av } from '../shared'
 
 // THE CONTACTS WORKSPACE under Frequency (templates/admin/Contacts.html idiom: chips, one round search pill,
@@ -26,7 +27,6 @@ const CHIPS = [
 ] as const
 
 const PAGE = 40
-const SORT = { key: 'completeness', direction: 'desc' } as const
 
 type Loaded = { id: string; detail: MemberDetail | null }
 
@@ -34,14 +34,22 @@ export function ContactsWorkspace({
   members,
   loadDetail,
   messageScope,
+  facets,
+  sortOptions,
 }: {
   members: MemberSummary[]
+  /** The roster's other filters (Role, Business, Activity, Lifecycle), opened from the Filters pill. */
+  facets: Facet[]
+  /** The sort choices; the first is the default (Most complete, so filled-out contacts surface first). */
+  sortOptions: SortOption[]
   loadDetail: (id: string) => Promise<MemberDetail>
   messageScope: { spaceId: string; slug: string }
 }) {
   const [chip, setChip] = useState('')
   const [q, setQ] = useState('')
   const [limit, setLimit] = useState(PAGE)
+  const [facetSel, setFacetSel] = useState<Record<string, string>>({})
+  const [sortKey, setSortKey] = useState(() => (sortOptions.find((o) => o.spec.key === 'completeness') ?? sortOptions[0])?.key ?? '')
   const [picked, setPicked] = useState<string | null>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
@@ -52,9 +60,16 @@ export function ContactsWorkspace({
     [members],
   )
   const shown = useMemo(
-    () => applyQuery(members, { text: q, facets: chip ? { tier: chip } : {}, sort: SORT }, 1, 20).filtered,
-    [members, q, chip],
+    () =>
+      applyQuery(
+        members,
+        { text: q, facets: { ...facetSel, ...(chip ? { tier: chip } : {}) }, sort: sortOptions.find((o) => o.key === sortKey)?.spec },
+        1,
+        20,
+      ).filtered,
+    [members, q, chip, facetSel, sortKey, sortOptions],
   )
+  const activeFilters = Object.values(facetSel).filter(Boolean).length
   const selectedId = shown.some((m) => m.id === picked) ? picked : (shown[0]?.id ?? null)
   const selected = shown.find((m) => m.id === selectedId) ?? null
 
@@ -107,6 +122,36 @@ export function ContactsWorkspace({
             </button>
           ))}
         </div>
+        <details className="adp-ws-filters">
+          <summary className={activeFilters ? 'chip on' : 'chip'}>
+            <FqIcon name="filter" />
+            Filters{activeFilters ? ` ${activeFilters}` : ''}
+          </summary>
+          <div className="panel adp-ws-menu">
+            {facets.map((f) => (
+              <Select
+                key={f.key}
+                aria-label={f.label}
+                value={facetSel[f.key] ?? ''}
+                onChange={(e) => {
+                  setFacetSel((prev) => ({ ...prev, [f.key]: e.target.value }))
+                  setLimit(PAGE)
+                }}
+                tone={facetSel[f.key] ? 'active' : 'default'}
+                emptyLabel={f.label}
+                options={f.options}
+              />
+            ))}
+            {sortOptions.length > 1 ? (
+              <Select
+                aria-label="Sort"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+                options={sortOptions.map((o) => ({ value: o.key, label: `Sort: ${o.label}` }))}
+              />
+            ) : null}
+          </div>
+        </details>
         <span className="ap-sp" />
         <Input
           className="adp-search"

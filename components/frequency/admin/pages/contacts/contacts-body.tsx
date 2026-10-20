@@ -7,6 +7,7 @@ import type { MemberSummary } from '@/lib/people/member-viewer'
 import type { ResonanceTier } from '@/lib/traits/compute'
 import { HOME_TZ } from '@/lib/time/zone'
 import { loadSpaceResonanceDetail } from '@/app/(main)/admin/crm/members/member-detail-actions'
+import { MEMBER_SORT_OPTIONS, LIFECYCLE_FACET, ROLE_FACET, BUSINESS_FACET, ACTIVE_FACET } from '@/app/(main)/admin/crm/member-summaries'
 import { ContactsWorkspace } from './contacts-workspace'
 import { AdminHead, AdminPageBody, EMPTY, Kpi, n } from '../shared'
 import { DAY_MS, visitsByProfile } from '../checkin-stats'
@@ -131,6 +132,8 @@ export async function FqContactsBody({
             members={roster}
             loadDetail={loadSpaceResonanceDetail.bind(null, slug)}
             messageScope={{ spaceId, slug }}
+            facets={[ROLE_FACET, BUSINESS_FACET, ACTIVE_FACET, LIFECYCLE_FACET]}
+            sortOptions={MEMBER_SORT_OPTIONS}
           />
         } table={<ContactsTable rows={rows} />} />
     </AdminPageBody>
