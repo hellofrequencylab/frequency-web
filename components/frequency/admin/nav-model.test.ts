@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { activeNav, hrefScore, itemBadge, phoneSlots, type AdminNavItem } from './nav-model'
+import { activeNav, hrefScore, itemBadge, menuGroups, phoneSlots, type AdminNavItem } from './nav-model'
 import { spaceNavItems } from './space-console'
 import { adminNavItems } from './admin-console'
 import type { ResolvedCategory, ResolvedItem } from '@/lib/menus/types'
@@ -91,5 +91,18 @@ describe('phoneSlots', () => {
     const { tabs, more } = phoneSlots(items)
     expect(tabs.map((t) => t.key)).toEqual(['a', 'b', 'c', 'd'])
     expect(more.map((m) => m.key)).toEqual(['x', 'e'])
+  })
+})
+
+describe('menuGroups (the operator top menu)', () => {
+  const leaf = (key: string, group?: string) => ({ key, label: key, href: `/${key}`, group })
+  it('groups a section\'s pages by the job heading they carry, in menu order, losing none', () => {
+    const item: AdminNavItem = { key: 'p', label: 'Platform', href: '/p', icon: 'settings', children: [leaf('a', 'Site'), leaf('b', 'Site'), leaf('c', 'Commerce'), leaf('d', 'Tools')] }
+    expect(menuGroups(item).map((g) => [g.label, g.leaves.map((l) => l.key)])).toEqual([['Site', ['a', 'b']], ['Commerce', ['c']], ['Tools', ['d']]])
+  })
+  it('returns one unlabelled group for pages with no heading, and none for a section with no pages', () => {
+    const flat: AdminNavItem = { key: 'p', label: 'P', href: '/p', icon: 'home', children: [leaf('a'), leaf('b')] }
+    expect(menuGroups(flat)).toEqual([{ label: '', leaves: [leaf('a'), leaf('b')] }])
+    expect(menuGroups({ key: 'o', label: 'O', href: '/o', icon: 'home' })).toEqual([])
   })
 })

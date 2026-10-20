@@ -1,7 +1,7 @@
 import { Suspense, type ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
-import { AdminCrumb, AdminNav, AdminNavList, AdminPhoneBar, AdminPhoneStrip } from './admin-nav'
+import { AdminCrumb, AdminNav, AdminNavList, AdminPhoneBar, AdminPhoneStrip, AdminTopMenu } from './admin-nav'
 import type { AdminNavItem } from './nav-model'
 import '@/app/themes/active/kit-members'
 import '@/app/themes/active/kit-admin'
@@ -53,6 +53,9 @@ export interface AdminShellProps {
    *  screen; folded into a ⋯ menu under 1100px. Each builder decides which apply (the website only when
    *  the Space has one). */
   links?: AdminShellLink[]
+  /** Draw the active section's pages as a menu across the top of every page (the operator console), and keep
+   *  the sidebar to one row per section. Off, the pages sit under the active sidebar row (the Space console). */
+  topMenu?: boolean
   me: { name: string; avatarUrl: string | null; href: string }
   children: ReactNode
 }
@@ -131,7 +134,7 @@ function TopLinks({ links }: { links: AdminShellLink[] }) {
   )
 }
 
-export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search, alerts, links = [], me, children }: AdminShellProps) {
+export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search, alerts, links = [], topMenu = false, me, children }: AdminShellProps) {
   return (
     <div data-kit="members" data-energy="still">
       <div data-kit="admin">
@@ -143,8 +146,8 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
               <span className="fq-logo-flow" aria-hidden />
             </Link>
             <SpaceCard space={space} />
-            <Suspense fallback={<AdminNavList items={items} label={navLabel} />}>
-              <AdminNav items={items} label={navLabel} />
+            <Suspense fallback={<AdminNavList items={items} label={navLabel} topMenu={topMenu} />}>
+              <AdminNav items={items} label={navLabel} topMenu={topMenu} />
             </Suspense>
             <span className="ap-sp" />
             <nav className="ad-nav" aria-label="Leave the console">
@@ -175,7 +178,7 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
               <Link className="ap-me" href={me.href} title={me.name} aria-label={me.name} style={bg(me.avatarUrl)} />
             </header>
             <Suspense fallback={null}>
-              <AdminPhoneStrip items={items} />
+              {topMenu ? <AdminTopMenu items={items} /> : <AdminPhoneStrip items={items} />}
             </Suspense>
             <main className="ad-main">{children}</main>
           </div>

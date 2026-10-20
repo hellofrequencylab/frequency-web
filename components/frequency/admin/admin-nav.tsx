@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { FqIcon } from '@/components/frequency/icon'
-import { activeNav, itemBadge, phoneSlots, type AdminNavItem } from './nav-model'
+import { activeNav, itemBadge, menuGroups, phoneSlots, type AdminNavItem, type AdminNavLeaf } from './nav-model'
 
 // The sidebar navigation and the top bar's breadcrumb (shell.js): client components only because the active
 // row follows the URL across soft navigations, which a layout cannot see. Both read the same resolver, so
@@ -17,11 +17,13 @@ function useActive(items: AdminNavItem[]) {
   return activeNav(items, pathname, new URLSearchParams(search.toString()))
 }
 
-export function AdminNavList({ items, label, activeKey = null, activeLeafKey = null }: {
+export function AdminNavList({ items, label, activeKey = null, activeLeafKey = null, topMenu = false }: {
   items: AdminNavItem[]
   label: string
   activeKey?: string | null
   activeLeafKey?: string | null
+  /** The section's pages live on the top menu (AdminTopMenu), so the sidebar stays one row per section. */
+  topMenu?: boolean
 }) {
   return (
     <>
@@ -40,7 +42,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
                 {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
               </Link>
             )}
-            {on && !!item.children?.length && (
+            {on && !topMenu && !!item.children?.length && (
               <div className="ad-sub">
                 {item.children.map((leaf, i, all) => (
                   <Fragment key={leaf.key}>
@@ -61,9 +63,9 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
   )
 }
 
-export function AdminNav({ items, label }: { items: AdminNavItem[]; label: string }) {
+export function AdminNav({ items, label, topMenu = false }: { items: AdminNavItem[]; label: string; topMenu?: boolean }) {
   const { item, leaf } = useActive(items)
-  return <AdminNavList items={items} label={label} activeKey={item?.key ?? null} activeLeafKey={leaf && leaf.href !== item?.href ? leaf.key : null} />
+  return <AdminNavList items={items} label={label} topMenu={topMenu} activeKey={item?.key ?? null} activeLeafKey={leaf && leaf.href !== item?.href ? leaf.key : null} />
 }
 
 export function AdminCrumb({ root, items }: { root: string; items: AdminNavItem[] }) {
@@ -87,6 +89,64 @@ export function AdminPhoneStrip({ items }: { items: AdminNavItem[] }) {
         </Link>
       ))}
     </nav>
+  )
+}
+
+/** THE TOP MENU: the active section's pages across the top of every page, at every width (owner, 2026-10-20).
+ *  A section with job groups draws two quiet rows: the groups (with the section's own home first), then the
+ *  pages of the group you are in. A section without groups draws one row. Each row scrolls sideways with no
+ *  bar, so a phone gets the same menu. Overview has no pages and draws nothing. */
+export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
+  const { item, leaf } = useActive(items)
+  if (!item || item.external || !item.children?.length) return null
+  const groups = menuGroups(item)
+  const onHome = !leaf || leaf.href === item.href
+  const current = onHome ? null : groups.find((g) => g.leaves.some((l) => l.key === leaf.key)) ?? null
+  const grouped = groups.some((g) => g.label)
+  const home = (
+    <Link href={item.href} className={onHome ? 'on' : undefined} aria-current={onHome ? 'page' : undefined}>
+      {item.label} home
+    </Link>
+  )
+  const page = (l: AdminNavLeaf) => (
+    <Link key={l.key} href={l.href} className={!onHome && l.key === leaf?.key ? 'on' : undefined} aria-current={!onHome && l.key === leaf?.key ? 'page' : undefined}>
+      {l.label}
+      {!!l.badge && <b aria-label={`${l.badge} waiting`}>{l.badge}</b>}
+    </Link>
+  )
+  return (
+    <div className="ad-topmenu">
+      <nav className="ad-tm-row" aria-label={`${item.label} ${grouped ? 'sections' : 'pages'}`}>
+        {home}
+        {grouped
+          ? groups.map((g) => {
+              const badge = g.leaves.reduce((n, l) => n + (l.badge ?? 0), 0)
+              const on = g === current
+              return (
+                <Link key={g.label} href={g.leaves[0].href} className={on ? 'on' : undefined} aria-current={on && g.leaves.length === 1 ? 'page' : undefined}>
+                  {g.label}
+                  {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
+                </Link>
+              )
+            })
+          : groups[0].leaves.map(page)}
+      </nav>
+      {grouped && !current && (
+        <nav className="ad-tm-row ad-tm-pages" aria-label={`All ${item.label} pages`}>
+          {groups.map((g) => (
+            <Fragment key={g.label}>
+              {g.label && <span className="ad-tm-h">{g.label}</span>}
+              {g.leaves.map(page)}
+            </Fragment>
+          ))}
+        </nav>
+      )}
+      {grouped && current && current.leaves.length > 1 && (
+        <nav className="ad-tm-row ad-tm-pages" aria-label={`${current.label} pages`}>
+          {current.leaves.map(page)}
+        </nav>
+      )}
+    </div>
   )
 }
 
