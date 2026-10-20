@@ -5,6 +5,7 @@ import {
   COLLECTIVE_FOUNDING_ENDS_LABEL,
   collectiveFoundingOpen,
   FOUNDING_RATE_NOTE,
+  FOUNDER_BADGE_ENDS_LABEL,
   FOUNDING_OPEN_ITEMS,
   foundingOpenFor,
   foundingOpenForPlan,
@@ -92,14 +93,23 @@ describe('the Collective Founding intro end date (LIVE-995)', () => {
     expect(new Date(COLLECTIVE_FOUNDING_ENDS_AT).getUTCMonth()).toBe(0)
   })
 
-  it('the shared note names the end date', () => {
+  it('the shared note names both dates: price to January 1, founder badge to December 1', () => {
     expect(FOUNDING_RATE_NOTE).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
+    expect(FOUNDING_RATE_NOTE).toContain(FOUNDER_BADGE_ENDS_LABEL)
+    expect(FOUNDING_RATE_NOTE).toMatch(/Grandfathered/)
+  })
+
+  it('the founder badge date is the site-wide beta end', async () => {
+    const { BETA_ENDS_LABEL } = await import('@/lib/core/beta-notices')
+    expect(FOUNDER_BADGE_ENDS_LABEL).toBe(BETA_ENDS_LABEL)
   })
 
   it('the static help articles name the same end date', async () => {
     const { readFileSync } = await import('node:fs')
     for (const f of ['content/help/spaces/collective.md', 'content/help/spaces/plans-and-pricing.md']) {
-      expect(readFileSync(f, 'utf8')).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
+      const text = readFileSync(f, 'utf8')
+      expect(text).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
+      expect(text).toContain(FOUNDER_BADGE_ENDS_LABEL)
     }
   })
 })

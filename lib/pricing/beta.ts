@@ -91,6 +91,13 @@ export const COLLECTIVE_FOUNDING_ENDS_AT = '2027-01-01T08:00:00.000Z'
  *  COLLECTIVE_FOUNDING_ENDS_AT (pinned by beta.test.ts). */
 export const COLLECTIVE_FOUNDING_ENDS_LABEL = 'January 1'
 
+/** The day the founder BADGE stops being granted: the `beta_grace` window end, which the badge grant reads
+ *  (lib/billing/beta-founding.ts). The Founding PRICE runs past it to COLLECTIVE_FOUNDING_ENDS_AT, but the
+ *  badge does not (owner 2026-10-20: "Badge till December 1 for founders"). Kept equal to BETA_ENDS_LABEL
+ *  (lib/core/beta-notices.ts, which imports this module, so it cannot be imported here); beta.test.ts pins
+ *  the two together. */
+export const FOUNDER_BADGE_ENDS_LABEL = 'December 1'
+
 /** Is the standing Founding intro still open at `now`? False on/after the end instant, and false when the
  *  constant cannot be parsed (charge list, never under-charge). PURE. */
 export function collectiveFoundingOpen(now: Date = new Date()): boolean {
@@ -134,7 +141,7 @@ export function foundingOpenForPlan(plan: SpacePlan, betaActive: boolean, now: D
 /** The one plain sentence beside a Founding price: the offer ends on COLLECTIVE_FOUNDING_ENDS_LABEL, and
  *  the rate is locked for as long as the subscription is kept (readLockedPriceId re-bills it). Shared by
  *  /pricing, the in-app ladder (where Collective checkout starts) and the FAQ so it is worded once. */
-export const FOUNDING_RATE_NOTE = `Founding price, offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}. Yours for as long as you keep the plan.`
+export const FOUNDING_RATE_NOTE = `Founding price, offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}. Grandfathered for as long as you keep the plan. Collectives that start before ${FOUNDER_BADGE_ENDS_LABEL} also get the founder badge.`
 
 // ── THE PRIVATE BETA PRICE GRANT (ADR-1061) — a per-Space grant, never a public offer ────────────
 // The owner, 2026-08-17, the same day they closed the window above: *"I still have a couple people
