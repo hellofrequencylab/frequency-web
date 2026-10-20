@@ -8,7 +8,8 @@ import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/ty
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
-import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
+import { resolveRows } from '@/lib/entity-blocks/layout'
+import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { deriveModuleSectionNav } from '@/lib/spaces/module-section-nav'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
@@ -129,7 +130,7 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
   // What this replaced: `resolveSpacePageDoc(...)`, which for a Space with no stored `pageDocs`
   // (Royal Temple, and every Space seeded since the cutover) returned the SEEDED DEFAULT doc — so
   // the menu described a template the operator never edited and the page never drew.
-  const grid = parseEntityLayout(readProfileLayoutNode(space.preferences)) ?? {}
+  const grid = readTypeKeyedGrid(readProfileLayoutNode(space.preferences)) ?? {}
   // Reviews is its OWN dedicated tab / page (added below), so an in-page section anchor for it is a
   // DUPLICATE nav link (the "two Reviews" bug: a stray #reviews anchor beside the real /reviews tab,
   // scrolling to nothing). Drop that anchor here so the dedicated tab is the only one.

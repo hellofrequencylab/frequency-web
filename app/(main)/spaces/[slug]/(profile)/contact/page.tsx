@@ -12,7 +12,7 @@ import { readContactFormContent } from '@/lib/spaces/contact-tab'
 import { SpaceContactBlock } from '@/components/page-editor/blocks/profile'
 import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 import { Eyebrow } from '@/components/page-editor/blocks/kit'
-import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { paragraphs, plainText, withoutAccentMarks } from '@/lib/sites/house-theme'
 import { safeImageSrc } from '@/lib/safe-image-src'
 
@@ -94,7 +94,7 @@ export default async function SpaceContactPage({ params }: { params: Promise<{ s
   // The profile: the Space's own About block (heading and text) beside its Zigzag photo, the same fields the
   // website's Contact page reads (components/sites/house-home buildHouseContact). Nothing written, nothing drawn.
   const prefs = space.preferences as Record<string, unknown> | null
-  const blocks = (parseEntityLayout(prefs?.profileLayout)?.content ?? {}) as Record<string, Record<string, unknown>>
+  const blocks = (readTypeKeyedGrid(prefs?.profileLayout)?.content ?? {}) as Record<string, Record<string, unknown>>
   const about = blocks.about ?? {}
   const aboutBody = paragraphs(about.body)
   const aboutTitle = withoutAccentMarks(plainText(about.title))

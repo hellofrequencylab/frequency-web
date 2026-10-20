@@ -336,6 +336,20 @@ describe('materializeBusiness — lock layout on a re-apply', () => {
     expect(prefsOf(spaceId).profileLayout).not.toEqual(handTuned)
   })
 
+  it('never overwrites a stored node document, locked or not', async () => {
+    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
+    const spaceId = created.spaceId!
+    const native = {
+      rows: [{ id: 'r0', columns: 1 as const, cells: [[{ nid: 'nabcdef1', type: 'about', content: { text: 'Authored' } }]] }],
+      bench: [],
+    }
+    const before = prefsOf(spaceId)
+    H.tables.spaces.find((s) => s.id === spaceId)!.preferences = { ...before, profileLayout: native }
+
+    await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId }, { verificationPolicy: 'allow' })
+    expect(prefsOf(spaceId).profileLayout).toEqual(native)
+  })
+
   it('cannot leave a Space with no page: the lock is a no-op when there is no layout yet', async () => {
     const res = await materializeBusiness(
       wellnessStudioFixture,
