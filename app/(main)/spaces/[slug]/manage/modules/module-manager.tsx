@@ -14,7 +14,7 @@ import {
 } from '@/lib/admin/modules/space-modules'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership-core'
-import { TierChip } from '@/components/ui/tier-chip'
+import { TierChip } from '@/components/pricing/tier-chip'
 import { TIER_MARKS, type ModuleTierRead } from '@/lib/pricing/tier-marks'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Switch } from '@/components/ui/switch'

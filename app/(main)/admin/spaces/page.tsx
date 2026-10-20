@@ -25,7 +25,7 @@ import { listSpaces } from '@/lib/spaces/store'
 import { intakeIdsBySpaceIds } from '@/lib/importer/store'
 import { resolveMode } from '@/lib/spaces/modes'
 import { asSpacePlan } from '@/lib/pricing/plans'
-import { TierChip } from '@/components/ui/tier-chip'
+import { TierChip } from '@/components/pricing/tier-chip'
 import {
   HEALTH_BUCKETS,
   HEALTH_BUCKET_LABEL,

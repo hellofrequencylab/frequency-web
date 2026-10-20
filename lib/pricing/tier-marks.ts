@@ -1,7 +1,7 @@
 // THE TIER MARK REGISTRY. One table that says, for every tier, rank or status mark a person or a Space can
 // wear, what it is called, which spectrum colour it takes and whether it carries a glyph. Every surface that
 // draws one of these (member cards, the profile header, Space cards and headers, the Menu and features index,
-// the plan ladder) reads it through components/ui/tier-chip.tsx, so a mark cannot read differently on two
+// the plan ladder) reads it through components/pricing/tier-chip.tsx, so a mark cannot read differently on two
 // pages. Colour VALUES live in app/globals.css (the rank spectrum); this file only picks the key.
 //
 // PURE and client-safe. Labels come from the naming canon (SPACE_PLAN_LABEL, ENTITLEMENT_LABEL) and are never

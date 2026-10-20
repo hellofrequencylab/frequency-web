@@ -1,5 +1,5 @@
 import { RoleBadge, type RoleChipKey } from '@/lib/community-roles'
-import { TierChip } from '@/components/ui/tier-chip'
+import { TierChip } from '@/components/pricing/tier-chip'
 import type { RankBadgeSize } from '@/components/ui/rank-badge'
 
 // THE MEMBER MARK CLUSTER. What a person wears beside their name on every member page and index: the

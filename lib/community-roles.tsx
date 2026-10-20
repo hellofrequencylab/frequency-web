@@ -11,7 +11,7 @@
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
 import { RankBadge, type RankBadgeSize } from '@/components/ui/rank-badge'
-import { TierChip } from '@/components/ui/tier-chip'
+import { TierChip } from '@/components/pricing/tier-chip'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 

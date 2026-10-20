@@ -10,7 +10,7 @@ const bad = []
 const need = (file, re, why) => { if (!re.test(r(file))) bad.push(`${file}: ${why}`) }
 
 need('lib/pricing/tier-marks.ts', /export const TIER_MARKS/, 'no one registry of tier marks')
-need('components/ui/tier-chip.tsx', /export function TierChip/, 'no shared TierChip')
+need('components/pricing/tier-chip.tsx', /export function TierChip/, 'no shared TierChip')
 need('lib/community-roles.tsx', /<TierChip tier="founder"/, 'Founder is not a TierChip')
 need('lib/community-roles.tsx', /<TierChip tier="founding_business"/, 'Founding Business is not a TierChip')
 need('components/crew/boosted-badge.tsx', /<TierChip tier="boosted"/, 'Boosted is not a TierChip')

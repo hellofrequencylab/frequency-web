@@ -1,4 +1,4 @@
-import { TierChip } from '@/components/ui/tier-chip'
+import { TierChip } from '@/components/pricing/tier-chip'
 
 // The BOOSTED mark (LIVE-756). A Crew member gave this Space a Boost in the last 7 days. Owner ruling
 // 2026-10-06 ("Circles only"): a Boost lifts a Circle in discovery, but a Space only wears this mark,

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Check, Globe, Network, ShieldCheck, Users } from 'lucide-react'
 import type { BillingInterval } from '@/lib/billing/pricing-keys'
 import type { SpacePlan } from '@/lib/pricing/plans'
-import { TierChip } from '@/components/ui/tier-chip'
+import { TierChip } from '@/components/pricing/tier-chip'
 import { ChoosePlanButton } from './choose-plan'
 import { BillingIntervalSwitch } from './interval-switch'
 
