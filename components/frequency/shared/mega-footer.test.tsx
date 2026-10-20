@@ -5,31 +5,47 @@ import { LEGAL_LINKS } from '@/lib/nav/legal-links'
 import { siteNavigationSchema } from '@/lib/jsonld'
 import { visibleFooterColumns } from '@/lib/nav/footer-access'
 
-const render = () =>
+const render = (extra: { title: string; links: { label: string; href: string }[] }[] = []) =>
   renderToStaticMarkup(
     <FqMegaFooter
-      columns={[{ title: 'Explore', links: [{ label: 'Circles', href: '/circles' }] }]}
+      columns={[{ title: 'Explore', links: [{ label: 'Circles', href: '/circles' }] }, ...extra]}
       ctas={[{ label: 'Start a Circle', href: '/circles/new', primary: true }]}
       tagline="Local groups that keep meeting."
-      quick={[{ label: 'Help', href: '/help' }]}
+      quick={[{ label: 'Settings', href: '/settings' }]}
     />,
   )
 
-describe('the mega footer (LIVE-1030)', () => {
+describe('the mega footer (LIVE-1030, LIVE-1113)', () => {
   it('draws the index in the HTML while closed, so a crawler reads it', () => {
     const html = render()
-    expect(html).toContain('<details')
-    expect(html).not.toContain('<details open')
+    expect(html).not.toContain('<details')
     expect(html).toContain('aria-label="Site index"')
     expect(html).toContain('href="/circles"')
     expect(html).toContain('Start a Circle')
   })
 
-  it('keeps every legal link and the contact outside the closing panel', () => {
+  it('opens the index as a native pop-up dialog on the stage surface, from one trigger', () => {
     const html = render()
-    const afterPanel = html.slice(html.indexOf('</details>'))
-    for (const l of LEGAL_LINKS) expect(afterPanel).toContain(`href="${l.href}"`)
-    expect(afterPanel).toContain('mailto:')
+    expect(html).toContain('popover="auto"')
+    expect(html).toContain('role="dialog"')
+    expect(html).toContain('aria-modal="true"')
+    expect(html).toContain('data-surface="stage"')
+    expect(html.match(/popovertarget="fq-mf-pop"/gi)).toHaveLength(2)
+    expect(html).toMatch(/popovertargetaction="hide"/i)
+  })
+
+  it('keeps the closed bar quiet: one trigger, no loose links', () => {
+    const html = render()
+    const bar = html.slice(html.indexOf('fq-mf-bar'), html.indexOf('id="fq-mf-pop"'))
+    expect(bar.match(/<button/g)).toHaveLength(1)
+    expect(bar).not.toContain('<a ')
+  })
+
+  it('keeps the Legal column in the index grid, from the shared list, and the contact in the last row', () => {
+    const html = render([{ title: 'Legal', links: LEGAL_LINKS.map((l) => ({ label: l.label, href: l.href })) }])
+    expect(html).toContain('>Legal</h3>')
+    for (const l of LEGAL_LINKS) expect(html.match(new RegExp(`href="${l.href}"`, 'g'))).toHaveLength(1)
+    expect(html).toContain('mailto:')
   })
 
   it('writes the index as SiteNavigationElement JSON-LD in the footer itself (LIVE-1095)', () => {
