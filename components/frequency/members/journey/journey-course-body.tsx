@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { upNext, playHref, type OngoingCycle } from '@/components/journey/v2/learn/course-home'
 import { unlockLine, type PhaseLockState } from '@/lib/journeys/schedule'
 import type { JourneyTree, Lesson, Phase } from '@/lib/journeys/tree'
@@ -161,16 +162,12 @@ export function JourneyCourseBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Journey</span>
-          <h1 className="h1">
-            <SerifTail text={title} />
-          </h1>
-          <span className="meta">{metaParts.join(' · ')}</span>
-        </div>
-        <div className="row wrap">{actions}</div>
-      </div>
+      <MemberHead
+        kicker="The Quest · Journey"
+        title={<SerifTail text={title} />}
+        meta={metaParts.join(' · ')}
+        actions={<div className="row wrap">{actions}</div>}
+      />
 
       <section className="panel mc-hero" aria-label="Your progress">
         <div className="fq-aura" aria-hidden />
