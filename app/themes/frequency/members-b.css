@@ -25,6 +25,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-card>.ph{height:170px;position:relative}
 [data-design="frequency"] [data-kit="members"] .fqm-card-b{display:flex;flex-direction:column;gap:6px;padding:18px 20px 20px}
 [data-design="frequency"] [data-kit="members"] .fqm-corner{position:absolute;top:14px;left:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-corner-b{position:absolute;bottom:14px;left:14px}
 
 /* Event: the split hero card, the section stack, the time column, the venue photo. */
 [data-design="frequency"] [data-kit="members"] .fqm-ev{margin-top:20px;display:flex;flex-wrap:wrap;border-radius:28px}
