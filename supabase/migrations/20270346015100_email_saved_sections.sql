@@ -10,6 +10,7 @@ create table public.email_saved_sections (
  created_by uuid references public.profiles(id) on delete set null,
  created_at timestamptz not null default now()
 );
+create index email_saved_sections_created_by_idx on public.email_saved_sections(created_by) where created_by is not null;
 create index email_saved_sections_created_idx on public.email_saved_sections(created_at desc);
 comment on table public.email_saved_sections is
  'EMAIL-042: reusable email blocks the marketing team keeps by name (block type plus content). Service-role only; the Email Studio actions read and write it behind the writer gate. Capped at 60 rows by the action.';
