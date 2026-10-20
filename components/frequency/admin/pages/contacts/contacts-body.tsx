@@ -6,7 +6,9 @@ import { contactIdFromRowId, isContactRowId, loadSpaceResonanceRoster } from '@/
 import type { MemberSummary } from '@/lib/people/member-viewer'
 import type { ResonanceTier } from '@/lib/traits/compute'
 import { HOME_TZ } from '@/lib/time/zone'
-import { SpaceMemberViewer } from '@/components/spaces/crm/space-member-viewer'
+import { loadSpaceResonanceDetail } from '@/app/(main)/admin/crm/members/member-detail-actions'
+import { MEMBER_SORT_OPTIONS, LIFECYCLE_FACET, ROLE_FACET, BUSINESS_FACET, ACTIVE_FACET } from '@/app/(main)/admin/crm/member-summaries'
+import { ContactsWorkspace } from './contacts-workspace'
 import { AdminHead, AdminPageBody, EMPTY, Kpi, n } from '../shared'
 import { DAY_MS, visitsByProfile } from '../checkin-stats'
 import { loadSpaceCheckins } from '../space-reads'
@@ -26,7 +28,7 @@ import { ContactsViews } from './contacts-views'
 //
 // THE WORKSPACE (owner, 2026-10-14: the new console lost the old contact system). Above the table sit the four
 // health numbers the DAWN stat row showed, and the page opens on the Workspace view: the SAME master-detail
-// roster DAWN renders (SpaceMemberViewer: search, sort, Role/Business/Activity/Tier/Lifecycle facets, the
+// roster DAWN renders, drawn in the kit (contacts-workspace.tsx: tier chips, a search pill, kit rows, and the
 // selected person's card with stats, timeline, deal stage, notes, custom fields, win-back and the message
 // composer), so nothing the old page did is lost. Table is the design's flat list, one click away.
 
@@ -125,7 +127,15 @@ export async function FqContactsBody({
           note={`${n(health.resonant)} resonant · ${n(health.cooling)} cooling`}
         />
       </div>
-      <ContactsViews workspace={<SpaceMemberViewer spaceId={spaceId} slug={slug} />} table={<ContactsTable rows={rows} />} />
+      <ContactsViews workspace={
+          <ContactsWorkspace
+            members={roster}
+            loadDetail={loadSpaceResonanceDetail.bind(null, slug)}
+            messageScope={{ spaceId, slug }}
+            facets={[ROLE_FACET, BUSINESS_FACET, ACTIVE_FACET, LIFECYCLE_FACET]}
+            sortOptions={MEMBER_SORT_OPTIONS}
+          />
+        } table={<ContactsTable rows={rows} />} />
     </AdminPageBody>
   )
 }

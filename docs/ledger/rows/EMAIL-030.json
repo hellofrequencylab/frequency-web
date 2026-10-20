@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-030",
+  "title": "A conversation reply wears the Frequency email card, and the sender's picture is a round avatar beside the signature",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/comms/email-template.ts",
+    "ref": "owner 2026-10-20 in the project thread, after the live Space send-and-reply pilot (EMAIL-028): the back and forth worked but the email looks horrible; style it with the Frequency email template and put the profile image as a circle to the left of the signature"
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. THE CONSEQUENCE: a conversation reply (renderReplyEmail, the batch email renderCoalescedEmail) went out as a bare column with a hairline header and a large square logo above the message, and a plain '-- ' signature, so a member's first Space email did not look like Frequency. THE FIX: lib/comms/email-template.ts wraps the message in the member-kit look (the design's wash page, a raised radius-24 card, Hanken body at 16px, the display face on the Space name, ink from the palette) and renders the signature as a small card: the Space's picture as a 52px circle to the left, the signature lines beside it (the Space name when no signature is set). The logo no longer crowns the card. The plain-text part keeps the RFC 3676 delimiter. Platform mail with no brand gets the same card. The owner's words are the authority for the test change: the old header-logo pin became the avatar pin.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/comms/email-template.ts','utf8');process.exit(s.includes('border-radius:50%')&&s.includes('border-radius:24px')&&!s.includes('max-height:40px')?0:1)\"",
+    "note": "PASS 2026-10-20: the template carries the circle avatar and the radius-24 card and no longer sets the 40px header logo; vitest lib/comms green."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

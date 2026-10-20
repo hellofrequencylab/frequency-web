@@ -1,4 +1,5 @@
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 
 // THE WAIT FOR THE MEMBER UTILITY SCREENS, IN THE KIT (Settings, My orders, Your codes). Under the
 // Frequency design these routes' loading.tsx drew DAWN skeletons (a bordered card list under a rule)
@@ -24,12 +25,7 @@ function Rows({ rows }: { rows: number }) {
 
 function Head({ kicker, title }: { kicker: string; title: string }) {
   return (
-    <div className="head">
-      <div>
-        <span className="k">{kicker}</span>
-        <h1 className="h1">{title}</h1>
-      </div>
-    </div>
+    <MemberHead kicker={kicker} title={title} />
   )
 }
 

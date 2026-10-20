@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Search, X } from 'lucide-react'
 import type { EntityBlockDef } from '@/lib/entity-blocks/registry'
 import { Input } from '@/components/ui/field'
@@ -40,6 +41,7 @@ export function BlockPicker({
   taken,
   onPick,
   onClose,
+  setup = [],
 }: {
   /** Every arrangeable block for the kind, in default order. */
   palette: EntityBlockDef[]
@@ -47,10 +49,13 @@ export function BlockPicker({
   taken: ReadonlySet<string>
   onPick: (id: string) => void
   onClose: () => void
+  /** Blocks the page cannot hold yet because they have no data (Services before the first service). Each is a
+   *  link to where that data is created, so the owner can start it from the picker. */
+  setup?: { id: string; label: string; description: string; href: string }[]
 }) {
   const [query, setQuery] = useState('')
   const { suggested, all } = useMemo(() => filterPickerBlocks(palette, taken, query), [palette, taken, query])
-  const empty = suggested.length === 0 && all.length === 0
+  const empty = suggested.length === 0 && all.length === 0 && setup.length === 0
 
   const option = (b: EntityBlockDef) => (
     <button
@@ -105,6 +110,23 @@ export function BlockPicker({
           <>
             {group('Suggested', suggested)}
             {group(query.trim() ? 'Results' : 'All', all)}
+            {setup.length > 0 && (
+              <div className="space-y-0.5">
+                <p className={capsLabel('px-2.5 pt-1 text-2xs font-semibold text-muted')}>Set up first</p>
+                {setup.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={b.href}
+                    className="flex w-full items-start gap-2 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-primary-bg focus:bg-primary-bg focus:outline-none"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body-sm font-semibold text-text">{b.label}</span>
+                      <span className="mt-0.5 block text-meta text-muted">{b.description}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

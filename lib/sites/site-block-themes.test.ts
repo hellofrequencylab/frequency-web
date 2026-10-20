@@ -44,7 +44,7 @@ const PAGE_OWN_RENDER = new Set([
 /** Home blocks that keep the Space page's own render (inside the house `.hs-plain` band). */
 const HOME_OWN_RENDER = new Set([
   'about', 'story', 'booking', 'events', 'journeys', 'team', 'reviews', 'callout', 'gallery', 'embed', 'recording',
-  'photoHero', 'displayHeading', 'prose',
+  'photoHero', 'displayHeading', 'prose', 'links',
 ])
 
 const websitePageTypes = () => {

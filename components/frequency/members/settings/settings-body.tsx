@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
@@ -175,12 +176,7 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">You</span>
-          <h1 className="h1">Settings</h1>
-        </div>
-      </div>
+      <MemberHead kicker="You" title="Settings" />
       <SettingsPanes panes={panes} initial={initial} />
       <Suspense fallback={null}>
         <HubLinks title="Settings" links={(v) => hubLinks('/settings', v)} />

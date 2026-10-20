@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { FqIcon } from '@/components/frequency/icon'
+import { Input } from '@/components/ui/field'
 
 // The Settings pane switcher (design_handoff/frequency/templates/members/Settings.html): a side list
 // on the left, one pane on the right. Every pane is server-rendered and stays MOUNTED (hidden with the
@@ -24,6 +26,30 @@ function paneForHash(panes: SettingsPane[], hash: string): string | null {
 
 export function SettingsPanes({ panes, initial }: { panes: SettingsPane[]; initial: string }) {
   const [active, setActive] = useState(initial)
+  const [q, setQ] = useState('')
+  const [words, setWords] = useState<Record<string, string>>({})
+  const panesRef = useRef<HTMLDivElement>(null)
+
+  // Search settings: a pane matches on its name or anything written in it. Every pane stays mounted
+  // (hidden, not removed), so its text is in the DOM; it is read as the box is typed in, because a
+  // section streams in behind its own Suspense boundary and may not be there at first paint.
+  function search(next: string) {
+    const text: Record<string, string> = {}
+    panesRef.current?.querySelectorAll('section[id]').forEach((el) => {
+      text[el.id] = (el.textContent ?? '').toLowerCase()
+    })
+    setWords(text)
+    setQ(next)
+  }
+  const needle = q.trim().toLowerCase()
+  const matching = needle
+    ? panes.filter(
+        (p) =>
+          p.label.toLowerCase().includes(needle) ||
+          p.anchors.some((a) => a.toLowerCase().includes(needle)) ||
+          (words[p.key] ?? '').includes(needle),
+      )
+    : panes
 
   // Follow the hash: on arrival (an old deep link) and on back/forward. Reading location.hash is an
   // external-system sync, which is exactly what an effect is for.
@@ -47,10 +73,23 @@ export function SettingsPanes({ panes, initial }: { panes: SettingsPane[]; initi
   }
 
   return (
+    <div className="w-full min-w-0">
+    <form
+      className="fqm-find mc-bottom-24"
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (matching[0]) choose(matching[0].key)
+      }}
+    >
+      <FqIcon name="search" />
+      <Input variant="seamless" type="search" value={q} onChange={(e) => search(e.target.value)} placeholder="Search settings" aria-label="Search settings" autoComplete="off" />
+    </form>
     <div className="ap-cols l">
       <aside className="side">
         <nav className="stack sel mc-gap-2" aria-label="Settings sections">
-          {panes.map((p) => (
+          {matching.length === 0 ? <p className="t2">No setting matches “{q.trim()}”.</p> : null}
+          {matching.map((p) => (
             <button
               key={p.key}
               type="button"
@@ -63,7 +102,7 @@ export function SettingsPanes({ panes, initial }: { panes: SettingsPane[]; initi
           ))}
         </nav>
       </aside>
-      <div>
+      <div ref={panesRef}>
         {panes.map((p) => (
           <section
             key={p.key}
@@ -75,6 +114,7 @@ export function SettingsPanes({ panes, initial }: { panes: SettingsPane[]; initi
           </section>
         ))}
       </div>
+    </div>
     </div>
   )
 }
