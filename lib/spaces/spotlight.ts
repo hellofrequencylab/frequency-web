@@ -1,4 +1,7 @@
 import { parseEntityLayout, sanitizeEntityLayout, type EntityLayout, type RowDef } from '@/lib/entity-blocks/layout'
+import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { normalizeNodeLayout, sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
+import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 
 // THE SPACE SPOTLIGHT (owner ask 2026-10-07: "use the exact same Spotlight app / editor for both personal
 // and space ... it should act as a linktree"). A Space's Spotlight is a one-column link page built from
@@ -85,6 +88,20 @@ function pickBags<T>(bags: Record<string, T> | undefined, ids: ReadonlySet<strin
   return Object.keys(out).length ? out : undefined
 }
 
+/** The node twin of `toSpotlightRows` (E0 task 12b, ADR-1853): one row per placed Spotlight node in reading
+ *  order, each node keeping its own id, bag and hidden flag, so two Text nodes stay two blocks. The bench
+ *  keeps its Spotlight nodes. Null when no node is placed. PURE. */
+function toSpotlightNodes(layout: NodeLayout | null | undefined): NodeLayout | null {
+  if (!layout) return null
+  const placed: BlockNode[] = layout.rows.flatMap((row) => row.cells.flat()).filter((n) => ALLOWED.has(n.type))
+  if (!placed.length) return null
+  const bench = layout.bench.filter((n) => ALLOWED.has(n.type))
+  return normalizeNodeLayout({
+    rows: placed.map((n, i) => ({ id: `r${i}`, columns: 1 as const, cells: [[n]] })),
+    bench,
+  })
+}
+
 /** Narrow a parsed / sanitized layout to a one-column Spotlight layout, or null when no block survives. */
 function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
   if (!layout?.rows?.length) return null
@@ -92,6 +109,8 @@ function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
   if (!rows.length) return null
   const placed = new Set(rows.map((r) => r.cells[0][0]))
   const out: EntityLayout = { rows }
+  const nodes = toSpotlightNodes(layout.nodes)
+  if (nodes) out.nodes = nodes
   const content = pickBags(layout.content, placed)
   if (content) out.content = content
   const style = pickBags(layout.style, placed)
@@ -103,6 +122,12 @@ function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
 export function readSpaceSpotlight(preferences: unknown): SpaceSpotlight {
   const node = spotlightNode(preferences)
   if (!node) return { published: false, layout: null }
+  // A NATIVE node document has no type-keyed projection (inline nodes cannot live in `cells: string[][]`),
+  // so it reads as nodes only. The render path reads `layout.nodes`; the flag stays off until it is wired.
+  if (hasNativeNodeStorage(node.layout)) {
+    const nodes = toSpotlightNodes(upgradeLayout(node.layout))
+    return { published: node.published === true, layout: nodes ? { rows: [], nodes } : null }
+  }
   return { published: node.published === true, layout: toSpotlightLayout(parseEntityLayout(node.layout)) }
 }
 
@@ -110,6 +135,15 @@ export function readSpaceSpotlight(preferences: unknown): SpaceSpotlight {
 export function spaceSpotlightGrid(spotlight: SpaceSpotlight): EntityLayout {
   if (spotlight.layout) return spotlight.layout
   return { rows: STARTER_IDS.map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] })) }
+}
+
+/** The Spotlight as nodes, for the editor and the node render path: the saved document read as nodes, else
+ *  the starter upgraded. Always one column. PURE. */
+export function spaceSpotlightNodes(spotlight: SpaceSpotlight): NodeLayout {
+  return (
+    spotlight.layout?.nodes ??
+    upgradeLayout({ rows: spaceSpotlightGrid(spotlight).rows, hidden: [], content: {}, style: {} }) ?? { rows: [], bench: [] }
+  )
 }
 
 /** The blocks a Spotlight shows on a website host (LIVE-855). A website stands alone, so the blocks that link
@@ -130,17 +164,32 @@ export function spotlightSiteGrid(grid: EntityLayout): EntityLayout {
  *  the wire sends is stored unchecked; `layout: null` clears it back to the starter. PURE. */
 export function nextSpotlightPreferences(
   current: Record<string, unknown>,
-  change: { published?: boolean; layout?: unknown },
+  change: { published?: boolean; layout?: unknown; native?: boolean },
 ): Record<string, unknown> {
   const prev = readSpaceSpotlight(current)
   const published = typeof change.published === 'boolean' ? change.published : prev.published
-  const layout =
-    change.layout === undefined
-      ? prev.layout
-      : change.layout === null
-        ? null
-        : toSpotlightLayout(sanitizeEntityLayout(change.layout, 'space'))
   const node: Record<string, unknown> = { published }
-  if (layout) node.layout = layout
+  if (change.native === true && change.layout) {
+    // A NATIVE node document (render_path_spotlight on, ADR-1853): stored as nodes, narrowed to the Spotlight.
+    const nodes = toSpotlightNodes(sanitizeNodeLayout(change.layout, 'space'))
+    if (nodes) node.layout = nodes
+    return { ...current, spotlight: node }
+  }
+  // A publish toggle keeps the STORED layout byte for byte (a native node document must not be round-tripped
+  // through the type-keyed projection), and the legacy write never stores `nodes`, a read projection.
+  if (change.layout === undefined) {
+    const stored = spotlightNode(current)?.layout
+    if (stored && prev.layout) node.layout = stored
+  } else if (change.layout !== null) {
+    const layout = toSpotlightLayout(sanitizeEntityLayout(change.layout, 'space'))
+    if (layout) node.layout = layout
+  }
   return { ...current, spotlight: node }
+}
+
+/** Refuse a LEGACY write over a stored native Spotlight, or a native document sent to a legacy write: the
+ *  type-keyed writer would clear the node cells (the LIVE-887 guard, for the Spotlight). Null when fine. */
+export function legacySpotlightWriteError(incoming: unknown, preferences: unknown): string | null {
+  const stored = spotlightNode(preferences)?.layout
+  return hasNativeNodeStorage(incoming) || hasNativeNodeStorage(stored) ? NODE_LAYOUT_WRITE_ERROR : null
 }
