@@ -1,4 +1,4 @@
-// WHICH SHELF A CIRCLE SITS ON (LIVE-1020, ADR-1841). The Circles index groups circles by who runs
+// WHICH SHELF A CIRCLE SITS ON (LIVE-1020, ADR-1843). The Circles index groups circles by who runs
 // them, derived from fields every circle already has, so nothing is stored and nothing drifts:
 //
 //   business   a Business or Non Profit Space owns it (its `space` is not the platform root)

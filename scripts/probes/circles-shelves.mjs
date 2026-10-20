@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1020 (ADR-1841): the Circles index is shelves by who runs them, community before business,
+// LIVE-1020 (ADR-1843): the Circles index is shelves by who runs them, community before business,
 // with a near-you shelf, a section index and a featured Business strip.
 import { readFileSync, existsSync } from 'node:fs'
 
