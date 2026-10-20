@@ -12,6 +12,7 @@ export default function EmailCardBlock(props: Record<string, unknown>) {
   const line = str('price') || str('when') || str('blurb')
   return (
     <div className="rounded-card border border-border bg-surface p-4">
+      {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL snapshot, not a build asset */}
       {image ? <img src={image} alt="" className="mb-3 w-full rounded-card" /> : null}
       <p className="font-semibold text-foreground">{title}</p>
       {line ? <p className="text-sm text-muted-foreground">{line}</p> : null}
