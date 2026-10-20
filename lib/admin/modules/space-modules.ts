@@ -33,6 +33,7 @@ import {
   TrendingUp,
   Wallet,
   Compass,
+  Nfc,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
@@ -273,6 +274,11 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
   { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own people, always', parent: 'space.offerings' },
+  // Check-in & scanners (LIVE-1113): the door code, the check-in roster, Regulars and the counter scanners all live in
+  // the `?panel=checkin` workspace, which lost its only menu door when space.checkin was retired (LIVE-226). This
+  // is that door again under a new id, as a TOOL inside the Money box (Regulars is what a check-in earns). Gated on
+  // `events`, the key the retired `checkin` resolves to, so it shows exactly when the panel would open.
+  { id: 'space.scanners', label: 'Check-in & scanners', desc: 'Your door code, who checked in, Regulars, and the card readers at your counter.', Icon: Nfc, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'panel', deepLink: (s) => `${base(s)}/full?panel=checkin`, order: 71, tier: 'primary', priority: 32.5, access: 'included', parent: 'space.offerings' },
   // Airwaves (ADR-608, P1): the Space's audio/video Recordings library. Upload a Recording into the Loom,
   // manage the catalog, and attach a Recording to any offering, journey, event, or the Space itself.
   { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41, access: 'included', parent: 'space.content' },

@@ -23,7 +23,7 @@ import {
 } from './store'
 
 /** Why a scan did not check the member in. The capture verifier's reasons pass through unchanged. */
-export type ScanReason =
+type ScanReason =
   | 'unknown_card'
   | 'card_mismatch'
   | 'checkin_not_set_up'
@@ -38,7 +38,7 @@ export type ScanReason =
   | 'capacity_reached'
 
 /** The device's reply, exactly as POST /api/v1/devices/scan sends it (docs/LOYALTY.md). */
-export interface ScanReply {
+interface ScanReply {
   ok: boolean
   reason?: ScanReason
   member: { display_name: string } | null

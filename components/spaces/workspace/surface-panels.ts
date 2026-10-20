@@ -124,4 +124,6 @@ export const PANEL_SURFACE_TO_ID: Record<string, string> = {
   'space.enroll': 'enroll',
   'space.tickets': 'tickets',
   'space.checkin': 'checkin',
+  // LIVE-1113: the door back into the Check-in workspace (door code, Regulars, counter scanners).
+  'space.scanners': 'checkin',
 }
