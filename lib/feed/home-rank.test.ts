@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rankHomeEvents, slotFor, friendsLine, intentFor, wallNowMs, clockLabel, type HomeEventInput, type HomeHistory } from './home-rank'
+import { rankHomeEvents, slotFor, friendsLine, intentFor, wallNowMs, clockLabel, firstSlotWith, type HomeEventInput, type HomeHistory } from './home-rank'
 
 // The Frequency home's ranker: each signal the design names either moves the order with a reason
 // the member can read, or is absent because there is no data (see the header of home-rank.ts).
@@ -105,5 +105,15 @@ describe('copy', () => {
     expect(clockLabel(at(0, 19, 30))).toBe('7:30pm')
     const wall = wallNowMs(new Date(Date.UTC(2026, 9, 12, 23, 20)), 'America/Los_Angeles')
     expect(new Date(wall).getUTCHours()).toBe(16)
+  })
+})
+
+describe('firstSlotWith', () => {
+  it('skips an empty Now tab and lands on the first tab that has something', () => {
+    expect(firstSlotWith((s) => s === 'tomorrow' || s === 'week')).toBe('tomorrow')
+  })
+  it('points past the current tab, and is null when nothing is left', () => {
+    expect(firstSlotWith((s) => s !== 'now', 'now')).toBe('tonight')
+    expect(firstSlotWith((s) => s === 'now', 'now')).toBeNull()
   })
 })

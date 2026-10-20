@@ -7,7 +7,7 @@ import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { fqToast } from '../shared/toast'
 import { FqAvatar, phStyle } from '../shared/avatar'
 import { SystemNotice } from '../shared/system-notice'
-import { distanceLabel, friendsLine, type HomeIntent, type HomeSlot, type RankedHomeEvent } from '@/lib/feed/home-rank'
+import { distanceLabel, firstSlotWith, friendsLine, type HomeIntent, type HomeSlot, type RankedHomeEvent } from '@/lib/feed/home-rank'
 import type { HomePlan } from '@/lib/feed/frequency-home'
 
 // UP NEXT, NEAR YOU and YOUR PEOPLE'S PLANS: one island because one piece of state drives all three
@@ -54,8 +54,15 @@ export function FeedPlanner({
   const [pick, setPick] = useState(0)
   const [heroDone, setHeroDone] = useState(false)
   const [intent, setIntent] = useState<HomeIntent | 'all'>('all')
-  const [slot, setSlot] = useState<HomeSlot>('now')
   const [radius, setRadius] = useState<number>(5)
+  // Open on the first tab that has something within the radius: "Now" is only what is live or starts
+  // within two hours, so it is often empty while the week is full (LIVE-1161).
+  const [slot, setSlot] = useState<HomeSlot>(
+    () =>
+      firstSlotWith((s) =>
+        events.some((e) => e.slot === s && (e.distanceMi == null ? !!e.myCircleName || !hasHome : e.distanceMi <= 5) && e.myStatus !== 'not_going'),
+      ) ?? 'now',
+  )
   const [, startTransition] = useTransition()
   const nearRef = useRef<HTMLDivElement>(null)
 
@@ -110,6 +117,7 @@ export function FeedPlanner({
 
   const fits = (e: RankedHomeEvent) => e.distanceMi == null ? !!e.myCircleName || !hasHome : e.distanceMi <= radius
   const near = events.filter((e) => e.slot === slot && (intent === 'all' || e.intent === intent) && fits(e) && status[e.id] !== 'not_going')
+  const nextSlot = near.length === 0 ? firstSlotWith((s) => events.some((e) => e.slot === s && (intent === 'all' || e.intent === intent) && fits(e) && status[e.id] !== 'not_going'), slot) : null
   const withFriends = near.filter((e) => e.friends.length > 0).length
   // The live count; an empty result says so in the body ("Nothing that fits within N mi."), not twice.
   const resultLine = `${near.length} ${near.length === 1 ? 'thing' : 'things'}${withFriends ? ` · ${withFriends} with friends` : ''}`
@@ -283,8 +291,8 @@ export function FeedPlanner({
       {near.length === 0 && (
         <SystemNotice
           icon="pin"
-          title={hasHome ? `Nothing that fits within ${radius} mi.` : 'Nothing on for that yet.'}
-          body={hasHome ? 'Widen the circle, try another day, or put something on yourself.' : 'Set a home base and we will show what is close.'}
+          title={nextSlot ? `Nothing ${slot === 'now' ? 'right now' : SLOTS.find(([k]) => k === slot)![1].toLowerCase()} within ${radius} mi.` : hasHome ? `Nothing that fits within ${radius} mi.` : 'Nothing on for that yet.'}
+          body={nextSlot ? `There is more on ${SLOTS.find(([k]) => k === nextSlot)![1].toLowerCase()}.` : hasHome ? 'Widen the circle, try another day, or put something on yourself.' : 'Set a home base and we will show what is close.'}
           actions={[
             hasHome ? { href: '/events/new', label: 'Add an event' } : { href: '/settings/profile', label: 'Set your home base', primary: true },
             { href: '/events', label: 'Browse events' },
@@ -292,7 +300,12 @@ export function FeedPlanner({
           className="fa-notice-flush"
         />
       )}
-      {near.length === 0 && hasHome && radius < 15 && (
+      {nextSlot && (
+        <button type="button" className="btn sm fa-widen" onClick={() => setSlot(nextSlot)}>
+          Show {SLOTS.find(([k]) => k === nextSlot)![1].toLowerCase()}
+        </button>
+      )}
+      {near.length === 0 && !nextSlot && hasHome && radius < 15 && (
         <button type="button" className="btn sm fa-widen" onClick={() => setRadius(15)}>
           Widen to 15 mi
         </button>
