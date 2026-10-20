@@ -65,6 +65,7 @@ import {
   assertNotProtectionWall,
   currentPathname,
   dropTouchBeforeFullPageCapture,
+  editorTargetSurfaces,
   headerBandSurfaces,
   masksFor,
   maskSelectorsFor,
@@ -453,6 +454,30 @@ test.describe('visual · header band', { tag: '@visual' }, () => {
     test.describe(state.id, () => {
       for (const surface of headerBandSurfaces()) {
         test(`${surface.path} header band matches baseline`, async ({ page, serverErrors }) => {
+          await capture(page, surface, state, serverErrors)
+        })
+      }
+    })
+  }
+})
+
+// The editor's Spotlight (PROG-E3, LIVE-1170): the picture a node-tree render has to match. Anonymous,
+// first screen only, desktop and mobile. Adds nothing until PW_SPOTLIGHT_HANDLE is set. The loop
+// existed in surfaces.ts but no describe walked it, so the capture run photographed nothing.
+test.describe('visual · editor', { tag: '@visual' }, () => {
+  test.skip(
+    !baseURL,
+    'PW_BASE_URL is not set. Point it at a Vercel preview or a running dev server to run the visual suite.',
+  )
+  test.skip(
+    () => test.info().project.name === NARROW_PROJECT,
+    'The editor surface is photographed at desktop and mobile; the narrow project photographs the shell and header band only (ADR-1270).',
+  )
+
+  for (const state of PUBLIC_RENDER_STATES) {
+    test.describe(state.id, () => {
+      for (const surface of editorTargetSurfaces()) {
+        test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
           await capture(page, surface, state, serverErrors)
         })
       }
