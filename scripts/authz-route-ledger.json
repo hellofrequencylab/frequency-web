@@ -279,6 +279,12 @@
       "reason": "Counter scanner card issue (LIVE-1125, docs/LOYALTY.md section 7). No member session: the credential is the X-Frequency-Device header, resolved by admitDevice (lib/devices/http.ts) to an ACTIVE scanner_devices row by id and a constant-time sha256 compare, after the address limit and before any other read. The one write is a member_cards row for the named handle, scoped to the DEVICE's space_id (never client-supplied), capped at five live cards per member per Space, storing only sha256 of the token. The reply carries the member's display name and the one-time token. A device can therefore mint cards only for its own Space, which only lets that Space check the member in. 404 while SCANNER_DEVICES_ENABLED is off.",
       "checked": "2026-10-19",
       "digest": "cbf4549b01e7022b"
+    },
+    "app/api/v1/devices/realtime-token/route.ts": {
+      "verdict": "token-credential",
+      "reason": "Internet relay token (LIVE-1120, ADR-1870, docs/LOYALTY.md section 8). No member session: the credential is the X-Frequency-Device header, resolved by admitDevice (lib/devices/http.ts) to an ACTIVE scanner_devices row by id and a constant-time sha256 compare, after the address limit and the DEVICE_RELAY_ENABLED switch and before any other read. The one service-role read is that device's own device_relay_settings row; the mint refuses unless its relay is on. The token is signed for the CREDENTIAL's device id only (no body is read), as role anon with frequency_kind device, and lives 15 minutes; the realtime.messages policy admits it to device:<that id> only while the device is active with the relay on. No writes beyond admitDevice's last_seen stamp.",
+      "checked": "2026-10-19",
+      "digest": "775ad3690a83a005"
     }
   }
 }

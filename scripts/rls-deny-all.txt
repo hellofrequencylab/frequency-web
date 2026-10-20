@@ -143,6 +143,8 @@ loyalty_hunt_completions
 # LIVE-1125 counter scanners: devices and member cards are read and written only by lib/devices/store.ts, behind the device credential or the owner gate; service-only, no browser role.
 scanner_devices
 member_cards
+# LIVE-1120 internet relay: relay settings are read and written only by lib/devices/relay-store.ts, behind the device credential or public.relay_manageable_devices; service-only, no browser role.
+device_relay_settings
 # LIVE-946 Tap to meet: codes and taps are written by lib/meet/store.ts for the signed-in member and by the meet_tap RPC; service-only, no browser role.
 meet_codes
 meet_taps
