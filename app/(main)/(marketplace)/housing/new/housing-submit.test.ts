@@ -9,8 +9,8 @@ import { sourceWithoutComments } from '@/test/source-shape'
 // not read useFormStatus) so they fail on the mistake returning.
 
 const read = (p: string) => readFileSync(p, 'utf8')
-const FORM = 'app/(main)/housing/new/housing-form.tsx'
-const SUBMIT = 'app/(main)/housing/new/submit.tsx'
+const FORM = 'app/(main)/(marketplace)/housing/new/housing-form.tsx'
+const SUBMIT = 'app/(main)/(marketplace)/housing/new/submit.tsx'
 
 describe('a second tap cannot post the housing listing twice', () => {
   it('the form submits through the pending-aware button, not a bare <button>', () => {

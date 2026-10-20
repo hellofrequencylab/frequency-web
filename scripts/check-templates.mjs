@@ -335,7 +335,7 @@ const BASELINE_HEADER =
   '# Adding a bare page is a deliberate, reviewable act and needs a reason the diff carries:\n' +
   '#   node scripts/check-templates.mjs --update --allow-raise --reason="why"\n' +
   '#\n' +
-  '# ⚠️ Three entries are compliant pages the gate cannot see (ADR-986): app/(main)/classifieds/new,\n' +
+  '# ⚠️ Three entries are compliant pages the gate cannot see (ADR-986): app/(main)/(marketplace)/classifieds/new,\n' +
   '# app/(main)/spaces/[slug]/settings/services/new and app/(main)/(marketplace)/market/sell are SERVER pages that\n' +
   '# gate and then delegate to a client Spark which composes SparkShell. The gate matches literal tags\n' +
   '# in the page file by design — it over-reports rather than certifying a hand-rolled layout — so they\n' +

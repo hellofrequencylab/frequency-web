@@ -6,7 +6,7 @@ import { Heart } from 'lucide-react'
 import {
   saveListingAction,
   unsaveListingAction,
-} from '@/app/(main)/housing/[id]/edit/actions'
+} from '@/app/(main)/(marketplace)/housing/[id]/edit/actions'
 import { useViewer } from '@/components/layout/viewer-chrome'
 
 // The heart toggle for a housing listing (favorites, listing_saves). Optimistic: the

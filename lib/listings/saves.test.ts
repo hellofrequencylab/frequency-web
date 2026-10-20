@@ -186,8 +186,8 @@ describe('saves (listing_saves)', () => {
 // ── Wiring (source shape): the surfaces actually mount what this layer provides ──────
 
 const DETAIL_PAGE = 'app/(public)/housing/[id]/page.tsx'
-const INDEX_PAGE = 'app/(main)/housing/page.tsx'
-const EDIT_DIR = 'app/(main)/housing/[id]/edit'
+const INDEX_PAGE = 'app/(main)/(marketplace)/housing/page.tsx'
+const EDIT_DIR = 'app/(main)/(marketplace)/housing/[id]/edit'
 
 describe('housing surfaces wiring', () => {
   it('the edit route exists (page + actions)', () => {
