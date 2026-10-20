@@ -265,7 +265,7 @@ export function AccentPicker({
             </button>
           </div>
           {!draftValid && (
-            <p className="text-meta font-medium text-danger">Enter a hex color like #E2912F.</p>
+            <p className="text-meta font-medium text-danger">Enter a hex color like #D2693C.</p>
           )}
         </div>
 
