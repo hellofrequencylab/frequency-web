@@ -102,3 +102,16 @@ export function approvalResetOnEdit(before: ApprovedEventFacts | null | undefine
   if (!before) return false
   return (['title', 'starts_at', 'ends_at', 'location'] as const).some(key => (before[key] ?? null) !== (after[key] ?? null))
 }
+
+/** The rows a Network parent's public calendar feed carries from one chapter (ADR-1773): an event the
+ *  owner or a central admin approved, and the occurrences of an approved series (a child rides on its
+ *  anchor's decision, since the queue decides a series once). A Collective parent carries every member
+ *  Space event, as its Network tab does; a chapter row with no decision stays off the feed. */
+export function networkFeedRows<T extends { id: string; parent_event_id: string | null }>(
+  rows: readonly T[],
+  input: { network: boolean; approved: ReadonlySet<string> },
+): T[] {
+  if (!input.network) return [...rows]
+  return rows.filter((row) => input.approved.has(row.id) || (!!row.parent_event_id && input.approved.has(row.parent_event_id)))
+}
+

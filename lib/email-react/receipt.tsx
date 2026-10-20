@@ -1,6 +1,7 @@
 import { EMAIL_ACTION, EMAIL_ACTION_INK, EMAIL_INK, EMAIL_MUTED, EMAIL_P, RECEIPT_FOOTER } from '@/lib/email'
 import { EmailShell, css } from './shell'
 import { palette } from '@/lib/theme/palette'
+import { emailType } from '@/lib/theme/email-type'
 
 // THE RECEIPT FAMILY ON REACT EMAIL (LIVE-695). One body for all four money receipts (order,
 // tip, donation, subscription) and the earner's notice, inside the base template. PURE: it takes
@@ -25,12 +26,15 @@ interface ReceiptEmailProps {
 const P_INK = css(`${EMAIL_P}color:${EMAIL_INK};`)
 const P_MUTED = css(`${EMAIL_P}color:${EMAIL_MUTED};`)
 const RULE = palette.emailBorder
-const DETAIL = css(`margin:0 0 24px;border-top:1px solid ${RULE};border-bottom:1px solid ${RULE};width:100%;`)
-const LABEL = css(`padding:6px 16px 6px 0;font-size:14px;color:${EMAIL_MUTED};`)
-const VALUE = css(`padding:6px 0;font-size:14px;color:${EMAIL_INK};font-weight:600;`)
+const DETAIL = css(`margin:0 0 24px;width:100%;border-collapse:separate;background:${palette.emailSurfaceElevated};border:1px solid ${RULE};border-radius:20px;`)
+const LABEL = css(`padding:12px 16px 12px 22px;font-size:14px;color:${EMAIL_MUTED};border-top:1px solid ${RULE};`)
+const VALUE = css(`padding:12px 22px 12px 0;font-size:15px;color:${EMAIL_INK};font-weight:600;text-align:right;border-top:1px solid ${RULE};`)
 const MADE_WITH = css(`margin:24px 0 0;font-size:12px;color:${EMAIL_MUTED};`)
 const BUTTON = css(
-  `display:inline-block;background:${EMAIL_ACTION};color:${EMAIL_ACTION_INK};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;`,
+  `display:inline-block;color:${EMAIL_ACTION_INK};font-family:${emailType.sans};font-size:15px;font-weight:600;line-height:1;text-decoration:none;padding:16px 24px;border-radius:999px;`,
+)
+const BUTTON_CELL = css(
+  `background:${EMAIL_ACTION};${emailType.actionBackground ? `background-image:${emailType.actionBackground};` : ''}border-radius:999px;${emailType.actionGlow ? `box-shadow:${emailType.actionGlow};` : ''}`,
 )
 
 export function ReceiptEmail({ greeting, lead, lines, closing, action, madeWith }: ReceiptEmailProps) {
@@ -53,11 +57,17 @@ export function ReceiptEmail({ greeting, lead, lines, closing, action, madeWith 
         </table>
       )}
       {action && (
-        <p style={{ margin: '0 0 20px' }}>
-          <a href={action.url} style={BUTTON}>
-            {action.label}
-          </a>
-        </p>
+        <table role="presentation" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'separate', margin: '4px 0 24px' }}>
+          <tbody>
+            <tr>
+              <td data-fq="fq-btn" style={BUTTON_CELL}>
+                <a href={action.url} style={BUTTON}>
+                  {action.label}
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       )}
       {closing.map((p, i) => (
         <p key={i} style={P_MUTED}>

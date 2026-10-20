@@ -2,7 +2,7 @@ import type { Vertical } from './registry'
 
 // Housing — rentals + roommates. Connect-only (no in-app money), shared entity
 // (matching on identity + geo + the resonance engine; ID-verified, high-trust per
-// PLATFORM-VISION §4). Pages live in app/(main)/housing; data in
+// PLATFORM-VISION §4). Pages live in app/(main)/(marketplace)/housing; data in
 // listings + housing_listings (ADR-39Y). Nav sits in the Marketplace hub run.
 export const housing: Vertical = {
   id: 'housing',

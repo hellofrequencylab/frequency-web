@@ -8,6 +8,7 @@ import { Sparkles, Search, BookOpen, X, MessageSquare, LifeBuoy, Bug, ArrowLeft 
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
+import { DockOrb, useDockBusy, type DockOrbMode } from '@/components/vera/dock-orb'
 import { SupportConversationsPanel } from '@/components/support/support-conversations-panel'
 import { DockChat, prefetchDockSummary } from '@/components/messages/dock-chat'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
@@ -563,6 +564,10 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
       ? 'Vera is AI. Ask anything, or find your way.'
       : 'Chat with members and your rooms.'
   const HeaderIcon = helpOpen ? LifeBuoy : tab === 'vera' ? Sparkles : MessageSquare
+  // LIVE-1025: the Frequency theme paints the header orb in the view's colour (Vera blue, Support
+  // green, Messages pink) and flickers it while a reply is arriving. DAWN never shows it.
+  const orbMode: DockOrbMode = helpOpen ? 'support' : tab === 'vera' ? 'vera' : 'messages'
+  const replying = useDockBusy()
 
   return (
     <>
@@ -699,11 +704,11 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // panel is position:fixed, so what moves is the page under the member's cursor.
               // Containing at the panel boundary means no gesture inside the dock reaches the page,
               // scrollable inner or not. Owner report, 2026-08-22.
-              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden overscroll-contain rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:h-auto md:max-h-[35rem] md:pb-2"
+              className="fqd-panel lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden overscroll-contain rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:h-auto md:max-h-[35rem] md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}
-              <div className="flex shrink-0 items-center gap-2.5 border-b border-chrome-border bg-surface px-4 py-3">
+              <div className="fqd-head flex shrink-0 items-center gap-2.5 border-b border-chrome-border bg-surface px-4 py-3">
                 {/* Back covers BOTH pushed views now. Help still pops to wherever you were; Vera
                     pops to Messages, which is the return path the removed Messages tab used to
                     provide. Without this, deleting that tab would strand a member in Vera. */}
@@ -718,10 +723,11 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                     <ArrowLeft className="h-4 w-4" aria-hidden />
                   </IconButton>
                 ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
+                  <span className="fqd-ic flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                     <HeaderIcon className="h-4 w-4" aria-hidden />
                   </span>
                 )}
+                <DockOrb mode={orbMode} busy={replying} />
                 <div className="min-w-0 flex-1">
                   <p id="vera-launcher-title" className="text-body-sm font-bold text-text">{headerTitle}</p>
                   <p className="truncate text-meta text-subtle">{headerSub}</p>

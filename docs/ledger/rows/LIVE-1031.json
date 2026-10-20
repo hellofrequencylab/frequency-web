@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1031",
+  "title": "Every member index header carries the same small pastel pill and small plain pill",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/index-actions.test.ts",
+    "ref": "Daniel 2026-10-19 design list (30 items), items 28 and 30"
+  },
+  "detail": "Cohesion pass, first cut. Circles, Channels, Market and Classifieds headers drop their large pills for the small ones Spaces and the shared header already use (btn pa sm / btn sm). Events' operator link drops the glass pill left over from the dark hero. Around You and Members stop hand-writing Tailwind primary buttons and use buttonClasses('primary', 'sm'); Housing's header buttons go from md to sm. Remaining cohesion work (one EmptyState, one toolbar class, PageHeading in the hand-rolled heads, kit bodies for Store, Housing, Members and Around You, Frequency loading states) follows in the next cohesion PRs; loading states ride LIVE-1032.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];for(const p of ['components/frequency/members/circles/circles-body.tsx','components/frequency/members/channels/channels-body.tsx','components/frequency/members/marketplace/marketplace-body.tsx','components/frequency/members/events/events-body.tsx']){if(/\\\"btn pa lg\\\"|\\\"btn lg\\\"|\\\"btn glass sm\\\"/.test(fs.readFileSync(p,'utf8')))bad.push(p+' has a large header pill')}for(const p of ['app/(main)/nearby/page.tsx','app/(main)/network/page.tsx']){if(fs.readFileSync(p,'utf8').includes('rounded-control bg-primary px-4 py-2'))bad.push(p+' hand-writes a primary button')}if(bad.length){console.error('LIVE-1031: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when an index header grows its own button size or a hand-written primary button. Behavior is index-actions.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

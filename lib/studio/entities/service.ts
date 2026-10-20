@@ -9,7 +9,7 @@
 //
 // PERSISTENCE: a `commerce_products` row with product_kind 'service', plus the service-specific
 // config under `metadata.service` (`ServiceConfig`, lib/commerce/types.ts). That is the path the
-// live booking + enquiry actions read (app/(main)/market/service-actions.ts), so it is what this
+// live booking + enquiry actions read (app/(main)/(marketplace)/market/service-actions.ts), so it is what this
 // manifest mirrors. The older `SpaceOffering` blob in a Space's preferences
 // (lib/spaces/profile-data.ts, edited from /spaces/[slug]/settings/services) is the SAME data one
 // generation back and is retiring at cutover; ServiceConfig was deliberately shaped as a field

@@ -1,0 +1,178 @@
+import { Store, Tag, Gift, Hand, Search } from 'lucide-react'
+import { getMyProfileId } from '@/lib/auth'
+import { listListings, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
+import { UnderlineTabs } from '@/components/ui/underline-tabs'
+import { EmptyState } from '@/components/ui/empty-state'
+import { NewListingButton } from '@/components/studio/market/new-listing-button'
+import { MarketGrid, type GridListing } from '@/components/market/market-grid'
+import { MarketHero } from '@/components/marketplace/market-hero'
+import { PageIntro } from '@/components/templates'
+import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
+import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
+import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
+import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqClassifiedsBody } from '@/components/frequency/members/marketplace/marketplace-body'
+
+// Classifieds (ADR-596) — the peer trade board (offer / free / lend / request), connect-only, no fees.
+// Hero-led (the site PhotoHero grammar) + a stats band. Operator-editable header content (ADR-180).
+
+const CONTENT_FALLBACK = {
+  title: 'Classifieds',
+  description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment, just neighbors helping out. Arrange the handoff offline.',
+}
+
+// Same posture as the Frequency Store index (app/(main)/(marketplace)/store/page.tsx:19-23): no /discover twin
+// exists for Classifieds, and this kind-filtered board is not the SEO surface — the individual
+// /classifieds/<id> pages are (self-canonical, Product schema, and the ones app/sitemap.ts
+// advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk through to the
+// indexable listing pages. It stays out of the robots.ts DISALLOW list for exactly the reason noted
+// there: a blanket "/classifieds" rule would deindex the listing pages too. The rest of the head
+// (title, description, canonical, og/twitter) still comes from the operator-editable page content.
+export async function generateMetadata() {
+  const meta = await pageContentMetadata('/classifieds', {
+    title: 'Classifieds',
+    description: 'Swap, give, lend, and find things with people near you. No fees, just neighbors.',
+  })
+  return { ...meta, robots: { index: false, follow: true } }
+}
+export const dynamic = 'force-dynamic'
+
+// A real community photo, not a random stock placeholder. This is the hero and the LCP element, and
+// it is what any social or AI preview of the page surfaces, so it has to be ours. Neighbors sharing
+// a shaded spot, which is the handoff this board is for.
+const HERO_IMAGE = '/images/site/outdoor-group.jpg'
+
+export default async function ClassifiedsPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
+  const { kind } = await searchParams
+  const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
+
+  const { description, body, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
+  // One unfiltered read powers the stats; the grid filters to the active kind in-process. The hero
+  // search bar filters the grid instantly on the client (MarketGrid reads the shared query).
+  const [profileId, allListings] = await Promise.all([getMyProfileId(), listListings({})])
+  const kindCount = (k: string) => allListings.filter((l) => l.kind === k).length
+  const listings = allListings.filter((l) => (activeKind ? l.kind === activeKind : true))
+
+  const grid: GridListing[] = listings.map((l) => ({
+    id: l.id,
+    title: l.title,
+    kind: l.kind,
+    description: l.description,
+    neighborhood: l.neighborhood,
+    city: l.city,
+    images: l.images ?? [],
+    latitude: l.latitude,
+    longitude: l.longitude,
+    author: l.author ? { display_name: l.author.display_name } : null,
+    seededUnclaimed: l.seededUnclaimed,
+  }))
+
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero via the copy cascade, then
+  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for this route got nothing.
+  // THE DESIGN SWITCH (ADR-1737, templates/members/Marketplace.html): the same listings, the same
+  // kind filter, the same Post a listing door, in the member kit. DAWN below is untouched.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqClassifiedsBody
+        listings={listings.map((l) => ({
+          id: l.id,
+          title: l.title,
+          kind: l.kind,
+          priceNote: l.price_note,
+          image: l.images?.[0] ?? null,
+          seller: l.author?.display_name ?? null,
+          place: l.neighborhood ?? l.city ?? null,
+          description: l.description,
+          lat: l.latitude,
+          lng: l.longitude,
+          unclaimed: !!l.seededUnclaimed,
+        }))}
+        activeKind={activeKind}
+        signedIn={!!profileId}
+        subtitle="Meet up to swap. No in-app payment."
+        stats={{ total: allListings.length, free: kindCount('free'), lend: kindCount('lend'), request: kindCount('request') }}
+        intro={{ body: body ?? null, ctaLabel: ctaLabel ?? null, ctaHref: ctaHref ?? null }}
+      />
+    )
+  }
+
+  const hero = await resolveMarketHero('/classifieds', { cover: HERO_IMAGE })
+
+  return (
+    <MarketSearchProvider>
+    <div className="space-y-6">
+      <MarketHero
+        {...hero}
+        eyebrow="Classifieds"
+        title="Swap, share, and find it local"
+        subtitle={description}
+        search={<MarketSearchBar placeholder="Search listings" />}
+        action={
+          profileId || (ctaLabel && ctaHref) ? (
+            <>
+              {profileId && <NewListingButton />}
+              {ctaLabel && ctaHref && (
+                <a
+                  href={ctaHref}
+                  className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                >
+                  {ctaLabel}
+                </a>
+              )}
+            </>
+          ) : undefined
+        }
+      />
+
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={body} className="" />
+
+      {/* One compact bar under the hero: the area picker + this surface's headline stats (C1). */}
+      <MarketplaceBar
+        active="all"
+        stats={[
+          { label: 'Listings', value: allListings.length, icon: Tag },
+          { label: 'Free', value: kindCount('free'), icon: Gift },
+          { label: 'To lend', value: kindCount('lend'), icon: Hand },
+          { label: 'Looking for', value: kindCount('request'), icon: Search },
+        ]}
+      />
+
+      <MarketplaceHiddenBanner area="market" />
+
+      <MarketplaceColumnsProvider>
+        <MarketGrid
+          listings={grid}
+          filters={
+            <UnderlineTabs
+              activeHref={activeKind ? `/classifieds?kind=${activeKind}` : '/classifieds'}
+              tabs={[
+                { href: '/classifieds', label: 'All' },
+                ...LISTING_KINDS.map((k) => ({ href: `/classifieds?kind=${k.key}`, label: k.label })),
+              ]}
+            />
+          }
+          columns={<MarketplaceColumns />}
+          emptyState={
+            <EmptyState
+              icon={Store}
+              title={activeKind ? 'Nothing here yet' : 'Classifieds is just getting started'}
+              description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
+            />
+          }
+        />
+      </MarketplaceColumnsProvider>
+
+      <MarketplaceGuide />
+    </div>
+    </MarketSearchProvider>
+  )
+}

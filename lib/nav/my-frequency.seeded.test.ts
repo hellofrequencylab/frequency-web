@@ -22,7 +22,7 @@ const tables: Record<string, unknown[]> = {
   notifications: [],
   memberships: [{ circle_id: 'c-own' }, { circle_id: 'c-seed' }, { circle_id: 'c-free' }],
   circles: [
-    { id: 'c-own', name: 'My Circle', slug: 'my-circle', space_id: 'sp-own' },
+    { id: 'c-own', name: 'My Circle', slug: 'my-circle', space_id: 'sp-own', image_url: '/img/my-circle.jpg' },
     { id: 'c-seed', name: 'Seeded Circle', slug: 'seeded-circle', space_id: 'sp-seed' },
     { id: 'c-free', name: 'Free Circle', slug: 'free-circle', space_id: null },
   ],
@@ -47,5 +47,15 @@ describe('getMyFrequency hides unclaimed seeded Spaces', () => {
     const menu = await getMyFrequency('seeder', 'ada')
     expect(menu.spaces.map((s) => s.href)).toEqual(['/spaces/mine'])
     expect(menu.circles.map((c) => c.href).sort()).toEqual(['/circles/free-circle', '/circles/my-circle'])
+  })
+})
+
+// LIVE-1013: the rail draws each Circle with its own picture, so the menu carries it (null when none).
+describe('getMyFrequency carries each Circle picture', () => {
+  it('passes the image through and leaves a Circle without one null', async () => {
+    const menu = await getMyFrequency('seeder', 'ada')
+    const byHref = Object.fromEntries(menu.circles.map((c) => [c.href, c.image]))
+    expect(byHref['/circles/my-circle']).toBe('/img/my-circle.jpg')
+    expect(byHref['/circles/free-circle']).toBeNull()
   })
 })

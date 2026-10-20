@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1051",
+  "title": "Editor E0 task 12b, canvas slice: the on-canvas Space editor runs on the node store behind the switch, through one canvas model",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 6; §8 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. components/entity-blocks/space-canvas/canvas-model.ts gives the editor one shape over either store (sections of blocks keyed by type on the live store, by node id on the node store, with the section and block operations). space-canvas-editor.tsx is now a view over that model: SpaceCanvasEditor adapts the live store (unchanged behaviour), NodeSpaceCanvasEditor the node store. SpaceCanvasEditorMount runs a node store of its own and saves the node document when the section passes nodeLayout, which it does only while render_path_space_profile is on. node-row-ops gains setNodeRowSplit. Refs are Maps (CodeQL). Honest gap: the Spotlight editor still writes the type-keyed document, so the switch stays off until it moves.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const rd=f=>fs.readFileSync(f,'utf8');const bad=[];const e=rd('components/entity-blocks/space-canvas/space-canvas-editor.tsx');if(!e.includes('NodeSpaceCanvasEditor')||!e.includes('useNodeCanvasModel'))bad.push('no node canvas editor');if(/useRef<Record<string/.test(e))bad.push('refs keyed by a Record');if(!rd('components/entity-blocks/space-canvas/space-canvas-editor-section.tsx').includes(\\\"renderPathEnabled('space_profile')\\\"))bad.push('section ignores the switch');if(!rd('components/entity-blocks/space-canvas/space-canvas-editor-mount.tsx').includes('NodeLayoutProvider'))bad.push('mount has no node store');if(bad.length){console.error('LIVE-1051: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the canvas editor loses its node path, keys a Record by block key, or the section/mount stop following the switch. Behavior is node-space-canvas-editor.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

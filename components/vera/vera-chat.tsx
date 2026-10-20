@@ -11,6 +11,7 @@ import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { Input } from '@/components/ui/field'
+import { DockOrb, announceDockBusy } from '@/components/vera/dock-orb'
 
 // The headless Vera conversation — the multi-turn chat with propose-and-confirm
 // writes, extracted so the onboarding lightbox AND the persistent companion
@@ -80,6 +81,12 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
   const [draft, setDraft] = useState('')
   const [pending, start] = useTransition()
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // The dock's orb flickers while a reply is on its way (LIVE-1025).
+  useEffect(() => {
+    announceDockBusy(pending)
+    return () => announceDockBusy(false)
+  }, [pending])
 
   // Keep the transcript pinned to the latest message, and to the draft as it grows.
   useEffect(() => {
@@ -185,7 +192,12 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
             <div className={VERA_BUBBLE}>{draft}</div>
           </div>
         )}
-        {pending && !draft && <p className="text-meta text-subtle">Vera is thinking…</p>}
+        {pending && !draft && (
+          <p className="flex items-center gap-2 text-meta text-subtle">
+            <DockOrb mode="vera" busy small />
+            Vera is thinking…
+          </p>
+        )}
 
         {proposals.map((p, i) => (
           <div key={i} className="lift-1 rounded-card border border-border bg-surface-elevated p-3">

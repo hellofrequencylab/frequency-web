@@ -45,7 +45,7 @@ const PROMPTS: Prompt[][] = [
       kind: 'Host story',
       title: 'A living room that became a regular night',
       ask: 'Started something at home, in a garden or in a park? Tell us who keeps coming back.',
-      hue: 'var(--fq-x-violet-neon)',
+      hue: 'var(--fq-x-sky-neon)',
     },
   ],
   [

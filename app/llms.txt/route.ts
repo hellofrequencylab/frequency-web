@@ -26,6 +26,7 @@ import { listDensityCities } from '@/app/discover/cities/_data'
 import { quickAnswers, quickAnswerLines } from '@/lib/marketing/quick-answers'
 import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { LEGAL_LINKS } from '@/lib/nav/legal-links'
 
 // NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-916). Every price and every percentage below is
 // READ from lib/pricing/pricing-grid.ts, the same derived model /pricing renders, resolved against the
@@ -102,6 +103,22 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
 // The live public directories — every indexable entity surface the sitemap advertises,
 // so an engine citing "what is on Frequency" can walk the real catalog instead of only
 // the brand pages. Same voice rules as `pages`.
+// The marketplace and the legal set (LIVE-1030). The legal list is lib/nav/legal-links.ts, the one every footer
+// reads, so a policy added there is cited here with no second edit.
+const MARKETPLACE: { path: string; label: string; desc: string }[] = [
+  { path: '/market', label: 'Market', desc: 'Local makers and sellers: goods and services from people near you.' },
+  { path: '/classifieds', label: 'Classifieds', desc: 'Community classifieds: things for sale, free, wanted and offered nearby.' },
+  { path: '/housing', label: 'Housing', desc: 'Rooms, rentals and shared housing posted by community members.' },
+  { path: '/store', label: 'Frequency Store', desc: 'The Frequency Store.' },
+]
+const LEGAL_DESC: Record<string, string> = {
+  privacy: 'How Frequency collects, uses and protects personal data.',
+  terms: 'The terms of use for Frequency.',
+  guidelines: 'The community guidelines every member agrees to.',
+  'space-email-policy': 'The rules a Space follows when it emails its audience.',
+  accessibility: 'The accessibility statement.',
+}
+
 const DIRECTORIES: { path: string; label: string; desc: string }[] = [
   { path: '/events', label: 'Events', desc: 'Upcoming public events: what is happening, when, and in which city.' },
   { path: '/discover/events', label: "What's happening", desc: 'The calendar of public Events near you, browsed by Channel and city.' },
@@ -274,6 +291,13 @@ export async function GET() {
     '',
     '## Live directories',
     ...DIRECTORIES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    '',
+    '## Marketplace',
+    ...MARKETPLACE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    '',
+    '## Legal, policies and contact',
+    ...LEGAL_LINKS.map((l) => `- [${l.label}](${abs(l.href)}): ${LEGAL_DESC[l.id] ?? l.label}`),
+    `- Contact: ${CONTACT_EMAIL}`,
     '',
     '## Problem-aware guides',
     ...GUIDES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),

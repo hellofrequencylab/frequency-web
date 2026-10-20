@@ -119,7 +119,7 @@ describe('check-seo — reading the sources of truth', () => {
 describe('check-seo — routes and the sitemap', () => {
   it('drops route-group segments when mapping a file to its URL', () => {
     expect(routeForFile('app/(marketing)/pricing/page.tsx')).toBe('/pricing')
-    expect(routeForFile('app/(main)/market/page.tsx')).toBe('/market')
+    expect(routeForFile('app/(main)/(marketplace)/market/page.tsx')).toBe('/market')
     expect(routeForFile('app/page.tsx')).toBe('/')
   })
 

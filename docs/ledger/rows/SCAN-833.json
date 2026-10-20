@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-833",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-19",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>/set_space_preference/.test(r('supabase/migrations/'+f)))){console.error('SCAN-833: preferences writers still replace the whole blob');process.exit(1)}const a=r('lib/sites/editor/actions.ts');const i=a.indexOf('export async function saveWebsiteStyle');const b=i<0?'':a.slice(i,i+6000);if(!/set_space_preferences/.test(b)||/update\\\\(\\\\{ preferences/.test(b)){console.error('SCAN-833: saveWebsiteStyle still replaces the whole preferences blob');process.exit(1)}\"",
+      "checked": "2026-10-19",
+      "note": "Closed 2026-10-19 (ADR-1822). Passes when a migration defines set_space_preferences and saveWebsiteStyle writes through it instead of replacing the blob."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-19 (ADR-1822). PREMISE RE-TESTED on main after SCAN-827: save_website_editor still writes the websiteEditor public stub into spaces.preferences, writeSpacePreferences still replaces the whole blob, and saveWebsiteStyle still wrote the whole blob guarded on the stub revision. Migration 20270346011200: set_space_preferences(p_space_id, p_patch), service_role only, sets each named top-level key in one UPDATE, deletes a key on JSON null, leaves every other key untouched, and refuses websiteEditor and programOverview. Converted writers: saveWebsiteStyle (theme, siteStyle; the revision guard and retry loop are gone because the write no longer touches websiteEditor), saveSiteMenu and resetSiteMenu (siteMenu), saveHeaderLogo (headerLogo), setSpaceSkyMarkers (skyMarkers). lib/spaces/store.ts gains patchSpacePreferences; writeSpacePreferences stays for callers not yet converted and its doc points at the new one. pgTAP: grants, set, delete, untouched stub, refused key, unknown Space. Apply with execute_sql then schema_migrations at 20270346011200."
+  }
+}

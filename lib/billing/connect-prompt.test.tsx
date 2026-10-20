@@ -42,7 +42,7 @@ describe('every sell path reaches the one Connect prompt (source shape)', () => 
   }
 
   it('the maker Market console (orders for a PROFILE payee) renders the same card from the pure kernel', () => {
-    const src = read('app/(main)/market/manage/page.tsx')
+    const src = read('app/(main)/(marketplace)/market/manage/page.tsx')
     expect(src).toContain("from '@/lib/billing/payout-prompt'")
     expect(src).toContain('PayoutPromptCard')
     expect(src).toMatch(/channels:\s*\['orders'\]/)
@@ -52,14 +52,14 @@ describe('every sell path reaches the one Connect prompt (source shape)', () => 
     // The price is typed here, so this is the first sell attempt for a PROFILE payee. The page is the
     // Server Component that can read; the Spark is the client island that renders. Neither may carry
     // the old go-elsewhere sentence beside (or instead of) the card.
-    const page = read('app/(main)/market/sell/page.tsx')
+    const page = read('app/(main)/(marketplace)/market/sell/page.tsx')
     expect(page).toContain("from '@/lib/billing/payout-prompt-resolve'")
     expect(page).toMatch(/resolveProfilePayoutPrompt\(/)
     expect(page).toMatch(/channels:\s*\['orders'\]/)
     expect(page).toMatch(/<ProductSpark payoutPrompt=\{payoutPrompt\}/)
     // Blank the comments first (docs/CHECKOUT.md section 6): a header that DESCRIBES the retired
     // sentence must not read as the sentence.
-    const spark = read('app/(main)/market/sell/product-spark.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    const spark = read('app/(main)/(marketplace)/market/sell/product-spark.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
     expect(spark).toContain('PayoutPromptCard')
     expect(spark).toMatch(/<PayoutPromptCard prompt=\{payoutPrompt\}/)
     expect(spark, 'the hand-written dead end is back').not.toMatch(/before your first sale/i)

@@ -1,4 +1,4 @@
-// LIVE-877 baseline: frozen legacy HTML/text before native renderer conversion.
+// LIVE-877 baseline: frozen legacy HTML/text before native renderer conversion. Outputs recaptured 2026-10-19 (EMAIL-029) on the owner's go; the SHA below is the recaptured file.
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
@@ -8,7 +8,7 @@ import {compileEmailDoc} from '../lib/email-studio/shell.ts'
 import {renderEmailLayout} from '../lib/email-studio/render.ts'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 const bytes=readFileSync('scripts/fixtures/email-node-render/legacy-golden.json')
-assert.equal(hash(bytes),'4728c3906925eec0125122f6439c5ff40fae8d254661e16bbeb32f0e33c41291','pre-conversion golden strings changed')
+assert.equal(hash(bytes),'a4e8f82b854586dc6226dd89c4330be627bd3c76438798e78cca2e49d42082e1','pre-conversion golden strings changed')
 const golden=JSON.parse(bytes)
 assert.equal(hash(readFileSync('scripts/entity-layout-corpus.json')),golden.sourceSha256)
 assert.equal(golden.documents.length,19)

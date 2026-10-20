@@ -46,8 +46,7 @@ import {
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
-import { NetworkTabs } from '@/components/people/network-tabs'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { NetworkHubBar } from '@/components/people/network-hub-bar'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
@@ -383,21 +382,15 @@ export default async function CommunityPage({
   // previous page's cards.
   const listingKey = filterHref({ ...base, page: String(page) })
 
-  // The overlay hero band, resolved once (lib/layout/index-hero.ts): the operator's Settings header
-  // image / focal point over the route's section default, plus the operator-tunable header element
-  // (ADR-793). The directory ships no section cover, so this resolves to the gradient band at the
-  // large directory height — exactly what this page rendered when it spelled the stanza out.
-  const hero = await resolveIndexHero('/network')
-
   return (
     <div>
-      {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. Stays
-          above the hero band so the Network sub-nav still leads the page. */}
-      <NetworkTabs active="/network" />
       {/* Header: unified hero band with the operator-editable title/description, Invite on
           the right. Globe glyph rides the title; the stats row + filters follow in the body. */}
       <IndexTemplate
-        {...hero}
+        // The plain heading, no photo band (LIVE-1021). Stated, not omitted: the LIVE-117 probe asks every
+        // IndexTemplate page to take a position on the hero band.
+        heroOverlay={false}
+        eyebrow="Your network"
         title={
           <span className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
@@ -412,7 +405,7 @@ export default async function CommunityPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className={buttonClasses('primary', 'sm')}
               >
                 {ctaLabel}
               </a>
@@ -421,6 +414,8 @@ export default async function CommunityPage({
           </div>
         }
       >
+      {/* One header, one tab strip, one how-to notice across Members, Friends and My Contacts. */}
+      <NetworkHubBar active="/network" />
       {/* Community size, pinned right against a baseline rule under the header. */}
       <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-1 border-b border-border">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-body-sm text-muted">

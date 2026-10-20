@@ -15,7 +15,7 @@ export const contentType = OG_CONTENT_TYPE
 // Per-city dynamic OG card for the density-gated city hubs at /discover/cities/[citySlug]
 // (SCAN-202): sitemapped, self-canonical landing pages that were sharing the generic brand card.
 // Visual language mirrors app/discover/partners/[slug]/opengraph-image.tsx: near-black gradient
-// ground, indigo brand bar (#6366f1 — Satori has no access to the CSS token system, so the literal
+// ground, amber brand bar (#E2912F — Satori has no access to the CSS token system, so the literal
 // mirrors the root image), white display type.
 //
 // Reads the SAME reader the page reads (getDensityCity), so no new query shape enters the graph

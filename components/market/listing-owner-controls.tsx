@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, RotateCcw, X, Trash2, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { setListingStatusAction, deleteListingAction } from '@/app/(main)/classifieds/actions'
+import { setListingStatusAction, deleteListingAction } from '@/app/(main)/(marketplace)/classifieds/actions'
 import type { ListingStatus } from '@/lib/marketplace'
 import { capsLabel } from '@/components/ui/caps-label'
 

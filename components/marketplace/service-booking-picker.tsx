@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { bookServiceAction, sendServiceEnquiry } from '@/app/(main)/market/service-actions'
+import { bookServiceAction, sendServiceEnquiry } from '@/app/(main)/(marketplace)/market/service-actions'
 import { buttonClasses } from '@/components/ui/button'
 import { openDockThread } from '@/lib/messages/dock-open'
 

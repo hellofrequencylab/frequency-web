@@ -1,0 +1,44 @@
+/* THE FREQUENCY MEGA FOOTER (LIVE-1030, components/frequency/shared/mega-footer.tsx). Hand-kept. --fq- tokens
+   only: ink and tints are the Commons tokens, so the night room re-tints it with no second set of values.
+   Not scoped to a kit (`.fq-mf` is its own root), so the member shell and the public site share the sheet.
+   Geometry reads the --fq- scale; an off-scale step left as a literal is the design's own value (token-ok). */
+[data-design="frequency"] .fq-mf{position:relative;z-index:1;margin-top:96px;border-top:1px solid var(--fq-border-hair);color:var(--fq-text-body);font:400 var(--fq-text-body-s)/1.4 var(--fq-font-sans)}
+[data-design="frequency"] .fq-mf a{color:var(--fq-text-muted);text-decoration:none}
+[data-design="frequency"] .fq-mf a:hover{color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] .fq-mf a:focus-visible,[data-design="frequency"] .fq-mf summary:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px;border-radius:var(--fq-radius-s)}
+/* The bar: always there. The summary is the toggle, so it is one big hit target. */
+[data-design="frequency"] .fq-mf-bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:18px 8px;cursor:pointer;list-style:none;color:var(--fq-text-faint)}
+[data-design="frequency"] .fq-mf-bar::-webkit-details-marker{display:none}
+[data-design="frequency"] .fq-mf-brand{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] .fq-mf-quick{display:inline-flex;gap:20px}
+[data-design="frequency"] .fq-mf-quick a{display:inline-flex;align-items:center;min-height:var(--fq-hit-min)}
+[data-design="frequency"] .fq-mf-sp{flex:1 1 auto}
+[data-design="frequency"] .fq-mf-toggle{display:inline-flex;align-items:center;gap:8px;min-height:var(--fq-hit-min);padding:0 16px;border-radius:var(--fq-radius-pill,999px);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-strong);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans)}
+[data-design="frequency"] .fq-mf-bar:hover .fq-mf-toggle{box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] .fq-mf-toggle svg{width:16px;height:16px;transition:transform var(--fq-dur-m,200ms) ease}
+[data-design="frequency"] .fq-mf-d[open] .fq-mf-toggle svg{transform:rotate(180deg)}
+[data-design="frequency"] .fq-mf-close{display:none}
+[data-design="frequency"] .fq-mf-d[open] .fq-mf-open{display:none}
+[data-design="frequency"] .fq-mf-d[open] .fq-mf-close{display:inline}
+/* The panel: the whole index, a lead column and the link columns. */
+[data-design="frequency"] .fq-mf-panel{padding:16px 8px 40px}
+[data-design="frequency"] .fq-mf-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);gap:clamp(32px,5vw,72px);padding-top:32px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] .fq-mf-lead{display:flex;flex-direction:column;gap:20px;align-items:flex-start}
+[data-design="frequency"] .fq-mf-line{margin:0;max-width:34ch;font:400 var(--fq-text-body-size)/1.5 var(--fq-font-sans);color:var(--fq-text-body);text-wrap:pretty}
+[data-design="frequency"] .fq-mf-ctas{display:flex;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] .fq-mf-ctas a,[data-design="frequency"] .fq-mf-ctas a:hover{text-decoration:none}
+[data-design="frequency"] .fq-mf-ctas .btn.pa{color:var(--fq-ink)}
+[data-design="frequency"] .fq-mf-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:32px 24px}
+[data-design="frequency"] .fq-mf-col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+[data-design="frequency"] .fq-mf-col a{display:inline-flex;align-items:center;min-height:32px;font:500 var(--fq-text-body-s)/1.3 var(--fq-font-sans)}
+[data-design="frequency"] .fq-mf-h{margin:0 0 6px;font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-strong)}
+/* The legal row: visible with the index shut. The bottom padding clears the two bottom docks. */
+[data-design="frequency"] .fq-mf-legal{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 24px;padding:20px 8px 88px;border-top:1px solid var(--fq-border-hair);font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] .fq-mf-legal nav{display:flex;flex-wrap:wrap;gap:0 20px}
+[data-design="frequency"] .fq-mf-legal a{display:inline-flex;align-items:center;min-height:var(--fq-hit-min)}
+@media (max-width:860px){
+[data-design="frequency"] .fq-mf-col a{min-height:var(--fq-hit-min)}
+[data-design="frequency"] .fq-mf-top{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] .fq-mf-bar{padding-inline:var(--fq-gutter-mobile,16px)}
+[data-design="frequency"] .fq-mf-panel{padding-inline:var(--fq-gutter-mobile,16px)}
+[data-design="frequency"] .fq-mf-legal{padding-inline:var(--fq-gutter-mobile,16px);padding-bottom:calc(var(--tab-bar-clearance,0px) + 24px)}}

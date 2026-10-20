@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { MarketplaceFacets, type MarketplaceArea } from '@/components/marketplace/facet-nav'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // MARKETPLACE BAR — the one control row under a commerce hero. The area menu (Classifieds · Housing ·
 // Market · Events · Frequency Store — MarketplaceFacets, reused not forked) sits on the LEFT with no card
@@ -48,7 +49,8 @@ export function MarketplaceBar({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-      <MarketplaceFacets active={active} />
+      {/* Under Frequency the commerce subtree layouts pin the area nav (LIVE-1027); Events has no such layout. */}
+      {SITE_DESIGN === 'frequency' && active !== 'events' ? <span /> : <MarketplaceFacets active={active} />}
       <MarketplaceStats stats={stats} />
     </div>
   )

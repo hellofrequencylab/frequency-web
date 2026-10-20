@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1035",
+  "title": "Around You shows who is new to the community, only members the Members directory would list",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/nearby/new-members.ts",
+    "ref": "Daniel's list of 30 design changes, 2026-10-19, item 4 (left over from LIVE-1017)"
+  },
+  "detail": "LIVE-1017 showed only a 'joined this week' count. Around You now also lists up to eight members who joined in the last two weeks as a row of name, photo and 'Joined 2d ago', each linking to the member's page. The read goes through scopeDirectoryQuery (active, listed in the directory, not ghosting, demo gate) and every row is re-checked by pickNewMembers with the shared isListableInDirectory predicate, then drops the viewer, Vera and rows with no name or handle. No location is shown or used. The row is hidden when there is nobody to show.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const p=fs.readFileSync('app/(main)/nearby/page.tsx','utf8');const m=fs.readFileSync('lib/nearby/new-members.ts','utf8');if(!p.includes('pickNewMembers('))bad.push('page stopped listing new members');if(!p.includes('scopeDirectoryQuery('))bad.push('new-members read lost the directory gate');if(!m.includes('isListableInDirectory'))bad.push('picker lost the shared visibility predicate');if(bad.length){console.error('LIVE-1035: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the new-members read loses the directory gate or the shared visibility predicate. Behavior is lib/nearby/new-members.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

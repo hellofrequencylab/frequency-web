@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { renderPathKey, type RenderPathSurface } from '@/lib/render-path'
 import { CHROME_CACHE_TAGS, crossRequestCached, invalidateCacheTag } from '@/lib/cross-request-cache'
 
 /** The `demo_mode` row's value, cached ACROSS requests under CHROME_CACHE_TAGS.platformFlags
@@ -465,3 +466,21 @@ export async function listFlagEvents(key: string, limit = 20): Promise<FlagEvent
     return []
   }
 }
+
+// Whether `surface` renders from the node tree (E0 task 2, lib/render-path.ts). FAIL-CLOSED, on purpose
+// and against demoModeEnabled / referralsEnabled, which default TRUE on error: those protect visibility,
+// this protects a live page from an UNPROVEN renderer. A missing row, a read error or a non-true value
+// all mean the OLD path. The key is built from a fixed list, so the seed walk above does not see it;
+// lib/render-path.test.ts proves every key is seeded by a migration instead.
+export const renderPathEnabled = cache(async (surface: RenderPathSurface): Promise<boolean> => {
+  try {
+    const { data } = await createAdminClient()
+      .from('platform_flags')
+      .select('value')
+      .eq('key', renderPathKey(surface))
+      .maybeSingle()
+    return data?.value === true
+  } catch {
+    return false
+  }
+})

@@ -23,6 +23,7 @@ import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 import type { ThisWeekEvent } from '@/lib/this-week'
 import { palette } from '@/lib/theme/palette'
+import { emailType, pickStockHero } from '@/lib/theme/email-type'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
 
@@ -309,17 +310,17 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
   const hey = recipientName ? `Hey ${escapeHtml(recipientName)}` : 'Hey'
   const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe</a> and you won't hear from us again.<br>Frequency™ · ${orgContactLine()}`
   return emailShell(`
-    <h1 style="${h1Style}">${hey}</h1>
-    <p style="${pStyle}">
+    <h1 data-fq="fq-h1" style="${h1Style}">${hey}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       Your friend <strong>${who}</strong> invited you to join <strong>The Quest</strong>. Hopefully they
       told you a little about our mission to create and connect community.
     </p>
-    <p style="${pStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
       We won't send a bunch of marketing emails, but we're happy to send you Quest reminders on your
       Journey once you're in.
     </p>
     <p style="margin:0 0 28px;">
-      <a href="${joinUrl}" style="${btnStyle}">Join us here →</a>
+      ${emailButton(`Join us here`, `${joinUrl}`)}
     </p>
     <p style="${pStyle}margin-bottom:8px;">Frequency™</p>
     <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
@@ -376,13 +377,13 @@ function signupRecoveryHtml({ firstName, resumeUrl }: { firstName: string | null
     : 'Your account is one step from done.'
   const footer = `One note, sent once, because this address was used to start an account at Frequency. We will not add you to any list. If that was not you, ignore this and nothing happens.<br>Frequency™ · ${orgContactLine()}`
   return emailShell(`
-    <h1 style="${h1Style}">${heading}</h1>
-    <p style="${pStyle}">
+    <h1 data-fq="fq-h1" style="${h1Style}">${heading}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       You started setting up a Frequency account and stopped partway. Picking it back up takes
       about two minutes, and the same door at /join is still open.
     </p>
     <p style="margin:0 0 28px;">
-      <a href="${resumeUrl}" style="${btnStyle}">Finish signing up</a>
+      ${emailButton(`Finish signing up`, `${resumeUrl}`)}
     </p>
     <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       Button not working? Paste this into your browser:<br>
@@ -563,19 +564,15 @@ function spaceFollowerReminderHtml({ recipientName, spaceName, eventTitle, whenL
   recipientName: string; spaceName: string; eventTitle: string; whenLabel: string; whenAbsolute: string; location: string | null; eventUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      From a Space you follow
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">
+    ${emailKicker(`From a Space you follow`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       Hi ${escapeHtml(recipientName)}, ${escapeHtml(spaceName)} has an event coming up ${escapeHtml(whenLabel)}.
       You follow them, so we thought you might want to know. No pressure, take a look if it fits your week.
     </p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-    </p>
-    <a href="${eventUrl}" style="${btnStyle}">See the event &rarr;</a>
-    <hr style="${dividerStyle}">
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
+    ${emailButton(`See the event`, `${eventUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You're getting this because you follow ${escapeHtml(spaceName)} and asked to hear about their events.
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
@@ -863,23 +860,19 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
   recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
 }): string {
   const refundLine = refunded
-    ? `<p style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.</p>`
+    ? `<p data-fq="fq-p" style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.</p>`
     : ''
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailAlert};margin:28px 0 8px;">
-      Event cancelled
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">
+    ${emailKicker(`Event cancelled`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       Hi ${escapeHtml(recipientName)}, we're sorry to share that this event has been cancelled
       and won't be going ahead.
     </p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>
-    </p>
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }])}
     ${refundLine}
-    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
-    <hr style="${dividerStyle}">
+    ${emailButton(`View event`, `${eventUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd or held a ticket.
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
@@ -937,7 +930,7 @@ export async function sendGuestEventCancelledEmail(params: {
   const refunded = params.refunded === true
   const greeting = guestGreeting(guestName)
   const releasedHtml = refunded
-    ? `<p style="${pStyle}"><strong>Your ticket has been refunded in full.</strong> The charge is being reversed, and it can take a few business days to land back on your original payment method.</p>`
+    ? `<p data-fq="fq-p" style="${pStyle}"><strong>Your ticket has been refunded in full.</strong> The charge is being reversed, and it can take a few business days to land back on your original payment method.</p>`
     : ''
   const releasedText = refunded
     ? `\nYour ticket has been refunded in full. The charge is being reversed, and it can take a few business days to land back on your original payment method.\n`
@@ -948,18 +941,16 @@ export async function sendGuestEventCancelledEmail(params: {
     to,
     subject: `Cancelled: ${eventTitle}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailAlert};margin:28px 0 8px;">
-        Event cancelled
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-      <p style="${pStyle}">
+      ${emailKicker(`Event cancelled`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">
         ${escapeHtml(greeting)}this event has been cancelled and will not be going ahead.
         ${refunded ? 'Your ticket has been released' : 'Your RSVP has been released'}, so there is nothing you need to do.
       </p>
       ${releasedHtml}
-      <p style="${pStyle}"><strong>${escapeHtml(whenAbsolute)}</strong></p>
-      <a href="${eventUrl}" style="${btnStyle}">View event →</a>
-      <hr style="${dividerStyle}">
+      ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }])}
+      ${emailButton(`View event`, `${eventUrl}`)}
+      <hr data-fq="fq-rule" style="${dividerStyle}">
       <p style="font-size:13px;color:${palette.emailSubtle};">
         You are getting this because this address was used to ${reason} ${escapeHtml(eventTitle)}.
       </p>
@@ -1021,14 +1012,14 @@ export async function sendGuestEventReminderEmail(params: {
     : 'a quick reminder that you said you were coming.'
 
   const accountOfferHtml = claimUrl ? `
-      <hr style="${dividerStyle}">
-      <p style="${pStyle}">
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-p" style="${pStyle}">
         <strong>Put this ticket in an account.</strong> Tap below and we will email you a sign in link
         at this address. Once you are in, this ticket is on your account with everything else you have
         said yes to.
       </p>
       <p style="margin:0 0 8px;">
-        <a href="${claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
+        ${emailButton(`Add this ticket to an account`, `${claimUrl}`)}
       </p>` : ''
 
   const footerHtml = held === 'ticket'
@@ -1056,16 +1047,12 @@ Add this ticket to an account: ${claimUrl}
     to,
     subject: `${whenLabel}: ${eventTitle}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-        ${escapeHtml(whenLabel)}
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-      <p style="${pStyle}">${escapeHtml(greeting)}${intro}</p>
-      <p style="${pStyle}">
-        <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-      </p>
-      <a href="${eventUrl}" style="${btnStyle}">View event →</a>${accountOfferHtml}
-      <hr style="${dividerStyle}">
+      ${emailKicker(`${escapeHtml(whenLabel)}`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(greeting)}${intro}</p>
+      ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
+      ${emailButton(`View event`, `${eventUrl}`)}${accountOfferHtml}
+      <hr data-fq="fq-rule" style="${dividerStyle}">
       <p style="font-size:13px;color:${palette.emailSubtle};">
         ${footerHtml}
       </p>
@@ -1129,18 +1116,18 @@ export async function sendMadeItEmail(params: {
     subject: `Did you make it to ${eventTitle}?`,
     ...(unsubscribeUrl ? { headers: listUnsubscribeHeaders(unsubscribeUrl) } : {}),
     html: emailShell(`
-      <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-      <p style="${pStyle}">${escapeHtml(greeting)}${escapeHtml(intro)}</p>
-      <a href="${madeItUrl}" style="${btnStyle}">Yes, I made it</a>
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(greeting)}${escapeHtml(intro)}</p>
+      ${emailButton(`Yes, I made it`, `${madeItUrl}`)}
       <p style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">Not this time</a></p>${next ? `
-      <hr style="${dividerStyle}">
-      <p style="${pStyle}">${escapeHtml(nextLine ?? '')}</p>
-      <p style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next one</a></p>
-      <p style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:${palette.emailPrimaryStrong};">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
-      <hr style="${dividerStyle}">
-      <p style="${pStyle}">${escapeHtml(offer)}</p>
-      <a href="${joinUrl}" style="${btnStyle}">Find your Circle &rarr;</a>` : ''}
-      <hr style="${dividerStyle}">
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(nextLine ?? '')}</p>
+      <p data-fq="fq-p" style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next one</a></p>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:${palette.emailPrimaryStrong};">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(offer)}</p>
+      ${emailButton(`Find your Circle`, `${joinUrl}`)}` : ''}
+      <hr data-fq="fq-rule" style="${dividerStyle}">
       <p style="font-size:13px;color:${palette.emailSubtle};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>` : ''}</p>
     `),
     text: `Did you make it to ${eventTitle}?
@@ -1188,15 +1175,13 @@ export async function sendGuestEventUpdateEmail(params: {
     to,
     subject: updateTitle ? `${eventTitle}: ${updateTitle}` : `Update from ${eventTitle}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailSubtle};margin:28px 0 8px;">
-        Event update
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
-      ${updateTitle ? `<p style="${pStyle}"><strong>${escapeHtml(eventTitle)}</strong></p>` : ''}
-      <p style="${pStyle}">Hi,</p>
-      <p style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
-      <a href="${eventUrl}" style="${btnStyle}">View event →</a>
-      <hr style="${dividerStyle}">
+      ${emailKicker(`Event update`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
+      ${updateTitle ? `<p data-fq="fq-p" style="${pStyle}"><strong>${escapeHtml(eventTitle)}</strong></p>` : ''}
+      <p data-fq="fq-p" style="${pStyle}">Hi,</p>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
+      ${emailButton(`View event`, `${eventUrl}`)}
+      <hr data-fq="fq-rule" style="${dividerStyle}">
       <p style="font-size:13px;color:${palette.emailSubtle};">
         You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)},
         and the host sent an update to everyone holding one. If that was not you, or you would rather
@@ -1255,15 +1240,13 @@ function eventUpdateHtml({ recipientName, eventTitle, updateTitle, body, eventUr
   eventUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailSubtle};margin:28px 0 8px;">
-      Event update
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
-    ${updateTitle ? `<p style="${pStyle}"><strong>${escapeHtml(eventTitle)}</strong></p>` : ''}
-    <p style="${pStyle}">Hi ${escapeHtml(recipientName)},</p>
-    <p style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
-    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
-    <hr style="${dividerStyle}">
+    ${emailKicker(`Event update`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
+    ${updateTitle ? `<p data-fq="fq-p" style="${pStyle}"><strong>${escapeHtml(eventTitle)}</strong></p>` : ''}
+    <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(recipientName)},</p>
+    <p data-fq="fq-p" style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
+    ${emailButton(`View event`, `${eventUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd to this event.
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
@@ -1369,17 +1352,15 @@ function guestBookingConfirmHtml(p: {
 }): string {
   const title = p.serviceName ?? `Session with ${p.spaceName}`
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      One quick step
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(title)}</h1>
-    <p style="${pStyle}">Hi ${escapeHtml(p.guestName)}, we are holding this time for you. Confirm it below and it is yours.</p>
-    <p style="${pStyle}">
+    ${emailKicker(`One quick step`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(title)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(p.guestName)}, we are holding this time for you. Confirm it below and it is yours.</p>
+    <p data-fq="fq-p" style="${pStyle}">
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
       <span style="color:${palette.emailSubtle};">${p.durationMinutes} minute session with ${escapeHtml(p.spaceName)}</span>
     </p>
     <p style="margin:0 0 28px;">
-      <a href="${p.confirmUrl}" style="${btnStyle}">Confirm my booking</a>
+      ${emailButton(`Confirm my booking`, `${p.confirmUrl}`)}
     </p>
     <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       The hold lasts ${p.holdMinutes} minutes. After that the time opens up again and you can book a fresh one.<br>
@@ -1430,16 +1411,14 @@ function bookingConfirmationHtml(p: {
       ? `Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(p.otherPartyName ?? 'a member')} just booked a time with you.`
       : `Hi ${escapeHtml(p.recipientName)}, your time with ${escapeHtml(p.spaceName)} is set. We added a calendar file to this email.`
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      ${eyebrow}
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(String(title))}</h1>
-    <p style="${pStyle}">${intro}</p>
-    <p style="${pStyle}">
+    ${emailKicker(`${eyebrow}`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(String(title))}</h1>
+    <p data-fq="fq-p" style="${pStyle}">${intro}</p>
+    <p data-fq="fq-p" style="${pStyle}">
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
       <span style="color:${palette.emailSubtle};">${p.durationMinutes} minute session</span>
     </p>
-    <a href="${p.manageUrl}" style="${btnStyle}">View booking &rarr;</a>
+    ${emailButton(`View booking`, `${p.manageUrl}`)}
     ${
       p.madeWith
         ? `<p style="font-size:12px;color:${palette.emailFaint};margin:28px 0 0;"><a href="${p.madeWith.url}" style="color:${palette.emailFaint};">${escapeHtml(p.madeWith.label)}</a></p>`
@@ -1490,13 +1469,11 @@ export function buildBookingReminderEmail(params: BookingReminderEmailParams): E
     to: params.to,
     subject: `Reminder: ${params.serviceName ?? params.spaceName}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-        Reminder
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
-      <p style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this is a reminder of your upcoming session.</p>
-      <p style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
-      <a href="${params.manageUrl}" style="${btnStyle}">View booking &rarr;</a>
+      ${emailKicker(`Reminder`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this is a reminder of your upcoming session.</p>
+      <p data-fq="fq-p" style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
+      ${emailButton(`View booking`, `${params.manageUrl}`)}
     `),
     text: `Reminder: ${params.serviceName ?? params.spaceName}
 
@@ -1546,13 +1523,11 @@ export function buildHousingMatchEmail(params: HousingMatchEmailParams): EmailPa
     subject,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-        Roommate matches
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
-      <p style="${pStyle}">Hi ${name}, ${escapeHtml(lead)}</p>
-      <p style="${pStyle}">You hear about each person once. Matching stays opt-in on both sides, and you can switch these notes off any time.</p>
-      <a href="${matchUrl}" style="${btnStyle}">${cta} &rarr;</a>
+      ${emailKicker(`Roommate matches`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${name}, ${escapeHtml(lead)}</p>
+      <p data-fq="fq-p" style="${pStyle}">You hear about each person once. Matching stays opt-in on both sides, and you can switch these notes off any time.</p>
+      ${emailButton(`${cta}`, `${matchUrl}`)}
     `),
     text: `${subject}
 
@@ -1608,12 +1583,10 @@ export function buildPlanShareEmail(params: PlanShareEmailParams): EmailPayload 
     subject,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-        Working together
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
-      <p style="${pStyle}">Hi ${name}, ${escapeHtml(lead)}</p>
-      <a href="${url}" style="${btnStyle}">${cta} &rarr;</a>
+      ${emailKicker(`Working together`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${name}, ${escapeHtml(lead)}</p>
+      ${emailButton(`${cta}`, `${url}`)}
     `),
     text: `${subject}
 
@@ -1637,20 +1610,18 @@ export async function sendBookingCancelledEmail(params: {
   bookUrl: string
 }) {
   const reasonLine = params.reason
-    ? `<p style="${pStyle}">Reason given: ${escapeHtml(params.reason)}</p>`
+    ? `<p data-fq="fq-p" style="${pStyle}">Reason given: ${escapeHtml(params.reason)}</p>`
     : ''
   await enqueueEmail({
     to: params.to,
     subject: `Cancelled: ${params.serviceName ?? params.spaceName}`,
     html: emailShell(`
-      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailAlert};margin:28px 0 8px;">
-        Booking cancelled
-      </p>
-      <h1 style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
-      <p style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this booking has been cancelled.</p>
-      <p style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
+      ${emailKicker(`Booking cancelled`)}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this booking has been cancelled.</p>
+      <p data-fq="fq-p" style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
       ${reasonLine}
-      <a href="${params.bookUrl}" style="${btnStyle}">Book another time &rarr;</a>
+      ${emailButton(`Book another time`, `${params.bookUrl}`)}
     `),
     text: `Booking cancelled: ${params.serviceName ?? params.spaceName}
 
@@ -1725,14 +1696,12 @@ function outreachNoteHtml({ recipientName, authorName, body, unsubscribeUrl }: {
 }): string {
   const paragraphs = body
     .split(/\n{2,}/)
-    .map((para) => `<p style="${pStyle}">${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+    .map((para) => `<p data-fq="fq-p" style="${pStyle}">${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
     .join('')
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      A note from ${escapeHtml(authorName)}
-    </p>
+    ${emailKicker(`A note from ${escapeHtml(authorName)}`)}
     ${paragraphs}
-    <hr style="${dividerStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       Hi ${escapeHtml(recipientName)}, you are getting this because ${escapeHtml(authorName)} leads your Circle on Frequency.
       <a href="${BASE_URL}/notifications" style="color:${palette.emailSubtle};">See it in your notifications</a>
@@ -1776,20 +1745,20 @@ export async function sendOptinConfirmEmail(params: { to: string; confirmUrl: st
 function optinConfirmHtml({ confirmUrl, firstName }: { confirmUrl: string; firstName: string | null }): string {
   const hi = firstName ? `${escapeHtml(firstName)}, one quick step.` : 'One quick step.'
   return emailShell(`
-    <h1 style="${h1Style}">${hi}</h1>
-    <p style="${pStyle}">
+    <h1 data-fq="fq-h1" style="${h1Style}">${hi}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       Someone entered this email to hear from Daniel Tyack, through Frequency. If that was
       you, confirm it below and you're on the list. Notes on Circles, practices, and events,
       a few times a month. No spam.
     </p>
     <p style="margin:0 0 28px;">
-      <a href="${confirmUrl}" style="${btnStyle}">Confirm my email</a>
+      ${emailButton(`Confirm my email`, `${confirmUrl}`)}
     </p>
     <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
       If the button doesn't work, paste this into your browser:<br>
       <a href="${confirmUrl}" style="color:${palette.emailSubtle};">${confirmUrl}</a>
     </p>
-    <hr style="${dividerStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};margin-bottom:0;">
       Didn't do this? Ignore this email and nothing happens. You won't hear from us again.
     </p>
@@ -1828,12 +1797,12 @@ function optinWelcomeHtml({ firstName, unsubscribeUrl }: { firstName: string | n
   const hi = firstName ? `You're in, ${escapeHtml(firstName)}.` : "You're in."
   const footer = `You're getting this because you confirmed your email at Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe</a> any time.<br>${orgContactLine()}`
   return emailShell(`
-    <h1 style="${h1Style}">${hi}</h1>
-    <p style="${pStyle}">
+    <h1 data-fq="fq-h1" style="${h1Style}">${hi}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       Thanks for confirming. You'll get a note from Daniel a few times a month: what's happening
       in the Circles, a practice worth trying, and the odd invite when something opens near you.
     </p>
-    <p style="${pStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
       That's it. Real notes from a real person. If it ever stops being worth your inbox, the
       unsubscribe link below always works.
     </p>
@@ -1857,21 +1826,110 @@ ${unsubscribeUrl}`
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
-// The email colours come from the design-keyed palette (lib/theme/palette.ts) as literal hex, because
-// email clients don't do CSS variables: cream ground, warm ink, primary amber, deep amber for links,
-// warm hairline. A Frequency deploy switches them with the rest of the platform.
-const containerStyle = `max-width:560px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;`
-const bodyBg         = `background:${palette.emailCanvas};padding:32px 16px;`
-const cardStyle      = `background:${palette.surface};border:1px solid ${palette.emailBorder};border-radius:16px;padding:36px 36px 30px;`
-const logoStyle      = `font-size:22px;font-weight:900;letter-spacing:-0.5px;color:${palette.emailPrimaryStrong};text-decoration:none;`
-const taglineStyle   = `font-size:11px;color:${palette.emailSubtle};letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 0;`
-const h1Style        = `font-size:24px;font-weight:800;color:${palette.text};margin:22px 0 12px;line-height:1.25;`
-const pStyle         = `font-size:15px;color:${palette.textMuted};line-height:1.65;margin:0 0 20px;`
-const leadStyle      = `font-size:14px;font-weight:700;color:${palette.text};margin:0 0 10px;`
-const btnStyle       = `display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px;`
-const footerStyle    = `font-size:12px;color:${palette.emailSubtle};margin-top:24px;text-align:center;line-height:1.7;`
-const unsubBtnStyle  = `display:inline-block;border:1px solid ${palette.emailBorder};border-radius:999px;padding:7px 18px;color:${palette.textMuted};text-decoration:none;font-weight:600;font-size:12px;`
-const dividerStyle   = `border:none;border-top:1px solid ${palette.emailBorder};margin:26px 0;`
+// The email colours come from the design-keyed palette (lib/theme/palette.ts) as literal hex and the
+// faces, gradients and shadows from lib/theme/email-type.ts, because email clients read no CSS
+// variable. The layout is the MEMBER KIT's (design_handoff/frequency/templates/members): the linen
+// page with the pastel wash, the wordmark, a raised white card at radius 24, Unbounded titles, Hanken
+// body, the pastel --pa pill with ink text as the one action, ink links, a quiet footer. Standard:
+// docs/EMAIL-LAYOUT.md (ADR-1800). The night room follows under prefers-color-scheme: dark.
+const bodyBg         = `margin:0;padding:0;background:${palette.emailCanvas};`
+const containerStyle = `width:100%;max-width:600px;border-collapse:collapse;`
+const cardStyle      = `background:${palette.surface};border:1px solid ${palette.emailBorder};border-radius:24px;padding:0;overflow:hidden;font-family:${emailType.sans};${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}`
+const cardBodyStyle  = `padding:40px 40px 36px;font-family:${emailType.sans};`
+/** The stock hero crowning the card (emailType.hero): the photo, the wash and the wordmark in one image. */
+const heroStyle      = `display:block;border:0;width:100%;max-width:600px;height:auto;border-radius:23px 23px 0 0;font-family:${emailType.display};font-size:16px;font-weight:600;color:${palette.emailHeading};`
+const logoStyle      = `display:block;border:0;width:${emailType.wordmark.width}px;height:auto;font-family:${emailType.display};font-size:16px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;color:${palette.emailHeading};text-decoration:none;`
+const taglineStyle   = `font-family:${emailType.display};font-size:11px;font-weight:500;color:${palette.emailSubtle};letter-spacing:0.14em;text-transform:uppercase;margin:0 0 12px;line-height:1;`
+const h1Style        = `font-family:${emailType.display};font-size:38px;font-weight:${emailType.displayWeight};color:${palette.emailHeading};margin:0 0 18px;line-height:1.04;letter-spacing:${emailType.displayTracking};`
+const pStyle         = `font-family:${emailType.sans};font-size:16px;color:${palette.emailBody};line-height:1.55;margin:0 0 20px;`
+const leadStyle      = `font-family:${emailType.display};font-size:17px;font-weight:${emailType.displayWeight};color:${palette.emailHeading};margin:0 0 10px;line-height:1.2;letter-spacing:-0.025em;`
+const btnStyle       = `display:inline-block;color:${palette.emailActionInk};font-family:${emailType.sans};font-size:15px;font-weight:600;line-height:1;text-decoration:none;padding:16px 24px;border-radius:999px;`
+const footerStyle    = `font-family:${emailType.sans};font-size:13px;color:${palette.emailSubtle};padding:28px 8px 0;text-align:center;line-height:1.6;`
+const unsubBtnStyle  = `color:${palette.emailSubtle};text-decoration:underline;`
+const dividerStyle   = `border:none;border-top:1px solid ${palette.emailBorder};margin:28px 0;`
+
+/** The label style (.k in the member kit): an eyebrow over a headline, a section kicker. */
+const EMAIL_LABEL = taglineStyle
+/** An inline link: ink, underlined (app.css a{color:var(--text-strong)}). */
+const EMAIL_LINK = `color:${palette.emailPrimaryStrong};text-decoration:underline;text-underline-offset:3px;`
+const EMAIL_SOFT_FILL = `background:${palette.emailAccentSoft};${emailType.softBackground ? `background-image:${emailType.softBackground};` : ''}`
+/** The soft panel (.soft): a callout, an invite note, on the pastel wash. */
+const EMAIL_SOFT = `background:${palette.emailAccentSoft};${emailType.softBackground ? `background-image:${emailType.softBackground};` : ''}border-radius:20px;padding:18px 20px;`
+/** A chip (.chip): a quiet pill, for a secondary link such as a calendar add. */
+const EMAIL_CHIP = `display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.emailBody};font-family:${emailType.sans};font-size:14px;font-weight:500;line-height:1;text-decoration:none;padding:13px 16px;border-radius:999px;`
+
+// The evolved layer (EMAIL-029): structure that makes mail scan at a glance without adding words. A kicker
+// pill over the headline, a facts panel for the when and where, section titles in the display face, and
+// list rows with a round pastel go. Every piece is one table or one block of inline styles, so it holds in
+// Gmail, Apple Mail and Outlook, and each carries a data-fq hook for the night room.
+
+/** The kicker (.k as a pill): a small pastel pill with the dot, over a headline. `text` is trusted HTML. */
+export function emailKicker(text: string): string {
+  const dot = `<span style="display:inline-block;width:6px;height:6px;border-radius:3px;background:${palette.emailAction};margin:0 8px 1px 0;vertical-align:middle;font-size:0;line-height:0;">&nbsp;</span>`
+  return `<p style="margin:0 0 18px;line-height:1;"><span data-fq="fq-soft" style="display:inline-block;${EMAIL_SOFT_FILL}border-radius:999px;padding:8px 14px 8px 12px;font-family:${emailType.display};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${palette.emailHeading};line-height:1;">${dot}${text}</span></p>`
+}
+
+/** A section title inside a card: display face, sentence case, no shouting. `text` is trusted HTML. */
+export function emailSection(text: string, top = 36): string {
+  return `<h2 data-fq="fq-strong" style="font-family:${emailType.display};font-size:18px;font-weight:${emailType.displayWeight};letter-spacing:-0.03em;line-height:1.2;color:${palette.emailHeading};margin:${top}px 0 14px;">${text}</h2>`
+}
+
+/** The facts panel: when, where, host as labelled rows on a soft rounded field. Values are trusted HTML. */
+export function emailFacts(rows: { label: string; html: string }[]): string {
+  const body = rows
+    .filter((r) => r.html)
+    .map(
+      (r, i, all) => `<tr><td style="padding:${i === 0 ? 18 : 14}px 22px ${i === all.length - 1 ? 18 : 14}px;${i > 0 ? `border-top:1px solid ${palette.emailCanvas};` : ''}"><p data-fq="fq-muted" style="${EMAIL_LABEL}margin:0 0 6px;">${r.label}</p><p data-fq="fq-strong" style="margin:0;font-family:${emailType.sans};font-size:17px;font-weight:600;line-height:1.35;color:${palette.emailHeading};">${r.html}</p></td></tr>`,
+    )
+    .join('')
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-panel" style="width:100%;border-collapse:separate;${EMAIL_SOFT_FILL}border-radius:20px;margin:0 0 24px;">${body}</table>`
+}
+
+/** One list row: a title and a quiet line, with a round pastel go on the right. Values are trusted HTML. */
+export function emailRow(title: string, meta: string, href: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-panel" style="width:100%;border-collapse:separate;background:${palette.emailSurfaceElevated};border:1px solid ${palette.emailBorder};border-radius:18px;margin:0 0 10px;"><tr><td style="padding:16px 8px 16px 20px;"><p data-fq="fq-strong" style="margin:0 0 3px;font-family:${emailType.sans};font-size:16px;font-weight:600;line-height:1.3;color:${palette.emailHeading};">${title}</p><p data-fq="fq-muted" style="margin:0;font-family:${emailType.sans};font-size:14px;line-height:1.4;color:${palette.emailSubtle};">${meta}</p></td><td width="64" align="center" style="padding:0 16px 0 8px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td data-fq="fq-btn" bgcolor="${palette.emailAction}" width="36" height="36" align="center" style="width:36px;height:36px;border-radius:18px;background:${palette.emailAction};${emailType.actionBackground ? `background-image:${emailType.actionBackground};` : ''}"><a href="${href}" style="display:block;width:36px;height:36px;line-height:36px;text-align:center;color:${palette.emailActionInk};font-family:${emailType.sans};font-size:16px;font-weight:600;text-decoration:none;">&rarr;</a></td></tr></table></td></tr></table>`
+}
+
+/** The head every shell shares: charset, viewport, both colour-scheme metas, the web fonts for the clients
+ *  that honour them, and one style block for the phone gutter and the night room. Inline styles carry the
+ *  light layout on their own, so a client that drops the block still renders the email as designed. */
+export function emailHead(title = ''): string {
+  const fonts = emailType.stylesheet
+    ? `<!--[if !mso]><!--><link rel="stylesheet" href="${emailType.stylesheet}"><!--<![endif]-->`
+    : ''
+  return `<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${title ? `<title>${escapeHtml(title)}</title>` : ''}${fonts}<style>
+body{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+@media only screen and (max-width:620px){[data-fq=fq-wrap]{padding:20px 12px!important}[data-fq=fq-card]{border-radius:20px!important}[data-fq=fq-body]{padding:28px 22px 26px!important}[data-fq=fq-h1]{font-size:30px!important}}
+@media (prefers-color-scheme:dark){
+body,[data-fq=fq-bg]{background:${palette.emailNightCanvas}!important}
+[data-fq=fq-card],[data-fq=fq-panel]{background:${palette.emailNightSurface}!important;border-color:${palette.emailNightBorder}!important}
+[data-fq=fq-h1],[data-fq=fq-strong],[data-fq=fq-logo]{color:${palette.emailNightStrong}!important}
+[data-fq=fq-p],[data-fq=fq-body]{color:${palette.emailNightBody}!important}
+[data-fq=fq-muted],[data-fq=fq-foot],[data-fq=fq-foot] a{color:${palette.emailNightMuted}!important}
+[data-fq=fq-rule]{border-color:${palette.emailNightBorder}!important}
+[data-fq=fq-btn]{background:${palette.emailNightAction}!important;background-image:none!important;box-shadow:none!important}
+[data-fq=fq-btn] a{color:${palette.emailNightOnAction}!important}
+[data-fq=fq-link],[data-fq=fq-body] a{color:${palette.emailNightLink}!important}
+[data-fq=fq-soft]{background:${palette.emailNightBorder}!important;background-image:none!important;color:${palette.emailNightStrong}!important}
+[data-fq=fq-outline]{border-color:${palette.emailNightMuted}!important}
+[data-fq=fq-outline] a{color:${palette.emailNightStrong}!important}
+[data-fq=fq-bg]{background-image:none!important}
+}
+</style></head>`
+}
+
+/** A hidden preheader: the inbox preview line, then filler so the client does not pull body copy in. */
+function emailPreheader(text: string): string {
+  if (!text) return ''
+  return `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${escapeHtml(text)}${'&nbsp;&zwnj;'.repeat(60)}</div>`
+}
+
+/** The primary action as a bulletproof pill: a table cell carries the fill and radius, the anchor the padding,
+ *  so Outlook paints a tappable 48px target too. One per email (docs/EMAIL-LAYOUT.md). */
+export function emailButton(label: string, href: string, align: 'left' | 'center' = 'left'): string {
+  const fill = `background:${palette.emailAction};${emailType.actionBackground ? `background-image:${emailType.actionBackground};` : ''}border-radius:999px;${emailType.actionGlow ? `box-shadow:${emailType.actionGlow};` : ''}`
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td align="${align}" style="padding:4px 0 24px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td data-fq="fq-btn" bgcolor="${palette.emailAction}" style="${fill}"><a href="${href}" style="${btnStyle}">${label}</a></td></tr></table></td></tr></table>`
+}
 
 // The shell's parts, for the React Email base template (lib/email-react/shell.tsx, LIVE-695), so
 // the React render and `emailShell` read one set of styles and cannot drift.
@@ -1879,10 +1937,16 @@ export const EMAIL_SHELL_STYLES = {
   body: bodyBg,
   container: containerStyle,
   card: cardStyle,
+  cardBody: cardBodyStyle,
+  hero: heroStyle,
   logo: logoStyle,
   tagline: taglineStyle,
   footer: footerStyle,
   unsub: unsubBtnStyle,
+  /** The outer cell: the canvas gutter around the column. */
+  wrap: `padding:36px 16px 48px;`,
+  /** The header cell above the card. */
+  header: `padding:0 4px 22px;text-align:left;`,
 } as const
 export const EMAIL_BASE_URL = BASE_URL
 /** The CAN-SPAM postal line, unescaped (React escapes it). */
@@ -1894,13 +1958,15 @@ export function emailPostalAddress(): string {
 // `emailShell` (the money receipts in lib/billing/*). They lived as three private copies in three
 // files until 2026-09-16; one source is what keeps a receipt looking like every other Frequency
 // email. Literal hex from lib/theme/palette.ts, not tokens: mail clients read no design tokens.
-export const EMAIL_INK        = palette.text
+export const EMAIL_INK        = palette.emailBody
 export const EMAIL_MUTED      = palette.textMuted
 export const EMAIL_RULE       = palette.emailBorder
-export const EMAIL_ACTION     = palette.primary
-export const EMAIL_ACTION_INK = palette.onPrimary
+/** The headline style every email's h1 shares (the shells and the modules that compose their own body). */
+export const EMAIL_H1         = h1Style
+export const EMAIL_ACTION     = palette.emailAction
+export const EMAIL_ACTION_INK = palette.emailActionInk
 /** One body paragraph, minus its colour: callers append `color:${EMAIL_INK};` or the muted one. */
-export const EMAIL_P = 'font-size:15px;line-height:1.6;margin:0 0 20px;'
+export const EMAIL_P = `font-family:${emailType.sans};font-size:16px;line-height:1.55;margin:0 0 20px;`
 
 /** Escape member-written text (a name, an event title, a post) for an email's HTML body. */
 export function escapeHtml(s: string): string {
@@ -1935,6 +2001,22 @@ export const RECEIPT_FOOTER: EmailFooter = {
   unsubscribe: false,
 }
 
+/** Options a caller may add to the shell beyond the footer: the inbox preview line and the document title. */
+interface EmailShellOptions {
+  preheader?: string
+  title?: string
+  /** Which stock hero to crown the card with; unset picks one at random per dispatch. */
+  hero?: number
+}
+
+/** The hero row at the top of the card: the stock hero image linked to the site, or '' when the design
+ *  has none (the wordmark header above the card shows instead). */
+function emailHeroRow(pick?: number): string {
+  const hero = pickStockHero(pick)
+  if (!hero) return ''
+  return `<tr><td style="padding:0;line-height:0;"><a href="${BASE_URL}" style="text-decoration:none;"><img src="${BASE_URL}${hero.path}" alt="Frequency, ${EMAIL_TAGLINE}" width="${hero.width}" height="${hero.height}" data-fq="fq-hero" style="${heroStyle}"></a></td></tr>`
+}
+
 /**
  * THE brand wrapper for every Frequency email: doctype, head, charset + viewport, the wordmark and
  * tagline, the card, and the footer with the unsubscribe control and the CAN-SPAM contact line.
@@ -1948,27 +2030,40 @@ export const RECEIPT_FOOTER: EmailFooter = {
  *   (e.g. the scan intro) that must NOT claim membership and needs its own unsubscribe line, and by
  *   the money receipts, which pass `RECEIPT_FOOTER` to drop the control as well as the claim.
  */
-export function emailShell(content: string, footer?: string | EmailFooter): string {
+export function emailShell(content: string, footer?: string | EmailFooter, opts: EmailShellOptions = {}): string {
   const foot =
     (typeof footer === 'string' ? footer : footer?.text) ??
     `You're receiving this because you joined Frequency, the community collective.`
   const showUnsub = typeof footer === 'object' ? footer.unsubscribe : true
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="${bodyBg}">
-  <div style="${containerStyle}">
-    <div style="${cardStyle}">
-      <a href="${BASE_URL}" style="${logoStyle}">frequency</a>
-      <p style="${taglineStyle}">${EMAIL_TAGLINE}</p>
-      ${content}
-    </div>
-    <div style="${footerStyle}">
-      <p style="margin:0 0 14px;">${foot}</p>
-      ${showUnsub ? `<a href="${BASE_URL}/settings/notifications" style="${unsubBtnStyle}">Unsubscribe or manage emails</a>` : ''}
-      <p style="margin:16px 0 0;color:${palette.emailFaint};">${orgContactLine()}</p>
-    </div>
-  </div>
+${emailHead(opts.title)}
+<body data-fq="fq-bg" style="${bodyBg}">
+  ${emailPreheader(opts.preheader ?? '')}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-bg" style="width:100%;border-collapse:collapse;background:${palette.emailCanvas};${emailType.wash ? `background-image:${emailType.wash};` : ''}">
+    <tr><td align="center" data-fq="fq-wrap" style="${EMAIL_SHELL_STYLES.wrap}">
+      <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+        ${emailType.hero ? '' : `<tr><td style="${EMAIL_SHELL_STYLES.header}">
+          <a href="${BASE_URL}" style="text-decoration:none;"><img src="${BASE_URL}${emailType.wordmark.path}" alt="Frequency, ${EMAIL_TAGLINE}" width="${emailType.wordmark.width}" height="${emailType.wordmark.height}" data-fq="fq-logo" style="${logoStyle}"></a>
+        </td></tr>`}
+        <tr><td data-fq="fq-card" style="${cardStyle}">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
+            ${emailHeroRow(opts.hero)}
+            <tr><td data-fq="fq-body" style="${cardBodyStyle}">
+          ${content}
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td data-fq="fq-foot" style="${footerStyle}">
+          <p style="margin:0 0 10px;">${foot}</p>
+          ${showUnsub ? `<p style="margin:0 0 10px;"><a href="${BASE_URL}/settings/notifications" style="${unsubBtnStyle}">Unsubscribe or manage emails</a></p>` : ''}
+          <p style="margin:0;font-size:12px;color:${palette.emailFaint};">${orgContactLine()}</p>
+        </td></tr>
+      </table>
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td></tr>
+  </table>
 </body>
 </html>`
 }
@@ -1977,20 +2072,21 @@ export function emailShell(content: string, footer?: string | EmailFooter): stri
 
 function welcomeHtml({ displayName, inviterName }: { displayName: string; inviterName?: string | null }): string {
   const name = escapeHtml(displayName)
-  const link = `color:${palette.emailPrimaryStrong};text-decoration:none;font-weight:600;`
+  const link = EMAIL_LINK
   const inviter = inviterName ? escapeHtml(inviterName) : null
   return emailShell(`
-    <h1 style="${h1Style}">Welcome to Frequency, ${name}.</h1>
-    ${inviter ? `<p style="margin:0 0 18px;padding:11px 14px;border-radius:10px;background:${palette.primaryBg};font-size:14px;line-height:1.5;color:${palette.emailPrimaryStrong};font-weight:600;">${inviter} invited you in. Find them in your people and say hi when you're settled.</p>` : ''}
-    <p style="${pStyle}">
+    ${emailKicker(`Welcome`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">You're in, <span style="font-family:${emailType.serif};font-style:italic;font-weight:400;letter-spacing:-0.02em;">${name}.</span></h1>
+    ${inviter ? `<p data-fq="fq-soft" style="${EMAIL_SOFT}margin:0 0 20px;font-family:${emailType.sans};font-size:15px;line-height:1.5;color:${palette.emailHeading};">${inviter} invited you in. Find them in your people and say hi when you're settled.</p>` : ''}
+    <p data-fq="fq-p" style="${pStyle}">
       You're in. Your profile is live and the whole place is yours to explore.
       Here's where to start.
     </p>
-    <a href="${BASE_URL}/feed" style="${btnStyle}">Open your feed &rarr;</a>
+    ${emailButton(`Open your feed`, `${BASE_URL}/feed`)}
 
-    <hr style="${dividerStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
 
-    <p style="${leadStyle}">Find your people</p>
+    <p data-fq="fq-strong" style="${leadStyle}">Find your people</p>
     <ul style="font-size:15px;color:${palette.textMuted};line-height:1.75;padding-left:20px;margin:0 0 4px;">
       <li><a href="${BASE_URL}/circles" style="${link}">Circles</a>: your local group, where it actually happens.</li>
       <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's happening near you this week.</li>
@@ -1998,15 +2094,15 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
       <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: show up, earn Zaps, climb the ranks.</li>
     </ul>
 
-    <hr style="${dividerStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
 
-    <p style="${leadStyle}">Bring a friend along</p>
-    <p style="${pStyle}">
+    <p data-fq="fq-strong" style="${leadStyle}">Bring a friend along</p>
+    <p data-fq="fq-p" style="${pStyle}">
       You've got a personal code. A friend who joins with it gets a few Zaps to start,
       and you earn Zaps once they join a Circle or pick up a Practice. Find yours under
       <a href="${BASE_URL}/codes" style="${link}">your codes</a>.
     </p>
-    <p style="${pStyle}">See you out there.</p>
+    <p data-fq="fq-p" style="${pStyle}">See you out there.</p>
   `)
 }
 
@@ -2052,12 +2148,12 @@ function inviteHtml({ inviterName, contextName, inviteUrl, contextKind }: {
   const who = escapeHtml(inviterName)
   const name = escapeHtml(contextName)
   return emailShell(`
-    <h1 style="${h1Style}">${who} invited you to join ${name}.</h1>
-    <p style="${pStyle}">
+    <h1 data-fq="fq-h1" style="${h1Style}">${who} invited you to join ${name}.</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       ${inviteDescriptor(name, contextKind)}
     </p>
-    <a href="${inviteUrl}" style="${btnStyle}">Accept invite →</a>
-    <hr style="${dividerStyle}">
+    ${emailButton(`Accept invite`, `${inviteUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       Or paste this link in your browser:<br>
       <span style="font-family:monospace;color:${palette.textMuted};">${inviteUrl}</span>
@@ -2112,16 +2208,16 @@ function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, loca
   const meta = [whenLine, location].filter(Boolean).map((s) => escapeHtml(s as string)).join(' · ')
   const footer = `${who} listed your event on Frequency, a place to find and host local gatherings. You're getting this once so you can claim it or ignore it. Not your event? No action needed, it stays as a community listing.<br>${orgContactLine()}`
   return emailShell(`
-    <h1 style="${h1Style}">Is this your event?</h1>
-    <p style="${pStyle}">${greeting}</p>
-    <p style="${pStyle}">
+    <h1 data-fq="fq-h1" style="${h1Style}">Is this your event?</h1>
+    <p data-fq="fq-p" style="${pStyle}">${greeting}</p>
+    <p data-fq="fq-p" style="${pStyle}">
       ${who} added <strong>${title}</strong>${meta ? ` (${meta})` : ''} to Frequency so people nearby can find it.
     </p>
-    <p style="${pStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
       If you're the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
     </p>
-    <a href="${claimUrl}" style="${btnStyle}">Claim your event →</a>
-    <hr style="${dividerStyle}">
+    ${emailButton(`Claim your event`, `${claimUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       Want to see it first? <a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};text-decoration:none;font-weight:600;">View the event</a>.
     </p>
@@ -2177,66 +2273,31 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   unsubscribeUrl: string
 }): string {
   const dispatchesHtml = dispatches.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week's dispatches</h2>
-    ${dispatches.map((d) => `
-      <div style="border-left:3px solid ${palette.emailPrimaryStrong};padding:0 0 0 14px;margin-bottom:18px;">
-        <p style="margin:0 0 4px;font-size:11px;color:${palette.emailSubtle};font-weight:600;">${escapeHtml(d.authorName)}</p>
-        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:${palette.text};">${escapeHtml(d.title)}</p>
-        ${d.excerpt ? `<p style="margin:0 0 8px;font-size:14px;color:${palette.textMuted};line-height:1.5;">${escapeHtml(d.excerpt)}</p>` : ''}
-        <a href="${d.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Read →</a>
-      </div>
-    `).join('')}
+    ${emailSection(`This week's dispatches`, 32)}
+    ${dispatches.map((d) => emailRow(escapeHtml(d.title), `${escapeHtml(d.authorName)}${d.excerpt ? ` · ${escapeHtml(d.excerpt)}` : ''}`, d.url)).join('')}
   ` : ''
 
   const eventsHtml = upcomingEvents.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week on your calendar</h2>
-    <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
-      ${upcomingEvents.map((e) => `
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
-            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${e.title}</p>
-            <p style="margin:0;font-size:13px;color:${palette.emailSubtle};">
-              ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}
-            </p>
-          </td>
-          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};text-align:right;">
-            <a href="${e.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">View</a>
-          </td>
-        </tr>
-      `).join('')}
-    </table>
+    ${emailSection(`This week on your calendar`, 32)}
+    ${upcomingEvents.map((e) => emailRow(escapeHtml(e.title), `${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${escapeHtml(e.location)}` : ''}`, e.url)).join('')}
   ` : ''
 
   // Leads the email: what is on near you this week that you have not said yes to yet.
   const nearbyHtml = nearbyEvents.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:24px 0 12px;">On near you this week</h2>
-    <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
-      ${nearbyEvents.map((e) => `
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
-            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${escapeHtml(e.title)}</p>
-            <p style="margin:0;font-size:13px;color:${palette.emailSubtle};">
-              ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${escapeHtml(e.location)}` : ''}
-            </p>
-          </td>
-          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};text-align:right;">
-            <a href="${e.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Go</a>
-          </td>
-        </tr>
-      `).join('')}
-    </table>
+    ${emailSection(`On near you this week`, 24)}
+    ${nearbyEvents.map((e) => emailRow(escapeHtml(e.title), `${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${escapeHtml(e.location)}` : ''}`, e.url)).join('')}
   ` : ''
 
   const statusHtml = (topStreak || rank) ? `
-    <div style="background:${palette.emailSurfaceElevated};border-radius:10px;padding:14px 16px;margin:24px 0;">
-      <p style="margin:0;font-size:11px;font-weight:800;color:${palette.emailSubtle};text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
+    <div data-fq="fq-soft" style="${EMAIL_SOFT}margin:24px 0;">
+      <p data-fq="fq-muted" style="${EMAIL_LABEL}margin:0 0 4px;">Your standing</p>
       ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:${palette.text};">⚡ <strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
       ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:${palette.text};">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
     </div>
   ` : ''
 
   const goAgainHtml = goAgain.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:${palette.emailPrimaryStrong};text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">Go again?</h2>
+    ${emailSection(`Go again?`, 32)}
     ${goAgain.map((g) => `
       <p style="margin:0 0 10px;font-size:14px;color:${palette.text};">
         You finished your run of <strong>${escapeHtml(g.title)}</strong>.
@@ -2246,19 +2307,17 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   ` : ''
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      Your week
-    </p>
-    <h1 style="${h1Style}">Hi ${recipientName},</h1>
-    <p style="${pStyle}">Here's what's happening in your community this week.</p>
+    ${emailKicker(`Your week`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">Hi ${recipientName},</h1>
+    <p data-fq="fq-p" style="${pStyle}">Here's what's happening in your community this week.</p>
     ${nearbyHtml}
     ${statusHtml}
     ${goAgainHtml}
     ${dispatchesHtml}
     ${eventsHtml}
-    <hr style="${dividerStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
-      <a href="${BASE_URL}/feed" style="${btnStyle}">Open Frequency →</a>
+      ${emailButton(`Open Frequency`, `${BASE_URL}/feed`)}
     </p>
     <p style="font-size:13px;color:${palette.emailSubtle};">
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
@@ -2338,18 +2397,14 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
 }): string {
   const eyebrow = lead === '24h' ? 'Reminder · tomorrow' : 'Starting soon'
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      ${eyebrow}
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">
+    ${emailKicker(`${eyebrow}`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">
       Hi ${escapeHtml(recipientName)}, your event is ${escapeHtml(whenLabel)}.
     </p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-    </p>
-    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
-    <hr style="${dividerStyle}">
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
+    ${emailButton(`View event`, `${eventUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd to attend.
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
@@ -2404,28 +2459,21 @@ function rsvpConfirmationHtml({
 
   // Add-to-calendar only for confirmed seats — pointless on a waitlist hold.
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
-    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">
-      Add to your calendar
-    </p>
+    <p data-fq="fq-muted" style="${EMAIL_LABEL}margin:24px 0 10px;">Add to your calendar</p>
     <p style="margin:0 0 8px;">
-      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
-      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+      ${googleCalUrl ? `<a href="${googleCalUrl}" data-fq="fq-soft" style="${EMAIL_CHIP}margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${icsUrl ? `<a href="${icsUrl}" data-fq="fq-soft" style="${EMAIL_CHIP}margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
   ` : ''
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      ${eyebrow}
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">${intro}</p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:${palette.emailSubtle};">${hostLine}</span>` : ''}
-    </p>
+    ${emailKicker(`${eyebrow}`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">${intro}</p>
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }, { label: 'Host', html: hostLine ? hostLine.replace(/^Hosted by /, '') : '' }])}
     ${calendarBlock}
-    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
-    <hr style="${dividerStyle}">
+    ${emailButton(`View event`, `${eventUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You're receiving this because you RSVP'd to attend. Plans change, and that's okay,
       <a href="${eventUrl}" style="color:${palette.emailSubtle};">update your RSVP</a> any time.
@@ -2516,12 +2564,10 @@ function guestRsvpConfirmationHtml({
   const hostLine = rsvpHostLine(hostName, circleName)
 
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
-    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">
-      Add to your calendar
-    </p>
+    <p data-fq="fq-muted" style="${EMAIL_LABEL}margin:24px 0 10px;">Add to your calendar</p>
     <p style="margin:0 0 8px;">
-      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
-      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+      ${googleCalUrl ? `<a href="${googleCalUrl}" data-fq="fq-soft" style="${EMAIL_CHIP}margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${icsUrl ? `<a href="${icsUrl}" data-fq="fq-soft" style="${EMAIL_CHIP}margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
   ` : ''
 
@@ -2529,38 +2575,33 @@ function guestRsvpConfirmationHtml({
   // happens on arrival, so a mail scanner that pre-clicks it changes nothing. Plain about what it
   // does, and honest that it stops working once the gathering ends.
   const seatBlock = seatUrl ? `
-    <hr style="${dividerStyle}">
-    <p style="${pStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
       <strong>Plans change?</strong> ${status === 'going' ? 'Add or drop plus-ones, answer the host, or give the spot back so the next person moves in.' : 'Answer the host, or give the spot back so the next person moves in.'}
       The link works until the gathering ends.
     </p>
     <p style="margin:0 0 8px;">
-      <a href="${seatUrl}" style="${btnStyle}">Manage your spot →</a>
+      ${emailButton(`Manage your spot`, `${seatUrl}`)}
     </p>
   ` : ''
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      ${eyebrow}
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">${intro}</p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:${palette.emailSubtle};">${hostLine}</span>` : ''}
-    </p>
+    ${emailKicker(`${eyebrow}`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">${intro}</p>
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }, { label: 'Host', html: hostLine ? hostLine.replace(/^Hosted by /, '') : '' }])}
     ${calendarBlock}
-    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    ${emailButton(`View event`, `${eventUrl}`)}
     ${seatBlock}
-    <hr style="${dividerStyle}">
-    <p style="${pStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
       <strong>Want this in one place?</strong> Sign up with this same address and this
       RSVP becomes part of your account, along with anything else you have said yes to.
     </p>
     <p style="margin:0 0 8px;">
-      <a href="${signUpUrl}" style="${btnStyle}">Set up your account →</a>
+      ${emailButton(`Set up your account`, `${signUpUrl}`)}
     </p>
-    <hr style="${dividerStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
       If that was not you, ignore this email and nothing further will be sent.
@@ -2674,28 +2715,28 @@ function ticketReceiptHtml(
     : 'Payment received. Keep this email, it is your ticket.'
 
   const addressLine = who.kind === 'member' && who.addressHidden
-    ? `<p style="${pStyle}">${ADDRESS_ON_PAGE_LINE}</p>`
+    ? `<p data-fq="fq-p" style="${pStyle}">${ADDRESS_ON_PAGE_LINE}</p>`
     : ''
 
   const calendarBlock = who.kind === 'member' && (who.icsUrl || who.googleCalUrl) ? `
-    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">
+    <p data-fq="fq-muted" style="${EMAIL_LABEL}margin:24px 0 10px;">
       Add to your calendar
     </p>
     <p style="margin:0 0 8px;">
-      ${who.googleCalUrl ? `<a href="${who.googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
-      ${who.icsUrl ? `<a href="${who.icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+      ${who.googleCalUrl ? `<a href="${who.googleCalUrl}" data-fq="fq-soft" style="${EMAIL_CHIP}margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${who.icsUrl ? `<a href="${who.icsUrl}" data-fq="fq-soft" style="${EMAIL_CHIP}margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
   ` : ''
 
   const accountOffer = who.kind === 'guest' ? `
-    <hr style="${dividerStyle}">
-    <p style="${pStyle}">
+    <hr data-fq="fq-rule" style="${dividerStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
       <strong>Put this ticket in an account.</strong> Tap below and we will email you a sign in link
       at this address. Once you are in, this ticket is on your account with everything else you have
       said yes to.
     </p>
     <p style="margin:0 0 8px;">
-      <a href="${who.claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
+      ${emailButton(`Add this ticket to an account`, `${who.claimUrl}`)}
     </p>` : ''
 
   // THE SHELL'S FOOTER, not a second one in the body (ADR-1376). This line used to print inside
@@ -2712,18 +2753,12 @@ function ticketReceiptHtml(
       Questions about this ticket? Reply to this email.`
 
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      Your ticket
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">${intro}</p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:${palette.emailSubtle};">${hostLine}</span>` : ''}
-      <br><span style="color:${palette.emailSubtle};">${escapeHtml(ticketCountLine(qty, amountLabel, tierName))}</span>
-    </p>
+    ${emailKicker(`Your ticket`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">${intro}</p>
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }, { label: 'Host', html: hostLine ? hostLine.replace(/^Hosted by /, '') : '' }, { label: 'Tickets', html: escapeHtml(ticketCountLine(qty, amountLabel, tierName)) }])}
     ${addressLine}
-    <a href="${eventUrl}" style="${btnStyle}">View event &rarr;</a>
+    ${emailButton(`View event`, `${eventUrl}`)}
     ${calendarBlock}${accountOffer}
   `, { text: footer, unsubscribe: false })
 }
@@ -2787,13 +2822,11 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
   recipientName: string; authorName: string; dispatchTitle: string; excerpt: string; dispatchUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      New dispatch from ${escapeHtml(authorName)}
-    </p>
-    <h1 style="${h1Style}">${escapeHtml(dispatchTitle)}</h1>
-    <p style="${pStyle}">${escapeHtml(excerpt)}</p>
-    <a href="${dispatchUrl}" style="${btnStyle}">Read dispatch →</a>
-    <hr style="${dividerStyle}">
+    ${emailKicker(`New dispatch from ${escapeHtml(authorName)}`)}
+    <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(dispatchTitle)}</h1>
+    <p data-fq="fq-p" style="${pStyle}">${escapeHtml(excerpt)}</p>
+    ${emailButton(`Read dispatch`, `${dispatchUrl}`)}
+    <hr data-fq="fq-rule" style="${dividerStyle}">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       Hi ${escapeHtml(recipientName)}, this dispatch was posted to your community on Frequency.
       <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>

@@ -7,7 +7,7 @@ import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace-core'
 import { marketGroupForKind, type MarketItem } from '@/lib/commerce/types'
 import type { ProductRating } from '@/lib/commerce/reviews'
 import { FqItemGrid, type FqGridItem } from './item-grid'
-import { FqHiddenAreaNote, FqMarketAreas } from './areas'
+import { FqHiddenAreaNote } from './areas'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks, type FqMenuViewer } from '@/components/frequency/members/shell/nav'
 import { AREA_PREFIX } from '@/lib/marketplace/visibility'
@@ -66,7 +66,7 @@ function Intro({ body, ctaLabel, ctaHref }: { body: string | null; ctaLabel: str
 }
 
 /** The Marketplace hub's children less its four areas, which the area tabs above already draw (gated
- *  by area visibility, FqMarketAreas). */
+ *  by area visibility, FqMarketAreas, now pinned in each subtree's layout). */
 const AREA_HREFS: readonly string[] = Object.values(AREA_PREFIX)
 const marketplaceHubLinks = (v: FqMenuViewer) => hubLinks('/marketplace', v).filter((l) => !AREA_HREFS.includes(l.href))
 
@@ -123,14 +123,13 @@ export function FqClassifiedsBody({
           <span className="meta">{meta}</span>
         </div>
         {signedIn && (
-          <Link className="btn pa lg" href="/classifieds/new">
+          <Link className="btn pa sm" href="/classifieds/new">
             <FqIcon name="tip" />
             Post a listing
           </Link>
         )}
       </div>
       <Intro {...intro} />
-      <FqMarketAreas active="market" />
       <FqHiddenAreaNote area="market" />
 
       <nav className="chips fqm-chips lg" aria-label="Kind">
@@ -207,13 +206,32 @@ export function FqMarketBody({
       text: `${p.title} ${p.description ?? ''}`,
       cta: p.productKind === 'ticket' ? 'Get tickets' : p.productKind === 'service' || p.productKind === 'booking' ? 'Book' : 'View',
       tag: founding.get(p.id) ? 'Founding' : verified.get(p.id) ? 'Verified' : null,
+      category: p.category,
+      cents: p.priceCents,
+      at: p.createdAt ?? null,
     }
   }
+  // FEATURED: makers the community can trust at a glance (Founding, Verified, or rated 4.5+),
+  // up to four, shown first on the unfiltered landing only. They leave their group rail so no
+  // card appears twice.
+  const isFeatured = (p: MarketItem) => {
+    const r = ratings.get(p.id)
+    return !p.projected && (founding.get(p.id) || verified.get(p.id) || (r && r.count > 0 && r.average >= 4.5))
+  }
+  const featured = group ? [] : items.filter(isFeatured).slice(0, 4)
+  const featuredIds = new Set(featured.map((p) => p.id))
   const sections = group
     ? [{ items: items.filter((p) => groupOf(p) === group).map(toItem) }]
-    : (Object.keys(GROUP_LABEL) as Group[])
-        .map((g) => ({ title: GROUP_LABEL[g], seeAll: `/market?group=${g}`, items: items.filter((p) => groupOf(p) === g).map(toItem) }))
-        .filter((s) => s.items.length > 0)
+    : [
+        ...(featured.length > 0 ? [{ title: 'Featured makers', items: featured.map(toItem) }] : []),
+        ...(Object.keys(GROUP_LABEL) as Group[])
+          .map((g) => ({
+            title: GROUP_LABEL[g],
+            seeAll: `/market?group=${g}`,
+            items: items.filter((p) => groupOf(p) === g && !featuredIds.has(p.id)).map(toItem),
+          }))
+          .filter((s) => s.items.length > 0),
+      ]
   const empty = sections.every((s) => s.items.length === 0)
 
   return (
@@ -230,17 +248,16 @@ export function FqMarketBody({
         </div>
         {signedIn && (
           <div className="row wrap">
-            <Link className="btn pa lg" href="/market/sell">
+            <Link className="btn pa sm" href="/market/sell">
               <FqIcon name="plus" />
               List a product
             </Link>
-            <Link className="btn lg" href="/market/manage">
+            <Link className="btn sm" href="/market/manage">
               My storefront
             </Link>
           </div>
         )}
       </div>
-      <FqMarketAreas active="makers" />
       <FqHiddenAreaNote area="makers" />
 
       <nav className="chips fqm-chips" aria-label="Group">
@@ -267,6 +284,17 @@ export function FqMarketBody({
       ) : (
         <FqItemGrid sections={sections} placeholder="Search the Market" />
       )}
+
+      <div className="panel row wrap fqm-note">
+        <span className="t2 grow">
+          {signedIn
+            ? 'Make something, teach something, host something? Put it on the Market and the people near you will find it.'
+            : 'Sign in to sell on the Market and to message the people behind the listings.'}
+        </span>
+        <Link className="btn pa" href={signedIn ? '/market/sell' : '/sign-in?next=/market'}>
+          {signedIn ? 'List a product' : 'Sign in'}
+        </Link>
+      </div>
       <Suspense fallback={null}>
         <HubLinks title="Marketplace" links={marketplaceHubLinks} />
       </Suspense>

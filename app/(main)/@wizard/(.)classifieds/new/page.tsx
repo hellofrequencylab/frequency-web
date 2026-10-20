@@ -1,5 +1,5 @@
 import { WizardModal } from '@/components/studio/wizard-modal'
-import NewListingPage from '@/app/(main)/classifieds/new/page'
+import NewListingPage from '@/app/(main)/(marketplace)/classifieds/new/page'
 
 // /classifieds/new as a modal. See `(.)circles/new/page.tsx` for the mechanism (ADR-1017).
 

@@ -63,6 +63,9 @@ export interface MyFrequencyEntry {
   href: string
   /** Unread notices waiting inside this entity. 0 renders no badge. */
   notices: number
+  /** The entity's own picture (a Circle's image), drawn as its rail icon; null falls back to its
+   *  initial (LIVE-1013). */
+  image?: string | null
 }
 
 /** The resolved menu: the member's own things, grouped the way the rail draws them. */
@@ -84,7 +87,7 @@ function emptyFor(profileHref: string): MyFrequency {
 
 type NoticeRow = { reference_type: string | null; reference_id: string | null }
 type CircleRow = { circle_id: string }
-type CircleNameRow = { id: string; name: string | null; slug: string | null; space_id?: string | null }
+type CircleNameRow = { id: string; name: string | null; slug: string | null; space_id?: string | null; image_url?: string | null }
 
 /**
  * Unread notice counts for this member, keyed `${reference_type}:${reference_id}`.
@@ -127,7 +130,7 @@ async function myCircles(profileId: string): Promise<CircleNameRow[]> {
   if (error || !memberships?.length) return []
   const ids = (memberships as CircleRow[]).map((m) => m.circle_id).filter(Boolean)
   if (ids.length === 0) return []
-  const { data: circles } = await db.from('circles').select('id, name, slug, space_id').in('id', ids)
+  const { data: circles } = await db.from('circles').select('id, name, slug, space_id, image_url').in('id', ids)
   return (circles ?? []) as CircleNameRow[]
 }
 
@@ -180,6 +183,7 @@ export const getMyFrequency = cache(
           label: c.name ?? 'Circle',
           href: `/circles/${c.slug}`,
           notices: notices.get(`circle:${c.id}`) ?? 0,
+          image: c.image_url ?? null,
         }))
 
       // The parent row wears the TOTAL, so a FOLDED rail still says something wants you — and a

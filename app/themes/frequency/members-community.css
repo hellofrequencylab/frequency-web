@@ -52,4 +52,29 @@
 [data-design="frequency"] [data-kit="members"] .fq-nearby-legend{min-height:24px;margin-top:var(--fq-space-3);font:400 var(--fq-text-meta)/var(--fq-lh-meta) var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fq-nearby-legend :is(li,p){font:inherit;color:inherit}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fq-nearby-map-frame{height:240px}}
+/* 3. The Channels board (LIVE-1028, components/frequency/members/channels/channels-body.tsx): a forum's board list.
+   One row per Channel (art, name, what it is, the latest thread, who is tuned in), and a card for each Channel
+   being talked about this week. The row's name link stretches over the whole row; the tune-in control sits above it. */
+[data-design="frequency"] [data-kit="members"] .fqm-board{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-row{position:relative;display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:var(--fq-space-4);padding:var(--fq-space-4);border-radius:var(--fq-radius-l);background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow);transition:transform var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-row:hover{transform:translateY(-1px)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-art{width:56px;height:56px;border-radius:var(--fq-radius-m);object-fit:cover}
+[data-design="frequency"] [data-kit="members"] .fqm-board-ic{display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-ic svg{width:24px;height:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-board-main{display:flex;flex-direction:column;gap:var(--fq-space-1);min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-board-name{display:flex;align-items:center;gap:var(--fq-space-2);flex-wrap:wrap}
+[data-design="frequency"] [data-kit="members"] .fqm-board-name a{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-name a::after,[data-design="frequency"] [data-kit="members"] .fqm-hot .h3 a::after{content:"";position:absolute;inset:0;border-radius:inherit}
+[data-design="frequency"] [data-kit="members"] .fqm-board-desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .fqm-board-latest{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .fqm-board-latest-k{font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-latest-by{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-board-side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--fq-space-2);position:relative;z-index:1}
+[data-design="frequency"] [data-kit="members"] .fqm-board-stats{text-align:right}
+[data-design="frequency"] [data-kit="members"] .fqm-hot{position:relative;display:flex;flex-direction:column;gap:var(--fq-space-3);padding:var(--fq-space-5);border-radius:var(--fq-radius-l);background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow)}
+[data-design="frequency"] [data-kit="members"] .fqm-hot .h3 a{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-hot-quote{margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .fqm-hot-foot{margin-top:auto;justify-content:space-between;position:relative;z-index:1}
+[data-design="frequency"] [data-kit="members"] .fqm-start{align-items:center}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-board-row{grid-template-columns:48px minmax(0,1fr)}[data-design="frequency"] [data-kit="members"] .fqm-board-art{width:48px;height:48px}[data-design="frequency"] [data-kit="members"] .fqm-board-side{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:space-between}[data-design="frequency"] [data-kit="members"] .fqm-board-stats{text-align:left}}
 }

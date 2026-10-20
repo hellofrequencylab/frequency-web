@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1009",
+  "title": "Editor E0 task 12b, builder slice: a node page builder arranges a Space page by node id, and the edit panel follows the editor binding",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 6; §8 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19. components/entity-blocks/node-page-builder.tsx is the Space half of EntityPageBuilder on the node store: rows from node-row-ops, blocks from node-ops, selection by node id, content and style bags per node, the stored bench for the tray, new blocks from the picker with the per-type cap greyed out. It reuses the legacy builder's pills, tray, menus and layout picker, now exported from profile-page-builder.tsx with an optional type/typeOf for labels when the key is a node id. block-edit-panel reads useEditorBinding. Dormant: nothing mounts the node builder. Honest gaps: starter layouts, the member list and the Spotlight stay on the legacy builder; SpacePageBuilder choosing the node builder, and the owner preview choosing the node grid, are the next slice.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const rd=f=>fs.readFileSync(f,'utf8');const s=rd('components/entity-blocks/node-page-builder.tsx');const bad=[];if(!s.includes('useNodeLayout'))bad.push('does not read the node store');for(const f of ['addNodeRow','placeNode','benchNode','setNodeContent'])if(!s.includes(f))bad.push('does not use '+f);if(/Record<string, (HTMLDivElement|BlockNode)/.test(s))bad.push('a Record keyed by node id');if(!rd('components/entity-blocks/block-edit-panel.tsx').includes('useEditorBinding'))bad.push('edit panel bypasses the binding');if(bad.length){console.error('LIVE-1009: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the node builder stops reading the node store or row/block node ops, keys a Record by node id, or the edit panel bypasses the binding. Behavior is node-page-builder.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

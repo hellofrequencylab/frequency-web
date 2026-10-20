@@ -43,7 +43,15 @@ import {
 } from './node-tree'
 import { entityBlockById, blockSupportsKind, type EntityKind } from './registry'
 import { sanitizeBlockContent, sanitizeBlockStyle, type BlockStyle, type MarginStep } from './block-content'
-import { maxColumnsForKind, normalizeRowMargin, normalizeRowTitle, type RowColumns, type RowRatio } from './layout'
+import {
+  maxColumnsForKind,
+  normalizeRowMargin,
+  normalizeRowTitle,
+  resolveRows,
+  type EntityLayout,
+  type RowColumns,
+  type RowRatio,
+} from './layout'
 import { entityBlockLimit, typeLimiter } from './block-limits'
 
 /** One row of a node document. `NodeLayout['rows'][number]`, named so the ops below read plainly. */
@@ -445,4 +453,22 @@ export function resolveNodeRows(layout: NodeLayout | null, kind: EntityKind): Re
     )
     return { ...row, cells }
   })
+}
+
+/**
+ * The node rows a surface renders from a PARSED entity layout, whatever shape it was stored in (E0 task 12,
+ * the read renderers). A `rows` document is read as nodes (`layout.nodes`, which `parseEntityLayout`
+ * attaches, or a fresh upgrade when the caller built the layout in code). The two pre-`rows` shapes keep
+ * the legacy resolver's GEOMETRY, because that is what they mean: a template's slot grid
+ * (`templateToRows`) and, for no usable layout at all, the kind's starter. Those rows are then upgraded,
+ * so each placement becomes a node holding the bag the sibling maps keep for its type, and the renderer
+ * sees one shape. Two placements of one type hold two bags; the first claims the sibling bag and the
+ * second starts empty, exactly as `upgradeLayout` partitions a stored document.
+ */
+export function resolveNodeRowsFor(layout: EntityLayout | null, kind: EntityKind): ResolvedNodeRow[] {
+  if (layout?.rows?.length) return resolveNodeRows(layout.nodes ?? upgradeLayout(layout), kind)
+  const legacy: Record<string, unknown> = { rows: resolveRows(layout, kind) }
+  if (layout?.content) legacy.content = layout.content
+  if (layout?.style) legacy.style = layout.style
+  return resolveNodeRows(upgradeLayout(legacy), kind)
 }

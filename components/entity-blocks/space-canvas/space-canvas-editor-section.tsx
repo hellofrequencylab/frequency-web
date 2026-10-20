@@ -3,6 +3,8 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
 import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
+import { ownerNodeLayout } from '@/lib/entity-blocks/node-seed'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { SpaceCanvasEditorMount } from './space-canvas-editor-mount'
 
 // THE SERVER SECTION that gates + seeds the on-canvas WYSIWYG Space editor. Mirrors OwnerSpaceLayoutPreview's
@@ -41,6 +43,8 @@ export async function SpaceCanvasEditorSection({ slug, focusBlockId }: {
   const saved = parseEntityLayout(rawLayout)
 
   const rows = resolveRows(saved, 'space')
+  // render_path_space_profile (E0 task 12b): the editor runs on the node store and saves the node document.
+  const nodePath = await renderPathEnabled('space_profile')
 
   // PUBLISH FROM HERE (LIVE-842). This editor autosaves to the draft node, so without the publish bar an
   // owner could set a photo here and never see it on the page or the website. Same gate as
@@ -64,6 +68,7 @@ export async function SpaceCanvasEditorSection({ slug, focusBlockId }: {
       hidden={saved?.hidden ?? []}
       content={saved?.content ?? {}}
       style={saved?.style ?? {}}
+      nodeLayout={nodePath ? ownerNodeLayout(saved) : undefined}
     />
   )
 }

@@ -19,7 +19,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { nextSpotlightPreferences } from '@/lib/spaces/spotlight'
+import { legacySpotlightWriteError, nextSpotlightPreferences } from '@/lib/spaces/spotlight'
+import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { siteSubdomainHost } from '@/lib/sites/host'
@@ -29,7 +31,7 @@ import { briefError, log } from '@/lib/log'
 import type { Space } from '@/lib/spaces/types'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 
-type SpotlightChange = { published?: boolean; layout?: unknown }
+type SpotlightChange = { published?: boolean; layout?: unknown; native?: boolean }
 
 /** The Space, when the caller may manage it. */
 async function managedSpace(slug: string): Promise<{ space: Space } | { error: string }> {
@@ -53,7 +55,7 @@ async function attachHost(host: string, slug: string): Promise<boolean> {
   }
 }
 
-async function writeSpotlight(slug: string, change: SpotlightChange): Promise<{ error?: string }> {
+async function writeSpotlight(slug: string, requested: SpotlightChange): Promise<{ error?: string }> {
   const managed = await managedSpace(slug)
   if ('error' in managed) return managed
   const { space } = managed
@@ -62,6 +64,15 @@ async function writeSpotlight(slug: string, change: SpotlightChange): Promise<{ 
     space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
       ? (space.preferences as Record<string, unknown>)
       : {}
+  // THE SPOTLIGHT'S BRANCH POINT OF render_path_spotlight (ADR-1853). Switched on, a NATIVE node document is
+  // stored as nodes; everything else keeps the legacy-write refusal, so a stale type-keyed save can never
+  // overwrite stored nodes. Switched off, or on any read error, nothing changes.
+  const native = requested.layout !== undefined && hasNativeNodeStorage(requested.layout) && (await renderPathEnabled('spotlight'))
+  if (requested.layout !== undefined && !native) {
+    const refused = legacySpotlightWriteError(requested.layout, space.preferences)
+    if (refused) return { error: refused }
+  }
+  const change: SpotlightChange = { ...requested, native }
   const preferences = nextSpotlightPreferences(current, change)
 
   // Untyped scoped update of the preferences jsonb (ADR-246: the column is not in the generated types).

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSendGate } from '@/lib/comms/send-gate'
-import { enqueueEmail, emailShell, listUnsubscribeHeaders, sendGuestRsvpConfirmationEmail } from '@/lib/email'
+import { enqueueEmail, emailShell, EMAIL_H1, listUnsubscribeHeaders, sendGuestRsvpConfirmationEmail } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { sendPushToProfile } from '@/lib/push'
@@ -280,7 +280,7 @@ export function promotedSeatHtml(p: PromotedSeatEmailParts): string {
   const host = hostLine(p.hostName, p.circleName)
   return emailShell(`
   <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:0 0 8px;">You're in</p>
-  <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;">${escapeHtml(p.eventTitle)}</h1>
+  <h1 data-fq="fq-h1" style="${EMAIL_H1}">${escapeHtml(p.eventTitle)}</h1>
   <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(PROMOTED_SEAT_LINE)} You were on the waitlist for this one and a seat just freed up, so it is yours. We'll send a reminder as it gets close.</p>
   <p style="font-size:15px;line-height:1.6;margin:0 0 4px;"><strong>When:</strong> ${escapeHtml(p.whenAbsolute)}</p>
   ${p.location ? `<p style="font-size:15px;line-height:1.6;margin:0 0 4px;"><strong>Where:</strong> ${escapeHtml(p.location)}</p>` : ''}

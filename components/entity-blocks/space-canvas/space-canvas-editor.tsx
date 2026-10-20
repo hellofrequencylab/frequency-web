@@ -1,24 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
-import { entityBlockById, profilePaletteForKind } from '@/lib/entity-blocks/registry'
+import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { blockEditsAllFieldsInRail, fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
-import {
-  addRow,
-  removeRow,
-  moveRow,
-  setRowSplit,
-  setRowTitle,
-  setRowHeaderOn,
-  placeBlock,
-  removeBlock,
-  nudgeBox,
-  placedIds,
-  type BuilderLayout,
-  type RowSplit,
-} from '@/lib/entity-blocks/rows-ops'
-import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
+import type { RowSplit } from '@/lib/entity-blocks/rows-ops'
+import { useLegacyCanvasModel, useNodeCanvasModel, type CanvasModel } from './canvas-model'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 import { Input } from '@/components/ui/field'
@@ -64,22 +51,35 @@ function columnsClass(columns: number, ratio: string | undefined): string {
   return ''
 }
 
-export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
+/** The canvas editor on the live type-keyed store (the default). */
+export function SpaceCanvasEditor(props: { loomScope?: string; focusBlockId?: string }) {
+  const model = useLegacyCanvasModel()
+  return <SpaceCanvasEditorView model={model} {...props} />
+}
+
+/** The canvas editor on the node store (E0 task 12b): the same view, blocks keyed by node id. */
+export function NodeSpaceCanvasEditor(props: { loomScope?: string; focusBlockId?: string }) {
+  const model = useNodeCanvasModel()
+  return <SpaceCanvasEditorView model={model} {...props} />
+}
+
+function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
+  model: CanvasModel | null
   /** The Loom library every image field / photo slot on this canvas opens into (the Space slug). */
   loomScope?: string
   /** A block to open selected and scroll to (the Pages list's Contact row opens the Contact form). */
   focusBlockId?: string
 }) {
-  const store = useProfileLayout()
-  const [selectedId, setSelectedId] = useState<string | null>(focusBlockId ?? null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addingAt, setAddingAt] = useState<{ rowId: string; col: number } | null>(null)
 
   // Vertical rail alignment (railOffset): when a block is selected (usually by clicking it on the canvas),
   // the LEFT section list translates so the selected tile sits on the SAME horizontal line as the block on
   // the canvas. Measured from layout coordinates (offsetTop / getBoundingClientRect against the shared grid),
   // so it is stable across page scroll; recomputed on selection change, on a tile expanding, and on resize.
-  const tileRefs = useRef<Record<string, HTMLLIElement | null>>({})
-  const blockRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  // Maps, not Records: a block key can be a node id, and an object write keyed by it is a CodeQL sink.
+  const tileRefs = useRef(new Map<string, HTMLLIElement | null>())
+  const blockRefs = useRef(new Map<string, HTMLDivElement | null>())
   const gridRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLOListElement | null>(null)
   const [railOffset, setRailOffset] = useState(0)
@@ -93,29 +93,36 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
     setSelectedId(id)
     setAlignTick((t) => t + 1)
   }, [])
-  // Opened for one block (the Pages list's Contact row): bring its tile into view once it has mounted.
+  // Opened for one block TYPE (the Pages list's Contact row): once the store has seeded, select the first
+  // block of that type (its key is its type on the live store, its node id on the node store) and bring its
+  // tile into view after it mounts.
+  const seeded = !!model?.seeded
+  const focusKey =
+    seeded && focusBlockId
+      ? (model!.rows.flatMap((r) => r.cells.flat()).find((b) => b.type === focusBlockId)?.key ?? null)
+      : null
+  const focused = useRef<string | null>(null)
   useEffect(() => {
-    if (!focusBlockId) return
-    tileRefs.current[focusBlockId]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }, [focusBlockId])
+    if (!focusKey || focused.current === focusKey) return
+    focused.current = focusKey
+    setSelectedId(focusKey)
+    setAlignTick((t) => t + 1)
+  }, [focusKey])
+  useEffect(() => {
+    if (!selectedId || selectedId !== focused.current) return
+    tileRefs.current.get(selectedId)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [selectedId])
   const toggleTile = useCallback((id: string) => {
     setSelectedId((cur) => (cur === id ? null : id))
     setAlignTick((t) => t + 1)
   }, [])
 
-  // The blocks not yet on the page: the curated space palette minus what is already placed.
-  const placed = useMemo(() => placedIds(store?.rows ?? []), [store?.rows])
-  const addable = useMemo(
-    () => profilePaletteForKind('space').filter((b) => !placed.has(b.id)),
-    [placed],
-  )
-
   useLayoutEffect(() => {
     const grid = gridRef.current
     const list = listRef.current
     const align = () => {
-      const tile = selectedId ? tileRefs.current[selectedId] : null
-      const block = selectedId ? blockRefs.current[selectedId] : null
+      const tile = selectedId ? tileRefs.current.get(selectedId) : null
+      const block = selectedId ? blockRefs.current.get(selectedId) : null
       if (!selectedId || !grid || !list || !tile || !block) {
         setRailOffset(0)
         return
@@ -141,9 +148,9 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
       ro.disconnect()
       window.removeEventListener('resize', align)
     }
-  }, [selectedId, alignTick, store?.rows, store?.content])
+  }, [selectedId, alignTick, model?.rows])
 
-  if (!store || !store.seeded) {
+  if (!model || !model.seeded) {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-card border border-border">
         <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
@@ -151,48 +158,16 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
     )
   }
 
-  const layout: BuilderLayout = { rows: store.rows, hidden: store.hidden, content: store.content, style: store.style }
-  const mutate = (next: BuilderLayout) => store.apply(next)
-
-  // Merge one content field against the freshest store bag (sparse: an empty value clears the key). It goes
-  // through patchContent, not applyContent: rebuilding the whole bag from the render-time `store.content`
-  // snapshot loses any field written earlier in the same tick, which is how the photo popup's `alt` write
-  // used to erase the photo the operator had just chosen (see live-profile-grid).
-  const setField = (blockId: string, key: string, value: unknown) => {
-    store.patchContent(blockId, { [key]: value })
-  }
-
-  // ── Section (row) ops ──
-  const onAddSection = () => {
-    const withRow = addRow(layout)
-    mutate(withRow)
-  }
-  const onRemoveSection = (rowId: string) => {
-    mutate(removeRow(layout, rowId))
-  }
-  const onMoveSection = (from: number, to: number) => {
-    if (to < 0 || to >= layout.rows.length) return
-    mutate(moveRow(layout, from, to))
-  }
-  const onSplit = (rowId: string, split: RowSplit) => mutate(setRowSplit(layout, rowId, split))
-  // The section title is WYSIWYG: setting a non-blank title also turns its live header on, so the canvas and
-  // the published page show the same heading; clearing it drops both (setRowTitle + setRowHeaderOn semantics).
-  const onSectionTitle = (rowId: string, value: string) => {
-    const withTitle = setRowTitle(layout, rowId, value)
-    mutate(setRowHeaderOn(withTitle, rowId, value.trim().length > 0))
-  }
-
   // ── Block ops ──
-  const onPlace = (blockId: string, rowId: string, col: number) => {
-    mutate(placeBlock(layout, blockId, rowId, col))
-    setSelectedId(blockId)
+  const onPlace = (type: string, rowId: string, col: number) => {
+    const key = model.place(type, rowId, col)
+    if (key) setSelectedId(key)
     setAddingAt(null)
   }
-  const onRemoveBlock = (blockId: string) => {
-    mutate(removeBlock(layout, blockId))
-    if (selectedId === blockId) setSelectedId(null)
+  const onRemoveBlock = (key: string) => {
+    model.remove(key)
+    if (selectedId === key) setSelectedId(null)
   }
-  const onNudge = (blockId: string, delta: -1 | 1) => mutate(nudgeBox(layout, blockId, delta))
 
   const activeSplit = (columns: number, ratio: string | undefined): RowSplit =>
     columns === 1 ? 'full' : ratio === 'lead' ? 'lead' : ratio === 'trail' ? 'sidebar' : 'even'
@@ -204,7 +179,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
         <div className="flex items-center justify-between">
           <h3 className="text-body-sm font-bold text-text">Sections</h3>
           <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
-            {store.saving ? (
+            {model.saving ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
               </>
@@ -214,7 +189,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
           </span>
         </div>
 
-        {store.rows.length === 0 ? (
+        {model.rows.length === 0 ? (
           <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-muted">
             This page has no sections yet. Add one below.
           </p>
@@ -224,19 +199,19 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
             className="relative space-y-2 transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
             style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
           >
-            {store.rows.map((row, ri) => (
+            {model.rows.map((row, ri) => (
               <li key={row.id} className="rounded-card border border-border bg-surface">
                 {/* Section header: reorder, layout picker, remove. */}
                 <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
                   <span className={capsLabel('min-w-0 flex-1 truncate text-2xs font-semibold text-muted')}>
                     Section {ri + 1}
                   </span>
-                  <SplitPicker active={activeSplit(row.columns, row.ratio)} onChoose={(s) => onSplit(row.id, s)} />
+                  <SplitPicker active={activeSplit(row.columns, row.ratio)} onChoose={(sp) => model.split(row.id, sp)} />
                   <button
                     type="button"
                     aria-label={`Move section ${ri + 1} up`}
                     disabled={ri === 0}
-                    onClick={() => onMoveSection(ri, ri - 1)}
+                    onClick={() => model.moveSection(ri, ri - 1)}
                     className="shrink-0 rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
                   >
                     <ChevronUp className="h-3.5 w-3.5" aria-hidden />
@@ -244,8 +219,8 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                   <button
                     type="button"
                     aria-label={`Move section ${ri + 1} down`}
-                    disabled={ri === store.rows.length - 1}
-                    onClick={() => onMoveSection(ri, ri + 1)}
+                    disabled={ri === model.rows.length - 1}
+                    onClick={() => model.moveSection(ri, ri + 1)}
                     className="shrink-0 rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
                   >
                     <ChevronDown className="h-3.5 w-3.5" aria-hidden />
@@ -253,7 +228,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                   <button
                     type="button"
                     aria-label={`Remove section ${ri + 1}`}
-                    onClick={() => onRemoveSection(row.id)}
+                    onClick={() => model.removeSection(row.id)}
                     className="shrink-0 rounded p-0.5 text-subtle hover:bg-danger-bg hover:text-danger"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -268,7 +243,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                     value={row.title ?? ''}
                     placeholder="Section title (optional)"
                     aria-label={`Title for section ${ri + 1}`}
-                    onChange={(e) => onSectionTitle(row.id, e.target.value)}
+                    onChange={(e) => model.sectionTitle(row.id, e.target.value)}
                     className="w-full rounded-md border border-transparent px-1 py-0.5 text-meta font-semibold text-text placeholder:font-normal hover:border-border focus:border-border-strong"
                   />
                 </div>
@@ -277,28 +252,28 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                 <div className={`grid gap-1.5 p-2 ${row.columns > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   {row.cells.map((stack, col) => (
                     <div key={`${row.id}-${col}`} className="space-y-1.5">
-                      {stack.map((id, si) => (
+                      {stack.map((block, si) => (
                         <BlockTile
-                          key={id}
-                          id={id}
-                          active={id === selectedId}
+                          key={block.key}
+                          id={block.type}
+                          active={block.key === selectedId}
                           canUp={si > 0}
                           canDown={si < stack.length - 1}
                           tileRef={(el) => {
-                            tileRefs.current[id] = el
+                            tileRefs.current.set(block.key, el)
                           }}
                           loomScope={loomScope}
-                          content={store.content[id] ?? {}}
-                          onSelect={() => toggleTile(id)}
-                          onUp={() => onNudge(id, -1)}
-                          onDown={() => onNudge(id, 1)}
-                          onField={(k, v) => setField(id, k, v)}
-                          onRemove={() => onRemoveBlock(id)}
+                          content={block.content}
+                          onSelect={() => toggleTile(block.key)}
+                          onUp={() => model.nudge(block.key, -1)}
+                          onDown={() => model.nudge(block.key, 1)}
+                          onField={(k, v) => model.setField(block.key, k, v)}
+                          onRemove={() => onRemoveBlock(block.key)}
                         />
                       ))}
                       {addingAt && addingAt.rowId === row.id && addingAt.col === col ? (
                         <AddBlockPalette
-                          addable={addable}
+                          addable={model.addable}
                           onPick={(bid) => onPlace(bid, row.id, col)}
                           onClose={() => setAddingAt(null)}
                         />
@@ -321,7 +296,7 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
 
         <button
           type="button"
-          onClick={onAddSection}
+          onClick={() => model.addSection()}
           className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add section
@@ -330,11 +305,11 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
 
       {/* RIGHT — the live, clickable space canvas. */}
       <div className="min-w-0 overflow-x-auto rounded-card border border-border bg-surface p-4 sm:p-6" aria-label="Page canvas">
-        {store.rows.length === 0 ? (
+        {model.rows.length === 0 ? (
           <p className="py-10 text-center text-body-sm text-subtle">Add a section to start building your page.</p>
         ) : (
           <div className="space-y-8">
-            {store.rows.map((row) => (
+            {model.rows.map((row) => (
               <section key={row.id} className="space-y-4">
                 {row.title && (
                   <h2 className="font-display text-lead font-bold uppercase tracking-tight text-text sm:text-page-title">
@@ -344,23 +319,24 @@ export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
                 <div className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
                   {row.cells.map((stack, col) => (
                     <div key={`${row.id}-${col}`} className="space-y-6">
-                      {stack.map((id) => (
+                      {stack.map((block) => (
                         <div
-                          key={id}
+                          key={block.key}
                           ref={(el) => {
-                            blockRefs.current[id] = el
+                            blockRefs.current.set(block.key, el)
                           }}
                           role="group"
-                          onMouseDown={() => selectBlock(id)}
+                          onMouseDown={() => selectBlock(block.key)}
                           className={`rounded-control p-2 transition-colors ${
-                            id === selectedId ? 'bg-primary-bg/30' : 'hover:bg-surface-elevated/40'
+                            block.key === selectedId ? 'bg-primary-bg/30' : 'hover:bg-surface-elevated/40'
                           }`}
                         >
                           <SpaceCanvasBlock
-                            id={id}
-                            props={store.content[id] ?? {}}
+                            id={block.type}
+                            nid={block.nid}
+                            props={block.content}
                             loomScope={loomScope}
-                            onField={(k, v) => setField(id, k, v)}
+                            onField={(k, v) => model.setField(block.key, k, v)}
                           />
                         </div>
                       ))}

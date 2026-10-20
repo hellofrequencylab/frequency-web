@@ -51,6 +51,7 @@ import {
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
 import type { BlockStyle, MarginStep } from '@/lib/entity-blocks/block-content'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { MarginControl } from './controls/field-controls'
 import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
 import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
@@ -82,7 +83,7 @@ import { capsLabel } from '@/components/ui/caps-label'
 // store. Space blocks locked behind a function the space lacks are held out of the picker + bench
 // (lockedIds). Semantic DAWN tokens, no hex, voice canon (no em dashes).
 
-const label = (id: string): string => entityBlockById(id)?.label ?? id
+export const label = (id: string): string => entityBlockById(id)?.label ?? id
 
 type Grab = { kind: 'row'; id: string } | { kind: 'block'; id: string } | null
 
@@ -100,6 +101,9 @@ export interface BuilderRailData {
   content?: Record<string, Record<string, unknown>>
   style?: Record<string, BlockStyle>
   customized: boolean
+  /** The stored document as nodes, present only while render_path_space_profile is on; the Space rail then
+   *  mounts the node page builder (SpacePageBuilderSwitch) instead of this one. */
+  nodeLayout?: NodeLayout
   lockedIds?: string[]
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Absent on the member builder (no function-backed blocks). */
@@ -1111,6 +1115,7 @@ export function SpacePageBuilder({
           customized: d.customized,
           lockedIds: d.lockedIds,
           pickerData: d.pickerData,
+          nodeLayout: d.nodeLayout,
         }
       : null
   }, [slug])
@@ -1139,15 +1144,16 @@ const SPACE_BLOCK_ADMIN_PATH: Record<string, string> = {
   booking: 'settings/offerings#availability',
   team: 'settings/members',
 }
-function spaceBlockAdminHref(slug: string, blockId: string): string | null {
+export function spaceBlockAdminHref(slug: string, blockId: string): string | null {
   const path = SPACE_BLOCK_ADMIN_PATH[blockId]
   if (path) return `/spaces/${slug}/${path}`
   return entityBlockById(blockId)?.category === 'data' ? `/spaces/${slug}/manage` : null
 }
 
 // ── The per-block control cluster ──
-function BlockPill({
+export function BlockPill({
   id,
+  type,
   hidden,
   grabbed,
   menuOpen,
@@ -1173,6 +1179,8 @@ function BlockPill({
   onConfirmDelete,
 }: {
   id: string
+  /** The registry block type, when `id` is a node id (the node builder); the label reads it. */
+  type?: string
   hidden: boolean
   grabbed: boolean
   menuOpen: boolean
@@ -1214,7 +1222,7 @@ function BlockPill({
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onKeyDown={onHandleKey}
-        aria-label={`Reorder ${label(id)}. Press Enter to grab, then use the arrow keys.`}
+        aria-label={`Reorder ${label(type ?? id)}. Press Enter to grab, then use the arrow keys.`}
         aria-pressed={grabbed}
         className="shrink-0 cursor-grab rounded p-0.5 text-subtle hover:text-text"
       >
@@ -1224,16 +1232,16 @@ function BlockPill({
       <button
         type="button"
         onClick={onEdit}
-        aria-label={`Edit ${label(id)}`}
+        aria-label={`Edit ${label(type ?? id)}`}
         aria-expanded={editing}
         className="min-w-0 flex-1 truncate text-left text-meta font-semibold text-text transition-colors hover:text-primary-strong"
       >
-        {label(id)}
+        {label(type ?? id)}
         {hidden && <span className="ml-1 text-2xs font-normal text-muted">(hidden)</span>}
       </button>
       <button
         type="button"
-        aria-label={`Move ${label(id)} up`}
+        aria-label={`Move ${label(type ?? id)} up`}
         disabled={!canUp}
         onClick={onUp}
         className="shrink-0 rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
@@ -1242,7 +1250,7 @@ function BlockPill({
       </button>
       <button
         type="button"
-        aria-label={`Move ${label(id)} down`}
+        aria-label={`Move ${label(type ?? id)} down`}
         disabled={!canDown}
         onClick={onDown}
         className="shrink-0 rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
@@ -1252,7 +1260,7 @@ function BlockPill({
       <div className="relative shrink-0">
         <button
           type="button"
-          aria-label={`${label(id)} menu`}
+          aria-label={`${label(type ?? id)} menu`}
           aria-expanded={menuOpen}
           onClick={onToggleMenu}
           className="rounded p-0.5 text-subtle hover:text-text"
@@ -1263,7 +1271,7 @@ function BlockPill({
           <Menu>
             {confirmDelete ? (
               <div className="px-2.5 py-2">
-                <p className="mb-1.5 text-meta text-text">Remove {label(id)} for good?</p>
+                <p className="mb-1.5 text-meta text-text">Remove {label(type ?? id)} for good?</p>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={onConfirmDelete} className="rounded-md bg-danger px-2 py-1 text-2xs font-semibold text-on-danger">
                     Remove
@@ -1311,8 +1319,9 @@ function BlockPill({
 }
 
 // ── The Blocks tray (the derived "not shown" set) ──
-function BlocksTray({
+export function BlocksTray({
   bench,
+  typeOf,
   emptySlots,
   openMenu,
   onToggleMenu,
@@ -1321,6 +1330,8 @@ function BlocksTray({
   onPlace,
 }: {
   bench: string[]
+  /** Maps a bench key to its block type when the keys are node ids. Identity when omitted. */
+  typeOf?: (key: string) => string
   emptySlots: { rowId: string; ri: number; ci: number }[]
   openMenu: string | null
   onToggleMenu: (id: string) => void
@@ -1357,15 +1368,15 @@ function BlocksTray({
                       draggable
                       onDragStart={() => onDragStart(id)}
                       onDragEnd={onDragEnd}
-                      aria-label={`Drag ${label(id)} onto an empty slot`}
+                      aria-label={`Drag ${label(typeOf ? typeOf(id) : id)} onto an empty slot`}
                       className="cursor-grab text-subtle hover:text-text"
                     >
                       <GripVertical className="h-3.5 w-3.5" aria-hidden />
                     </button>
-                    <span className="text-2xs font-semibold text-text">{label(id)}</span>
+                    <span className="text-2xs font-semibold text-text">{label(typeOf ? typeOf(id) : id)}</span>
                     <button
                       type="button"
-                      aria-label={`Place ${label(id)}`}
+                      aria-label={`Place ${label(typeOf ? typeOf(id) : id)}`}
                       aria-expanded={openMenu === `bench:${id}`}
                       onClick={() => onToggleMenu(id)}
                       className="text-subtle hover:text-text"
@@ -1398,14 +1409,14 @@ function BlocksTray({
 }
 
 // ── Small primitives ──
-function Menu({ children }: { children: React.ReactNode }) {
+export function Menu({ children }: { children: React.ReactNode }) {
   return (
     <div className="absolute right-0 z-20 mt-1 min-w-44 rounded-card border border-border bg-surface p-1 lift-3">
       {children}
     </div>
   )
 }
-function MenuItem({ children, onClick, danger = false }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
+export function MenuItem({ children, onClick, danger = false }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
   return (
     <button
       type="button"
@@ -1423,7 +1434,7 @@ function MenuItem({ children, onClick, danger = false }: { children: React.React
 type RowLayoutChoice = 'full' | 'even' | 'lead'
 /** The three row layouts, each with a tiny visual diagram: Full (one column), 50 / 50 (two even), and
  *  Main / Side (a wide lead column + a rail). Full always returns a split row to a single column. */
-function RowLayoutPicker({
+export function RowLayoutPicker({
   index,
   columns,
   ratio,

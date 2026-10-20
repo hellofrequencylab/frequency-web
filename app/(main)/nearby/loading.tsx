@@ -1,11 +1,10 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { SectionHeader } from '@/components/ui/section-header'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
-// Route-level loading UI for the /nearby Community dashboard (PAGE-FRAMEWORK
-// §5). Mirrors the StreamTemplate header + the highlight hero, the at-a-glance
-// line, and the two-column body (broadcasts left, happenings rail right), so the
-// dashboard paints its real shape immediately while the aggregates stream (no
-// layout shift).
+// Route-level loading UI for /nearby (PAGE-FRAMEWORK §5). Mirrors the page under the map: the
+// Dispatch ticker strip, the four stat tiles, the events + circles row, and the Dispatch stream, so
+// the dashboard paints its real shape immediately while the aggregates stream (no layout shift).
 function DispatchCardSkeleton() {
   return (
     <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-4 lift-1">
@@ -20,48 +19,36 @@ function DispatchCardSkeleton() {
 }
 
 export default function NearbyLoading() {
+  // Under Frequency the wait wears the kit skeleton every other index uses (LIVE-1032).
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Around You" shape="items" />
   return (
-    <div>
-      {/* Header band (PageHeading: title + description + rule) */}
-      <div className="mb-4 space-y-2 sm:mb-5">
+    <div className="space-y-8">
+      <div className="space-y-2">
         <Skeleton className="h-7 w-40" />
         <Skeleton className="h-4 w-full max-w-2xl" />
       </div>
-      <div className="mb-5 border-b border-border sm:mb-6" />
 
-      {/* Highlight hero */}
-      <div className="mb-6 flex items-center gap-4 rounded-card border border-border bg-surface p-5">
-        <Skeleton className="h-11 w-11 shrink-0 rounded-2xl" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-4 w-full max-w-md" />
-        </div>
+      <Skeleton className="h-12 w-full rounded-card" />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[4.5rem] w-full rounded-card" />
+        ))}
       </div>
 
-      {/* At-a-glance line */}
-      <Skeleton className="mb-6 h-4 w-full max-w-lg" />
-
-      {/* Two-column body */}
-      <div className="flex flex-col items-start gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          <SectionHeader title="Latest Dispatches" />
-          <div className="grid grid-cols-1 gap-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <DispatchCardSkeleton key={i} />
-            ))}
-          </div>
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[4.75rem] w-full rounded-card" />
+          ))}
         </div>
+        <Skeleton className="h-64 w-full rounded-card" />
+      </div>
 
-        <div className="w-full shrink-0 space-y-4 lg:w-72">
-          <div className="grid grid-cols-2 gap-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-2xl" />
-            ))}
-          </div>
-          <Skeleton className="h-48 w-full rounded-2xl" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
-        </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <DispatchCardSkeleton key={i} />
+        ))}
       </div>
     </div>
   )

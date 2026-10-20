@@ -63,6 +63,8 @@ coordinates and a 200 m radius through the proximity check the capture path alre
 - RPC `loyalty_record_visit(space, profile, day, zaps)`: stamps, mints a reward when the card is
   full, returns the card state. SECURITY DEFINER, service role only, advisory lock per card.
 - `zap_config` gains `space_checkin` (25, daily cap 75). Hunt completion pays `hunt_complete`.
+- `meet_codes` (a member's 60-second code) and `meet_taps` (one row per pair per week); RPC `meet_tap`.
+  `zap_config` `meetup_tap` (15, daily cap 45), paid to both members.
 
 ## 5. Phases (one PR, one row, one migration each)
 

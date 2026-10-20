@@ -6,12 +6,23 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { FOOTER_COLUMNS, FOOTER_LEGAL, ROUTES, SIDE_CTA } from '@/lib/frequency/site-nav'
+import { JsonLd } from '@/components/json-ld'
+import { siteNavigationSchema } from '@/lib/jsonld'
+import { CONTACT_EMAIL } from '@/lib/site'
 
 const WORDMARK = '/brand/frequency/frequency-wordmark.png'
+
+// The index is also written as SiteNavigationElement JSON-LD (siteNavigationSchema), from the SAME columns the
+// footer draws, so the structured data cannot name a link the page does not show (LIVE-1030).
+const INDEX = [
+  ...FOOTER_COLUMNS.map((c) => ({ title: c.heading, links: c.links.filter((l) => l.href).map((l) => ({ label: l.label, href: l.href! })) })),
+  { title: 'Legal', links: FOOTER_LEGAL.map((l) => ({ label: l.label, href: l.href! })) },
+]
 
 export function SiteFooter() {
   return (
     <footer className="ft2">
+      <JsonLd data={siteNavigationSchema(INDEX)} />
       <div className="wrap">
         <div className="ft2-top">
           <div className="ft2-brand">
@@ -55,6 +66,7 @@ export function SiteFooter() {
                 {l.label}
               </Link>
             ))}
+            <a href={`mailto:${CONTACT_EMAIL}`}>Contact</a>
           </span>
           <span className="ft2-sign">
             <span className="fq-logo-icon fq-iridescent ft2-roundel" aria-hidden="true" />

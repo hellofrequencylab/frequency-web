@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading UI for the Channels index (PAGE-FRAMEWORK §5). See the note in
 // app/(main)/circles/loading.tsx: the retired `px-4 py-8 max-w-2xl mx-auto` shell double-padded
@@ -24,6 +26,9 @@ function ChannelCardSkeleton() {
 }
 
 export default function ChannelsLoading() {
+  // Under Frequency the page opens on the plain kit head (LIVE-1012), so the wait does too. The DAWN
+  // photo-band block below painted a tall grey slab where Frequency has no header image.
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Channels" shape="items" />
   return (
     <div>
       <Skeleton className="min-h-[15rem] w-full rounded-3xl sm:min-h-[24rem]" />

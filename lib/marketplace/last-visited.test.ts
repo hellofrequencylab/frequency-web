@@ -79,9 +79,9 @@ describe('every surface has something that writes the cookie', () => {
   // Classifieds, Housing and Market stamp it from a subtree layout: every path under them is a
   // commerce path. Events does NOT, and that asymmetry is deliberate (see the page's comment).
   const LAYOUTS: [CommerceSurface, string][] = [
-    ['classifieds', 'app/(main)/classifieds/layout.tsx'],
-    ['housing', 'app/(main)/housing/layout.tsx'],
-    ['market', 'app/(main)/market/layout.tsx'],
+    ['classifieds', 'app/(main)/(marketplace)/classifieds/layout.tsx'],
+    ['housing', 'app/(main)/(marketplace)/housing/layout.tsx'],
+    ['market', 'app/(main)/(marketplace)/market/layout.tsx'],
   ]
 
   for (const [surface, path] of LAYOUTS) {
