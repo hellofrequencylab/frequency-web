@@ -107,6 +107,7 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   // Operator-authored rows sit behind operator authz. A suspension is a MEMBER sanction; the
   // created_by on these names an operator doing their job.
   campaigns: 'operator-authored (Email Studio / marketing)',
+  email_saved_sections: 'operator-authored (Email Studio saved blocks, service-role only)',
   crm_activities: 'operator-authored (CRM)',
   crm_deals: 'operator-authored (CRM)',
   crm_tasks: 'operator-authored (CRM)',
