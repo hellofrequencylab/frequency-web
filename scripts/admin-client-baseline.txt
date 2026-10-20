@@ -1217,6 +1217,7 @@ lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
 lib/spaces/space-discussion.ts
+lib/spaces/space-image-store.ts
 lib/spaces/spotlight-clicks.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
