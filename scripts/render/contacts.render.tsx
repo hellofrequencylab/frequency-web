@@ -23,19 +23,18 @@ const people = [
 
 it('renders the contacts workspace', async () => {
   if (!out) throw new Error('set RENDER_OUT')
-  const { MemberViewer } = await import('@/components/people/member-viewer')
+  const { ContactsWorkspace } = await import('@/components/frequency/admin/pages/contacts/contacts-workspace')
   const members = people.map(([displayName, handle, headline, badges], i) => ({
     id: `m${i}`, handle, displayName, headline, badges: [...badges], stats: [{ label: 'Visits', value: String(40 - i * 6) }],
+    ...(i === 0 ? { detail: { profileId: 'p0', displayName, handle, email: 'audrey@lin.co', bio: 'Hosts the Thursday sound bath.', scores: { health: 82, tier: 'Resonant', churn: 'Low', activation: 90, lifecycle: 'Engaged' }, engagement: { sent: 12, opened: 9, clicked: 4, replied: 2, lastTouch: 'Oct 14' }, stats: [{ label: 'Visits', value: '38' }] } } : {}),
   }))
-  const el = createElement(MemberViewer, {
-    members, loadDetail: async () => null, detailVariant: 'crm', defaultView: 'list', pageSize: 24,
-    initialSelectedId: 'm0', sortOptions: [{ key: 'recent', label: 'Newest', spec: { key: 'joined', direction: 'desc' } }],
-    search: { placeholder: 'Search members', facets: [] },
+  const el = createElement(ContactsWorkspace, {
+    members, loadDetail: async () => { throw new Error('fixture') }, messageScope: { spaceId: 's', slug: 'royal-temple' },
   } as never)
   const { prelude } = await prerenderToNodeStream(el)
   const chunks: Buffer[] = []
   for await (const c of prelude) chunks.push(Buffer.from(c))
   const body = Buffer.concat(chunks).toString()
   writeFileSync(`${out}/contacts.html`,
-    `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"></head><body><div data-kit="admin"><div class="adp" style="padding:24px">${body}</div></div></body></html>`)
+    `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"></head><body><div data-kit="members" data-energy="still"><div data-kit="admin"><div class="adp" data-kit="members" style="padding:24px">${body}</div></div></div></body></html>`)
 })
