@@ -2,11 +2,12 @@
 
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
-import { Loader2, Mail, Plus, Trash2 } from 'lucide-react'
+import { Copy, Loader2, Mail, Plus, Trash2 } from 'lucide-react'
 import { EmailEditorPane } from './editor-pane'
 import {
   createEmailDraft,
   deleteEmailDraft,
+  duplicateEmailCampaign,
   listEmailCampaigns,
   loadEmailCampaign,
   saveEmailCampaign,
@@ -29,6 +30,8 @@ export interface EmailWorkspaceActions {
   create: () => Promise<ActionResult<{ id: string }>>
   /** Delete a draft. */
   remove: (id: string) => Promise<ActionResult>
+  /** Copy an email into a new draft. Omit to hide the Duplicate control (a Space bundle without it). */
+  duplicate?: (id: string) => Promise<ActionResult<{ id: string }>>
   /** Load one email into the editor. */
   load: (id: string) => Promise<LoadedEmailCampaign | null>
   /** Persist layout / subject / preheader (injected into the editor pane's store + fields). */
@@ -45,6 +48,7 @@ const ADMIN_ACTIONS: EmailWorkspaceActions = {
   list: listEmailCampaigns,
   create: createEmailDraft,
   remove: deleteEmailDraft,
+  duplicate: duplicateEmailCampaign,
   load: loadEmailCampaign,
   save: saveEmailCampaign,
   sendTest: sendTestEmail,
@@ -158,6 +162,21 @@ export function EmailStudioWorkspace({
     })
   }
 
+  function onDuplicate(id: string) {
+    if (!act.duplicate) return
+    const copy = act.duplicate
+    setError(null)
+    startTransition(async () => {
+      const res = await copy(id)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      await refreshList()
+      setSelectedId(res.data.id)
+    })
+  }
+
   function onDelete(id: string) {
     setError(null)
     startTransition(async () => {
@@ -230,6 +249,17 @@ export function EmailStudioWorkspace({
                         <span className="text-subtle">{formatWhen(card.updatedAt)}</span>
                       </span>
                     </button>
+                    {act.duplicate && (
+                      <button
+                        type="button"
+                        aria-label={`Duplicate ${card.subject.trim() || 'Untitled'}`}
+                        onClick={() => onDuplicate(card.id)}
+                        disabled={pending}
+                        className="shrink-0 rounded p-1 text-subtle opacity-0 transition-opacity hover:text-text focus:opacity-100 group-hover:opacity-100 disabled:opacity-50"
+                      >
+                        <Copy className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    )}
                     {card.status === 'draft' && (
                       <button
                         type="button"
