@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-957",
+  "title": "Connect the Group owner (@frequency) to Stripe so paid tiers can charge",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "/mnt/project-files/the-group/README.md",
+    "ref": "Production walk 2026-10-19, reported in the thread."
+  },
+  "detail": "Production walk of The Group (2026-10-19): the owner profile @frequency has no Stripe Connect account, so a paid Circle or event tier on the Network falls back to a free join. WAITS ON JUNE (or whoever runs @frequency): finish Stripe Connect onboarding for that owner from the Space's billing page, then confirm a paid tier shows a checkout panel instead of a free join. No code change is expected.",
+  "notes": "Filed 2026-10-20 at Daniel's request (\"Put June's work in the backlog\"). Open and blocked on June An's answers, not on code. Not parked: parking needs a ruling ADR (HYG-161).",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-20",
+    "evidence": "OPEN. Closes when the @frequency owner profile has a Stripe Connect account that can take charges and a paid tier on a Group Space opens checkout instead of a free join."
+  }
+}
