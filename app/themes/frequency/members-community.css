@@ -78,3 +78,11 @@
 [data-design="frequency"] [data-kit="members"] .fqm-start{align-items:center}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-board-row{grid-template-columns:48px minmax(0,1fr)}[data-design="frequency"] [data-kit="members"] .fqm-board-art{width:48px;height:48px}[data-design="frequency"] [data-kit="members"] .fqm-board-side{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:space-between}[data-design="frequency"] [data-kit="members"] .fqm-board-stats{text-align:left}}
 }
+/* 4. The Network hub (LIVE-1086, Members / Friends / My Contacts): the how-to notice, and the facet row under the Members find field. Kit tokens only. */
+[data-design="frequency"] [data-kit="members"] .fqm-net-notice{position:relative;display:block;margin:0 0 var(--fq-space-6);padding-right:56px}
+[data-design="frequency"] [data-kit="members"] .fqm-net-notice .h3{display:block;margin-bottom:var(--fq-space-2)}
+[data-design="frequency"] [data-kit="members"] .fqm-net-notice-list{list-style:none;margin:0;padding:0;display:grid;gap:var(--fq-space-2) var(--fq-space-5);grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="members"] .fqm-net-notice-list a{color:var(--fq-text-strong);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="members"] .fqm-net-x{position:absolute;top:var(--fq-space-3);right:var(--fq-space-3)}
+[data-design="frequency"] [data-kit="members"] .fqm-facets{margin-top:var(--fq-space-3)}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-net-notice-list{grid-template-columns:1fr}}
