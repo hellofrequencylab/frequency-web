@@ -1,6 +1,7 @@
 'use server'
 
 
+import { splitDisplayName } from '@/lib/email-studio/personalize'
 import { resolveDataBlockRefs } from '@/lib/email-studio/data-blocks'
 import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
 import { rateLimitOk } from '@/lib/rate-limit'
@@ -450,6 +451,22 @@ export async function listSpaceEmailAudienceTags(spaceId: string): Promise<strin
   return listAudienceTags(spaceId)
 }
 
+/** Give each recipient the first and last name its contact row holds, so a send that sets `mergeTags` can
+ *  greet people by name. A recipient with no contact row, or an unreadable roster, keeps no name and reads the
+ *  tag's default fallback, exactly as a broadcast always did. Scoped to this Space's own contacts. */
+async function withRecipientNames(spaceId: string, recipients: SpaceRecipient[]): Promise<SpaceRecipient[]> {
+  const ids = recipients.map((r) => r.contactId).filter((v): v is string => !!v)
+  if (ids.length === 0) return recipients
+  try {
+    const db = createAdminClient()
+    const { data } = await db.from('contacts').select('id, display_name').eq('space_id', spaceId).in('id', ids)
+    const names = new Map((data ?? []).map((c) => [String(c.id), c.display_name as string | null]))
+    return recipients.map((r) => (r.contactId ? { ...r, ...splitDisplayName(names.get(r.contactId)) } : r))
+  } catch {
+    return recipients
+  }
+}
+
 /**
  * SEND a block-email draft NOW to a resolved audience. Gated on canEditProfile + the row belonging to the
  * Space. Compiles the block layout to branded HTML with the Space's OWN palette (spaceEmailColors) and a
@@ -484,19 +501,18 @@ export async function sendSpaceEmailDraft(
   const meter = await checkCampaignMonthMeter(spaceId)
   if (!meter.ok) return fail(meter.error)
 
-  // A broadcast is not personalized, so any unfilled merge token degrades to its default fallback rather
-  // than rendering a raw {{token}}. The per-recipient unsubscribe placeholder is left intact for the seam.
-  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
-  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
-  const html = applyMergeTags(compiled.html, {}, { fallbacks })
+  // The subject and body go to the seam with their merge tags intact: it fills {{contact.*}} per recipient
+  // (a nameless one degrades to the tag's default fallback) and sets each person's unsubscribe link.
+  const subject = compiled.subject || 'Your email'
+  const html = compiled.html
 
   // Resolve the recipients over THIS Space's contacts (the exact shape the send seam consumes). The count
   // the owner confirmed in the rail resolves the same way, so it can never disagree with this list.
-  const recipients = await resolveAudience(spaceId, filter)
+  const recipients = await withRecipientNames(spaceId, await resolveAudience(spaceId, filter))
   if (recipients.length === 0)
     return fail('No one matched that audience yet. Add contacts or pick a different filter.')
 
-  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
+  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients, mergeTags: true })
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
@@ -556,11 +572,10 @@ export async function sendSpaceEmailDraftToRecipients(
   const meter = await checkCampaignMonthMeter(spaceId)
   if (!meter.ok) return fail(meter.error)
 
-  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
-  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
-  const html = applyMergeTags(compiled.html, {}, { fallbacks })
+  const subject = compiled.subject || 'Your email'
+  const html = compiled.html
 
-  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
+  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients: await withRecipientNames(spaceId, recipients), mergeTags: true })
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
