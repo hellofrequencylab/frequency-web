@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { entityBlockById, blockSupportsKind } from '@/lib/entity-blocks/registry'
 import { resolveRows } from '@/lib/entity-blocks/layout'
+import { resolveNodeRowsFor } from '@/lib/entity-blocks/node-ops'
 import {
   SPACE_SPOTLIGHT_BLOCK_IDS,
   readSpaceSpotlight,
@@ -133,5 +134,37 @@ describe('Space Spotlight as nodes (E0 task 12b)', () => {
     expect(spaceSpotlightNodes(readSpaceSpotlight({})).rows.map((r) => r.cells[0][0].type)).toEqual(['about', 'linkCards', 'links'])
     const saved = readSpaceSpotlight(nextSpotlightPreferences({}, { layout: nodeDoc, native: true }))
     expect(spaceSpotlightNodes(saved).rows).toHaveLength(3)
+  })
+})
+
+describe('Space Spotlight node document, read side (E0 task 12b)', () => {
+  const doc = {
+    rows: [
+      { id: 'r0', columns: 1, cells: [[{ nid: 'nBBBBBB1', type: 'text', content: { text: 'One' } }]] },
+      { id: 'r1', columns: 1, cells: [[{ nid: 'nBBBBBB2', type: 'text', content: { text: 'Two' } }]] },
+      { id: 'r2', columns: 1, cells: [[{ nid: 'nBBBBBB3', type: 'booking' }]] },
+      { id: 'r3', columns: 1, cells: [[{ nid: 'nBBBBBB4', type: 'links', hidden: true }]] },
+    ],
+    bench: [],
+  }
+  const stored = () => nextSpotlightPreferences({}, { published: true, layout: doc, native: true })
+
+  it('reads as nodes with a non-empty type-keyed projection, so no renderer falls back to the starter', () => {
+    const s = readSpaceSpotlight(stored())
+    expect(s.layout?.nodes?.rows).toHaveLength(4)
+    expect(s.layout?.rows?.length).toBeGreaterThan(0)
+    expect(placed(stored())).toEqual(['text', 'booking'])
+    expect(s.layout?.content).toEqual({ text: { text: 'One' } })
+  })
+
+  it('resolves to the nodes themselves: two Text blocks draw, the hidden node does not', () => {
+    const rows = resolveNodeRowsFor(spaceSpotlightGrid(readSpaceSpotlight(stored())), 'space')
+    expect(rows.flatMap((r) => r.cells.flat()).map((n) => n.nid)).toEqual(['nBBBBBB1', 'nBBBBBB2', 'nBBBBBB3'])
+  })
+
+  it('a website narrows the nodes as well as the rows', () => {
+    const site = spotlightSiteGrid(spaceSpotlightGrid(readSpaceSpotlight(stored())))
+    expect(site.nodes?.rows.flatMap((r) => r.cells.flat()).map((n) => n.type)).toEqual(['text', 'text', 'links'])
+    expect(site.nodes?.rows.flatMap((r) => r.cells.flat()).map((n) => n.type)).not.toContain('booking')
   })
 })
