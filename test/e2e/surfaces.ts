@@ -897,17 +897,13 @@ export function headerBandSurfaces(): readonly Surface[] {
  * live content and a fullPage baseline of it would record WHEN it was taken (see `viewportOnly`).
  */
 export function editorTargetSurfaces(
-  env: { spotlightHandle?: string; siteSlug?: string } = {
+  env: { spotlightHandle?: string } = {
     spotlightHandle: process.env.PW_SPOTLIGHT_HANDLE,
-    siteSlug: process.env.PW_SITE_SLUG,
   },
 ): readonly Surface[] {
   const surfaces: Surface[] = []
   if (env.spotlightHandle) {
     surfaces.push({ path: `/spotlight/${env.spotlightHandle}`, slug: 'editor-spotlight', audience: 'anon', viewportOnly: true })
-  }
-  if (env.siteSlug) {
-    surfaces.push({ path: `/sites/${env.siteSlug}`, slug: 'editor-site', audience: 'anon', viewportOnly: true })
   }
   return surfaces
 }
@@ -933,7 +929,7 @@ export function editorTargetSurfaces(
  * is how the argument gets made.
  */
 export function coverageSurfaces(
-  env?: { roomPath?: string; spaceSlug?: string; spotlightHandle?: string; siteSlug?: string },
+  env?: { roomPath?: string; spaceSlug?: string; spotlightHandle?: string },
 ): readonly Surface[] {
   return [
     ...publicSurfaces(),

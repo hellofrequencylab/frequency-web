@@ -1,5 +1,5 @@
 // Editor E3 gate (PROG-E3, EDITOR-ARCHITECTURE E3). Two halves:
-//   instrument  the visual suite declares a /spotlight and a /sites/ surface (§7.1, §8.1 item 2), without which
+//   instrument  the visual suite declares a /spotlight surface (a Site renders on its own host, outside the single-base suite) (§7.1, §8.1 item 2), without which
 //               "zero visual diff" cannot be measured. Same read the PROG-E3 probe made before this file existed.
 //   axis        defineBlock declares density as a block property. E3 widens kinds and declares density.
 // `--instrument` runs the first half only (LIVE-1157); the default runs both (PROG-E3).
@@ -12,7 +12,6 @@ const surfaces = readFileSync('test/e2e/surfaces.ts', 'utf8')
 const paths = [...surfaces.matchAll(/path:\s*[`'"]([^`'"]+)[`'"]/g)].map((m) => m[1])
 const need = [
   ['Spotlight', /^\/spotlight/],
-  ['Site', /^\/sites\//],
 ]
 const missing = need.filter(([, re]) => !paths.some((p) => re.test(p))).map(([n]) => n)
 if (missing.length) {
