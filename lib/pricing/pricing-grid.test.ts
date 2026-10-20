@@ -180,8 +180,8 @@ describe('offerings: every sellable tier is on the page', () => {
 
   it('applies the operator-set trial to the paid Space plans only', () => {
     for (const o of spaceOfferings(input)) {
-      // A quoted Network has no self-serve trial.
-      if (o.tier === 'free' || o.tier === 'network') expect(o.trial).toBeNull()
+      // Network sells self-serve now, with the same trial as every Space plan.
+      if (o.tier === 'free') expect(o.trial).toBeNull()
       else expect(o.trial).toBe(`${PRICING_DEFAULTS.trial.days}-day free trial.`)
     }
     // Members get no trial: the free tier is the trial.
@@ -248,6 +248,10 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
       if (o.id === 'collective') {
         expect(o.listAnchor).not.toBeNull()
         expect(o.betaNote).toBe(FOUNDING_RATE_NOTE)
+      } else if (o.id === 'network') {
+        // The Network Founding offer is a first-year coupon, never a struck anchor, and it says "Founding".
+        expect(o.listAnchor).toBeNull()
+        expect(o.betaNote === null || /^Founding offer/.test(o.betaNote)).toBe(true)
       } else {
         expect(o.listAnchor, `${o.id} must carry no struck anchor once the window is closed`).toBeNull()
         expect(o.betaNote, `${o.id} must carry no beta caption once the window is closed`).toBeNull()
@@ -268,6 +272,10 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     // Asserted in the OPEN window: with the window shut every anchor is null, so this would pass by
     // having nothing to say. The rule under test is the pairing, and only an open window exercises it.
     for (const o of allOfferings(open)) {
+      if (o.id === 'network') {
+        expect(o.betaNote === null || /^Founding offer/.test(o.betaNote)).toBe(true)
+        continue
+      }
       const note = o.id === 'collective' ? FOUNDING_RATE_NOTE : BETA_RATE_NOTE
       expect(o.betaNote).toBe(o.listAnchor ? note : null)
     }

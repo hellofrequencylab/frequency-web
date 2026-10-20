@@ -38,7 +38,7 @@ export const ITEM_KEYS = [
   'collective_space', // an extra Collective member Space (ADR-1709), quantity = extra Spaces
   'nonprofit_collective', // NON PROFIT COLLECTIVE base (ADR-1709)
   'network', // NETWORK base (SCAN-980): network_base and nonprofit_network both -> 'network'
-  'network_chapter', // a chapter past the ten a Network includes (SCAN-980), quantity = extra chapters
+  'network_chapter', // a chapter past the three a Network includes (SCAN-980), quantity = extra chapters; network_chapter and nonprofit_network_chapter both -> 'network_chapter'
   'independent', // INDEPENDENT base (ADR-811): the standalone white-label tier (independent_base -> 'independent')
   'ai',
   'custom_domain', // the custom domain add-on (LIVE-821): addon_custom_domain -> 'custom_domain'
@@ -69,7 +69,7 @@ export function itemKeyForCatalogKey(catalogKey: string | null | undefined): Ite
   if (key === 'collective_space') return 'collective_space'
   if (key === 'nonprofit_collective') return 'nonprofit_collective'
   if (key === 'network_base' || key === 'nonprofit_network') return 'network'
-  if (key === 'network_chapter') return 'network_chapter'
+  if (key === 'network_chapter' || key === 'nonprofit_network_chapter') return 'network_chapter'
   if (key === 'independent_base') return 'independent'
   if (key) {
     const addon = addonKeyForCatalogItem(key)

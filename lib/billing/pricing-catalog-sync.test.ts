@@ -166,6 +166,10 @@ const FROZEN_SYNCED_KEYS = [
   'nonprofit_collective_month_list',
   'nonprofit_collective_year',
   'nonprofit_collective_year_list',
+  'nonprofit_network_chapter_month',
+  'nonprofit_network_chapter_month_list',
+  'nonprofit_network_chapter_year',
+  'nonprofit_network_chapter_year_list',
   'nonprofit_network_month',
   'nonprofit_network_month_list',
   'nonprofit_network_year',
@@ -300,10 +304,10 @@ describe('a re-sync is idempotent', () => {
     expect(store.prices.map((p) => p.id)).toEqual(pricesAfterFirst)
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 11 live items (the operator seat left the catalog, ADR-1810): 11 standard products plus
-    // Collective's founding product ($99 Founding Collective, owner 2026-10-06), 44 price keys.
-    expect(store.products).toHaveLength(12)
-    expect(store.prices).toHaveLength(44)
+    // 12 live items (the operator seat left the catalog, ADR-1810): 12 standard products plus
+    // Collective's founding product ($99 Founding Collective, owner 2026-10-06), 48 price keys.
+    expect(store.products).toHaveLength(13)
+    expect(store.prices).toHaveLength(48)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {

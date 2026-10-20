@@ -10,7 +10,7 @@
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingLive, getPricingValues, loadPricingFlags, type PricingFlagKey } from '@/lib/pricing/settings'
-import { asAddonKey, asSpacePlan, networkCheckoutOpen, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
+import { asAddonKey, asSpacePlan, networkCheckoutOpen, NETWORK_PLAN, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
 import {
   asCatalogItemKey,
@@ -20,7 +20,7 @@ import {
   type SpacePlanKey,
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
-import { foundingOpenFor, isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey } from '@/lib/pricing/beta'
+import { foundingOpenFor, isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey, networkFoundingOpen } from '@/lib/pricing/beta'
 import { spaceHasBetaPriceGrant } from './space-beta-grant'
 import { receiptEmailFor } from './receipt-address'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
@@ -131,6 +131,8 @@ interface SpaceLoadout {
   /** The active add-ons (Vera AI, custom domain). Sold on Business and Non Profit; ignored elsewhere. */
   addons?: readonly (AddonKey | string)[]
   interval: BillingInterval
+  /** Network only, yearly only: the package (ten chapters, pay for eight). Ignored everywhere else. */
+  networkPackage?: boolean
 }
 
 /** Resolve the Stripe price id to CHARGE for a catalog item, on the three-armed rule in
@@ -189,10 +191,10 @@ function catalogKeysForLoadout(
   // Collective (ADR-1709) bills its own base; Vera AI is included, so no add-on line rides on it.
   if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }]
   if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }]
-  // Network (SCAN-980) bills its own base with ten chapters and Vera AI included. A verified 501(c)(3)
+  // Network (SCAN-980) bills its own base with three chapters and Vera AI included. A verified 501(c)(3)
   // bills `nonprofit_network` instead (SCAN-1008, owner ruling 2026-10-19 "Build both"): the plan is
   // still `network`, only the base differs, so the reconciler maps both to the `network` item. A chapter
-  // past the included ten rides `network_chapter`, bought after checkout on the billing page
+  // past the included three rides `network_chapter`, bought after checkout on the billing page
   // (lib/collective/extra-space-billing.ts), never on first checkout.
   if (loadout.plan === 'network' && opts.nonprofitVerified) return [{ key: 'nonprofit_network', perSeat: false }]
   if (loadout.plan === 'network') return [{ key: 'network_base', perSeat: false }]
@@ -323,6 +325,26 @@ export async function createSpaceLoadoutCheckout(
   }
   if (lineItems.length === 0) return null
 
+  // THE NETWORK OFFERS (owner 2026-10-20). Both are Stripe coupons on the Checkout session, so no second
+  // price is minted and capacity still counts the ordinary `network_chapter` quantity:
+  //   - PACKAGE (yearly only): ten chapters, pay for eight. The base plus seven chapters, less a coupon
+  //     worth two chapters on every yearly invoice. Never stacked with Founding.
+  //   - FOUNDING (yearly only, until the end instant): a year for nine months, the first invoice only.
+  // `discounts` and `allow_promotion_codes` cannot both be set on a session, so a Network session that
+  // carries one of these takes no promotion code.
+  let networkCoupon: string | null = null
+  if (loadout.plan === 'network' && interval === 'year') {
+    if (loadout.networkPackage === true) {
+      const chapterKey: CatalogItemKey = nonprofitVerified ? 'nonprofit_network_chapter' : 'network_chapter'
+      const chapterPrice = await resolveLoadoutPriceId(spaceId, chapterKey, interval, hasBetaGrant)
+      if (!chapterPrice) return null
+      lineItems.push({ price: chapterPrice, quantity: NETWORK_PLAN.packageChapters - NETWORK_PLAN.includedChapters })
+      networkCoupon = nonprofitVerified ? NETWORK_PLAN.couponNonprofitPackage : NETWORK_PLAN.couponPackage
+    } else if (networkFoundingOpen()) {
+      networkCoupon = nonprofitVerified ? NETWORK_PLAN.couponNonprofitFounding : NETWORK_PLAN.couponFounding
+    }
+  }
+
   const plan = asSpacePlan(loadout.plan)
   const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval, ...(await checkoutGaMetadata()) }
   // 14-day per-item trial (operator-editable via pricing settings, default 14). Stripe starts the
@@ -348,7 +370,7 @@ export async function createSpaceLoadoutCheckout(
       successUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
     }),
-    allow_promotion_codes: true,
+    ...(networkCoupon ? { discounts: [{ coupon: networkCoupon }] } : { allow_promotion_codes: true }),
   })
   // 🔴 TRAP 1 (docs/CHECKOUT.md §3): `!session.url` is TRUE FOR EVERY ELEMENTS SESSION. Ask the
   // resolver, never the URL.
