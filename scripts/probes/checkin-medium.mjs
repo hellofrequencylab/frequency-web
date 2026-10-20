@@ -14,7 +14,7 @@ if (!/export function signedPlacardUrl/.test(code) || !/withMedium\(signedNodeUr
   bad.push('no signedPlacardUrl built from signedNodeUrl, so a placard and its QR can drift apart')
 
 const capture = r('lib/engagement/capture.ts')
-if (!/export function captureSource/.test(capture) || !/captureSource\(node\.type as string, attempt\.medium\)/.test(capture))
+if (!/function captureSource/.test(capture) || !/captureSource\(node\.type as string, attempt\.medium\)/.test(capture))
   bad.push('capture still takes its source from the node type alone')
 if (!/context: \{ nodeId: attempt\.nodeId, medium/.test(capture)) bad.push('the check-in ledger row does not record its medium')
 

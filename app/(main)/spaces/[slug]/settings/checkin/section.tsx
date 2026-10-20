@@ -6,8 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { ensureCheckinNode, countCheckins } from '@/lib/spaces/checkin'
-import { signedNodeUrl } from '@/lib/qr/node-code'
-import { withMedium } from '@/lib/qr/links'
+import { signedNodeUrl, signedPlacardUrl } from '@/lib/qr/node-code'
 import { renderQrSvg } from '@/lib/qr/render'
 import { CheckinCodeCard } from '@/components/spaces/checkin-code-card'
 import { CheckinRoster } from '@/components/spaces/checkin-roster'
@@ -61,10 +60,9 @@ export async function CheckinSection({
   // (read-only: signedNodeUrl builds the signed /n/<id> destination; renderQrSvg paints it inline). A staff
   // previewer reads an existing node but never mints one, so the card may be absent for them.
   const node = await ensureCheckinNode(space.id)
-  // The tag link is THIS link plus `&m=nfc` (byte-for-byte what signedPlacardUrl builds for the same
-  // issue time), so the QR and the tag carry one signed code and a tap counts apart from a scan.
+  // The tag holds the placard link: the same signed link plus `&m=nfc`, so a tap counts apart from a scan.
   const link = node ? signedNodeUrl(node.id) : null
-  const nfcLink = link ? withMedium(link, 'nfc') : null
+  const nfcLink = node ? signedPlacardUrl(node.id) : null
   const svg = link ? await renderQrSvg(link, 256) : null
 
   // The count for the StatCard is a head/count query (countCheckins) — NOT listCheckins(...).length, which

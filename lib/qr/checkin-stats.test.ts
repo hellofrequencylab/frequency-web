@@ -1,25 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeCheckins, checkinMedium, type CheckinRow } from './checkin-stats'
+import { summarizeCheckins, type CheckinRow } from './checkin-stats'
 
 const NOW = new Date('2026-10-20T12:00:00Z')
 const at = (day: string) => `${day}T10:00:00Z`
-
-describe('checkinMedium', () => {
-  it('reads context.medium on new rows', () => {
-    expect(checkinMedium({ source: 'qr', context: { nodeId: 'n', medium: 'nfc' } })).toBe('nfc')
-    expect(checkinMedium({ source: 'qr', context: { nodeId: 'n', medium: 'device' } })).toBe('device')
-  })
-
-  it('falls back to source on legacy rows', () => {
-    expect(checkinMedium({ source: 'nfc', context: { nodeId: 'n' } })).toBe('nfc')
-    expect(checkinMedium({ source: 'qr', context: { nodeId: 'n' } })).toBe('qr')
-    expect(checkinMedium({ source: 'beacon', context: null })).toBe('qr')
-  })
-
-  it('drops geo captures', () => {
-    expect(checkinMedium({ source: 'geo', context: { nodeId: 'n', medium: 'qr' } })).toBeNull()
-  })
-})
 
 describe('summarizeCheckins', () => {
   it('counts legacy, nfc and device rows and excludes geo', () => {

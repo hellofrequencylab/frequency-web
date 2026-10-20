@@ -77,24 +77,31 @@ describe('captureNode partner attribution', () => {
   })
 })
 
-// NFC + QR unification: one check-in node is reached by a printed QR and a tapped placard, so the
-// medium the member used decides the ledger source, and the node type is only the fallback.
-import { captureSource } from './capture'
 
-describe('captureSource', () => {
-  it('uses the node type when the medium is unknown', () => {
-    expect(captureSource('qr', null)).toBe('qr')
-    expect(captureSource('nfc', undefined)).toBe('nfc')
-    expect(captureSource('mystery', null)).toBe('qr')
+// NFC + QR unification: one check-in node is reached by a printed QR and a tapped placard, so the
+// medium the member used decides the ledger source and is stored on the row; the node type
+// (here 'qr') is only the fallback.
+import { recordEngagementEvent } from './events'
+
+describe('captureNode medium', () => {
+  beforeEach(() => {
+    h.state.offers = []
+    h.state.inserts = []
+    vi.mocked(recordEngagementEvent).mockClear()
   })
-  it('lets the medium win over the node type', () => {
-    expect(captureSource('qr', 'nfc')).toBe('nfc')
-    expect(captureSource('nfc', 'qr')).toBe('qr')
+  const ledger = () =>
+    vi.mocked(recordEngagementEvent).mock.calls.find((c) => c[0].eventType === 'node_capture')?.[0]
+
+  it('falls back to the node type when the medium is unknown', async () => {
+    await captureNode(attempt)
+    expect(ledger()).toMatchObject({ source: 'qr', context: { nodeId: 'node-1', medium: 'qr' } })
   })
-  it('counts a counter scanner card as an NFC read', () => {
-    expect(captureSource('qr', 'device')).toBe('nfc')
+  it('records a placard tap on a QR-type node as NFC', async () => {
+    await captureNode({ ...attempt, medium: 'nfc' })
+    expect(ledger()).toMatchObject({ source: 'nfc', context: { medium: 'nfc' } })
   })
-  it('keeps a ghost node geo whatever the medium', () => {
-    expect(captureSource('ghost', 'nfc')).toBe('geo')
+  it('records a counter scanner card as an NFC read with the device medium', async () => {
+    await captureNode({ ...attempt, medium: 'device' })
+    expect(ledger()).toMatchObject({ source: 'nfc', context: { medium: 'device' } })
   })
 })

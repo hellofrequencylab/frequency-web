@@ -36,7 +36,7 @@ const NODE_TYPE_SOURCE: Record<string, EngagementSource> = {
  * capture came through. The medium the member actually used wins; the node type is the fallback for
  * callers that do not know it. A card at a counter scanner is an NFC read. A ghost node is always geo.
  */
-export function captureSource(nodeType: string | null | undefined, medium: CaptureMedium | null | undefined): EngagementSource {
+function captureSource(nodeType: string | null | undefined, medium: CaptureMedium | null | undefined): EngagementSource {
   const byType = NODE_TYPE_SOURCE[nodeType ?? ''] ?? 'qr'
   if (byType === 'geo' || !medium) return byType
   return medium === 'qr' ? 'qr' : 'nfc'

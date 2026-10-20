@@ -284,14 +284,14 @@ function NodeCard({
               href={`/print/qr?node=${encodeURIComponent(node.id)}&placard=1`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Nfc className="w-3 h-3" /> Placard
             </a>
             {node.spaceSlug && (
               <a
                 href={`/admin/cyberunicorn?space=${encodeURIComponent(node.spaceSlug)}`}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+                className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
               >
                 <Cpu className="w-3 h-3" /> Program placard
               </a>

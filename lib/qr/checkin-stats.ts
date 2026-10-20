@@ -9,9 +9,9 @@ export interface CheckinRow {
   created_at: string
 }
 
-export type CheckinMedium = 'qr' | 'nfc' | 'device'
+type CheckinMedium = 'qr' | 'nfc' | 'device'
 
-export interface SpaceCheckinStat {
+interface SpaceCheckinStat {
   spaceId: string
   total: number
   qr: number
@@ -19,7 +19,7 @@ export interface SpaceCheckinStat {
   device: number
 }
 
-export interface CheckinSummary {
+interface CheckinSummary {
   total: number
   /** Split by arrival channel. They sum to `total`. */
   byMedium: Record<CheckinMedium, number>
@@ -39,7 +39,7 @@ function asRecord(v: unknown): Record<string, unknown> | null {
 
 /** How a capture arrived, or null when it is not a QR/NFC/device check-in (geo).
  *  New rows carry context.medium; legacy rows only have the node-type source. */
-export function checkinMedium(row: Pick<CheckinRow, 'source' | 'context'>): CheckinMedium | null {
+function checkinMedium(row: Pick<CheckinRow, 'source' | 'context'>): CheckinMedium | null {
   if (row.source === 'geo') return null
   const medium = asRecord(row.context)?.medium
   if (medium === 'qr' || medium === 'nfc' || medium === 'device') return medium

@@ -48,7 +48,7 @@ export function toAbsoluteSiteUrl(text: string): string {
  *  code) and carries no marker; 'nfc' appends `?m=nfc` so the `/q` resolver and the
  *  `/n` check-in page can attribute the tap. Used when writing a tag: the same code,
  *  channel-stamped. */
-export type ScanMedium = 'qr' | 'nfc'
+type ScanMedium = 'qr' | 'nfc'
 
 /** Read the `m` marker off a scanned URL. Anything but `nfc` is a printed code. */
 export function readScanMedium(raw: string | null | undefined): ScanMedium {
