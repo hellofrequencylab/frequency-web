@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1167",
+  "title": "The Around you map tile shows a real map under its pins instead of an empty dot grid",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/events/events-map-lightbox.tsx",
+    "ref": "Owner 2026-10-20 in the project chat: some of the maps are still messed up (screenshot of the feed right rail, '140 events on the map' over a blank grid)"
+  },
+  "detail": "FILED 2026-10-20. THE CONSEQUENCE: the Around you tile in the right rail and on /events was drawn as an SVG of faint dots over a CSS grid by design (SCAN-975), so it looked like a map that failed to load. THE FIX: the tile mounts a still, non-interactive MapLibre basemap under the pins, pinned to keyless OpenFreeMap through a new `engine` prop on the map seam so a Google key never bills a map load on every feed view. The SVG stays as the paint while tiles arrive. The lightbox map is unchanged. NOT VERIFIED: the Google browser key, referrer list and billing in production could not be read from this session; docs/MAPS.md section 6 triage applies if the lightbox map is blank.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/rail-map-tile-basemap.mjs",
+    "note": "Fails on main (no basemap in the tile), passes with this change."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

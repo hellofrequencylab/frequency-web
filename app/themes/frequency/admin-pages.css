@@ -512,3 +512,18 @@
 [data-design="frequency"] [data-kit="admin"] .sw.on::after{transform:translateX(18px)}
 [data-design="frequency"] [data-kit="admin"] .sw:disabled{cursor:default;opacity:.5}
 [data-design="frequency"] [data-kit="admin"] .sw.mu-pending{opacity:.6}
+
+/* THE PHONE HOME (LIVE-1166; owner, 2026-10-20, "the space console experience in Mobile is trash"). The first
+   numbers belong above the fold: the headline stats go two to a row instead of one (the kit stacks them under
+   560px, so one card filled a screen), the cards drop the desktop's air, and the head's actions sit side by
+   side at full width as 48px targets. Under 560px only; the kit's tablet and desktop grids are untouched. */
+@media (max-width:560px){
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp .g4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp .g4+.g4.adp-kpi-row{margin-top:10px}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp .panel.kpi{padding:14px;gap:4px}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp .panel.kpi .num{font-size:var(--fq-text-h3)}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp>.head{flex-direction:column;align-items:stretch;gap:var(--fq-space-5);margin-bottom:var(--fq-space-6)}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp>.head>.row.wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp>.head>.row.wrap .btn{justify-content:center;min-height:48px}
+[data-design="frequency"] [data-kit="admin"] .ad-main .adp>.head>.row.wrap .btn.pa{order:-1}
+}

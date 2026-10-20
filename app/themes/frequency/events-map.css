@@ -10,6 +10,7 @@
 [data-design="frequency"] [data-kit="members"] .evm-tile:hover,[data-design="frequency"] [data-kit="members"] .evm-tile:focus-visible{box-shadow:0 24px 44px -30px color-mix(in oklab,var(--fq-ink) 55%,transparent),inset 0 0 0 1.5px color-mix(in oklab,var(--fq-x-sky-neon) 80%,transparent)}
 [data-design="frequency"] [data-kit="members"] .evm-tile:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
 [data-design="frequency"] [data-kit="members"] .evm-tile-map{position:absolute;inset:0;width:100%;height:100%;background-image:linear-gradient(var(--fq-border-hair) 1px,transparent 1px),linear-gradient(90deg,var(--fq-border-hair) 1px,transparent 1px);background-size:28px 28px}
+[data-design="frequency"] [data-kit="members"] .evm-tile-live{position:absolute;inset:0;pointer-events:none}
 [data-design="frequency"] [data-kit="members"] .evm-halo{fill:color-mix(in oklab,var(--fq-x-sky-neon) 30%,transparent)}
 [data-design="frequency"] [data-kit="members"] .evm-dot{fill:var(--fq-accent)}
 [data-design="frequency"] [data-kit="members"] .evm-tile-b{position:relative;display:flex;flex-direction:column;gap:4px;max-width:calc(100% - 120px);padding:12px 14px;border-radius:16px;background:color-mix(in oklab,var(--fq-surface-raised) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}

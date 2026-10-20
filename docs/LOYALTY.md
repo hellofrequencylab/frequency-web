@@ -181,7 +181,7 @@ never stored in the clear. Refusals: `unknown_member`, `too_many_cards`.
 **`GET /c/<token>`** is what the card opens on a phone: the reader's **own** `/rewards` (through
 sign-in when signed out), or `/code-unavailable` for a revoked card. It checks nobody in.
 
-### Write a card over USB (the CyberUnicorn console, `LIVE-1166`)
+### Write a card over USB (the CyberUnicorn console, `LIVE-1168`)
 
 With the CyberUnicorn plugged into the owner's computer, "Counter scanners" opens with the
 **CyberUnicorn console** (`components/spaces/loyalty/cyberunicorn-console.tsx`), the one block on the
