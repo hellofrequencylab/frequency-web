@@ -11,6 +11,7 @@ import { StatusChip } from '@/components/admin/status'
 import { Input, Textarea } from '@/components/ui/field'
 import { starterRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { StepBlockEditor } from './step-block-editor'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { Button } from '@/components/ui/button'
 
 export interface StepRowData {
@@ -22,6 +23,8 @@ export interface StepRowData {
   enabled: boolean
   /** The step's block-editor body (kind 'email'), or null when it still uses the plain `body`. */
   blockJson: EntityLayout | null
+  /** The body as a node document, present only while render_path_email is on. */
+  nodeLayout?: NodeLayout | null
 }
 export interface PersonaRow {
   persona: string
@@ -226,6 +229,7 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
             stepId={step.id}
             subject={step.subject}
             initialLayout={step.blockJson ?? { rows: starterRows('email', 'basic') }}
+            nodeLayout={step.nodeLayout ?? undefined}
           />
         </div>
       )}

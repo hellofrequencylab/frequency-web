@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { NodeLayoutProvider, useNodeLayout, type SaveNodeLayout } from '@/components/entity-blocks/node-layout-store'
+import { NodeLayoutProvider, type SaveNodeLayout } from '@/components/entity-blocks/node-layout-store'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { EntityLayoutProvider, useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
@@ -22,6 +22,7 @@ import { ComposeToolbar } from './compose-toolbar'
 import { EmailContextBar } from './context-bar'
 import { EmailPreview } from './preview'
 import { EmailCanvasEditor, NodeEmailCanvasEditor } from './email-canvas-editor'
+import { NodeSeeder } from './email-canvas-model'
 import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
 
 /** The persist action shape the pane injects into the store + compose fields (matches saveEmailCampaign). */
@@ -76,15 +77,6 @@ function LayoutSeeder({ layout }: { layout: EntityLayout }) {
     if (!store || store.seeded) return
     const rows = layout.rows ?? resolveRows(layout, 'email')
     store.seed(rows, layout.hidden ?? [], layout.content ?? {}, layout.style ?? {})
-  }, [store, layout])
-  return null
-}
-
-/** Seeds the node store from the campaign's node document (E0 task 12b). First seed wins. */
-function NodeSeeder({ layout }: { layout: NodeLayout }) {
-  const store = useNodeLayout()
-  useIsoLayoutEffect(() => {
-    store?.seed(layout)
   }, [store, layout])
   return null
 }
