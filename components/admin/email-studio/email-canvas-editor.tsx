@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, GripVertical, Loader2, Monitor, Plus, Settings2, Smartphone, Trash2 } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
@@ -84,6 +84,8 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   // library). `dragId` is the block being dragged; `overId` the tile currently hovered as the drop target.
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
+  // The preview width: the 600px desktop card, or the 375px a phone gives it (the shell is fluid below 600).
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
 
   // The single-column email block list, in reading order (each row is one block).
   const blocks = store?.blocks ?? []
@@ -288,13 +290,30 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
       {/* RIGHT — the live, clickable email canvas (mirrors the email palette), with the ADD-BLOCK palette
           BELOW the email body so adding a block reads as "append to the email" rather than a left-rail control. */}
       <div className="min-w-0 space-y-3">
+      <div className="flex items-center justify-end gap-1" role="group" aria-label="Preview width">
+        {(['desktop', 'mobile'] as const).map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => setDevice(d)}
+            aria-pressed={device === d}
+            className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-2xs font-semibold transition-colors ${
+              device === d ? 'border-primary bg-primary-bg/40 text-text' : 'border-border bg-surface text-muted hover:text-text'
+            }`}
+          >
+            {d === 'desktop' ? <Monitor className="h-3 w-3" aria-hidden /> : <Smartphone className="h-3 w-3" aria-hidden />}
+            {d === 'desktop' ? 'Desktop' : 'Phone'}
+          </button>
+        ))}
+      </div>
       <div
+        data-fq-preview-device={device}
         className="overflow-x-auto rounded-2xl p-4 sm:p-6"
         style={{ background: C.canvas }}
         aria-label="Email canvas"
       >
         <div
-          className="mx-auto w-full max-w-[600px] overflow-hidden rounded-3xl"
+          className={`mx-auto w-full overflow-hidden rounded-3xl ${device === 'mobile' ? 'max-w-[375px]' : 'max-w-[600px]'}`}
           style={{ background: C.surface, border: `1px solid ${C.border}`, boxShadow: '0 1px 2px rgba(60,40,20,.04),0 22px 50px -36px rgba(80,50,20,.34)' }} // token-ok: mirrors the email card shadow
         >
           {heroHtml ? <div dangerouslySetInnerHTML={{ __html: heroHtml }} /> : null}
@@ -330,7 +349,7 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
             Privacy/Terms/Help, address, unsubscribe) exactly as it sends. It is NOT a block in the list, so it
             can't be selected, reordered, or removed; pointer-events are off so its placeholder links stay inert.
             Same markup the send uses (emailFooterHtml), never re-wrapped at send. */}
-        <div className="mx-auto mt-1 w-full max-w-[600px] px-6 sm:px-9">
+        <div className={`mx-auto mt-1 w-full px-6 sm:px-9 ${device === 'mobile' ? 'max-w-[375px]' : 'max-w-[600px]'}`}>
           <p className="mb-1 text-center text-2xs" style={{ color: C.subtle }}>
             Legal footer, added to every email
           </p>
