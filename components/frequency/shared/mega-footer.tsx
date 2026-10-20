@@ -4,6 +4,8 @@ import "@/app/themes/active/mega-footer";
 import { MegaFooterLift } from "./mega-footer-lift";
 import { LEGAL_LINKS } from "@/lib/nav/legal-links";
 import { CONTACT_EMAIL, ORG_LEGAL_NAME } from "@/lib/site";
+import { JsonLd } from "@/components/json-ld";
+import { siteNavigationSchema } from "@/lib/jsonld";
 
 // THE FREQUENCY MEGA FOOTER (LIVE-1030). The member shell's footer was one line ("Frequency · Community
 // Collective / Help / Settings"). This is the site map the owner asked for: a bar that is always there
@@ -49,6 +51,7 @@ export function FqMegaFooter({
   const year = new Date().getFullYear();
   return (
     <footer className="fq-mf" aria-label="Site footer">
+      <JsonLd data={siteNavigationSchema(columns)} />
       <details className="fq-mf-d">
         <summary className="fq-mf-bar">
           <span className="fq-mf-brand">Frequency · Community Collective</span>

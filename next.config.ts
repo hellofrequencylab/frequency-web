@@ -715,6 +715,9 @@ const nextConfig: NextConfig = {
       // Demo/seed placeholder imagery (circle covers + member avatars). Harmless
       // to allow; simply unreferenced once demo content is cleared.
       { protocol: "https", hostname: "picsum.photos" },
+      // Product photos imported from a Squarespace store keep their original CDN URL (The Group's Shop
+      // cards showed broken images because the optimizer refuses a host that is not listed here).
+      { protocol: "https", hostname: "images.squarespace-cdn.com", pathname: "/content/**" },
       { protocol: "https", hostname: "i.pravatar.cc" },
     ],
   },

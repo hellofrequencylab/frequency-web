@@ -207,6 +207,12 @@ native work without upgrading or sanitizing it. Actual action fixtures and the r
 probe pin zero destructive writes, while ordinary untouched legacy draft reuse and owner-scoped
 cleanup remain unchanged. The final release must integrate after LIVE-887 and LIVE-875.
 
+Email body writer (LIVE-1057, ADR-1858): `prepareEmailLayoutWrite` (lib/email-studio/layout-write.ts) is the one
+decision behind `saveEmailCampaign` and `saveSpaceEmailDraft`. While `render_path_email` is on, an incoming node
+document is stored as nodes, rich text sanitised per node by its own type (`sanitizeEmailRichNodes`); with the
+switch off, a node document is refused as before. A legacy save over stored nodes is refused either way. The
+editors do not send nodes yet, and nurture saves still refuse them.
+
 ### Member writer compatibility boundary (LIVE-875)
 
 The session-owned member grid save refuses incoming native node cells or stored bench, and

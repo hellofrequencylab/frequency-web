@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1066",
+  "title": "The Space page editor offers a Links block, and the picker offers a way to start Services",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "\u00a78 task 12b"
+  },
+  "detail": "Owner ask 2026-10-20 (\"add the ability to add standard links and services\"; decision card: both). `links` leaves the Space palette exclusions (registry.ts) so a Space can add a Links list it fills in itself; the website Home plans it through the Space page's own render (HOME_OWN_RENDER). The BlockPicker takes `setup` links, and the node page builder passes one for Offerings (Services) while it is data-locked, pointing at the Space's offerings settings. Pinned palette tests updated to the owner's ask. Next: the broken Shop card thumbnails and the transparent top bar from the same screenshot.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const r=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');if(/space: new Set\\\\(\\\\['links'/.test(r))bad.push('links still excluded from the Space palette');if(!fs.readFileSync('components/entity-blocks/node-page-builder.tsx','utf8').includes('SETUP_FIRST'))bad.push('no Services setup link');if(!fs.readFileSync('components/entity-blocks/block-picker.tsx','utf8').includes('Set up first'))bad.push('picker has no setup group');if(bad.length){console.error('LIVE-1066: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when Links leaves the Space palette again or the picker loses the way to start Services. Behavior is block-picker-setup.test.tsx and registry.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

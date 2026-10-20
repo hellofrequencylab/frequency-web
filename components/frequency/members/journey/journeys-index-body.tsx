@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { FqIcon } from '@/components/frequency/icon'
+import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import { phStyle } from '@/components/frequency/members/shared/avatar'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
@@ -44,8 +46,9 @@ export function JourneysIndexBody({
   canBuild,
   order,
   progress,
-  mine,
-  library,
+  mine: allMine,
+  library: allLibrary,
+  query = '',
 }: {
   title: string
   description: string | null
@@ -58,9 +61,16 @@ export function JourneysIndexBody({
   progress: MemberJourneyProgress[]
   mine: JourneyPlan[] | null
   library: JourneyPlan[]
+  /** The search box's text (?q=), already trimmed. Narrows Keep going, Yours and the library. */
+  query?: string
 }) {
-  const active = progress.filter((j) => !j.complete || j.ongoing)
-  const finished = progress.filter((j) => j.complete && !j.ongoing)
+  const needle = query.toLowerCase()
+  const matches = (...text: (string | null | undefined)[]) => !needle || text.some((t) => t?.toLowerCase().includes(needle))
+  const mine = allMine ? allMine.filter((p) => matches(p.title, p.summary)) : null
+  const library = allLibrary.filter((p) => matches(p.title, p.summary))
+  const progressAll = progress.filter((j) => matches(j.title))
+  const active = progressAll.filter((j) => !j.complete || j.ongoing)
+  const finished = progressAll.filter((j) => j.complete && !j.ongoing)
 
   const sections: Record<string, React.ReactNode> = {
     'journeys-start': (
@@ -91,7 +101,7 @@ export function JourneysIndexBody({
         </div>
         {mine.length === 0 ? (
           <div className="empty">
-            <p className="why">No journeys yet. New journey opens the builder.</p>
+            <p className="why">{needle ? `None of yours match “${query}”.` : 'No journeys yet. New journey opens the builder.'}</p>
           </div>
         ) : (
           <div className="g3">{mine.slice(0, 6).map((p) => planCard(p, true))}</div>
@@ -108,7 +118,7 @@ export function JourneysIndexBody({
         </div>
         {library.length === 0 ? (
           <div className="empty">
-            <p className="why">The library is just getting started. Build a journey and share it to be the first.</p>
+            <p className="why">{needle ? `No Journeys match “${query}”. Try fewer words.` : 'The library is just getting started. Build a journey and share it to be the first.'}</p>
           </div>
         ) : (
           <div className="g3">{library.map((p) => planCard(p, false))}</div>
@@ -119,27 +129,31 @@ export function JourneysIndexBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Journeys</span>
-          <h1 className="h1">
-            <SerifTail text={title} />
-          </h1>
-          {description && <span className="meta">{description}</span>}
-        </div>
-        <div className="row wrap">
-          <NewJourneyButton canCreate={canBuild} className="btn pa" />
-          <Link className="btn" href="/journeys/mine">
-            Your journeys
-          </Link>
-          {cta && (
-            <a className="btn" href={cta.href}>
-              {cta.label}
-            </a>
-          )}
-        </div>
-      </div>
+      <MemberHead
+        kicker="The Quest · Journeys"
+        title={<SerifTail text={title} />}
+        meta={description}
+        actions={
+          <>
+            <div className="row wrap">
+              <NewJourneyButton canCreate={canBuild} className="btn pa" />
+              <Link className="btn" href="/journeys/mine">
+                Your journeys
+              </Link>
+              {cta && (
+                <a className="btn" href={cta.href}>
+                  {cta.label}
+                </a>
+              )}
+            </div>
+          </>
+        }
+      />
       {intro && <div className="body mc-bottom-24">{intro}</div>}
+
+      <div className="fqm-tools">
+        <FqFindField action="/journeys" value={query} placeholder="Search Journeys" keep={{}} />
+      </div>
 
       {active.length > 0 && (
         <section aria-label="Keep going">

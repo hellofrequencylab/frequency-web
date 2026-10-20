@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// LIVE-1056: the device wire. A scanner authenticates with X-Frequency-Device (never a bearer), gets a
+// LIVE-1113: the device wire. A scanner authenticates with X-Frequency-Device (never a bearer), gets a
 // flat { ok, reason?, … } body, and 404 while the switch is off (the firmware reads that as "backend not
 // set up").
 

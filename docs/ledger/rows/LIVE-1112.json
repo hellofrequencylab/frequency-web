@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1112",
+  "title": "Sign-in and the other doorway screens wear the site's dark Stage room, not the light Commons",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/auth/auth-frame.tsx",
+    "ref": "Owner 2026-10-19, signing in on a local dev server: style the sign-in card with the dark theme."
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. PREMISE RE-TESTED: /sign-in renders light because only signed-out visitors ever see it (a signed-in viewer is redirected) and lib/theme/mode.ts keeps every signed-out viewer light on purpose (no fq_acct cookie, so no .dark). That law stays. The site's own dark look is the Stage surface (data-surface=\"stage\", which the marketing SiteShell wears), so AuthFrame now carries it: the whole doorway (sign-in, check your email, native open, global error) goes dark, not just the card, so the step from the dark website into the network stays one room. Stage does not re-declare the glass panel, so auth.css draws --fq-glass-panel from Stage's raised card, and the pastel magic-link pill takes ink text (the mega footer's rule). Field focus ring is the room's text-strong; check:tokens and check:contrast pass.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const f=fs.readFileSync('components/frequency/auth/auth-frame.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/auth.css','utf8');const miss=[];if(!/<main[^>]*className=\\\"fqa\\\"[^>]*data-surface=\\\"stage\\\"/.test(f))miss.push('doorway is not on Stage');if(!/\\.fqa\\[data-surface=\\\"stage\\\"\\]\\{--fq-glass-panel:/.test(c))miss.push('Stage panel still the light Commons glass');if(!/\\.fqa \\.btn\\.pa[^{]*\\{color:var\\(--fq-ink\\)\\}/.test(c))miss.push('pastel pill text not ink');if(miss.length){console.error('LIVE-1112: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-19"
+}

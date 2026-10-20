@@ -206,15 +206,10 @@ export async function syncPricingProductsToStripe(changedBy?: string | null): Pr
 // Prices and only creates a new Price when an amount changed (Stripe Prices are immutable).
 
 /** Whether a catalog item is an INERT placeholder for the sync (so it mints no Stripe product/price).
- *  An item is inert when its code `placeholder` flag is set AND the operator has not activated it. Only
- *  the operator seat (ADR-799/803) has an activation switch (`catalog_operator_seat_active`); every other
- *  placeholder stays inert regardless. LIVE-229 cleared the seat's placeholder, so this returns false
- *  for `operator_seat` regardless of the switch: a routine sync mints the approved $12. The switch
- *  still gates checkout (`operatorSeatsSellable`). PURE. */
-export function isCatalogItemInertPlaceholder(item: CatalogItem, operatorSeatActive: boolean): boolean {
-  if (!item.placeholder) return false
-  if (item.key === 'operator_seat') return !operatorSeatActive
-  return true
+ *  An item is inert when its code `placeholder` flag is set. The operator seat's activation switch
+ *  (ADR-799/803) went with the seat itself (ADR-1810), so no item has an exception any more. PURE. */
+export function isCatalogItemInertPlaceholder(item: CatalogItem): boolean {
+  return item.placeholder === true
 }
 
 /** Which PRODUCT a catalog item's price hangs on (ADR-1062).
@@ -338,17 +333,16 @@ export async function syncPricingCatalogToStripe(changedBy?: string | null): Pro
 
   const result: SyncResult = { ok: true, synced: [], errors: [] }
 
-  // The operator-editable amounts (over the code defaults, ADR-463) and the operator-seat activation
-  // switch (ADR-803). Both fail-safe: a missing override reads the code amount, a missing flag reads OFF.
-  const [catalog, flags] = await Promise.all([loadCatalogConfig(), loadPricingFlags()])
+  // The operator-editable amounts (over the code defaults, ADR-463), read beside the pricing flags in
+  // ONE round trip (LIVE-402 pins the parallel shape). Nothing in the sync reads a flag since the
+  // operator-seat switch went (ADR-1810); the flags read is request-cached and costs nothing extra.
+  // Fail-safe: a missing override reads the code amount.
+  const [catalog] = await Promise.all([loadCatalogConfig(), loadPricingFlags()])
   const resolvedByKey = catalogConfigByKey(catalog)
-  const operatorSeatActive = flags.catalog_operator_seat_active
 
   for (const item of catalogItems()) {
     // Skip a PLACEHOLDER item so the sync mints no Stripe product/price for a stand-in amount.
-    // LIVE-229 cleared `operator_seat.placeholder`, so the seat is no longer skipped here: the
-    // approved $12 mints on a routine sync. `catalog_operator_seat_active` still gates checkout.
-    if (isCatalogItemInertPlaceholder(item, operatorSeatActive)) continue
+    if (isCatalogItemInertPlaceholder(item)) continue
 
     // Sync the OPERATOR-SET amounts (the console's "run this after you change a catalog price" contract),
     // fail-safe to the code catalog when no override exists (ADR-463/803). Read BEFORE the products are

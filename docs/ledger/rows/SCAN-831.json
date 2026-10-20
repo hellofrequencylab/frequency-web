@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-831",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/siteTheme\\(/.test(r('lib/sites/editor/state.ts'))){console.error('SCAN-831: the publish gate reads the snapshot theme, not the theme the site wears');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\npublishedWebsiteSnapshot now also requires the snapshot's theme to equal the theme the site wears (siteTheme mapped through EDITOR_THEME_OF), so a Bold site that switches to Frequency falls back to the house look instead of serving its Menswork document through the Frequency render; the share card then follows the worn theme because the snapshot reads null. state.test.ts pins both sides."
+  }
+}

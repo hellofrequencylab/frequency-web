@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
@@ -376,24 +377,24 @@ export async function CrewBody({ ctx }: { ctx: CrewContext; headerImage?: string
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest</span>
-          <h1 className="h1">
-            <SerifTail text="My Quest." />
-          </h1>
-          <span className="meta">{meta}</span>
-        </div>
-        <div className="row wrap">
-          {ctx.isCrewLead && <span className="tag glass">Crew Lead</span>}
-          <Link className="btn sm" href="/crew/leaderboard">
-            Leaderboard
-          </Link>
-          <Link className="btn sm" href="/crew/store">
-            The Vault
-          </Link>
-        </div>
-      </div>
+      <MemberHead
+        kicker="The Quest"
+        title={<><SerifTail text="My Quest." /></>}
+        meta={meta}
+        actions={
+          <>
+            <div className="row wrap">
+              {ctx.isCrewLead && <span className="tag glass">Crew Lead</span>}
+              <Link className="btn sm" href="/crew/leaderboard">
+                Leaderboard
+              </Link>
+              <Link className="btn sm" href="/crew/store">
+                The Vault
+              </Link>
+            </div>
+          </>
+        }
+      />
       <div className="ap-cols">
         <div className="mc-sections">
           {main.map((id) =>

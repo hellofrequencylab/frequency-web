@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// LIVE-1056: a member card tapped on a phone opens the reader's own rewards (through sign-in when
+// LIVE-1113: a member card tapped on a phone opens the reader's own rewards (through sign-in when
 // signed out). It never checks anyone in; a revoked or unknown card lands on /code-unavailable.
 
 let profileId: string | null = 'p-1'

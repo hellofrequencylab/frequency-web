@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { FocusTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +13,9 @@ export const dynamic = 'force-dynamic'
 // own posts and an operator can arrange it (Settings ▾ → Page → Layout). The page keeps only the
 // auth guard + the Focus header and renders <PageModules>.
 
-export default async function JournalPage() {
+export default async function JournalPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const { q } = await searchParams
+  const query = (Array.isArray(q) ? q[0] : q)?.trim().slice(0, 80) ?? ''
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
@@ -23,6 +27,11 @@ export default async function JournalPage() {
       title="Your Journal"
       description="Your record of showing up: every moment you’ve captured, newest first. This is the feed as a journal, not a scroll: proof you were here."
     >
+      {SITE_DESIGN === 'frequency' && (
+        <div className="fqm-tools">
+          <FqFindField action="/journal" value={query} placeholder="Search your journal" keep={{}} />
+        </div>
+      )}
       <PageModules route="/journal" />
     </FocusTemplate>
   )

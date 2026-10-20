@@ -10,6 +10,10 @@ for (const id of ['near-you', 'starters', 'gathering', 'frequency', 'community',
   if (!body.includes(`id="${id}"`)) bad.push(`no ${id} shelf`)
 }
 if (body.indexOf('id="community"') > body.indexOf('id="business"')) bad.push('business circles sit above community circles')
+if (body.indexOf('id="community"') > body.indexOf('id="frequency"')) bad.push('Frequency circles sit above community circles')
+if (!/FREQUENCY_PRIMARY_SLUGS/.test(r('lib/circles/kind.ts'))) bad.push('primary circles are not an explicit list')
+if (!r('components/frequency/members/circles/circles-body.tsx').includes('/spaces/directory')) bad.push('All Business Spaces does not point at the directory')
+if (!/fqPlaceholderArt\(c\.slug\)/.test(body)) bad.push('a circle with no image has no art fallback')
 if (!/<ShelfIndex/.test(body)) bad.push('no section index')
 if (!/<FeaturedBusinessStrip/.test(body)) bad.push('no featured Business strip')
 if (/Popular/.test(body)) bad.push('a shelf is labeled Popular')

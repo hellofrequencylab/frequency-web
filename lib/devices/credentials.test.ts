@@ -11,7 +11,7 @@ import {
   sha256Hex,
 } from './credentials'
 
-// LIVE-1056: the device header, the stored hashes and the input normalizers a scanner leans on.
+// LIVE-1113: the device header, the stored hashes and the input normalizers a scanner leans on.
 
 const ID = '4b3f1c2e-8d7a-4c1b-9e2f-1a2b3c4d5e6f'
 

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-994",
+  "title": "A verified nonprofit pays the $39 Non Profit plan: approval unlocks a Choose Non Profit checkout with the trial instead of granting the plan free",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/nonprofit-verification.ts",
+    "ref": "Owner decision 2026-10-20 (card): Charge $39."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20 (ADR-1811). PREMISE RE-TESTED on main: approveVerification called setSpacePlan(nonprofit, force) so approval granted the plan free. Now approval only marks verified; the billing page offers Choose Non Profit (trial included) to a verified free Space.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.readFileSync(p,'utf8');const miss=[];if(/setSpacePlan\\\\(/.test(r('lib/spaces/nonprofit-verification.ts')))miss.push('approval still grants the plan');if(!/'nonprofit'/.test(r('app/(main)/spaces/[slug]/settings/billing/choose-plan.tsx')))miss.push('ChoosePlanButton lacks nonprofit');if(!/plan=\\\"nonprofit\\\"/.test(r('app/(main)/spaces/[slug]/settings/billing/billing-body.tsx')))miss.push('billing page has no Choose Non Profit');if(miss.length){console.error('LIVE-994: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-20"
+}

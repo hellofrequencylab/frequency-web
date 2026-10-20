@@ -2,6 +2,7 @@ import 'server-only'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 import type { EmailBrand } from '@/lib/comms/email-brand'
 import { palette } from '@/lib/theme/palette'
+import { emailType } from '@/lib/theme/email-type'
 
 // The standard, deliberately-basic branded wrapper for outbound conversation email: a simple Frequency
 // header, the message body, the sender's signature, and a footer with frequencylocal.com. Applied to the
@@ -23,8 +24,9 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-/** The reply typeface: the system stack, like the member shell (lib/email.ts). */
-const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
+/** The reply typeface: the design's body stack (Hanken Grotesk, falling to Helvetica, on Frequency; the
+ *  system stack on DAWN), like the member shell (lib/email.ts). */
+const FONT_STACK = emailType.sans
 
 /** Plain text → escaped inner HTML (newlines to <br>). */
 function textToInnerHtml(text: string): string {
@@ -38,53 +40,88 @@ export function bodyToHtml(text: string): string {
   return `<div style="font-family:${FONT_STACK};font-size:15px;line-height:1.5;color:${palette.text}">${esc(text).replace(/\n/g, '<br>')}</div>`
 }
 
-/** A signature as an inner HTML block (RFC 3676 `-- ` delimiter), or '' for none. */
-function signatureInnerHtml(signature: string | null): string {
-  const sig = (signature ?? '').trim()
-  if (!sig) return ''
-  return `<div style="margin-top:18px;color:${palette.textMuted};font-size:13px;line-height:1.5">-- <br>${esc(sig).replace(/\n/g, '<br>')}</div>`
+/** The sender's picture as a round avatar, 52px. Only an http(s) URL reaches the src (brand.logoUrl was
+ *  already filtered by resolveSpaceEmailBrand; this guards a caller that passes its own). */
+function avatarHtml(url: string | null | undefined, alt: string): string {
+  const src = (url ?? '').trim()
+  if (!/^https?:\/\//i.test(src)) return ''
+  return `<img src="${esc(src)}" alt="${esc(alt)}" width="52" height="52" style="display:block;width:52px;height:52px;border-radius:50%;object-fit:cover;border:0">`
 }
 
-/** The Space-branded header: the logo (when there is one) and the brand name, no Frequency masthead.
- *  Every value comes from data, so every value is escaped. token-ok: email inline styles. */
+/** The signature as a small card: the round picture to the left, the signature lines beside it. With no
+ *  picture the card is the lines alone, behind the same hairline rule. '' when there is neither a
+ *  signature nor a picture. The plain-text part keeps the RFC 3676 `-- ` delimiter (renderReplyEmail). */
+function signatureInnerHtml(signature: string | null, avatarUrl?: string | null, name?: string | null): string {
+  const sig = (signature ?? '').trim()
+  const avatar = avatarHtml(avatarUrl, name ?? '')
+  if (!sig && !avatar) return ''
+  const lines = (sig || (name ?? '').trim()).split('\n').map((l) => esc(l))
+  const first = lines.shift() ?? ''
+  const rest = lines.length ? `<div style="margin-top:2px;color:${palette.textMuted};font-size:13px;line-height:1.5">${lines.join('<br>')}</div>` : ''
+  const text = `<div style="font-family:${emailType.display};font-weight:${emailType.displayWeight};font-size:15px;line-height:1.3;letter-spacing:-0.02em;color:${palette.emailHeading}">${first}</div>${rest}`
+  const photo = avatar ? `<td width="52" valign="middle" style="width:52px;padding:0 14px 0 0">${avatar}</td>` : ''
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;padding-top:18px;border-top:1px solid ${palette.emailBorder};width:100%"><tr>${photo}<td valign="middle" style="font-family:${FONT_STACK}">${text}</td></tr></table>`
+}
+
+/** The Space-branded header: the brand name, no Frequency masthead. The Space's picture rides in the
+ *  signature card as a round avatar, not here. Every value comes from data, so every value is escaped.
+ *  token-ok: email inline styles. */
 function brandHeaderHtml(brand: EmailBrand): string {
   const name = esc(brand.name)
-  const colour = esc(brand.accent ?? palette.text)
-  const logo = brand.logoUrl
-    ? `<img src="${esc(brand.logoUrl)}" alt="${name}" style="display:block;max-height:40px;height:auto;width:auto;margin-bottom:8px">`
-    : ''
-  return `<div style="padding:18px 0 14px;border-bottom:1px solid ${palette.emailBorder}">
-    ${logo}<div style="font-weight:700;font-size:17px;letter-spacing:-0.01em;color:${colour}">${name}</div>
+  const colour = esc(brand.accent ?? palette.emailHeading)
+  return `<div style="padding:0 0 18px">
+    <div style="font-family:${emailType.display};font-weight:${emailType.displayWeight};font-size:17px;letter-spacing:${emailType.displayTracking};color:${colour}">${name}</div>
   </div>`
 }
 
-/** The Space-branded footer: one small line. Frequency is the "sent with", not the masthead. */
+/** The Frequency wordmark, centred (the image already carries "Community Collective"; the alt text says
+ *  it for clients that block images). Absolute URL, as mail needs. */
+function frequencyMarkHtml(): string {
+  const { path, width, height } = emailType.wordmark
+  const w = Math.round(width * 0.7)
+  const h = Math.round(height * 0.7)
+  return `<div style="text-align:center"><img src="${APP}${path}" alt="${SITE_NAME} ${SITE_TAGLINE}" width="${w}" height="${h}" style="display:inline-block;width:${w}px;height:${h}px;border:0"></div>`
+}
+
+/** The Space-branded footer: a link back to the Space's page, the Frequency mark with Community
+ *  Collective, then one small line. Frequency is the "sent with", not the masthead. */
 function brandFooterHtml(brand: EmailBrand): string {
-  return `<div style="padding:14px 0;border-top:1px solid ${palette.emailBorder};color:${palette.emailSubtle};font-size:12px;line-height:1.5">
-    <a href="${APP}" style="color:${palette.emailSubtle}">Sent with ${SITE_NAME}</a> · <a href="${esc(brand.url)}" style="color:${palette.emailSubtle}">${esc(brand.name)}</a>
+  return `<div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
+    <div style="margin-bottom:16px"><a href="${esc(brand.url)}" style="color:${palette.emailHeading};font-weight:600;text-decoration:underline">Back to ${esc(brand.name)} on ${SITE_NAME}</a></div>
+    ${frequencyMarkHtml()}
+    <div style="margin-top:12px"><a href="${APP}" style="color:${palette.emailSubtle}">Sent with ${SITE_NAME}</a> · <a href="${esc(brand.url)}" style="color:${palette.emailSubtle}">${esc(brand.name)}</a></div>
   </div>`
 }
 
-const WRAP_STYLE = `max-width:560px;margin:0 auto;padding:0 12px;font-family:${FONT_STACK};color:${palette.text}`
+/** The page: the design's wash over the card ground, the column fluid to 600px. */
+const PAGE_STYLE = `margin:0;padding:32px 16px 40px;background-color:${palette.emailCanvas};${emailType.wash ? `background-image:${emailType.wash};` : ''}font-family:${FONT_STACK};color:${palette.text}`
+/** The raised card (.card in the member kit): white, hairline, radius 24, the soft shadow. */
+const CARD_STYLE = `max-width:600px;margin:0 auto;padding:32px 32px 28px;background:${palette.surface};border:1px solid ${palette.emailBorder};border-radius:24px;${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}`
+const BODY_STYLE = `font-size:16px;line-height:1.55;color:${palette.emailBody}`
 
-/** Wrap inner message HTML in the standard basic Frequency header + footer, or, with a brand, the
- *  Space's header and the small "Sent with Frequency" footer. */
+/** Wrap inner message HTML in the Frequency email look: the wash page, the raised card with the Frequency
+ *  wordmark (or, with a brand, the Space's name) above the message, and the small footer line below. */
 export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null): string {
   if (brand) {
-    return `<div style="${WRAP_STYLE}">
-  ${brandHeaderHtml(brand)}
-  <div style="padding:20px 2px;font-size:15px;line-height:1.55">${innerHtml}</div>
+    return `<div style="${PAGE_STYLE}">
+  <div style="${CARD_STYLE}">
+    ${brandHeaderHtml(brand)}
+    <div style="${BODY_STYLE}">${innerHtml}</div>
+  </div>
   ${brandFooterHtml(brand)}
 </div>`
   }
-  return `<div style="${WRAP_STYLE}">
-  <div style="padding:18px 0 14px;border-bottom:1px solid ${palette.emailBorder}">
-    <div style="font-weight:700;font-size:17px;letter-spacing:-0.01em;color:${palette.text}">${SITE_NAME}</div>
-    <div style="margin-top:3px;font-weight:700;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:${palette.emailSubtle}">${SITE_TAGLINE}</div>
+  return `<div style="${PAGE_STYLE}">
+  <div style="${CARD_STYLE}">
+    <div style="padding:0 0 18px">
+      <div style="font-family:${emailType.display};font-weight:${emailType.displayWeight};font-size:17px;letter-spacing:${emailType.displayTracking};color:${palette.emailHeading}">${SITE_NAME}</div>
+      <div style="margin-top:3px;font-weight:700;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:${palette.emailSubtle}">${SITE_TAGLINE}</div>
+    </div>
+    <div style="${BODY_STYLE}">${innerHtml}</div>
   </div>
-  <div style="padding:20px 2px;font-size:15px;line-height:1.55">${innerHtml}</div>
-  <div style="padding:14px 0;border-top:1px solid ${palette.emailBorder};color:${palette.emailSubtle};font-size:12px;line-height:1.5">
-    ${SITE_TAGLINE}. <a href="${APP}" style="color:${palette.emailSubtle}">frequencylocal.com</a>
+  <div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
+    ${frequencyMarkHtml()}
+    <div style="margin-top:12px">${SITE_TAGLINE}. <a href="${APP}" style="color:${palette.emailSubtle}">frequencylocal.com</a></div>
   </div>
 </div>`
 }
@@ -108,7 +145,7 @@ export function renderReplyEmail(
 ): { html: string; text: string } {
   const trimmed = (body ?? '').trim()
   const sig = (signature ?? '').trim()
-  const html = wrapEmailHtml(`${textToInnerHtml(trimmed)}${signatureInnerHtml(sig)}`, brand)
+  const html = wrapEmailHtml(`${textToInnerHtml(trimmed)}${signatureInnerHtml(sig, brand?.logoUrl, brand?.name)}`, brand)
   const text = `${trimmed}${sig ? `\n\n-- \n${sig}` : ''}${textFooter(brand)}`
   return { html, text }
 }
@@ -121,7 +158,7 @@ export function renderCoalescedEmail(
   brand?: EmailBrand | null,
 ): { html: string; text: string } {
   const sig = (signature ?? '').trim()
-  const html = wrapEmailHtml(`${coalescedInnerHtml}${signatureInnerHtml(sig)}`, brand)
+  const html = wrapEmailHtml(`${coalescedInnerHtml}${signatureInnerHtml(sig, brand?.logoUrl, brand?.name)}`, brand)
   const text = `${(coalescedText ?? '').trim()}${sig ? `\n\n-- \n${sig}` : ''}${textFooter(brand)}`
   return { html, text }
 }

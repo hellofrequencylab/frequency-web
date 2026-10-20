@@ -225,6 +225,8 @@
 [data-design="frequency"] [data-kit="members"] .fqm-micro .fqm-circle-orb{width:40px;height:40px}
 [data-design="frequency"] [data-kit="members"] .fqm-circle-img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block}
 [data-design="frequency"] [data-kit="members"] .fqm-circle-orb:has(.fqm-circle-img){background:var(--fq-surface-card)}
+/* The phone drawer's Your Circles rows draw the same mark at the row icon's size (LIVE-1043). */
+[data-design="frequency"] [data-kit="members"] .rl-row .fqm-drawer-orb{width:24px;height:24px}
 [data-design="frequency"] [data-kit="members"] .fqm-ring{position:relative;width:40px;height:40px;border-radius:50%;background:var(--fqm-ink-8)}
 [data-design="frequency"] [data-kit="members"] .fqm-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--fq-pa);-webkit-mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0);mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0)}
 [data-design="frequency"] [data-kit="members"] .fqm-ring>span{position:absolute;inset:3px;border-radius:50%;background:var(--fq-surface-card);display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong)}
@@ -582,7 +584,8 @@
   [data-design="frequency"] [data-kit="members"] .ap-search{margin-left:auto}
 
   [data-design="frequency"] [data-kit="members"] .fqm-tabbar{
-    position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:62px;
+    position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom) + var(--fq-foot-lift, 0px));height:62px;
+    transition:bottom 340ms var(--fq-ease-out);
     display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;padding:0 4px;
     border-radius:var(--fq-radius-orb);
     background:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 98%,transparent),color-mix(in oklab,var(--fq-surface-card) 95%,transparent));
@@ -957,35 +960,94 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
   }
 }
 
-/* THE BOTTOM-RIGHT CHAT PANEL, IN THE FREQUENCY LOOK (LIVE-1025).
-   The panel itself is the shared one (components/vera/vera-launcher.tsx); these hooks (.fqd-*) only
-   restyle it. The closed tab is NOT touched here: it is the rail's .fqm-vera-btn, pinned by its own
-   test. The orb carries the view: Vera blue, Support green, Messages pink. It flickers while a reply
-   is arriving (data-busy), and sits still under reduced motion. */
+/* THE BOTTOM-RIGHT CHAT PANEL, IN THE FREQUENCY LOOK (LIVE-1025, LIVE-1088).
+   The panel is the shared one (components/vera/vera-launcher.tsx); every surface in it carries an
+   .fqd-* hook and is drawn here, not left to DAWN's utilities: header with the mode orb, a three-tab
+   switch (Messages, Vera, Help), person rows, bubbles, composer, chips, Help cards. The closed tab is NOT
+   touched here (it is the rail's .fqm-vera-btn, pinned by its own test). The orb carries the view: Vera
+   blue, Support green, Messages pink, and flickers while a reply is arriving (data-busy). */
 [data-design="frequency"] .fqd-panel{
-  background:var(--fq-surface-card);border:none;border-radius:var(--fq-radius-xl);
-  box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 24px 60px -24px color-mix(in oklab,var(--fq-ink) 35%,transparent);
-  color:var(--fq-text-body)}
+  --fqd-in:var(--fq-text-strong);--fqd-mute:var(--fq-text-muted);
+  background:var(--fq-surface-card);border:none;border-radius:var(--fq-radius-xl);color:var(--fq-text-body);
+  box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 28px 64px -24px color-mix(in oklab,var(--fq-ink) 38%,transparent);
+  font-family:var(--fq-font-sans)}
 [data-design="frequency"] .fqd-panel [class*="bg-surface"],
 [data-design="frequency"] .fqd-panel [class*="bg-canvas"]{background:transparent}
-[data-design="frequency"] .fqd-head{
-  background:var(--fq-pa-soft),var(--fq-surface-card);border-bottom:1px solid var(--fq-border-hair);padding:14px 16px}
-[data-design="frequency"] .fqd-head .fqd-ic{display:none}
-[data-design="frequency"] .fqd-head #vera-launcher-title{font:600 var(--fq-text-body) var(--fq-font-sans);color:var(--fq-text-strong)}
-[data-design="frequency"] .fqd-panel :is(input,textarea){border-radius:var(--fq-radius-orb)}
-[data-design="frequency"] .fqd-panel :is(button,a)[class*="rounded-pill"]{border-radius:var(--fq-radius-orb)}
-[data-design="frequency"] .fqd-panel button[class*="bg-primary"]:not([class*="bg-primary-bg"]){
-  background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow)}
+[data-design="frequency"] .fqd-panel :is([class*="border-border"],[class*="border-chrome-border"]){border-color:var(--fq-border-hair)}
+[data-design="frequency"] .fqd-panel :is([class*="text-subtle"],[class*="text-muted"]){color:var(--fqd-mute)}
+[data-design="frequency"] .fqd-panel :is([class*="text-text"],[class*="text-primary-strong"]){color:var(--fqd-in)}
+
+/* header */
+[data-design="frequency"] .fqd-head{background:var(--fq-pa-soft),var(--fq-surface-card);border-bottom:none;padding:16px 16px 10px;gap:12px}
+[data-design="frequency"] .fqd-head :is(.fqd-ic,.fqd-back){display:none}
+[data-design="frequency"] .fqd-head #vera-launcher-title{font:600 var(--fq-text-h4)/1.1 var(--fq-font-display);letter-spacing:-.01em;color:var(--fqd-in)}
+[data-design="frequency"] .fqd-head #vera-launcher-title+p{margin-top:3px;font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fqd-mute)}
+[data-design="frequency"] .fqd-head button{border-radius:50%}
+
+/* the three-tab switch */
+[data-design="frequency"] .fqd-tabs{display:flex;gap:4px;margin:0 16px 10px;padding:4px;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
+[data-design="frequency"] .fqd-tabs button{flex:1;min-height:34px;border:none;cursor:pointer;border-radius:var(--fq-radius-orb);background:transparent;color:var(--fqd-mute);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);transition:background .2s ease,color .2s ease}
+[data-design="frequency"] .fqd-tabs button[aria-pressed="true"]{background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow)}
+[data-design="frequency"] .fqd-tabs button:focus-visible{outline:2px solid var(--fq-ink);outline-offset:2px}
+[data-design="frequency"] .fqd-helpfoot{display:none}
+
+/* find field and tool row */
+[data-design="frequency"] .fqd-tools{border:none;padding:4px 16px 10px;gap:8px}
+[data-design="frequency"] .fqd-panel input{border-radius:var(--fq-radius-orb);border:none;background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fqd-in)}
+[data-design="frequency"] .fqd-panel input:focus-visible{box-shadow:inset 0 0 0 1.5px var(--fq-ink)}
+[data-design="frequency"] .fqd-panel :is(textarea){border-radius:20px;border:none;background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fqd-in)}
+[data-design="frequency"] .fqd-tools button:not(.fqd-row){border-radius:var(--fq-radius-orb);background:var(--fq-pa-soft),var(--fq-surface-card);border:none;box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fqd-in)}
+[data-design="frequency"] .fqd-thead{border-bottom:1px solid var(--fq-border-hair);padding:8px 12px}
+
+/* person and room rows */
+[data-design="frequency"] .fqd-panel ul.divide-y>:not([hidden])~:not([hidden]){border-color:transparent}
+[data-design="frequency"] .fqd-row{margin:0 8px;width:calc(100% - 16px);padding:10px 10px;border-radius:var(--fq-radius-l);transition:background .15s ease}
+[data-design="frequency"] .fqd-row:hover{background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent)}
+[data-design="frequency"] .fqd-row:focus-visible{outline:2px solid var(--fq-ink);outline-offset:-2px}
+[data-design="frequency"] .fqd-row [class*="font-medium"]{font-weight:600}
+[data-design="frequency"] .fqd-row [class*="bg-danger"]{background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow)}
+[data-design="frequency"] .fqd-room-ic{border-radius:50%;background:var(--fq-pa-soft),var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fqd-in)}
+[data-design="frequency"] .fqd-empty{padding:20px 16px}
+[data-design="frequency"] .fqd-foot{border:none;padding:8px 16px 12px}
+[data-design="frequency"] .fqd-foot a{color:var(--fqd-in);font-weight:600;text-decoration:none}
+[data-design="frequency"] .fqd-foot a:hover{text-decoration:underline}
+
+/* conversation: bubbles and composer */
+[data-design="frequency"] .fqd-scroll{padding:16px;gap:14px}
+[data-design="frequency"] .fqd-bub{border:none;box-shadow:none;border-radius:20px;padding:9px 14px;font:400 var(--fq-text-body-s)/1.45 var(--fq-font-sans)}
+[data-design="frequency"] .fqd-bub.is-theirs{background:color-mix(in oklab,var(--fq-text-strong) 9%,transparent);color:var(--fqd-in);border-bottom-left-radius:6px}
+[data-design="frequency"] .fqd-bub.is-mine{background:var(--fq-pa);color:var(--fq-ink);border-bottom-right-radius:6px;box-shadow:var(--fq-pa-glow)}
+[data-design="frequency"] .fqd-name{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fqd-mute)}
+[data-design="frequency"] .fqd-msg p{color:var(--fqd-in)}
+[data-design="frequency"] .fqd-compose textarea{min-height:44px;padding:11px 16px}
+[data-design="frequency"] .fqd-compose{border-top:1px solid var(--fq-border-hair);padding:12px 14px;background:transparent}
+[data-design="frequency"] .fqd-compose button[aria-label="Send"]{width:40px;height:40px;border-radius:50%;border:none;background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow)}
+[data-design="frequency"] .fqd-compose button[aria-label="Send"]:disabled{opacity:.45;box-shadow:none}
+[data-design="frequency"] .fqd-chip{border:none;border-radius:var(--fq-radius-orb);background:var(--fq-pa-soft),var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fqd-in);padding:6px 12px}
+[data-design="frequency"] .fqd-chip:hover{box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] .fqd-card{border:none;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .fqd-card [class*="bg-success"]{background:var(--fq-pa);color:var(--fq-ink)}
+[data-design="frequency"] .fqd-askvera{background:var(--fq-pa-soft),var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair),var(--fq-pa-glow)}
+
+/* Help */
+[data-design="frequency"] .fqd-link{border-radius:var(--fq-radius-l);color:var(--fqd-in);font-weight:500}
+[data-design="frequency"] .fqd-link:hover{background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent)}
+[data-design="frequency"] .fqd-panel .fqd-find svg{color:var(--fqd-mute)}
+
+/* The open panel rests on the open mega footer's top edge, like the docks (LIVE-1030, LIVE-1043). From md
+   only: below md the panel is a bottom sheet over everything. An inline anchor (DAWN's bar) still wins. */
+@media (min-width:768px){
+  [data-design="frequency"] .fqd-wrap{bottom:calc(24px + var(--fq-foot-lift, 0px));transition-property:grid-template-rows,bottom}}
 
 /* token-ok: the three mode colours (Vera blue, Support green, Messages pink) are the owner's ruling for the dock orb; the design export has no tokens for them. */
-[data-design="frequency"] .fqd-orb[data-mode="vera"]{--orb-hi:#CFE2FF;--orb-mid:#8DB4FF;--orb-lo:#6FD8FF;--orb-glow:#6FA8FF}
+[data-design="frequency"] .fqd-orb[data-mode="vera"]{--orb-top:#FFFFFF;--orb-hi:#CFE2FF;--orb-mid:#8DB4FF;--orb-lo:#6FD8FF;--orb-glow:#6FA8FF}
 /* token-ok: Support green. */
-[data-design="frequency"] .fqd-orb[data-mode="support"]{--orb-hi:#D5F5DC;--orb-mid:#8FDDA6;--orb-lo:#5CCB9A;--orb-glow:#5CCB9A}
+[data-design="frequency"] .fqd-orb[data-mode="support"]{--orb-top:#FFFFFF;--orb-hi:#D5F5DC;--orb-mid:#8FDDA6;--orb-lo:#5CCB9A;--orb-glow:#5CCB9A}
 /* token-ok: Messages pink. */
-[data-design="frequency"] .fqd-orb[data-mode="messages"]{--orb-hi:#FADCEB;--orb-mid:#F2A6CF;--orb-lo:#E985B8;--orb-glow:#E985B8}
+[data-design="frequency"] .fqd-orb[data-mode="messages"]{--orb-top:#FFFFFF;--orb-hi:#FADCEB;--orb-mid:#F2A6CF;--orb-lo:#E985B8;--orb-glow:#E985B8}
 [data-design="frequency"] .fqd-orb{
   display:inline-flex;flex:none;width:36px;height:36px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,var(--fq-surface-card) 0,var(--orb-hi) 26%,var(--orb-mid) 58%,var(--orb-lo) 100%);
+  background:radial-gradient(circle at 35% 30%,var(--orb-top) 0,var(--orb-hi) 26%,var(--orb-mid) 58%,var(--orb-lo) 100%);
   box-shadow:0 0 18px color-mix(in oklab,var(--orb-glow) 55%,transparent)}
 [data-design="frequency"] .fqd-orb.is-sm{width:18px;height:18px}
 [data-design="frequency"] .fqd-orb{transition:background .3s ease,box-shadow .3s ease}

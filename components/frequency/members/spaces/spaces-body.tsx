@@ -6,8 +6,9 @@ import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { SPACE_KINDS, isSpaceKind, spaceKindLabel } from '@/lib/spaces/categories'
 import { SUBJECTS, findSubject } from '@/lib/taxonomy/subjects'
 import { SHOW_STEP, type DirectoryParams, type DirectorySections } from '@/lib/spaces/directory-sections'
-import { FqFacetMenu, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
+import { FqFacetMenu, FqFindField, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { SystemNotice } from '@/components/frequency/members/shared/system-notice'
 import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 
@@ -34,7 +35,9 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
 }
 
-function SpaceTile({ s }: { s: NetworkedSpace }) {
+// `inFounding`: the tile sits under the Founding Businesses heading, which already says it, so the mark is not
+// repeated on every card (owner 2026-10-20: it read as loud).
+function SpaceTile({ s, inFounding = false }: { s: NetworkedSpace; inFounding?: boolean }) {
   const art = s.coverUrl || fqPlaceholderArt(s.slug)
   const stats = [
     s.memberCount ? plural(s.memberCount, 'member', 'members') : null,
@@ -47,7 +50,7 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
     <Link className="card fqm-card" href={`/spaces/${s.slug}`}>
       <span className="ph" style={{ backgroundImage: `url('${art}')` }}>
         <span className="tag glass fqm-corner">{s.kindLabel}</span>
-        {s.isFoundingBusiness && (
+        {s.isFoundingBusiness && !inFounding && (
           <span className="fqm-corner-b">
             <FounderMark />
           </span>
@@ -57,7 +60,11 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
         <span className="h3">{s.name}</span>
         {s.tagline && <span className="t2">{s.tagline}</span>}
         {stats && <span className="t2 fqm-body-ink">{stats}</span>}
-        {s.boosted && <span className="t2 fqm-body-ink">Boosted</span>}
+        {s.boosted && (
+          <span className="row">
+            <span className="tag">Boosted</span>
+          </span>
+        )}
       </span>
     </Link>
   )
@@ -106,7 +113,20 @@ export function FqSpacesBody({
     <MembersBody>
       {header}
 
+      {!signedIn && (
+        <SystemNotice
+          icon="space"
+          title="Run something in town?"
+          body="A Space is one home for the Circles you gather and the Events you put on. Hosting is free."
+          actions={[
+            { href: '/join', label: 'Sign up to create a Space', primary: true },
+            { href: '/sign-in', label: 'Log in' },
+          ]}
+        />
+      )}
+
       <div className="fqm-tools">
+        <FqFindField action={BASE} value={params.q} placeholder="Search by name, place or subject" keep={{ ...cur, q: undefined }} />
         <FqFacetMenu
           label="Subject"
           paramKey="subject"
@@ -192,7 +212,7 @@ export function FqSpacesBody({
           </div>
           <div className="g3">
             {founding.map((s) => (
-              <SpaceTile key={s.id} s={s} />
+              <SpaceTile key={s.id} s={s} inFounding />
             ))}
           </div>
         </section>
@@ -201,7 +221,7 @@ export function FqSpacesBody({
       <section className="sec" aria-labelledby="fq-spaces-all">
         <div className="sec-h">
           <span id="fq-spaces-all" className="h2">
-            {filtering ? 'Results' : 'All Spaces'}
+            {filtering ? 'Results' : featured.length + founding.length > 0 ? 'More Spaces' : 'All Spaces'}
           </span>
           <span className="meta">{plural(total, 'Space', 'Spaces')}</span>
         </div>
@@ -228,7 +248,15 @@ export function FqSpacesBody({
           <div className="stack">
             <EmptyState
               variant={filtering ? 'no-results' : 'first-use'}
-              title={params.following === '1' ? 'You are not following any Spaces yet.' : filtering ? 'No Spaces match.' : 'No Spaces here yet.'}
+              title={
+                params.following === '1'
+                  ? 'You are not following any Spaces yet.'
+                  : filtering
+                    ? 'No Spaces match.'
+                    : featured.length + founding.length > 0
+                      ? 'Every Space is in the rows above.'
+                      : 'No Spaces here yet.'
+              }
               description={
                 filtering
                   ? 'Try a wider search, or start from a kind of Space below.'
@@ -255,18 +283,15 @@ export function FqSpacesBody({
         )}
       </section>
 
-      <div className="soft row wrap sec">
-        <span className="grow stack fqm-gap-sm">
-          <span className="h3">Run something in town?</span>
-          <span className="t2">
-            A Space is one home for the Circles you gather, the Events you put on and everything you offer. Hosting is
-            free. You pay when you start charging.
-          </span>
-        </span>
-        <Link className="btn pa" href="/spaces/new">
-          {signedIn ? 'Create a Space' : 'Sign up to create a Space'}
-        </Link>
-      </div>
+      {signedIn && (
+        <SystemNotice
+          className="sec"
+          icon="help"
+          title="Not sure what a Space is?"
+          body="It is one home for the Circles you gather, the Events you put on and everything you offer. Hosting is free. You pay when you start charging."
+          actions={[{ href: '/help', label: 'How Spaces work' }]}
+        />
+      )}
     </MembersBody>
   )
 }

@@ -1,4 +1,4 @@
-// COUNTER SCANNERS, the pure half (LIVE-1056, docs/LOYALTY.md "Counter scanners"). Secrets, tokens and
+// COUNTER SCANNERS, the pure half (LIVE-1113, docs/LOYALTY.md "Counter scanners"). Secrets, tokens and
 // the hashes the database keeps instead of them. Crypto only, no IO: unit-tested in credentials.test.ts.
 //
 //   • A device authenticates with `X-Frequency-Device: <device id>.<secret>`. The secret is 32 random

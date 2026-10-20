@@ -1,4 +1,4 @@
--- NFC counter check-in: a Space's own scanner reads a member's card and checks them in (LIVE-1056).
+-- NFC counter check-in: a Space's own scanner reads a member's card and checks them in (LIVE-1113).
 -- See docs/BUILD-BACKLOG.json for status and docs/LOYALTY.md "Counter scanners" for the program and
 -- the device contract; this file explains the schema, it does not track the work.
 --
@@ -40,7 +40,7 @@ create index if not exists scanner_devices_created_by_idx on public.scanner_devi
 alter table public.scanner_devices enable row level security;
 revoke all on table public.scanner_devices from public, anon, authenticated;
 grant all on public.scanner_devices to service_role;
-comment on table public.scanner_devices is 'LIVE-1056 counter scanners: a device a Space owner registered to check members in by NFC card. secret_hash is sha256(hex) of the one-time secret. Service role only; lib/devices gates every read and write.';
+comment on table public.scanner_devices is 'LIVE-1113 counter scanners: a device a Space owner registered to check members in by NFC card. secret_hash is sha256(hex) of the one-time secret. Service role only; lib/devices gates every read and write.';
 
 create table if not exists public.member_cards (
   id uuid primary key default gen_random_uuid(),
@@ -61,6 +61,6 @@ create index if not exists member_cards_issued_by_idx on public.member_cards(iss
 alter table public.member_cards enable row level security;
 revoke all on table public.member_cards from public, anon, authenticated;
 grant all on public.member_cards to service_role;
-comment on table public.member_cards is 'LIVE-1056 counter scanners: a member''s NFC card. token_hash is sha256(hex) of the opaque token on the card; uid_hash is an HMAC of the chip UID bound on first scan. space_id null means every Space. Service role only.';
+comment on table public.member_cards is 'LIVE-1113 counter scanners: a member''s NFC card. token_hash is sha256(hex) of the opaque token on the card; uid_hash is an HMAC of the chip UID bound on first scan. space_id null means every Space. Service role only.';
 
 commit;

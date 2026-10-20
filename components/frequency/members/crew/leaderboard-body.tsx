@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 import { BoardVisibilitySwitch } from '@/components/frequency/members/shared/board-visibility'
@@ -51,23 +52,23 @@ export function LeaderboardBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Leaderboard</span>
-          <h1 className="h1">
-            Showing up, <span className="serif">together.</span>
-          </h1>
-          <span className="meta">One shared goal first. Where people stand sits below it, scoped to your Circle, and yours to opt out of.</span>
-        </div>
-        <div className="row wrap">
-          <Link className="btn sm" href="/crew">
-            My Quest
-          </Link>
-          <Link className="btn sm" href="/crew/store">
-            The Vault
-          </Link>
-        </div>
-      </div>
+      <MemberHead
+        kicker="The Quest · Leaderboard"
+        title={<>Showing up, <span className="serif">together.</span></>}
+        meta="One shared goal first. Where people stand sits below it, scoped to your Circle, and yours to opt out of."
+        actions={
+          <>
+            <div className="row wrap">
+              <Link className="btn sm" href="/crew">
+                My Quest
+              </Link>
+              <Link className="btn sm" href="/crew/store">
+                The Vault
+              </Link>
+            </div>
+          </>
+        }
+      />
 
       <section className="panel mc-hero" aria-label="The shared goal">
         <div className="fq-aura" aria-hidden />

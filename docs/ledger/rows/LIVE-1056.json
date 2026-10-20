@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1056",
+  "title": "Editor E0 task 12b, leftover readers: the website seed, menu, nav, Contact and importer handle a stored node Space",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "\u00a71.5 step 6; \u00a78 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. A stored native node document parses to rows with empty cells, so readers that ask which block types a Space places saw an empty page. lib/entity-blocks/node-projection.ts holds readTypeKeyedGrid (a native document is projected to its shown types with first-node bags; every other document parses as before) and nodeProjection (moved from spotlight.ts). Readers moved onto it: lib/sites/editor/seed.ts, manage/layout/menu-actions.ts, lib/spaces/profile-nav.ts, lib/spaces/contact-tab.ts, (profile)/contact/page.tsx, lib/sites/house-theme.ts. lib/importer/materialize.ts holds a stored node layout (published or draft) like a locked one, so a re-seed never overwrites node identities. Renderers (public, claim, full) already resolve nodes and are unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];if(!fs.existsSync('lib/entity-blocks/node-projection.ts'))bad.push('no type-keyed view');for(const f of ['lib/sites/editor/seed.ts','lib/spaces/profile-nav.ts','lib/spaces/contact-tab.ts','lib/sites/house-theme.ts','app/(main)/spaces/[slug]/manage/layout/menu-actions.ts'])if(!fs.readFileSync(f,'utf8').includes('readTypeKeyedGrid'))bad.push(f+' skips the type-keyed view');if(!fs.readFileSync('lib/importer/materialize.ts','utf8').includes('legacySpaceLayoutWriteError'))bad.push('importer can overwrite a node layout');if(bad.length){console.error('LIVE-1056: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a leftover reader goes back to the raw parse (an empty page on a node Space) or the importer stops holding a node layout. Behavior is lib/entity-blocks/node-projection.test.ts and lib/importer/materialize.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

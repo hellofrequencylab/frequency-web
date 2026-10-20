@@ -99,7 +99,8 @@ export default async function SpacesDirectoryPage({
       eyebrow="Directory"
       title="Business Spaces"
       subtitle="A Space is the home a studio, a shop or a nonprofit keeps here, and the Circles and Events they host hang off it. Find one near you, follow it, and turn up."
-      search={<DirectorySearch placeholder="Search Spaces by name" />}
+      // Under Frequency the one search box lives in the find row of the body (FqFindField), as on Circles.
+      search={SITE_DESIGN === 'frequency' ? undefined : <DirectorySearch placeholder="Search Spaces by name" />}
       action={
         viewerProfileId ? (
           <>

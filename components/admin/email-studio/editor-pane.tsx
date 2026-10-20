@@ -9,6 +9,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { NodeLayoutProvider, type SaveNodeLayout } from '@/components/entity-blocks/node-layout-store'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { EntityLayoutProvider, useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
@@ -19,14 +21,15 @@ import type { ActionResult } from '@/lib/action-result'
 import { ComposeToolbar } from './compose-toolbar'
 import { EmailContextBar } from './context-bar'
 import { EmailPreview } from './preview'
-import { EmailCanvasEditor } from './email-canvas-editor'
+import { EmailCanvasEditor, NodeEmailCanvasEditor } from './email-canvas-editor'
+import { NodeSeeder } from './email-canvas-model'
 import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
 
 /** The persist action shape the pane injects into the store + compose fields (matches saveEmailCampaign). */
 type SaveCampaign = (
   id: string,
   patch: {
-    layout?: BuilderLayout | EntityLayout
+    layout?: BuilderLayout | EntityLayout | NodeLayout
     subject?: string
     preheader?: string
     fromName?: string
@@ -190,6 +193,13 @@ export function EmailEditorPane({
     [id, saveCampaign],
   )
 
+  // The node store's persist (the canvas arrangement on a node document): the whole node document, debounced
+  // by the store. The server decides whether it may be stored (render_path_email).
+  const saveNodes = useCallback<SaveNodeLayout>(
+    (payload: NodeLayout) => saveCampaign(id, { layout: payload }),
+    [id, saveCampaign],
+  )
+
   // Debounced subject / preheader save (separate from the layout store's own debounce).
   const fieldTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scheduleFieldSave = useCallback(
@@ -257,6 +267,37 @@ export function EmailEditorPane({
   // CANVAS (prototype, flag-gated): the on-canvas WYSIWYG model. Reuses the SAME provider, seed, save,
   // compile, and (via the shared store) the live preview / test-send paths as the other arrangements; only the
   // editing surface changes. The compose fields sit on top; the send / schedule panel (sidebar) sits below.
+  const nodeLayout = campaign.nodeLayout
+  if (arrangement === 'canvas' && nodeLayout) {
+    // A node document (render_path_email on): the canvas runs on its own node store, so a block type can repeat.
+    return (
+      <NodeLayoutProvider save={saveNodes}>
+        <NodeSeeder layout={nodeLayout} />
+        <div className="space-y-4">
+          <EmailContextBar context={campaign.context} />
+          <ComposeToolbar
+            campaignId={id}
+            subject={subject}
+            preheader={preheader}
+            fromName={fromName}
+            onSubject={onSubject}
+            onPreheader={onPreheader}
+            onFromName={onFromName}
+            replyMode={replyMode}
+            onReplyMode={onReplyMode}
+            saveNote={saveNote}
+            previewOpen
+            onTogglePreview={() => {}}
+            showPreviewToggle={false}
+            sendTest={sendTest}
+          />
+          <NodeEmailCanvasEditor colors={colors} />
+          {sidebar}
+        </div>
+      </NodeLayoutProvider>
+    )
+  }
+
   if (arrangement === 'canvas') {
     return (
       <EntityLayoutProvider kind="email" save={save}>

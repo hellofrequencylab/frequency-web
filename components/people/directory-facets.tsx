@@ -1,6 +1,13 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { FacetDropdown, type FacetOption } from '@/components/ui/facet-dropdown'
 import { ROLE_LABEL, type CommunityRole } from '@/lib/community-roles'
+import '@/app/themes/active/members-b'
+import { FqFacetMenu, type Params } from '@/components/frequency/members/shared/kit-tools'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (LIVE-1086): the same three facets drawn as the kit's chips-with-menus (what Events and the
+// Channels toolbar use), carried on the page's own URL params. DAWN keeps the FacetDropdown row. Inlined at build.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Faceted filters for the Community directory (BUILD-LIST P5) — the same
 // URL-driven FacetDropdown pattern as /events. Three facets, every option
@@ -26,12 +33,17 @@ export async function DirectoryFacets({
   profiles,
   circles,
   className,
+  base = '/network',
+  current = {},
 }: {
   /** The unfiltered directory (so options stay stable while a filter is active). */
   profiles: { id: string; community_role: string | null; entity_types?: string[] | null }[]
   /** Forming/active circles (id + city) — the city vocabulary. */
   circles: { id: string; city: string | null }[]
   className?: string
+  /** The page path and its live params, for the kit chips (a facet sets its own param and keeps the rest). */
+  base?: string
+  current?: Params
 }) {
   // Topic — distinct entity_types tags present on listed profiles.
   const topicSet = new Set<string>()
@@ -82,6 +94,17 @@ export async function DirectoryFacets({
 
   if (topicOptions.length === 0 && cityOptions.length === 0 && !showRole) return null
 
+  if (FREQUENCY) {
+    // A new facet restarts the paging.
+    const cur: Params = { ...current, page: undefined }
+    return (
+      <div className="chips fqm-facets">
+        {topicOptions.length > 0 && <FqFacetMenu label="Topic" paramKey="topic" options={topicOptions} base={base} current={cur} icon="filter" />}
+        {cityOptions.length > 0 && <FqFacetMenu label="City" paramKey="city" options={cityOptions} base={base} current={cur} icon="pin" />}
+        {showRole && <FqFacetMenu label="Role" paramKey="role" options={roleOptions} base={base} current={cur} />}
+      </div>
+    )
+  }
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className ?? ''}`}>
       {topicOptions.length > 0 && <FacetDropdown label="Topic" paramKey="topic" options={topicOptions} />}

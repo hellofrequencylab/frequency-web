@@ -3,7 +3,7 @@ import { rateLimitOk } from '@/lib/rate-limit'
 import { DEVICE_HEADER } from './credentials'
 import { authenticateDevice, scannerDevicesEnabled, touchDevice, type ScannerDevice } from './store'
 
-// THE DEVICE WIRE (LIVE-1056, docs/LOYALTY.md "Counter scanners"). The /api/v1/devices/* routes are a
+// THE DEVICE WIRE (LIVE-1113, docs/LOYALTY.md "Counter scanners"). The /api/v1/devices/* routes are a
 // separate, small contract from the member app's (lib/contract/respond.ts): a microcontroller parses a
 // flat JSON body, so every answer is `{ ok, reason?, … }` at the top level, never the `{ data, error }`
 // envelope. The firmware reads it this way:

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { createClient } from '@/lib/supabase/server'
@@ -326,25 +327,25 @@ export async function VaultBody() {
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">You · The Vault</span>
-          <h1 className="h1">
-            The <span className="serif">Vault.</span>
-          </h1>
-          <span className="meta">{seasonLine}</span>
-        </div>
-        <div className="row wrap">
-          <Link className="btn sm" href="/crew/store/ledger">
-            How you earned
-          </Link>
-          {shows.has('vault-leaderboard') && (
-            <Link className="btn sm" href="/crew/leaderboard">
-              Leaderboard
-            </Link>
-          )}
-        </div>
-      </div>
+      <MemberHead
+        kicker="You · The Vault"
+        title={<>The <span className="serif">Vault.</span></>}
+        meta={seasonLine}
+        actions={
+          <>
+            <div className="row wrap">
+              <Link className="btn sm" href="/crew/store/ledger">
+                How you earned
+              </Link>
+              {shows.has('vault-leaderboard') && (
+                <Link className="btn sm" href="/crew/leaderboard">
+                  Leaderboard
+                </Link>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {/* The reference sets the three tiles full width above the columns; they stay there while the
           operator keeps Standing first, and fall into the column order when they move it. */}

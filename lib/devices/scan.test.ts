@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// LIVE-1056: a card scan resolves device → Space → member and hands the Space's own check-in to
+// LIVE-1113: a card scan resolves device → Space → member and hands the Space's own check-in to
 // captureNode with a freshly signed code and the Space's pin. Everything downstream (ledger, stamps,
 // Zaps, hunts, CRM) is captureNode's, so this pins the hand-off and the card checks around it.
 

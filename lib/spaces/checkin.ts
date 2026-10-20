@@ -80,7 +80,7 @@ const NODE_COLS = 'id, space_id, kind'
 const CAPTURE_COLS = 'id, actor_profile_id, captured_at'
 
 /** Read THIS Space's existing check-in node, or null (service-role; FAIL-SAFE to null). UNGATED: the
- *  one outside caller is the counter scanner (lib/devices/scan.ts, LIVE-1056), whose device credential
+ *  one outside caller is the counter scanner (lib/devices/scan.ts, LIVE-1113), whose device credential
  *  already pins the Space. It never mints a node; that stays behind ensureCheckinNode's owner gate. */
 export async function readCheckinNode(spaceId: string): Promise<NodeRow | null> {
   try {

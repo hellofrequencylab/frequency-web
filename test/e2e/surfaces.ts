@@ -1227,6 +1227,18 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The newest circles by created_at, with a live member count on each row.',
   },
+  {
+    value: 'nearby-board-stats',
+    file: 'components/nearby/around-you-board.tsx',
+    kind: 'live',
+    why: 'Four tally tiles under Frequency: upcoming events, circles, members and Dispatches this week, each a live count.',
+  },
+  {
+    value: 'nearby-board-panel',
+    file: 'components/nearby/around-you-board.tsx',
+    kind: 'live',
+    why: 'The chosen tab\'s list: gatherings, circles, new members or Dispatches, all live rows with names, dates and relative times.',
+  },
   // ── /discover, the public hub (LIVE-301) ────────────────────────────────────────────────
   // Six boxes across three files, one per live read. `/discover` is prerendered hourly, so each
   // preview deployment bakes its own snapshot of the database and `pr-compare` compares two

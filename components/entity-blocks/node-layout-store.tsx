@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
+import { saveMemberGridLayout } from '@/app/(main)/settings/profile/spotlight-actions'
 
 // THE NODE LAYOUT STORE (E0 task 12b, ADR-1835). The node-keyed twin of `profile-layout-context`: it holds
 // a NodeLayout, selects a block by its node id (`selectedNid`) instead of its type, and saves the whole
@@ -218,15 +219,14 @@ export function useNodeLayout(): NodeLayoutStoreValue | null {
 
 /** The mount `EntityLayoutMount` renders inside the live provider, at the same position on every route. It
  *  is a wrapper with its own name on purpose: the position never picks between provider types (LIVE-472),
- *  it always nests this one. Only the Space writer accepts a node document (ADR-1834, behind
- *  render_path_space_profile); the member writer still refuses nodes (LIVE-875), so a member-route save
- *  reports that instead of calling it. Inert until something seeds it. */
+ *  it always nests this one. The Space writer (ADR-1834) and the member writer (LIVE-1062) accept a node
+ *  document only behind render_path_space_profile and refuse it otherwise. Inert until something seeds it. */
 export function NodeLayoutMount({ spaceSlug, children }: { spaceSlug: string | null; children: ReactNode }) {
   const save = useCallback<SaveNodeLayout>(
     (layout) =>
       spaceSlug
         ? saveSpaceGridLayout(spaceSlug, layout as unknown as BuilderLayout)
-        : Promise.resolve({ error: 'This page cannot save this layout yet.' }),
+        : saveMemberGridLayout(layout),
     [spaceSlug],
   )
   return (

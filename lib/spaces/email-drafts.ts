@@ -1,7 +1,8 @@
 'use server'
 
-import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
+import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
 
 // PER-SPACE BLOCK-EMAIL DRAFTS (Email in the Business CRM, P1 · deliverable 2 — the Marketing editor's data
@@ -57,13 +58,15 @@ import { campaignStatusToMessaging } from '@/lib/messaging/status'
 import type { MessagingCampaignItem } from '@/lib/messaging/console'
 import {
   parseEntityLayout,
-  sanitizeEntityLayout,
   starterRows,
   type EntityLayout,
 } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc, type EmailBrand } from '@/lib/email-studio/shell'
-import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
+import { applyMergeTags } from '@/lib/email-studio/render'
+import { NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
+import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
 import { spaceEmailBrand } from '@/lib/spaces/email-colors'
@@ -268,11 +271,16 @@ export async function loadSpaceEmailDraft(
 
   const subject = row.subject ?? ''
   const status = row.status ?? 'draft'
+  const layout = layoutFromBlockJson(row.block_json)
+  // Behind render_path_email the canvas edits a node document: a stored one as it is, a legacy one upgraded in
+  // memory (nothing is written until the first edit saves it).
+  const nodeLayout = (await renderPathEnabled('email')) ? (upgradeLayout(row.block_json) ?? upgradeLayout(layout)) : null
   return {
     id: row.id,
     subject,
     preheader: row.preheader ?? '',
-    layout: layoutFromBlockJson(row.block_json),
+    layout,
+    ...(nodeLayout ? { nodeLayout } : {}),
     context: {
       kind: 'broadcast',
       campaignName: subject.trim() || 'Untitled email',
@@ -296,7 +304,7 @@ export async function loadSpaceEmailDraft(
 export async function saveSpaceEmailDraft(
   spaceId: string,
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+  patch: { layout?: BuilderLayout | EntityLayout | NodeLayout; subject?: string; preheader?: string },
 ): Promise<{ error?: string }> {
   const gate = await requireSpaceEditor(spaceId)
   if (!gate.ok) return { error: gate.error }
@@ -305,15 +313,19 @@ export async function saveSpaceEmailDraft(
   const existing = await readDraft(id, spaceId)
   if (!existing) return { error: 'That email no longer exists.' }
 
-  if (patch.layout && (legacySpaceLayoutWriteError(patch.layout, null) || legacySpaceLayoutWriteError(existing.block_json, null))) return { error: NODE_LAYOUT_WRITE_ERROR }
+  let prepared: EmailRenderLayout | null = null
+  if (patch.layout) {
+    const write = await prepareEmailLayoutWrite(patch.layout, existing.block_json, starterEmailLayout)
+    if ('error' in write) return { error: NODE_LAYOUT_WRITE_ERROR }
+    prepared = write.layout
+  }
 
   const update: TablesUpdate<'campaigns'> = {}
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)
   if (typeof patch.preheader === 'string') update.preheader = patch.preheader.slice(0, 300)
 
   if (patch.layout) {
-    const clean = sanitizeEntityLayout(patch.layout as EntityLayout, 'email')
-    const layout = clean ? sanitizeEmailRichContent(clean) : starterEmailLayout()
+    const layout = prepared ?? starterEmailLayout()
     // The jsonb block_json payload stays a narrow Json cast (the one loose shape in this module).
     update.block_json = layout as unknown as Json
     try {

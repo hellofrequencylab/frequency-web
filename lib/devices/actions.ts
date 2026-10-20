@@ -1,6 +1,6 @@
 'use server'
 
-// COUNTER SCANNER owner actions (LIVE-1056, docs/LOYALTY.md "Counter scanners"). Three writes, each
+// COUNTER SCANNER owner actions (LIVE-1113, docs/LOYALTY.md "Counter scanners"). Three writes, each
 // behind scannerOwnerGate(spaceId, 'write') inside ./store.ts (canEditProfile and the per-Space
 // check-in function). The device secret is returned ONCE, by registerScanner, and never again.
 

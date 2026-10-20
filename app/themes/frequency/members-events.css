@@ -424,11 +424,17 @@
 [data-design="frequency"] [data-kit="members"] .ev-list4{grid-template-columns:minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .ay-spot-cover,[data-design="frequency"] [data-kit="members"] .ev-list4 .ev-cover{aspect-ratio:2/1}
 }
+/* The centre column, not the window, decides the columns: with both rails open it is ~540px at 1280 (LIVE-1070). */
+[data-design="frequency"] [data-kit="members"] .ev-lib,[data-design="frequency"] [data-kit="members"] .ay{container:evc/inline-size}
 [data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media (max-width:900px){
+@container evc (max-width:760px){
 [data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="members"] .ay-top{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .ay-spot{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="members"] .ay-spot-cover{aspect-ratio:16/9;min-height:0}
+[data-design="frequency"] [data-kit="members"] .ay-spot-t{font-size:clamp(22px,5cqi,28px)}
 }
-@media (max-width:560px){
+@container evc (max-width:440px){
 [data-design="frequency"] [data-kit="members"] .ev-list3{grid-template-columns:minmax(0,1fr)}
 [data-design="frequency"] [data-kit="members"] .ev-list3 .ev-cover{aspect-ratio:2/1}
 }

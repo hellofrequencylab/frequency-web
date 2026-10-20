@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-028",
+  "title": "Resend has no verified people.frequencylocal.com domain, so conversational mail cannot send from its default address",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/comms/from-address.ts",
+    "ref": "catch-up scan 2026-10-20; phase plan phase 3; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-20. THE CONSEQUENCE: DEFAULT_CONVERSATION_ADDRESS is people@people.frequencylocal.com (lib/comms/from-address.ts) and Resend has no verified people.frequencylocal.com domain, so a 1:1 conversation send from the house address is refused by the provider until the domain verifies. Owner action, no code: add the domain in Resend, copy the DNS records it shows into the frequencylocal.com zone (Vercel DNS), wait for Verified. Click-by-click steps are in the project thread.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-20",
+    "evidence": "OPEN. Closes when Resend lists people.frequencylocal.com as Verified and one test message from people@people.frequencylocal.com is accepted by the provider."
+  },
+  "wave": "W7"
+}

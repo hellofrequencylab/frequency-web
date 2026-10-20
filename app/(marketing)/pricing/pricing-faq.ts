@@ -10,6 +10,16 @@ import {
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY, paidWalls } from '@/lib/pricing/pricing-page'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDER_BADGE_ENDS_LABEL } from '@/lib/pricing/beta'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
+
+/** The seats every plan includes, read off the ONE meter map so the answer can never quote a number the
+ *  gate does not use. Seats are included per tier and never sold (ADR-1810). PURE. */
+function seatsAnswer(): string {
+  const seats = PLACEHOLDER_METER_LIMITS.space_team!
+  const n = (tier: string) => String(seats[tier] ?? 0)
+  return `Every plan includes its operator seats: ${n('free')} on Free (the owner), ${n('business')} on Business, ${n('collective')} on Collective plus two per member Space, and ${n('network')} on Network, one per central admin.`
+}
 
 /** The network fee on an offering that sells, as a bare figure ("5%"), read off the offering's own
  *  number. Never typed. */
@@ -25,7 +35,6 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
   const [member, crew] = memberOfferings(input)
   const extras = planExtras(input)
   const ai = extras.find((e) => e.key === 'ai')!
-  const seats = extras.find((e) => e.key === 'seats')!
   const ladder = spaces
     .map((s) => `${s.label} is ${s.monthly}${s.listAnchor ? ` at the beta rate, under ${s.listAnchor}` : ''}: ${s.tagline.toLowerCase()} ${s.forWho}`)
     .join(' ')
@@ -63,7 +72,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
           // is open (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), one price otherwise. The extra member Space
           // belongs to Collectives that already hold member Spaces (the 2026-10-16 split moved chapters to
           // Network), so it reads as the grandfathering fact it is.
-          a: `${PLAN_STORY.collective} It is ${collective.monthly}${collective.listAnchor ? ` as a Founding price under the ${collective.listAnchor} list, and the Founding price is yours for as long as you keep the plan` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
+          a: `${PLAN_STORY.collective} It is ${collective.monthly}${collective.listAnchor ? ` as a Founding price under the ${collective.listAnchor} list. The Founding offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}, and the Founding price is grandfathered for as long as you keep the plan, and a Collective that starts before ${FOUNDER_BADGE_ENDS_LABEL} also gets the founder badge` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
         },
       ]
     : []
@@ -118,7 +127,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'How do team seats work?',
-      a: `${seats.detail} ${seats.availability} ${seats.price === 'Owner-priced today' ? 'Seats are owner-priced today, so you bring on the people you need without a locked public per-seat price.' : `Extra seats are ${seats.price}.`}`,
+      a: `${seatsAnswer()} Seats are never sold separately, and the plan price never multiplies by headcount.`,
     },
     {
       q: 'What is the Vera AI add-on?',

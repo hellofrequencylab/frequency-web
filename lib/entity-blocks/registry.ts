@@ -234,13 +234,14 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
 
 /** Block ids curated OUT of a specific kind's palette (ADR-536 → ADR-542), even though they are in the core
  *  set for the other kind. The SPACE editor offers ONLY its connected data sections + the four free-form
- *  blocks (Callout, Gallery, Journeys, Features), so the legacy authored blocks are dropped: `links` →
- *  the connected "Find us online" (`business`) covers links; `heading`/`text` → a Callout carries a title +
+ *  blocks (Callout, Gallery, Journeys, Features), so the legacy authored blocks are dropped, except `links`
+ *  (back 2026-10-20 at the owner's ask: a list the Space fills in beside the connected "Find us online"
+ *  `business`): `heading`/`text` → a Callout carries a title +
  *  body; `image` → the Gallery. They stay for the MEMBER, whose profile still uses them. The MEMBER excludes
  *  the space-only free-form `gallery`/`callout`? (both are space-kind here, so blocksForKind already drops
  *  them for members — no member exclusion needed). */
 const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
-  space: new Set(['links', 'heading', 'text', 'image']),
+  space: new Set(['heading', 'text', 'image']),
   member: new Set(['gallery']),
   // Email uses its own curated set (EMAIL_PALETTE_BLOCK_IDS), so it needs no CORE-set exclusions.
   email: new Set(),

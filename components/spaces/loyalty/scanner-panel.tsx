@@ -11,7 +11,7 @@ import { relativeTime } from '@/lib/utils'
 import { registerScanner, revokeCard, revokeScanner } from '@/lib/devices/actions'
 import type { MemberCardSummary, ScannerDeviceSummary } from '@/lib/devices/store'
 
-// COUNTER SCANNERS, the owner panel (LIVE-1056, docs/LOYALTY.md "Counter scanners"). Register a scanner
+// COUNTER SCANNERS, the owner panel (LIVE-1113, docs/LOYALTY.md "Counter scanners"). Register a scanner
 // (its key is shown once, here, and never again), revoke one, and revoke a member card the scanners
 // issued. Every write is an owner-gated action in lib/devices/actions.ts. No em dashes.
 

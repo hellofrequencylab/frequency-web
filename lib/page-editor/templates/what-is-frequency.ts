@@ -3,6 +3,7 @@ import { CATEGORY_LINE, FOUNDING_PLACE } from '@/lib/site'
 import { priceStringsFrom, defaultPricingInput, CREW_NOTE } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL } from '@/lib/pricing/beta'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { ADVERTISED_SPACE_PLANS, formatBps } from '@/lib/pricing/display'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
@@ -139,7 +140,7 @@ const SPACE_TIER_ROWS: Partial<Record<(typeof ADVERTISED_SPACE_PLANS)[number], A
     name: SPACE_PLAN_LABEL.collective,
     // The Founding intro under its list (ADR-1709 §7): the price a new Collective pays, named as such.
     price: `${P.collectiveFounding}/mo`,
-    note: `Founding price, list ${P.collectiveList}/mo. ${SPACE_RATE('collective')} network only`,
+    note: `Founding price until ${COLLECTIVE_FOUNDING_ENDS_LABEL}, list ${P.collectiveList}/mo. ${SPACE_RATE('collective')} network only`,
     who: 'Separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, and Vera AI included. Each partner keeps its own members and payouts.',
   },
   nonprofit: {

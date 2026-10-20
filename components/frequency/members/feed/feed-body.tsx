@@ -1,3 +1,4 @@
+import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
 import '@/app/themes/active/members-a'
 import Link from 'next/link'
 import { Suspense } from 'react'
@@ -116,6 +117,11 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
             <ContextLine eventsP={eventsP} />
           </Suspense>
         </div>
+      </div>
+
+      {/* Search the Feed: posts only, the Search page's Posts tab. */}
+      <div className="fqm-tools">
+        <FqFindField action="/search" value={undefined} placeholder="Search the Feed" keep={{ tab: 'posts' }} />
       </div>
 
       {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the

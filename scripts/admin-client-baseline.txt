@@ -402,10 +402,11 @@
 
 # lib/loyalty/store.ts + lib/loyalty/visit.ts (added 2026-10-19, LIVE-940): Regulars. The three loyalty tables are service-role only (internal): the store reads are scoped to one Space or the caller, every write runs behind the owner gate, and the visit writer is reached only from the capture pipeline after the signed-code check.
 # lib/loyalty/hunt-store.ts + lib/loyalty/hunts-visit.ts (added 2026-10-19, LIVE-942): Regulars hunts. The three hunt tables are service-role only (internal): the public read is one live hunt by slug and shows only what its page prints, the owner reads and every write run behind the same loyalty owner gate, and the progress writer is reached only from the capture pipeline after the stamp landed.
-# lib/devices/store.ts (added 2026-10-19, LIVE-1056): counter scanners. scanner_devices and member_cards are
+# lib/devices/store.ts (added 2026-10-19, LIVE-1113): counter scanners. scanner_devices and member_cards are
 # service-role only (no browser role), and the device side has no Frequency session at all: a scanner
 # authenticates with its own credential. Every device read is pinned to the device's space_id; every owner
 # read and write runs behind scannerOwnerGate (canEditProfile and the check-in function).
+app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -525,6 +526,7 @@ app/(main)/events/[slug]/manage/attendance-actions.ts
 app/(main)/events/[slug]/manage/broadcast-actions.ts
 app/(main)/events/[slug]/manage/broadcast-section.tsx
 app/(main)/events/[slug]/manage/crm/actions.ts
+app/(main)/events/[slug]/manage/door-section.tsx
 app/(main)/events/[slug]/manage/load.ts
 app/(main)/events/[slug]/manage/page.tsx
 app/(main)/events/[slug]/manage/questionnaire-actions.ts
@@ -560,7 +562,6 @@ app/(main)/journeys/run-actions.ts
 app/(main)/lead/inbox/actions.ts
 app/(main)/lead/load-led-circles.ts
 app/(main)/library/actions.ts
-app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/messages/actions.ts
 app/(main)/messages/inbox-data.ts
 app/(main)/messages/r/[roomId]/page.tsx
@@ -598,6 +599,7 @@ app/(main)/spaces/[slug]/collaborations-actions.ts
 app/(main)/spaces/[slug]/crm/actions.ts
 app/(main)/spaces/[slug]/crm/conversations-actions.ts
 app/(main)/spaces/[slug]/edit-page/actions.ts
+app/(main)/spaces/[slug]/journeys/cohost-actions.ts
 app/(main)/spaces/[slug]/manage/identity-editor.tsx
 app/(main)/spaces/[slug]/manage/layout/actions.ts
 app/(main)/spaces/[slug]/manage/leadership/actions.ts
@@ -788,7 +790,6 @@ lib/billing/connect.ts
 lib/billing/crew-grants.ts
 lib/billing/donation-receipt.ts
 lib/billing/manual-agreements.ts
-lib/billing/operator-seats.ts
 lib/billing/payout-prompt-resolve.ts
 lib/billing/pricing-prices.ts
 lib/billing/receipt-email.ts
@@ -916,6 +917,7 @@ lib/dashboard/scores.ts
 lib/demo/decay.ts
 lib/demo/engine.ts
 lib/demo/generate.ts
+lib/devices/store.ts
 lib/digest.ts
 lib/dispatches.ts
 lib/elements/store.ts
@@ -944,6 +946,7 @@ lib/events/crm-roster.ts
 lib/events/deletion.ts
 lib/events/dispatch-audience.ts
 lib/events/dispatch.ts
+lib/events/door-code.ts
 lib/events/embeddings.ts
 lib/events/event-drafts.ts
 lib/events/event-share.ts
@@ -1005,6 +1008,7 @@ lib/importer/harvest/staging-lifecycle.ts
 lib/importer/materialize.ts
 lib/importer/store.ts
 lib/journey-plans.ts
+lib/journeys/cohost-shares.ts
 lib/journeys/compose.ts
 lib/journeys/current-leg.ts
 lib/journeys/drip-sends.ts
@@ -1047,6 +1051,11 @@ lib/listings/index.ts
 lib/loom/authorized-image-upload.ts
 lib/loom/cover-actions.ts
 lib/loom/picker-actions.ts
+lib/loyalty/discover.ts
+lib/loyalty/hunt-store.ts
+lib/loyalty/hunts-visit.ts
+lib/loyalty/store.ts
+lib/loyalty/visit.ts
 lib/marketing/content.ts
 lib/marketing/market-read.ts
 lib/marketplace.ts
@@ -1056,6 +1065,7 @@ lib/marketplace/listing-qna-actions.ts
 lib/marketplace/visibility.ts
 lib/match/prefs.ts
 lib/match/romance.ts
+lib/meet/store.ts
 lib/member-day.ts
 lib/member-progress.ts
 lib/menus/db.ts
@@ -1205,8 +1215,8 @@ lib/spaces/memberships.ts
 lib/spaces/my-memberships.ts
 lib/spaces/nonprofit-verification.ts
 lib/spaces/operated.ts
-lib/spaces/profile-settings.ts
 lib/spaces/private-state.ts
+lib/spaces/profile-settings.ts
 lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
@@ -1250,12 +1260,3 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
-lib/loyalty/store.ts
-lib/loyalty/visit.ts
-lib/loyalty/hunt-store.ts
-lib/loyalty/hunts-visit.ts
-lib/loyalty/discover.ts
-lib/events/door-code.ts
-app/(main)/events/[slug]/manage/door-section.tsx
-lib/meet/store.ts
-lib/devices/store.ts

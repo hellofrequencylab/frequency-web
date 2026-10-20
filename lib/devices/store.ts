@@ -1,4 +1,4 @@
-// COUNTER SCANNERS, the IO half (LIVE-1056, docs/LOYALTY.md "Counter scanners"). Reads and writes on
+// COUNTER SCANNERS, the IO half (LIVE-1113, docs/LOYALTY.md "Counter scanners"). Reads and writes on
 // scanner_devices and member_cards through the service-role admin client. Both tables are service-role
 // only (scripts/table-grants.txt `internal`), so THIS file is the tenancy wall:
 //   • the DEVICE side is pinned by the device credential: a device acts only for its own space_id;

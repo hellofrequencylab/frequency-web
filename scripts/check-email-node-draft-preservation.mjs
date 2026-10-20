@@ -12,6 +12,7 @@ const modules=new Map([
  ['@/lib/outbound/guard','export const writerGate=async()=>({ok:true,profileId:"owner"})'],['@/lib/admin/guard','export const requireAdmin=async()=>{}'],['@/lib/auth','export const getCachedUser=async()=>null'],
  ['@/lib/email','export const sendRawEmail=()=>{throw Error("No outbound") }'],['@/lib/site','export const SITE_URL="https://example.test"'],
  ['@/lib/unsubscribe-tokens','export const buildUnsubscribeUrl=()=>"";export const buildManageEmailsUrl=()=>""'],['@/lib/studio/campaigns','export const BUILTIN_SEGMENTS=[];export const TRAIT_SEGMENT_PREFIX="seg:"'],
+ ['@/lib/platform-flags','export const renderPathEnabled=async()=>false'],
  ['@/lib/email-studio/send','export const sanitizeFromName=value=>value;export const loadCampaignFromName=()=>null;export const loadCampaignReplyMode=()=>null;export const resolveCampaignFromHeader=()=>null'],
 ])
 registerHooks({resolve(spec,context,next){if(modules.has(spec))return {url:`data:text/javascript,${encodeURIComponent(modules.get(spec))}`,shortCircuit:true};return next(spec,context)}})

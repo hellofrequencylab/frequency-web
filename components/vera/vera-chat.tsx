@@ -44,9 +44,9 @@ export interface VeraOpeningSeed {
 //
 // Hoisted out of the JSX because the raw-button-bg ratchet reads a 500-character window forward
 // from every `<button` in the file, and the composer's Send sits close enough to catch one.
-const YOU_BUBBLE = 'lift-1 max-w-[80%] rounded-card rounded-br-control bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+const YOU_BUBBLE = 'fqd-bub is-mine lift-1 max-w-[80%] rounded-card rounded-br-control bg-primary px-3.5 py-2 text-body-sm text-on-primary'
 const VERA_BUBBLE =
-  'lift-1 max-w-[85%] rounded-card rounded-bl-control border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
+  'fqd-bub is-theirs lift-1 max-w-[85%] rounded-card rounded-bl-control border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
 
 /** Member-facing label for a proposed write Vera wants to make. */
 function proposalLabel(p: ProposedToolCall): string {
@@ -200,7 +200,7 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
         )}
 
         {proposals.map((p, i) => (
-          <div key={i} className="lift-1 rounded-card border border-border bg-surface-elevated p-3">
+          <div key={i} className="fqd-card lift-1 rounded-card border border-border bg-surface-elevated p-3">
             <p className="text-meta text-muted">{proposalLabel(p)}</p>
             <div className="mt-2 flex gap-2">
               <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-meta font-semibold text-success transition-colors hover:opacity-80">
@@ -235,11 +235,11 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
       {/* Composer + chips. Canvas under the composer, the way every DAWN dock separates its
           action row from the content above it — the hairline alone reads as one more divider
           inside a scrolling transcript. */}
-      <div className="shrink-0 space-y-2.5 border-t border-border bg-canvas px-4 py-3">
+      <div className="fqd-compose shrink-0 space-y-2.5 border-t border-border bg-canvas px-4 py-3">
         {suggestions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((s) => (
-              <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-pill border border-border bg-surface px-3 py-1 text-meta text-text transition-colors hover:bg-surface-elevated disabled:opacity-50">
+              <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="fqd-chip rounded-pill border border-border bg-surface px-3 py-1 text-meta text-text transition-colors hover:bg-surface-elevated disabled:opacity-50">
                 {s}
               </button>
             ))}
