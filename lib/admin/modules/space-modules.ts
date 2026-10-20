@@ -274,7 +274,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
   { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own people, always', parent: 'space.offerings' },
-  // Check-in & scanners (LIVE-1113): the door code, the check-in roster, Regulars and the counter scanners all live in
+  // Check-in & scanners (LIVE-1125): the door code, the check-in roster, Regulars and the counter scanners all live in
   // the `?panel=checkin` workspace, which lost its only menu door when space.checkin was retired (LIVE-226). This
   // is that door again under a new id, as a TOOL inside the Money box (Regulars is what a check-in earns). Gated on
   // `events`, the key the retired `checkin` resolves to, so it shows exactly when the panel would open.

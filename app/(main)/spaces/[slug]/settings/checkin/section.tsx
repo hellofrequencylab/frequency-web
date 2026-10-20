@@ -101,7 +101,7 @@ export async function CheckinSection({
         <RegularsSection space={space} staffViewing={staffViewing} />
       </Suspense>
 
-      {/* COUNTER SCANNERS (LIVE-1113): NFC card readers that check members in on this same door node. */}
+      {/* COUNTER SCANNERS (LIVE-1125): NFC card readers that check members in on this same door node. */}
       <Suspense fallback={<RosterSkeleton />}>
         <ScannersSection space={space} staffViewing={staffViewing} />
       </Suspense>

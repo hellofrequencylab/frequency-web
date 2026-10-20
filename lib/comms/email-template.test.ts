@@ -43,14 +43,16 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
   it('header is the brand name, no Frequency masthead; the logo is the round avatar in the signature card', () => {
     const { html } = renderReplyEmail('Hello', 'Dana', BRAND)
     expect(html).toContain('color:#0a7f5a">Riverside Makers</div>')
-    // The Frequency mark and Community Collective live in the footer (owner ask 2026-10-20), never the header.
-    expect(html.indexOf(`alt="${SITE_NAME} ${SITE_TAGLINE}"`)).toBeGreaterThan(html.indexOf('Dana'))
+    // Owner ask 2026-10-20: the Frequency wordmark sits top left and links to the home feed; a small one
+    // closes the footer. The card itself is headed by the Space, not by a Frequency masthead.
+    expect(html.indexOf('href="https://frequencylocal.com/feed"')).toBeLessThan(html.indexOf('Riverside Makers</div>'))
     expect(html).not.toContain(`>${SITE_NAME}</div>`)
     // Owner ask 2026-10-20: the profile picture is a circle to the left of the signature.
     expect(html).toContain('<img src="https://cdn.test/logo.png" alt="Riverside Makers" width="52" height="52"')
     expect(html).toContain('border-radius:50%')
-    expect(html.indexOf('<img')).toBeLessThan(html.indexOf('Dana'))
-    expect(html.indexOf('<img')).toBeGreaterThan(html.indexOf('Hello'))
+    const avatar = html.indexOf('<img src="https://cdn.test/logo.png"')
+    expect(avatar).toBeLessThan(html.indexOf('Dana'))
+    expect(avatar).toBeGreaterThan(html.indexOf('Hello'))
   })
 
   it('a Space with a logo and no signature still gets the card, named by the Space', () => {
@@ -64,6 +66,19 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
     expect(html).toContain('border-radius:24px')
     expect(html).toContain(`background:${palette.surface}`)
     expect(html).toContain(`color:${palette.emailBody}`)
+  })
+
+  it('the footer carries the shared legal lines: Privacy, Terms, Help, Manage emails, copyright and the postal line', () => {
+    const { html, text } = renderReplyEmail('Hello', null, BRAND)
+    for (const path of ['/privacy', '/terms', '/help', '/manage-emails']) {
+      expect(html).toContain(`href="https://frequencylocal.com${path}"`)
+      expect(text).toContain(`https://frequencylocal.com${path}`)
+    }
+    expect(html).toContain(`&copy; ${new Date().getFullYear()} Frequency Labs Holdings`)
+    expect(html).toContain('Carlsbad, CA')
+    expect(text).toContain('Carlsbad, CA')
+    expect(text).not.toContain('—')
+    expect(html).not.toContain('—')
   })
 
   it('the footer carries the Frequency mark with Community Collective and a link back to the Space page', () => {

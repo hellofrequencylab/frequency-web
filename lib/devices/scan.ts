@@ -1,4 +1,4 @@
-// COUNTER SCANNERS: one card scan (LIVE-1113, docs/LOYALTY.md "Counter scanners"). Device → Space →
+// COUNTER SCANNERS: one card scan (LIVE-1125, docs/LOYALTY.md "Counter scanners"). Device → Space →
 // member → the Space's check-in node → captureNode, so a card at the counter runs EXACTLY what the
 // member's phone runs at the door code: verification, the exactly-once ledger, the Regulars stamp and
 // its Zaps, hunts and the CRM timeline (lib/engagement/capture.ts). Nothing here re-implements any of it.

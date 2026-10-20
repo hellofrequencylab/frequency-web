@@ -196,7 +196,7 @@ describe('every tool files under its box (the Automation class, by construction)
     expect(parented.length).toBeGreaterThanOrEqual(18)
     const underExcludedBox = parented.filter((m) => spaceModuleById(m.parent!)!.hub === 'none')
     // Gather (content) owns 8 tools (Leadership joined it, LIVE-862; Your reach left for Reach, ADR-1746);
-    // Money (offerings) owns 6 (Check-in & scanners joined it, LIVE-1113). Page is hub:none under Your page
+    // Money (offerings) owns 6 (Check-in & scanners joined it, LIVE-1125). Page is hub:none under Your page
     // (settings), so it is not in this set.
     expect(underExcludedBox.length).toBe(14)
     for (const m of underExcludedBox) {

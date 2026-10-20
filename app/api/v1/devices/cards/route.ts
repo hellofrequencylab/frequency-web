@@ -4,7 +4,7 @@ import { admitDevice, deviceFail, deviceJson } from '@/lib/devices/http'
 import { normalizeHandle } from '@/lib/devices/credentials'
 import { issueCardForHandle } from '@/lib/devices/store'
 
-// POST /api/v1/devices/cards (LIVE-1113, docs/LOYALTY.md "Counter scanners"): the counter scanner
+// POST /api/v1/devices/cards (LIVE-1125, docs/LOYALTY.md "Counter scanners"): the counter scanner
 // writes a new member card. Device-authenticated; the card is valid at the device's OWN Space only.
 // Body { member_handle }. Reply { ok, token, url, member }: the device writes `url` (SITE_URL/c/<token>)
 // to the card as an NDEF URI, so the same card opens the member's rewards on a phone. The token is

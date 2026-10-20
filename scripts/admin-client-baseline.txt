@@ -402,7 +402,7 @@
 
 # lib/loyalty/store.ts + lib/loyalty/visit.ts (added 2026-10-19, LIVE-940): Regulars. The three loyalty tables are service-role only (internal): the store reads are scoped to one Space or the caller, every write runs behind the owner gate, and the visit writer is reached only from the capture pipeline after the signed-code check.
 # lib/loyalty/hunt-store.ts + lib/loyalty/hunts-visit.ts (added 2026-10-19, LIVE-942): Regulars hunts. The three hunt tables are service-role only (internal): the public read is one live hunt by slug and shows only what its page prints, the owner reads and every write run behind the same loyalty owner gate, and the progress writer is reached only from the capture pipeline after the stamp landed.
-# lib/devices/store.ts (added 2026-10-19, LIVE-1113): counter scanners. scanner_devices and member_cards are
+# lib/devices/store.ts (added 2026-10-19, LIVE-1125): counter scanners. scanner_devices and member_cards are
 # service-role only (no browser role), and the device side has no Frequency session at all: a scanner
 # authenticates with its own credential. Every device read is pinned to the device's space_id; every owner
 # read and write runs behind scannerOwnerGate (canEditProfile and the check-in function).
