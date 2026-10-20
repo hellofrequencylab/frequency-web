@@ -8,7 +8,6 @@ import {
   marginTopClass,
   safeImageUrl,
   safeUrl,
-  sanitizeInlineHtml,
   textByRoleClass,
   textStyleClass,
   type BlockStyle,
@@ -22,6 +21,9 @@ import {
   parseLinkCard,
 } from '@/lib/spotlight/embeds'
 import { BlockIcon } from './block-icon'
+import { InlineRichText, inlineRichHtml } from './inline-rich-text'
+import HeadingBlock from './blocks/heading.web'
+import DividerBlock from './blocks/divider.web'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
 import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 
@@ -35,35 +37,6 @@ import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 function s(props: Record<string, unknown>, key: string): string {
   const v = props[key]
   return typeof v === 'string' ? v : ''
-}
-
-/** The safe inline-HTML string for an operator-authored value: heal a legacy double-escape FIRST (a value
- *  stored as entities but no real markup renders its true characters once here instead of literal `&quot;`),
- *  then sanitize to the allowlist (Bold / Italic / Link marks + <br> survive; a real newline becomes a <br>;
- *  EVERYTHING else is escaped as inert text). A plain-text value round-trips unchanged. '' when nothing
- *  survives. Exposed so a bespoke element that must keep its own attributes (an eyebrow's `data-text-role`)
- *  paints the same rich HTML without re-declaring the pipeline. */
-export function inlineRichHtml(value: string): string {
-  return sanitizeInlineHtml(decodeLegacyEntities(value))
-}
-
-/** Render an operator's inline-rich TEXT value (a slot authored on the WYSIWYG canvas) through the safe
- *  allowlist above, in the given tag — so a heading / title / body renders its <br> line breaks and inline
- *  marks EXACTLY as the editor canvas shows them, instead of escaping `<br>` to a literal `<BR>`. The value is
- *  re-sanitised HERE on read (defence in depth — a stored blob is user-originated and never trusted, mirroring
- *  the email renderer), so no unsafe markup can reach the page. Returns null when nothing survives. */
-export function InlineRichText({
-  as: Tag = 'p',
-  value,
-  className,
-}: {
-  as?: 'p' | 'blockquote' | 'h1' | 'h2' | 'h3' | 'h4' | 'span' | 'div' | 'figcaption'
-  value: string
-  className?: string
-}) {
-  const html = inlineRichHtml(value)
-  if (!html) return null
-  return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 /** The per-block STYLE frame (ADR-528 → ADR-569): an optional card background, a padding step, alignment, a
@@ -411,11 +384,9 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       // `props.items`, so the switch here is layout-only.
       return <FeaturesBlock props={props} />
     case 'heading': {
+      // One component for every surface (contract/heading.ts).
       const text = s(props, 'text')
-      // Render through the inline-rich path so a heading authored with a <br> (or a Bold / Italic / Link mark)
-      // shows a real line break / mark on the page, EXACTLY as the editor canvas does — not a literal `<BR>`.
-      // font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`.
-      return text ? <InlineRichText as="h2" value={text} className="font-section text-page-title font-bold text-text" /> : null
+      return text ? <HeadingBlock text={text} /> : null
     }
     case 'button': {
       // A labeled call-to-action link (shared with Email Studio). A no-link button falls back to '#' until
@@ -602,7 +573,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       )
     }
     case 'divider':
-      return <hr className="border-border" />
+      return <DividerBlock />
     // THE CONTACT FORM, WITH NO SPACE TO POST TO — i.e. the preview. The LIVE render is intercepted
     // upstream in space-profile-modules.tsx, which is the only render path that knows which Space the
     // page belongs to and can hand the island a slug. Reaching this case at all means the block is

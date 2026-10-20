@@ -3,7 +3,7 @@ import { decodeLegacyEntities, gridColumns, safeImageUrl, safeUrl } from '@/lib/
 import { DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { withoutAccentMarks } from '@/lib/sites/house-theme'
 import { BlockIcon } from './block-icon'
-import { InlineRichText } from './content-block-view'
+import { InlineRichText } from './inline-rich-text'
 import {
   PhotoHeroBlock,
   EditorialSectionBlock,
