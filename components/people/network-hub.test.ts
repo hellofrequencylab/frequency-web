@@ -17,6 +17,7 @@ describe('Network hub pages (source shape)', () => {
       expect(src).toContain('<NetworkHubBar active=')
       expect(src).not.toContain('resolveIndexHero')
       expect(src).not.toContain('{...hero}')
+      expect(src).toContain('heroOverlay={false}')
       expect(src).toContain('eyebrow="Your network"')
     })
   }

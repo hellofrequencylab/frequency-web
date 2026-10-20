@@ -387,6 +387,9 @@ export default async function CommunityPage({
       {/* Header: unified hero band with the operator-editable title/description, Invite on
           the right. Globe glyph rides the title; the stats row + filters follow in the body. */}
       <IndexTemplate
+        // The plain heading, no photo band (LIVE-1021). Stated, not omitted: the LIVE-117 probe asks every
+        // IndexTemplate page to take a position on the hero band.
+        heroOverlay={false}
         eyebrow="Your network"
         title={
           <span className="flex items-center gap-2">

@@ -105,6 +105,9 @@ export default async function ConnectionsPage({
           resolves to `text-on-ink` over the scrim, and a hardcoded `text-primary-strong` would be
           the one dark glyph on a dark band. */}
       <IndexTemplate
+        // The plain heading, no photo band (LIVE-1021). Stated, not omitted: the LIVE-117 probe asks every
+        // IndexTemplate page to take a position on the hero band.
+        heroOverlay={false}
         eyebrow="Your network"
         title={
           <span className="flex items-center gap-2">

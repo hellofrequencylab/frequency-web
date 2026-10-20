@@ -54,6 +54,9 @@ export default async function FriendsPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <IndexTemplate
+        // The plain heading, no photo band (LIVE-1021). Stated, not omitted: the LIVE-117 probe asks every
+        // IndexTemplate page to take a position on the hero band.
+        heroOverlay={false}
         eyebrow="Your network"
         title="Friends"
         description="Your people. Connections you’ve made, reconnect nudges, near-misses, and introductions."
