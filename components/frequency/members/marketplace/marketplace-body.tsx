@@ -342,10 +342,7 @@ export function FqStoreBody({ products }: { products: MarketItem[] }) {
       </div>
       <FqHiddenAreaNote area="shop" />
       {items.length === 0 ? (
-        <EmptyState
-          title="The Store is being stocked"
-          description="Merch, event passes and retreats are coming. Check back soon."
-        />
+        <EmptyState title="The Store is being stocked" description="Merch, event passes and retreats are coming. Check back soon." />
       ) : (
         <FqItemGrid sections={[{ items }]} placeholder="Search the Store" />
       )}
