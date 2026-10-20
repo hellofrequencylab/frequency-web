@@ -1,10 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Input } from '@/components/ui/field'
+import { Bookmark, ChevronDown, ChevronUp, GripVertical, Loader2, Monitor, Plus, Settings2, Smartphone, Trash2, Undo2, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
+import { deleteSection, loadSavedSections, saveSection, type SavedSection } from '@/lib/email-studio/saved-sections'
 import { emailFooterHtml, emailHeaderHtml, emailHeroHtml } from '@/lib/email-studio/shell'
 import { useLegacyEmailModel, useNodeEmailModel, type EmailCanvasModel } from './email-canvas-model'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
@@ -55,6 +57,14 @@ function isCoreField(f: FieldDef): boolean {
 
 const label = (id: string) => entityBlockById(id)?.label ?? id
 
+function browserStorage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage
+  } catch {
+    return null
+  }
+}
+
 // A stand-in unsubscribe target for the EDIT canvas only. The real one-click token is injected at send; here it
 // just makes the shared footer's unsubscribe read as a live link so the operator sees the compliant control.
 const EDITOR_UNSUBSCRIBE_PLACEHOLDER = 'https://frequencylocal.com/unsubscribe'
@@ -84,6 +94,11 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   // library). `dragId` is the block being dragged; `overId` the tile currently hovered as the drop target.
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
+  // The preview width: the 600px desktop card, or the 375px a phone gives it (the shell is fluid below 600).
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
+  // Saved sections: blocks the operator kept to reuse in other emails (this browser's storage; see saved-sections).
+  // Read once at mount; the panel only renders after the store seeds on the client, so the server render never differs.
+  const [saved, setSaved] = useState<SavedSection[]>(() => loadSavedSections(browserStorage()))
 
   // The single-column email block list, in reading order (each row is one block).
   const blocks = store?.blocks ?? []
@@ -105,6 +120,23 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   // The stock hero crowns the card on the platform brand, as it does in the sent email. Pinned to the first of
   // the five so the server and client renders agree; each send picks one at random.
   const heroHtml = useMemo(() => emailHeroHtml({ brand: { colors: C }, hero: 0 }), [C])
+
+  // Ctrl/Cmd+Z steps back one edit; ignored inside a text field or a rich slot so it never fights the
+  // browser's own undo of the characters being typed.
+  const undo = store?.undo
+  useEffect(() => {
+    if (!undo) return
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return
+      const el = e.target as HTMLElement | null
+      const tag = el?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return
+      e.preventDefault()
+      undo()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo])
 
 
   if (!store || !store.seeded) {
@@ -132,6 +164,19 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
     if (key) setSelectedId(key)
   }
 
+  // Drop a saved section into this email: a fresh block of its type, then its saved content laid over it.
+  const addSaved = (section: SavedSection) => {
+    const key = store.add(section.type)
+    if (!key) return
+    for (const [field, value] of Object.entries(section.content)) store.setField(key, field, value)
+    setSelectedId(key)
+  }
+
+  const keepSection = (block: { type: string; content: Record<string, unknown> }, name: string) => {
+    const next = saveSection(browserStorage(), { name, type: block.type, content: block.content }, label(block.type))
+    if (next) setSaved(next)
+  }
+
   const remove = (key: string) => {
     store.remove(key)
     if (selectedId === key) setSelectedId(null)
@@ -145,8 +190,20 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
       <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
           <h3 className="text-body-sm font-bold text-text">Blocks</h3>
-          <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
-            {store.saving ? <><Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving</> : 'Saved'}
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={store.undo}
+              disabled={!store.canUndo}
+              aria-label="Undo the last change"
+              title="Undo (Ctrl or Cmd + Z)"
+              className="inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 text-2xs font-semibold text-muted transition-colors hover:text-text disabled:opacity-30"
+            >
+              <Undo2 className="h-3 w-3" aria-hidden /> Undo
+            </button>
+            <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
+              {store.saving ? <><Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving</> : 'Saved'}
+            </span>
           </span>
         </div>
 
@@ -268,6 +325,7 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
                           />
                         ))
                       )}
+                      <SaveSectionControl onSave={(name) => keepSection(block, name)} />
                       <button
                         type="button"
                         onClick={() => remove(id)}
@@ -288,13 +346,30 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
       {/* RIGHT — the live, clickable email canvas (mirrors the email palette), with the ADD-BLOCK palette
           BELOW the email body so adding a block reads as "append to the email" rather than a left-rail control. */}
       <div className="min-w-0 space-y-3">
+      <div className="flex items-center justify-end gap-1" role="group" aria-label="Preview width">
+        {(['desktop', 'mobile'] as const).map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => setDevice(d)}
+            aria-pressed={device === d}
+            className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-2xs font-semibold transition-colors ${
+              device === d ? 'border-primary bg-primary-bg/40 text-text' : 'border-border bg-surface text-muted hover:text-text'
+            }`}
+          >
+            {d === 'desktop' ? <Monitor className="h-3 w-3" aria-hidden /> : <Smartphone className="h-3 w-3" aria-hidden />}
+            {d === 'desktop' ? 'Desktop' : 'Phone'}
+          </button>
+        ))}
+      </div>
       <div
+        data-fq-preview-device={device}
         className="overflow-x-auto rounded-2xl p-4 sm:p-6"
         style={{ background: C.canvas }}
         aria-label="Email canvas"
       >
         <div
-          className="mx-auto w-full max-w-[600px] overflow-hidden rounded-3xl"
+          className={`mx-auto w-full overflow-hidden rounded-3xl ${device === 'mobile' ? 'max-w-[375px]' : 'max-w-[600px]'}`}
           style={{ background: C.surface, border: `1px solid ${C.border}`, boxShadow: '0 1px 2px rgba(60,40,20,.04),0 22px 50px -36px rgba(80,50,20,.34)' }} // token-ok: mirrors the email card shadow
         >
           {heroHtml ? <div dangerouslySetInnerHTML={{ __html: heroHtml }} /> : null}
@@ -330,7 +405,7 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
             Privacy/Terms/Help, address, unsubscribe) exactly as it sends. It is NOT a block in the list, so it
             can't be selected, reordered, or removed; pointer-events are off so its placeholder links stay inert.
             Same markup the send uses (emailFooterHtml), never re-wrapped at send. */}
-        <div className="mx-auto mt-1 w-full max-w-[600px] px-6 sm:px-9">
+        <div className={`mx-auto mt-1 w-full px-6 sm:px-9 ${device === 'mobile' ? 'max-w-[375px]' : 'max-w-[600px]'}`}>
           <p className="mb-1 text-center text-2xs" style={{ color: C.subtle }}>
             Legal footer, added to every email
           </p>
@@ -362,7 +437,81 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
           </div>
         </div>
       )}
+
+      {/* SAVED SECTIONS — blocks kept from other emails. Clicking one adds a copy; the cross removes it. */}
+      {saved.length > 0 && (
+        <div className="space-y-1.5 rounded-card border border-border bg-surface-elevated/40 p-3">
+          <p className="text-2xs font-semibold text-muted">Saved sections</p>
+          <div className="flex flex-wrap gap-1.5">
+            {saved.map((sec) => {
+              const placeable = addable.some((b) => b.id === sec.type)
+              return (
+                <span key={sec.id} className="inline-flex items-center overflow-hidden rounded-control border border-border bg-surface text-2xs font-semibold text-muted">
+                  <button
+                    type="button"
+                    onClick={() => addSaved(sec)}
+                    disabled={!placeable}
+                    title={placeable ? `Add ${sec.name} to this email` : `${label(sec.type)} is already in this email`}
+                    className="inline-flex items-center gap-1 px-2 py-1 transition-colors hover:text-text disabled:opacity-40"
+                  >
+                    <Bookmark className="h-3 w-3" aria-hidden /> {sec.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSaved(deleteSection(browserStorage(), sec.id))}
+                    aria-label={`Delete saved section ${sec.name}`}
+                    className="px-1.5 py-1 transition-colors hover:text-danger"
+                  >
+                    <X className="h-3 w-3" aria-hidden />
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
       </div>
     </div>
+  )
+}
+
+/** "Save this block": an inline name field, so a block can be kept without leaving the tile. */
+function SaveSectionControl({ onSave }: { onSave: (name: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 rounded-control px-1.5 py-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
+      >
+        <Bookmark className="h-3.5 w-3.5" aria-hidden /> Save for other emails
+      </button>
+    )
+  }
+  return (
+    <form
+      className="flex items-center gap-1.5"
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSave(name)
+        setName('')
+        setOpen(false)
+      }}
+    >
+      <Input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name (optional)"
+        aria-label="Name for this saved section"
+        maxLength={60}
+        autoFocus
+        className="h-7 text-2xs"
+      />
+      <button type="submit" className="rounded-control px-1.5 py-1 text-2xs font-semibold text-primary-strong hover:underline">
+        Save
+      </button>
+    </form>
   )
 }

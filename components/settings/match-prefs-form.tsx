@@ -6,6 +6,7 @@ import { saveMatchPrefsAction } from '@/app/(main)/settings/connections/match-ac
 import { isError } from '@/lib/action-result'
 import { sunSign, SIGN_INFO } from '@/lib/astrology/signs'
 import { Input } from '@/components/ui/field'
+import { Switch } from '@/components/ui/switch'
 
 // Match preferences (Resonance Feed Phase 5, ADR-419). Opt into the astrology signal
 // (enter a birth date) and romance matching. Everything is OFF by default and saves on
@@ -139,21 +140,6 @@ export function MatchPrefsForm({
 
 function Toggle({ on, label, onToggle }: { on: boolean; label: string; onToggle: () => void }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors ${
-        on ? 'bg-primary' : 'bg-surface-elevated border border-border'
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${
-          on ? 'translate-x-6' : 'translate-x-1'
-        }`}
-      />
-    </button>
+    <Switch checked={on} onCheckedChange={() => onToggle()} aria-label={label} />
   )
 }

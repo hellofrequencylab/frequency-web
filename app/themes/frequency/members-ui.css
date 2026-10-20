@@ -300,8 +300,8 @@
 [data-design="frequency"] [data-kit="members"] :is(h1,h2,h3,h4):is(.font-bold,.font-extrabold,.font-black){font-weight:500}
 [data-design="frequency"] [data-kit="members"] .eyebrow{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 
-/* The DAWN surfaces a member body still nests (the Profile side, the Vault's trophies and store, the
-   event page's original layout, Journey details, the Circle's menus), read as the kit's surfaces, the
+/* The DAWN surfaces a member body still nests (the Profile side, the event page's original layout,
+   Journey details, the Circle's menus; the Vault's trophies and store left for the kit in LIVE-1103/1104), read as the kit's surfaces, the
    way the admin kit answers them (admin-pages.css "Surfaces"). Design-system audit, 2026-10-14.
      a bordered DAWN card       the kit's glass `.panel`; a card inside a card is a quiet well
      inside a Settings pane     open space with a hairline (owner, 2026-10-14: the panes carry no boxes)
@@ -360,8 +360,9 @@
 }
 
 /* ── Hand-built switches (owner, 2026-10-14: "the crazy purple color is still there") ─────────────────
-   About a dozen DAWN forms draw their own `role="switch"` with `bg-primary` when on, which Frequency
-   resolves to its saturated action violet. The kit's switch (.sw) is the iridescent --fq-pa when on and
+   A few DAWN controls still draw their own `role="switch"` with `bg-primary` when on (the block editor's
+   field toggles, the Space publish switch), which Frequency resolves to its saturated action violet. The
+   Settings and admin forms moved to the shared Switch or the kit's `.sw` (LIVE-1101, LIVE-1102). The kit's switch (.sw) is the iridescent --fq-pa when on and
    --fq-track when off; every hand-built switch in the app kits now reads the same. */
 [data-design="frequency"] [data-kit] [role="switch"]:is(.bg-primary, [aria-checked="true"]):not(.sw),
 [data-design="frequency"] [data-kit] [role="switch"][aria-checked="true"] > .bg-primary {

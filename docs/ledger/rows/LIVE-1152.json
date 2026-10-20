@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1152",
+  "title": "Editor E1, slice 5: eight more data blocks join the contract",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "\u00a73 the block contract; ADR-1005"
+  },
+  "detail": "Adopts linkCards, circles, team, reviews, faq, contact, business and topfriends into lib/entity-blocks/contract/ with reads 'live', each through the shared data-section component. check:blocks now holds 40 of 41. The last registry block, guestbook, waits on a one-line update to the completeness test in scripts/check-blocks.test.ts, which pins the registry as not fully adopted; that edit needs the owner's say. Left on PROG-E1: guestbook and the binding layer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-blocks.mjs",
+    "note": "Fails when an adopted block stops holding the contract.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

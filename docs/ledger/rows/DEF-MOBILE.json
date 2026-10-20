@@ -1,0 +1,6 @@
+{
+  "id": "DEF-MOBILE",
+  "append": {
+    "detail": "── 2026-10-19 (ADR-1865, LIVE-1121). OWNER REQUESTS, relayed by the coordinating session: build the app now, Android first, named Frequency Experience; then 'Right now, I just want a phone app to control it.' The Expo project now exists in mobile/ (branch live/frequency-experience) as a remote for the owner's CyberUnicorn 5000, on the shared contract types and the Frequency design. The member half (sign-in, stamp cards, Zaps, NFC check-in, push) was written, held back by that ruling, then brought back into the app's Frequency tab the same day (LIVE-1122, ADR-1866) when the owner asked for deep site integration. The row stays parked for the member app, iOS, store submission, attestation, Sign in with Apple (LIVE-725), in-app purchase (LIVE-726), geofencing and the sync-engine pilot. The premise 'no Expo project in the tree' is no longer true."
+  }
+}

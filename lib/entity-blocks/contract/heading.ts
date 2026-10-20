@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defineBlock } from '../define-block'
-import { fieldsForBlock } from '../block-content'
+import { fieldsForBlock, inlineHtmlToText } from '../block-content'
 
 // THE HEADING BLOCK, ADOPTED (E1 pilot, docs/EDITOR-ARCHITECTURE.md §3). The content model is the one the
 // editor already stores for this block: a single inline-rich `text`. The field metadata is the registry's
@@ -21,5 +21,5 @@ export const headingBlock = defineBlock({
     email: { density: 'standard', fields: '*' },
   },
   render: { web: () => import('@/components/entity-blocks/blocks/heading.web'), email: 'registered' },
-  toText: (content) => (content.text ?? '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').trim(),
+  toText: (content) => inlineHtmlToText(content.text).replace(/\s*\n\s*/g, ' '),
 })

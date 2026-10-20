@@ -188,7 +188,7 @@ export function SpaceMemberComposer({
       }),
     [spaceId],
   )
-  const sendTest = useCallback((id: string) => sendSpaceTestEmail(spaceId, id), [spaceId])
+  const sendTest = useCallback((id: string, to?: string) => sendSpaceTestEmail(spaceId, id, to), [spaceId])
 
   function send() {
     if (!campaign) return

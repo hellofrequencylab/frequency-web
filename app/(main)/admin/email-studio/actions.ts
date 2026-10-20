@@ -1,5 +1,7 @@
 'use server'
 
+import { duplicateCampaign } from '@/lib/email-studio/duplicate'
+import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
 import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
@@ -288,6 +290,40 @@ export async function createEmailDraft(
 }
 
 /**
+ * Duplicate an email: a new DRAFT with the same subject (prefixed "Copy of"), preheader, blocks, From name and
+ * reply mode, owned by the caller. Writer-gated. Any campaign can be copied, sent ones included, since the copy
+ * carries none of the send history (see lib/email-studio/duplicate).
+ */
+export async function duplicateEmailCampaign(id: string): Promise<ActionResult<{ id: string }>> {
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+
+  const db = createAdminClient()
+  const { data, error } = await db.from('campaigns').select('subject, preheader, block_json').eq('id', id).maybeSingle()
+  if (error || !data) return fail('That email no longer exists.')
+
+  const payload = duplicateCampaign(
+    {
+      subject: data.subject,
+      preheader: data.preheader,
+      block_json: data.block_json,
+      fromName: await loadCampaignFromName(id),
+      replyMode: await loadCampaignReplyMode(id),
+    },
+    gate.profileId,
+  )
+  const { data: made, error: insertError } = await db
+    .from('campaigns')
+    .insert(payload as unknown as Database['public']['Tables']['campaigns']['Insert'])
+    .select('id')
+    .single()
+  if (insertError || !made) return fail('Could not copy this email. Try again.')
+
+  revalidatePath(CAMPAIGN_CONSOLE)
+  return ok({ id: made.id })
+}
+
+/**
  * Load one campaign into the editor: subject + preheader off the row, and the block layout parsed from
  * block_json (basic starter when unset). Read-gated, and owner-scoped for DRAFTS (created_by = the caller)
  * so an operator only ever opens their own draft — matching discardDraftIfEmpty. A non-draft (sent /
@@ -461,12 +497,13 @@ export async function saveEmailCampaign(
  * Never sends to a list, never clears the approval gate; records test_sent_at so the lifecycle UI can show
  * "tested".
  */
-export async function sendTestEmail(id: string): Promise<ActionResult<{ to: string }>> {
+export async function sendTestEmail(id: string, toRaw?: string): Promise<ActionResult<{ to: string }>> {
   const gate = await writerGate()
   if (!gate.ok) return fail(gate.error)
 
-  const to = (await getCachedUser())?.email ?? null
-  if (!to) return fail('We could not find an email on your account to send the test to.')
+  const target = parseTestRecipient(toRaw, (await getCachedUser())?.email ?? null)
+  if (!target.ok) return fail(target.error)
+  const to = target.to
 
   const db = createAdminClient()
   const { data, error } = await db
@@ -476,7 +513,11 @@ export async function sendTestEmail(id: string): Promise<ActionResult<{ to: stri
     .maybeSingle()
   if (error || !data) return fail('That email no longer exists.')
 
-  const layout = layoutFromBlockJson(data.block_json)
+  // A test shows the same live Event and Circle cards a real send will, not the snapshot saved with the draft.
+  // Loaded on demand: data-blocks is server-only and reads the database, and the draft-preservation probe (LIVE-877)
+  // imports this module with only the draft transports stubbed.
+  const { resolveDataBlockRefs } = await import('@/lib/email-studio/data-blocks')
+  const layout = await resolveDataBlockRefs(layoutFromBlockJson(data.block_json))
   const doc = { layout, subject: data.subject ?? '', preheader: data.preheader ?? '' }
   // A TEST is delivered to the operator's OWN address, so build REAL footer links for them (their own
   // (profileId, lifecycle) token). This makes the footer's "Unsubscribe" + "Manage emails" links live in the

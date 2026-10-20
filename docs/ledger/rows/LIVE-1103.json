@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1103",
+  "title": "The Vault draws its Trophy case in the Frequency kit instead of nesting a DAWN card",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/vault/trophy-case.test.tsx",
+    "ref": "LIVE-938 area 4 (Vault) and the members-ui.css bridge cleanup"
+  },
+  "detail": "The Frequency Vault body mounted DAWN's TrophyCase (components/quest/trophy-case.tsx), a bordered card of DAWN tiles, counters and caps labels that only fit the kit because members-ui.css repainted bordered DAWN cards. FqTrophyCase draws the same record (seasons newest first, each past season's stamped summary, a tile per finished Journey linking to it) in the kit's panel, card, ic and t1/t2 pieces. Rank hues stay data-driven through seasonRankStyle until the rank-colour ruling. DAWN's TrophyCase is unchanged for the DAWN build.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/frequency/members/vault/vault-body.tsx','utf8');if(s.includes('components/quest/trophy-case')||!s.includes('<FqTrophyCase ')){console.error('LIVE-1103: the Frequency Vault nests the DAWN Trophy case');process.exit(1)}\"",
+    "note": "Fails when the Frequency Vault goes back to DAWN's TrophyCase. Behavior is trophy-case.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
