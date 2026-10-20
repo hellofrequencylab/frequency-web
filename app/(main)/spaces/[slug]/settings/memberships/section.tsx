@@ -12,6 +12,8 @@ import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { resolveMembershipTicketGate } from '@/lib/events/ticket-space-access'
 import { isError } from '@/lib/action-result'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
+import { MembershipViews } from './membership-views'
+import { asMembershipView } from '@/lib/spaces/offerings'
 import { MembershipOwnerList } from '@/components/spaces/membership-owner-list'
 import { MembershipEventAccess } from '@/components/spaces/membership-event-access'
 import { MembershipCircleAccess } from '@/components/spaces/membership-circle-access'
@@ -52,10 +54,13 @@ export async function MembershipsSection({
   space,
   viewerProfileId,
   staffViewing,
+  view,
 }: {
   space: Space
   viewerProfileId: string | null
   staffViewing: boolean
+  /** The open view (`?view=`): plans, benefits, circles, events or members. Defaults to plans. */
+  view?: string
 }) {
   const brandName = space.brandName ?? space.name
 
@@ -117,7 +122,15 @@ export async function MembershipsSection({
     )
   }
 
-  const editors = (
+  // ONE VIEW AT A TIME (LIVE-1176). The editors used to stack: tiers, then benefits, circle access, a
+  // 30 row event list and the members table in one scroll. Each is a view of its own now, behind a
+  // `?view=` bar, and only the open one loads. Under Frequency the members table already leads the Plans
+  // view, so that design has no Members view.
+  const isFrequency = SITE_DESIGN === 'frequency'
+  const requested = asMembershipView(view)
+  const open = isFrequency && requested === 'members' ? 'plans' : requested
+
+  const plans = (
     <div className="space-y-8">
       {/* Phase 4 (docs/VALUE-LADDER.md): the space_membership_tiers meter's in-context prompt. The tier
           list is already loaded, so the count is exact. Appears at 80% of the allowance, names the
@@ -134,52 +147,64 @@ export async function MembershipsSection({
       <fieldset disabled={staffViewing} className="contents">
         <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
       </fieldset>
+    </div>
+  )
 
-      {/* MEMBER BENEFITS (ADR-1372, LIVE-093): what a tier is WORTH at a checkout, as opposed to
-          what it lets you through. It lives here rather than behind its own route so a tier and its
-          price modifiers are edited on one surface. The write is gated server-side in
-          setSpaceBenefits (canEditProfile + the memberships function gate). */}
-      <section>
-        <SectionHeader title="Member benefits" />
-        <p className="mb-3 text-body-sm text-muted">
-          Set what a membership takes off the price, and pick the tiers each one belongs to.
-        </p>
-        <Suspense fallback={<BenefitsSkeleton />}>
-          <BenefitsLoader space={space} tiers={tiers} staffViewing={staffViewing} />
-        </Suspense>
-      </section>
+  // THE FREQUENCY BODY (SITE_DESIGN, build-time): the Member Admin Memberships page leads (plan cards and
+  // the members table), and the tier editor follows it unchanged. DAWN renders the editor alone.
+  const plansView = isFrequency ? (
+    <FqMembershipsBody spaceId={space.id} tiers={tiers}>
+      {plans}
+    </FqMembershipsBody>
+  ) : (
+    plans
+  )
 
-      {/* CIRCLE ACCESS (ADR-859): the circle each tier includes. The circle is the tier's
-          communications hub: its gatherings and its Message center audience. Linking sweeps the
-          tier's current members in; the membership lifecycle keeps it in sync from then on. */}
-      <section>
-        <SectionHeader title="Circle access" />
-        <p className="mb-3 text-body-sm text-muted">
-          Give each membership its own circle. Members join it automatically while their
-          membership is active, and its gatherings show on your space calendar.
-        </p>
-        <Suspense fallback={<MembersSkeleton />}>
-          <CircleAccessLoader space={space} staffViewing={staffViewing} />
-        </Suspense>
-      </section>
-
-      {/* EVENT ACCESS (ADR-824): which upcoming events a membership includes. Writes the ADR-823
-          members-ticket gate on the event, the same rows the event's own ticket editor manages. */}
-      <section>
-        <SectionHeader title="Event access" />
-        <p className="mb-3 text-body-sm text-muted">
-          Include your events with a membership. Pick who gets the free Members ticket on each.
-        </p>
-        <Suspense fallback={<MembersSkeleton />}>
-          <EventAccessLoader space={space} tiers={tiers} staffViewing={staffViewing} />
-        </Suspense>
-      </section>
-
-      {/* Under Frequency the members table leads the body instead (FqMembershipsBody), with these same
-          promote and cancel actions on each row, so the list is not drawn twice. */}
-      {SITE_DESIGN !== 'frequency' && (
+  return (
+    <div className="space-y-6">
+      <MembershipViews active={open} includeMembers={!isFrequency} />
+      {open === 'plans' && plansView}
+      {open === 'benefits' && (
         <section>
-          <SectionHeader title="Members" />
+          {/* MEMBER BENEFITS (ADR-1372, LIVE-093): what a tier is WORTH at a checkout, as opposed to what
+              it lets you through. The write is gated server-side in setSpaceBenefits (canEditProfile +
+              the memberships function gate). */}
+          <p className="mb-4 max-w-prose text-body-sm text-muted">
+            Set what a membership takes off the price, and pick the tiers each one belongs to.
+          </p>
+          <Suspense fallback={<BenefitsSkeleton />}>
+            <BenefitsLoader space={space} tiers={tiers} staffViewing={staffViewing} />
+          </Suspense>
+        </section>
+      )}
+      {open === 'circles' && (
+        <section>
+          {/* CIRCLE ACCESS (ADR-859): the circle each tier includes. The circle is the tier's
+              communications hub: its gatherings and its Message center audience. Linking sweeps the
+              tier's current members in; the membership lifecycle keeps it in sync from then on. */}
+          <p className="mb-4 max-w-prose text-body-sm text-muted">
+            Give each membership its own circle. Members join it automatically while their
+            membership is active, and its gatherings show on your space calendar.
+          </p>
+          <Suspense fallback={<MembersSkeleton />}>
+            <CircleAccessLoader space={space} staffViewing={staffViewing} />
+          </Suspense>
+        </section>
+      )}
+      {open === 'events' && (
+        <section>
+          {/* EVENT ACCESS (ADR-824): which upcoming events a membership includes. Writes the ADR-823
+              members-ticket gate on the event, the same rows the event's own ticket editor manages. */}
+          <p className="mb-4 max-w-prose text-body-sm text-muted">
+            Include your events with a membership. Pick who gets the free Members ticket on each.
+          </p>
+          <Suspense fallback={<MembersSkeleton />}>
+            <EventAccessLoader space={space} tiers={tiers} staffViewing={staffViewing} />
+          </Suspense>
+        </section>
+      )}
+      {open === 'members' && (
+        <section>
           <Suspense fallback={<MembersSkeleton />}>
             <MembershipOwnerList spaceId={space.id} />
           </Suspense>
@@ -187,17 +212,6 @@ export async function MembershipsSection({
       )}
     </div>
   )
-
-  // THE FREQUENCY BODY (SITE_DESIGN, build-time): the Member Admin Memberships page leads (plan cards and
-  // the members table), and every editor above follows it unchanged. DAWN renders the editors alone.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqMembershipsBody spaceId={space.id} tiers={tiers}>
-        {editors}
-      </FqMembershipsBody>
-    )
-  }
-  return editors
 }
 
 /** The honest sentence at the point of tier creation (LIVE-231). What charging members is part of

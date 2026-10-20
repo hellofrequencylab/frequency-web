@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1176",
+  "title": "The Memberships tab is five short views and the event list folds",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/memberships/section.tsx",
+    "ref": "Owner 2026-10-20 in the project chat: the offerings and money page is a joke, make menus or compact areas and space it well (PR 2 of 3 after LIVE-1175)"
+  },
+  "detail": "FILED 2026-10-20. THE CONSEQUENCE: even inside its own tab the Memberships body stacked the tier editor with its long textareas, member benefits, circle access, a 30 row event list and the members table into one scroll. THE FIX: a `?view=` bar (Plans, Benefits, Circles, Event access, Members) renders one editor at a time, and the event list shows 8 rows with Show all. Every form and action is unchanged; Frequency keeps its plan cards and members table leading the Plans view and has no separate Members view. See ADR-1871.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/memberships-views.mjs",
+    "note": "Fails on main (editors stack in one body), passes with this change."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

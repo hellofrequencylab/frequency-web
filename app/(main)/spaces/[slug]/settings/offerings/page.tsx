@@ -39,10 +39,10 @@ export default async function SpaceOfferingsPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ tab?: string | string[] }>
+  searchParams: Promise<{ tab?: string | string[]; view?: string | string[] }>
 }) {
   const { slug } = await params
-  const { tab } = await searchParams
+  const { tab, view } = await searchParams
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -69,7 +69,11 @@ export default async function SpaceOfferingsPage({
       description="What people can book, join, support, or check in to. Pick a tab to set it up; it shows on your space page."
       width="wide"
     >
-      <OfferingsBody slug={slug} tab={typeof tab === 'string' ? tab : undefined} />
+      <OfferingsBody
+        slug={slug}
+        tab={typeof tab === 'string' ? tab : undefined}
+        view={typeof view === 'string' ? view : undefined}
+      />
     </ConsoleFocusTemplate>
   )
 }
