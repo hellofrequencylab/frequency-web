@@ -140,3 +140,11 @@
 @layer components {
 html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top:calc(68px + var(--fq-space-7))}
 }
+
+/* THE TOP BAR HIDES WHAT SCROLLS UNDER IT (owner screenshot 2026-10-20, the Space Spotlight editor: the
+   breadcrumb and nav sat on top of a block's text, both legible at once). The kit paints the bar at 82%
+   with a blur, which leaves the page readable through it wherever the blur is not applied. Raising the
+   fill to 96% keeps the glass edge and makes the bar do its job. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"] .ad-top{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
+}
