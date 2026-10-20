@@ -1,9 +1,0 @@
-expo.modules.usbserial.usb-serial-pngs-0 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/build/generated/res/pngs/release
-expo.modules.usbserial.usb-serial-updated_navigation_xml-1 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/build/generated/updated_navigation_xml/release
-expo.modules.usbserial.usb-serial-mergeReleaseResources-2 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
-expo.modules.usbserial.usb-serial-mergeReleaseResources-3 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
-expo.modules.usbserial.usb-serial-release-4 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/build/intermediates/merged_res/release/mergeReleaseResources
-expo.modules.usbserial.usb-serial-release-5 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/build/intermediates/packaged_res/release/packageReleaseResources
-expo.modules.usbserial.usb-serial-main-6 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/src/main/res
-expo.modules.usbserial.usb-serial-release-7 /Users/danieltyack/Developer/frequency-web/.claude/worktrees/frequency-experience/mobile/modules/usb-serial/android/src/release/res
-gradleHome-0 /Users/danieltyack/.gradle

@@ -42,3 +42,7 @@ yarn-error.*
 
 # local env
 .env
+
+# local Expo modules: Gradle output next to their source
+modules/*/android/build/
+modules/*/android/.cxx/
