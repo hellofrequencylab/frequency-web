@@ -8,6 +8,8 @@ import {
   nextSpotlightPreferences,
   isSellingLinkCard,
   spotlightSiteGrid,
+  spaceSpotlightNodes,
+  legacySpotlightWriteError,
 } from './spotlight'
 
 const placed = (prefs: unknown) =>
@@ -89,5 +91,47 @@ describe('Space Spotlight', () => {
       }),
     )
     expect((spotlightSiteGrid(grid).rows ?? []).map((r) => r.cells[0][0])).toEqual(['about', 'linkCards', 'links'])
+  })
+})
+
+describe('Space Spotlight as nodes (E0 task 12b)', () => {
+  const nodeDoc = {
+    rows: [
+      { id: 'r0', columns: 2, cells: [[{ nid: 'nAAAAAA1', type: 'text', content: { text: 'One' } }], [{ nid: 'nAAAAAA2', type: 'text', content: { text: 'Two' } }]] },
+      { id: 'r1', columns: 1, cells: [[{ nid: 'nAAAAAA3', type: 'team' }]] },
+      { id: 'r2', columns: 1, cells: [[{ nid: 'nAAAAAA4', type: 'links' }]] },
+    ],
+    bench: [{ nid: 'nAAAAAA5', type: 'heading', content: { text: 'Later' } }, { nid: 'nAAAAAA6', type: 'team' }],
+  }
+
+  it('a native write keeps two Text nodes as two blocks, one per row, and drops non-Spotlight blocks', () => {
+    const next = nextSpotlightPreferences({}, { published: true, layout: nodeDoc, native: true })
+    const nodes = readSpaceSpotlight(next).layout?.nodes
+    expect(nodes?.rows.map((r) => r.cells[0][0].nid)).toEqual(['nAAAAAA1', 'nAAAAAA2', 'nAAAAAA4'])
+    expect(nodes?.rows.every((r) => r.columns === 1)).toBe(true)
+    expect(nodes?.rows[1].cells[0][0].content).toEqual({ text: 'Two' })
+    expect(nodes?.bench.map((n) => n.type)).toEqual(['heading'])
+  })
+
+  it('a publish toggle keeps the stored native document byte for byte', () => {
+    const native = nextSpotlightPreferences({}, { layout: nodeDoc, native: true })
+    const toggled = nextSpotlightPreferences(native, { published: true })
+    expect((toggled.spotlight as { layout: unknown }).layout).toEqual((native.spotlight as { layout: unknown }).layout)
+    expect(readSpaceSpotlight(toggled).published).toBe(true)
+  })
+
+  it('a legacy write never stores nodes, and is refused over a stored native Spotlight', () => {
+    const legacy = nextSpotlightPreferences({}, { layout: { rows: [{ id: 'r0', columns: 1, cells: [['links']] }] } })
+    expect(JSON.stringify(legacy)).not.toContain('"nodes"')
+    const native = nextSpotlightPreferences({}, { layout: nodeDoc, native: true })
+    expect(legacySpotlightWriteError({ rows: [{ id: 'r0', columns: 1, cells: [['links']] }] }, native)).toMatch(/cannot save yet/)
+    expect(legacySpotlightWriteError(nodeDoc, {})).toMatch(/cannot save yet/)
+    expect(legacySpotlightWriteError({ rows: [{ id: 'r0', columns: 1, cells: [['links']] }] }, legacy)).toBeNull()
+  })
+
+  it('spaceSpotlightNodes is the saved nodes, else the starter as nodes', () => {
+    expect(spaceSpotlightNodes(readSpaceSpotlight({})).rows.map((r) => r.cells[0][0].type)).toEqual(['about', 'linkCards', 'links'])
+    const saved = readSpaceSpotlight(nextSpotlightPreferences({}, { layout: nodeDoc, native: true }))
+    expect(spaceSpotlightNodes(saved).rows).toHaveLength(3)
   })
 })
