@@ -87,3 +87,108 @@ One tap system, all in the web app, before the iOS app:
 
 Every phase reads `envFlag('LOYALTY_ENABLED')` until the launch switch is thrown; the gate lives in
 `docs/RUNBOOKS.md`.
+
+## 7. Counter scanners (`LIVE-1056`)
+
+The door code turned around: instead of the member's phone reading the Space's code, the Space's own
+card reader (the CyberUnicorn 5000, an ESP32 with a PN532) reads the **member's** card at the
+counter. The server then runs the Space's own check-in through `captureNode`, so the ledger, the
+stamp, the 25 Zaps, hunts and the CRM timeline are the ones a phone scan gets. Nothing is
+re-implemented. Behind `SCANNER_DEVICES_ENABLED` (envFlag); the gate is in `docs/RUNBOOKS.md`.
+
+**Pieces.** Migration `20270346011500_scanner_devices.sql` (`scanner_devices`, `member_cards`,
+both service role only). `lib/devices/` (credentials, store, scan, the device wire). Routes
+`app/api/v1/devices/{scan,cards}` and `app/c/[token]`. Owner panel: Space settings, Check-in,
+"Counter scanners" (`scanners-section.tsx`, under Regulars).
+
+**Trust.**
+
+- A device is registered by a Space owner (canEditProfile and the per-Space check-in function).
+  Its secret (32 random bytes, base64url) is shown once; only `sha256(secret)` is stored. Revoking
+  sets `active = false` and the next request is a 401.
+- A card is an opaque token (16 random bytes, base64url); only `sha256(token)` is stored. A card
+  minted by a device works at that device's Space only. `space_id null` (a Frequency-wide card) is
+  allowed by the schema and the scan, with no issuer yet.
+- The chip UID is bound on the card's first scan (an HMAC under the server signing key, never the
+  raw UID). After that, the token on another chip, or with no UID, is refused as `card_mismatch`.
+  A token copied before its first scan is the one gap: the owner revokes the card.
+- The device is the witness of presence. The scan presents a node code the server signs on the spot
+  and the Space's own pin as the location, which satisfies the "must be here" geofence. A stolen
+  device secret can check in only cards issued for that one Space, once a member-day each; revoke it.
+- A member holds at most 5 live cards per Space; a Space at most 10 live scanners.
+
+### The device contract
+
+Base URL is the site (`https://frequencylocal.com`, or `http://<lan-ip>:3000` for a dev server).
+Both endpoints are `POST`, JSON in and out, header `X-Frequency-Device: <device id>.<secret>`
+(never `Authorization: Bearer`: that header is the member app's and `lib/contract/caller.ts` 401s
+anything that is not a Supabase session). Replies are flat JSON, **not** the `/api/v1`
+`{ data, error }` envelope.
+
+| Status | Body | Meaning |
+| :--- | :--- | :--- |
+| 200 | `{ "ok": true, … }` | Done. |
+| 200 | `{ "ok": false, "reason": "…", … }` | A real answer to show at the counter. |
+| 400 | `{ "ok": false, "reason": "invalid_input" }` | The body is not in the expected shape. |
+| 401 | `{ "ok": false, "reason": "device_unauthorized" }` | Header missing, malformed, unknown, wrong or revoked. |
+| 404 | `{ "ok": false, "reason": "not_enabled" }` | Scanners are switched off on this server. |
+| 429 | `{ "ok": false, "reason": "rate_limited" }`, `Retry-After: 30` | 300 a minute per address, then 30 scans or 10 cards a minute per device. |
+| 5xx | `{ "ok": false, "reason": "internal" }` | Retry later (queue the scan). |
+
+**`POST /api/v1/devices/scan`**
+
+```json
+{ "card_token": "abcdefghijklmnopqrstuv", "uid": "04:A2:1F:9C", "queued": true, "scanned_at": 1760900000 }
+```
+
+`card_token` is required (base64url, 16 to 128 characters). `uid` is optional hex, 4 to 10 bytes,
+any case, `:` `-` or spaces allowed. `queued` and `scanned_at` are accepted and ignored: the check-in
+is credited on the member's day as the server resolves it.
+
+```json
+{
+  "ok": true,
+  "member": { "display_name": "Maya" },
+  "zapsAwarded": 25,
+  "loyalty": { "stamps": 6, "required": 6, "earned": true, "reward_code": "K7Q2MX" }
+}
+```
+
+`loyalty` is `null` when the Space does not run Regulars (or `LOYALTY_ENABLED` is off).
+`reward_code` is present only when this scan filled the card. On `ok: false`, `member` is the card
+holder when the card was recognized, else `null`; `zapsAwarded` is 0 and `loyalty` is `null`.
+Reasons: `unknown_card` (no such live card, or one for another Space), `card_mismatch` (the token on
+the wrong chip), `checkin_not_set_up` (the Space has never opened its Check-in panel, so it has no
+door node), `already_captured` (already checked in today), and the verifier's own: `inactive`,
+`not_yet_valid`, `expired`, `too_far`, `location_required`, `capacity_reached`, `bad_signature`,
+`unknown_node`.
+
+**`POST /api/v1/devices/cards`**
+
+```json
+{ "member_handle": "@maya" }
+```
+
+```json
+{ "ok": true, "token": "abcdefghijklmnopqrstuv", "url": "https://frequencylocal.com/c/abcdefghijklmnopqrstuv", "member": { "display_name": "Maya" } }
+```
+
+The device writes `url` to the card as an NDEF URI record. On a scan it reads that record back and
+sends the last path segment (`/c/<token>`) as `card_token`. The token is returned this once and
+never stored in the clear. Refusals: `unknown_member`, `too_many_cards`.
+
+**`GET /c/<token>`** is what the card opens on a phone: the reader's **own** `/rewards` (through
+sign-in when signed out), or `/code-unavailable` for a revoked card. It checks nobody in.
+
+### Try it locally
+
+1. `SCANNER_DEVICES_ENABLED=1` (and `LOYALTY_ENABLED=1` to see stamps) in `.env.local`, apply the
+   migration to the local or a branch database, `pnpm dev`.
+2. As the owner, open the Space's settings, Check-in. Opening it mints the door node. Under
+   "Counter scanners", add a scanner and copy its key (shown once).
+3. Issue a card and scan it:
+
+```bash
+curl -s -X POST localhost:3000/api/v1/devices/cards -H 'content-type: application/json' -H "X-Frequency-Device: $KEY" -d '{"member_handle":"maya"}'
+curl -s -X POST localhost:3000/api/v1/devices/scan -H 'content-type: application/json' -H "X-Frequency-Device: $KEY" -d '{"card_token":"<token>","uid":"04A21F9C"}'
+```

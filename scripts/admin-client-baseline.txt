@@ -1254,3 +1254,8 @@ lib/loyalty/discover.ts
 lib/events/door-code.ts
 app/(main)/events/[slug]/manage/door-section.tsx
 lib/meet/store.ts
+# lib/devices/store.ts (added 2026-10-19, LIVE-1056): counter scanners. scanner_devices and member_cards are
+# service-role only (no browser role), and the device side has no Frequency session at all: a scanner
+# authenticates with its own credential. Every device read is pinned to the device's space_id; every owner
+# read and write runs behind scannerOwnerGate (canEditProfile and the check-in function).
+lib/devices/store.ts
