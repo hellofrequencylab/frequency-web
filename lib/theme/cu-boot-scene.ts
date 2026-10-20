@@ -385,9 +385,9 @@ export function startBootScene(canvas: HTMLCanvasElement, opts: BootSceneOptions
     if (k >= P_BLAST) {
       const n = Math.min(1, (k - P_BLAST) / (P_WASH - P_BLAST))
       let cx = 120
-      let top = 22
+      let top: number
       let sc = 3
-      let sx = 1
+      let sx: number
       if (n < 0.16) {
         const tn = n / 0.16
         sx = 1 - 0.55 * tn
