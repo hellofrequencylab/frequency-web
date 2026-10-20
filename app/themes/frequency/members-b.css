@@ -384,5 +384,18 @@
 [data-design="frequency"] [data-kit="members"] .fqm-more>summary::-webkit-details-marker{display:none}
 [data-design="frequency"] [data-kit="members"] .fqm-more[open]>summary{display:none}
 [data-design="frequency"] [data-kit="members"] .fqm-more>.g3{margin-top:0}
-[data-design="frequency"] [data-kit="members"] .fqm-pin-nav{position:sticky;top:var(--fq-hdr);z-index:20;margin:0 0 20px;padding:8px 0;background:var(--fq-bg-canvas);overflow-x:auto;scrollbar-width:none}
+[data-design="frequency"] [data-kit="members"] .fqm-pin-nav{margin:0}
 [data-design="frequency"] [data-kit="members"] .fqm-pin-nav::-webkit-scrollbar{display:none}
+
+[data-design="frequency"] [data-kit="members"] .fqm-uhead{margin:0 0 20px}
+[data-design="frequency"] [data-kit="members"] .fqm-uhead-title{margin:0 0 14px}
+[data-design="frequency"] [data-kit="members"] .fqm-feature-nav{position:sticky;top:var(--fq-hdr);z-index:20;padding:8px 0;background:var(--fq-bg-canvas);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;overflow:visible}
+[data-design="frequency"] [data-kit="members"] .fqm-feature-nav a{display:flex;flex-direction:column;gap:2px;padding:12px 16px;border-radius:20px;background:var(--fq-surface-card);border:1px solid var(--fq-border-subtle,transparent);text-decoration:none;color:inherit;transition:transform 200ms var(--fq-ease-out),box-shadow 200ms}
+[data-design="frequency"] [data-kit="members"] .fqm-feature-nav a:hover{transform:translateY(-2px)}
+[data-design="frequency"] [data-kit="members"] .fqm-feature-nav a.on{background:var(--pa);color:#1E1B18;border-color:transparent}
+[data-design="frequency"] [data-kit="members"] .fqm-feature-nav a.on .t2{color:#1E1B18}
+[data-design="frequency"] [data-kit="members"] .fqm-tip{margin:4px 0 20px;align-items:center;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-slide{animation:fqm-slide-in 320ms var(--fq-ease-out) both}
+@keyframes fqm-slide-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-slide{animation:none}}
+@media (max-width:640px){[data-design="frequency"] [data-kit="members"] .fqm-feature-nav{display:flex;overflow-x:auto;scrollbar-width:none}[data-design="frequency"] [data-kit="members"] .fqm-feature-nav a{flex:none;min-width:140px}[data-design="frequency"] [data-kit="members"] .fqm-feature-nav .t2{display:none}}

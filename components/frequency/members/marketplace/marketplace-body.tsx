@@ -117,9 +117,9 @@ export function FqClassifiedsBody({
       <div className="head">
         <div>
           <span className="k">Community · Marketplace</span>
-          <h1 className="h1">
+          <h2 className="h1">
             Swap it <span className="serif">locally.</span>
-          </h1>
+          </h2>
           <span className="meta">{meta}</span>
         </div>
         {signedIn && (
@@ -239,9 +239,9 @@ export function FqMarketBody({
       <div className="head">
         <div>
           <span className="k">Community · Market</span>
-          <h1 className="h1">
+          <h2 className="h1">
             Buy from your <span className="serif">community.</span>
-          </h1>
+          </h2>
           <span className="meta">
             Buy direct, the seller gets paid, the fee stays low · {counts.total} {counts.total === 1 ? 'listing' : 'listings'}
           </span>
