@@ -76,3 +76,25 @@ describe('captureNode partner attribution', () => {
     expect(redemption()).toMatchObject({ offer_id: null })
   })
 })
+
+// NFC + QR unification: one check-in node is reached by a printed QR and a tapped placard, so the
+// medium the member used decides the ledger source, and the node type is only the fallback.
+import { captureSource } from './capture'
+
+describe('captureSource', () => {
+  it('uses the node type when the medium is unknown', () => {
+    expect(captureSource('qr', null)).toBe('qr')
+    expect(captureSource('nfc', undefined)).toBe('nfc')
+    expect(captureSource('mystery', null)).toBe('qr')
+  })
+  it('lets the medium win over the node type', () => {
+    expect(captureSource('qr', 'nfc')).toBe('nfc')
+    expect(captureSource('nfc', 'qr')).toBe('qr')
+  })
+  it('counts a counter scanner card as an NFC read', () => {
+    expect(captureSource('qr', 'device')).toBe('nfc')
+  })
+  it('keeps a ghost node geo whatever the medium', () => {
+    expect(captureSource('ghost', 'nfc')).toBe('geo')
+  })
+})

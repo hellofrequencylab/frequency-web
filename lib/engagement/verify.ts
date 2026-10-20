@@ -17,7 +17,12 @@ export interface CaptureAttempt {
   presentedSecret?: string | null
   /** Device-reported position; required when the node sets a proximity radius. */
   location?: { lng: number; lat: number } | null
+  /** How the member reached the node: a printed QR (`qr`), a tapped NFC tag or placard (`nfc`, the
+   *  `?m=nfc` marker), or a card at a counter scanner (`device`). Attribution only; never verified. */
+  medium?: CaptureMedium | null
 }
+
+export type CaptureMedium = 'qr' | 'nfc' | 'device'
 
 export type VerifyReason =
   | 'unknown_node'

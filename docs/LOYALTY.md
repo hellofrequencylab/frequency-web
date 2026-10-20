@@ -88,6 +88,17 @@ One tap system, all in the web app, before the iOS app:
 Every phase reads `envFlag('LOYALTY_ENABLED')` until the launch switch is thrown; the gate lives in
 `docs/RUNBOOKS.md`.
 
+### One link for the placard and its QR (`LIVE-1185`)
+
+A Space's NFC placard and its QR code are the same check-in point. The QR encodes
+`signedNodeUrl(node)`; the placard (and any NFC tag for a node) holds `signedPlacardUrl(node)`, the
+same link plus a trailing `&m=nfc`. The verifier reads only `s`, so the marker never touches the
+signature. The `/n` page passes `m` to `claimNode`, and `captureNode` records the medium the member
+used (`qr`, `nfc`, or `device` for a card at a counter scanner) on the `node_capture` ledger row as
+`context.medium`, with the ledger `source` following it. Admin Scan stats counts check-ins next to
+scans, split by medium, per Space. QR Studio prints a "Tap or scan" placard
+(`/print/qr?node=<id>&placard=1`) and links a check-in node to the placard portal.
+
 ## 7. Counter scanners (`LIVE-1125`)
 
 The door code turned around: instead of the member's phone reading the Space's code, the Space's own

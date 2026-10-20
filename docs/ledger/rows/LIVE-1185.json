@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1185",
+  "title": "NFC placards and QR codes are one check-in system: one signed link, the medium recorded on every check-in, and Scan stats counting both",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-20 in the project thread: link the NFC and check-in system with the QR system. Pairs with the placard portal (space_tags, LIVE-1182)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. PREMISE RE-TESTED: a Space check-in node had one signed link (signedNodeUrl) printed as a QR and written to NFC tags, but captureNode took the ledger source from nodes.type, so a placard tap on a QR-type node counted as a QR scan; the Space and QR Studio NFC writers deliberately wrote the bare link for that reason; and Scan stats read only qr_scans (the /q resolver), so no check-in by QR or NFC was counted there. Built: signedPlacardUrl in lib/qr/node-code.ts (the signed link plus a trailing &m=nfc, which the verifier never reads) and readScanMedium in lib/qr/links.ts; CaptureAttempt.medium ('qr' | 'nfc' | 'device'), captureSource (the medium wins, the node type is the fallback, ghost stays geo) and context { nodeId, medium, spaceId } on the node_capture ledger row; the /n page passes ?m= to claimNode; /q node redirects keep the marker; counter-scanner cards record 'device'. Scan stats gains a Check-ins section (lib/qr/checkin-stats.ts) split by NFC tap, QR scan and counter scanner, with a per-Space table. The Space check-in card and QR Studio write the placard link to tags; QR Studio prints a 'Tap or scan to check in' placard (/print/qr?node=<id>&placard=1) and links a check-in node to the placard portal (/admin/cyberunicorn?space=<slug>). No migration: engagement_events.source is free text and context is jsonb. Rows written before this have no context.medium and fall back to their source.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/checkin-medium.mjs",
+    "note": "Fails when the placard link stops being built from the signed QR link, when capture takes its source from the node type alone or stops recording the medium, when /n or the counter scanner stops passing it, when Scan stats stops counting check-ins, or when the Space NFC writer writes the bare QR link."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
