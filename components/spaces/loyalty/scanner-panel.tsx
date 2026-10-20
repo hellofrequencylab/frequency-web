@@ -47,6 +47,9 @@ export function ScannerPanel({
   }
 
   function revoke(kind: 'device' | 'card', id: string) {
+    // A revoked scanner or card is retired for good (docs/RUNBOOKS.md "Regulars"), so a stray tap asks first.
+    const ask = kind === 'device' ? 'Revoke this scanner? It stops checking members in for good.' : 'Revoke this card? It stops working for good.'
+    if (!window.confirm(ask)) return
     setMessage(null)
     start(async () => {
       const result = kind === 'device' ? await revokeScanner(spaceId, id) : await revokeCard(spaceId, id)
