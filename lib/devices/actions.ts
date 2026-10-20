@@ -16,9 +16,12 @@ import { hashUid, normalizeHandle, normalizeUid } from './credentials'
 import {
   SCANNER_LIMITS,
   bindConsoleCard,
+  describeScannerForConsole,
   discardConsoleCard,
   issueCardFromConsole,
   registerScannerDevice,
+  registerScannerFromConsole,
+  revokeScannerFromConsole,
   revokeMemberCard,
   revokeScannerDevice,
   scannerDevicesEnabled,
@@ -88,5 +91,39 @@ export async function finishConsoleCard(spaceId: string, cardId: string, rawUid:
 /** The write never landed: drop the card that was minted for it. */
 export async function cancelConsoleCard(spaceId: string, cardId: string): Promise<ActionResult> {
   if (typeof cardId !== 'string' || !(await discardConsoleCard(spaceId, cardId))) return fail('Could not clear that card.')
+  return ok()
+}
+
+// ── Board setup over USB (build plan phase 3): the console makes the plugged-in board a Space's
+// counter scanner and hands it the id and secret with `frequency.provision`. Staff only.
+
+/** Register a scanner for the Space and return what the board needs. The secret goes straight to the
+ *  board over USB and is never shown on screen. */
+export async function provisionConsoleScanner(
+  spaceId: string,
+  rawLabel: unknown,
+): Promise<ActionResult<{ deviceId: string; secret: string; base: string }>> {
+  if (!scannerDevicesEnabled()) return fail('Counter scanners are not open yet.')
+  const label = (typeof rawLabel === 'string' ? rawLabel.trim() : '').slice(0, SCANNER_LIMITS.labelMax) || 'CyberUnicorn'
+  const out = await registerScannerFromConsole(spaceId, label)
+  if (out === 'forbidden') return fail('Only Frequency staff can set up a scanner here.')
+  if (out === 'limit') return fail(`That Space already runs ${SCANNER_LIMITS.devicesPerSpace} scanners. Revoke one first.`)
+  if (!out) return fail('Could not set up that scanner. Try again.')
+  await refresh(spaceId)
+  return ok({ deviceId: out.id, secret: out.secret, base: new URL(SITE_URL).origin })
+}
+
+/** Which Space the board's scanner id belongs to. */
+export async function readConsoleScanner(
+  deviceId: unknown,
+): Promise<ActionResult<{ spaceId: string; spaceName: string; label: string; active: boolean } | null>> {
+  if (typeof deviceId !== 'string' || !/^[0-9a-f-]{36}$/i.test(deviceId)) return ok(null)
+  return ok(await describeScannerForConsole(deviceId.toLowerCase()))
+}
+
+/** The board forgot its setup: revoke the scanner so its id stops working. */
+export async function retireConsoleScanner(deviceId: unknown): Promise<ActionResult> {
+  if (typeof deviceId !== 'string' || !/^[0-9a-f-]{36}$/i.test(deviceId)) return fail('That is not a scanner id.')
+  if (!(await revokeScannerFromConsole(deviceId.toLowerCase()))) return fail('Could not revoke that scanner.')
   return ok()
 }

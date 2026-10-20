@@ -9,6 +9,7 @@ import {
   parseDeviceHeader,
   secretMatches,
   sha256Hex,
+  signatureMatches,
 } from './credentials'
 
 // LIVE-1125: the device header, the stored hashes and the input normalizers a scanner leans on.
@@ -86,5 +87,28 @@ describe('member handle', () => {
     expect(normalizeHandle('')).toBeNull()
     expect(normalizeHandle('has space')).toBeNull()
     expect(normalizeHandle(7)).toBeNull()
+  })
+})
+
+describe('relayed scan signature', () => {
+  // A fixed vector computed outside Node (Python hmac), the way the firmware does it: key = the 32 raw
+  // bytes of sha256(secret), message = "scan:v1:" + device id + ":" + body.
+  const secret = 'A'.repeat(43)
+  const body = '{"card_token":"abcdefghijklmnopqrstuv","uid":"04A1B2C3","scanned_at":1792526400,"nonce":"9f86d081"}'
+  const sig = 'v1=092ac773c0cc06b151f3c56d9df4f1b61a93a0dc8b6b7e26d57615e6e4d544ea'
+
+  it('accepts the board signature over the exact body', () => {
+    expect(signatureMatches(sha256Hex(secret), ID, body, sig)).toBe(true)
+    expect(signatureMatches(sha256Hex(secret), ID, body, sig.toUpperCase().replace('V1=', 'v1='))).toBe(true)
+  })
+
+  it('refuses a changed body, another device, another secret or a malformed header', () => {
+    expect(signatureMatches(sha256Hex(secret), ID, body.replace('9f86d081', '9f86d082'), sig)).toBe(false)
+    expect(signatureMatches(sha256Hex(secret), ID.replace('4b3f', '4b3e'), body, sig)).toBe(false)
+    expect(signatureMatches(sha256Hex('B'.repeat(43)), ID, body, sig)).toBe(false)
+    for (const bad of [null, '', sig.slice(3), 'v2=' + sig.slice(3), sig.slice(0, -2)]) {
+      expect(signatureMatches(sha256Hex(secret), ID, body, bad)).toBe(false)
+    }
+    expect(signatureMatches(null, ID, body, sig)).toBe(false)
   })
 })

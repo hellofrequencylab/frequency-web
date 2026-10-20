@@ -27,6 +27,16 @@ export type Command =
   | 'frequency.read_tag'
   | 'frequency.write_tag'
   | 'frequency.scan'
+  | 'system.caps'
+  | 'system.time'
+  | 'wifi.status'
+  | 'wifi.scan'
+  | 'wifi.join'
+  | 'wifi.forget'
+  | 'frequency.config'
+  | 'frequency.provision'
+  | 'frequency.unprovision'
+  | 'frequency.relay_reply'
 
 /** PROTOCOL.md §1 error codes, plus the phone's own `timeout` and `disconnected`. */
 export type DeviceErrorCode = 'bad_json' | 'unknown_command' | 'not_available' | 'bad_args' | 'busy' | 'timeout' | 'disconnected' | string
@@ -105,6 +115,9 @@ export class LineSplitter {
 /** How long to wait for a reply. PROTOCOL.md: ~5 s, and hat.probe / cli.run can take a second or two;
  *  frequency.read_tag waits up to ~5 s for a tag on its own, so it gets more. */
 export function timeoutFor(cmd: string): number {
+  // wifi.join waits up to 20 s for the network by default; wifi.scan takes 2 to 4 s.
+  if (cmd === 'wifi.join') return 30000
+  if (cmd === 'wifi.scan' || cmd === 'wifi.status') return 10000
   if (cmd === 'frequency.read_tag' || cmd === 'frequency.write_tag' || cmd === 'frequency.scan') return 12000
   if (cmd === 'cli.run' || cmd === 'hat.probe') return 8000
   return 5000
@@ -130,4 +143,12 @@ export function describeDeviceError(code: DeviceErrorCode, message?: string): st
     default:
       return message || 'Something went wrong on the device.'
   }
+}
+
+/** A protocol line made safe for an on-screen log: the device secret, a Wi-Fi password, a card token and
+ *  a scan signature are masked. `frequency.provision`, `wifi.join` and `frequency.scan_relay` carry them. */
+export function redactLine(line: string): string {
+  return line
+    .replace(/(\\?"(?:secret|password|card_token|signature)\\?"\s*:\s*\\?")[^"\\]*/g, '$1***')
+    .replace(/\/c\/[A-Za-z0-9_-]{16,}/g, '/c/...')
 }

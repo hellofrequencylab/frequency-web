@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1181",
+  "title": "The CyberUnicorn console sets a board up as a Space's counter scanner over USB and relays its scans through the cable",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "§7 Setup and scans over the cable. Build plan phases 3 and 5; the device half is hellofrequencylab/projects PR #10 (cyberpunkunicorn-os/apps/remote/PROTOCOL.md, Setup over the cable and Scans through the cable). Owner 2026-10-20 in the project thread: get everything wired and ready for tonight's demo."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. PREMISE RE-TESTED: POST /api/v1/devices/scan took only the X-Frequency-Device secret header, and the console (LIVE-1168, LIVE-1180) spoke none of system.time, frequency.provision or frequency.relay_reply, so a board could be neither set up nor checked in through a computer. Built: signatureMatches in lib/devices/credentials.ts (HMAC-SHA256 keyed on the 32 raw bytes of the stored sha256(secret), over scan:v1:<device id>:<exact body>, v1=<hex>, constant time); authenticateSignedDevice in lib/devices/store.ts and a signed path in admitDevice (lib/devices/http.ts) that only the scan route opts into; the scan route reads the raw body, and a signed scan must carry scanned_at within 300 s and a nonce claimed once per device (claimOnce, Upstash SET NX, in lib/rate-limit.ts), answering 400 stale_scan or 409 replayed. Console: system.caps and system.time after boot and on hello, a 10 s system.status keepalive, a Counter scanner block that registers a scanner for the chosen Space (registerScannerFromConsole, staff only) and sends frequency.provision (the secret goes to the board and is never shown), Switch and Forget setup (frequency.unprovision plus revoke), Wi-Fi by wifi.scan and wifi.join, Test a check-in by frequency.scan, and frequency.scan_relay forwarded by lib/device/cable-scan.ts with frequency.relay_reply sent back. redactLine masks secret, password, card_token and signature in the on-screen device log. EVIDENCE 2026-10-20: without Upstash configured the nonce guard answers fresh, and the 300 s window plus the check-in ledger's once-a-day rule still bound a replay.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cable-scanner.mjs",
+    "note": "Fails when the scan route stops checking the board signature over the exact bytes, drops the clock window or the replay guard, when another device route accepts a relayed signature, when a console scanner write loses its staff gate, when the console stops sending provision, unprovision, relay_reply, system.time, wifi.join or frequency.scan or stops forwarding scan_relay, loses its 10 s keepalive, or when the device log can show a secret."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

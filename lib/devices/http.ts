@@ -1,7 +1,7 @@
 import 'server-only'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { DEVICE_HEADER } from './credentials'
-import { authenticateDevice, scannerDevicesEnabled, touchDevice, type ScannerDevice } from './store'
+import { DEVICE_HEADER, DEVICE_ID_HEADER, SIGNATURE_HEADER } from './credentials'
+import { authenticateDevice, authenticateSignedDevice, scannerDevicesEnabled, touchDevice, type ScannerDevice } from './store'
 
 // THE DEVICE WIRE (LIVE-1125, docs/LOYALTY.md "Counter scanners"). The /api/v1/devices/* routes are a
 // separate, small contract from the member app's (lib/contract/respond.ts): a microcontroller parses a
@@ -34,14 +34,21 @@ export async function admitDevice(
   request: Request,
   endpoint: string,
   perDevice: { limit: number },
-): Promise<{ device: ScannerDevice } | { response: Response }> {
+  opts?: { signedBody?: string },
+): Promise<{ device: ScannerDevice; signed: boolean } | { response: Response }> {
   if (!scannerDevicesEnabled()) return { response: deviceFail(404, 'not_enabled') }
   const retry = { 'retry-after': '30' }
-  const device = await authenticateDevice(request.headers.get(DEVICE_HEADER))
+  // A route that passes `signedBody` also takes a scan relayed through the USB cable: no secret in the
+  // headers, just the device id and the board's signature over those exact bytes.
+  const header = request.headers.get(DEVICE_HEADER)
+  const signed = !header && opts?.signedBody !== undefined && request.headers.has(SIGNATURE_HEADER)
+  const device = signed
+    ? await authenticateSignedDevice(request.headers.get(DEVICE_ID_HEADER), request.headers.get(SIGNATURE_HEADER), opts!.signedBody!)
+    : await authenticateDevice(header)
   if (!device) return { response: deviceFail(401, 'device_unauthorized') }
   if (!(await rateLimitOk(`v1:${endpoint}:device`, device.id, perDevice.limit, '1 m', { whenUnconfigured: 'allow' }))) {
     return { response: deviceFail(429, 'rate_limited', retry) }
   }
   await touchDevice(device.id)
-  return { device }
+  return { device, signed }
 }

@@ -190,7 +190,8 @@ the owner's call (2026-10-20, `LIVE-1180`): Spaces ask, staff write. It is the o
 CyberUnicorn 5000 design system (`lib/theme/cyberunicorn.ts`, scoped to that block). It
 talks to the board over Web Serial (Chrome or Edge on a computer) in the device's remote protocol v1
 (`lib/device/`, a copy of `mobile/src/device/`; the device half is `cyberpunkunicorn-os/apps/remote/PROTOCOL.md`).
-No scanner registration and no device secret are needed: the staff member's own session mints the card.
+Writing a card needs no scanner registration and no device secret: the staff member's own session mints
+it. Setting the board up as a counter scanner is below (`LIVE-1181`).
 
 1. Connect. The port opens at 115200 8N1 with DTR and RTS set low in one call (the CYD's auto-reset
    circuit resets the ESP32 when they differ), then `system.status` is re-sent for up to 40 s until the
@@ -222,6 +223,38 @@ The button files one `badge_requests` row (migration `20270346018000_badge_reque
 only, one pending row per member per Space, so a second tap is a no-op). The console lists pending
 requests oldest first; **Use** fills in the Space and the member, **Clear** cancels the request, and a
 written card marks it done and points it at the card. Behind `SCANNER_DEVICES_ENABLED` like the rest.
+
+### Setup and scans over the cable (`LIVE-1181`)
+
+The same console makes the plugged-in board a Space's **counter scanner** without typing on it (build
+plan phases 3 and 5; device half `cyberpunkunicorn-os/apps/remote/PROTOCOL.md`, "Setup over the cable"
+and "Scans through the cable").
+
+- **On connect** the page reads `system.caps`, sets the board clock with `system.time { epoch }` (again
+  on every `hello`, since the board has no battery clock), reads `frequency.config`, and pings
+  `system.status` every 10 s. The board relays through the cable only when it heard from the page in
+  the last 30 s, its clock is set, it is provisioned, and it has no Wi-Fi.
+- **Make it the Space's scanner.** `provisionConsoleScanner` (staff only, `registerScannerFromConsole`)
+  registers a scanner for the chosen Space and returns its id and one-time secret to the page, which
+  sends `frequency.provision { device_id, secret, base, reader: true }`. The secret goes to the board
+  and is never shown. Switching Spaces revokes the old scanner id; **Forget setup** sends
+  `frequency.unprovision` and revokes it too. The scanner then shows on the Space's Check in tab.
+- **Wi-Fi** by `wifi.scan` and `wifi.join`. A board on Wi-Fi posts scans itself with its secret header.
+- **A scan through the cable.** The board emits `frequency.scan_relay { nonce, device_id, body, signature }`.
+  The page (`lib/device/cable-scan.ts`) posts `body` byte for byte to `POST /api/v1/devices/scan` with
+  `X-Frequency-Device-Id` and `X-Frequency-Signature` and no secret, then answers
+  `frequency.relay_reply { nonce, status, body }` (`status` 0 when the server was unreachable, so the
+  board queues). **Test a check-in** runs `frequency.scan`; through the cable its reply carries `relay`,
+  which the page posts itself.
+- **The server check** (`signatureMatches`, `authenticateSignedDevice`): HMAC-SHA256 keyed on the 32 raw
+  bytes of the stored `sha256(secret)`, over `scan:v1:<device id>:<body>`, sent as `v1=<hex>`. Only the
+  scan route takes it. A signed scan also needs `scanned_at` within 300 s of the server clock
+  (`400 stale_scan`) and a `nonce` not seen from that device in the window (`409 replayed`, Upstash
+  `SET NX`; with no Upstash the window and the once-a-day ledger bound a replay). Keying on the stored
+  hash means a database leak could forge that Space's cable scans, the same blast radius as a leaked
+  device secret: revoke the scanner either way.
+- The on-screen device log runs every line through `redactLine` (`lib/device/protocol.ts`), which masks
+  `secret`, `password`, `card_token` and `signature`.
 
 ### Try it locally
 

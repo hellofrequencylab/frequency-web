@@ -4,13 +4,34 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Re
 import { useRouter } from 'next/navigation'
 import { Press_Start_2P, VT323 } from 'next/font/google'
 import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
-import { cancelConsoleCard, finishConsoleCard, startConsoleCard } from '@/lib/devices/actions'
+import {
+  cancelConsoleCard,
+  finishConsoleCard,
+  provisionConsoleScanner,
+  readConsoleScanner,
+  retireConsoleScanner,
+  startConsoleCard,
+} from '@/lib/devices/actions'
 import { dismissBadgeRequest, lookupConsoleSpace } from '@/lib/devices/badge-actions'
 import type { BadgeRequestRow } from '@/lib/devices/badges'
 import { RpcClient, DeviceError } from '@/lib/device/client'
 import { openWebSerial, pickPort, rememberedPort, webSerialAvailable } from '@/lib/device/web-serial'
-import type { HatProbe, SystemStatus, TagRead, TagWritten } from '@/lib/device/types'
+import { forwardScan, scanReasonText, type RelayAnswer } from '@/lib/device/cable-scan'
+import type {
+  FrequencyConfig,
+  HatProbe,
+  ScanRelay,
+  ScanResult,
+  SystemCaps,
+  SystemStatus,
+  TagRead,
+  TagWritten,
+  WifiJoin,
+  WifiNetwork,
+  WifiScan,
+} from '@/lib/device/types'
 import {
   CU_ICONS,
   CU_SCOPE_STYLE,
@@ -30,6 +51,13 @@ import {
 // actions (lib/devices/actions.ts): mint, write, then bind the chip, or discard the mint if the device
 // says the write failed.
 //
+// It also makes the plugged-in board a Space's COUNTER SCANNER (build plan phases 3 and 5): register a
+// scanner for the chosen Space, hand the board its id and secret with `frequency.provision` (the secret
+// goes straight to the board and is never shown), put it on Wi-Fi with `wifi.scan` + `wifi.join`, and,
+// while this page is open, forward the scans a board with no Wi-Fi signs and sends up the cable
+// (`frequency.scan_relay`, lib/device/cable-scan.ts). The page sets the board clock after it boots and
+// pings it every 10 s, which is what tells the board the cable is live.
+//
 // This is the ONE surface on the page that wears the CyberUnicorn 5000 design system (lib/theme/
 // cyberunicorn.ts, scoped to this root): black screen, a rainbow frame walking the hue wheel, rainbow
 // titles in the pixel display face, VT323 body text, stepped 25 fps motion that stops under reduced
@@ -46,6 +74,8 @@ const TAP_REPLY_MS = TAP_MS + 15000
 /** Opening the port reboots the CYD on macOS (the CH340 driver pulses EN), and a boot to the main menu
  *  takes about 18 s, so the page keeps asking for up to this long. Measured on hardware 2026-10-20. */
 const BOOT_WAIT_MS = 40000
+/** The board uses the cable for a scan only if this page sent a line in the last 30 s. */
+const KEEPALIVE_MS = 10000
 
 // ── The 25 fps tick (FRAME_MS = 40), one rAF for the whole panel, frozen under reduced motion. ─────
 
@@ -211,7 +241,7 @@ function Row({ label, value, tone = 'text' }: { label: string; value: string; to
 
 // ── The device conversation ───────────────────────────────────────────────────────────────────────
 
-type Phase = 'idle' | 'connecting' | 'ready' | 'minting' | 'tap' | 'checking' | 'done'
+type Phase = 'idle' | 'connecting' | 'ready' | 'minting' | 'tap' | 'checking' | 'scanning' | 'working' | 'done'
 
 interface Done {
   title: string
@@ -255,6 +285,18 @@ function outcomeUnknown(e: unknown): boolean {
 }
 
 type Target = { spaceId: string; spaceName: string }
+type Scanner = { spaceId: string; spaceName: string; label: string; active: boolean }
+type CheckIn = { at: number; name: string; ok: boolean; detail: string }
+
+/** One check-in line from the server's answer. */
+function checkInFrom(answer: RelayAnswer | ScanResult, viaCable: boolean): CheckIn {
+  const b = ('body' in answer ? answer.body : answer) as { ok?: unknown; reason?: unknown; member?: { display_name?: unknown } | null; loyalty?: { stamps?: unknown; required?: unknown; earned?: unknown } | null }
+  const name = typeof b.member?.display_name === 'string' ? b.member.display_name : 'A card'
+  const ok = 'body' in answer ? b.ok === true : !('relay' in answer) && b.member != null
+  const l = b.loyalty
+  const stamps = l && typeof l.stamps === 'number' && typeof l.required === 'number' ? `${l.stamps} of ${l.required} stamps${l.earned ? ', reward earned' : ''}` : 'Checked in'
+  return { at: Date.now(), name, ok, detail: ok ? `${stamps}${viaCable ? ' (through this computer)' : ''}` : scanReasonText(b.reason) }
+}
 
 export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeRequestRow[]; spaces: { slug: string; name: string }[] }) {
   const router = useRouter()
@@ -277,6 +319,14 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
   const [cardFor, setCardFor] = useState<string | null>(null)
   const [target, setTarget] = useState<Target | null>(null)
   const [spaceSlug, setSpaceSlug] = useState('')
+  const [caps, setCaps] = useState<string[] | null>(null)
+  const [config, setConfig] = useState<FrequencyConfig | null>(null)
+  const [scanner, setScanner] = useState<Scanner | null>(null)
+  const [checkIns, setCheckIns] = useState<CheckIn[]>([])
+  const [networks, setNetworks] = useState<WifiNetwork[] | null>(null)
+  const [ssid, setSsid] = useState('')
+  const [wifiPassword, setWifiPassword] = useState('')
+  const [notice, setNotice] = useState<string | null>(null)
 
   // The countdown under "TAP THE CARD", and the boot bar while the board restarts.
   useEffect(() => {
@@ -295,6 +345,10 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
     setStatus(null)
     setHat(null)
     setTapStarted(null)
+    setCaps(null)
+    setConfig(null)
+    setScanner(null)
+    setNetworks(null)
     await c?.close().catch(() => undefined)
   }, [])
 
@@ -302,8 +356,21 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
   // flash or another tool can open it. Connecting again always takes a click (it reboots the board).
   const busyRef = useRef(false)
   useEffect(() => {
-    busyRef.current = phase === 'connecting' || phase === 'minting' || phase === 'tap' || phase === 'checking'
+    busyRef.current = phase === 'connecting' || phase === 'minting' || phase === 'tap' || phase === 'checking' || phase === 'scanning' || phase === 'working'
   }, [phase])
+
+  // The keepalive: a status ping every 10 s while nothing else is in flight. The board relays a scan
+  // through the cable only while it has heard from this page in the last 30 s.
+  const connectedNow = phase !== 'idle' && phase !== 'connecting'
+  useEffect(() => {
+    if (!connectedNow) return
+    const id = setInterval(() => {
+      const c = clientRef.current
+      if (!c || busyRef.current) return
+      void c.call<SystemStatus>('system.status').then(setStatus, () => undefined)
+    }, KEEPALIVE_MS)
+    return () => clearInterval(id)
+  }, [connectedNow])
   useEffect(() => {
     const release = () => {
       if (clientRef.current) void disconnect()
@@ -341,6 +408,11 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
         if (e.event === 'frequency.waiting_for_tag') {
           setTapStarted(Date.now())
           setNow(Date.now())
+        } else if (e.event === 'hello') {
+          // The board restarted on its own: give it the time again, or cable scans have none.
+          void setClock(client)
+        } else if (e.event === 'frequency.scan_relay') {
+          void relayScan(client, (e.data ?? {}) as ScanRelay)
         }
       })
       transport.onClose((reason) => {
@@ -369,12 +441,152 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
         return
       }
       setStatus(s)
+      const c = await client.call<SystemCaps>('system.caps').catch(() => null)
+      const commands = c?.commands ?? []
+      setCaps(commands)
+      if (commands.includes('system.time')) await setClock(client)
       setHat(await client.call<HatProbe>('hat.probe').catch(() => null))
+      if (commands.includes('frequency.config')) await refreshConfig(client)
       setPhase('ready')
     } catch (e) {
       await disconnect()
       setProblem(e instanceof Error ? e.message : 'Could not connect.')
     }
+  }
+
+  async function setClock(client: RpcClient) {
+    await client.call('system.time', { epoch: Math.floor(Date.now() / 1000) }).catch(() => undefined)
+  }
+
+  async function refreshConfig(client: RpcClient) {
+    const cfg = await client.call<FrequencyConfig>('frequency.config').catch(() => null)
+    setConfig(cfg)
+    if (!cfg?.device_id) {
+      setScanner(null)
+      return
+    }
+    const info = await readConsoleScanner(cfg.device_id)
+    setScanner(isError(info) ? null : info.data)
+  }
+
+  // A board with no Wi-Fi signed a scan and sent it up the cable: post it, then hand the answer back.
+  async function relayScan(client: RpcClient, relay: ScanRelay) {
+    if (!relay.nonce) return
+    const answer = await forwardScan(relay)
+    await client.call('frequency.relay_reply', { nonce: relay.nonce, status: answer.status, body: answer.body }).catch(() => undefined)
+    setCheckIns((prev) => [checkInFrom(answer, true), ...prev].slice(0, 6))
+    if (answer.status === 0 || answer.status >= 500) void refreshConfig(client)
+  }
+
+  /** Run one board-setup step with the panel marked busy; a failure lands in the problem line. */
+  async function step(work: (client: RpcClient) => Promise<void>) {
+    const client = clientRef.current
+    if (!client) return
+    setProblem(null)
+    setNotice(null)
+    setPhase('working')
+    try {
+      await work(client)
+    } catch (e) {
+      setProblem(e instanceof DeviceError ? e.message : e instanceof Error ? e.message : 'Something went wrong. Try again.')
+    }
+    if (clientRef.current) setPhase('ready')
+  }
+
+  // Make this board the chosen Space's counter scanner. A board set up for another scanner id is
+  // switched over and the old id revoked, so a board only ever answers for one Space.
+  function setUpScanner() {
+    if (!target) return
+    void step(async (client) => {
+      const out = await provisionConsoleScanner(target.spaceId, 'CyberUnicorn 5000')
+      if (isError(out)) throw new Error(out.error)
+      const previous = config?.device_id
+      let cfg: FrequencyConfig
+      try {
+        cfg = await client.call<FrequencyConfig>('frequency.provision', { device_id: out.data.deviceId, secret: out.data.secret, base: out.data.base, reader: true })
+      } catch (e) {
+        await retireConsoleScanner(out.data.deviceId)
+        throw e
+      }
+      if (previous && previous !== out.data.deviceId) await retireConsoleScanner(previous)
+      setConfig(cfg)
+      setScanner({ spaceId: target.spaceId, spaceName: target.spaceName, label: 'CyberUnicorn 5000', active: true })
+      setNotice(`This board is now ${target.spaceName}'s counter scanner. Members tap their badge on its Frequency screen to check in.`)
+      router.refresh()
+    })
+  }
+
+  function forgetScanner() {
+    void step(async (client) => {
+      const previous = config?.device_id
+      const cfg = await client.call<FrequencyConfig>('frequency.unprovision')
+      if (previous) await retireConsoleScanner(previous)
+      setConfig(cfg)
+      setScanner(null)
+      setNotice('The board forgot its scanner setup, and that scanner was revoked.')
+    })
+  }
+
+  function findNetworks() {
+    void step(async (client) => {
+      const out = await client.call<WifiScan>('wifi.scan')
+      const list = (out.networks ?? []).filter((n) => n.ssid && n.auth !== 'enterprise')
+      setNetworks(list)
+      if (list[0]?.ssid && !ssid) setSsid(list[0].ssid)
+    })
+  }
+
+  function joinWifi() {
+    if (!ssid) return
+    void step(async (client) => {
+      const out = await client.call<WifiJoin>('wifi.join', wifiPassword ? { ssid, password: wifiPassword, save: true } : { ssid, save: true })
+      setWifiPassword('')
+      setNetworks(null)
+      setStatus(await client.call<SystemStatus>('system.status').catch(() => status))
+      await refreshConfig(client)
+      setNotice(
+        out.internet === 'online'
+          ? `On ${out.ssid ?? ssid} and online. Scans now go straight to Frequency.`
+          : out.internet === 'captive'
+            ? `${out.ssid ?? ssid} wants a sign-in page the board cannot open. Use another network or a phone hotspot.`
+            : `Joined ${out.ssid ?? ssid}, but it has no internet. Scans go through this computer while it is plugged in.`,
+      )
+    })
+  }
+
+  // Tap a member card on the board and check them in, the way the counter does.
+  async function testCheckIn() {
+    const client = clientRef.current
+    if (!client) return
+    setProblem(null)
+    setNotice(null)
+    setDone(null)
+    setPhase('scanning')
+    setTapStarted(Date.now())
+    setNow(Date.now())
+    try {
+      const out = await client.call<ScanResult>('frequency.scan', { timeout_ms: TAP_MS }, { timeoutMs: TAP_REPLY_MS })
+      setTapStarted(null)
+      if (out.relay?.nonce) {
+        // Through the cable: the board cannot wait for a second command while it answers this one, so the
+        // page posts the signed scan and keeps the answer.
+        const answer = await forwardScan(out.relay)
+        setCheckIns((prev) => [checkInFrom(answer, true), ...prev].slice(0, 6))
+      } else {
+        setCheckIns((prev) => [checkInFrom(out, false), ...prev].slice(0, 6))
+      }
+    } catch (e) {
+      setTapStarted(null)
+      const known: Record<string, string> = {
+        not_member_card: 'That is not a Frequency member card.',
+        reader_mode_off: 'Reader mode is off on the board. Set it up as a scanner first.',
+        backend_not_set_up: 'The board is not set up as a scanner yet.',
+        offline: 'The board is offline, so it saved the scan for later.',
+        rejected: 'Frequency refused that scan.',
+      }
+      setProblem(e instanceof DeviceError && known[e.code] ? `${known[e.code]}${e.code === 'rejected' && e.message ? ` (${e.message})` : ''}` : tagProblem(e))
+    }
+    if (clientRef.current) setPhase('ready')
   }
 
   // DIP 3 can be flipped after connecting, so the reader can be looked for again without a reconnect (a reboot).
@@ -539,14 +751,20 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
                 <RainbowBar value={bootStarted === null ? 0.05 : Math.min(1, (now - bootStarted) / 20000)} label="Waking the CyberUnicorn" />
                 <p className="text-[var(--cu-muted)]">Reticulating rainbows...</p>
               </Screen>
-            ) : phase === 'tap' || phase === 'checking' || phase === 'minting' ? (
+            ) : phase === 'working' ? (
+              <Screen icon="frequency" title="WORKING ON IT">
+                <p>Talking to the CyberUnicorn. Joining Wi-Fi can take up to 30 seconds.</p>
+              </Screen>
+            ) : phase === 'tap' || phase === 'checking' || phase === 'scanning' || phase === 'minting' ? (
               <Screen icon="frequency" title={phase === 'minting' ? 'MAKING THE CARD' : 'TAP THE CARD'} big>
                 <p>
                   {phase === 'minting'
                     ? 'Making a card link for this member...'
                     : phase === 'tap'
                       ? `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until it beeps.`
-                      : 'Hold any card or tag on the reader to see what it holds.'}
+                      : phase === 'scanning'
+                        ? 'Hold a member card on the reader to check them in.'
+                        : 'Hold any card or tag on the reader to see what it holds.'}
                 </p>
                 {phase !== 'minting' && <RainbowBar value={remaining} label="Time left to tap the card" />}
               </Screen>
@@ -570,6 +788,8 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
                 </div>
               </Screen>
             ) : null}
+
+            {notice && !problem && <p className="border border-[var(--cu-ok)] px-3 py-2 text-[var(--cu-ok)]">{notice}</p>}
 
             {problem && (
               <p role="alert" className="border border-[var(--cu-attention)] px-3 py-2 text-[var(--cu-attention)]">
@@ -669,7 +889,44 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
                   Disconnect
                 </CuButton>
               </div>
+
+              <ScannerSetup
+                canSetUp={caps?.includes('frequency.provision') ?? false}
+                canWifi={caps?.includes('wifi.join') ?? false}
+                config={config}
+                scanner={scanner}
+                target={target}
+                wifi={status?.wifi}
+                readerOk={readerOk}
+                networks={networks}
+                ssid={ssid}
+                password={wifiPassword}
+                onSsid={setSsid}
+                onPassword={setWifiPassword}
+                onSetUp={setUpScanner}
+                onForget={forgetScanner}
+                onFindNetworks={findNetworks}
+                onJoin={joinWifi}
+                onTest={() => void testCheckIn()}
+              />
             </div>
+          )}
+
+          {connected && checkIns.length > 0 && (
+            <section aria-labelledby="cu5k-checkins" className="space-y-2">
+              <h4 id="cu5k-checkins" className="font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">
+                Check-ins
+              </h4>
+              <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+                {checkIns.map((c) => (
+                  <li key={c.at} className="flex flex-wrap items-baseline gap-x-3 px-3 py-2">
+                    <span className={c.ok ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-attention)]'}>{c.name}</span>
+                    <span className="text-[var(--cu-muted)]">{c.detail}</span>
+                    <span className="ml-auto text-[var(--cu-dim)]">{new Date(c.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {(phase === 'idle' || phase === 'ready') && (
@@ -732,5 +989,128 @@ function Screen({ icon, title, big, children }: { icon: keyof typeof CU_ICONS; t
         {children}
       </div>
     </div>
+  )
+}
+
+const FIELD_CLASS =
+  'block min-h-11 w-full rounded-none border border-[var(--cu-secondary)] bg-[var(--cu-floor)] px-3 py-1 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] text-[var(--cu-text)] shadow-none caret-[var(--cu-primary)] outline-none ring-0 placeholder:text-[var(--cu-dim)] focus-visible:border-[var(--cu-primary)] focus-visible:ring-0'
+
+/** The board-as-counter-scanner block: which Space it answers for, how its scans travel, Wi-Fi. */
+function ScannerSetup(props: {
+  canSetUp: boolean
+  canWifi: boolean
+  config: FrequencyConfig | null
+  scanner: Scanner | null
+  target: Target | null
+  wifi: SystemStatus['wifi']
+  readerOk: boolean
+  networks: WifiNetwork[] | null
+  ssid: string
+  password: string
+  onSsid: (v: string) => void
+  onPassword: (v: string) => void
+  onSetUp: () => void
+  onForget: () => void
+  onFindNetworks: () => void
+  onJoin: () => void
+  onTest: () => void
+}) {
+  const { config, scanner, target, wifi } = props
+  const ready = config?.ready === true
+  const revoked = scanner?.active === false
+  const sameSpace = ready && !revoked && scanner?.spaceId === target?.spaceId
+  const scannerText = !props.canSetUp
+    ? 'This firmware cannot be set up over USB. Update it.'
+    : !ready
+      ? 'Not set up'
+      : revoked
+        ? 'Revoked. Set it up again.'
+        : scanner
+          ? `${scanner.spaceName}, ${scanner.label}`
+          : 'Set up for a scanner this site does not know'
+  const route = !ready
+    ? null
+    : wifi?.connected
+      ? `Over Wi-Fi (${wifi.ssid ?? 'connected'})`
+      : config?.cable
+        ? 'Through this computer'
+        : config?.clock_set === false
+          ? 'Waiting for the board clock. Reconnect it.'
+          : 'Saved on the board until it is online'
+  const selected = props.networks?.find((n) => n.ssid === props.ssid)
+  return (
+    <section aria-labelledby="cu5k-scanner" className="space-y-3 border-t border-[var(--cu-panel)] pt-4">
+      <h4 id="cu5k-scanner" className="font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">
+        Counter scanner
+      </h4>
+      <dl className="space-y-1">
+        <Row label="Scanner" value={scannerText} tone={ready && !revoked && scanner ? 'ok' : 'attention'} />
+        {route && <Row label="Scans" value={config?.queued ? `${route}. ${config.queued} waiting to send.` : route} tone="secondary" />}
+        {props.canWifi && <Row label="Wi-Fi" value={wifi?.connected ? `${wifi.ssid ?? 'Connected'}${wifi.ip ? `  ${wifi.ip}` : ''}` : 'Not connected'} />}
+      </dl>
+      <div className="flex flex-wrap items-center gap-3">
+        {props.canSetUp && target && !sameSpace && (
+          <CuButton tone="secondary" onClick={props.onSetUp}>
+            {ready && !revoked ? `Switch to ${target.spaceName}` : `Make it ${target.spaceName}'s scanner`}
+          </CuButton>
+        )}
+        {ready && !revoked && props.readerOk && (
+          <CuButton tone="secondary" onClick={props.onTest}>
+            Test a check-in
+          </CuButton>
+        )}
+        {props.canWifi && (
+          <CuButton tone="quiet" onClick={props.onFindNetworks}>
+            {wifi?.connected ? 'Change Wi-Fi' : 'Join Wi-Fi'}
+          </CuButton>
+        )}
+        {props.canSetUp && config?.device_id && (
+          <CuButton tone="quiet" onClick={props.onForget}>
+            Forget setup
+          </CuButton>
+        )}
+      </div>
+      {props.canSetUp && !target && !ready && <p className="text-[var(--cu-dim)]">Choose a Space above to make this board its counter scanner.</p>}
+      {props.networks && (
+        <form
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault()
+            props.onJoin()
+          }}
+        >
+          <label className="flex-1 space-y-1">
+            <span className="block font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">Network</span>
+            <Select
+              value={props.ssid}
+              onChange={(e) => props.onSsid(e.target.value)}
+              className={FIELD_CLASS}
+              emptyLabel={props.networks.length === 0 ? 'No networks found' : undefined}
+              options={props.networks.map((n) => ({
+                value: n.ssid ?? '',
+                label: `${n.ssid}${n.auth === 'open' ? ' (open)' : ''}${n.saved ? ' (saved)' : ''}`,
+              }))}
+            />
+          </label>
+          {selected?.auth !== 'open' && (
+            <label className="flex-1 space-y-1">
+              <span className="block font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">Password</span>
+              <Input
+                type="password"
+                value={props.password}
+                onChange={(e) => props.onPassword(e.target.value)}
+                placeholder={selected?.saved ? 'Saved on the board' : 'Wi-Fi password'}
+                autoComplete="off"
+                maxLength={63}
+                className={FIELD_CLASS}
+              />
+            </label>
+          )}
+          <CuButton type="submit" tone="secondary" disabled={!props.ssid}>
+            Join
+          </CuButton>
+        </form>
+      )}
+    </section>
   )
 }
