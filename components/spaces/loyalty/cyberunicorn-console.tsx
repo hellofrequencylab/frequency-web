@@ -403,7 +403,13 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
       const transport = await openWebSerial(port)
       const client = new RpcClient(transport)
       clientRef.current = client
-      client.log.on((l) => setLog((prev) => [...prev.slice(-39), `${l.dir === 'out' ? '>' : l.dir === 'in' ? '<' : '#'} ${l.text}`]))
+      // Whether the board printed anything at all tells a dead or busy port from firmware that has no remote app.
+      let heard = 0
+      setLog([])
+      client.log.on((l) => {
+        if (l.dir === 'in') heard++
+        setLog((prev) => [...prev.slice(-39), `${l.dir === 'out' ? '>' : l.dir === 'in' ? '<' : '#'} ${l.text}`])
+      })
       client.events.on((e) => {
         if (e.event === 'frequency.waiting_for_tag') {
           setTapStarted(Date.now())
@@ -437,7 +443,11 @@ export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeReque
       setBootStarted(null)
       if (!s) {
         await disconnect()
-        setProblem('The CyberUnicorn did not answer. Wait for it to finish booting, then connect again. If it still says nothing, it needs the CyberUnicorn OS build with the remote app.')
+        setProblem(
+          heard === 0
+            ? 'Nothing came from the CyberUnicorn at all. Check it is switched on and that you picked its USB serial port. If you just flashed it, unplug it for 5 seconds, plug it back in, wait for its main menu, then connect again.'
+            : 'The CyberUnicorn is printing but not answering commands. Wait for its main menu and connect again. If it still does not answer, it needs the CyberUnicorn OS build with the remote app. Device log below shows what it printed.',
+        )
         return
       }
       setStatus(s)
