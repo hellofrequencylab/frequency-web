@@ -38,6 +38,7 @@ import { faqBlock } from './faq'
 import { contactBlock } from './contact'
 import { businessBlock } from './business'
 import { topfriendsBlock } from './topfriends'
+import { guestbookBlock } from './guestbook'
 
 // THE ADOPTED BLOCKS (E1). A block joins the contract by being listed here, one at a time, and from that
 // moment `check:blocks` holds it to the whole of it (scripts/check-blocks.mjs). The registry (../registry.ts)
@@ -84,4 +85,5 @@ export const ADOPTED_BLOCKS = [
   contactBlock,
   businessBlock,
   topfriendsBlock,
+  guestbookBlock,
 ] as const

@@ -101,7 +101,7 @@ describe('check:blocks --complete, the whole phase', () => {
   it('passes only when the gates exist, defineBlock is exported and every block is adopted', () => {
     expect(completeProblems({ scripts, defineBlockExported: true, defs: ADOPTED_BLOCKS, registry: only })).toEqual([])
     expect(completeProblems({ scripts: {}, defineBlockExported: false, defs: ADOPTED_BLOCKS, registry: only })).toHaveLength(4)
-    expect(completeProblems({ scripts, defineBlockExported: true, defs: ADOPTED_BLOCKS, registry: ENTITY_BLOCKS }).join()).toContain('not yet adopted')
+    expect(completeProblems({ scripts, defineBlockExported: true, defs: ADOPTED_BLOCKS, registry: [...ENTITY_BLOCKS, { ...ENTITY_BLOCKS[0], id: 'not-adopted' }] }).join()).toContain('not yet adopted')
   })
 })
 

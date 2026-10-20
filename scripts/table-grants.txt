@@ -354,5 +354,7 @@ loyalty_rewards                      internal
 loyalty_hunts                        internal
 loyalty_hunt_stops                   internal
 loyalty_hunt_completions             internal
+scanner_devices                      internal
+member_cards                         internal
 meet_codes                           internal
 meet_taps                            internal
