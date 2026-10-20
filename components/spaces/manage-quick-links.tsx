@@ -60,11 +60,11 @@ const ICONS = {
 export function ManageQuickLinks(props: { slug: string; published: boolean; inPanel: boolean }) {
   const links = manageQuickLinks(props)
   return (
-    <nav aria-label="Manage shortcuts" className="mb-4 flex flex-wrap gap-2">
+    <nav aria-label="Manage shortcuts" className="mb-4 flex flex-wrap gap-2 max-md:flex-nowrap max-md:overflow-x-auto max-md:[scrollbar-width:none]">
       {links.map((link) => {
         const Icon = ICONS[link.key]
         const className =
-          'inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none'
+          'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-control max-md:min-h-11 border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none'
         const body = (
           <>
             <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
