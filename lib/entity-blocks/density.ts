@@ -8,7 +8,7 @@ import type { BlockDensity } from './define-block'
 //
 // Literal class strings on purpose: Tailwind finds a class by scanning source, so none is assembled here.
 
-export const DENSITY_STACK: Readonly<Record<BlockDensity, string>> = {
+const DENSITY_STACK: Readonly<Record<BlockDensity, string>> = {
   compact: 'space-y-6',
   standard: 'space-y-10',
   roomy: 'space-y-14',

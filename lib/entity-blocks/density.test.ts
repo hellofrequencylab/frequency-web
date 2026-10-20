@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { DENSITY_STACK, stackClassFor } from './density'
+import { stackClassFor } from './density'
+import type { BlockDensity } from './define-block'
 
 describe('density scale', () => {
   it('keeps the two spacings that shipped before the scale existed', () => {
@@ -8,7 +9,7 @@ describe('density scale', () => {
   })
 
   it('has exactly three steps, each a different spacing', () => {
-    expect(Object.keys(DENSITY_STACK).sort()).toEqual(['compact', 'roomy', 'standard'])
-    expect(new Set(Object.values(DENSITY_STACK)).size).toBe(3)
+    const steps: BlockDensity[] = ['compact', 'standard', 'roomy']
+    expect(new Set(steps.map(stackClassFor)).size).toBe(3)
   })
 })

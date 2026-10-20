@@ -16,7 +16,7 @@ import type { FieldDef } from './block-content'
 
 /** Where a block may be shown. A surface not listed is not offered there (§3 rule 2: `kinds` gates legality,
  *  `surfaces` gates display). */
-export type BlockSurface = 'profile-inapp' | 'spotlight-public' | 'space-profile' | 'space-site' | 'email'
+type BlockSurface = 'profile-inapp' | 'spotlight-public' | 'space-profile' | 'space-site' | 'email'
 
 /** The spacing and type scale a surface asks of the one component (§3 rule 4: density is a prop). */
 export type BlockDensity = 'compact' | 'standard' | 'roomy'
