@@ -1,4 +1,6 @@
 import type { Data } from '@/lib/page-editor/types'
+import { siteTheme } from '@/lib/theme/site-style'
+import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
@@ -150,14 +152,17 @@ export function publishedWebsitePage(preferences: unknown, slug: string): Websit
  *  somebody edits?"). Add a theme only once its render matches the look it replaces. */
 export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network'])
 
-/** The published website the PUBLIC site draws, or null to keep the house look: nothing published, or a
- *  published theme not yet in WEBSITE_THEMES_LIVE. The one gate every public reader goes through (the
+/** The published website the PUBLIC site draws, or null to keep the house look: nothing published, a
+ *  published theme not yet in WEBSITE_THEMES_LIVE, or a snapshot written in a theme other than the one the
+ *  site wears now (SCAN-831: the Theme tab saves the site style live, so a Bold site that switches to
+ *  Frequency must not serve its Menswork document through the Frequency render, and the share card follows
+ *  the theme worn, not the snapshot's). The one gate every public reader goes through (the
  *  site, its share image, the crawler). The public preferences stub carries only this snapshot plus
  *  revision (SCAN-827); the editor reads the full state through overlayWebsiteEditor + readWebsiteEditor. */
 export function publishedWebsiteSnapshot(preferences: unknown): WebsiteSnapshot | null {
   const editor = record(preferences) ? preferences.websiteEditor : null
   const published = record(editor) ? editor.published : null
-  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) ? published : null
+  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) && published.theme === EDITOR_THEME_OF[siteTheme(preferences)] ? published : null
 }
 
 export function withoutWebsiteDrafts<T>(preferences: T): T {
