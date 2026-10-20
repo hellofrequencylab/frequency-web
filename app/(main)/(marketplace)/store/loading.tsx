@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading skeleton for the Frequency Store. The page awaits the full catalog before
 // first paint; this renders instantly during that await (hero + a product grid) so the store never
@@ -17,6 +19,9 @@ function ProductCardSkeleton() {
 }
 
 export default function StoreLoading() {
+  // Under Frequency the Store opens on the plain kit head (LIVE-1012), so the wait does too. The DAWN
+  // photo band below painted a tall grey slab where Frequency has no header image (LIVE-1032).
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading the Store" shape="items" />
   return (
     <div>
       <Skeleton className="h-48 w-full rounded-none sm:h-60" />

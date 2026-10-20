@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 import { GridSkeleton } from '@/components/spaces/directory-view'
 
 // The Business Spaces directory's loading screen (SCAN-405, LIVE-1018). The Frequency page awaits the
@@ -7,6 +9,8 @@ import { GridSkeleton } from '@/components/spaces/directory-view'
 // nothing flashes where the header will land.
 
 export default function SpacesDirectoryLoading() {
+  // Under Frequency the wait wears the kit skeleton every other index uses (LIVE-1032).
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Spaces" shape="circles" />
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Loading Spaces">
       <div className="space-y-3">

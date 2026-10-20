@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading UI for the Community directory (PAGE-FRAMEWORK §5). The
 // layout withholds the hub tab strip on the bare /network index, so the page
@@ -16,6 +18,9 @@ function ContactCardSkeleton() {
 }
 
 export default function NetworkLoading() {
+  // Under Frequency the page opens on the plain kit head with no DAWN tab strip or rail, so the wait
+  // wears the kit skeleton every other index uses (LIVE-1032).
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Members" shape="items" />
   return (
     <div>
       {/* Header band (PageHeading: title + description + Invite action) */}
