@@ -32,10 +32,9 @@ export function loyaltyEnabled(): boolean {
   return envFlag('LOYALTY_ENABLED')
 }
 
-/** Why a Space cannot run Regulars, or null when it can. Pure on the Space row: a physical location
- *  (a mappable coordinate, lib/spaces/location.ts) and a plan at or above Business. A staff-waived
- *  Space clears the plan floor (LIVE-822). Reads the waiver only on a refusal. */
-export async function loyaltyEligibility(space: Space): Promise<'no_location' | 'plan' | null> {
+/** True when the Space has a mappable pin (lib/spaces/location.ts). A pin is optional for Regulars
+ *  (LIVE-948): it only powers the distance check on a check-in. */
+export function spaceHasPin(space: Space): boolean {
   const location = normalizeSpaceLocation({
     street: space.street,
     city: space.city,
@@ -46,7 +45,13 @@ export async function loyaltyEligibility(space: Space): Promise<'no_location' | 
     longitude: space.longitude,
     precision: space.locationPrecision,
   })
-  if (!isMappable(location)) return 'no_location'
+  return isMappable(location)
+}
+
+/** Why a Space cannot run Regulars, or null when it can. A plan at or above Business; no address or pin
+ *  is needed (LIVE-948). A staff-waived Space clears the plan floor (LIVE-822). Reads the waiver only
+ *  on a refusal. */
+export async function loyaltyEligibility(space: Space): Promise<'plan' | null> {
   if (planRank(space.plan) >= PLAN_CAPABILITY_RANK.business) return null
   try {
     if (await spaceLimitsWaived(space.id)) return null
@@ -319,7 +324,7 @@ export async function writeLoyaltyProgram(spaceId: string, input: LoyaltyProgram
         reward_title: input.rewardTitle,
         reward_value_cents: input.rewardValueCents,
         reward_note: input.rewardNote,
-        geofence: input.geofence,
+        geofence: input.geofence && spaceHasPin(gate.space),
         surprise_odds: input.surpriseOdds,
         updated_by: gate.callerId,
         updated_at: new Date().toISOString(),

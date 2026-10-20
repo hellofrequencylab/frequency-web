@@ -16,7 +16,6 @@ export async function saveLoyaltyProgram(spaceId: string, raw: unknown): Promise
   if (!saved) {
     const space = await getSpaceById(spaceId)
     const why = space ? await loyaltyEligibility(space) : null
-    if (parsed.input.status === 'on' && why === 'no_location') return fail('Add the address and map pin in Profile before turning Regulars on.')
     if (parsed.input.status === 'on' && why === 'plan') return fail('Regulars is a Business feature. Upgrade the Space to turn it on.')
     return fail('Could not save Regulars.')
   }
