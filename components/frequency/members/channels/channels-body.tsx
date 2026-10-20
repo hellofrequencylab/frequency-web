@@ -16,6 +16,7 @@ import {
   filterChannels,
   parseChannelSort,
   sortChannels,
+  threadExcerpt,
   trendingChannels,
   type ForumChannel,
   type ForumIndex,
@@ -74,7 +75,7 @@ function Row({ c, canToggle, showPillar }: { c: ForumChannel; canToggle: boolean
           <Link href={`/channels/${c.slug}`}>{c.name}</Link>
           {c.hasPinned && <span className="tag fqm-board-tag">Pinned thread</span>}
         </span>
-        {c.description && <span className="t2 fqm-board-desc">{c.description}</span>}
+        {c.description && <span className="t2 fqm-board-desc">{threadExcerpt(c.description, 160)}</span>}
         {c.latest ? (
           <span className="meta fqm-board-latest">
             <span className="fqm-board-latest-k">Latest</span> {c.latest.excerpt}

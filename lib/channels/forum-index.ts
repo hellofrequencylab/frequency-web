@@ -13,7 +13,7 @@ import { listSecondaryCarriers } from '@/lib/circles/channel-carriers'
 // see on the Channel page, so the index shows no more than the Channel itself does.
 
 export const CHANNEL_SORTS = ['active', 'tuned', 'circles', 'az'] as const
-export type ChannelSort = (typeof CHANNEL_SORTS)[number]
+type ChannelSort = (typeof CHANNEL_SORTS)[number]
 
 export const CHANNEL_SORT_LABEL: Record<ChannelSort, string> = {
   active: 'Most active',
@@ -23,7 +23,7 @@ export const CHANNEL_SORT_LABEL: Record<ChannelSort, string> = {
 }
 
 /** A Channel is "active" if it has had a public thread in this many days. */
-export const ACTIVE_WINDOW_DAYS = 14
+const ACTIVE_WINDOW_DAYS = 14
 /** How many public threads are read to build the per-Channel activity. Newest first, so it is a window. */
 const POST_WINDOW = 800
 
@@ -51,7 +51,7 @@ export interface ForumChannel {
   tunedIn: boolean
 }
 
-export interface ForumPillar {
+interface ForumPillar {
   id: string
   slug: string
   name: string
@@ -63,7 +63,7 @@ export interface ForumIndex {
   channels: ForumChannel[]
 }
 
-export interface ChannelParams {
+interface ChannelParams {
   q?: string
   pillar?: string
   show?: string
