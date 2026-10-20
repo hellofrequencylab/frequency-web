@@ -75,7 +75,9 @@ export function PushRegistration() {
   return (
     <p
       role="status"
-      className="fixed bottom-4 left-4 z-50 max-w-xs rounded-card border border-border bg-surface-elevated px-3 py-2 text-body-sm text-subtle shadow-pop"
+      // `fq-push-note` is the Frequency hook (members-shell.css, LIVE-1100): bottom centre where the kit's
+      // toast lands, clear of the bottom-left dock and the phone tab bar this corner used to sit on.
+      className="fq-push-note fixed bottom-4 left-4 z-50 max-w-xs rounded-card border border-border bg-surface-elevated px-3 py-2 text-body-sm text-subtle shadow-pop"
     >
       {PUSH_SAVE_FAILED_COPY}{' '}
       <button type="button" onClick={() => setSaveFailed(false)} className="ml-1 font-semibold text-primary-strong underline">

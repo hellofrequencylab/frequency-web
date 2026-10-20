@@ -18,7 +18,7 @@ import { CampaignAnalyticsExpansion } from '@/components/admin/crm/campaign-anal
 import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
-import type { SegmentOption } from '@/components/admin/email-studio/send-panel'
+import type { SegmentOption } from '@/modules/email-design/client'
 import { Input } from '@/components/ui/field'
 
 export function MarketingWorkspace({

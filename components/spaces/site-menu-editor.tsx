@@ -9,15 +9,8 @@ import { Field, Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Radio } from '@/components/ui/radio'
-import {
-  getSiteMenuEditorData,
-  resetSiteMenu,
-  saveHeaderLogo,
-  saveSiteMenu,
-  type MenuEditorData,
-  type MenuEditorOption,
-} from '@/app/(main)/spaces/[slug]/manage/layout/menu-actions'
-import { uploadSpaceImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import type { MenuEditorData, MenuEditorOption } from '@/lib/spaces/site-menu-core'
+import { useSiteMenuActions } from './site-menu-actions'
 import {
   isMenuHref,
   MAX_MENU_CHILDREN,
@@ -59,10 +52,12 @@ export function SiteMenuEditor({ slug, className }: { slug: string; className?: 
   const [dirty, setDirty] = useState(false)
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [pending, start] = useTransition()
+  const act = useSiteMenuActions(slug)
 
   useEffect(() => {
     let live = true
-    getSiteMenuEditorData(slug)
+    act
+      .load()
       .then((d) => {
         if (!live) return
         setData(d)
@@ -72,7 +67,7 @@ export function SiteMenuEditor({ slug, className }: { slug: string; className?: 
     return () => {
       live = false
     }
-  }, [slug])
+  }, [act])
 
   if (data === undefined) return <p className="text-body-sm text-muted">Loading your menu…</p>
   if (!data || !menu) return null
@@ -94,7 +89,7 @@ export function SiteMenuEditor({ slug, className }: { slug: string; className?: 
 
   const save = () =>
     start(async () => {
-      const r = await saveSiteMenu(slug, menu)
+      const r = await act.save(menu)
       if (!('error' in r)) {
         setDirty(false)
         setData({ ...data, saved: true })
@@ -103,9 +98,9 @@ export function SiteMenuEditor({ slug, className }: { slug: string; className?: 
     })
   const reset = () =>
     start(async () => {
-      const r = await resetSiteMenu(slug)
+      const r = await act.reset()
       if ('error' in r) return setMessage({ tone: 'error', text: r.error })
-      const fresh = await getSiteMenuEditorData(slug)
+      const fresh = await act.load()
       setData(fresh)
       setMenu(fresh?.menu ?? null)
       setDirty(false)
@@ -412,10 +407,11 @@ function LogoSection({ slug, data, onSaved }: { slug: string; data: MenuEditorDa
   const [logoUrl, setLogoUrl] = useState<string | null>(data.logo.logoUrl)
   const [note, setNote] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [pending, start] = useTransition()
+  const act = useSiteMenuActions(slug)
 
   const persist = (nextMode: HeaderLogoMode, nextUrl: string | null) =>
     start(async () => {
-      const r = await saveHeaderLogo(slug, { mode: nextMode, logoUrl: nextUrl })
+      const r = await act.saveLogo({ mode: nextMode, logoUrl: nextUrl })
       if (!('error' in r)) {
         onSaved({ mode: nextMode, logoUrl: nextUrl })
         setNote({ tone: 'ok', text: 'Logo saved on your Space page and website.' })
@@ -426,11 +422,11 @@ function LogoSection({ slug, data, onSaved }: { slug: string; data: MenuEditorDa
     start(async () => {
       const fd = new FormData()
       fd.set('file', file)
-      const r = await uploadSpaceImage(slug, 'logo', fd)
+      const r = await act.uploadLogo(fd)
       if ('error' in r) return setNote({ tone: 'error', text: r.error })
       setLogoUrl(r.url)
       setMode('logo')
-      const saved = await saveHeaderLogo(slug, { mode: 'logo', logoUrl: r.url })
+      const saved = await act.saveLogo({ mode: 'logo', logoUrl: r.url })
       if (!('error' in saved)) {
         onSaved({ mode: 'logo', logoUrl: r.url })
         setNote({ tone: 'ok', text: 'Logo uploaded and in use.' })

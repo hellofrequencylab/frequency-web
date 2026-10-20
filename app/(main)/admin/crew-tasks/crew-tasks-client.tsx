@@ -8,6 +8,7 @@ import { getInitials } from '@/lib/utils'
 import { Field, Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Switch } from '@/components/ui/switch'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -29,17 +30,7 @@ const label = 'block text-meta font-medium text-muted mb-1'
 // `aria-checked` carries the state.
 function Toggle({ value, onChange, disabled, labelId }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean; labelId: string }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={value}
-      aria-labelledby={labelId}
-      onClick={() => onChange(!value)}
-      disabled={disabled}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-pill border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
-    >
-      <span className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
-    </button>
+    <Switch checked={value} onCheckedChange={() => onChange(!value)} aria-labelledby={labelId} disabled={disabled} />
   )
 }
 

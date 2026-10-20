@@ -690,7 +690,7 @@ components/sidebar/demo-notice.tsx
 components/sidebar/rail-panels.tsx
 components/sidebar/right-sidebar.tsx
 components/sites/editor/editor-page.tsx
-components/spaces/crm/space-member-composer-actions.ts
+modules/crm/components/space-member-composer-actions.ts
 components/walkthroughs/feed-role-promotion.tsx
 components/walkthroughs/feed-walkthrough.tsx
 components/widgets/admin/admin-hubs-roster.tsx
@@ -1222,6 +1222,7 @@ lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
 lib/spaces/space-discussion.ts
+lib/spaces/space-image-store.ts
 lib/spaces/spotlight-clicks.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts

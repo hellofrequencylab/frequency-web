@@ -1,7 +1,7 @@
 import 'server-only'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
-import type { EmailBrand } from '@/lib/comms/email-brand'
+import type { EmailBrand, EmailOrigin } from '@/lib/comms/email-brand'
 import { palette } from '@/lib/theme/palette'
 import { emailType } from '@/lib/theme/email-type'
 
@@ -93,12 +93,13 @@ function headerMarkHtml(): string {
  *  legal footer): a link back to the Space when there is one, the small Frequency mark, Privacy, Terms and
  *  Help, Manage emails, the "Sent with" line, then the copyright and CAN-SPAM postal line. A 1:1 reply
  *  carries no one-click Unsubscribe (it is not bulk mail); Manage emails opens the preference page. */
-function footerHtml(brand?: EmailBrand | null): string {
+function footerHtml(brand?: EmailBrand | null, origin?: EmailOrigin | null): string {
   const link = (href: string, label: string, strong = false): string =>
     `<a href="${esc(href)}" style="color:${strong ? palette.emailHeading : palette.emailSubtle};${strong ? 'font-weight:600;' : ''}text-decoration:underline">${label}</a>`
   const dot = ' &middot; '
-  const back = brand
-    ? `<div style="margin-bottom:16px">${link(brand.url, `Back to ${esc(brand.name)} on ${SITE_NAME}`, true)}</div>`
+  const target = origin ?? (brand ? { label: brand.name, url: brand.url } : null)
+  const back = target
+    ? `<div style="margin-bottom:16px">${link(target.url, `Back to ${esc(target.label)} on ${SITE_NAME}`, true)}</div>`
     : ''
   const sentWith = brand
     ? `${link(APP, `Sent with ${SITE_NAME}`)}${dot}${link(brand.url, esc(brand.name))}`
@@ -122,14 +123,14 @@ const BODY_STYLE = `font-size:16px;line-height:1.55;color:${palette.emailBody}`
 /** Wrap inner message HTML in the Frequency email look: the wash page, the Frequency wordmark top left
  *  (linking to the home feed), the raised card (headed by the Space's name when there is a brand), and the
  *  shared footer below. */
-export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null): string {
+export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null, origin?: EmailOrigin | null): string {
   return `<div style="${PAGE_STYLE}">
   ${headerMarkHtml()}
   <div style="${CARD_STYLE}">
     ${brand ? brandHeaderHtml(brand) : ''}
     <div style="${BODY_STYLE}">${innerHtml}</div>
   </div>
-  ${footerHtml(brand)}
+  ${footerHtml(brand, origin)}
 </div>`
 }
 
@@ -140,8 +141,9 @@ export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null): str
 const TEXT_FOOTER = `\n\n${SITE_TAGLINE} · ${APP}`
 
 /** The plain-text footer: the platform line, or the brand's "Sent with Frequency" line. */
-function textFooter(brand?: EmailBrand | null): string {
-  const lead = brand ? `\n\nSent with ${SITE_NAME} · ${APP}\n${brand.name} · ${brand.url}` : TEXT_FOOTER
+function textFooter(brand?: EmailBrand | null, origin?: EmailOrigin | null): string {
+  const target = origin ?? (brand ? { label: brand.name, url: brand.url } : null)
+  const lead = brand || origin ? `\n\nSent with ${SITE_NAME} · ${APP}\n${target ? `${target.label} · ${target.url}` : ''}`.trimEnd() : TEXT_FOOTER
   return `${lead}\nPrivacy: ${APP}/privacy · Terms: ${APP}/terms · Help: ${APP}/help\nManage emails: ${APP}/manage-emails\n${PLATFORM_POSTAL_LINE}`
 }
 
@@ -150,11 +152,12 @@ export function renderReplyEmail(
   body: string,
   signature: string | null,
   brand?: EmailBrand | null,
+  origin?: EmailOrigin | null,
 ): { html: string; text: string } {
   const trimmed = (body ?? '').trim()
   const sig = (signature ?? '').trim()
-  const html = wrapEmailHtml(`${textToInnerHtml(trimmed)}${signatureInnerHtml(sig, brand?.logoUrl, brand?.name)}`, brand)
-  const text = `${trimmed}${sig ? `\n\n-- \n${sig}` : ''}${textFooter(brand)}`
+  const html = wrapEmailHtml(`${textToInnerHtml(trimmed)}${signatureInnerHtml(sig, brand?.logoUrl, brand?.name)}`, brand, origin)
+  const text = `${trimmed}${sig ? `\n\n-- \n${sig}` : ''}${textFooter(brand, origin)}`
   return { html, text }
 }
 
@@ -164,9 +167,10 @@ export function renderCoalescedEmail(
   coalescedInnerHtml: string,
   signature: string | null,
   brand?: EmailBrand | null,
+  origin?: EmailOrigin | null,
 ): { html: string; text: string } {
   const sig = (signature ?? '').trim()
-  const html = wrapEmailHtml(`${coalescedInnerHtml}${signatureInnerHtml(sig, brand?.logoUrl, brand?.name)}`, brand)
-  const text = `${(coalescedText ?? '').trim()}${sig ? `\n\n-- \n${sig}` : ''}${textFooter(brand)}`
+  const html = wrapEmailHtml(`${coalescedInnerHtml}${signatureInnerHtml(sig, brand?.logoUrl, brand?.name)}`, brand, origin)
+  const text = `${(coalescedText ?? '').trim()}${sig ? `\n\n-- \n${sig}` : ''}${textFooter(brand, origin)}`
   return { html, text }
 }

@@ -37,7 +37,7 @@ import { Input } from '@/components/ui/field'
 // The visual Funnel FLOW VIEW (EMAIL-CAMPAIGNS-FUNNELS-PLAN P4, ask #4/#5). A funnel
 // renders as a clean vertical flow: a Trigger banner, the stages as minimal nodes
 // (icon + label + one status line), and a Goal banner. Reorder by dragging (the native
-// HTML5 DnD idiom lifted from components/spaces/crm/stage-editor.tsx, no new library)
+// HTML5 DnD idiom lifted from modules/crm/components/stage-editor.tsx, no new library)
 // or the keyboard up/down arrows. Clicking a node opens its settings in a SIDE PANEL,
 // never on the node, so the canvas stays quiet (the plan's research rule). Every change
 // persists through a server action that re-gates marketing access; this layer is fast
