@@ -130,6 +130,7 @@ interface SpaceHubGroup {
 export const SPACE_HUB_GROUPS: readonly SpaceHubGroup[] = [
   // Order is intent: set up getting paid, then what you sell, then what you pay us.
   { key: 'offerings.getpaid', section: 'offerings', label: 'Get paid', ids: ['space.payments'] },
+  { key: 'offerings.door', section: 'offerings', label: 'At the door', ids: ['space.regulars'] },
   {
     key: 'offerings.sell',
     section: 'offerings',

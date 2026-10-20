@@ -76,7 +76,7 @@ describe('sectionForModule (the hub IA)', () => {
     // space.enroll / space.tickets / space.checkin were three more rows here until LIVE-226. The BOX itself
     // (space.offerings) left the tab in ADR-1313 — it was rendering as a peer beside its own children,
     // linking back to the tab it sat on.
-    for (const id of ['space.booking', 'space.memberships', 'space.donations', 'space.payments', 'space.services']) {
+    for (const id of ['space.booking', 'space.memberships', 'space.donations', 'space.payments', 'space.regulars', 'space.services']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('offerings')
     }
   })
@@ -196,8 +196,8 @@ describe('every tool files under its box (the Automation class, by construction)
     expect(parented.length).toBeGreaterThanOrEqual(18)
     const underExcludedBox = parented.filter((m) => spaceModuleById(m.parent!)!.hub === 'none')
     // Gather (content) owns 8 tools (Leadership joined it, LIVE-862; Your reach left for Reach, ADR-1746);
-    // Money (offerings) owns 5. Page is hub:none under Your page (settings), so it is not in this set.
-    expect(underExcludedBox.length).toBe(13)
+    // Money (offerings) owns 6 (Check in joined it, LIVE-949). Page is hub:none under Your page (settings), so it is not in this set.
+    expect(underExcludedBox.length).toBe(14)
     for (const m of underExcludedBox) {
       expect(EXCLUDED_BOX_TAB[m.parent!], `${m.parent} must stand for a tab`).toBeTruthy()
     }
