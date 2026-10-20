@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NurtureSequence, NurtureStep } from '@/lib/nurture/schedule'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -31,6 +32,7 @@ function toStep(r: StepRow): NurtureStep {
     body: r.body,
     enabled: r.enabled,
     blockJson: r.block_json == null ? null : parseEntityLayout(r.block_json),
+    nodeLayout: r.block_json == null ? null : upgradeLayout(r.block_json),
   }
 }
 

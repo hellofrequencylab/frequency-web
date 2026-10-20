@@ -5,7 +5,7 @@ import { Monitor, Smartphone } from 'lucide-react'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags, type EmailColors } from '@/lib/email-studio/render'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
-import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
 
 // LIVE EMAIL PREVIEW. Compiles the working email doc (block layout + subject + preheader) to send-ready HTML
 // IN THE BROWSER (lib/email-studio compile is pure + framework-free, so it is client-safe) and renders it in
@@ -35,7 +35,7 @@ export function EmailPreview({
   preheader,
   colors,
 }: {
-  layout: EntityLayout
+  layout: EmailRenderLayout
   subject: string
   preheader: string
   /** Palette override so the preview paints the same brand palette the email will send in. A per-Space editor

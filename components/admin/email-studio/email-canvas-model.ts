@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useLayoutEffect, useMemo } from 'react'
 import { emailPalette, type EntityBlockDef } from '@/lib/entity-blocks/registry'
 import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { addNode, canPlaceType, getNode, removeNode, setNodeContent } from '@/lib/entity-blocks/node-ops'
@@ -136,4 +136,15 @@ export function useNodeEmailModel(): EmailCanvasModel | null {
         return setNodeContent(l, key, Object.keys(bag).length ? bag : undefined)
       }),
   }
+}
+
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
+/** Seeds the node store from a node document the instant the editor mounts. First seed wins. */
+export function NodeSeeder({ layout }: { layout: NodeLayout }) {
+  const store = useNodeLayout()
+  useIsoLayoutEffect(() => {
+    store?.seed(layout)
+  }, [store, layout])
+  return null
 }
