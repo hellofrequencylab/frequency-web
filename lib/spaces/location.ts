@@ -21,12 +21,14 @@ function isSpaceLocationPrecision(v: unknown): v is SpaceLocationPrecision {
 /**
  * The precision a row should be TREATED as, whatever the column happens to hold.
  *
- * 🔴 FAILS OPEN TO 'exact', deliberately, and the direction is worth stating because the instinct is
- * the opposite. The private-looking default would be 'approximate', but the coordinate columns start
- * NULL: a Space has NO published location until its owner places a pin, and placing it is the act of
- * consent. So there is no row this default can surprise, and defaulting the other way would mean a
- * typo or a future enum value silently coarsened every venue on the map with nothing to notice it.
+ * 🔴 READING an unrecognised value FAILS OPEN TO 'exact', deliberately, and the direction is worth
+ * stating because the instinct is the opposite. Defaulting a READ the other way would mean a typo or a
+ * future enum value silently coarsened every venue on the map with nothing to notice it.
  * lib/nearby/map-pins.test.ts asserts this direction on purpose rather than leaving it implied.
+ *
+ * That is a rule about READS of stored rows. A NEW location is private: the column default and
+ * DEFAULT_SPACE_LOCATION_PRECISION are 'approximate' (LIVE-947, ADR-1786), so a Space only publishes
+ * its street after its owner chooses "Show my exact spot".
  */
 export function resolvePrecision(value: unknown): SpaceLocationPrecision {
   return value === 'approximate' ? 'approximate' : 'exact'
@@ -44,6 +46,10 @@ export type SpaceLocation = {
   precision: SpaceLocationPrecision
 }
 
+/** What a Space with no saved location starts as. PRIVATE BY DEFAULT (LIVE-947, ADR-1786): the street
+ *  and ZIP stay off every public surface until the owner picks "Show my exact spot". */
+export const DEFAULT_SPACE_LOCATION_PRECISION: SpaceLocationPrecision = 'approximate'
+
 export const EMPTY_SPACE_LOCATION: SpaceLocation = {
   street: null,
   city: null,
@@ -52,7 +58,7 @@ export const EMPTY_SPACE_LOCATION: SpaceLocation = {
   country: null,
   latitude: null,
   longitude: null,
-  precision: 'exact',
+  precision: DEFAULT_SPACE_LOCATION_PRECISION,
 }
 
 function text(v: unknown): string | null {
@@ -89,7 +95,7 @@ export function normalizeSpaceLocation(input: unknown): SpaceLocation {
     country: text(raw.country),
     latitude: placed ? latitude : null,
     longitude: placed ? longitude : null,
-    precision: isSpaceLocationPrecision(raw.precision) ? raw.precision : 'exact',
+    precision: isSpaceLocationPrecision(raw.precision) ? raw.precision : DEFAULT_SPACE_LOCATION_PRECISION,
   }
 }
 

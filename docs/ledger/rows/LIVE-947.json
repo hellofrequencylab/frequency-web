@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-947",
+  "title": "A Space's street address is private by default: new locations save as approximate until the owner chooses exact",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/location.ts",
+    "ref": "Owner ask 2026-10-20 ('Make the street address private by default'). ADR-1786"
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. Migration 20270346014000 sets spaces.location_precision default to 'approximate' and flips Spaces that have no pin yet (nothing published, nobody chose exact). A Space with a pin keeps its value. normalizeSpaceLocation and EMPTY_SPACE_LOCATION now default to approximate, so the first save from the location form is private. Reading an unrecognised stored value still fails open to exact (pinned by lib/nearby/map-pins.test.ts). The migration is pasted in production by hand; the SQL is in the merge-order folder.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.readFileSync(p,'utf8');const miss=[];const m=r('supabase/migrations/20270346014000_space_location_private_default.sql');if(!/set default 'approximate'/.test(m))miss.push('column default not approximate');if(!/DEFAULT_SPACE_LOCATION_PRECISION: SpaceLocationPrecision = 'approximate'/.test(r('lib/spaces/location.ts')))miss.push('code default not approximate');if(miss.length){console.error('LIVE-947: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-20"
+}
