@@ -1,9 +1,0 @@
-{
-  "id": "SCAN-762",
-  "patch": {
-    "source": {
-      "file": "app/(main)/(marketplace)/housing/new/housing-form.tsx",
-      "ref": "found 2026-10-05 by the scan-seven verticals finder; confirmed by an independent skeptic"
-    }
-  }
-}
