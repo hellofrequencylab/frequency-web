@@ -263,14 +263,14 @@ export function FqCirclesBody({
         </div>
         {signedIn && (
           <div className="row wrap">
-            <NewCircleCompose interests={interests} buttonLabel="Start a Circle" canCreate={canCreate} buttonClass="btn pa lg" />
+            <NewCircleCompose interests={interests} buttonLabel="Start a Circle" canCreate={canCreate} buttonClass="btn pa sm" />
             {canCreate && (
-              <Link className="btn lg" href="/lead">
+              <Link className="btn sm" href="/lead">
                 Manage my Circles
               </Link>
             )}
             {content.ctaLabel && content.ctaHref && (
-              <a className="btn lg" href={content.ctaHref}>
+              <a className="btn sm" href={content.ctaHref}>
                 {content.ctaLabel}
               </a>
             )}

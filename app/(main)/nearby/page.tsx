@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { buttonClasses } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Megaphone, Zap, CalendarDays, Users, CircleDot, Radio, ArrowRight } from 'lucide-react'
@@ -301,7 +302,7 @@ export default async function NearbyPage({
         {ctaLabel && ctaHref && (
           <a
             href={ctaHref}
-            className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+            className={buttonClasses('primary', 'sm')}
           >
             {ctaLabel}
           </a>
@@ -389,7 +390,7 @@ export default async function NearbyPage({
               icon={CalendarDays}
               title="Nothing on the calendar yet"
               description="Be the first to put a gathering on it. Hosts can start one in a minute."
-              action={<Link href="/events/new" className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover">Host an event</Link>}
+              action={<Link href="/events/new" className={buttonClasses('primary', 'sm')}>Host an event</Link>}
             />
           )}
         </section>
@@ -420,7 +421,7 @@ export default async function NearbyPage({
               icon={CircleDot}
               title="No new circles this week"
               description="Start one around something you care about and the first people to find it will be neighbors."
-              action={<Link href="/circles/new" className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover">Start a circle</Link>}
+              action={<Link href="/circles/new" className={buttonClasses('primary', 'sm')}>Start a circle</Link>}
             />
           )}
         </section>

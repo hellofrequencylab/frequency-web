@@ -179,11 +179,11 @@ export function FqChannelsBody({
           {canCreate && (
             <NewChannelCompose
               pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
-              buttonClass="btn pa lg"
+              buttonClass="btn pa sm"
             />
           )}
           {content.ctaLabel && content.ctaHref && (
-            <a className="btn lg" href={content.ctaHref}>
+            <a className="btn sm" href={content.ctaHref}>
               {content.ctaLabel}
             </a>
           )}
