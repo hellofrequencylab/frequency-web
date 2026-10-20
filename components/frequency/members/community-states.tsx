@@ -36,22 +36,39 @@ function Head() {
 }
 
 /** The Circles index and the Marketplace doors: head, find row, chips, then the card grid. */
-export function FqIndexLoading({ label, shape }: { label: string; shape: 'circles' | 'items' }) {
+export function FqIndexLoading({
+  label,
+  shape,
+  lead,
+  children,
+}: {
+  label: string
+  shape: 'circles' | 'items'
+  /** Drawn between the head and the find row, for a page that opens on a panel (Around You's map). */
+  lead?: React.ReactNode
+  /** Replaces the chips and grid when the page below the find row is not a card grid (LIVE-1042). */
+  children?: React.ReactNode
+}) {
   const cells = shape === 'circles' ? 6 : 8
   return (
     <Busy label={label}>
       <Head />
+      {lead}
       <Sk className="fqm-sk-find" />
-      <div className="chips fqm-chips">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Sk key={i} className="fqm-sk-chip" />
-        ))}
-      </div>
-      <div className={shape === 'circles' ? 'g3' : 'g4'}>
-        {Array.from({ length: cells }).map((_, i) => (
-          <Sk key={i} className={shape === 'circles' ? 'fqm-sk-card' : 'fqm-sk-item'} />
-        ))}
-      </div>
+      {children ?? (
+        <>
+          <div className="chips fqm-chips">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Sk key={i} className="fqm-sk-chip" />
+            ))}
+          </div>
+          <div className={shape === 'circles' ? 'g3' : 'g4'}>
+            {Array.from({ length: cells }).map((_, i) => (
+              <Sk key={i} className={shape === 'circles' ? 'fqm-sk-card' : 'fqm-sk-item'} />
+            ))}
+          </div>
+        </>
+      )}
     </Busy>
   )
 }
