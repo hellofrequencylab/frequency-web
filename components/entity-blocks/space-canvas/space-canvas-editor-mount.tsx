@@ -10,7 +10,9 @@ import {
   type SaveLayout,
 } from '@/components/entity-blocks/profile-layout-context'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
-import { SpaceCanvasEditor } from './space-canvas-editor'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { NodeLayoutProvider, useNodeLayout, type SaveNodeLayout } from '@/components/entity-blocks/node-layout-store'
+import { NodeSpaceCanvasEditor, SpaceCanvasEditor } from './space-canvas-editor'
 import { SpacePublishFab } from '@/components/entity-blocks/space-publish-fab'
 
 // THE MOUNT for the on-canvas WYSIWYG Space editor (the space analogue of the email EditorPane). It mounts
@@ -44,6 +46,15 @@ function Seeder({
   return null
 }
 
+function NodeSeeder({ layout }: { layout: NodeLayout }) {
+  const store = useNodeLayout()
+  useIsoLayoutEffect(() => {
+    if (!store || store.seeded) return
+    store.seed(layout)
+  }, [store, layout])
+  return null
+}
+
 export function SpaceCanvasEditorMount({
   slug,
   canPublish = false,
@@ -54,6 +65,7 @@ export function SpaceCanvasEditorMount({
   hidden = [],
   content = {},
   style = {},
+  nodeLayout,
 }: {
   slug: string
   /** A manager (the publish action fails closed on the same gate). Shows the publish bar. */
@@ -68,8 +80,26 @@ export function SpaceCanvasEditorMount({
   hidden?: string[]
   content?: Record<string, Record<string, unknown>>
   style?: Record<string, BlockStyle>
+  /** The stored document as nodes, present only while render_path_space_profile is on (E0 task 12b): the
+   *  editor then runs on its own node store and saves the node document. */
+  nodeLayout?: NodeLayout
 }) {
   const save = useCallback<SaveLayout>((payload: BuilderLayout) => saveSpaceGridLayout(slug, payload), [slug])
+  const saveNodes = useCallback<SaveNodeLayout>(
+    (layout) => saveSpaceGridLayout(slug, layout as unknown as BuilderLayout),
+    [slug],
+  )
+  if (nodeLayout) {
+    return (
+      <NodeLayoutProvider identity={`space:${slug}`} save={saveNodes}>
+        <NodeSeeder layout={nodeLayout} />
+        <NodeSpaceCanvasEditor key={focusBlockId ?? ''} loomScope={slug} focusBlockId={focusBlockId} />
+        {canPublish && (
+          <SpacePublishFab slug={slug} initialPublished={profilePublished} hasUnpublishedChanges={hasUnpublishedChanges} />
+        )}
+      </NodeLayoutProvider>
+    )
+  }
   return (
     <EntityLayoutProvider kind="space" save={save}>
       <Seeder rows={rows} hidden={hidden} content={content} style={style} />

@@ -118,3 +118,11 @@ export function setNodeRowMargin(layout: NodeLayout, rowId: string, edge: 'mt' |
     return next
   })
 }
+
+/** A section's column layout as one choice (the on-canvas editor's picker): `full`, `even` (50/50), `lead`
+ *  (66/33), or `sidebar` (33/66, the `trail` ratio). Composes the column and ratio ops on one layout value. */
+export function setNodeRowSplit(layout: NodeLayout, rowId: string, split: 'full' | 'even' | 'lead' | 'sidebar'): NodeLayout {
+  if (split === 'full') return setNodeRowColumns(layout, rowId, 1)
+  const widened = setNodeRowColumns(layout, rowId, 2)
+  return setNodeRowRatio(widened, rowId, split === 'even' ? 'even' : split === 'lead' ? 'lead' : 'trail')
+}
