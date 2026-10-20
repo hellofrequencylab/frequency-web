@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1153",
+  "title": "Editor E1, slice 6: Guestbook joins the contract, so all 41 registry blocks are adopted",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "\u00a73 the block contract; ADR-1005"
+  },
+  "detail": "Adopts guestbook, the last registry block. check:blocks holds 41 of 41. The completeness test in scripts/check-blocks.test.ts asserted that the full registry is NOT fully adopted, which cannot stay true once it is; it now asserts the same thing against the registry plus one block that is not adopted (owner approved the edit, decision card 2026-10-20). PROG-E1 stays open on the binding layer (the 146 page Apps still carry an empty surface descriptor).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-blocks.mjs --complete",
+    "note": "Fails while any registry block is not adopted.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

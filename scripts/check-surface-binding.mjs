@@ -95,6 +95,11 @@ async function main() {
     componentKeys: objectKeys(readFileSync(REGISTRY, 'utf8'), 'COMPONENTS'),
     baseline: JSON.parse(readFileSync(BASELINE, 'utf8')),
   })
+  // --complete is the E1 phase gate: it also fails while any page App still has an empty surface descriptor.
+  if (process.argv.includes('--complete')) {
+    const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'))
+    if (baseline.unboundPageDescriptors > 0) problems.push(`S1: ${baseline.unboundPageDescriptors} page Apps still carry an empty surface descriptor; the binding layer is not complete`)
+  }
   if (problems.length) {
     console.error(`check:surface-binding — ${problems.length} problem(s):\n` + problems.map((p) => `  ${p}`).join('\n'))
     process.exit(1)
