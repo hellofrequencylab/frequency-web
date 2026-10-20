@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
 import { relativeTime } from '@/lib/utils'
 import { notificationHref } from '@/lib/notifications/href'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqFocusPage } from '@/components/frequency/members/shared/focus-page'
 import { getMyNotifications, markAllRead } from './actions'
 
 // /notifications: the full list behind the bell. The URL was already promised and never answered:
@@ -35,26 +37,23 @@ export default async function NotificationsPage() {
   const items = load.kind === 'ok' ? load.items : []
   const unread = items.filter((n) => !n.read_at).length
 
-  return (
-    <FocusTemplate
-      eyebrow="You"
-      title="Notifications"
-      description="What happened while you were away. The newest 30, newest first."
-      actions={
-        <>
-          {unread > 0 && (
-            <form action={markAllRead}>
-              <Button type="submit" variant="secondary" size="sm">
-                Mark all as read
-              </Button>
-            </form>
-          )}
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/settings/notifications">Manage</Link>
+  const description = 'What happened while you were away. The newest 30, newest first.'
+  const actions = (
+    <>
+      {unread > 0 && (
+        <form action={markAllRead}>
+          <Button type="submit" variant="secondary" size="sm">
+            Mark all as read
           </Button>
-        </>
-      }
-    >
+        </form>
+      )}
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/settings/notifications">Manage</Link>
+      </Button>
+    </>
+  )
+  const content = (
+    <>
       {load.kind === 'error' ? (
         <EmptyState
           variant="error"
@@ -92,6 +91,20 @@ export default async function NotificationsPage() {
           ))}
         </ul>
       )}
+    </>
+  )
+
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqFocusPage kicker="You" title="Notifications" meta={description} actions={<div className="row wrap">{actions}</div>}>
+        {content}
+      </FqFocusPage>
+    )
+  }
+
+  return (
+    <FocusTemplate eyebrow="You" title="Notifications" description={description} actions={actions}>
+      {content}
     </FocusTemplate>
   )
 }
