@@ -13,9 +13,9 @@ import { isSafeInAppPath, funnelLanding } from '@/lib/funnels/destination'
 import type { FunnelDestination } from '@/lib/funnels/definitions'
 import { readPendingInduction } from './pending-induction'
 import FunnelInduction from './induction'
+import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 import FeatureFunnel from './feature-funnel'
 import { SITE_DESIGN } from '@/lib/theme/design'
-import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
@@ -106,15 +106,13 @@ export default async function FunnelInductionPage({
       }
     : undefined
 
-  // THE FREQUENCY BETA ENTRY (ADR-1737, SCAN-879). Under the Frequency design a signed-out visitor on the
-  // bare /join gets the short Beta launch sequence: name and email (saved, and the sign-in link sent),
-  // then a photo and a town, then "check your email". It parks its answers through the induction's own
-  // stash, and the emailed link finishes at /join/complete exactly as the deferred induction does. A run
-  // this browser already parked from the entry (a name and a handle) reopens on its second step instead
-  // of restarting. Anything else (a funnel, a persona, a `next`, a signed-in member) is the induction
-  // exactly as before, and DAWN never reaches this branch (SITE_DESIGN is build-time).
-  // It wears the public site's chrome (header, footer, FX) as Join.html does: /join sits outside the
-  // (marketing) layout, so the shell is rendered here, around this one branch only.
+  // THE FREQUENCY BETA ENTRY (ADR-1737, SCAN-879). Under the Frequency design a signed-out visitor on the bare
+  // /join gets the short Beta launch sequence: name and email (saved, and the sign-in link sent), then a photo
+  // and a town, then "check your email". It parks its answers through the induction's own stash, and the
+  // emailed link finishes at /join/complete exactly as the deferred induction does. A run this browser already
+  // parked from the entry reopens on its second step. It wears the public site's chrome (header, footer, FX):
+  // /join sits outside the (marketing) layout, so the shell is rendered here. DAWN never reaches this branch
+  // (SITE_DESIGN is build-time).
   if (SITE_DESIGN === 'frequency' && !user && !seqSlug && !personaSlug && !nextParam) {
     const resumed = !!parked?.displayName && !!parked.handle
     return (
@@ -129,8 +127,12 @@ export default async function FunnelInductionPage({
     )
   }
 
+  // SCAN-851: a funnel link (?seq=, ?persona=, ?next=) reaches the same card. FunnelInduction branches on
+  // SITE_DESIGN and carries the funnel, persona and landing through the emailed link; DAWN keeps the
+  // cinematic induction exactly as before.
   if (!user) {
-    return <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...resume} {...funnel} />
+    const induction = <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...resume} {...funnel} />
+    return SITE_DESIGN === 'frequency' ? <SiteShell>{induction}</SiteShell> : induction
   }
 
   const { data: profile } = await supabase

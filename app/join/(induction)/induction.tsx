@@ -25,6 +25,8 @@ import { ArrivalFollowUp } from '@/components/onboarding/arrival-follow-up'
 import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 
 // Avatar can't ride the auth-redirect in a cookie, so the deferred (signed-out)
 // flow parks its data URL in localStorage and the /complete page uploads it.
@@ -149,7 +151,7 @@ function accent(text: string): React.ReactNode {
   )
 }
 
-export default function FunnelInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, initialDisplayName = '', initialLocation = '', initialLat = null, initialLng = null, initialHeardAbout = '', parkedHandle = '', inviter = null, slide2Features, slide3Core, destination }: Props) {
+function DawnInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, initialDisplayName = '', initialLocation = '', initialLat = null, initialLng = null, initialHeardAbout = '', parkedHandle = '', inviter = null, slide2Features, slide3Core, destination }: Props) {
   // NICHE-funnel forks (ADR-funnels). A non-empty set flips one beat over to the niche
   // layout; both absent keeps the whole flow identical to the General funnel.
   const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 0: cards vs persona fork
@@ -1297,4 +1299,29 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
       </div>
     </main>
   )
+}
+
+/**
+ * The induction's front door. Under the Frequency design a signed-out visitor (the deferred run) gets the
+ * Join template's card, with the funnel, persona and landing they arrived with carried through (SCAN-851);
+ * the page wraps it in the site shell. DAWN, a signed-in member and the admin preview keep the cinematic
+ * walk above, unchanged. SITE_DESIGN is build-time, so DAWN never takes the Frequency branch.
+ */
+export default function FunnelInduction(props: Props) {
+  if (SITE_DESIGN === 'frequency' && props.deferred && !props.preview) {
+    const resumed = !!props.initialDisplayName && !!props.parkedHandle
+    const to = props.destination?.mode === 'direct' && isSafeInAppPath(props.destination.url) ? props.destination.url : undefined
+    return (
+      <FrequencyJoin
+        initialStep={resumed ? 2 : 1}
+        initialName={props.initialDisplayName ?? ''}
+        initialHandle={resumed ? props.parkedHandle : ''}
+        initialPlace={props.initialLocation ?? ''}
+        sequence={props.sequence}
+        persona={props.persona}
+        destinationUrl={to}
+      />
+    )
+  }
+  return <DawnInduction {...props} />
 }
