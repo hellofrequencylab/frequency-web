@@ -19,6 +19,8 @@ import { HousingCategoryNav } from '@/components/marketplace/housing-category-na
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqHousingBody } from '@/components/frequency/members/marketplace/marketplace-body'
 
 // Housing — rentals + roommates (connect-only, member-only). Hero-led (the site PhotoHero grammar) to
 // match Classifieds / Market / Frequency Store. The facet band is a plain GET form, so it stays
@@ -98,6 +100,20 @@ export default async function HousingPage({
     />
   )
 
+  if (!viewerProfileId && SITE_DESIGN === 'frequency') {
+    return (
+      <div className="empty stack">
+        <span className="h3">Sign in to browse housing</span>
+        <span className="t2">
+          Housing is for members. It is where you find a place, or a roommate you would click with.
+        </span>
+        <Link className="btn pa sm" href="/sign-in?next=/housing">
+          Sign in
+        </Link>
+      </div>
+    )
+  }
+
   if (!viewerProfileId) {
     return (
       <MarketSearchProvider>
@@ -142,6 +158,33 @@ export default async function HousingPage({
   const activeFacetCount =
     (selectedType ? 1 : 0) + (minCents != null || maxCents != null ? 1 : 0) + selectedAmenities.size
   const hasFacets = activeFacetCount > 0
+
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqHousingBody
+        homes={listings.map((l) => ({
+          id: l.id,
+          title: l.title,
+          description: l.description,
+          image: l.images[0] ?? null,
+          priceNote: l.priceNote,
+          category: l.category,
+          city: l.city,
+          lat: l.latitude,
+          lng: l.longitude,
+          createdAt: l.createdAt,
+          unclaimed: l.seededUnclaimed,
+        }))}
+        savedIds={[...savedIds]}
+        selectedType={selectedType}
+        savedOnly={savedOnly}
+        min={sp.min ?? ''}
+        max={sp.max ?? ''}
+        amenities={rawAmenities}
+        hasFacets={hasFacets}
+      />
+    )
+  }
 
   return (
     <MarketSearchProvider>
