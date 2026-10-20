@@ -455,9 +455,9 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     />
   )
 
-  // THE MEGA FOOTER (LIVE-1030, LIVE-1115): the full site index, role-gated through the same registry columns
-  // as the rail (lib/nav/footer-access.ts), its Legal column, and the calls to action, in a pop-up the footer's
-  // one trigger opens. Help is in the Support column; Settings rides the pop-up's last row.
+  // THE MEGA FOOTER (LIVE-1030, LIVE-1154): the design system's site footer at the end of the page, whose area
+  // headings each open a mega panel upward, role-gated through the same registry columns as the rail
+  // (lib/nav/footer-access.ts), its Legal column included, and the calls to action in each panel.
   const footerColumns = visibleFooterColumns(gateRole, props.staffRole ?? null, navAccess as Record<string, AccessLevel> | undefined)
     .map((c) => ({ title: c.title, links: c.links.map((l) => ({ label: l.label, href: l.href })) }))
   const footer = (
@@ -475,7 +475,6 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
               { label: props.operatesSpaces ? 'Your Spaces' : 'Open a Space', href: props.operatesSpaces ? '/spaces/directory' : '/spaces/new' },
             ]
       }
-      quick={props.anonymous ? [] : [{ label: 'Settings', href: '/settings' }]}
     />
   )
 

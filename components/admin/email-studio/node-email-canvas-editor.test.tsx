@@ -62,4 +62,39 @@ describe('NodeEmailCanvasEditor', () => {
     await click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Heading')))
     expect(store.layout!.rows.length).toBe(before + 1)
   })
+
+  it('switches the preview between desktop and phone width', async () => {
+    const canvas = () => container.querySelector('[data-fq-preview-device]')
+    expect(canvas()?.getAttribute('data-fq-preview-device')).toBe('desktop')
+    await click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Phone')))
+    expect(canvas()?.getAttribute('data-fq-preview-device')).toBe('mobile')
+    expect(container.querySelector('.max-w-\\[375px\\]')).not.toBeNull()
+  })
+
+  it('undoes the last move from the Undo button', async () => {
+    await click(byLabel('Move Text down')[0])
+    expect(texts()).toEqual(['Two', 'One'])
+    await click(byLabel('Undo the last change')[0])
+    expect(texts()).toEqual(['One', 'Two'])
+  })
+
+  it('saves a block and adds a copy of it back from the saved sections', async () => {
+    const win = window as unknown as { localStorage: Storage }
+    win.localStorage.clear()
+    await click(container.querySelector('button[aria-expanded]'))
+    await click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Save for other emails')))
+    const nameInput = container.querySelector<HTMLInputElement>('input[aria-label="Name for this saved section"]')!
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(nameInput, 'Opening line')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await click([...container.querySelectorAll('button')].find((b) => b.textContent === 'Save'))
+    const chip = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Opening line'))
+    expect(chip).toBeTruthy()
+    const before = store.layout!.rows.length
+    await click(chip)
+    expect(store.layout!.rows.length).toBe(before + 1)
+    expect(texts()[texts().length - 1]).toBe('One')
+  })
 })

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1102",
+  "title": "Switches in admin draw the kit switch instead of an empty button, and the admin forms stop hand-building their own",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/admin/admin-switches.test.ts",
+    "ref": "LIVE-938 area 4 (admin widgets) and the members-ui.css bridge cleanup"
+  },
+  "detail": "The shared Switch renders the kit's .sw under Frequency, but only the members kit styled .sw. Inside [data-kit=\"admin\"] every shared Switch (the admin Toggle used by the AI, payments and demo settings, the page-layout render toggle, Space module switches) drew as an empty, unstyled button. admin-pages.css now styles .sw the way the admin templates do (they load the members app.css). Seven admin forms (menu on/off, connection settings, scan-intro emails, crew tasks, walkthrough row and editor, elements) drew their own role=\"switch\" with bg-primary, which only read right because members-ui.css repainted it. They now use the shared Switch.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];if(!fs.readFileSync('app/themes/frequency/admin-pages.css','utf8').includes('[data-kit=\\\"admin\\\"] .sw{'))bad.push('admin kit has no switch style');for(const p of ['components/admin/menu/on-off-toggle.tsx','components/admin/connection-settings-admin.tsx','app/(main)/admin/crm/contacts/scan-invite-toggle.tsx','app/(main)/admin/crew-tasks/crew-tasks-client.tsx','app/(main)/admin/walkthroughs/row-actions.tsx','app/(main)/admin/walkthroughs/[id]/editor.tsx','app/(main)/admin/elements/elements-editor.tsx']){const s=fs.readFileSync(p,'utf8');if(s.includes('role=\\\"switch\\\"')||!s.includes('<Switch '))bad.push(p)}if(bad.length){console.error('LIVE-1102: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the admin kit loses its switch style or an admin form hand-builds a switch again. Behavior is admin-switches.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

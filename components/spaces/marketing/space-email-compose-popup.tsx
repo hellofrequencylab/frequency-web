@@ -142,7 +142,7 @@ function ComposeBody({
       }),
     [spaceId],
   )
-  const sendTest = useCallback((id: string) => sendSpaceTestEmail(spaceId, id), [spaceId])
+  const sendTest = useCallback((id: string, to?: string) => sendSpaceTestEmail(spaceId, id, to), [spaceId])
 
   return (
     <Dialog open onClose={onClose} ariaLabel="New email" className="max-w-7xl !mt-0">

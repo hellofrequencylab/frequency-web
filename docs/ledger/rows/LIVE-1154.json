@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1154",
+  "title": "The member footer is the design system's site footer at the end of the page, its area headings opening mega panels upward over the docks that rest on it",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1867"
+  },
+  "detail": "Daniel 2026-10-20, on LIVE-1116's floating tab bar: 'I don't want a floating menu in the footer. I want a FOOTER at the BOTTOM of the page. The design system does not have a round menu. That's DAWN.' and 'Make it so it looks like a footer menu, but has a mega menu that also opens up.' FqMegaFooter is now the .ft2 site footer after the rail grid at the end of the page: a dark stage band under an iridescent rule with the sheen wordmark, square area-heading tabs, and the copyright, legal row and contact. A tab opens its panel up out of the footer in the same band (.ft2-top grid: heading, line, iridescent CTAs, links); on a phone it is a sheet above the tab bar. Both rail foot tabs are fixed to the window bottom (members-shell.css), measured 24px from the bottom mid-page and at the page end, resting over the footer's ends.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const t=fs.readFileSync('components/frequency/shared/mega-footer-tabs.tsx','utf8');const f=fs.readFileSync('components/frequency/shared/mega-footer.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/mega-footer.css','utf8');const s=fs.readFileSync('app/themes/frequency/members-shell.css','utf8');const r=fs.readFileSync('components/frequency/members/shell/rail-layout.tsx','utf8');if(/position:fixed;left:50%/.test(c)||/\\.fq-mf-dock/.test(c))bad.push('the footer floats over the page again');if(/\\.fq-mf-tabs button\\{[^}]*border-radius/.test(c))bad.push('the footer tabs are round pills');if(r.indexOf('{!edge && footer}')<r.indexOf('</EntityLayoutMount>'))bad.push('the footer is not after the rail grid at the end of the page');if(!f.includes('data-surface=\\\"stage\\\"'))bad.push('the footer is not the dark stage band');if(!/\\.fq-mf-mega\\{position:absolute;[^}]*bottom:100%/.test(c))bad.push('a panel does not open upward out of the footer');if(!t.includes('aria-controls={panelId(i)}'))bad.push('the headings are not tabs');if(/\\.fqm-tab-wrap\\{position:fixed/.test(s)||!/\\.fqm-rail\\{position:sticky/.test(s))bad.push('the docks no longer ride the window bottom and rest on the footer');if(!/\\.fq-mf\\{position:relative;z-index:3/.test(c))bad.push('an open panel does not cover the docks');if(bad.length){console.error('LIVE-1154: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the footer floats over the page, its tabs turn into round pills, it stops following the rail grid or being the dark band, a panel stops opening upward or covering the docks, the headings stop being tabs, or the docks stop riding the window bottom and resting on the footer. Behavior is mega-footer.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

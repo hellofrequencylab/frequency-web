@@ -379,6 +379,118 @@ export type Database = {
           },
         ]
       }
+      scanner_devices: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          last_seen_at: string | null
+          revoked_at: string | null
+          secret_hash: string
+          space_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          secret_hash: string
+          space_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          secret_hash?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanner_devices_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scanner_devices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_cards: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          issued_by: string | null
+          last_used_at: string | null
+          profile_id: string
+          revoked_at: string | null
+          space_id: string | null
+          token_hash: string
+          uid_hash: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          last_used_at?: string | null
+          profile_id: string
+          revoked_at?: string | null
+          space_id?: string | null
+          token_hash: string
+          uid_hash?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          last_used_at?: string | null
+          profile_id?: string
+          revoked_at?: string | null
+          space_id?: string | null
+          token_hash?: string
+          uid_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_cards_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_cards_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_cards_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "scanner_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_loyalty_programs: {
         Row: {
           created_at: string
@@ -4621,6 +4733,34 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      email_saved_sections: {
+        Row: {
+          block_type: string
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          block_type: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          block_type?: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+        ]
       }
       email_events: {
         Row: {

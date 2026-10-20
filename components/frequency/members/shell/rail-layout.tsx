@@ -322,6 +322,8 @@ export function FqRailLayout({
           )}
         </div>
       </EntityLayoutMount>
+      {/* The footer follows the rail grid (LIVE-1154): the sticky rails ride the window bottom while the page
+          scrolls and their docks come to rest on its top edge; an open mega panel rises over them. */}
       {!edge && footer}
       {/* A console route has no rails, so the right rail's foot tab (the Vera orb + the Vault) rides
           the bottom-right corner on its own (owner, 2026-10-13: "should always have the chat / vera

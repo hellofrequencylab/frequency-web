@@ -10,8 +10,8 @@ import { ledgerLabel } from '@/lib/economy/ledger'
 import { RANK_LABELS, RANK_ORDER, rankIndex } from '@/lib/season-ranks'
 import { getAchievementsData } from '@/app/(main)/crew/gamification-actions'
 import { getTrophyCase } from '@/lib/quest/trophies'
-import { TrophyCase } from '@/components/quest/trophy-case'
-import { VaultStore } from '@/components/widgets/vault/vault-store'
+import { FqTrophyCase } from './trophy-case'
+import { FqVaultStore, SHELVES } from './store'
 import { visibleModuleOrder } from '@/components/frequency/members/shared/module-order'
 
 // THE VAULT under Frequency (design_handoff/frequency/templates/members/The Vault.html):
@@ -35,14 +35,6 @@ import { visibleModuleOrder } from '@/components/frequency/members/shared/module
 
 /** Zaps roll into Gems FLAT at 5:1 at season end, floor division (docs/NAMING.md, reset_season()). */
 const ZAPS_PER_GEM = 5
-
-/** The Store's shelves (components/widgets/vault/vault-store.tsx), with the kit's icon for each. */
-const SHELVES: { key: string; label: string; desc: string; icon: FqIconName }[] = [
-  { key: 'cosmetic', label: 'Profile cosmetics', desc: 'Borders and flair icons', icon: 'gem' },
-  { key: 'title', label: 'Custom titles', desc: 'Shown on your profile', icon: 'crew' },
-  { key: 'collectible', label: 'Collectible badges', desc: 'Some are season exclusives', icon: 'award' },
-  { key: 'membership', label: 'Membership credits', desc: 'Redeem for free months', icon: 'membership' },
-]
 
 const SOURCE_ICON: Record<string, FqIconName> = {
   event_attend: 'checkin',
@@ -299,7 +291,7 @@ export async function VaultBody() {
           <span className="h2">Trophies</span>
           <span className="meta">Every Journey you finish stays here</span>
         </div>
-        <TrophyCase seasons={trophies.seasons} totalTrophies={trophies.totalTrophies} currentSeason={d.seasonNumber} />
+        <FqTrophyCase seasons={trophies.seasons} totalTrophies={trophies.totalTrophies} currentSeason={d.seasonNumber} />
       </div>
     ) : null
 
@@ -309,7 +301,7 @@ export async function VaultBody() {
         <span className="h2">Vault Store</span>
         <span className="meta">💎 {d.balance.toLocaleString()} to spend</span>
       </div>
-      <VaultStore />
+      <FqVaultStore />
     </div>
   )
 

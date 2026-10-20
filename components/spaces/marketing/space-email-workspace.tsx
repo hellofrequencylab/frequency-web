@@ -41,7 +41,7 @@ export function SpaceEmailWorkspace({
       remove: (id) => deleteSpaceEmailDraft(spaceId, id),
       load: (id) => loadSpaceEmailDraft(spaceId, id),
       save: (id, patch) => saveSpaceEmailDraft(spaceId, id, patch),
-      sendTest: (id) => sendSpaceTestEmail(spaceId, id),
+      sendTest: (id, to) => sendSpaceTestEmail(spaceId, id, to),
     }),
     [spaceId],
   )

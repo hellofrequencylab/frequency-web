@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Sparkles, Check, TriangleAlert, EyeOff } from 'lucide-react'
 import { setResonanceMatching, setResonanceTargetMute } from '@/app/(main)/settings/connections/resonance-actions'
+import { Switch } from '@/components/ui/switch'
 
 // Resonance matching consent (ADR-385) — the member's own opt-IN to the match pool, plus the
 // secondary "mute being suggested" control. Opt-in is OFF by default (a person-to-person surface
@@ -72,19 +73,7 @@ export function ResonanceMatchingToggle({
         </div>
         {/* Each switch is named by the heading it sits beside, so the spoken name is the
             visible one and cannot drift. `aria-checked` carries on/off. */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={optedIn}
-          aria-labelledby="resonance-matching-heading"
-          onClick={toggleMatching}
-          disabled={pending}
-          className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors disabled:opacity-50 ${
-            optedIn ? 'bg-primary' : 'bg-surface-elevated border border-border'
-          }`}
-        >
-          <span className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${optedIn ? 'translate-x-6' : 'translate-x-1'}`} />
-        </button>
+        <Switch checked={optedIn} onCheckedChange={() => toggleMatching()} aria-labelledby="resonance-matching-heading" pending={pending} />
       </div>
 
       {/* Secondary control — only meaningful once you are in the pool. */}
@@ -98,19 +87,7 @@ export function ResonanceMatchingToggle({
               Keep getting your own matches, but stop being suggested to other people.
             </p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={muted}
-            aria-labelledby="resonance-mute-heading"
-            onClick={toggleMute}
-            disabled={pending}
-            className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors disabled:opacity-50 ${
-              muted ? 'bg-primary' : 'bg-surface-elevated border border-border'
-            }`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${muted ? 'translate-x-6' : 'translate-x-1'}`} />
-          </button>
+          <Switch checked={muted} onCheckedChange={() => toggleMute()} aria-labelledby="resonance-mute-heading" pending={pending} />
         </div>
       )}
 

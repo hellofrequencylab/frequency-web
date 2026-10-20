@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1122",
+  "title": "Frequency Experience: the member experience lands in the app's Frequency tab (email sign-in, Rewards, tap-to-check-in, push) on /api/v1, with GET /api/v1/rewards and GET /api/v1/spaces/checkin-links",
+  "status": "open",
+  "priority": "P2",
+  "lane": "program",
+  "size": "L",
+  "source": {
+    "file": "docs/MOBILE-APP.md",
+    "ref": "Owner request 2026-10-19, relayed by the coordinating session: deep site integration next, after the remote (ADR-1865 held the member half at 73dc345f4). ADR-1866."
+  },
+  "detail": "FILED 2026-10-19 (ADR-1866). BUILT on branch live/frequency-experience, restored from 73dc345f4 and rebuilt on the Frequency kit (mobile/src/ui): sign-in with supabase-js (email code, or a magic link to frequency://auth/callback and https://frequencylocal.com/auth/native, PKCE exchanged in the app), the session in Expo SecureStore in chunks, POST /api/v1/session/bootstrap after sign-in and on every cold start, push registration (POST /api/v1/push/devices, revoked on sign-out), the Frequency tab as the web's /rewards (GET /api/v1/rewards: season Zaps and streak, stamp cards, open reward codes), check-in by the phone's NFC, a pasted link or the /n/ deep link through POST /api/v1/nodes/{id}/capture, and the tag writer offering the owner's Spaces' signed links (GET /api/v1/spaces/checkin-links, run as the caller). APP-CONTRACT rules kept: a 401 refreshes once then signs out; profile_required opens the web's /onboarding; every answer parsed with its envelope schema. The device remote stays fully usable signed out and with no EXPO_PUBLIC_* settings. Manifest: NFC, foreground location, notifications, the /n/ and /auth/native intent filters. THE CONSEQUENCE STILL OPEN: no phone has signed in against the live site. It closes when a sideloaded APK with mobile/.env filled in signs in by email code, shows the member's cards, and checks in by tapping a written tag, which also needs the owner steps in docs/MOBILE-APP.md §6 (Supabase redirect allow-list OWN-091, assetlinks fingerprints LIVE-714).",
+  "verify": {
+    "kind": "manual",
+    "evidence": "2026-10-19: mobile typecheck, lint and node tests pass; expo export --platform android passes; app/api/v1/rewards/route.test.ts passes (5 tests). Not yet signed in from a phone.",
+    "checked": "2026-10-19"
+  },
+  "wave": "WM"
+}

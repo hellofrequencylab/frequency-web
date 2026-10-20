@@ -34,6 +34,9 @@ export interface EmailCanvasModel {
   add: (type: string) => string | null
   remove: (key: string) => void
   setField: (key: string, field: string, value: unknown) => void
+  /** Step back one edit (the store coalesces a burst of typing into one step). */
+  undo: () => void
+  canUndo: boolean
 }
 
 export function useLegacyEmailModel(): EmailCanvasModel | null {
@@ -74,6 +77,8 @@ export function useLegacyEmailModel(): EmailCanvasModel | null {
     remove: (key) => store.apply(removeBlock(layout, key)),
     // patchContent folds over the freshest bag, so several fields landing in one tick all stay.
     setField: (key, field, value) => store.patchContent(key, { [field]: value }),
+    undo: store.undo,
+    canUndo: store.canUndo,
   }
 }
 
@@ -135,6 +140,8 @@ export function useNodeEmailModel(): EmailCanvasModel | null {
         else bag[field] = value
         return setNodeContent(l, key, Object.keys(bag).length ? bag : undefined)
       }),
+    undo: store.undo,
+    canUndo: store.canUndo,
   }
 }
 

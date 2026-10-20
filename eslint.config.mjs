@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
     // it would add ~1,000 warnings we can never act on, which is how a warning count stops
     // meaning anything. Freshness is enforced by scripts/copy-maplibre-worker.test.ts.
     "public/maplibre/**",
+    // Frequency Experience, the Expo app (docs/MOBILE-APP.md). Its own package, its own
+    // eslint-config-expo lint (`pnpm --dir mobile lint`), its own React Native rules.
+    "mobile/**",
   ]),
   // ADR-246: ban the untyped admin-client cast. Use the typed `createAdminClient()`
   // and cast the specific payload/value if a column/table needs it. Genuinely-untyped

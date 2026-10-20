@@ -1,6 +1,10 @@
 'use server'
 
 
+import { splitDisplayName } from '@/lib/email-studio/personalize'
+import { resolveDataBlockRefs } from '@/lib/email-studio/data-blocks'
+import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
@@ -359,13 +363,20 @@ export async function saveSpaceEmailDraft(
 export async function sendSpaceTestEmail(
   spaceId: string,
   id: string,
+  toRaw?: string,
 ): Promise<ActionResult<{ to: string }>> {
   const gate = await requireSpaceEditor(spaceId)
   if (!gate.ok) return fail(gate.error)
   const { space } = gate
 
-  const to = (await getCachedUser())?.email ?? null
-  if (!to) return fail('We could not find an email on your account to send the test to.')
+  const user = await getCachedUser()
+  const target = parseTestRecipient(toRaw, user?.email ?? null)
+  if (!target.ok) return fail(target.error)
+  const to = target.to
+  // A test to somebody else is the one door here that mails an outsider, so it is throttled per editor.
+  if (!target.own && !(await rateLimitOk('space-email-test', `${spaceId}:${user?.id ?? 'anon'}`, 10, '1 h'))) {
+    return fail('That is a lot of test emails to other people. Try again in an hour, or send the test to yourself.')
+  }
 
   const row = await readDraft(id, spaceId)
   if (!row) return fail('That email no longer exists.')
@@ -373,7 +384,7 @@ export async function sendSpaceTestEmail(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending a test.')
@@ -440,6 +451,22 @@ export async function listSpaceEmailAudienceTags(spaceId: string): Promise<strin
   return listAudienceTags(spaceId)
 }
 
+/** Give each recipient the first and last name its contact row holds, so a send that sets `mergeTags` can
+ *  greet people by name. A recipient with no contact row, or an unreadable roster, keeps no name and reads the
+ *  tag's default fallback, exactly as a broadcast always did. Scoped to this Space's own contacts. */
+async function withRecipientNames(spaceId: string, recipients: SpaceRecipient[]): Promise<SpaceRecipient[]> {
+  const ids = recipients.map((r) => r.contactId).filter((v): v is string => !!v)
+  if (ids.length === 0) return recipients
+  try {
+    const db = createAdminClient()
+    const { data } = await db.from('contacts').select('id, display_name').eq('space_id', spaceId).in('id', ids)
+    const names = new Map((data ?? []).map((c) => [String(c.id), c.display_name as string | null]))
+    return recipients.map((r) => (r.contactId ? { ...r, ...splitDisplayName(names.get(r.contactId)) } : r))
+  } catch {
+    return recipients
+  }
+}
+
 /**
  * SEND a block-email draft NOW to a resolved audience. Gated on canEditProfile + the row belonging to the
  * Space. Compiles the block layout to branded HTML with the Space's OWN palette (spaceEmailColors) and a
@@ -464,7 +491,7 @@ export async function sendSpaceEmailDraft(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER, sentWithFrequency: campaignCarriesFrequencyFooter(space.plan) },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
@@ -474,19 +501,18 @@ export async function sendSpaceEmailDraft(
   const meter = await checkCampaignMonthMeter(spaceId)
   if (!meter.ok) return fail(meter.error)
 
-  // A broadcast is not personalized, so any unfilled merge token degrades to its default fallback rather
-  // than rendering a raw {{token}}. The per-recipient unsubscribe placeholder is left intact for the seam.
-  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
-  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
-  const html = applyMergeTags(compiled.html, {}, { fallbacks })
+  // The subject and body go to the seam with their merge tags intact: it fills {{contact.*}} per recipient
+  // (a nameless one degrades to the tag's default fallback) and sets each person's unsubscribe link.
+  const subject = compiled.subject || 'Your email'
+  const html = compiled.html
 
   // Resolve the recipients over THIS Space's contacts (the exact shape the send seam consumes). The count
   // the owner confirmed in the rail resolves the same way, so it can never disagree with this list.
-  const recipients = await resolveAudience(spaceId, filter)
+  const recipients = await withRecipientNames(spaceId, await resolveAudience(spaceId, filter))
   if (recipients.length === 0)
     return fail('No one matched that audience yet. Add contacts or pick a different filter.')
 
-  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
+  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients, mergeTags: true })
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
@@ -536,7 +562,7 @@ export async function sendSpaceEmailDraftToRecipients(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER, sentWithFrequency: campaignCarriesFrequencyFooter(space.plan) },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
@@ -546,11 +572,10 @@ export async function sendSpaceEmailDraftToRecipients(
   const meter = await checkCampaignMonthMeter(spaceId)
   if (!meter.ok) return fail(meter.error)
 
-  const fallbacks = MERGE_TAG_DEFAULT_FALLBACKS
-  const subject = applyMergeTags(compiled.subject || 'Your email', {}, { fallbacks, escape: false })
-  const html = applyMergeTags(compiled.html, {}, { fallbacks })
+  const subject = compiled.subject || 'Your email'
+  const html = compiled.html
 
-  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
+  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients: await withRecipientNames(spaceId, recipients), mergeTags: true })
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
@@ -606,7 +631,7 @@ export async function sendSpaceEmailDraftAsConversations(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')

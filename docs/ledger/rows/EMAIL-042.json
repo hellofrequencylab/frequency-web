@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-042",
+  "title": "Saved email sections are shared across the team and devices",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/email-studio/saved-sections-actions.ts",
+    "ref": "owner 2026-10-20: saved sections live in a database table (EMAIL-040 decision card); PROG-EMAIL1"
+  },
+  "detail": "Built 2026-10-20. Migration 20270346015100 creates email_saved_sections (service-role only, 60-row cap in the action); the Email Studio editor reads and writes it through writer-gated actions. Until the migration is applied in production the library shows empty and a save is refused, so apply it once its PR is the next migration PR to merge.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-editor.mjs sharedsections",
+    "note": "PASS 2026-10-20: saved sections live in the shared email_saved_sections table through writer-gated actions and show for every operator on every device; the browser-storage list stays as the fallback for editors with no shared library. Production needs the migration applied."
+  },
+  "wave": "W7",
+  "closed": "2026-10-20"
+}

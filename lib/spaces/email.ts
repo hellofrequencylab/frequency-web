@@ -46,6 +46,7 @@ import { normalizeEmailTopic } from './email-topics'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 import { encodeSendToken, injectTracking } from './email-tracking'
+import { personalizeFor } from '@/lib/email-studio/personalize'
 import { randomUUID } from 'crypto'
 import { briefError, log } from '@/lib/log'
 import { envString } from '@/lib/env/string'
@@ -92,6 +93,9 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 export interface SpaceRecipient {
   contactId?: string
   email: string
+  /** For a send that sets `mergeTags`: the name {{contact.first_name}} and {{contact.last_name}} fill with. */
+  firstName?: string
+  lastName?: string
 }
 
 /** Which lane a send belongs to, which is what decides the CONSENT BAR it must clear (ADR-1040).
@@ -120,6 +124,9 @@ interface SendSpaceCampaignInput {
   topic?: NotificationTopic
   lane?: SpaceSendLane
   recipients: SpaceRecipient[]
+  /** Fill {{contact.*}} merge tags in the subject and body per recipient (EMAIL-039). Off by default, so a
+   *  caller that already resolved its tags sends exactly what it always did. */
+  mergeTags?: boolean
 }
 
 /** What sendSpaceCampaign reports back: how many were actually sent, skipped as suppressed, or failed. */
@@ -151,6 +158,8 @@ export function normalizeRecipients(raw: SpaceRecipient[] | null | undefined): S
     seen.add(email)
     const rec: SpaceRecipient = { email }
     if (typeof r.contactId === 'string' && r.contactId.trim()) rec.contactId = r.contactId.trim()
+    if (typeof r.firstName === 'string' && r.firstName.trim()) rec.firstName = r.firstName.trim()
+    if (typeof r.lastName === 'string' && r.lastName.trim()) rec.lastName = r.lastName.trim()
     out.push(rec)
     if (out.length >= MAX_RECIPIENTS_PER_CALL) break
   }
@@ -624,6 +633,12 @@ async function deliverSpaceCampaign(
     // Personalize the body's unsubscribe link for THIS recipient (the header carries the same URL).
     // A body with no placeholder is sent unchanged, so this is safe for any html.
     let personalizedHtml = html.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
+    let recipientSubject = subject
+    if (input.mergeTags) {
+      const mine = personalizeFor({ subject, html: personalizedHtml }, rec)
+      personalizedHtml = mine.html
+      recipientSubject = mine.subject
+    }
 
     // ENGAGEMENT TRACKING (additive, FAIL-SAFE): pre-generate this send's ledger id so a per-recipient
     // opaque token maps opens/clicks back to THIS exact row, then inject an open pixel + rewrite links
@@ -655,7 +670,7 @@ async function deliverSpaceCampaign(
         SPACE_CAMPAIGN_EMAIL_KIND,
         {
           to: rec.email,
-          subject,
+          subject: recipientSubject,
           html: personalizedHtml,
           from: fromLine,
           ...(identityId ? { identityId } : {}),

@@ -3,6 +3,7 @@
 // queued via the durable email outbox) and advance — or complete/cancel. Called from
 // /api/cron/nurture. Server-only; never sends inline (enqueueEmail).
 
+import { resolveDataBlockRefs } from '@/lib/email-studio/data-blocks'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
@@ -193,7 +194,7 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     // exactly like the Phase-4 campaign send; a legacy plain-body step keeps the existing lightweight render.
     const block = blockByStepId.get(step.id) ?? null
     const message = block
-      ? renderBlockStep(block, step.subject, mergeVarsFor(contact.display_name, e.email), unsubscribeUrl)
+      ? renderBlockStep(await resolveDataBlockRefs(block), step.subject, mergeVarsFor(contact.display_name, e.email), unsubscribeUrl)
       : { subject: step.subject, ...renderPlainStep(step.body, unsubscribeUrl) }
     // A drip step is BULK mail: scheduled marketing to a list, not a message someone is waiting
     // on. The lane keeps it behind transactional sends when the daily quota is tight (LIVE-091).

@@ -715,6 +715,18 @@ Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production
 
 Then set `LOYALTY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset it. Earned rewards stay readable on `/rewards` and in the owner roster; nothing is deleted.
 
+### Counter scanners (LIVE-1125)
+
+`SCANNER_DEVICES_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`). Off, `/api/v1/devices/scan` and `/api/v1/devices/cards` answer 404 (the scanner firmware reads that as "backend not set up"), `/c/<token>` sends the visitor straight to `/rewards`, and the Check-in panel says scanners are not open. Contract and trust model: `docs/LOYALTY.md` section 7.
+
+**Gate before turning it on**, in order. All **owner** unless tagged.
+
+1. Migration `20270346014500_scanner_devices.sql` applied (`scanner_devices`, `member_cards`, both RLS on with anon and authenticated revoked). **agent** confirms from `pg_tables` and `information_schema.role_table_grants`.
+2. `UNSUBSCRIBE_SECRET` is set in Production (it already is: the door codes and the card UID hash sign with it). Rotating it voids every bound card UID as well as every printed door code.
+3. On a preview with the switch on: register a scanner on a staff Space, write a card from the device, tap it twice on one day (the second answers `already_captured`) and once on the next (a second stamp). Revoke the scanner and see the device show 401.
+
+Then set `SCANNER_DEVICES_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset it. Scanners and cards stay in place and work again when it is turned back on; revoke them in the panel to retire them for good.
+
 ### SMS provisioning (ADR-256)
 
 `SMS_PROVISIONING_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`), not a literal `"true"`-only string. `isSmsProvisioned()` also needs `TWILIO_MESSAGING_SERVICE_SID` and one carrier registration: either `SMS_A2P_BRAND_ID` + `SMS_A2P_CAMPAIGN_ID` (A2P 10DLC) or `SMS_TOLLFREE_VERIFICATION_SID` (a verified toll-free number, ADR-1790). Sending still has to pass consent, preference, quiet hours, and the platform switch at `/admin/sms` (defaults off). Filing packet: [`A2P-REGISTRATION.md`](A2P-REGISTRATION.md) (§8 is the toll-free path).

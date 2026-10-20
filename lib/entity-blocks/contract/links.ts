@@ -1,0 +1,26 @@
+import { defineBlock } from '../define-block'
+import { fieldsForBlock } from '../block-content'
+import { contentFromFields, textOfContent } from './from-fields'
+
+// THE LINKS BLOCK, ADOPTED (E1). Content and inspector fields come from the registry's own field list
+// (./from-fields), so the schema and the inspector cannot drift; `check:blocks` holds the rest.
+export const linksBlock = defineBlock({
+  type: 'links',
+  v: 1,
+  kinds: ['member', 'space'],
+  reads: 'authored',
+  content: contentFromFields('links'),
+  fields: fieldsForBlock('links'),
+  migrations: [],
+  surfaces: {
+    'profile-inapp': { density: 'standard', fields: '*' },
+    'spotlight-public': { density: 'standard', fields: '*' },
+    'space-profile': { density: 'standard', fields: '*' },
+    'space-site': { density: 'standard', fields: '*' },
+  },
+  render: {
+    web: () => import('@/components/entity-blocks/blocks/links.web'),
+    email: null,
+  },
+  toText: (content) => textOfContent(content, 'links'),
+})

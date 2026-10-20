@@ -120,6 +120,8 @@ space_email_reply_aliases
 space_email_reply_quarantine
 # EMAIL-022: the Space inbox address carries provider ids and written DNS; service-only, read by the inbound webhook.
 space_inbox_addresses
+# EMAIL-042: saved email sections are service-only; the Email Studio actions are the only door, behind the writer gate.
+email_saved_sections
 # SCAN-827: website drafts, review comments and the Executive Overview; service-only, no browser role.
 space_private_state
 # EMAIL-012: operation leases/ownership nonces are service-only; migration078 explicitly revokes browser roles.
@@ -140,6 +142,9 @@ loyalty_rewards
 loyalty_hunts
 loyalty_hunt_stops
 loyalty_hunt_completions
+# LIVE-1125 counter scanners: devices and member cards are read and written only by lib/devices/store.ts, behind the device credential or the owner gate; service-only, no browser role.
+scanner_devices
+member_cards
 # LIVE-946 Tap to meet: codes and taps are written by lib/meet/store.ts for the signed-in member and by the meet_tap RPC; service-only, no browser role.
 meet_codes
 meet_taps

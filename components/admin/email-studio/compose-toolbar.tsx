@@ -50,10 +50,12 @@ export function ComposeToolbar({
   saveNote?: { message: string; onFile: Array<{ label: string; value: string }>; onRetry: () => void } | null
   /** The test-send action ("Send test to me"). Defaults to the admin Email Studio's sendTestEmail; a per-Space
    *  editor injects its own space-scoped, brand-compiling test-send (sendSpaceTestEmail). */
-  sendTest?: (campaignId: string) => Promise<ActionResult<{ to: string }>>
+  sendTest?: (campaignId: string, to?: string) => Promise<ActionResult<{ to: string }>>
 }) {
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  // Where the test goes. Blank sends it to the operator, as it always did.
+  const [testTo, setTestTo] = useState('')
   const subjectRef = useRef<HTMLInputElement>(null)
 
   // Splice a picked emoji into the SUBJECT at the caret (or over the selection), then restore focus + caret
@@ -80,7 +82,7 @@ export function ComposeToolbar({
   function onSendTest() {
     setNote(null)
     startTransition(async () => {
-      const res = await sendTest(campaignId)
+      const res = await sendTest(campaignId, testTo.trim() || undefined)
       if (isError(res)) setNote({ kind: 'error', text: res.error })
       else setNote({ kind: 'ok', text: `Test sent to ${res.data.to}.` })
     })
@@ -176,6 +178,14 @@ export function ComposeToolbar({
         <MergeTagPicker />
         {/* Drop an emoji into the subject line at the caret. */}
         <EmojiPicker onSelect={insertEmojiIntoSubject} />
+        <Input
+          type="email"
+          value={testTo}
+          onChange={(e) => setTestTo(e.target.value)}
+          placeholder="Test to (blank is you)"
+          aria-label="Send the test to this address"
+          className="h-8 w-44 bg-surface-elevated/50 text-2xs"
+        />
         <button
           type="button"
           onClick={onSendTest}
@@ -183,7 +193,7 @@ export function ComposeToolbar({
           className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Send className="h-3.5 w-3.5" aria-hidden />}
-          Send test to me
+          {testTo.trim() ? 'Send test' : 'Send test to me'}
         </button>
         {showPreviewToggle && (
           <button

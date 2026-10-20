@@ -1844,7 +1844,7 @@ const h1Style        = `font-family:${emailType.display};font-size:38px;font-wei
 const pStyle         = `font-family:${emailType.sans};font-size:16px;color:${palette.emailBody};line-height:1.55;margin:0 0 20px;`
 const leadStyle      = `font-family:${emailType.display};font-size:17px;font-weight:${emailType.displayWeight};color:${palette.emailHeading};margin:0 0 10px;line-height:1.2;letter-spacing:-0.025em;`
 const btnStyle       = `display:inline-block;color:${palette.emailActionInk};font-family:${emailType.sans};font-size:15px;font-weight:600;line-height:1;text-decoration:none;padding:16px 24px;border-radius:999px;`
-const footerStyle    = `font-family:${emailType.sans};font-size:13px;color:${palette.emailSubtle};padding:28px 8px 0;text-align:center;line-height:1.6;`
+const footerStyle    = `font-family:${emailType.sans};font-size:13px;color:${palette.emailSubtle};padding:28px 20px 0;text-align:center;line-height:1.6;`
 const unsubBtnStyle  = `color:${palette.emailSubtle};text-decoration:underline;`
 const dividerStyle   = `border:none;border-top:1px solid ${palette.emailBorder};margin:28px 0;`
 
@@ -1899,7 +1899,7 @@ export function emailHead(title = ''): string {
     : ''
   return `<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${title ? `<title>${escapeHtml(title)}</title>` : ''}${fonts}<style>
 body{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
-@media only screen and (max-width:620px){[data-fq=fq-wrap]{padding:20px 12px!important}[data-fq=fq-card]{border-radius:20px!important}[data-fq=fq-body]{padding:28px 22px 26px!important}[data-fq=fq-h1]{font-size:30px!important}}
+@media only screen and (max-width:620px){[data-fq=fq-wrap]{padding:0 0 24px!important}[data-fq=fq-head]{padding-top:20px!important}[data-fq=fq-card]{border-radius:0!important;border-left:0!important;border-right:0!important;box-shadow:none!important}[data-fq=fq-hero]{border-radius:0!important}[data-fq=fq-body]{padding:28px 22px 26px!important}[data-fq=fq-h1]{font-size:30px!important}}
 @media (prefers-color-scheme:dark){
 body,[data-fq=fq-bg]{background:${palette.emailNightCanvas}!important}
 [data-fq=fq-card],[data-fq=fq-panel]{background:${palette.emailNightSurface}!important;border-color:${palette.emailNightBorder}!important}
@@ -1944,9 +1944,9 @@ export const EMAIL_SHELL_STYLES = {
   footer: footerStyle,
   unsub: unsubBtnStyle,
   /** The outer cell: the canvas gutter around the column. */
-  wrap: `padding:36px 16px 48px;`,
+  wrap: `padding:36px 0 48px;`,
   /** The header cell above the card. */
-  header: `padding:0 4px 22px;text-align:left;`,
+  header: `padding:0 20px 22px;text-align:left;`,
 } as const
 export const EMAIL_BASE_URL = BASE_URL
 /** The CAN-SPAM postal line, unescaped (React escapes it). */
@@ -2044,7 +2044,7 @@ ${emailHead(opts.title)}
     <tr><td align="center" data-fq="fq-wrap" style="${EMAIL_SHELL_STYLES.wrap}">
       <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
-        ${emailType.hero ? '' : `<tr><td style="${EMAIL_SHELL_STYLES.header}">
+        ${emailType.hero ? '' : `<tr><td data-fq="fq-head" style="${EMAIL_SHELL_STYLES.header}">
           <a href="${BASE_URL}" style="text-decoration:none;"><img src="${BASE_URL}${emailType.wordmark.path}" alt="Frequency, ${EMAIL_TAGLINE}" width="${emailType.wordmark.width}" height="${emailType.wordmark.height}" data-fq="fq-logo" style="${logoStyle}"></a>
         </td></tr>`}
         <tr><td data-fq="fq-card" style="${cardStyle}">

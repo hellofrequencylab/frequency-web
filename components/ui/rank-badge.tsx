@@ -135,6 +135,8 @@ export function RankBadge({
     <span
       className={cn('rank-badge leading-tight', SIZE[size], className)}
       style={rankBadgeStyle(key)}
+      // Frequency draws every reached season rank in one iridescent pill (app/themes/frequency.css, SCAN-860).
+      data-season-rank={season ? rank : undefined}
       {...props}
     >
       {dot && <span className="rank-dot" aria-hidden />}

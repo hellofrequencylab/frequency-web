@@ -23,7 +23,17 @@ import { EmailContextBar } from './context-bar'
 import { EmailPreview } from './preview'
 import { EmailCanvasEditor, NodeEmailCanvasEditor } from './email-canvas-editor'
 import { NodeSeeder } from './email-canvas-model'
+import { deleteSharedSection, listSavedSections, saveSharedSection } from '@/lib/email-studio/saved-sections-actions'
+import type { SavedLibrary } from '@/lib/email-studio/saved-sections'
 import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
+
+/** The Email Studio keeps saved sections in the shared table (EMAIL-042), so the whole team and every device sees them. */
+const sharedLibrary: SavedLibrary = {
+  list: () => listSavedSections(),
+  save: (input, fallbackName) => saveSharedSection({ ...input, fallbackName }),
+  remove: (id) => deleteSharedSection(id),
+}
+
 
 /** The persist action shape the pane injects into the store + compose fields (matches saveEmailCampaign). */
 type SaveCampaign = (
@@ -117,7 +127,7 @@ export function EmailEditorPane({
    *  editor injects its own space-scoped, brand-compiling save (saveSpaceEmailDraft). */
   saveCampaign?: SaveCampaign
   /** The test-send action, injected into the compose toolbar (defaults to the admin sendTestEmail). */
-  sendTest?: (id: string) => Promise<ActionResult<{ to: string }>>
+  sendTest?: (id: string, to?: string) => Promise<ActionResult<{ to: string }>>
   /** Brand palette for the canvas + live preview (spaceEmailColors for a Space). Defaults to DAWN. */
   colors?: EmailColors
   /** 'stacked' (default): toolbar on top, canvas below, preview toggled beside it. 'trio': a full-width
@@ -291,7 +301,7 @@ export function EmailEditorPane({
             showPreviewToggle={false}
             sendTest={sendTest}
           />
-          <NodeEmailCanvasEditor colors={colors} />
+          <NodeEmailCanvasEditor colors={colors} library={sharedLibrary} />
           {sidebar}
         </div>
       </NodeLayoutProvider>
@@ -323,7 +333,7 @@ export function EmailEditorPane({
             showPreviewToggle={false}
             sendTest={sendTest}
           />
-          <EmailCanvasEditor colors={colors} />
+          <EmailCanvasEditor colors={colors} library={sharedLibrary} />
           {sidebar}
         </div>
       </EntityLayoutProvider>

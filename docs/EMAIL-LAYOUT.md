@@ -17,9 +17,9 @@ An email is a member screen that arrived in an inbox: the Event card, with one t
 | Part | Rule | Why |
 | :--- | :--- | :--- |
 | Column | One column, 600px, fluid below it (`width="100%"; max-width:600px`), an Outlook ghost table pins 600 | 600 is the width every client renders without horizontal scroll; Outlook ignores max-width |
-| Canvas | `--surface-card` #FFFEFC with the `--wash` lilac-to-aqua radial gradients over it, 36px top, 48px bottom, 16px side gutter (12px on a phone) | The member app's page: linen with the wash; the gutter keeps the card off the glass edge |
+| Canvas | `--surface-card` #FFFEFC with the `--wash` lilac-to-aqua radial gradients over it, 36px top, 48px bottom, no side gutter | The member app's page: linen with the wash. On a desktop the 600px column is centred on it; on a phone the card is the full width of the screen |
 | Header | The wordmark image (`assets/logo/frequency-wordmark.png`, 178px) above the card, left-aligned | `.ap-logo`; the card opens on the headline, not the logo |
-| Card | `.card`: white, hairline, radius 24 (20 on a phone), the kit's soft shadow, padding 40 (28 by 22 on a phone) | The raised member card; the shadow paints in Apple Mail and Gmail and drops silently elsewhere |
+| Card | `.card`: white, hairline, radius 24, the kit's soft shadow, padding 40 (28 by 22 on a phone) | The raised member card on a desktop. Under 620px it is full width: no radius, no side borders, no shadow, and the hero loses its corners, so it meets the screen edge |
 | Footer | Below the card, centred, 13px, muted ink | Legal and preference lines are read last and must not compete with the action |
 | Tables | Every layout table is `role="presentation"`; no `<div>` layout, no floats | Screen readers skip presentational tables; Outlook renders tables only |
 | Styles | Inline on every element; one `<style>` block carries only the phone gutter and the night room | Gmail strips a lot of `<style>`; the light layout must survive with inline alone |
