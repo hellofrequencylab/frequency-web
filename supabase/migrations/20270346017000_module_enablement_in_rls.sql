@@ -16,7 +16,7 @@
 --   events         events
 --   practices      practices
 --   journey_plans  journeys
---   programs       program
+--   space_programs program
 --
 -- THE RULE, mirrored from the app. Every function is universal and DEFAULT-ON: an absent key is ON.
 -- Only an explicit `false` written by the operator turns one off (the app's own header says so:
@@ -81,7 +81,7 @@ create policy journey_plans_module_enabled on public.journey_plans
   as restrictive for select
   using (private.space_function_enabled(space_id, 'journeys') or private.can_write_space_content(space_id));
 
-drop policy if exists programs_module_enabled on public.programs;
-create policy programs_module_enabled on public.programs
+drop policy if exists space_programs_module_enabled on public.space_programs;
+create policy space_programs_module_enabled on public.space_programs
   as restrictive for select
   using (private.space_function_enabled(space_id, 'program') or private.can_write_space_content(space_id));

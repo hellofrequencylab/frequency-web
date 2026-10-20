@@ -6,7 +6,7 @@ select plan(13);
 select is(
   (select count(*)::int from pg_policy
     where polrelid in ('public.circles'::regclass, 'public.events'::regclass, 'public.practices'::regclass,
-                       'public.journey_plans'::regclass, 'public.programs'::regclass)
+                       'public.journey_plans'::regclass, 'public.space_programs'::regclass)
       and polname like '%\_module\_enabled'
       and not polpermissive and polcmd = 'r'),
   5,
@@ -66,10 +66,10 @@ select is(
 
 select is(
   (select count(*)::int from pg_policy
-    where polrelid = 'public.programs'::regclass and polname = 'programs_module_enabled'
+    where polrelid = 'public.space_programs'::regclass and polname = 'space_programs_module_enabled'
       and pg_get_expr(polqual, polrelid) like '%''program''%'),
   1,
-  'programs is keyed by the program function'
+  'space_programs is keyed by the program function'
 );
 
 select is(
