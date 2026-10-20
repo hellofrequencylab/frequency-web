@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-community'
 import { FqIcon } from '@/components/frequency/icon'
@@ -220,14 +221,14 @@ export function FqChannelsBody({
       </div>
 
       {channels.length === 0 ? (
-        <div className="empty stack">
-          <span className="h3">No Channels yet.</span>
-          <span className="t2">
-            {canCreate
+        <EmptyState
+          title="No Channels yet."
+          description={
+            canCreate
               ? 'Start the first one and it appears here, with its threads and the Circles that practice it.'
-              : 'Channels appear here as soon as the team sets them up.'}
-          </span>
-        </div>
+              : 'Channels appear here as soon as the team sets them up.'
+          }
+        />
       ) : narrowed ? (
         <section className="sec" aria-label="Results">
           <div className="sec-h">
@@ -243,13 +244,16 @@ export function FqChannelsBody({
               ))}
             </ul>
           ) : (
-            <div className="empty stack">
-              <span className="h3">No Channels match.</span>
-              <span className="t2">Try fewer words, another Pillar, or start the Channel you were looking for.</span>
-              <Link className="btn sm fqm-tag-start" href="/channels">
-                See every Channel
-              </Link>
-            </div>
+            <EmptyState
+              variant="no-results"
+              title="No Channels match."
+              description="Try fewer words, another Pillar, or start the Channel you were looking for."
+              action={
+                <Link className="btn sm" href="/channels">
+                  See every Channel
+                </Link>
+              }
+            />
           )}
         </section>
       ) : (
