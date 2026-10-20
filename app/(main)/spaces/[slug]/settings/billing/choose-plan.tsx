@@ -28,8 +28,8 @@ export function ChoosePlanButton({
   interval = 'month',
 }: {
   slug: string
-  /** The loadout plan to buy: Business (LIVE-228), Collective (OWN-096) or Network (SCAN-980). */
-  plan: 'business' | 'collective' | 'network'
+  /** The loadout plan to buy: Business (LIVE-228), Collective (OWN-096), Network (SCAN-980) or Non Profit (LIVE-994, verified Spaces only). */
+  plan: 'business' | 'collective' | 'network' | 'nonprofit'
   /** The button label, e.g. "Choose Business". */
   label: string
   /** Monthly or yearly billing, as picked on the ladder's switch. Default monthly. */
