@@ -36,10 +36,13 @@ export const metadata = {
 
 export default async function SpaceOfferingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ tab?: string | string[] }>
 }) {
   const { slug } = await params
+  const { tab } = await searchParams
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -62,11 +65,11 @@ export default async function SpaceOfferingsPage({
   return (
     <ConsoleFocusTemplate
       eyebrow={brandName}
-      title="Offerings"
-      description="Everything people can book, join, support, or attend. Open a section to set it up; it shows on your space page."
+      title="Offerings and Money"
+      description="What people can book, join, support, or check in to. Pick a tab to set it up; it shows on your space page."
       width="wide"
     >
-      <OfferingsBody slug={slug} />
+      <OfferingsBody slug={slug} tab={typeof tab === 'string' ? tab : undefined} />
     </ConsoleFocusTemplate>
   )
 }

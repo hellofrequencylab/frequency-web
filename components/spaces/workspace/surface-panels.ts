@@ -73,7 +73,7 @@ export const SURFACE_PANELS: Record<string, SurfacePanel> = {
   },
   checkin: {
     label: 'Check in',
-    fullHref: (slug) => `/spaces/${slug}/settings/offerings#checkin`,
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings?tab=checkin`,
   },
   // 'services' (the retired JSON Store) panel removed (ADR-596, Phase 9): the Store became the Shop
   // console at /settings/shop. space.services now deep-links there (no inline panel), so closing this
