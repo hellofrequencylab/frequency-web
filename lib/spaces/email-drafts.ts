@@ -1,6 +1,7 @@
 'use server'
 
 
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
 
 // PER-SPACE BLOCK-EMAIL DRAFTS (Email in the Business CRM, P1 · deliverable 2 — the Marketing editor's data
@@ -297,7 +298,7 @@ export async function loadSpaceEmailDraft(
 export async function saveSpaceEmailDraft(
   spaceId: string,
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+  patch: { layout?: BuilderLayout | EntityLayout | NodeLayout; subject?: string; preheader?: string },
 ): Promise<{ error?: string }> {
   const gate = await requireSpaceEditor(spaceId)
   if (!gate.ok) return { error: gate.error }
