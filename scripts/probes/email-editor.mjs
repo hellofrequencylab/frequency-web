@@ -42,6 +42,10 @@ const checks = {
   sections: () => {
     assert.ok(existsSync('lib/email-studio/saved-sections.ts'), 'sections can be saved and reused')
   },
+  sharedsections: () => {
+    assert.ok(/create table public\.email_saved_sections/.test(read('supabase/migrations/20270346015100_email_saved_sections.sql')), 'a shared table holds the saved sections')
+    assert.ok(read('components/admin/email-studio/editor-pane.tsx').includes('library={sharedLibrary}'), 'the Email Studio editor uses the shared library')
+  },
   duplicate: () => {
     assert.ok(read('lib/email-studio/duplicate.ts').includes('duplicateCampaign'), 'a campaign can be duplicated')
   },
