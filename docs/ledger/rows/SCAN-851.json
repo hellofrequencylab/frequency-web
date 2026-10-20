@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-851",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['app/join/(induction)/induction.tsx'].map(r).join('\\n').search(/SITE_DESIGN|components\\/frequency/)>-1===true)?0:1)\""
+    }
+  },
+  "append": {
+    "detail": "\n\nUnder the Frequency design a signed-out visitor on /join?seq=, ?persona= or ?next= now gets the Join template's card (FrequencyJoin) inside the site shell instead of the DAWN induction; the funnel cohort and persona ride through the emailed link as the induction's own cookies, and the landing as ?to= on /join/complete. DAWN, signed-in members and the admin preview keep the induction unchanged."
+  }
+}

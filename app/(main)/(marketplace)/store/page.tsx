@@ -9,6 +9,8 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqStoreBody } from '@/components/frequency/members/marketplace/marketplace-body'
 
 // Frequency Store — first-party Frequency retail (commerce core, owner_kind='platform'). Frequency is the
 // seller. Hero-led (the site PhotoHero grammar). Distinct from the Vault (Gems) and a Space's Shop tab.
@@ -32,6 +34,7 @@ export default async function ShopPage() {
   // this page's coded cover, plus the operator-tunable header element (ADR-793) for
   // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
   // header image for this route got nothing.
+  if (SITE_DESIGN === 'frequency') return <FqStoreBody products={products} />
   const hero = await resolveMarketHero('/store', { cover: HERO_IMAGE })
   return (
     <MarketSearchProvider>

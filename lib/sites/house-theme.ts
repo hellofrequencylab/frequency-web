@@ -10,6 +10,9 @@
 // Contact -> the closing ink band. Any other block still renders, through the
 // Space page's own block render, in a plain band, so nothing an owner placed ever disappears.
 
+import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
+
 /** One themed section, in page order. `ids` are the block ids it renders from (and so absorbs). */
 export type HouseSection =
   | { kind: 'who'; id: string }
@@ -109,7 +112,10 @@ export const SITE_CONTACT_SLUG = 'contact'
  *  closing band on Home already shows the contact details. */
 export function siteHasContactPage(preferences: unknown): boolean {
   const prefs = preferences && typeof preferences === 'object' ? (preferences as Record<string, unknown>) : null
-  const layout = prefs?.profileLayout as { rows?: { cells?: unknown }[]; hidden?: unknown } | undefined
+  const raw = prefs?.profileLayout
+  // A native node document is read through its type-keyed view, so a placed Contact form counts the same way.
+  // Every other document keeps the lenient raw read it always had.
+  const layout = (hasNativeNodeStorage(raw) ? readTypeKeyedGrid(raw) : raw) as { rows?: { cells?: unknown }[]; hidden?: unknown } | null | undefined
   const rows = Array.isArray(layout?.rows) ? layout.rows : []
   if (Array.isArray(layout?.hidden) && layout.hidden.includes('contactForm')) return false
   return rows.some((r) => Array.isArray(r.cells) && r.cells.some((c) => Array.isArray(c) && c.includes('contactForm')))

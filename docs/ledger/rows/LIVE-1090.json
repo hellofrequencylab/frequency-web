@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1090",
+  "title": "Store and Housing get Frequency page bodies, and photo-less marketplace cards get kit art",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-1090.json",
+    "ref": "Daniel design list item 17, plan thread review 2026-10-20"
+  },
+  "detail": "Under the Frequency design /store and /housing render the same head, chips and portrait grid as Classifieds and Market (FqStoreBody, FqHousingBody), with Housing keeping its type chips, Saved, price and amenity filters and the heart on each card. Cards with no photo show a pastel gradient with the title's initial instead of a blank block.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('components/frequency/members/marketplace/marketplace-body.tsx','utf8');const bad=[];for(const f of ['FqStoreBody','FqHousingBody'])if(!b.includes('export function '+f))bad.push(f+' missing');for(const [p,f] of [['store','FqStoreBody'],['housing','FqHousingBody']])if(!fs.readFileSync('app/(main)/(marketplace)/'+p+'/page.tsx','utf8').includes(f))bad.push(p+' page does not render '+f);if(!fs.readFileSync('components/frequency/members/marketplace/item-grid.tsx','utf8').includes('fqm-item-art'))bad.push('no art fallback for photo-less cards');if(bad.length){console.error('LIVE-1090: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when Store or Housing lack a Frequency body or photo-less cards lack the art fallback."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
