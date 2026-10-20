@@ -14,8 +14,10 @@ import type { SpaceFunctionKey } from '@/lib/spaces/functions'
  *  `email` (Email Studio, 2026) is NOT a live profile: it reuses the SAME block model + renderer spine
  *  as member / space, but its layout renders to an inline-styled email document (lib/email-studio) instead
  *  of a web page. It is single-column only (MAX_COLUMNS_BY_KIND.email === 1) and carries its own curated
- *  palette (EMAIL_PALETTE_BLOCK_IDS) of the blocks that port cleanly to email. */
-export type EntityKind = 'member' | 'space' | 'email'
+ *  palette (EMAIL_PALETTE_BLOCK_IDS) of the blocks that port cleanly to email.
+ *  `site` (E3, LIVE-1171) is a Space's published website. It is the WEB renderer on a public surface, so it
+ *  borrows the Space's block legality (see blockSupportsKind) and adds its own column ceiling and palette. */
+export type EntityKind = 'member' | 'space' | 'email' | 'site'
 
 /** How a block gets its content:
  *  - `data`    — bound to the entity's LIVE data (offerings, stats, reviews). The block renders a
@@ -155,7 +157,9 @@ export function entityBlockById(id: string): EntityBlockDef | null {
 
 /** Whether a block supports an entity kind. */
 export function blockSupportsKind(block: EntityBlockDef, kind: EntityKind): boolean {
-  return block.kinds.includes(kind)
+  // A Site is the Space's own website: every block a Space may hold is legal there, and no block is legal
+  // there that a Space cannot hold. One source (`kinds` carries `space`), so the two cannot drift.
+  return block.kinds.includes(kind === 'site' ? 'space' : kind)
 }
 
 /** Block ids the MEMBER profile CHROME already renders canonically (ADR-522): the bio in the identity
@@ -245,6 +249,8 @@ const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
   member: new Set(['gallery']),
   // Email uses its own curated set (EMAIL_PALETTE_BLOCK_IDS), so it needs no CORE-set exclusions.
   email: new Set(),
+  // Site shows the same authored sections a Space does, so it drops the same legacy free-form trio.
+  site: new Set(['heading', 'text', 'image']),
 }
 
 /** The curated EMAIL palette (Email Studio, 2026): the CONTENT + DESIGN blocks that port cleanly to an
