@@ -56,7 +56,7 @@ export function FeedPlanner({
   const [intent, setIntent] = useState<HomeIntent | 'all'>('all')
   const [radius, setRadius] = useState<number>(5)
   // Open on the first tab that has something within the radius: "Now" is only what is live or starts
-  // within two hours, so it is often empty while the week is full (LIVE-1157).
+  // within two hours, so it is often empty while the week is full (LIVE-1161).
   const [slot, setSlot] = useState<HomeSlot>(
     () =>
       firstSlotWith((s) =>

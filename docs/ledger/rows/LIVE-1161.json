@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1161",
+  "title": "Near you opens on a tab that has events instead of an empty Now",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('components/frequency/members/feed/planner.tsx','utf8');const r=fs.readFileSync('lib/feed/home-rank.ts','utf8');const miss=[[/export function firstSlotWith/.test(r),'firstSlotWith helper'],[/useState<HomeSlot>\\(\\s*\\(\\) =>\\s*firstSlotWith/.test(p),'planner opens on the first tab with results'],[/Show \\{SLOTS/.test(p),'empty tab points at the next tab']].filter(([ok])=>!ok).map(([,m])=>m);if(miss.length){console.error('LIVE-1161: '+miss.join(', '));process.exit(1)}\""
+  },
+  "detail": "Owner report 2026-10-20 (Android, Feed): Near you said Nothing that fits within 5 mi on Now with Anything selected while 27 public events with coordinates sit in the next week around North County. Production data and distance math are fine. Cause: Now only holds events live or starting within two hours (slotFor), it is the default tab, and its empty state told the member to widen the radius. At 10:46 Pacific nothing was left today, so the first screen read as no events nearby. Fix: open on the first tab with a result inside the radius, and when a tab is empty and a later tab has results, say so and offer one tap to it.",
+  "closed": "2026-10-20"
+}

@@ -107,7 +107,7 @@ const SLOT_ORDER: HomeSlot[] = ['now', 'tonight', 'tomorrow', 'week']
 /**
  * The Near you tab to open on, and the next one to point at when a tab is empty. "Now" only holds
  * what is live or starts within two hours, so on most mornings it is empty while the week is full;
- * landing there read as "no events near me" (LIVE-1157). `has` says whether a tab has a result for the
+ * landing there read as "no events near me" (LIVE-1161). `has` says whether a tab has a result for the
  * member's current filters.
  */
 export function firstSlotWith(has: (slot: HomeSlot) => boolean, after: HomeSlot | null = null): HomeSlot | null {

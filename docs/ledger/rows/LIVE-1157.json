@@ -1,15 +1,21 @@
 {
   "id": "LIVE-1157",
-  "title": "Near you opens on a tab that has events instead of an empty Now",
-  "lane": "live",
-  "priority": "P1",
-  "size": "S",
-  "wave": "W7",
+  "title": "Editor E3 instrument: the visual suite can photograph a member's Spotlight and a Space's Site",
   "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "\u00a77.1 and \u00a78.1 item 2"
+  },
+  "detail": "E3's gate is zero visual diff across Spotlight, in-app profile, Space and Site, and none of them had a baseline. editorTargetSurfaces in test/e2e/surfaces.ts adds an anonymous first-screen surface for /spotlight/<PW_SPOTLIGHT_HANDLE> and /sites/<PW_SITE_SLUG>, joins the coverage union, and e2e-manual.yml passes both repo variables. With neither set the suite is unchanged. Nothing is photographed until the owner sets the two variables and runs the capture. The in-app profile and Space profile baselines are not part of this slice.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('components/frequency/members/feed/planner.tsx','utf8');const r=fs.readFileSync('lib/feed/home-rank.ts','utf8');const miss=[[/export function firstSlotWith/.test(r),'firstSlotWith helper'],[/useState<HomeSlot>\\(\\s*\\(\\) =>\\s*firstSlotWith/.test(p),'planner opens on the first tab with results'],[/Show \\{SLOTS/.test(p),'empty tab points at the next tab']].filter(([ok])=>!ok).map(([,m])=>m);if(miss.length){console.error('LIVE-1157: '+miss.join(', '));process.exit(1)}\""
+    "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-e3.mjs --instrument",
+    "note": "Fails while the visual suite declares no Spotlight or Site surface.",
+    "checked": "2026-10-20"
   },
-  "detail": "Owner report 2026-10-20 (Android, Feed): Near you said Nothing that fits within 5 mi on Now with Anything selected while 27 public events with coordinates sit in the next week around North County. Production data and distance math are fine. Cause: Now only holds events live or starting within two hours (slotFor), it is the default tab, and its empty state told the member to widen the radius. At 10:46 Pacific nothing was left today, so the first screen read as no events nearby. Fix: open on the first tab with a result inside the radius, and when a tab is empty and a later tab has results, say so and offer one tap to it.",
-  "closed": "2026-10-20"
+  "closed": "2026-10-20",
+  "wave": "W4"
 }
