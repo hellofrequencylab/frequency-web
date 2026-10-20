@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1166",
+  "title": "The Space console Home on a phone shows its numbers above the fold: stats two to a row, actions side by side, shortcuts in one row",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/themes/frequency/admin-pages.css",
+    "ref": "Owner 2026-10-20 in the project chat: the Space console experience on mobile is trash; proposal /mnt/project-files/console-mobile/console-mobile-proposal-2026-10-20.md, approved 'Do it'; PR 2 of 3 after LIVE-1165"
+  },
+  "detail": "FILED 2026-10-20. THE CONSEQUENCE: on a 390px phone the kit stacked the Home stats one to a row (one card filled a screen), the head's Edit page and New event stacked small and left-aligned, and the five shortcut pills wrapped into a ragged block above the greeting, so the first number sat near 700px. THE FIX: under 560px the stats go two to a row with compact cards, the head's actions sit side by side at full width as 48px targets with New event first, and the shortcut pills are one sideways row of 44px targets. DECISION: the proposal drew the shortcuts as a tile grid below the stats; moving them would restructure the manage board, so they stay above the greeting as a single compact row. A follow-up can move them if the owner wants the grid. Verified in a render of the real shell, kit CSS and the Home head and KPI components at 390px (the pills render as plain CSS in the fixture; their Tailwind classes were not rendered).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/console-phone-home.mjs",
+    "note": "The probe fails on main (no phone home block) and passes with this change."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
