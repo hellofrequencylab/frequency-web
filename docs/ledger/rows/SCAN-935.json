@@ -1,7 +1,15 @@
 {
   "id": "SCAN-935",
-  "wave": "W7",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Merged into SCAN-904 on 2026-10-20 (owner decision in the phase-plan thread, \"Yes, retire all 8\"). Identical close condition: one browser confirmation of Google tiles on the event, Around You and Circle maps. SCAN-904 carries it. Nothing left to measure on this row.",
+      "checked": "2026-10-20"
+    }
+  },
   "append": {
-    "detail": "\n\nEVIDENCE UPDATE 2026-10-19: Vercel project env lists NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY and GOOGLE_MAPS_API_KEY (names only read, values not decrypted), so the production artifact can activate the Google provider. Still open: nobody has loaded a Frequency map in a browser against production and seen Google tiles with no fallback error; the 101 focused map tests pass on main. Closes when the owner or a browser session confirms Google rendering on the event venue, Around You and Circle discovery maps."
+    "detail": "\n\nMERGED INTO SCAN-904 2026-10-20. Identical close condition: one browser confirmation of Google tiles on the event, Around You and Circle maps. SCAN-904 carries it. The original probe is unchanged in this row's history."
   }
 }
