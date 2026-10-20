@@ -1,17 +1,21 @@
 import "@/app/themes/active/mega-footer";
 import { MegaFooterTabs } from "./mega-footer-tabs";
+import { LEGAL_LINKS } from "@/lib/nav/legal-links";
 import { CONTACT_EMAIL, ORG_LEGAL_NAME } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
 import { siteNavigationSchema } from "@/lib/jsonld";
 
-// THE FREQUENCY MEGA FOOTER (LIVE-1030, LIVE-1115). The owner, 2026-10-20: "The footer should be just like
-// a mega menu. Bunch of tabs, that pop open into nav areas. Except this is upside down so it pops up. The
-// left and right menus ALWAYS stay pinned to the bottom. The middle of the mega menu opens up on activation."
+// THE FREQUENCY MEGA FOOTER (LIVE-1030, LIVE-1154). The owner, 2026-10-20: "I want a FOOTER at the BOTTOM of
+// the page" that "looks like a footer menu, but has a mega menu that also opens up", with the left and right
+// docks pinned to the bottom, resting on top of the closed footer and covered by an open mega menu, and no
+// round menu ("that's DAWN").
 //
-// So the footer is the member header's mega menu turned over: a tab bar pinned to the bottom of the window
-// between the two rail docks, one tab per area of the site index, each opening its panel upward
-// (mega-footer-tabs.tsx, the one client island). The footer no longer sits in the page's flow, so the
-// rails run to the end of the page and their docks never leave the window's bottom edge.
+// So it is the design system's site footer (`.ft2`): a dark band in the page flow at the very end of the
+// page, under an iridescent rule, holding the wordmark, the area headings, the copyright and the legal row.
+// The headings are tabs (mega-footer-tabs.tsx, the one client island): each opens its area's mega panel up
+// out of the footer, over the page and over the docks. The footer follows the rail grid, so
+// the sticky rails ride the window bottom while the page scrolls and their docks come to rest on the closed
+// footer's top edge.
 //
 // ONE SOURCE. The columns arrive as props from the registry (lib/nav/registry.ts footerColumns, gate-filtered
 // by lib/nav/footer-access.ts). Their Legal column is lib/nav/legal-links.ts, the list every footer shares
@@ -41,7 +45,7 @@ export function FqMegaFooter({
 }) {
   const year = new Date().getFullYear();
   return (
-    <footer className="fq-mf" aria-label="Site footer">
+    <footer className="fq-mf" aria-label="Site footer" data-surface="stage">
       <JsonLd data={siteNavigationSchema(columns)} />
       <MegaFooterTabs
         columns={columns}
@@ -49,6 +53,7 @@ export function FqMegaFooter({
         tagline={tagline}
         copyright={`© ${year} ${ORG_LEGAL_NAME}`}
         contact={CONTACT_EMAIL}
+        legal={LEGAL_LINKS.map((l) => ({ label: l.label, href: l.href }))}
       />
     </footer>
   );
