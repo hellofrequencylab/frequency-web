@@ -14,10 +14,10 @@ export default function EmailCardBlock(props: Record<string, unknown>) {
     <div className="rounded-card border border-border bg-surface p-4">
       {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL snapshot, not a build asset */}
       {image ? <img src={image} alt="" className="mb-3 w-full rounded-card" /> : null}
-      <p className="font-semibold text-foreground">{title}</p>
-      {line ? <p className="text-sm text-muted-foreground">{line}</p> : null}
+      <p className="font-semibold text-text">{title}</p>
+      {line ? <p className="text-body-sm text-muted">{line}</p> : null}
       {href ? (
-        <a href={href} className="mt-2 inline-block text-sm underline">
+        <a href={href} className="mt-2 inline-block text-body-sm underline">
           {str('ctaLabel') || 'Open'}
         </a>
       ) : null}
