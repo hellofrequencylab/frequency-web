@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { storeSpaceImage } from '@/lib/spaces/space-image-store'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceCanUseFullWebsite, spaceHasEntitlement } from '@/lib/spaces/entitlements'
@@ -206,24 +207,7 @@ export async function uploadSpaceImage(
   const auth = await authorizeEditor(slug)
   if (!auth) return { error: 'You do not have access to edit this page.' }
 
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
-  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
-  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10MB.' }
-
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-  const folder = kind === 'cover' ? 'covers' : 'logos'
-  const path = `spaces/${auth.spaceId}/${folder}/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error } = await admin.storage
-    .from('event-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
-  if (error) return { error: error.message }
-
-  const { data } = admin.storage.from('event-media').getPublicUrl(path)
-  return { url: data.publicUrl }
+  return storeSpaceImage(auth.spaceId, kind, formData)
 }
 
 /**

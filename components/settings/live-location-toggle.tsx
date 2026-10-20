@@ -5,6 +5,7 @@ import { Radio, Check, TriangleAlert, ShieldCheck } from 'lucide-react'
 import { setLiveLocation } from '@/lib/connections/connection-settings-actions'
 import { isError } from '@/lib/action-result'
 import { capsLabel } from '@/components/ui/caps-label'
+import { Switch } from '@/components/ui/switch'
 
 // Live-location opt-in (ADR-186). Turning it on captures the device position ONCE
 // via the browser and stores it as the member's live point; it's still only ever
@@ -69,19 +70,7 @@ export function LiveLocationToggle({
         </div>
         {/* Named by the section's own heading, so the switch announces the same words a
             sighted member reads above it. `aria-checked` carries on/off. */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={live}
-          aria-labelledby="live-location-heading"
-          onClick={toggle}
-          disabled={pending}
-          className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors disabled:opacity-50 ${
-            live ? 'bg-primary' : 'bg-surface-elevated border border-border'
-          }`}
-        >
-          <span className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${live ? 'translate-x-6' : 'translate-x-1'}`} />
-        </button>
+        <Switch checked={live} onCheckedChange={() => toggle()} aria-labelledby="live-location-heading" pending={pending} />
       </div>
 
       <div className="mt-2 min-h-[1.25rem] text-2xs">

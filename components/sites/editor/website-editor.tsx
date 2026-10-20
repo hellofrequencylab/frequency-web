@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { LoomPickerActionsProvider } from '@/components/loom/picker-actions-context'
 import { websiteLoomScopes, websiteLoomScope, websiteLoomImages, uploadWebsiteLoomImage } from '@/lib/sites/editor/media-actions'
+import { SiteMenuActionsProvider } from '@/components/spaces/site-menu-actions'
+import { loadWebsiteMenu, saveWebsiteMenu, resetWebsiteMenu, saveWebsiteHeaderLogo, uploadWebsiteLogo } from '@/lib/sites/editor/menu-actions'
 import { WebsiteFeatureSourceContext } from './feature-source-context'
 import type { WebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { config } from '@/lib/page-editor/config'
@@ -43,5 +45,12 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
     images: (key: string, options: Parameters<typeof websiteLoomImages>[2]) => websiteLoomImages(host, key, options),
     upload: (key: string, data: FormData) => uploadWebsiteLoomImage(host, key, data),
   }), [host])
-  return <LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onPresence={presence} onStyle={style} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider>
+  const menu = useMemo(() => ({
+    load: () => loadWebsiteMenu(host),
+    save: (value: Parameters<typeof saveWebsiteMenu>[1]) => saveWebsiteMenu(host, value),
+    reset: () => resetWebsiteMenu(host),
+    saveLogo: (logo: { mode: string; logoUrl: string | null }) => saveWebsiteHeaderLogo(host, logo),
+    uploadLogo: (data: FormData) => uploadWebsiteLogo(host, data),
+  }), [host])
+  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onPresence={presence} onStyle={style} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
 }

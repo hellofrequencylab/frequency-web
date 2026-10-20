@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { LOCATION_BAND_OPTIONS, type LocationBand } from '@/lib/connections/location'
 import { saveConnectionSettings } from '@/lib/connections/connection-settings-actions'
 import type { ConnectionSettings } from '@/lib/connections/connection-settings'
+import { Switch } from '@/components/ui/switch'
 
 // The admin console for the connection-layer singleton (ADR-186). Three groups:
 // Features (the platform-wide master switches that gate whole capabilities), Privacy
@@ -244,23 +245,7 @@ function Toggle({
         <p className="text-body-sm font-semibold text-text">{label}</p>
         <p className="text-meta text-subtle">{hint}</p>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-pill transition-colors disabled:opacity-60 ${
-          checked ? 'bg-primary' : 'border border-border-strong bg-surface-elevated'
-        }`}
-      >
-        <span
-          className={`inline-block h-5 w-5 transform rounded-pill bg-surface shadow transition-transform ${
-            checked ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </button>
+      <Switch checked={checked} onCheckedChange={() => onChange(!checked)} aria-label={label} disabled={disabled} />
     </div>
   )
 }

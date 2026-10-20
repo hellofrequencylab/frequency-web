@@ -501,3 +501,14 @@
 [data-design="frequency"] [data-kit="members"] .fqs-pane .adp .panel.kpi{padding:var(--fq-space-5)}
 }
 }
+
+/* THE SWITCH IN THE ADMIN KIT (LIVE-1102). The shared Switch renders the kit's `.sw` under Frequency, but only
+   the members kit styled it, so every Switch inside [data-kit="admin"] (the AI, payments and demo toggles,
+   page-layout and module switches) drew as an empty button. The admin templates load the members app.css,
+   so this is that same switch: 46x28, the knob its ::after, the iridescent fill when on. */
+[data-design="frequency"] [data-kit="admin"] .sw{position:relative;flex:none;width:46px;height:28px;border-radius:999px;border:none;background:var(--fq-track);cursor:pointer;transition:background var(--fq-dur-base)}
+[data-design="frequency"] [data-kit="admin"] .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fq-surface-card);box-shadow:0 1px 3px color-mix(in oklab,var(--fq-ink) 25%,transparent);transition:transform var(--fq-dur-base) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="admin"] .sw.on{background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="admin"] .sw.on::after{transform:translateX(18px)}
+[data-design="frequency"] [data-kit="admin"] .sw:disabled{cursor:default;opacity:.5}
+[data-design="frequency"] [data-kit="admin"] .sw.mu-pending{opacity:.6}

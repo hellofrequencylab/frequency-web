@@ -1,0 +1,33 @@
+import { headingBlock } from './heading'
+import { dividerBlock } from './divider'
+import { calloutBlock } from './callout'
+import { textBlock } from './text'
+import { linksBlock } from './links'
+import { imageBlock } from './image'
+import { featuresBlock } from './features'
+import { galleryBlock } from './gallery'
+import { quoteBlock } from './quote'
+import { embedBlock } from './embed'
+import { recordingBlock } from './recording'
+import { buttonBlock } from './button'
+import { contactFormBlock } from './contactForm'
+
+// THE ADOPTED BLOCKS (E1). A block joins the contract by being listed here, one at a time, and from that
+// moment `check:blocks` holds it to the whole of it (scripts/check-blocks.mjs). The registry (../registry.ts)
+// stays the catalog the editors read; this list is the set whose definitions are complete. The count
+// ratchets up toward ENTITY_BLOCKS as blocks are adopted (EDITOR-ARCHITECTURE §7.3, `blocks-adopted`).
+export const ADOPTED_BLOCKS = [
+  headingBlock,
+  dividerBlock,
+  calloutBlock,
+  textBlock,
+  linksBlock,
+  imageBlock,
+  featuresBlock,
+  galleryBlock,
+  quoteBlock,
+  embedBlock,
+  recordingBlock,
+  buttonBlock,
+  contactFormBlock,
+] as const
