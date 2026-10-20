@@ -33,6 +33,8 @@ import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags } from '@/lib/email-studio/render'
 import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
 import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
+import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { sanitizeFromName, loadCampaignFromName, loadCampaignReplyMode, resolveCampaignFromHeader } from '@/lib/email-studio/send'
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
@@ -108,6 +110,8 @@ export interface LoadedEmailCampaign {
    *  offers no toggle. */
   replyMode?: 'broadcast' | 'conversation'
   layout: EntityLayout
+  /** The campaign as a node document, present only while render_path_email is on. The canvas editor runs on it. */
+  nodeLayout?: NodeLayout
   context: EmailEditorContext
 }
 
@@ -309,13 +313,19 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
   // Reply mode rides its own additive column, read fail-safe (→ 'broadcast' pre-migration).
   const replyMode = await loadCampaignReplyMode(id)
 
+  const layout = layoutFromBlockJson(data.block_json)
+  // Behind render_path_email the canvas edits a node document: a stored one as it is, a legacy one upgraded
+  // (nothing is written until the first edit saves it).
+  const nodeLayout = (await renderPathEnabled('email')) ? (upgradeLayout(data.block_json) ?? upgradeLayout(layout)) : null
+
   return {
     id: data.id,
     subject,
     preheader: data.preheader ?? '',
     fromName,
     replyMode,
-    layout: layoutFromBlockJson(data.block_json),
+    layout,
+    ...(nodeLayout ? { nodeLayout } : {}),
     // STEP CONTEXT is `null` and `kind` is always 'broadcast' today, so every email in the Studio reads
     // as a standalone send. The one sequence that ever populated it was the beta launch series, ordered
     // off `campaigns.phase_id`, and it went away with the Beta Command Center.
@@ -358,7 +368,7 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
 export async function saveEmailCampaign(
   id: string,
   patch: {
-    layout?: BuilderLayout | EntityLayout
+    layout?: BuilderLayout | EntityLayout | NodeLayout
     subject?: string
     preheader?: string
     fromName?: string
