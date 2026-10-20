@@ -74,10 +74,22 @@ function brandHeaderHtml(brand: EmailBrand): string {
   </div>`
 }
 
-/** The Space-branded footer: one small line. Frequency is the "sent with", not the masthead. */
+/** The Frequency wordmark, centred (the image already carries "Community Collective"; the alt text says
+ *  it for clients that block images). Absolute URL, as mail needs. */
+function frequencyMarkHtml(): string {
+  const { path, width, height } = emailType.wordmark
+  const w = Math.round(width * 0.7)
+  const h = Math.round(height * 0.7)
+  return `<div style="text-align:center"><img src="${APP}${path}" alt="${SITE_NAME} ${SITE_TAGLINE}" width="${w}" height="${h}" style="display:inline-block;width:${w}px;height:${h}px;border:0"></div>`
+}
+
+/** The Space-branded footer: a link back to the Space's page, the Frequency mark with Community
+ *  Collective, then one small line. Frequency is the "sent with", not the masthead. */
 function brandFooterHtml(brand: EmailBrand): string {
-  return `<div style="padding:18px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
-    <a href="${APP}" style="color:${palette.emailSubtle}">Sent with ${SITE_NAME}</a> · <a href="${esc(brand.url)}" style="color:${palette.emailSubtle}">${esc(brand.name)}</a>
+  return `<div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
+    <div style="margin-bottom:16px"><a href="${esc(brand.url)}" style="color:${palette.emailHeading};font-weight:600;text-decoration:underline">Back to ${esc(brand.name)} on ${SITE_NAME}</a></div>
+    ${frequencyMarkHtml()}
+    <div style="margin-top:12px"><a href="${APP}" style="color:${palette.emailSubtle}">Sent with ${SITE_NAME}</a> · <a href="${esc(brand.url)}" style="color:${palette.emailSubtle}">${esc(brand.name)}</a></div>
   </div>`
 }
 
@@ -107,8 +119,9 @@ export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null): str
     </div>
     <div style="${BODY_STYLE}">${innerHtml}</div>
   </div>
-  <div style="padding:18px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
-    ${SITE_TAGLINE}. <a href="${APP}" style="color:${palette.emailSubtle}">frequencylocal.com</a>
+  <div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
+    ${frequencyMarkHtml()}
+    <div style="margin-top:12px">${SITE_TAGLINE}. <a href="${APP}" style="color:${palette.emailSubtle}">frequencylocal.com</a></div>
   </div>
 </div>`
 }
