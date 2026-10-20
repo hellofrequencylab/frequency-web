@@ -1,14 +1,11 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { DeviceScreen } from '@/components/device-gate'
-import { Section } from '@/components/screen'
-import { Meta } from '@/components/text'
-import { Button, Card, Notice } from '@/components/ui'
 import { useDeviceAction } from '@/device/DeviceProvider'
-import { space } from '@/theme'
+import { Button, Card, Meta, Notice, SectionHeader, SegmentedControl } from '@/ui'
 
-// `sound.tone {hz, ms}` on the CYD's speaker output. A row of notes and a few chimes; the tone returns
-// once it has started.
+// `sound.tone {hz, ms}` on the CYD's speaker output: a row of notes with a length switch, and a few
+// chimes. The tone returns once it has started.
 
 const NOTES = [
   { label: 'C', hz: 262 },
@@ -16,7 +13,7 @@ const NOTES = [
   { label: 'E', hz: 330 },
   { label: 'G', hz: 392 },
   { label: 'A', hz: 440 },
-  { label: 'C′', hz: 523 },
+  { label: 'High C', hz: 523 },
 ]
 
 const CHIMES = [
@@ -27,38 +24,43 @@ const CHIMES = [
 
 export default function Sound() {
   const { run, busy, error } = useDeviceAction()
-  const [ms, setMs] = useState(300)
-  const tone = (hz: number, length = ms) => run('sound.tone', { hz, ms: length })
+  const [ms, setMs] = useState('300')
+  const tone = (hz: number, length = Number(ms)) => run('sound.tone', { hz, ms: length })
 
   return (
     <DeviceScreen>
-      {error ? <Notice tone="live">{error}</Notice> : null}
-      <Section title="Notes">
+      {error ? <Notice tone="broadcast">{error}</Notice> : null}
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Notes" />
         <Card>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[3] }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {NOTES.map((n) => (
-              <View key={n.label} style={{ width: '30%', flexGrow: 1 }}>
-                <Button variant="secondary" label={n.label} accessibilityLabel={`Play ${n.label}, ${n.hz} hertz`} disabled={!!busy} onPress={() => tone(n.hz)} />
+              <View key={n.label} style={{ width: '31%', flexGrow: 1 }}>
+                <Button block label={n.label} accessibilityLabel={`Play ${n.label}, ${n.hz} hertz`} disabled={!!busy} onPress={() => tone(n.hz)} />
               </View>
             ))}
           </View>
-          <View style={{ flexDirection: 'row', gap: space[3] }}>
-            {[150, 300, 800].map((v) => (
-              <View key={v} style={{ flex: 1 }}>
-                <Button compact variant={ms === v ? 'primary' : 'ghost'} label={`${v} ms`} onPress={() => setMs(v)} />
-              </View>
-            ))}
-          </View>
+          <SegmentedControl
+            size="sm"
+            value={ms}
+            onChange={setMs}
+            options={[
+              { value: '150', label: 'Short' },
+              { value: '300', label: 'Medium' },
+              { value: '800', label: 'Long' },
+            ]}
+          />
         </Card>
-      </Section>
-      <Section title="Chimes">
+      </View>
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Chimes" />
         <Card>
           {CHIMES.map((c) => (
-            <Button key={c.label} variant="secondary" icon="sound" label={c.label} disabled={!!busy} onPress={() => tone(c.hz, c.ms)} />
+            <Button key={c.label} block variant="soft" icon="sound" label={c.label} disabled={!!busy} onPress={() => tone(c.hz, c.ms)} />
           ))}
           <Meta>Needs a speaker on the CYD&apos;s speaker header.</Meta>
         </Card>
-      </Section>
+      </View>
     </DeviceScreen>
   )
 }

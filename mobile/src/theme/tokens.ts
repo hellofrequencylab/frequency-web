@@ -1,48 +1,38 @@
 // FREQUENCY TOKENS for React Native: a port, not a redesign.
 //
-// Source of truth: design_handoff/frequency/tokens/ (themes.css, space-motion.css, typography.css),
-// the same export app/themes/frequency/core.css is generated from. The app is the member room, so it
-// wears COMMONS (light, the default) and dims to the Commons night room (Thermal) when the phone is in
-// dark mode, exactly as the web does under `data-time="night"`. Stage (marketing, always dark) is not
-// used here.
+// Source of truth: the LIVE Frequency theme the website wears (`<html data-design="frequency">`):
+// app/themes/frequency.css, the alias layer, over app/themes/frequency/core.css, the token export,
+// with the members kit (kit-members.css, members-ui.css). Where the alias layer overrides the export
+// (canvas, accent, the pastel, muted text, status hues) the alias layer wins, because that is what a
+// member sees. The app is the member room: Commons by day, the Commons night room (Thermal) when the
+// phone is in dark mode, as the web does under `.dark`.
 //
 // Rules carried over from the system (design_handoff/frequency/README.md):
-//   - the crossover hues mean one thing each: violet = act, magenta = live, aqua = presence, sun = reward;
-//   - the pastel accent (`pa`) is for actions, progress and live dots only;
+//   - the pastel (`pa`) is for the one primary action, progress and live dots only;
+//   - Unbounded is for display, numbers and labels, at weight 500, never bold;
 //   - no hex outside this file. Components read `useTheme()`.
-// When the export changes, change the VALUES here; a component never learns a new colour.
+// When the theme changes, change the VALUES here; a component never learns a new colour.
 
 export type ColorScheme = 'light' | 'dark'
-
-/** Crossover hues, `--x-*` in themes.css. Neon on Stage, deep on Commons. */
-export const crossover = {
-  violetNeon: '#8B5CFF',
-  violetDeep: '#5B3FD0',
-  magentaNeon: '#FF2BD6',
-  magentaDeep: '#B0287F',
-  aquaNeon: '#3DF2FF',
-  aquaDeep: '#17788A',
-  sunNeon: '#FFC46B',
-  sunDeep: '#9A6200',
-} as const
 
 export type Palette = {
   canvas: string
   sunken: string
   card: string
   raised: string
-  glass: string
   textStrong: string
   text: string
   textMuted: string
   textFaint: string
-  textOnAccent: string
   border: string
   borderStrong: string
+  /** `--fq-track`: meters and the segmented control's box. */
   track: string
-  action: string
-  actionText: string
-  actionHover: string
+  /** Ink at 4%: the input and segmented-track fill. */
+  fill: string
+  /** The primary action when it is not the pastel: ink on canvas (`.ink`, filled icon buttons). */
+  ink: string
+  onInk: string
   accent: string
   accentSoft: string
   accent2: string
@@ -50,104 +40,118 @@ export type Palette = {
   liveSoft: string
   presence: string
   presenceSoft: string
-  reward: string
-  rewardSoft: string
   focus: string
-  link: string
-  tipBg: string
-  /** The pastel accent gradient stops (`--pa`), for progress and live dots only. */
-  pa: readonly [string, string, string, string]
-  /** Background wash (`--wash`): three soft radial orbs [colour, opacity]. */
+  /** The pastel (`--fq-pa`): gradient stops, the ink that sits on it, and its glow. */
+  pa: readonly [string, string, string]
+  paSoft: readonly [string, string, string]
+  onPa: string
+  paGlow: string
+  /** The glass panel (`--fq-glass-panel`): gradient stops and its inset rim. */
+  glass: readonly [string, string]
+  glassRim: string
+  /** Background wash: soft radial orbs [colour, opacity]. */
   wash: readonly (readonly [string, number])[]
+  /** `.tag` base fill. */
+  tagBg: string
+  tipBg: string
+  onTip: string
+  scrim: string
   success: string
   warning: string
   danger: string
   info: string
+  onStatus: string
 }
 
-/** `:root,[data-theme="commons"]` */
+/** Commons, as the alias layer resolves it (frequency.css :root[data-design="frequency"]). */
 const commons: Palette = {
-  canvas: '#FAF4EA',
-  sunken: '#F2E9DC',
+  canvas: '#F4F6F7',
+  sunken: '#E9EEF1',
   card: '#FFFEFC',
   raised: '#FFFFFF',
-  glass: 'rgba(255,251,245,0.74)',
   textStrong: '#34312E',
   text: '#4D4945',
-  textMuted: '#7C766F',
-  textFaint: '#A59F98',
-  textOnAccent: '#FFFFFF',
+  textMuted: '#6E6862',
+  textFaint: '#6F6961',
   border: 'rgba(30,27,24,0.07)',
   borderStrong: 'rgba(30,27,24,0.2)',
   track: 'rgba(30,27,24,0.06)',
-  action: crossover.violetDeep,
-  actionText: '#FFFFFF',
-  actionHover: '#4A31B8',
-  accent: crossover.violetDeep,
-  accentSoft: '#ECE6FF',
-  accent2: crossover.aquaDeep,
-  live: crossover.magentaDeep,
+  fill: 'rgba(30,27,24,0.04)',
+  ink: '#34312E',
+  onInk: '#F4F6F7',
+  accent: '#3A8C99',
+  accentSoft: '#E4F3F4',
+  accent2: '#17788A',
+  live: '#B0287F',
   liveSoft: '#FBE3F1',
-  presence: crossover.aquaDeep,
+  presence: '#156D7E',
   presenceSoft: '#DDF3F5',
-  reward: crossover.sunDeep,
-  rewardSoft: '#FFF0D6',
-  focus: crossover.violetDeep,
-  link: crossover.violetDeep,
-  tipBg: 'rgba(52,49,46,0.92)',
-  pa: ['#EEC1EC', '#C4B8FF', '#A3D4FF', '#8FE9FF'],
+  focus: '#34312E',
+  pa: ['#A3D4FF', '#8FE9FF', '#A3E8D4'],
+  paSoft: ['rgba(163,212,255,0.24)', 'rgba(143,233,255,0.2)', 'rgba(163,232,212,0.2)'],
+  onPa: '#34312E',
+  paGlow: 'rgba(120,150,225,0.55)',
+  glass: ['rgba(255,252,246,0.7)', 'rgba(255,248,238,0.34)'],
+  glassRim: 'rgba(255,255,255,0.8)',
   wash: [
-    ['#D6BEFA', 0.24],
-    ['#8FE9FF', 0.28],
-    ['#B8A2FF', 0.18],
+    ['#A3D4FF', 0.26],
+    ['#8FE9FF', 0.24],
+    ['#A3E8D4', 0.18],
   ],
-  // colors.css semantic status (day).
-  success: '#2F7F5A',
-  warning: '#A86A00',
-  danger: '#C2362B',
-  info: '#2F6F8F',
+  tagBg: 'rgba(255,255,255,0.7)',
+  tipBg: 'rgba(52,49,46,0.92)',
+  onTip: '#F4F6F7',
+  scrim: 'rgba(7,11,20,0.6)',
+  success: '#296E4E',
+  warning: '#895700',
+  danger: '#B23227',
+  info: '#2C6886',
+  onStatus: '#FFFFFF',
 }
 
-/** `[data-theme="commons"][data-time="night"]`: the Thermal room, crossover hues lifted. */
+/** The Commons night room (`.dark`): Thermal grounds, lifted hues. */
 const commonsNight: Palette = {
   canvas: '#0E0B09',
   sunken: '#090706',
   card: '#18120E',
   raised: '#221A14',
-  glass: 'rgba(34,26,20,0.7)',
   textStrong: '#FBF2E6',
   text: '#E3D6C6',
   textMuted: '#B3A391',
-  textFaint: '#857767',
-  textOnAccent: '#120C08',
+  textFaint: '#908170',
   border: 'rgba(251,242,230,0.09)',
   borderStrong: 'rgba(251,242,230,0.2)',
   track: 'rgba(251,242,230,0.08)',
-  action: '#A68BFF',
-  actionText: '#120C08',
-  actionHover: '#BBA6FF',
-  accent: '#A68BFF',
-  accentSoft: 'rgba(166,139,255,0.14)',
+  fill: 'rgba(251,242,230,0.05)',
+  ink: '#FBF2E6',
+  onInk: '#0E0B09',
+  accent: '#3DF2FF',
+  accentSoft: 'rgba(61,242,255,0.14)',
   accent2: '#5FD9E6',
   live: '#FF6FD8',
   liveSoft: 'rgba(255,111,216,0.14)',
   presence: '#5FD9E6',
   presenceSoft: 'rgba(95,217,230,0.12)',
-  reward: '#FFC46B',
-  rewardSoft: 'rgba(255,196,107,0.12)',
-  focus: '#5FD9E6',
-  link: '#BBA6FF',
-  tipBg: 'rgba(251,242,230,0.94)',
-  pa: ['#EEC1EC', '#C4B8FF', '#A3D4FF', '#8FE9FF'],
+  focus: '#FBF2E6',
+  pa: ['#A3D4FF', '#8FE9FF', '#A3E8D4'],
+  paSoft: ['rgba(163,212,255,0.14)', 'rgba(143,233,255,0.12)', 'rgba(163,232,212,0.12)'],
+  onPa: '#1E1B18',
+  paGlow: 'rgba(163,212,255,0.35)',
+  glass: ['rgba(34,26,20,0.7)', 'rgba(34,26,20,0.45)'],
+  glassRim: 'rgba(251,242,230,0.08)',
   wash: [
-    ['#A68BFF', 0.12],
-    ['#5FD9E6', 0.1],
+    ['#A3D4FF', 0.1],
+    ['#5FD9E6', 0.08],
   ],
-  // Night status: the Thermal room's own hues (colors.css night B).
-  success: '#7CC97F',
-  warning: '#FFA33A',
-  danger: '#FF6A2B',
-  info: '#3FD6C8',
+  tagBg: 'rgba(34,26,20,0.75)',
+  tipBg: 'rgba(251,242,230,0.94)',
+  onTip: '#0E0B09',
+  scrim: 'rgba(7,11,20,0.6)',
+  success: '#3FA374',
+  warning: '#C98200',
+  danger: '#DC685F',
+  info: '#3E94BE',
+  onStatus: '#120C08',
 }
 
 export const palettes: Record<ColorScheme, Palette> = { light: commons, dark: commonsNight }
@@ -158,20 +162,25 @@ export const space = [0, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 88, 120] as co
 /** Phone gutter, `--gutter-mobile`. */
 export const gutter = 18
 
-/** `--radius-s|m|l|xl|orb`. Roles: control = m, card = l, feature = xl, chip = orb. */
-export const radius = { s: 10, m: 16, l: 24, xl: 36, orb: 999 } as const
+/** `--radius-s|m|l|xl|orb`. Roles: input = m, card and panel = l, sheet = 28, chip and button = orb. */
+export const radius = { s: 10, m: 16, l: 24, sheet: 28, xl: 36, orb: 999 } as const
 
-/** `--hit-min`: the smallest tap target. */
+/** `--hit-min` / `--tap-min`: the smallest tap target. */
 export const hitMin = 44
 
-/** `--dur-fast|base|slow` in ms. */
+/** `--dur-fast|base|slow` in ms; 0 under reduced motion (see src/ui/motion.ts). */
 export const duration = { fast: 160, base: 260, slow: 480 } as const
 
-/** The three faces (typography.css), as loaded font family names (src/theme/fonts.ts). */
+/** Easing curves (space-motion.css) as cubic-bezier control points. */
+export const easing = {
+  out: [0.16, 1, 0.3, 1],
+  breath: [0.45, 0, 0.55, 1],
+  drop: [0.7, 0, 0.3, 1],
+} as const
+
+/** The three faces, as loaded font family names (src/theme/fonts.ts). Unbounded only at 500. */
 export const fonts = {
-  display: 'Unbounded_600SemiBold',
-  displayMedium: 'Unbounded_500Medium',
-  displayBold: 'Unbounded_700Bold',
+  display: 'Unbounded_500Medium',
   sans: 'HankenGrotesk_400Regular',
   sansMedium: 'HankenGrotesk_500Medium',
   sansSemiBold: 'HankenGrotesk_600SemiBold',
@@ -179,23 +188,33 @@ export const fonts = {
   serifItalic: 'InstrumentSerif_400Regular_Italic',
 } as const
 
-/** The type scale (typography.css), phone sizes. Display steps are the h-steps: the
- *  96/64px display sizes are marketing-only and never appear in the member room. */
+/** The member type scale (members-ui.css / kit-members.css), phone sizes. */
 export const type = {
-  h1: { fontSize: 30, lineHeight: 34, letterSpacing: -0.6 },
-  h2: { fontSize: 22, lineHeight: 26, letterSpacing: -0.33 },
-  h3: { fontSize: 18, lineHeight: 22, letterSpacing: -0.18 },
-  bodyL: { fontSize: 19, lineHeight: 29 },
+  /** Page title. */
+  h1: { fontSize: 28, lineHeight: 32, letterSpacing: -1.1 },
+  /** `.h2` section title: Unbounded 500 22/1.1, -.035em. */
+  h2: { fontSize: 22, lineHeight: 24, letterSpacing: -0.77 },
+  /** `.h3` card title: Unbounded 500 17/1.2, -.025em. */
+  h3: { fontSize: 17, lineHeight: 20, letterSpacing: -0.43 },
   body: { fontSize: 16, lineHeight: 25 },
-  bodyS: { fontSize: 14, lineHeight: 21 },
+  /** Buttons and inputs: Hanken 15. */
+  control: { fontSize: 15, lineHeight: 18 },
+  bodyS: { fontSize: 14, lineHeight: 20 },
+  /** `.t2` / `.meta`: 13/1.35. */
   meta: { fontSize: 13, lineHeight: 18 },
-  /** `--text-label` 11px, Unbounded, tracked 0.14em, uppercase. */
+  /** `.k` label: Unbounded 500 11px, tracked .14em, uppercase. */
   label: { fontSize: 11, lineHeight: 14, letterSpacing: 1.54 },
-  serifM: { fontSize: 26, lineHeight: 30 },
+  serif: { fontSize: 26, lineHeight: 30 },
 } as const
 
-/** `--shadow-1` / `--shadow-2` as React Native shadows (iOS props + Android elevation). */
+/** `--shadow-1|2|float` as React Native shadows (boxShadow strings, RN 0.76+ with the new arch). */
 export const shadow = {
-  1: { shadowColor: '#1E1B18', shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
-  2: { shadowColor: '#1E1B18', shadowOpacity: 0.28, shadowRadius: 40, shadowOffset: { width: 0, height: 18 }, elevation: 6 },
+  1: '0px 1px 2px rgba(30,27,24,0.06), 0px 4px 14px -6px rgba(30,27,24,0.12)',
+  2: '0px 2px 6px rgba(30,27,24,0.06), 0px 18px 40px -18px rgba(30,27,24,0.28)',
+  float: '0px 30px 80px -30px rgba(30,27,24,0.45)',
+  /** `.card`. */
+  card: '0px 1px 2px rgba(60,40,20,0.04), 0px 22px 50px -36px rgba(80,50,20,0.34)',
+  /** `.panel` (day). */
+  panel: '0px 1px 2px rgba(60,40,20,0.04), 0px 24px 50px -36px rgba(80,50,20,0.32)',
+  panelNight: '0px 20px 50px -30px rgba(0,0,0,0.6)',
 } as const

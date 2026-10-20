@@ -1,13 +1,57 @@
 # Frequency Experience
 
-The Frequency app for Android: your Regulars stamp cards, reward codes and Zaps, check-in by tapping a
-venue tag, and a remote for your CyberUnicorn 5000 over USB or Bluetooth. How it is built:
+The Frequency app for Android. This first version is a remote for your CyberUnicorn 5000, over a USB
+cable or Bluetooth. It works with no Frequency account and no internet. Your Frequency account (stamp
+cards, Zaps, check-in) comes to the app's Frequency tab next. How it is built:
 [`docs/MOBILE-APP.md`](../docs/MOBILE-APP.md).
 
-It uses native modules (NFC, Bluetooth, USB serial), so it runs as a **development build**, not in Expo
-Go.
+## Install it on your phone (no cable, no developer options)
 
-## Run it on your computer
+1. Get `frequency-experience.apk` onto the phone: email it to yourself, put it in Google Drive, or use
+   any file share, then tap it in the Files app or the download notification.
+2. Android asks to allow installs from that app (Files, Drive, Gmail or Chrome). Turn on **Allow from
+   this source** for this one install, then go back and tap **Install**.
+3. If Play Protect warns that it does not recognise the developer, tap **More details**, then **Install
+   anyway**. The APK is signed with a development key, not a Play Store key, so this warning is
+   expected.
+4. Open **Frequency Experience**.
+
+To update, install the new APK the same way: it replaces the old one and keeps nothing you need.
+
+## Connect the CyberUnicorn 5000
+
+**USB (OTG).** Use an OTG adapter that ends in **USB-A**, then a USB-A to USB-C cable to the CyberUnicorn.
+A USB-C to USB-C cable will not power it (the board has no CC pull-downs). Android asks once to let
+Frequency Experience use the device: tap OK, and tick "always" to skip it next time. With "always" on,
+plugging the gadget in offers to open the app. The app opens the port without touching the reset lines
+(DTR and RTS stay low), so the board keeps running. The phone powers the board and the hat, so watch the
+phone's battery with the radios on.
+
+**Bluetooth.** On the CyberUnicorn open **Remote**, then **Bluetooth now** (or run `remote ble on`). In
+the app: Connect, Bluetooth. It shows up as **CU5K**. Android asks for **Nearby devices** the first time.
+Turn the gadget's Bluetooth off when you are done: it is open to anyone in range.
+
+Either way your phone stays on its own Wi-Fi.
+
+**Internet.** Coming soon (it needs the device relay on the Frequency server first).
+
+## What you can do
+
+| Screen | What it does | Device command |
+|---|---|---|
+| Device (home) | Connection, status, memory, Wi-Fi and Bluetooth, the hat module | `system.status`, `hat.probe` |
+| Light Show | Play and stop, scenes, brightness | `lightshow.state`, `lightshow.set` |
+| LED colour | Colour wheel and modes | `led.set`, `led.mode` |
+| Sound | Notes and chimes | `sound.tone` |
+| Sensors | Light level and any sensors, live | `light.read`, `sensors.read` |
+| Screen remote | Previous, next, select, back on the gadget's own screen | `screen.nav`, `apps.list` |
+| Tag writer | Write a pasted Frequency check-in link to an NFC tag and read it back | `frequency.write_tag`, `frequency.read_tag` |
+| Console | Run any Bruce command, or watch the serial stream | `cli.run` |
+
+A command whose app is not in the firmware yet answers "Not in this firmware yet." That is expected
+until its branch is merged.
+
+## For developers
 
 From `mobile/`:
 
@@ -16,91 +60,40 @@ pnpm install
 ```
 
 ```bash
-cp .env.example .env
-```
-
-Fill in `.env`. Point `EXPO_PUBLIC_API_URL` at your laptop's LAN address while `pnpm dev` runs in the
-repo root (for example `http://192.168.1.20:3000`), or at a preview deployment. Do not point a
-development build at production by accident.
-
-Checks:
-
-```bash
 pnpm check
 ```
 
-That is `pnpm typecheck`, `pnpm lint` and `pnpm test` (the protocol and link parsers, under Node).
+That runs the typecheck, lint and tests (the protocol, byte and link parsers, under Node).
 
-### Android emulator or a phone on a cable
+### Build the APK
 
-Needs JDK 17, the Android SDK (`ANDROID_HOME`) and either a running emulator or a phone with USB
-debugging on.
+Needs JDK 17 and the Android SDK (`ANDROID_HOME`). The first build downloads Gradle and its
+dependencies and takes a while.
+
+```bash
+pnpm prebuild
+```
+
+```bash
+pnpm build:apk:local
+```
+
+The APK lands in `android/app/build/outputs/apk/release/app-release.apk`. It is a release build with the
+JavaScript inside, signed with the development key, so it installs and runs on its own without a dev
+server.
+
+### Run in the emulator or on a phone with a cable
+
+With an emulator running or a phone with USB debugging on:
 
 ```bash
 pnpm android
 ```
 
-That runs `expo run:android`: it generates `android/`, builds a debug APK, installs it and starts Metro.
-After the first build, `pnpm start` is enough while you only change JavaScript.
+That builds a debug app, installs it and starts Metro. After that, `pnpm start` is enough while you only
+change JavaScript.
 
-## Install on your Android phone (EAS development build)
+### Cloud build (optional)
 
-1. Install the EAS CLI and sign in to your Expo account (your own login, in your terminal):
-
-   ```bash
-   npx eas-cli@latest login
-   ```
-
-2. Link the project once. It prints a project id: put it in `.env` as `EAS_PROJECT_ID`.
-
-   ```bash
-   npx eas-cli@latest init
-   ```
-
-3. Build the development APK in the cloud:
-
-   ```bash
-   pnpm build:apk
-   ```
-
-4. When it finishes, open the link EAS prints **on the phone** (or scan its QR code) and install the APK.
-   Android asks you to allow installs from your browser: allow it for this install.
-5. On your computer, run `pnpm start` and open the app on the phone. It finds Metro on the same Wi-Fi,
-   or scan the QR code Metro shows.
-
-### Or install over a USB cable with adb
-
-1. On the phone: Settings, About phone, tap **Build number** seven times. Developer options appear.
-2. Settings, System, Developer options: turn on **USB debugging**.
-3. Plug the phone into the computer and tap **Allow** on the phone's prompt.
-4. Check it is seen, then build and install:
-
-   ```bash
-   adb devices
-   ```
-
-   ```bash
-   pnpm android
-   ```
-
-## Connect the CyberUnicorn 5000
-
-**USB (OTG).** Use an OTG adapter that ends in **USB-A**, then a USB-A to USB-C cable to the CyberUnicorn.
-A USB-C to USB-C cable will not power it (the board has no CC pull-downs). Android asks once to let
-Frequency Experience use the device: tap OK (tick "always" to skip it next time). The app opens the
-port without touching the reset lines, so the board keeps running. The phone powers the board and the
-hat, so watch the phone's battery with the radios on.
-
-**Bluetooth.** On the CyberUnicorn open **Remote**, then **Bluetooth now** (or run `remote ble on`).
-In the app: Device, Connect, Bluetooth. It shows up as **CU5K**. Android asks for **Nearby devices**
-the first time. Turn Bluetooth on the gadget off again when you are done; it is open to anyone in range.
-
-Either way your phone stays on its own Wi-Fi.
-
-**Internet.** Coming soon (it needs the device relay on the server).
-
-## What needs the real hardware
-
-The USB and Bluetooth links and every device screen can only be proved with the CyberUnicorn in hand.
-Commands whose app is not in the firmware yet (LED, sound, sensors, the `frequency.*` tag commands)
-answer "Not in this firmware yet" until their branches merge.
+`pnpm build:apk` runs an EAS development build in the cloud. It needs your own Expo account
+(`npx eas-cli@latest login`, then `npx eas-cli@latest init`).

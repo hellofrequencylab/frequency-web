@@ -172,8 +172,6 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `GET` / `PATCH /api/v1/profile` | bearer or cookie | The caller's own `ProfileView`. PATCH `{ displayName?, handle?, bio?, website?, city? }` edits through the web's `updateProfile`; a field left out keeps its value. A taken handle is `conflict`. |
 | `GET /api/v1/profile/{handle}` | bearer or cookie | A member's public profile (public fields only) with `blockedByMe`. |
 | `POST` / `DELETE /api/v1/push/devices` | bearer or cookie | Register `{ platform, provider, token, appVersion? }` or revoke `{ token }` the caller's device. Sends run after the same send gate as web push (`lib/push.ts`), so the member's notification settings apply. |
-| `GET /api/v1/rewards` | bearer or cookie | `RewardsView`: what the web's `/rewards` shows. Every Regulars stamp card the caller holds with its open reward codes, plus the caller's season Zaps and streak. `enabled: false` with no cards while `LOYALTY_ENABLED` is off. |
-| `GET /api/v1/spaces/checkin-links` | bearer or cookie | `{ items }`: the signed `/n/<nodeId>?s=` check-in link of each Space the caller runs (owner or active admin), for the app's NFC tag writer. Runs the web's `ensureCheckinNode` as the caller, as opening the Space's check-in settings does. |
 
 Still filed as their own rows: push devices (`LIVE-720`) and in-app purchase.
 

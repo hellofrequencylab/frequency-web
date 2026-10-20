@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { DeviceScreen } from '@/components/device-gate'
-import { Section } from '@/components/screen'
-import { Meta, Subheading } from '@/components/text'
-import { Button, Card, Chip, Notice, Row, Segmented } from '@/components/ui'
 import { useDevice, useDeviceAction } from '@/device/DeviceProvider'
 import { LIGHTSHOW_LEVELS, type LightShowState } from '@/device/types'
-import { space, useTheme } from '@/theme'
+import { Badge, Button, LiveDot, Meta, Meter, Notice, Panel, SectionHeader, SegmentedControl, Subheading } from '@/ui'
 
 // Light Show remote: `lightshow.state` / `lightshow.set {scene?, level?, running?}`, kept live by the
-// `lightshow.state` event (the device's own buttons change it too).
+// `lightshow.state` event (the device's own buttons change it too). Scenes are a vertical segmented
+// list, brightness is a segmented row with its meter, play and stop is the one primary action.
 
 export default function LightShow() {
   const { onEvent, call } = useDevice()
   const { run, busy, error } = useDeviceAction()
-  const { c } = useTheme()
   const [show, setShow] = useState<LightShowState | null>(null)
   const [note, setNote] = useState<string | null>(null)
 
@@ -22,7 +19,7 @@ export default function LightShow() {
     call<LightShowState>('lightshow.state').then(setShow, (e: unknown) => setNote(e instanceof Error ? e.message : 'Could not read the show.'))
     return onEvent((e) => {
       if (e.event === 'lightshow.state' && e.data && typeof e.data === 'object') setShow(e.data as LightShowState)
-      if (e.event === 'lightshow.error') setNote(((e.data as { message?: string } | null)?.message ?? 'The show could not start.') as string)
+      if (e.event === 'lightshow.error') setNote((e.data as { message?: string } | null)?.message ?? 'The show could not start.')
     })
   }, [call, onEvent])
 
@@ -34,51 +31,51 @@ export default function LightShow() {
 
   const scenes = show?.scenes ?? []
   const levels = LIGHTSHOW_LEVELS.slice(0, show?.level_count ?? LIGHTSHOW_LEVELS.length)
+  const level = show?.level ?? 0
 
   return (
     <DeviceScreen>
-      <Card>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4] }}>
-          <View style={{ flex: 1, gap: space[2] }}>
+      <Panel>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <LiveDot on={!!show?.running} />
+          <View style={{ flex: 1, gap: 2 }}>
             <Subheading>{show?.scene_name ?? 'Light Show'}</Subheading>
-            <Meta>{show?.running ? 'Playing' : 'Stopped'}{show?.pin != null && show.pin >= 0 ? ` · LED strip on pin ${show.pin}` : ' · screen only'}</Meta>
+            <Meta>{show?.pin != null && show.pin >= 0 ? `LED strip on pin ${show.pin}` : 'Screen only'}</Meta>
           </View>
-          <Chip label={show?.running ? 'Live' : 'Off'} tone={show?.running ? 'live' : 'muted'} />
+          <Badge label={show?.running ? 'Playing' : 'Stopped'} tone={show?.running ? 'broadcast' : 'neutral'} />
         </View>
         <Button
-          label={show?.running ? 'Stop' : 'Play'}
+          block
+          variant={show?.running ? 'ink' : 'primary'}
           icon={show?.running ? 'close' : 'sun'}
-          busy={busy === 'lightshow.set'}
+          label={show?.running ? 'Stop the show' : 'Play the show'}
+          loading={busy === 'lightshow.set'}
           onPress={() => set({ running: !show?.running })}
         />
         <Meta>Play works from the device&apos;s main menu. If it says busy, press Back on the screen remote a few times first.</Meta>
-      </Card>
-      {error ? <Notice tone="live">{error}</Notice> : null}
-      {note ? <Notice tone="live">{note}</Notice> : null}
+      </Panel>
+      {error ? <Notice tone="broadcast">{error}</Notice> : null}
+      {note ? <Notice tone="broadcast">{note}</Notice> : null}
 
-      <Section title="Brightness">
-        <Segmented
-          value={String(show?.level ?? 0)}
-          onChange={(v) => set({ level: Number(v) })}
-          options={levels.map((pct, i) => ({ value: String(i), label: `${pct}%` }))}
-        />
-      </Section>
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Brightness" />
+        <SegmentedControl value={String(level)} onChange={(v) => set({ level: Number(v) })} options={levels.map((pct, i) => ({ value: String(i), label: `${pct}%` }))} />
+        <Meter label="Brightness" value={levels[level] ?? 0} max={40} reading={`${show?.level_percent ?? levels[level] ?? 0}%`} />
+      </View>
 
-      <Section title="Scenes" count={scenes.length}>
-        <Card padded={false} style={{ padding: space[3] }}>
-          {scenes.map((name, i) => (
-            <Row
-              key={name}
-              icon={i === show?.scene ? 'check' : 'sun'}
-              tint={i === show?.scene ? c.live : undefined}
-              title={name}
-              onPress={() => set({ scene: i })}
-              trailing={i === show?.scene ? <Chip label="Now" tone="live" /> : undefined}
-            />
-          ))}
-          {scenes.length === 0 ? <Meta style={{ padding: space[4] }}>No scenes reported yet.</Meta> : null}
-        </Card>
-      </Section>
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Scenes" count={scenes.length} />
+        {scenes.length ? (
+          <SegmentedControl
+            vertical
+            value={show?.scene != null ? String(show.scene) : null}
+            onChange={(v) => set({ scene: Number(v) })}
+            options={scenes.map((name, i) => ({ value: String(i), label: name, icon: 'sun' }))}
+          />
+        ) : (
+          <Meta>No scenes reported yet.</Meta>
+        )}
+      </View>
     </DeviceScreen>
   )
 }

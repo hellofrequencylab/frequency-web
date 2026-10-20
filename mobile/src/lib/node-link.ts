@@ -3,14 +3,22 @@
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export type NodeLink = { nodeId: string; secret: string | null }
+type NodeLink = { nodeId: string; secret: string | null }
 
-/** Parse a check-in link from a tag, a deep link or a pasted URL. Accepts the site's https link (any
- *  host in `hosts`), the app's own `frequency://n/<id>` scheme and a bare `/n/<id>` path. */
-export function parseNodeLink(input: string, hosts: readonly string[]): NodeLink | null {
+/** The production site. A check-in link from any other host (a local or preview deployment) is still
+ *  a valid link; the tag writer just says so. */
+export const SITE_HOST = 'frequencylocal.com'
+
+type ParsedNodeLink = NodeLink & { host: string | null }
+
+/** Parse a check-in link from a tag, a deep link or a pasted URL. Accepts an http(s) link on a host in
+ *  `hosts` (or any host when `hosts` is '*'), the app's own `frequency://n/<id>` scheme and a bare
+ *  `/n/<id>` path. */
+export function parseNodeLink(input: string, hosts: readonly string[] | '*'): ParsedNodeLink | null {
   const text = input.trim()
   let path: string
   let query: string
+  let linkHost: string | null = null
   const m = /^([a-z][a-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(\?[^#]*)?/i.exec(text)
   if (m) {
     const scheme = m[1]!.toLowerCase()
@@ -18,8 +26,9 @@ export function parseNodeLink(input: string, hosts: readonly string[]): NodeLink
     if (scheme === 'frequency') {
       // frequency://n/<id>: the "host" is the first path segment.
       path = `/${host}${m[3] ?? ''}`
-    } else if ((scheme === 'https' || scheme === 'http') && hosts.some((h) => h.toLowerCase() === host)) {
+    } else if ((scheme === 'https' || scheme === 'http') && (hosts === '*' || hosts.some((h) => h.toLowerCase() === host))) {
       path = m[3] ?? ''
+      linkHost = host
     } else {
       return null
     }
@@ -35,7 +44,7 @@ export function parseNodeLink(input: string, hosts: readonly string[]): NodeLink
   if (!pm) return null
   const nodeId = decodeURIComponent(pm[1]!)
   if (!UUID.test(nodeId)) return null
-  return { nodeId: nodeId.toLowerCase(), secret: readParam(query, 's') }
+  return { nodeId: nodeId.toLowerCase(), secret: readParam(query, 's'), host: linkHost }
 }
 
 function readParam(query: string, name: string): string | null {

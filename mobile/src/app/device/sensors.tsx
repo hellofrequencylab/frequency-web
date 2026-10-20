@@ -1,26 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { useFocusEffect } from 'expo-router'
-import { Progress } from '@/components/game'
 import { DeviceScreen } from '@/components/device-gate'
-import { Section } from '@/components/screen'
-import { Body, Count, Label, Meta } from '@/components/text'
-import { Button, Card, Notice } from '@/components/ui'
 import { DeviceError } from '@/device/client'
 import { useDevice } from '@/device/DeviceProvider'
 import { describeDeviceError } from '@/device/protocol'
 import type { LightRead, SensorsRead } from '@/device/types'
-import { space } from '@/theme'
+import { Card, Counter, Meta, Notice, ProgressTrack, SectionHeader, Skeleton, Switch } from '@/ui'
 
-// `light.read` (the CYD's light sensor) and `sensors.read` (whatever the Sensors app finds), polled
-// every 3 seconds while this screen is open.
+// `light.read` (the CYD's light sensor) and `sensors.read` (whatever the Sensors app finds), read every
+// 3 seconds while this screen is open and Live is on.
 
 type Reading<T> = { data: T | null; error: string | null }
 
 export default function Sensors() {
   const { call } = useDevice()
-  const [light, setLight] = useState<Reading<LightRead>>({ data: null, error: null })
-  const [sensors, setSensors] = useState<Reading<SensorsRead>>({ data: null, error: null })
+  const [light, setLight] = useState<Reading<LightRead> | null>(null)
+  const [sensors, setSensors] = useState<Reading<SensorsRead> | null>(null)
   const [live, setLive] = useState(true)
   const busy = useRef(false)
 
@@ -34,13 +30,16 @@ export default function Sensors() {
         return { data: null, error: e instanceof DeviceError ? describeDeviceError(e.code, e.message) : 'Could not read.' }
       }
     }
-    setLight(await grab<LightRead>('light.read'))
-    setSensors(await grab<SensorsRead>('sensors.read'))
+    const l = await grab<LightRead>('light.read')
+    const s = await grab<SensorsRead>('sensors.read')
+    setLight(l)
+    setSensors(s)
     busy.current = false
   }, [call])
 
   useEffect(() => {
-    void read()
+    const t = setTimeout(() => void read(), 0)
+    return () => clearTimeout(t)
   }, [read])
 
   useFocusEffect(
@@ -53,39 +52,57 @@ export default function Sensors() {
 
   return (
     <DeviceScreen>
-      <Section title="Light">
+      <Card>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Meta>Live readings every 3 seconds</Meta>
+          </View>
+          <Switch value={live} onChange={setLive} label="Live readings" />
+        </View>
+      </Card>
+
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Light" />
         <Card>
-          {light.data ? (
+          {light == null ? (
             <>
-              <Count>{light.data.percent != null ? `${Math.round(light.data.percent)}%` : '–'}</Count>
-              <Progress value={light.data.percent ?? 0} max={100} />
-              {light.data.raw != null ? <Meta>Raw {light.data.raw}</Meta> : null}
+              <Skeleton width="30%" height={26} />
+              <Skeleton height={8} />
+            </>
+          ) : light.data ? (
+            <>
+              <Counter icon="sun" label="Light level" value={light.data.percent != null ? Math.round(light.data.percent) : null} unit="%" />
+              <ProgressTrack value={light.data.percent ?? 0} max={100} size="lg" label="Light level" />
+              {light.data.raw != null ? <Meta>Raw reading {light.data.raw}</Meta> : null}
             </>
           ) : (
-            <Notice tone="info">{light.error ?? 'Reading…'}</Notice>
+            <Notice tone="info">{light.error}</Notice>
           )}
         </Card>
-      </Section>
-      <Section title="Sensors" count={sensors.data?.sensors?.length}>
+      </View>
+
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Sensors" count={sensors?.data?.sensors?.length} />
         <Card>
-          {sensors.data?.sensors?.length ? (
-            sensors.data.sensors.map((s, i) => (
-              <View key={`${s.name}-${s.kind}-${i}`} style={{ flexDirection: 'row', alignItems: 'baseline', gap: space[4] }}>
-                <View style={{ flex: 1 }}>
-                  <Body>{s.name ?? 'Sensor'}</Body>
-                  {s.kind ? <Label>{s.kind}</Label> : null}
+          {sensors == null ? (
+            <Skeleton width="60%" />
+          ) : sensors.data?.sensors?.length ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 }}>
+              {sensors.data.sensors.map((s, i) => (
+                <View key={`${s.name}-${s.kind}-${i}`} style={{ width: '50%' }}>
+                  <Counter
+                    label={`${s.name ?? 'Sensor'}${s.kind ? ` · ${s.kind}` : ''}`}
+                    value={typeof s.value === 'number' ? Number(s.value.toFixed(1)) : s.value ?? null}
+                    unit={s.unit === 'C' ? '°C' : s.unit}
+                  />
                 </View>
-                <Body style={{ fontVariant: ['tabular-nums'] }}>
-                  {typeof s.value === 'number' ? s.value.toFixed(1) : s.value ?? '–'} {s.unit === 'C' ? '°C' : s.unit ?? ''}
-                </Body>
-              </View>
-            ))
+              ))}
+            </View>
           ) : (
             <Notice tone="info">{sensors.error ?? 'No sensors reported.'}</Notice>
           )}
         </Card>
-      </Section>
-      <Button variant="secondary" label={live ? 'Pause' : 'Resume live readings'} onPress={() => setLive((v) => !v)} />
+      </View>
     </DeviceScreen>
   )
 }

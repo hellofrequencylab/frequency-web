@@ -1,58 +1,43 @@
 import { useState } from 'react'
-import { ActivityIndicator, View } from 'react-native'
-import { router } from 'expo-router'
+import { View } from 'react-native'
 import { DeviceScreen } from '@/components/device-gate'
-import { Icon } from '@/components/icon'
-import { Section } from '@/components/screen'
-import { Body, BodySmall, Meta, Subheading } from '@/components/text'
-import { Button, Card, Chip, Field, Notice, Row } from '@/components/ui'
 import { useDeviceAction } from '@/device/DeviceProvider'
 import { utf8Encode } from '@/device/bytes'
 import { encodeRequest, MAX_REQUEST_BYTES } from '@/device/protocol'
 import type { TagRead, TagWritten } from '@/device/types'
-import { api } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
-import { CHECKIN_HOSTS, WEB_HOST } from '@/lib/env'
-import { parseNodeLink } from '@/lib/node-link'
-import { useRemote } from '@/lib/use-remote'
-import { space, useTheme } from '@/theme'
+import { parseNodeLink, SITE_HOST } from '@/lib/node-link'
+import { Badge, Body, BodySmall, Button, Card, Field, Meta, Notice, Panel, SectionHeader, Soft, Subheading, useConfirm } from '@/ui'
 
-// Write a Frequency check-in tag with the CyberUnicorn's PN532: pick the check-in link of a Space you
-// run (GET /api/v1/spaces/checkin-links) or paste one, then `frequency.write_tag {url}`. Only Frequency
-// /n/ links are written, so a tag made here always checks someone in. The tag spec (docs/LOYALTY.md §6)
-// is ONE NDEF URI record and nothing else, so no label is sent: the name shown here stays on the phone.
-// The link is never built or retyped on the phone; it is the server-signed one. `frequency.read_tag`
-// reads a tag back and the screen compares its URL to the one sent.
-
-type Target = { url: string; label: string }
+// Write a Frequency check-in tag with the CyberUnicorn's PN532. Paste the Space's check-in link (Space,
+// Settings, Check in, Copy), then `frequency.write_tag {url}`. The tag holds ONE NDEF URI record and
+// nothing else (docs/LOYALTY.md §6), so no label is sent. The link is never built or retyped here: it
+// is the server-signed one, checked only for its /n/<id>?s= shape. `frequency.read_tag` reads a tag
+// back and the screen compares its URL with the one sent.
 
 export default function TagWriter() {
-  const { c } = useTheme()
-  const { session } = useAuth()
-  const { run, busy, error, setError } = useDeviceAction()
-  const { data: links, error: linksError } = useRemote(session ? session.user.id : null, api.checkinLinks)
-  const [target, setTarget] = useState<Target | null>(null)
+  const confirm = useConfirm()
+  const { run, busy, error } = useDeviceAction()
   const [pasted, setPasted] = useState('')
   const [written, setWritten] = useState<TagWritten | null>(null)
   const [read, setRead] = useState<TagRead | null>(null)
 
-  const usePasted = () => {
-    const link = parseNodeLink(pasted, CHECKIN_HOSTS)
-    if (!link) {
-      setError('Paste a Frequency check-in link, the kind that starts with https://' + WEB_HOST + '/n/.')
-      return
-    }
-    setError(null)
-    setTarget({ url: pasted.trim(), label: 'Frequency check-in' })
-  }
-
-  const tooLong = target ? utf8Encode(encodeRequest(999999, 'frequency.write_tag', { url: target.url })).length > MAX_REQUEST_BYTES : false
+  const url = pasted.trim()
+  const link = url ? parseNodeLink(url, '*') : null
+  const shapeError = url && !link ? 'That is not a Frequency check-in link. It looks like https://frequencylocal.com/n/…?s=…' : null
+  const unsigned = link && !link.secret ? 'This link has no ?s= code, so it will not check anyone in. Copy it again from Check in settings.' : null
+  const offSite = !!link?.host && link.host !== SITE_HOST
+  const tooLong = link ? utf8Encode(encodeRequest(999999, 'frequency.write_tag', { url })).length > MAX_REQUEST_BYTES : false
 
   const write = async () => {
-    if (!target) return
+    if (!link) return
+    if (
+      offSite &&
+      !(await confirm({ title: 'Not a frequencylocal.com link', body: `This link is from ${link.host}. Write it anyway? Fine for testing, not for a tag on the wall.`, confirm: 'Write it', variant: 'ink' }))
+    )
+      return
     setWritten(null)
     setRead(null)
-    const r = await run<TagWritten>('frequency.write_tag', { url: target.url })
+    const r = await run<TagWritten>('frequency.write_tag', { url })
     if (r) setWritten(r)
   }
 
@@ -62,81 +47,55 @@ export default function TagWriter() {
     if (r) setRead(r)
   }
 
-  const readMatches = read?.url && target ? read.url === target.url : null
+  const matches = read?.url != null && read.url === url
 
   return (
     <DeviceScreen>
-      <Card>
-        <BodySmall>Hold a blank NTAG sticker or card on the CyberUnicorn&apos;s NFC hat (DIP 3 on), pick a link, and write it. Members tap the tag with their phone to check in.</BodySmall>
-      </Card>
+      <Soft>
+        <Subheading>How it works</Subheading>
+        <BodySmall>1. On Frequency, open your Space, then Settings, then Check in, and copy the check-in link.</BodySmall>
+        <BodySmall>2. Paste it below and hold a blank NTAG215 sticker or card on the NFC hat (DIP 3 on).</BodySmall>
+        <BodySmall>3. Write it, then read it back. Members tap it with their phone to check in.</BodySmall>
+      </Soft>
 
-      <Section title="Your Spaces">
-        {!session ? (
-          <Notice tone="info" title="Sign in to use your Spaces">
-            The check-in links of the Spaces you run appear here. You can still paste a link below.
-          </Notice>
-        ) : linksError ? (
-          <Notice tone="live">{linksError}</Notice>
-        ) : links == null ? (
-          <ActivityIndicator color={c.accent} />
-        ) : links.length === 0 ? (
-          <Notice tone="info">You do not run a Space with check-in yet. Paste a link from a Space&apos;s check-in settings instead.</Notice>
-        ) : (
-          <Card padded={false} style={{ padding: space[3] }}>
-            {links.map((l) => (
-              <Row
-                key={l.spaceId}
-                icon="space"
-                title={l.spaceName}
-                detail="Door check-in link"
-                onPress={() => setTarget({ url: l.url, label: `${l.spaceName} check-in` })}
-                trailing={target?.url === l.url ? <Chip label="Picked" tone="presence" /> : undefined}
-              />
-            ))}
-          </Card>
-        )}
-      </Section>
+      <Panel>
+        <Field
+          label="Check-in link"
+          value={pasted}
+          onChangeText={setPasted}
+          placeholder={`https://${SITE_HOST}/n/…`}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          error={shapeError ?? unsigned ?? (tooLong ? 'That link is too long for one device request.' : null)}
+          hint={offSite ? `From ${link?.host}, not ${SITE_HOST}.` : 'Paste the whole link, including the ?s= part.'}
+        />
+        <Button block variant="primary" icon="tag" label="Write the tag" loading={busy === 'frequency.write_tag'} disabled={!link || !!unsigned || tooLong || !!busy} onPress={write} />
+        <Button block icon="checkin" label="Read a tag back" loading={busy === 'frequency.read_tag'} disabled={!!busy} onPress={check} />
+      </Panel>
 
-      <Section title="Or paste a link">
-        <Card>
-          <Field label="Check-in link" value={pasted} onChangeText={setPasted} placeholder={`https://${WEB_HOST}/n/…`} autoCapitalize="none" autoCorrect={false} />
-          <Button variant="secondary" label="Use this link" disabled={!pasted.trim()} onPress={usePasted} />
-        </Card>
-      </Section>
-
-      {target ? (
-        <Card>
-          <Subheading>{target.label}</Subheading>
-          <Meta selectable numberOfLines={2}>
-            {target.url}
-          </Meta>
-          {tooLong ? <Notice tone="live">That link is too long for one device request.</Notice> : null}
-          <Button label="Write the tag" icon="tag" busy={busy === 'frequency.write_tag'} disabled={tooLong || !!busy} onPress={write} />
-          <Button variant="secondary" label="Read a tag back" icon="checkin" busy={busy === 'frequency.read_tag'} disabled={!!busy} onPress={check} />
-        </Card>
-      ) : null}
-
-      {error ? <Notice tone="live">{error}</Notice> : null}
+      {error ? <Notice tone="broadcast">{error}</Notice> : null}
 
       {written ? (
-        <Notice tone={written.written ? 'presence' : 'live'} title={written.written ? 'Tag written' : 'Not written'}>
-          {written.uid ? `Tag ${written.uid}` : 'The device did not report the tag id.'}
+        <Notice tone={written.written ? 'success' : 'danger'} title={written.written ? 'Tag written' : 'Not written'}>
+          {written.uid ? `Tag ${written.uid}. Read it back to check it.` : 'The device did not report the tag id.'}
         </Notice>
       ) : null}
 
       {read ? (
-        <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-            <Icon name={readMatches ? 'check' : 'tag'} size={20} color={readMatches ? c.presence : c.textMuted} />
-            <Subheading>{readMatches ? 'This tag checks in to your Space' : 'Tag read'}</Subheading>
-          </View>
-          {read.uid ? <Meta>Tag {read.uid}{read.type ? ` · ${read.type}` : ''}</Meta> : null}
-          <Body selectable>{read.url ?? read.label ?? 'No link on this tag.'}</Body>
-          {read.url && !parseNodeLink(read.url, CHECKIN_HOSTS) ? <Meta>This is not a Frequency check-in link.</Meta> : null}
-        </Card>
+        <View style={{ gap: 14 }}>
+          <SectionHeader title="On the tag" />
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {url ? <Badge label={matches ? 'Matches the link' : 'Does not match'} tone={matches ? 'success' : 'warning'} icon={matches ? 'check' : undefined} /> : null}
+              {read.type ? <Badge label={read.type} /> : null}
+            </View>
+            {read.uid ? <Meta>Tag {read.uid}</Meta> : null}
+            <Body selectable>{read.url ?? read.label ?? 'No link on this tag.'}</Body>
+            {read.url && !parseNodeLink(read.url, '*') ? <Meta>This is not a Frequency check-in link.</Meta> : null}
+          </Card>
+        </View>
       ) : null}
-
-      {!session ? <Button variant="ghost" label="Sign in" onPress={() => router.push('/sign-in')} /> : null}
     </DeviceScreen>
   )
 }

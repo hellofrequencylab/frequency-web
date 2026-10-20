@@ -1,5 +1,5 @@
 // Config plugin: Android USB host for the CyberUnicorn 5000 (CH340, VID 0x1A86).
-//  - declares android.hardware.usb.host and android.hardware.nfc as optional features;
+//  - declares android.hardware.usb.host and android.hardware.bluetooth_le as optional features;
 //  - adds a USB_DEVICE_ATTACHED intent filter + device filter, so plugging the gadget in offers to
 //    open Frequency Experience (and "always open" grants USB permission without a prompt).
 const fs = require('fs')
@@ -18,7 +18,7 @@ function withFeatures(config) {
   return withAndroidManifest(config, (cfg) => {
     const manifest = cfg.modResults.manifest
     manifest['uses-feature'] = manifest['uses-feature'] || []
-    for (const name of ['android.hardware.usb.host', 'android.hardware.nfc', 'android.hardware.bluetooth_le']) {
+    for (const name of ['android.hardware.usb.host', 'android.hardware.bluetooth_le']) {
       if (!manifest['uses-feature'].some((f) => f.$['android:name'] === name)) {
         manifest['uses-feature'].push({ $: { 'android:name': name, 'android:required': 'false' } })
       }

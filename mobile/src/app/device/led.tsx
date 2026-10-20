@@ -1,16 +1,14 @@
 import { useMemo, useState } from 'react'
-import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native'
+import { Pressable, View, type GestureResponderEvent } from 'react-native'
 import Svg, { Circle, Defs, G, Path, RadialGradient, Stop } from 'react-native-svg'
 import { DeviceScreen } from '@/components/device-gate'
-import { Section } from '@/components/screen'
-import { Meta, Subheading } from '@/components/text'
-import { Button, Card, Notice, Segmented } from '@/components/ui'
 import { useDeviceAction } from '@/device/DeviceProvider'
 import { LED_MODES, type LedColor } from '@/device/types'
-import { space, useTheme } from '@/theme'
+import { radius, useTheme } from '@/theme'
+import { Button, Card, Meta, Notice, SectionHeader, SegmentedControl, Subheading, useToast } from '@/ui'
 
-// The CYD's RGB LED: a colour wheel for `led.set {r,g,b}` and the modes for `led.mode`. The colours
-// here are the LED's own values (data sent to the device), not interface colours.
+// The CYD's RGB LED: a colour wheel for `led.set {r,g,b}` and the modes for `led.mode`. The wheel's
+// colours are the LED's own values (data sent to the device), not interface colours.
 
 const SIZE = 260
 const R = SIZE / 2
@@ -32,11 +30,14 @@ function wedge(i: number): string {
   return `M${R},${R} L${R + R * Math.cos(a0)},${R + R * Math.sin(a0)} A${R},${R} 0 0 1 ${R + R * Math.cos(a1)},${R + R * Math.sin(a1)} Z`
 }
 
+const MODE_LABELS: Record<(typeof LED_MODES)[number], string> = { off: 'Off', solid: 'Solid', rainbow: 'Rainbow', breathe: 'Breathe' }
+
 export default function Led() {
   const { c } = useTheme()
+  const toast = useToast()
   const { run, busy, error } = useDeviceAction()
-  const [rgb, setRgb] = useState<[number, number, number]>([255, 43, 214])
-  const [mode, setMode] = useState<(typeof LED_MODES)[number]>('solid')
+  const [rgb, setRgb] = useState<[number, number, number]>([143, 233, 255])
+  const [mode, setMode] = useState<(typeof LED_MODES)[number] | null>(null)
   const wedges = useMemo(() => Array.from({ length: SEGMENTS }, (_, i) => ({ d: wedge(i), fill: hex(hsvToRgb((i / SEGMENTS) * 360, 1, 1)) })), [])
 
   const pick = (e: GestureResponderEvent) => {
@@ -49,7 +50,10 @@ export default function Led() {
 
   const send = async () => {
     const out = await run<LedColor>('led.set', { r: rgb[0], g: rgb[1], b: rgb[2] })
-    if (out) setMode('solid')
+    if (out) {
+      setMode('solid')
+      toast(`LED set to ${hex(rgb).toUpperCase()}`)
+    }
   }
 
   return (
@@ -71,34 +75,31 @@ export default function Led() {
             <Circle cx={R} cy={R} r={R} fill="url(#white)" />
           </Svg>
         </Pressable>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4], alignSelf: 'stretch' }}>
-          <View style={[styles.swatch, { backgroundColor: hex(rgb), borderColor: c.borderStrong }]} />
-          <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' }}>
+          <View style={{ width: 44, height: 44, borderRadius: radius.orb, backgroundColor: hex(rgb), boxShadow: `inset 0px 0px 0px 1px ${c.borderStrong}` }} />
+          <View style={{ flex: 1, gap: 2 }}>
             <Subheading>{hex(rgb).toUpperCase()}</Subheading>
             <Meta>
               R {rgb[0]} · G {rgb[1]} · B {rgb[2]}
             </Meta>
           </View>
         </View>
-        <View style={{ alignSelf: 'stretch' }}>
-          <Button label="Set the LED" busy={busy === 'led.set'} onPress={send} />
-        </View>
+        <Button block variant="primary" icon="check" label="Set the LED" loading={busy === 'led.set'} onPress={send} />
       </Card>
-      {error ? <Notice tone="live">{error}</Notice> : null}
-      <Section title="Mode">
-        <Segmented
+      {error ? <Notice tone="broadcast">{error}</Notice> : null}
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Mode" />
+        <SegmentedControl
+          size="sm"
           value={mode}
+          disabled={!!busy}
           onChange={async (m) => {
             const out = await run('led.mode', { mode: m })
             if (out) setMode(m)
           }}
-          options={LED_MODES.map((m) => ({ value: m, label: m[0]!.toUpperCase() + m.slice(1) }))}
+          options={LED_MODES.map((m) => ({ value: m, label: MODE_LABELS[m] }))}
         />
-      </Section>
+      </View>
     </DeviceScreen>
   )
 }
-
-const styles = StyleSheet.create({
-  swatch: { width: 44, height: 44, borderRadius: 22, borderWidth: 1 },
-})

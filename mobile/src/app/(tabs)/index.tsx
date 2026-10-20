@@ -1,88 +1,146 @@
+import { useState } from 'react'
 import { View } from 'react-native'
-import { router } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
-import { StatTile } from '@/components/game'
+import { router, type Href } from 'expo-router'
 import { Wordmark } from '@/components/logo'
-import { PageHeading, Screen, Section } from '@/components/screen'
-import { Body, Meta, Serif } from '@/components/text'
-import { Button, Card, Notice, Row } from '@/components/ui'
-import { useDevice } from '@/device/DeviceProvider'
-import { api } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
-import { env, memberConfigured } from '@/lib/env'
-import { useRemote } from '@/lib/use-remote'
-import { space } from '@/theme'
+import { PageHeading, Screen } from '@/components/screen'
+import { useDevice, useDeviceAction } from '@/device/DeviceProvider'
+import { HAT_NAMES, type HatProbe } from '@/device/types'
+import {
+  Badge,
+  Body,
+  Button,
+  ButtonRow,
+  Card,
+  Counter,
+  EmptyState,
+  LiveDot,
+  Meta,
+  Notice,
+  Panel,
+  Row,
+  SectionHeader,
+  Skeleton,
+  Subheading,
+  useConfirm,
+  type IconName,
+} from '@/ui'
 
-export default function Home() {
-  const { session, me, needsProfile, error, push, signOut } = useAuth()
-  const device = useDevice()
-  const { data: rewards, error: loadError, refreshing, refresh } = useRemote(session ? session.user.id : null, api.rewards)
+// The CyberUnicorn 5000 dashboard, the app's home: how it is connected, what it reports, the hat, and
+// the tools. No account and no network: the link is a USB cable or Bluetooth LE.
 
-  const name = me?.displayName ?? me?.handle ?? null
-  const openRewards = rewards?.cards.reduce((n, c) => n + c.openRewards.length, 0) ?? 0
+const TOOLS: { href: Href; icon: IconName; title: string; detail: string }[] = [
+  { href: '/device/light-show', icon: 'sun', title: 'Light Show', detail: 'Scenes, brightness, play and stop' },
+  { href: '/device/led', icon: 'photo', title: 'LED colour', detail: 'Pick a colour or a mode' },
+  { href: '/device/sound', icon: 'sound', title: 'Sound', detail: 'Notes and chimes' },
+  { href: '/device/sensors', icon: 'chart', title: 'Sensors', detail: 'Light, temperature and the rest' },
+  { href: '/device/remote', icon: 'compass', title: 'Screen remote', detail: 'Next, back and select from the phone' },
+  { href: '/device/tag-writer', icon: 'tag', title: 'Tag writer', detail: 'Write a Frequency check-in tag' },
+  { href: '/device/console', icon: 'edit', title: 'Console', detail: 'Run a Bruce command' },
+]
+
+function uptime(s?: number): string | null {
+  if (s == null) return null
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return h ? `${h} h ${m} min` : `${m} min`
+}
+
+export default function DeviceHome() {
+  const { state, kind, label, error, status, refreshStatus, disconnect } = useDevice()
+  const { run, busy, error: actionError } = useDeviceAction()
+  const confirm = useConfirm()
+  const [probe, setProbe] = useState<HatProbe | null>(null)
+  const connected = state === 'connected'
+
+  const askDisconnect = async () => {
+    if (await confirm({ title: 'Disconnect?', body: 'The CyberUnicorn keeps running. You can connect again any time.', confirm: 'Disconnect', variant: 'ink' })) await disconnect()
+  }
 
   return (
-    <Screen refreshing={refreshing} onRefresh={session ? refresh : undefined}>
-      <Wordmark height={20} />
-      <PageHeading eyebrow="Frequency Experience" title={name ? `Hi, ${name}` : 'Welcome in'} description="Your cards, your check-ins and your CyberUnicorn, in one place." />
+    <Screen>
+      <Wordmark height={18} />
+      <PageHeading eyebrow="Your gadget" title="CyberUnicorn 5000" description="Plug it in with a USB OTG adapter, or connect over Bluetooth. Your phone stays on its own Wi-Fi." />
 
-      {!memberConfigured ? (
-        <Notice tone="info" title="Not connected to Frequency yet">
-          This build has no API address. Add EXPO_PUBLIC_API_URL and the Supabase keys to mobile/.env, then rebuild. The device tools work without it.
-        </Notice>
-      ) : !session ? (
-        <Card>
-          <Serif>Gather like it matters.</Serif>
-          <Body>Sign in to see your stamp cards, your Zaps and to check in with a tap.</Body>
-          <Button label="Sign in" icon="user" onPress={() => router.push('/sign-in')} />
-        </Card>
-      ) : needsProfile ? (
-        <Notice tone="reward" title="One step left">
-          Your account has no Frequency profile yet. Finish setting it up on the web, then pull down to refresh.
-        </Notice>
-      ) : null}
+      <Panel>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <LiveDot on={connected} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Subheading>{connected ? label ?? 'Connected' : state === 'connecting' ? 'Connecting' : 'Not connected'}</Subheading>
+            <Meta>{connected ? (kind === 'usb' ? 'USB cable, 115200 baud' : 'Bluetooth LE') : 'USB or Bluetooth, no account needed'}</Meta>
+          </View>
+          {connected ? <Badge label={kind === 'usb' ? 'USB' : 'Bluetooth'} tone="signal" /> : null}
+        </View>
+        {error ? <Notice tone="broadcast">{error}</Notice> : null}
+        {connected ? (
+          <ButtonRow>
+            <Button size="sm" icon="arrow" label="Refresh" onPress={() => refreshStatus().catch(() => undefined)} />
+            <Button size="sm" variant="ghost" label="Disconnect" onPress={askDisconnect} />
+          </ButtonRow>
+        ) : (
+          <Button block variant="primary" icon="link" label="Connect" loading={state === 'connecting'} onPress={() => router.push('/device/connect')} />
+        )}
+      </Panel>
 
-      {error ? <Notice tone="danger">{error}</Notice> : null}
-      {loadError ? <Notice tone="danger">{loadError}</Notice> : null}
+      {connected ? (
+        <View style={{ gap: 14 }}>
+          <SectionHeader title="Status" />
+          <Card>
+            {status ? (
+              <>
+                <Body>
+                  {status.os ?? 'CyberUnicorn'} {status.version ?? ''}
+                  {status.bruce_version ? ` · Bruce ${status.bruce_version}` : ''}
+                </Body>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Counter icon="clock" label="Up" value={uptime(status.uptime_s)} />
+                  <Counter icon="vault" label="Free memory" value={status.heap_free != null ? Math.round(status.heap_free / 1024) : null} unit="KB" />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  <Badge label={status.wifi?.connected ? `Wi-Fi ${status.wifi.ssid ?? ''}`.trim() : 'Wi-Fi off'} tone={status.wifi?.connected ? 'signal' : 'neutral'} />
+                  <Badge label={status.ble?.enabled ? 'Bluetooth on' : 'Bluetooth off'} tone={status.ble?.enabled ? 'signal' : 'neutral'} />
+                </View>
+              </>
+            ) : (
+              <>
+                <Skeleton width="70%" />
+                <Skeleton height={26} width="40%" />
+              </>
+            )}
+          </Card>
 
-      {session && rewards ? (
-        <View style={{ flexDirection: 'row', gap: space[4] }}>
-          <StatTile icon="zap" label="Zaps" value={rewards.seasonZaps} tone="reward" />
-          <StatTile icon="streak" label="Streak" value={rewards.streak} tone="live" />
-          <StatTile icon="award" label="Codes" value={openRewards} tone="accent" />
+          <SectionHeader title="Hat module" />
+          <Card>
+            <Body>
+              {probe?.summary ??
+                (status?.hat?.live?.length
+                  ? status.hat.live.map((h) => HAT_NAMES[h] ?? h).join(', ')
+                  : status?.hat?.probed_s_ago == null
+                    ? 'Not checked since it started.'
+                    : 'Nothing found.')}
+            </Body>
+            {probe?.advice ? <Meta>{probe.advice}</Meta> : null}
+            {actionError ? <Notice tone="broadcast">{actionError}</Notice> : null}
+            <Button size="sm" variant="soft" icon="search" label="Check the hat" loading={busy === 'hat.probe'} onPress={async () => setProbe(await run<HatProbe>('hat.probe'))} />
+          </Card>
         </View>
       ) : null}
 
-      <Section title="Next">
-        <Card padded={false} style={{ padding: space[3] }}>
-          <Row icon="checkin" title="Check in" detail="Tap a venue tag with your phone" onPress={() => router.push('/check-in')} />
-          <Row icon="award" title="Rewards" detail="Your stamp cards and codes" onPress={() => router.push('/rewards')} />
-          <Row
-            icon="sound"
-            title="CyberUnicorn 5000"
-            detail={device.state === 'connected' ? `Connected over ${device.kind === 'usb' ? 'USB' : 'Bluetooth'}` : 'Not connected'}
-            onPress={() => router.push('/device')}
-          />
-        </Card>
-      </Section>
-
-      {session ? (
-        <Section title="Account">
-          <Card>
-            <Meta>Signed in as {session.user.email ?? me?.handle ?? 'you'}</Meta>
-            {push && !push.ok ? <Meta>Notifications: {push.reason}</Meta> : null}
-            {env.apiUrl ? (
-              <Button
-                variant="secondary"
-                icon="globe"
-                label="Open Frequency on the web"
-                onPress={() => WebBrowser.openBrowserAsync(`${env.apiUrl}/rewards`).catch(() => undefined)}
-              />
-            ) : null}
-            <Button variant="ghost" label="Sign out" onPress={signOut} />
+      <View style={{ gap: 14 }}>
+        <SectionHeader title="Tools" count={TOOLS.length} />
+        {connected ? (
+          <Card padded={false} gap={0} style={{ padding: 6 }}>
+            {TOOLS.map((t) => (
+              <Row key={String(t.href)} icon={t.icon} title={t.title} detail={t.detail} onPress={() => router.push(t.href)} />
+            ))}
           </Card>
-        </Section>
-      ) : null}
+        ) : (
+          <EmptyState
+            icon="link"
+            title="Connect to open the tools"
+            description="Light Show, the LED, sound, sensors, the screen remote, the console and the tag writer open once your CyberUnicorn is connected."
+          />
+        )}
+      </View>
     </Screen>
   )
 }

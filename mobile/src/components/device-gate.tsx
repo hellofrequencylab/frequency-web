@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { router } from 'expo-router'
 import { useDevice } from '@/device/DeviceProvider'
+import { Button, EmptyState } from '@/ui'
 import { Screen } from './screen'
-import { Button, EmptyState } from './ui'
 
-/** A device tool screen. Shows a reconnect prompt instead of controls when the link is down. */
+/** A device tool screen. Shows the empty state and one way back to Connect when the link is down. */
 export function DeviceScreen({ children }: { children: ReactNode }) {
   const { state } = useDevice()
   if (state !== 'connected') {
@@ -12,9 +12,9 @@ export function DeviceScreen({ children }: { children: ReactNode }) {
       <Screen edges={[]}>
         <EmptyState
           icon="link"
-          title="Not connected."
+          title="Not connected"
           description="Connect your CyberUnicorn over USB or Bluetooth to use this."
-          action={<Button label="Connect" onPress={() => router.push('/device/connect')} />}
+          action={<Button variant="primary" label="Connect" icon="link" onPress={() => router.push('/device/connect')} />}
         />
       </Screen>
     )
