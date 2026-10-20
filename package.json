@@ -76,6 +76,7 @@
     "check:entity-layouts": "node scripts/check-entity-layouts.mjs",
     "check:blocks": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-blocks.mjs",
     "check:email-blocks": "node scripts/check-email-blocks.mjs",
+    "check:surface-binding": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-surface-binding.mjs",
     "check:cosmetic-renders": "node scripts/check-cosmetic-renders.mjs",
     "check:studio": "node scripts/check-studio.mjs",
     "check:creates": "node scripts/check-creates.mjs",

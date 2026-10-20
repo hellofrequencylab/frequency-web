@@ -1,6 +1,6 @@
 {
   "id": "LIVE-1069",
-  "title": "Editor E1, slice 1: the block contract exists and holds the Heading and Divider blocks",
+  "title": "Editor E1, slice 1: the block contract and its two gates exist, and hold the Heading and Divider blocks",
   "status": "done",
   "priority": "P2",
   "lane": "live",
@@ -9,7 +9,7 @@
     "file": "docs/EDITOR-ARCHITECTURE.md",
     "ref": "§3 the block contract; §7.2 check:blocks"
   },
-  "detail": "Decomposed from PROG-E1 on 2026-10-20. lib/entity-blocks/define-block.ts is the contract: type, v, kinds, reads, resolveAt, a Zod content schema, field metadata, contiguous up/down migrations, per-surface display, one lazy web component and a mandatory toText. lib/entity-blocks/contract/ adopts two blocks (heading, divider) as the pilots ADR-1005 allows; each draws from ONE component under components/entity-blocks/blocks/ that ContentBlockView now renders through (InlineRichText moved to its own file to break the import cycle). scripts/check-blocks.mjs holds every adopted definition to the contract: registry id and kinds, fields keys equal content keys, migration chain, toText, surfaces, a lazy import that resolves to a file (read from the definition's source by AST), email offer and renderer agree, and a live read needs a send-time resolver. Wired as a vitest guard (scripts/check-blocks.test.ts, named in guard-wiring.test.ts) and as pnpm check:blocks. Nothing in the editors reads a definition yet; the registry is still the catalog. Left for E1: adopt the other registry blocks (the blocks-adopted ratchet toward 36), check:surface-binding, and the binding layer.",
+  "detail": "Decomposed from PROG-E1 on 2026-10-20. lib/entity-blocks/define-block.ts is the contract: type, v, kinds, reads, resolveAt, a Zod content schema, field metadata, contiguous up/down migrations, per-surface display, one lazy web component and a mandatory toText. lib/entity-blocks/contract/ adopts two blocks (heading, divider) as the pilots ADR-1005 allows; each draws from ONE component under components/entity-blocks/blocks/ that ContentBlockView now renders through (InlineRichText moved to its own file to break the import cycle). scripts/check-blocks.mjs holds every adopted definition to the contract: registry id and kinds, fields keys equal content keys, migration chain, toText, surfaces, a lazy import that resolves to a file (read from the definition's source by AST), email offer and renderer agree, and a live read needs a send-time resolver. Wired as a vitest guard (scripts/check-blocks.test.ts, named in guard-wiring.test.ts) and as pnpm check:blocks. Nothing in the editors reads a definition yet; the registry is still the catalog. scripts/check-surface-binding.mjs (EDITOR-GATES S0, S2, S3) holds that every page App has a component in lib/widgets/registry.tsx and ratchets the count of empty page surface descriptors at the measured 146 (scripts/surface-binding-baseline.json; the plan's 157 had attrited). S1, S4 and S5 land with the binding layer. Left for E1: adopt the other 39 registry blocks, and the binding layer. PROG-E1's probe is corrected to check:blocks --complete so it stays red until every registry block is adopted.",
   "verify": {
     "kind": "cmd",
     "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-blocks.mjs",

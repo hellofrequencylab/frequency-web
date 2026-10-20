@@ -19,6 +19,10 @@
 //
 // CANNOT SEE: whether the component renders correctly (the visual suite's job), or that stored content in
 // production parses (check:node-document-safety's corpus). Exit 1 on any problem, 0 when all hold.
+//
+// `--complete` adds the whole-phase arm: the three E1 gates are package scripts, `defineBlock` is exported, and
+// every registry block is adopted (ADR-1005's target). It is what PROG-E1's probe runs; the default run, and
+// CI, stay green while blocks are adopted one at a time.
 
 import { existsSync, readFileSync } from 'node:fs'
 import ts from 'typescript'
@@ -114,6 +118,22 @@ export function blockProblems(def, { registry, emailPalette, source, exists = ex
  * @param {Record<string, string | undefined>} [sources] each adopted type's definition file text
  * @returns {string[]}
  */
+/** The `--complete` arm, PROG-E1's whole consequence: the three E1 gates are package scripts, `defineBlock` is
+ *  exported, and no registry block is left unadopted. Returns what is missing. */
+export function completeProblems({ scripts, defineBlockExported, defs, registry }) {
+  const out = ['check:blocks', 'check:surface-binding', 'check:email-blocks'].filter((g) => !scripts[g]).map((g) => `package.json lacks ${g}`)
+  if (!defineBlockExported) out.push('no exported defineBlock under lib/')
+  const left = unadopted(defs, registry)
+  if (left.length) out.push(`${left.length} of ${registry.length} registry blocks are not yet adopted by the block contract`)
+  return out
+}
+
+/** Registry blocks the contract has not adopted yet. */
+export function unadopted(defs, registry) {
+  const adopted = new Set(defs.map((d) => d.type))
+  return registry.filter((b) => !adopted.has(b.id)).map((b) => b.id)
+}
+
 export function adoptionProblems(defs, ctx, sources = {}) {
   const out = []
   if (!defs.length) return ['no block is adopted: the gate would pass on nothing']
@@ -139,6 +159,18 @@ async function main() {
   if (problems.length) {
     console.error(`check:blocks — ${problems.length} problem(s):\n` + problems.map((p) => `  ${p}`).join('\n'))
     process.exit(1)
+  }
+  if (process.argv.includes('--complete')) {
+    const left = completeProblems({
+      scripts: JSON.parse(readFileSync('package.json', 'utf8')).scripts ?? {},
+      defineBlockExported: /export function defineBlock\b/.test(readFileSync('lib/entity-blocks/define-block.ts', 'utf8')),
+      defs: ADOPTED_BLOCKS,
+      registry: ENTITY_BLOCKS,
+    })
+    if (left.length) {
+      console.error(`check:blocks --complete — E1 is not done: ${left.join('; ')}.`)
+      process.exit(1)
+    }
   }
   console.log(`check:blocks — ${ADOPTED_BLOCKS.length} adopted block(s) of ${ENTITY_BLOCKS.length}, all hold the contract.`)
 }

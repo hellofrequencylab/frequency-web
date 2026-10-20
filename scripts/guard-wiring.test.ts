@@ -127,6 +127,9 @@ const VITEST_ENFORCED: Record<string, string> = {
   // contract. The adopted set is TypeScript with Zod schemas, so the enforcing arm runs under vitest where it is
   // importable; its sibling test drives each arm against a broken copy of a real definition.
   'check:blocks': 'scripts/check-blocks.test.ts',
+  // Added 2026-10-20 (PROG-E1). A page App's surface resolves to a component, and the count of empty surface
+  // descriptors only falls. The catalog is TypeScript, so the enforcing arm runs under vitest where it is importable.
+  'check:surface-binding': 'scripts/check-surface-binding.test.ts',
   'check:crm-parity': 'scripts/check-crm-parity.test.ts',
   'check:vocab': 'scripts/check-vocab.test.ts',
   'check:studio': 'scripts/check-studio.test.ts',

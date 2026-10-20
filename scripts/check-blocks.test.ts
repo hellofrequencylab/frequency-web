@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
 import { readFileSync } from 'node:fs'
-import { adoptionProblems, blockProblems, lazyImportPaths, CONTRACT_DIR } from './check-blocks.mjs'
+import { adoptionProblems, blockProblems, lazyImportPaths, unadopted, completeProblems, CONTRACT_DIR } from './check-blocks.mjs'
 import { ADOPTED_BLOCKS } from '../lib/entity-blocks/contract'
 import { ENTITY_BLOCKS, EMAIL_PALETTE_BLOCK_IDS } from '../lib/entity-blocks/registry'
 import { defineBlock } from '../lib/entity-blocks/define-block'
@@ -82,6 +82,26 @@ describe('check:blocks, each arm fires', () => {
 
   it('B8 the same type adopted twice', () => {
     expect(adoptionProblems([heading, heading], base, sources)).toContain('heading: adopted twice')
+  })
+})
+
+describe('check:blocks --complete', () => {
+  it('names the registry blocks not yet adopted, and nothing once all are', () => {
+    const left = unadopted(ADOPTED_BLOCKS, ENTITY_BLOCKS)
+    expect(left.length).toBe(ENTITY_BLOCKS.length - ADOPTED_BLOCKS.length)
+    expect(left).not.toContain('heading')
+    expect(unadopted(ADOPTED_BLOCKS, ENTITY_BLOCKS.filter((b) => b.id === 'heading' || b.id === 'divider'))).toEqual([])
+  })
+})
+
+describe('check:blocks --complete, the whole phase', () => {
+  const scripts = { 'check:blocks': 'x', 'check:surface-binding': 'x', 'check:email-blocks': 'x' }
+  const only = ENTITY_BLOCKS.filter((b) => b.id === 'heading' || b.id === 'divider')
+
+  it('passes only when the gates exist, defineBlock is exported and every block is adopted', () => {
+    expect(completeProblems({ scripts, defineBlockExported: true, defs: ADOPTED_BLOCKS, registry: only })).toEqual([])
+    expect(completeProblems({ scripts: {}, defineBlockExported: false, defs: ADOPTED_BLOCKS, registry: only })).toHaveLength(4)
+    expect(completeProblems({ scripts, defineBlockExported: true, defs: ADOPTED_BLOCKS, registry: ENTITY_BLOCKS }).join()).toContain('not yet adopted')
   })
 })
 
