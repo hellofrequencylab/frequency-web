@@ -11,39 +11,34 @@ const render = (extra: { title: string; links: { label: string; href: string }[]
       columns={[{ title: 'Explore', links: [{ label: 'Circles', href: '/circles' }] }, ...extra]}
       ctas={[{ label: 'Start a Circle', href: '/circles/new', primary: true }]}
       tagline="Local groups that keep meeting."
-      quick={[{ label: 'Settings', href: '/settings' }]}
     />,
   )
 
-describe('the mega footer (LIVE-1030, LIVE-1115)', () => {
-  it('draws the index in the HTML while closed, so a crawler reads it', () => {
-    const html = render()
-    expect(html).not.toContain('<details')
-    expect(html).toContain('aria-label="Site index"')
+describe('the mega footer (LIVE-1030, LIVE-1116)', () => {
+  it('draws every panel in the HTML while closed, so a crawler reads the whole index', () => {
+    const html = render([{ title: 'The Quest', links: [{ label: 'Journeys', href: '/journeys' }] }])
     expect(html).toContain('href="/circles"')
+    expect(html).toContain('href="/journeys"')
     expect(html).toContain('Start a Circle')
+    expect(html.match(/class="fq-mf-mega"[^>]*hidden=""/g)).toHaveLength(2)
   })
 
-  it('opens the index as a native pop-up dialog on the stage surface, from one trigger', () => {
-    const html = render()
-    expect(html).toContain('popover="auto"')
-    expect(html).toContain('role="dialog"')
-    expect(html).toContain('aria-modal="true"')
-    expect(html).toContain('data-surface="stage"')
-    expect(html.match(/popovertarget="fq-mf-pop"/gi)).toHaveLength(2)
-    expect(html).toMatch(/popovertargetaction="hide"/i)
+  it('is a bar of tabs, one per area, each a disclosure for its own panel; no lone index button', () => {
+    const html = render([{ title: 'Support', links: [{ label: 'Help', href: '/help' }] }])
+    const bar = html.slice(html.indexOf('class="fq-mf-bar"'))
+    expect(bar.match(/<button/g)).toHaveLength(2)
+    expect(bar).toContain('aria-controls="fq-mf-p0"')
+    expect(bar).toContain('aria-controls="fq-mf-p1"')
+    expect(bar).toContain('aria-expanded="false"')
+    expect(bar).toContain('>Explore<')
+    expect(bar).toContain('>Support<')
+    expect(html).not.toContain('Site index</button>')
+    expect(html).not.toContain('popover')
   })
 
-  it('keeps the closed bar quiet: one trigger, no loose links', () => {
-    const html = render()
-    const bar = html.slice(html.indexOf('fq-mf-bar'), html.indexOf('id="fq-mf-pop"'))
-    expect(bar.match(/<button/g)).toHaveLength(1)
-    expect(bar).not.toContain('<a ')
-  })
-
-  it('keeps the Legal column in the index grid, from the shared list, and the contact in the last row', () => {
+  it('keeps the Legal column as its own tab, from the shared list, with the contact', () => {
     const html = render([{ title: 'Legal', links: LEGAL_LINKS.map((l) => ({ label: l.label, href: l.href })) }])
-    expect(html).toContain('>Legal</h3>')
+    expect(html).toContain('>Legal<')
     for (const l of LEGAL_LINKS) expect(html.match(new RegExp(`href="${l.href}"`, 'g'))).toHaveLength(1)
     expect(html).toContain('mailto:')
   })
