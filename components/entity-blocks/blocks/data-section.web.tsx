@@ -5,8 +5,8 @@ export default function DataSectionHeader({ eyebrow, title }: { eyebrow?: string
   if (!eyebrow && !title) return null
   return (
     <header>
-      {eyebrow ? <p className="text-xs uppercase tracking-wide text-muted-foreground">{eyebrow}</p> : null}
-      {title ? <h2 className="text-xl font-semibold text-foreground">{title}</h2> : null}
+      {eyebrow ? <p className="eyebrow text-muted">{eyebrow}</p> : null}
+      {title ? <h2 className="text-lead font-semibold text-text">{title}</h2> : null}
     </header>
   )
 }
