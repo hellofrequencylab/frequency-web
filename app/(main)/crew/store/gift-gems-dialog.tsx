@@ -13,7 +13,8 @@ import { giftGemsAction, searchGiftRecipients, type GiftRecipient } from './acti
 // The server action is the authority: it revalidates the balance under an advisory lock
 // and never loses Gems, so this UI stays a thin, friendly wrapper.
 
-export function GiftGemsDialog({ balance }: { balance: number }) {
+// `triggerClassName` lets the Frequency Vault draw the opener as its own kit button (LIVE-1104).
+export function GiftGemsDialog({ balance, triggerClassName }: { balance: number; triggerClassName?: string }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GiftRecipient[]>([])
@@ -78,6 +79,14 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
   }
 
   if (!open) {
+    if (triggerClassName) {
+      return (
+        <button type="button" className={triggerClassName} onClick={() => setOpen(true)}>
+          <Gift className="h-4 w-4" aria-hidden />
+          Gift Gems
+        </button>
+      )
+    }
     return (
       <Button variant="secondary" size="sm" onClick={() => setOpen(true)} className="whitespace-nowrap">
         <Gift className="h-4 w-4" aria-hidden />
