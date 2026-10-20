@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-861",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';process.exit((['components/spaces/space-form.tsx'].map(r).join('\\n').search(/#E2912F|#9A5E12/)>-1===false)?0:1)\""
+    }
+  },
+  "append": {
+    "detail": "\n\nACCENT_SWATCHES now draws eight hexes from the Frequency palette (terracotta, clay, sun, seaglass, sage, sky, aqua, orchid), no violet; the Create Space form, branding form and setup spark all read the one list."
+  }
+}

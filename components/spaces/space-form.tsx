@@ -154,21 +154,22 @@ export function VisibilityField({
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
 /**
- * The suggested brand-accent SWATCHES an owner can pick with one tap. Each carries a real DAWN palette
- * hex (app/globals.css light-mode base tokens), so they stay on-system, relabeled to warm, plain,
- * on-brand names (CONTENT-VOICE) — never the alert/semantic words (success/warning/danger/info) the
- * accent must not borrow. The owner can still pick ANY color with the picker beside them; a swatch is
- * just a fast on-brand start. The selected accent is stored as a hex.
+ * The suggested brand-accent SWATCHES an owner can pick with one tap. Each is a hex from the Frequency
+ * palette (design_handoff/frequency/tokens/colors.css: the warm Commons ramp plus the pastel the member app
+ * pill is drawn in), relabeled to warm, plain, on-brand names (CONTENT-VOICE), never the alert/semantic words
+ * (success/warning/danger/info) the accent must not borrow, and no violet (owner, 2026-10-19). The owner can
+ * still pick ANY color with the picker beside them; a swatch is just a fast on-brand start. The selected
+ * accent is stored as a hex.
  */
 export const ACCENT_SWATCHES: { name: string; hex: string }[] = [
-  { name: 'Sunrise', hex: '#E2912F' },
-  { name: 'Bronze', hex: '#9A5E12' },
-  { name: 'Clay', hex: '#B07515' },
-  { name: 'Rose', hex: '#BA3B30' },
-  { name: 'Forest', hex: '#0F8E78' },
-  { name: 'Spruce', hex: '#11827A' },
-  { name: 'Ocean', hex: '#1EB6C5' },
-  { name: 'Harbor', hex: '#2F6FB0' },
+  { name: 'Terracotta', hex: '#D2693C' },
+  { name: 'Clay', hex: '#A84A22' },
+  { name: 'Sun', hex: '#FFC46B' },
+  { name: 'Seaglass', hex: '#2F7F74' },
+  { name: 'Sage', hex: '#B4C2A2' },
+  { name: 'Sky', hex: '#A3D4FF' },
+  { name: 'Aqua', hex: '#8FE9FF' },
+  { name: 'Orchid', hex: '#EEC1EC' },
 ]
 
 /**
