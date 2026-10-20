@@ -886,6 +886,33 @@ export function headerBandSurfaces(): readonly Surface[] {
 }
 
 /**
+ * The editor program's E3 surfaces (PROG-E3, EDITOR-ARCHITECTURE §7.1): the two block-rendering
+ * surfaces no baseline covered, a member's standalone Spotlight and a Space's external Site. E3's
+ * gate is "zero visual diff" across them, and a gate with no photograph behind it measures nothing.
+ *
+ * Both are env-gated like `appSurfaces()`' room and console: a handle and a slug are facts about
+ * real data (a member with a Spotlight, a Space with a Site), so they are repo variables the owner
+ * sets, not constants here. With neither set this returns nothing and the suite is unchanged.
+ * Anonymous, because both are public pages; viewport only, because a Spotlight is a member's
+ * live content and a fullPage baseline of it would record WHEN it was taken (see `viewportOnly`).
+ */
+export function editorTargetSurfaces(
+  env: { spotlightHandle?: string; siteSlug?: string } = {
+    spotlightHandle: process.env.PW_SPOTLIGHT_HANDLE,
+    siteSlug: process.env.PW_SITE_SLUG,
+  },
+): readonly Surface[] {
+  const surfaces: Surface[] = []
+  if (env.spotlightHandle) {
+    surfaces.push({ path: `/spotlight/${env.spotlightHandle}`, slug: 'editor-spotlight', audience: 'anon', viewportOnly: true })
+  }
+  if (env.siteSlug) {
+    surfaces.push({ path: `/sites/${env.siteSlug}`, slug: 'editor-site', audience: 'anon', viewportOnly: true })
+  }
+  return surfaces
+}
+
+/**
  * THE VISUAL SUITE'S OWN SURFACE LIST — the union, and the answer to HYG-026.
  *
  * Three inputs, each with a different reason to be here:
@@ -906,9 +933,15 @@ export function headerBandSurfaces(): readonly Surface[] {
  * is how the argument gets made.
  */
 export function coverageSurfaces(
-  env?: { roomPath?: string; spaceSlug?: string },
+  env?: { roomPath?: string; spaceSlug?: string; spotlightHandle?: string; siteSlug?: string },
 ): readonly Surface[] {
-  return [...publicSurfaces(), ...appSurfaces(env), ...operatorSurfaces(), ...headerBandSurfaces()]
+  return [
+    ...publicSurfaces(),
+    ...appSurfaces(env),
+    ...operatorSurfaces(),
+    ...headerBandSurfaces(),
+    ...editorTargetSurfaces(env),
+  ]
 }
 
 /**
