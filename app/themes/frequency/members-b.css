@@ -370,3 +370,5 @@
 }
 /* SCAN-955: on a phone the quiet Directions link keeps the 36px touch target SCAN-945 gave it. */
 @media (max-width:640px){[data-design="frequency"] [data-kit="members"] .fqm-evh-dir{display:inline-flex;align-items:center;min-height:36px}}
+[data-design="frequency"] [data-kit="members"] .fqm-pin-nav{position:sticky;top:var(--fq-hdr);z-index:20;margin:0 0 20px;padding:8px 0;background:var(--fq-bg-canvas);overflow-x:auto;scrollbar-width:none}
+[data-design="frequency"] [data-kit="members"] .fqm-pin-nav::-webkit-scrollbar{display:none}

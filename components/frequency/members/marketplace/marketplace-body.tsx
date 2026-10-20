@@ -7,7 +7,7 @@ import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace-core'
 import { marketGroupForKind, type MarketItem } from '@/lib/commerce/types'
 import type { ProductRating } from '@/lib/commerce/reviews'
 import { FqItemGrid, type FqGridItem } from './item-grid'
-import { FqHiddenAreaNote, FqMarketAreas } from './areas'
+import { FqHiddenAreaNote } from './areas'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks, type FqMenuViewer } from '@/components/frequency/members/shell/nav'
 import { AREA_PREFIX } from '@/lib/marketplace/visibility'
@@ -66,7 +66,7 @@ function Intro({ body, ctaLabel, ctaHref }: { body: string | null; ctaLabel: str
 }
 
 /** The Marketplace hub's children less its four areas, which the area tabs above already draw (gated
- *  by area visibility, FqMarketAreas). */
+ *  by area visibility, FqMarketAreas, now pinned in each subtree's layout). */
 const AREA_HREFS: readonly string[] = Object.values(AREA_PREFIX)
 const marketplaceHubLinks = (v: FqMenuViewer) => hubLinks('/marketplace', v).filter((l) => !AREA_HREFS.includes(l.href))
 
@@ -130,7 +130,6 @@ export function FqClassifiedsBody({
         )}
       </div>
       <Intro {...intro} />
-      <FqMarketAreas active="market" />
       <FqHiddenAreaNote area="market" />
 
       <nav className="chips fqm-chips lg" aria-label="Kind">
@@ -259,7 +258,6 @@ export function FqMarketBody({
           </div>
         )}
       </div>
-      <FqMarketAreas active="makers" />
       <FqHiddenAreaNote area="makers" />
 
       <nav className="chips fqm-chips" aria-label="Group">
