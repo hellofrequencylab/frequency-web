@@ -37,7 +37,7 @@ export interface LadderRung {
   /** The plan the Choose button buys, when this rung is choosable by this Space. */
   choose: 'business' | 'collective' | 'network' | null
   /** Network only: the yearly package (ten chapters, pay for eight), offered on the yearly view. */
-  package: { price: string; blurb: string } | null
+  package?: { price: string; blurb: string } | null
 }
 
 export function PlanLadderRungs({
