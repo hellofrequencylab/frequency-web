@@ -77,4 +77,24 @@ describe('NodeEmailCanvasEditor', () => {
     await click(byLabel('Undo the last change')[0])
     expect(texts()).toEqual(['One', 'Two'])
   })
+
+  it('saves a block and adds a copy of it back from the saved sections', async () => {
+    const win = window as unknown as { localStorage: Storage }
+    win.localStorage.clear()
+    await click(container.querySelector('button[aria-expanded]'))
+    await click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Save for other emails')))
+    const nameInput = container.querySelector<HTMLInputElement>('input[aria-label="Name for this saved section"]')!
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(nameInput, 'Opening line')
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await click([...container.querySelectorAll('button')].find((b) => b.textContent === 'Save'))
+    const chip = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Opening line'))
+    expect(chip).toBeTruthy()
+    const before = store.layout!.rows.length
+    await click(chip)
+    expect(store.layout!.rows.length).toBe(before + 1)
+    expect(texts()[texts().length - 1]).toBe('One')
+  })
 })
