@@ -1192,16 +1192,22 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'The at-a-glance line: upcoming events, circles, members and recent Dispatches, four DB tallies.',
   },
   {
-    value: 'nearby-latest-dispatch',
+    value: 'nearby-dispatch-ticker',
+    file: 'components/nearby/dispatch-marquee.tsx',
+    kind: 'live',
+    why: 'The Dispatch ticker scrolls the newest announcements with author and relative time, and it moves on its own, so no two captures show the same frame.',
+  },
+  {
+    value: 'nearby-stat-row',
     file: 'app/(main)/nearby/page.tsx',
     kind: 'live',
-    why: 'The highlight card holds whichever Dispatch was published most recently.',
+    why: 'Four tiles of live tallies: upcoming events, circles, members and Dispatches this week.',
   },
   {
     value: 'nearby-dispatch-list',
     file: 'app/(main)/nearby/page.tsx',
     kind: 'live',
-    why: 'The Dispatch stream itself, up to 20 rows with author and relative time.',
+    why: 'The Dispatch stream itself, up to 8 cards with author and relative time.',
   },
   {
     value: 'nearby-coming-up',
