@@ -56,7 +56,7 @@ function projectOf(variant: string): string {
 }
 
 /** Slugs captured at viewport height, read off the surface registry rather than re-listed.
- *  The stub env is what makes the two env-gated rows visible here; see appSurfaces().
+ *  The stub env is what makes the env-gated rows (room, Space console, Spotlight) visible here; see appSurfaces().
  *
  *  🔴 EVERY REGISTRY, and keep it that way even though only `/feed` opts in today. It reads
  *  `coverageSurfaces()` — the visual suite's own union (ADR-1128), so a registry added there is
@@ -70,7 +70,7 @@ function projectOf(variant: string): string {
  *  compromised capture rather than as an unknown, and the next anon opt-in must not have to
  *  rediscover that. */
 const VIEWPORT_ONLY = new Set(
-  coverageSurfaces({ roomPath: '/room', spaceSlug: 'space' })
+  coverageSurfaces({ roomPath: '/room', spaceSlug: 'space', spotlightHandle: 'handle' })
     .filter((s) => s.viewportOnly)
     .map((s) => s.slug),
 )
@@ -261,7 +261,7 @@ describe('visual baselines are distinct per surface', () => {
     // closes is a NEWLY CAPTURED surface with no baseline to compare against, and a new public
     // surface would now be caught by that same mass failure rather than by this rule.
     const anonSlugs = new Set(
-      coverageSurfaces({ roomPath: '/room', spaceSlug: 'space' })
+      coverageSurfaces({ roomPath: '/room', spaceSlug: 'space', spotlightHandle: 'handle' })
         .filter((s) => s.audience === 'anon')
         .map((s) => s.slug),
     )
