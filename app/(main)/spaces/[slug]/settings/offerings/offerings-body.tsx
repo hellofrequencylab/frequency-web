@@ -1,12 +1,11 @@
 import { Suspense } from 'react'
 import { HandHeart } from 'lucide-react'
-import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { offeringSectionsForType } from '@/lib/spaces/offerings'
+import { asOfferingTab, offeringSectionsForType, type OfferingTab } from '@/lib/spaces/offerings'
 import { isRetiredSpaceFunctionKey } from '@/lib/spaces/functions'
 import type { Space } from '@/lib/spaces/types'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
@@ -14,6 +13,8 @@ import type { PayoutChannel } from '@/lib/billing/payout-prompt'
 import { AvailabilitySection } from '../availability/section'
 import { MembershipsSection } from '../memberships/section'
 import { DonationsSection } from '../donations/section'
+import { CheckinSection } from '../checkin/section'
+import { OfferingsTabs } from './offerings-tabs'
 
 // OFFERINGS BODY — the chrome-free unified commerce surface, lifted out of the standalone
 // /settings/offerings page (Stage D2) so it renders in TWO places from one source: (1) that page, wrapped
@@ -82,7 +83,7 @@ function renderSection(
   }
 }
 
-export async function OfferingsBody({ slug }: { slug: string }) {
+export async function OfferingsBody({ slug, tab }: { slug: string; tab?: string }) {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -110,24 +111,11 @@ export async function OfferingsBody({ slug }: { slug: string }) {
     .map((s) => SECTION_CHANNEL[s.anchor])
     .filter((c): c is PayoutChannel => Boolean(c))
 
+  const active = asOfferingTab(tab)
+
   return (
     <>
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
-
-      {/* THE ONE CONNECT PROMPT (LIVE-233), for whichever money paths this space actually configures
-          here. Renders the payout ACCOUNT STATE rather than only a nudge (whenReady="status",
-          LIVE-290): on this surface the card IS the payments UI, so an owner whose account already
-          works gets a way back to their Stripe dashboard instead of nothing at all. It starts
-          onboarding inline
-          rather than linking to a settings page the operator did not want to be on. An admin who is
-          not the OWNER is told who has to act, because the owner is who Stripe pays (ADR-819). */}
-      {channels.length > 0 && (
-        <div className="mb-8">
-          <Suspense fallback={null}>
-            <SpacePayoutSetupPrompt space={space} viewerProfileId={viewerProfileId} channels={channels} whenReady="status" />
-          </Suspense>
-        </div>
-      )}
 
       {sections.length === 0 ? (
         <EmptyState
@@ -136,22 +124,62 @@ export async function OfferingsBody({ slug }: { slug: string }) {
           description="This space type does not run bookings, memberships, or giving. Change your space type to add them."
         />
       ) : (
-        <div className="space-y-12">
-          {sections.map((section) => {
-            const meta = SECTION_META[section.anchor]
-            return (
-              <section key={section.anchor} id={section.anchor} className="scroll-mt-24">
-                <SectionHeader title={meta.title} />
-                <p className="-mt-2 mb-4 text-body-sm text-muted">{meta.blurb}</p>
-                <Suspense fallback={<SectionSkeleton />}>
-                  {renderSection(section.anchor, space, viewerProfileId, staffViewing)}
-                </Suspense>
-              </section>
-            )
-          })}
-        </div>
+        <>
+          <OfferingsTabs active={active} />
+          <div className="pt-6">
+            <Suspense key={active} fallback={<SectionSkeleton />}>
+              {renderTab(active, space, viewerProfileId, staffViewing, channels)}
+            </Suspense>
+          </div>
+        </>
       )}
     </>
+  )
+}
+
+/** One tab's body. Only the open tab renders, so the page loads one section's data, not all of them. */
+function renderTab(
+  tab: OfferingTab,
+  space: Space,
+  viewerProfileId: string | null,
+  staffViewing: boolean,
+  channels: PayoutChannel[],
+) {
+  if (tab === 'paid') return <PaidTab space={space} viewerProfileId={viewerProfileId} channels={channels} />
+  if (tab === 'checkin') {
+    return <CheckinSection space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} />
+  }
+  const anchor = tab === 'bookings' ? 'availability' : tab
+  const meta = SECTION_META[anchor]
+  return (
+    <section id={anchor} className="scroll-mt-24">
+      <p className="mb-5 max-w-prose text-body-sm text-muted">{meta.blurb}</p>
+      {renderSection(anchor, space, viewerProfileId, staffViewing)}
+    </section>
+  )
+}
+
+/** THE ONE CONNECT PROMPT (LIVE-233), for whichever money paths this space configures here. It renders the
+ *  payout ACCOUNT STATE rather than only a nudge (whenReady="status", LIVE-290): an owner whose account
+ *  already works gets a way back to their Stripe dashboard. An admin who is not the OWNER is told who has
+ *  to act, because the owner is who Stripe pays (ADR-819). It has its own tab now, so it stops pushing the
+ *  forms down the page. */
+function PaidTab({
+  space,
+  viewerProfileId,
+  channels,
+}: {
+  space: Space
+  viewerProfileId: string | null
+  channels: PayoutChannel[]
+}) {
+  return (
+    <section id="paid">
+      <p className="mb-5 max-w-prose text-body-sm text-muted">
+        Where your money lands and which of your money paths are live.
+      </p>
+      <SpacePayoutSetupPrompt space={space} viewerProfileId={viewerProfileId} channels={channels} whenReady="status" />
+    </section>
   )
 }
 

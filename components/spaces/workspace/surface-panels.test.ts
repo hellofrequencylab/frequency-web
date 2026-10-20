@@ -17,7 +17,7 @@ describe('SURFACE_PANELS — the inline commerce service panels (P2)', () => {
     ['donations', 'Donations', `/spaces/${slug}/settings/offerings#donations`],
     ['enroll', 'Enrollment', `/spaces/${slug}/settings/offerings#enroll`],
     ['tickets', 'Tickets', `/spaces/${slug}/settings/offerings#tickets`],
-    ['checkin', 'Check in', `/spaces/${slug}/settings/offerings#checkin`],
+    ['checkin', 'Check in', `/spaces/${slug}/settings/offerings?tab=checkin`],
   ]
 
   it.each(commerce)('%s panel → label "%s", full page %s', (id, label, fullHref) => {

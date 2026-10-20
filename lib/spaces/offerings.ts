@@ -68,3 +68,30 @@ export function typeHasOfferings(type: SpaceType): boolean {
 export function offeringFunctionsForType(type: SpaceType): SpaceFunctionKey[] {
   return offeringSectionsForType(type).map((s) => s.requiredFunction)
 }
+
+/** The tabs of the Offerings and Money page, in bar order. One tab shows at a time, so the page is a few
+ *  compact areas instead of one long scroll. `paid` is the payout account state, `checkin` is the door
+ *  (Check in came back here from the ?panel=checkin workspace, which had no menu door), and the rest are
+ *  the catalog sections above. PURE. */
+export const OFFERING_TABS = [
+  { key: 'paid', label: 'Get paid' },
+  { key: 'bookings', label: 'Bookings' },
+  { key: 'memberships', label: 'Memberships' },
+  { key: 'donations', label: 'Donations' },
+  { key: 'checkin', label: 'Check in' },
+] as const
+
+export type OfferingTab = (typeof OFFERING_TABS)[number]['key']
+
+/** Narrow a `?tab=` value to a known tab, defaulting to the first. PURE. */
+export function asOfferingTab(raw: string | null | undefined): OfferingTab {
+  return OFFERING_TABS.find((t) => t.key === raw)?.key ?? OFFERING_TABS[0].key
+}
+
+/** The tab an old `#anchor` link meant (`#availability` was the Bookings section), so every link written
+ *  before the tabs still lands in the right place. Null for an unknown or retired anchor. PURE. */
+export function offeringTabForAnchor(anchor: string): OfferingTab | null {
+  const a = anchor.replace(/^#/, '')
+  if (a === 'availability') return 'bookings'
+  return OFFERING_TABS.find((t) => t.key === a)?.key ?? null
+}
