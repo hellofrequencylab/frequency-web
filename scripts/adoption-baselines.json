@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 726,
+      "baseline": 725,
       "frozen": {
-        "at": "2026-10-19",
-        "value": 726,
+        "at": "2026-10-20",
+        "value": 725,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Around You loading skeleton and page moved literal rounded-2xl to rounded-card (LIVE-1017)",
-        "from": 732
+        "reason": "Nurture step editor (#3637) button moved from rounded-md to rounded-control, retiring one literal-radius site",
+        "from": 726
       },
       "history": [
         {
@@ -350,6 +350,13 @@
           "to": 726,
           "direction": "lowered",
           "reason": "Around You loading skeleton and page moved literal rounded-2xl to rounded-card (LIVE-1017)"
+        },
+        {
+          "at": "2026-10-20",
+          "from": 726,
+          "to": 725,
+          "direction": "lowered",
+          "reason": "Nurture step editor (#3637) button moved from rounded-md to rounded-control, retiring one literal-radius site"
         }
       ]
     },
@@ -1840,14 +1847,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 231,
+      "baseline": 230,
       "frozen": {
-        "at": "2026-10-14",
-        "value": 231,
+        "at": "2026-10-20",
+        "value": 230,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies",
-        "from": 232
+        "reason": "Nurture step editor (#3637) label moved to the eyebrow role, retiring one handrolled-eyebrow site",
+        "from": 231
       },
       "history": [
         {
@@ -1933,6 +1940,13 @@
           "to": 231,
           "direction": "lowered",
           "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies"
+        },
+        {
+          "at": "2026-10-20",
+          "from": 231,
+          "to": 230,
+          "direction": "lowered",
+          "reason": "Nurture step editor (#3637) label moved to the eyebrow role, retiring one handrolled-eyebrow site"
         }
       ]
     }
