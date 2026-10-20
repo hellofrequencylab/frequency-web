@@ -363,3 +363,27 @@ device's personal owner, so they keep control even without a Space role.
 
 Not built: the audit table of relayed commands (protocol section 6, item 5, optional), and an owner
 panel for the switch on the web (the phone's PATCH is the only control today).
+
+**Staff Wi-Fi remote (`LIVE-1186`).** The portal at `/admin/cyberunicorn` has a "Wi-Fi remote"
+feature for Admin and Janitor. It lists every active device (`listRelayDevicesForConsole`), switches a
+device's relay on or off (`setConsoleRelay`, writing `device_relay_settings` as the caller), and drives
+it with the same `RpcClient` over `lib/device/relay-transport.ts`. Migration
+`20270346020000_relay_staff_join.sql` adds the staff branch to `private.relay_member_may_join`: staff
+may join `device:<id>` for any active device whose relay is on. `relay_manageable_devices` is
+unchanged, so the phone's list still follows the owner and Space-admin rule. The board answers only its
+allow-list over the relay, so placards, badges, scanner setup and the live screen stay on USB.
+
+## 9. Firmware updates (`LIVE-1186`)
+
+The portal's "Update firmware" feature installs the newest CyberUnicorn OS over USB, replacing the
+Terminal `./flash.sh` step. Releases are GitHub releases on `hellofrequencylab/projects` tagged
+`cu5k-v<version>` with `app.bin` and `manifest.json` (board `cyd-2432s028r`, `app.offset` 0x10000,
+`app.size`, `app.sha256`). `lib/devices/firmware.ts` reads and checks them; the browser cannot fetch
+release assets itself (no CORS), so two staff-only routes proxy them:
+`GET /api/devices/firmware` (the newest release, or null) and
+`GET /api/devices/firmware/app?tag=` (the checked `app.bin`). Both answer 404 while
+`SCANNER_DEVICES_ENABLED` is off. `lib/device/flasher.ts` loads `esptool-js` only when the button is
+pressed, checks the sha256 again, writes `app.bin` at 0x10000 at 230400 baud and verifies the MD5. The
+bootloader, the partition table and NVS are left alone, so Wi-Fi, the device credential and settings
+survive. After an install the board needs unplugging for 5 seconds. Set `GITHUB_TOKEN` to lift
+GitHub's anonymous rate limit.

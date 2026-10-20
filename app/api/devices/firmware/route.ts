@@ -2,7 +2,7 @@ import { fail, ok, rateLimited } from '@/lib/contract/respond'
 import { consoleStaffGate, scannerDevicesEnabled } from '@/lib/devices/store'
 import { FirmwareError, latestFirmware, type FirmwareRelease } from '@/lib/devices/firmware'
 
-// GET /api/v1/devices/firmware: the newest published CyberUnicorn 5000 firmware, for the "Update
+// GET /api/devices/firmware: the newest published CyberUnicorn 5000 firmware, for the "Update
 // firmware" button on /admin/cyberunicorn. Reads GitHub releases tagged `cu5k-v<version>` through
 // lib/devices/firmware.ts (the browser cannot read release assets itself: no CORS), validates the
 // release's manifest.json, and answers { release } or { release: null } when none is published yet.

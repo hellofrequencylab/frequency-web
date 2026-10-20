@@ -29,7 +29,7 @@ const act = r('lib/devices/tag-actions.ts')
 if (!/^'use server'/.test(act)) bad.push('tag-actions.ts is not a server action module')
 const start = act.indexOf('export async function startSpaceTag')
 if (start < 0 || !/ensureCheckinNodeForStaff\(/.test(act.slice(start, start + 500))) bad.push('startSpaceTag does not gate through ensureCheckinNodeForStaff')
-if (!/signedNodeUrl\(node\.id\)/.test(act)) bad.push('startSpaceTag does not write the signed door link (signedNodeUrl)')
+if (!/signed(Node|Placard)Url\(node\.id\)/.test(act)) bad.push('startSpaceTag does not write the signed door link (signedPlacardUrl)')
 if (!/recordSpaceTag\(/.test(act) || !/latestCheckinSince\(/.test(act)) bad.push('tag-actions.ts bypasses the staff-gated space-tags store')
 
 const checkin = r('lib/spaces/checkin.ts')

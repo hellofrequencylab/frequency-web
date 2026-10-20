@@ -4,7 +4,7 @@
 //
 // Only the app partition is written, at 0x10000, exactly as `./flash.sh` without `--full`: the
 // bootloader, the partition table and NVS (Wi-Fi, the device credential, settings) are left alone,
-// so the board comes back as itself. The image comes from /api/v1/devices/firmware/app, already
+// so the board comes back as itself. The image comes from /api/devices/firmware/app, already
 // checked on the server; it is checked again here (sha256) before a byte goes down the cable, and
 // esptool's own MD5 read-back checks what landed in flash.
 //

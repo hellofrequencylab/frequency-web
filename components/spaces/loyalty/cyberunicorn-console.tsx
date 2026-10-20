@@ -682,7 +682,7 @@ export function CyberUnicornConsole({
   async function loadFirmware() {
     setFirmware(null)
     try {
-      const res = await fetch('/api/v1/devices/firmware', { cache: 'no-store' })
+      const res = await fetch('/api/devices/firmware', { cache: 'no-store' })
       const json = (await res.json().catch(() => null)) as { data?: { release?: FirmwareRelease | null } | null; error?: { message?: string } | null } | null
       if (!res.ok || !json?.data) {
         setFirmware({ release: null, error: json?.error?.message ?? 'Could not check for an update. Try again.' })

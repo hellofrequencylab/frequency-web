@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 // CYBERUNICORN FIRMWARE RELEASES (the "Update firmware" button on /admin/cyberunicorn). The firmware
 // repo (public GitHub hellofrequencylab/projects) publishes a release tagged `cu5k-v<version>` with
 // app.bin, full.bin and manifest.json. The browser cannot fetch a release asset itself (GitHub sends
-// no CORS headers on the download), so the staff-only routes under app/api/v1/devices/firmware/ read
+// no CORS headers on the download), so the staff-only routes under app/api/devices/firmware/ read
 // it through this file and hand the bytes on.
 //
 // Only app.bin is ever served: the updater writes it at 0x10000, the app partition, exactly like
@@ -174,7 +174,7 @@ async function readManifest(release: GithubRelease): Promise<FirmwareManifest> {
 
 /** Where the browser downloads a release's app image: our own staff-only route. */
 function appRoute(tag: string): string {
-  return `/api/v1/devices/firmware/app?tag=${encodeURIComponent(tag)}`
+  return `/api/devices/firmware/app?tag=${encodeURIComponent(tag)}`
 }
 
 /**

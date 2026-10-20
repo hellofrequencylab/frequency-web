@@ -116,7 +116,7 @@ describe('latestFirmware and fetchFirmwareApp (mocked GitHub)', () => {
       commit: 'abc1234',
       publishedAt: '2026-10-01T00:00:00Z',
       notesUrl: 'https://github.com/hellofrequencylab/projects/releases/tag/cu5k-v0.1.0',
-      app: { size: 1000, sha256: imageSha, url: '/api/v1/devices/firmware/app?tag=cu5k-v0.1.0' },
+      app: { size: 1000, sha256: imageSha, url: '/api/devices/firmware/app?tag=cu5k-v0.1.0' },
     })
   })
 

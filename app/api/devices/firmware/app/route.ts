@@ -2,7 +2,7 @@ import { fail, rateLimited } from '@/lib/contract/respond'
 import { consoleStaffGate, scannerDevicesEnabled } from '@/lib/devices/store'
 import { FirmwareError, fetchFirmwareApp } from '@/lib/devices/firmware'
 
-// GET /api/v1/devices/firmware/app?tag=cu5k-v<version>: the app image (app.bin) of one published
+// GET /api/devices/firmware/app?tag=cu5k-v<version>: the app image (app.bin) of one published
 // CyberUnicorn 5000 release, as raw bytes for the browser flasher (lib/device/flasher.ts), which
 // writes it at 0x10000 over Web Serial. lib/devices/firmware.ts downloads it from the GitHub release
 // and checks its size and sha256 against that release's manifest before a byte is sent; the checksum
@@ -10,7 +10,9 @@ import { FirmwareError, fetchFirmwareApp } from '@/lib/devices/firmware'
 //
 // Platform staff only: consoleStaffGate (lib/devices/store.ts: getCallerProfile, then isStaff), the
 // gate the USB console runs behind. 404 while SCANNER_DEVICES_ENABLED is off, and for a tag that is
-// not a published cu5k release. Errors use the /api/v1 envelope; success is application/octet-stream.
+// not a published cu5k release. Errors use the {data, error} envelope; success is
+// application/octet-stream. Outside /api/v1 on purpose: this serves the staff console, not the app
+// contract, and the app contract answers only JSON envelopes.
 
 export const dynamic = 'force-dynamic'
 
