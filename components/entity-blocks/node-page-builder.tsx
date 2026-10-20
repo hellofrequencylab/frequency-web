@@ -80,13 +80,16 @@ export function NodePageBuilder({
   loadRailData,
   seed,
   editHrefFor,
+  kind = 'space',
 }: {
-  /** The Space slug; guarded against the seed's matchId. */
+  /** The Space slug (or the member handle); guarded against the seed's matchId. */
   pageId: string
   loadRailData: () => Promise<BuilderRailData | null>
   /** A pre-fetched seed from the rail bundle (ADR-550); `undefined` self-fetches through loadRailData. */
   seed?: BuilderRailData | null
   editHrefFor?: (blockId: string) => string | null
+  /** Whose page this arranges: its palette and what it may hold. Defaults to a Space. */
+  kind?: 'space' | 'member'
 }) {
   const store = useNodeLayout()
   const router = useRouter()
@@ -192,11 +195,11 @@ export function NodePageBuilder({
   const typeOf = (nid: string): string => nodeOf(layout, nid)?.type ?? nid
   const nameOf = (nid: string): string => label(typeOf(nid))
   const lockedSet = new Set(lockedIds)
-  const palette: EntityBlockDef[] = profilePaletteForKind('space').filter((b) => !lockedSet.has(b.id))
+  const palette: EntityBlockDef[] = profilePaletteForKind(kind).filter((b) => !lockedSet.has(b.id))
   const paletteTypes = new Set(palette.map((b) => b.id))
   // Types the picker greys out: a data block already on the page (the per-type cap, block-limits.ts).
   const atCap = new Set(palette.filter((b) => !canPlaceType(layout, b.id)).map((b) => b.id))
-  const bench = layout.bench.filter((n) => paletteTypes.has(n.type) && blockSupportsKind(entityBlockById(n.type)!, 'space')).map((n) => n.nid)
+  const bench = layout.bench.filter((n) => paletteTypes.has(n.type) && blockSupportsKind(entityBlockById(n.type)!, kind)).map((n) => n.nid)
   const emptySlots = layout.rows.flatMap((r, ri) => r.cells.map((_s, ci) => ({ rowId: r.id, ri, ci })))
   const moveTargets = layout.rows.map((r, ri) => ({ rowId: r.id, ri, full: false }))
   const slotSeq = layout.rows.flatMap((r) => r.cells.flatMap((stack) => stack.map((n) => n.nid)))
