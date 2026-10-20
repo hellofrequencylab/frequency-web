@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { joinViaInviteLink } from '@/app/(main)/admin/actions'
 
-export function JoinButton({ token, circleName }: { token: string; circleName: string }) {
+export function JoinButton({ token, circleName, frequency = false }: { token: string; circleName: string; frequency?: boolean }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -24,7 +24,11 @@ export function JoinButton({ token, circleName }: { token: string; circleName: s
     <button
       onClick={handleJoin}
       disabled={isPending}
-      className="w-full rounded-xl bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+      className={
+        frequency
+          ? 'btn fq-iri-btn'
+          : 'w-full rounded-xl bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60 transition-colors flex items-center justify-center gap-2'
+      }
     >
       {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
       {isPending ? 'Joining…' : `Join ${circleName}`}

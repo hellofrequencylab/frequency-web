@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1082",
+  "title": "The Feed post stream is grouped into shelves (Circles, people, worth a look, community) instead of one flat interleave (LIVE-1082)",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/members/feed/posts.tsx",
+    "ref": "Owner 2026-10-20: double check every item from the design list and make sure it is fully evolved (item 24). Before/after renders in /mnt/project-files/changed-plan/."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. Posts group into From your Circles, From your people, Worth a look (milestones, journey, classifieds, dispatch) and Around the community, each on kit glass cards with a section title and a link; older community posts sit behind a native Show more. Renders in /mnt/project-files/changed-plan/feed-stream-before-after-*.png (fonts are stand-ins, stream only).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feed-stream-groups.mjs"
+  },
+  "closed": "2026-10-20"
+}

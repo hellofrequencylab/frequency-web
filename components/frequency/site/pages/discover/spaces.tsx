@@ -22,6 +22,7 @@ import { DirectorySearch } from '@/components/ui/directory-search'
 import { BETA_CTA_HREF, BETA_CTA_LABEL, SITE_NAME } from '@/lib/site'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { FqIcon } from '@/components/frequency/icon'
+import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 import { count, DirCard, DirChips, DirEmpty, DirGrid, DirHero, DirPage, DirSection, photo } from './dir-parts'
 
 const BASE = '/discover/spaces'
@@ -73,7 +74,6 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
     s.followerCount && s.followerCount > 0 ? count(s.followerCount, 'follower', 'followers') : null,
     s.upcomingEventCount && s.upcomingEventCount > 0 ? count(s.upcomingEventCount, 'event', 'events') : null,
   ].filter(Boolean) as string[]
-  const marks = [s.isFoundingBusiness && 'Founding Business', s.boosted && 'Boosted'].filter(Boolean) as string[]
   return (
     <li>
       <article className="pc dd-card">
@@ -93,10 +93,9 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
             )}
           </span>
           <span className="tg">
+            {s.isFoundingBusiness && <FounderMark />}
             <i>{s.kindLabel}</i>
-            {marks.map((m) => (
-              <i key={m}>{m}</i>
-            ))}
+            {s.boosted && <i>Boosted</i>}
           </span>
         </span>
         <h3>

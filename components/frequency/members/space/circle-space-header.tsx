@@ -17,7 +17,7 @@ import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
 import { activeBoostIds } from '@/lib/crew/boost'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
-import { FoundingBusinessBadge } from '@/lib/community-roles'
+import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 import { readCoverSize, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
@@ -110,10 +110,10 @@ export async function FqCircleSpaceHeader({ spaceSlug, children }: { spaceSlug: 
         logo={showLogoChip ? <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} /> : null}
         eyebrow={hero.eyebrow}
         name={hero.heading}
+        coverBadge={isFoundingBusiness ? <FounderMark /> : null}
         badges={
-          isFoundingBusiness || isBoosted ? (
+          isBoosted ? (
             <div className="fqs-badges">
-              {isFoundingBusiness && <FoundingBusinessBadge founding className="text-3xs leading-tight" />}
               <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
             </div>
           ) : null

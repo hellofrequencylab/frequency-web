@@ -420,3 +420,12 @@
 @media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .fa-start{grid-template-columns:1fr}}
 [data-design="frequency"] [data-kit="members"] .fa-msg .tabs{gap:10px;justify-content:space-between;overflow:visible}
 [data-design="frequency"] [data-kit="members"] .fa-msg .tabs button{white-space:nowrap;flex:0 1 auto;min-width:fit-content}
+
+/* The grouped stream (LIVE-1082): shelves of posts, each post a card */
+[data-design="frequency"] [data-kit="members"] .fa-shelf{margin-top:8px}
+[data-design="frequency"] [data-kit="members"] .fa-shelf .fa-sh{margin-top:40px}
+[data-design="frequency"] [data-kit="members"] .fa-shelf-body{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+[data-design="frequency"] [data-kit="members"] .fa-shelf-body>.fa-post{padding:20px 22px;border:none;border-radius:22px;background:var(--fq-glass-panel);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:var(--fq-glass-panel-shadow)}
+[data-design="frequency"] [data-kit="members"] .fa-shelf-body>.fa-notice{margin-top:0}
+[data-design="frequency"] [data-kit="members"] .fa-more-posts{margin-top:24px}
+[data-design="frequency"] [data-kit="members"] .fa-more-posts[open]>.fa-post{margin-top:14px}
