@@ -1,0 +1,38 @@
+# Frequency Experience (the Expo app in mobile/, docs/MOBILE-APP.md) is its own package: the root
+# `tsc` excludes it (tsconfig.json) and the root ESLint ignores it (eslint.config.mjs), so without this
+# workflow nothing ever typechecks, lints or tests it. Runs only when a PR touches mobile/ or the shared
+# contract it imports; it never builds an APK. SCAN-1021.
+name: mobile
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'lib/contract/**'
+      - '.github/workflows/mobile.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install
+        run: pnpm install --frozen-lockfile --ignore-workspace
+      - name: Typecheck, lint and test
+        run: pnpm check

@@ -1,0 +1,21 @@
+{
+  "id": "SCAN-1021",
+  "title": "The Frequency Experience app in mobile/ is typechecked, linted and tested on every PR that touches it",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "docs/MOBILE-APP.md",
+    "ref": "section 1"
+  },
+  "detail": "Meta scan 2026-10-20 of the work merged since 2026-10-19 (LIVE-1121, LIVE-1122). mobile/ is excluded from the root tsc (tsconfig.json) and ignored by the root ESLint, and no workflow ran its own `pnpm check`, so a change to the app or to lib/contract (which it shares) could break it with every required check green. .github/workflows/mobile.yml runs mobile's typecheck, lint and test when a PR touches mobile/ or lib/contract/. It is not a required check and never builds an APK. Verified green locally 2026-10-20.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const t=require('fs').readFileSync('.github/workflows/mobile.yml','utf8');if(!t.includes('mobile/**')||!t.includes('lib/contract/**')||!/run: pnpm check/.test(t))process.exit(1)\"",
+    "note": "Fails when no workflow runs mobile's own check on a PR that touches mobile/ or lib/contract/.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
