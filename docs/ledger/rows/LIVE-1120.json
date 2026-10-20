@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1120",
+  "title": "Editor E1, slice 2: the eleven blocks drawn by ContentBlockView join the contract",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "\u00a73 the block contract; ADR-1005"
+  },
+  "detail": "Adopts callout, text, links, image, features, gallery, quote, embed, recording, button and contactForm into lib/entity-blocks/contract/. Content and inspector fields come from the registry's own field list through lib/entity-blocks/contract/from-fields.ts (one source, so they cannot name different keys); each block has one component under components/entity-blocks/blocks/ that draws through ContentBlockView. Nothing a visitor or editor sees changes. check:blocks now holds 13 of 41. Left on PROG-E1: the design and email-card blocks, the 18 data blocks, and the binding layer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-blocks.mjs",
+    "note": "Fails when an adopted block stops holding the contract. 2026-10-20: the eleven content blocks are among the adopted set.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}
