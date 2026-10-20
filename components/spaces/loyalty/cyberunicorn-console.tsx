@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Re
 import { useRouter } from 'next/navigation'
 import { Press_Start_2P, VT323 } from 'next/font/google'
 import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import {
   cancelConsoleCard,
@@ -1080,16 +1081,16 @@ function ScannerSetup(props: {
         >
           <label className="flex-1 space-y-1">
             <span className="block font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">Network</span>
-            <select value={props.ssid} onChange={(e) => props.onSsid(e.target.value)} className={FIELD_CLASS}>
-              {props.networks.length === 0 && <option value="">No networks found</option>}
-              {props.networks.map((n) => (
-                <option key={n.ssid} value={n.ssid}>
-                  {n.ssid}
-                  {n.auth === 'open' ? ' (open)' : ''}
-                  {n.saved ? ' (saved)' : ''}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={props.ssid}
+              onChange={(e) => props.onSsid(e.target.value)}
+              className={FIELD_CLASS}
+              emptyLabel={props.networks.length === 0 ? 'No networks found' : undefined}
+              options={props.networks.map((n) => ({
+                value: n.ssid ?? '',
+                label: `${n.ssid}${n.auth === 'open' ? ' (open)' : ''}${n.saved ? ' (saved)' : ''}`,
+              }))}
+            />
           </label>
           {selected?.auth !== 'open' && (
             <label className="flex-1 space-y-1">
