@@ -3,32 +3,38 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CyberUnicornConsole } from '@/components/spaces/loyalty/cyberunicorn-console'
-import { listBadgeRequests, listSpacesForConsole } from '@/lib/devices/badges'
+import { findSpaceForConsole, listBadgeRequests, listSpacesForConsole } from '@/lib/devices/badges'
 import { scannerDevicesEnabled } from '@/lib/devices/store'
 
 export const dynamic = 'force-dynamic'
 
-// THE CYBERUNICORN (LIVE-1180): the USB badge programmer, for platform staff (Admin and Janitor). Plug the
-// CyberUnicorn 5000 into this computer, pick a member who asked for a badge on a Space's page (or type a
-// Space and a handle), hold a card to the reader, and the console writes their member card for that
-// Space. It moved here from a Space's Check in tab on the owner's call (2026-10-20): Spaces ask, staff write.
-export default async function CyberUnicornPage() {
+// THE CYBERUNICORN (LIVE-1180, LIVE-1182): the USB programming portal, for platform staff (Admin and
+// Janitor). Plug the CyberUnicorn 5000 into this computer, pick ANY Space, and write its NFC check-in
+// placard on the spot (the sales-visit demo), then tap it with a phone and watch the check-in land. It
+// also writes member badges (members ask on a Space's page; the request waits here), sets the board up
+// as a counter scanner, and mirrors the board's screen live with its buttons beside it.
+// `?space=<slug>` opens the portal on that Space (QR Studio's "Program placard" links here).
+export default async function CyberUnicornPage({ searchParams }: { searchParams: Promise<{ space?: string }> }) {
   await requireAdmin('admin')
   const on = scannerDevicesEnabled()
-  const [requests, spaces] = on ? await Promise.all([listBadgeRequests(), listSpacesForConsole()]) : [[], []]
+  const { space: slug } = await searchParams
+  const [requests, spaces, initialSpace] = on
+    ? await Promise.all([listBadgeRequests(), listSpacesForConsole(), slug ? findSpaceForConsole(slug.trim().toLowerCase()) : Promise.resolve(null)])
+    : [[], [], null]
 
   return (
     <AdminTemplate
       title="CyberUnicorn"
       eyebrow="Growth"
       icon={Nfc}
-      description="Program scannable member badges over USB. Members ask for one on a Space's page; their request waits here until you write their card."
+      width="wide"
+      description="Program NFC check-in placards for any Space with the CyberUnicorn over USB, then tap one with a phone to see the check-in land. Member badges, the counter scanner and the Unicorn's live screen are here too."
     >
       <AdminSection>
         {on ? (
-          <CyberUnicornConsole requests={requests} spaces={spaces} />
+          <CyberUnicornConsole requests={requests} spaces={spaces} initialSpace={initialSpace ? { spaceId: initialSpace.id, spaceName: initialSpace.name } : null} />
         ) : (
-          <EmptyState title="Badges are not open yet." description="Turn on SCANNER_DEVICES_ENABLED to write member badges." />
+          <EmptyState title="The CyberUnicorn is not switched on yet." description="Turn on SCANNER_DEVICES_ENABLED to write placards and badges." />
         )}
       </AdminSection>
     </AdminTemplate>

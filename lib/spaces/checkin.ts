@@ -27,7 +27,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { isJanitor } from '@/lib/core/roles'
+import { isJanitor, isStaff } from '@/lib/core/roles'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -204,6 +204,23 @@ export async function ensureCheckinNode(spaceId: string): Promise<CheckinNode | 
   if (!spaceFunctionAccess(space, 'checkin', caps.role)) return null
   const label = `${space.brandName ?? space.name} check-in`
   const created = await insertCheckinNode(spaceId, label)
+  return created ? { id: created.id } : null
+}
+
+/**
+ * Create-or-get a Space's check-in node for Frequency staff (web_role admin or janitor), so the
+ * CyberUnicorn console in the admin menu can write any Space's door link onto an NFC tag (LIVE-1182).
+ * Staff act across Spaces by role, not by a Space seat, so this skips the owner and per-Space function
+ * gates ensureCheckinNode applies. View-as aware: a janitor previewing as a member is refused.
+ */
+export async function ensureCheckinNodeForStaff(spaceId: string): Promise<CheckinNode | null> {
+  const caller = await getCallerProfile()
+  if (!caller || !isStaff(caller.webRole)) return null
+  const space = await getSpaceById(spaceId)
+  if (!space) return null
+  const existing = await readCheckinNode(spaceId)
+  if (existing) return { id: existing.id }
+  const created = await insertCheckinNode(spaceId, `${space.brandName ?? space.name} check-in`)
   return created ? { id: created.id } : null
 }
 

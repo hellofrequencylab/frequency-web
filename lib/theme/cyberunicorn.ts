@@ -39,7 +39,7 @@ export const CU_SCOPE_STYLE = {
 } as CSSProperties
 
 /** cyberHue(): full-saturation hue in degrees → RGB. Same sector maths as rainbow.cpp. */
-function cyberHue(hue: number): RGB {
+export function cyberHue(hue: number): RGB {
   let h = hue % 360
   if (h < 0) h += 360
   const s = Math.floor(h / 60)
@@ -61,13 +61,22 @@ function cyberHue(hue: number): RGB {
 }
 
 /** Quantise to RGB565 and back: the colour the ILI9341 actually lights. */
-function to565([r, g, b]: RGB): RGB {
+export function to565([r, g, b]: RGB): RGB {
   return [(r & 0xf8) | (r >> 5), (g & 0xfc) | (g >> 6), (b & 0xf8) | (b >> 5)]
 }
 
-function rgbCss([r, g, b]: RGB): string {
+export function rgbCss([r, g, b]: RGB): string {
   return `rgb(${r},${g},${b})`
 }
+
+/** A raw RGB565 value (what Bruce streams in a screen packet) as CSS, for the console's live screen
+ *  (lib/device/screen-mirror.ts). */
+export function rgb565(c: number): string {
+  return `rgb(${((((c >> 11) & 31) * 255) / 31) | 0},${((((c >> 5) & 63) * 255) / 63) | 0},${(((c & 31) * 255) / 31) | 0})`
+}
+
+/** The dashed box the live screen draws where the board shows an image file it cannot send. */
+export const MIRROR_IMAGE_OUTLINE = 'rgb(85,85,85)'
 
 /** The panel colour of one hue, as CSS. */
 export function hueCss(hue: number): string {
@@ -235,7 +244,7 @@ export const CU_ICONS = {
   },
 } as const
 
-const UNICORN_PALETTE: Record<string, RGB> = {
+export const UNICORN_PALETTE: Record<string, RGB> = {
   K: [24, 6, 40],
   W: [255, 255, 255],
   w: [200, 180, 255],
@@ -247,7 +256,7 @@ const UNICORN_PALETTE: Record<string, RGB> = {
 }
 
 /** The boot unicorn's two gallop frames (assets/make_unicorn.py), 40×29 cells. 'R' is the mane. */
-const CU_UNICORN_FRAMES = [
+export const CU_UNICORN_FRAMES = [
   [
     '...................................H....',
     '..................................HhK...',
