@@ -2,6 +2,6 @@
   "id": "PROG-E10",
   "wave": "W7",
   "append": {
-    "detail": "\n\n── ACTIVE by owner ruling 2026-10-19 (project thread, decision card \"Make active\"): every deferred item except the iOS app build returns to the active build list. Earlier park or hold text in this row no longer applies. PROBE DEFECT: the probe asks for a custom_domain column; the build used spaces.domain (4 production Spaces carry one) and proxy.ts:509 routes those hosts, so the probe can never pass as written. Re-point it to spaces.domain plus the proxy route plus one W5 hardening consequence."
+    "detail": "\n\n\u2500\u2500 ACTIVE by owner ruling 2026-10-19 (project thread, decision card \"Make active\"): every deferred item except the iOS app build returns to the active build list. Earlier park or hold text in this row no longer applies. PROBE DEFECT: the probe asks for a custom_domain column; the build used spaces.domain (4 production Spaces carry one) and proxy.ts:509 routes those hosts, so the probe can never pass as written. Re-point it to spaces.domain plus the proxy route plus one W5 hardening consequence.\n\nABSORBED 2026-10-20: PROG-W6 merged into this row (phase plan, /mnt/project-files/phases/plan-2026-10-20.md). Their open work and close conditions now belong here."
   }
 }

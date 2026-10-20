@@ -1,0 +1,6 @@
+{
+  "id": "HYG-144",
+  "append": {
+    "detail": "\n\nABSORBED 2026-10-20: OWN-084, OWN-088 merged into this row (phase plan, /mnt/project-files/phases/plan-2026-10-20.md). Their open work and close conditions now belong here.\n\nOWNER RULING 2026-10-20 (phase-plan thread, decision card): the second storage provider is set up AFTER the 1 Dec launch, not before. Until then uploaded files have only Supabase's copy."
+  }
+}
