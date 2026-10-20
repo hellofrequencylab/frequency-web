@@ -196,7 +196,7 @@ export function FqEventsBody({
           </p>
           {content.ctaLabel && content.ctaHref && (
             <div className="ev-actions">
-              <a className="btn glass sm" href={content.ctaHref}>
+              <a className="btn sm" href={content.ctaHref}>
                 {content.ctaLabel}
               </a>
             </div>

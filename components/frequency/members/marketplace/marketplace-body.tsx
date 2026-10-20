@@ -123,7 +123,7 @@ export function FqClassifiedsBody({
           <span className="meta">{meta}</span>
         </div>
         {signedIn && (
-          <Link className="btn pa lg" href="/classifieds/new">
+          <Link className="btn pa sm" href="/classifieds/new">
             <FqIcon name="tip" />
             Post a listing
           </Link>
@@ -248,11 +248,11 @@ export function FqMarketBody({
         </div>
         {signedIn && (
           <div className="row wrap">
-            <Link className="btn pa lg" href="/market/sell">
+            <Link className="btn pa sm" href="/market/sell">
               <FqIcon name="plus" />
               List a product
             </Link>
-            <Link className="btn lg" href="/market/manage">
+            <Link className="btn sm" href="/market/manage">
               My storefront
             </Link>
           </div>

@@ -86,10 +86,10 @@ export default async function HousingPage({
       action={
         viewerProfileId ? (
           <>
-            <Link href="/housing/roommates" className={buttonClasses('secondary', 'md')}>
+            <Link href="/housing/roommates" className={buttonClasses('secondary', 'sm')}>
               <Users className="h-4 w-4" aria-hidden /> Find a roommate
             </Link>
-            <Link href="/housing/new" className={buttonClasses('primary', 'md')}>
+            <Link href="/housing/new" className={buttonClasses('primary', 'sm')}>
               <Plus className="h-4 w-4" aria-hidden /> List housing
             </Link>
           </>
