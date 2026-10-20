@@ -20,7 +20,7 @@ import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
 import { formatBps } from '@/lib/pricing/display'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
 import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
-import { catalogItem, networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
+import { networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
@@ -90,7 +90,7 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
       'For separate groups that partner, each keeping its own members and payouts',
       'Cross-listed Circles and Journeys and a shared calendar',
       'Vera AI and a custom domain included',
-      'More operator seats',
+      'Three operator seats, plus two per member Space',
     ],
   },
   // Network (SCAN-961): one organization running many chapters. Quote only until its Stripe price exists.
@@ -138,12 +138,10 @@ const spaceTierCard = (t: PricingTier, i: number) => {
   }
 }
 
-// The seat add-on reads the same catalog row the /pricing extras card does. LIVE-229 cleared the
-// placeholder, so this card publishes the catalog amount with no further edit.
+// The add-on cards read the same catalog rows the /pricing extras card does. Seats are not an add-on:
+// every tier includes its seats (ADR-1810), so there is no seat card here.
 const EXTRAS = planExtras({ values: PRICING_DEFAULTS, catalog: CAT })
-const SEATS = EXTRAS.find((e) => e.key === 'seats')!
 const DOMAIN = EXTRAS.find((e) => e.key === 'custom_domain')!
-const SEATS_PLACEHOLDER = catalogItem('operator_seat').placeholder === true
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
@@ -321,26 +319,8 @@ export const data: Data = {
             ],
             ctaLabel: 'Add it from your Space billing', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
-          {
-            name: 'Operator seats', price: SEATS.price, strikePrice: '', cadence: '',
-            priceNote: SEATS_PLACEHOLDER
-              ? 'Not yet activated, so the price is not locked in. Your first operator seat is always free.'
-              : 'Your first operator seat is always free.',
-            tagline: 'Add operators to help run your Space.',
-            highlight: 'normal', badge: SEATS_PLACEHOLDER ? 'comingSoon' : 'none',
-            features: [
-              { text: 'Your owner seat is free' },
-              { text: 'Add editors, moderators, and admins' },
-              { text: SEATS.availability },
-            ],
-            ctaLabel: SEATS_PLACEHOLDER ? 'Coming soon' : 'Add seats from your Space billing',
-            ctaHref: SEATS_PLACEHOLDER ? '' : '/spaces',
-            ctaStyle: SEATS_PLACEHOLDER ? 'disabled' : 'secondary',
-          },
         ],
-        footnote: SEATS_PLACEHOLDER
-          ? 'Add-ons are flat, never a percentage. Operator seats are a soft placeholder, so their price is not locked in yet.'
-          : 'Add-ons are flat, never a percentage.',
+        footnote: 'Add-ons are flat, never a percentage. Seats come with the plan.',
         tone: 'surface', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: 'none', visibility: 'all' },
       },
     },

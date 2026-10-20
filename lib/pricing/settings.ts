@@ -187,10 +187,8 @@ export const PRICING_FLAG_KEYS = [
   // delete (no new ledger row). loadPricingFlags already filters on this list.
   // Household / Circle multi-seat bundle (ADR-370, REMAINING-WORK #6). Default OFF (never sold while OFF).
   'bundle_household_enabled',
-  // Operator-seat ACTIVATION (ADR-803). Default OFF = the seat stays the inert PLACEHOLDER (catalog sync
-  // skips it, no Stripe price minted). Flipping it ON drops the placeholder so a re-sync mints the live
-  // seat price from the operator-set amount. Never charges on its own (billingLive() still gates money).
-  'catalog_operator_seat_active',
+  // `catalog_operator_seat_active` (ADR-803) was retired with the $12 operator seat (ADR-1810): seats
+  // are included per tier, never sold. A leftover platform_flags row is filtered out by this list.
   // Buying a domain inside Frequency (LIVE-781). Default OFF: the Domain section shows Buy a new domain
   // as Coming soon until an operator turns this on, which waits on Vercel confirming that buying
   // domains for customers is allowed. Sells only with billing_live too (domainPurchaseEnabled).
@@ -212,9 +210,6 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   gamification_full_member: false,
   gamification_full_crew: true,
   bundle_household_enabled: false,
-  // OFF = checkout does not offer seats (`operatorSeatsSellable`). The catalog amount is live
-  // (LIVE-229); this switch is the sell gate, not the mint gate (ADR-803 / ADR-1435).
-  catalog_operator_seat_active: false,
   domain_purchase_enabled: false,
 }
 

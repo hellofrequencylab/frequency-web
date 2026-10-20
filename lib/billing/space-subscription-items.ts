@@ -75,9 +75,9 @@ export function itemKeyForCatalogKey(catalogKey: string | null | undefined): Ite
     const addon = addonKeyForCatalogItem(key)
     if (addon) return addon
     if (key === 'nonprofit_seat') return 'nonprofit_seat'
-    if (key === 'operator_seat') return 'operator_seat' // the per-seat operator add-on (ADR-799)
   }
   // RETIRED (ADR-552), kept resolvable for legacy rows: the former Pro base + Organization catalog keys.
+  if (catalogKey === 'operator_seat') return 'operator_seat' // retired $12 seat (ADR-1810): a legacy line keeps its seats
   if (catalogKey === 'pro_base') return 'base'
   if (catalogKey === 'organization') return 'organization'
   return null

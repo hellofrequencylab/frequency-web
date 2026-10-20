@@ -25,7 +25,7 @@ import { spaceKind, spaceKindPillLabel, readProfileData } from './profile-data'
 // rollup, so the directory and `space_standing` can never disagree about what standing means.
 import { careScore, standingScore, type StandingResult } from './standing'
 import { isSpaceKind, type SpaceKind } from './categories'
-import { isSubjectKey } from '@/lib/taxonomy/subjects'
+import { isSubjectKey, SUBJECTS } from '@/lib/taxonomy/subjects'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
 // The logo-backdrop reader is PURE and dependency-light (it and its module import only the focal-point
 // math), so it is safe to pull into a module the sitemap reaches — same import lib/layout/cover-scrim.ts
@@ -528,7 +528,21 @@ export const listNetworkedSpaces = cache(
 
         if (needle) {
           const like = `*${needle}*`
-          query = query.or(`name.ilike.${like},brand_name.ilike.${like},slug.ilike.${like}`)
+          // Name, brand and slug, plus what the Space says about itself (tagline), where it is (city) and
+          // the subject door whose label the words name ("yoga" finds Movement only if the label says so).
+          const bySubject = SUBJECTS.filter((s) => s.label.toLowerCase().includes(needle.toLowerCase())).map(
+            (s) => `${SUBJECT_PATH}.eq.${s.key}`,
+          )
+          query = query.or(
+            [
+              `name.ilike.${like}`,
+              `brand_name.ilike.${like}`,
+              `slug.ilike.${like}`,
+              `tagline.ilike.${like}`,
+              `city.ilike.${like}`,
+              ...bySubject,
+            ].join(','),
+          )
         }
 
         const ordered =

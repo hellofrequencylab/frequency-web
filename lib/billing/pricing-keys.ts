@@ -467,7 +467,6 @@ export const CATALOG_ITEM_KEYS = [
   'addon_ai',
   'addon_custom_domain',
   'nonprofit_seat',
-  'operator_seat',
 ] as const
 
 export type CatalogItemKey = (typeof CATALOG_ITEM_KEYS)[number]
@@ -667,23 +666,6 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     perSeat: false,
     ...amountsFromMonthly(3900, 3900), // $39/mo flat (ADR-811), full Collective toolkit, verified 501c3
   },
-  operator_seat: {
-    // OPERATOR SEATS (ADR-799, LIVE-229 / ADR-1435): a genuine per-seat add-on. The owner's seat is
-    // free (BASE_SEAT_ALLOWANCE); each ADDITIONAL operator (editor/moderator/admin) bills one seat at
-    // this flat rate, on any paid plan. This is a SEPARATE per-seat item (perSeat:true) — distinct from
-    // the retired per-seat PLAN pricing (ADR-590) and refining ADR-552's "seats ride the base tier"
-    // note per the owner's flat-add-on choice.
-    //
-    // LIVE at $12/seat/mo (CORE-MODEL §5 phase 3.2). The catalog amount is the approved price, not a
-    // stand-in: a catalog sync mints the Stripe objects. `catalog_operator_seat_active` still gates
-    // checkout (`operatorSeatsSellable`), so a routine sync can mint the approved price without
-    // offering seats until the operator flips the switch. The 2026-08-19 $9 mint was the stand-in;
-    // this amount is the one ADR-811 / ADR-1294 already named.
-    key: 'operator_seat',
-    label: 'Operator seat',
-    perSeat: true,
-    ...amountsFromMonthly(1200, 1200), // $12/seat/mo, no founding rate (LIVE-229)
-  },
 }
 
 /** Read a catalog item by key (PURE). Returns the typed item for a known key. */
@@ -760,10 +742,13 @@ export function addonKeyForCatalogItem(key: CatalogItemKey): 'ai' | 'custom_doma
 export const RETIRED_ADDON_ITEM_KEYS: readonly string[] = ['addon_marketing', 'addon_team', 'addon_branding']
 
 /** The retired CATALOG item keys on the catalog price-key axis (ADR-552): the former Pro base and
- *  Organization plan (folded into Business), plus the ADR-472 add-on items. Kept resolvable; never synced. */
+ *  Organization plan (folded into Business), the ADR-472 add-on items, and the $12 operator seat
+ *  (ADR-1810: an old plan that crept back; seats are included per tier, never sold). Kept resolvable
+ *  for any legacy subscription row; never synced, and the sync ARCHIVES its Stripe prices. */
 const RETIRED_CATALOG_ITEM_KEYS: readonly string[] = [
   'pro_base',
   'organization',
+  'operator_seat',
   ...RETIRED_ADDON_ITEM_KEYS,
 ]
 
@@ -793,7 +778,7 @@ export const RETIRED_CATALOG_KEYS: readonly string[] = (() => {
       keys.push(`${base}_${period}_founder`)
     }
   }
-  // The retired CATALOG items (Pro base, Organization, and the Marketing/Team/Branding add-ons), both
+  // The retired CATALOG items (Pro base, Organization, the operator seat, and the Marketing/Team/Branding add-ons), both
   // intervals + both the founding and the _list anchor variant (matching catalogPriceKey's namespace).
   for (const item of RETIRED_CATALOG_ITEM_KEYS) {
     for (const interval of BILLING_INTERVALS) {

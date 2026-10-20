@@ -335,7 +335,7 @@ export function PricingPromises() {
           },
           {
             title: 'One honest price, no surprise invoices.',
-            body: 'Your plan is one flat monthly price, and a fee you always see in full. Any add-on you turn on, like Vera AI or extra operator seats, is shown up front, never a hidden line item.',
+            body: 'Your plan is one flat monthly price, and a fee you always see in full. Any add-on you turn on, like Vera AI or a custom domain, is shown up front, never a hidden line item. Seats come with the plan.',
           },
           {
             title: 'Month to month. Leave anytime.',

@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ArrowRight, Loader2, Lock, Minus, Plus, ChevronUp } from 'lucide-react'
+import { ArrowRight, Loader2, Lock, ChevronUp } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { IconButton } from '@/components/ui/icon-button'
 import { startSpaceLoadoutCheckout, settleSpaceLoadoutAction } from './actions'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
@@ -15,66 +14,35 @@ import { BillingIntervalSwitch } from './interval-switch'
 // wires to startSpaceLoadoutCheckout, which is DOUBLE-GATED server-side (billingLive AND the per-plan
 // switch), so while billing is OFF this renders a tasteful disabled "Available soon" preview and nothing
 // charges. The Monthly / Yearly switch (LIVE-990) picks the interval the checkout bills; it used to be
-// hardcoded to 'month', so the yearly price /pricing advertises could not be bought here. No em dashes
-// (CONTENT-VOICE §10).
-
-/** Hard ceiling on extra operator seats bought in one go (a sane picker bound, not a plan limit). */
-const MAX_EXTRA_SEATS = 25
-
-/** Whole-dollar money label (no cents when even). Client-side, so no project money lib. */
-function usd(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-  })
-}
+// hardcoded to 'month', so the yearly price /pricing advertises could not be bought here. Seats are
+// included per tier (ADR-1810); the old $12 operator-seat picker is gone. No em dashes (CONTENT-VOICE §10).
 
 export function GoBusinessCta({
   slug,
   sellable,
   trialDays,
-  seatsSellable = false,
-  seatMonthlyCents = 0,
-  seatYearlyCents = 0,
 }: {
   slug: string
   /** Whether the Business checkout is live (billingLive AND the per-plan switch). False while OFF. */
   sellable: boolean
   trialDays: number
-  /** Whether operator SEATS can be bought (the seat is activated + priced). Hides the picker when false. */
-  seatsSellable?: boolean
-  /** The resolved per-seat monthly price in cents, so the picker can show N x $X = $Y/mo. */
-  seatMonthlyCents?: number
-  /** The resolved per-seat yearly price in cents (two months free), for the Yearly reading of that line. */
-  seatYearlyCents?: number
 }) {
   const [error, setError] = useState<string | null>(null)
-  const [extraSeats, setExtraSeats] = useState(0)
   const [interval, setInterval] = useState<BillingInterval>('month')
   const [pending, start] = useTransition()
   const [session, setSession] = useState<{
-    seats: number
     interval: BillingInterval
     clientSecret: string
     sessionId: string | null
   } | null>(null)
   const [open, setOpen] = useState(false)
-  // The seat line reads in the chosen interval; the yearly seat price is the catalog's, never 12x.
-  const seatCents = interval === 'year' ? seatYearlyCents : seatMonthlyCents
-  const liveSession = session && session.seats === extraSeats && session.interval === interval ? session : null
+  const liveSession = session && session.interval === interval ? session : null
 
   function fallBackToHosted() {
     setSession(null)
     setError('Opening secure checkout…')
-    const seatQuantity = seatsSellable && extraSeats > 0 ? extraSeats : undefined
     start(async () => {
-      const res = await startSpaceLoadoutCheckout(slug, {
-        plan: 'business',
-        interval,
-        seatQuantity,
-        forceHosted: true,
-      })
+      const res = await startSpaceLoadoutCheckout(slug, { plan: 'business', interval, forceHosted: true })
       if (!isError(res) && res.data.url) window.location.href = res.data.url
       else setError('Could not start checkout. Please try again.')
     })
@@ -89,14 +57,10 @@ export function GoBusinessCta({
     }
     start(async () => {
       warmStripeBrowser()
-      // seatQuantity is the LICENSED count (the owner's own seat is the free base, so the picker adds
-      // EXTRA operators). Only sent when seats are sellable; otherwise the seat item stays inert.
-      const seatQuantity = seatsSellable && extraSeats > 0 ? extraSeats : undefined
-      const res = await startSpaceLoadoutCheckout(slug, { plan: 'business', interval, seatQuantity })
+      const res = await startSpaceLoadoutCheckout(slug, { plan: 'business', interval })
       if (isError(res)) setError(res.error)
       else if (res.data.clientSecret) {
         setSession({
-          seats: extraSeats,
           interval,
           clientSecret: res.data.clientSecret,
           sessionId: res.data.sessionId ?? null,
@@ -115,48 +79,14 @@ export function GoBusinessCta({
           <h2 className="text-body font-bold text-text">Go Business</h2>
           <p className="mt-1 text-body-sm text-muted">
             Go Business to start charging: paid tickets, memberships, donations, your shop and booking
-            deposits. Everything you already have stays, with higher limits, your own website and more
-            seats. You keep 100% of what you bring in, and the network fee applies only to a customer
+            deposits. Everything you already have stays, with higher limits, your own website and two
+            seats included. You keep 100% of what you bring in, and the network fee applies only to a customer
             the network introduces, once.
           </p>
           {/* Mission framing (CONTENT-VOICE §1a, voice-bound): plain, no guilt, no hype. */}
           <p className="mt-2 text-meta text-muted">
             Going Business keeps Frequency independent and funds the small team that builds it.
           </p>
-          {/* Operator-seat picker (A4/A5). Only shown when seats are actually sellable (activated + priced);
-              your own seat is free, so this buys EXTRA operators. Hidden until seats go live. */}
-          {sellable && seatsSellable && (
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-meta font-semibold text-text">Extra operator seats</span>
-              <div className="inline-flex items-center gap-1 rounded-control border border-border">
-                <IconButton
-                  label="Remove a seat"
-                  onClick={() => setExtraSeats((n) => Math.max(0, n - 1))}
-                  disabled={pending || extraSeats <= 0}
-                >
-                  <Minus className="h-3.5 w-3.5" aria-hidden />
-                </IconButton>
-                <span className="min-w-8 text-center text-body-sm font-semibold tabular-nums text-text" aria-live="polite">
-                  {extraSeats}
-                </span>
-                <IconButton
-                  label="Add a seat"
-                  onClick={() => setExtraSeats((n) => Math.min(MAX_EXTRA_SEATS, n + 1))}
-                  disabled={pending || extraSeats >= MAX_EXTRA_SEATS}
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden />
-                </IconButton>
-              </div>
-              <span className="text-2xs text-muted">Your own seat is included.</span>
-            </div>
-          )}
-          {/* What the chosen seats cost, so the count is never priceless. Prorated on the first invoice. */}
-          {sellable && seatsSellable && seatCents > 0 && extraSeats > 0 && (
-            <p className="mt-2 text-meta font-medium text-text">
-              {extraSeats} {extraSeats === 1 ? 'seat' : 'seats'} x {usd(seatCents)} ={' '}
-              {usd(seatCents * extraSeats)}{interval === 'year' ? '/yr' : '/mo'}, prorated on your first invoice.
-            </p>
-          )}
         </div>
         <div className="min-w-[12rem]">
           {sellable && (

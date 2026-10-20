@@ -114,7 +114,7 @@ vi.mock('./pricing-prices', () => ({
 
 vi.mock('@/lib/pricing/settings', () => ({
   getPricingValues: () => Promise.resolve({ tier: {}, plan: {} }),
-  loadPricingFlags: () => Promise.resolve({ catalog_operator_seat_active: false }),
+  loadPricingFlags: () => Promise.resolve({}),
 }))
 
 // The code-default catalog amounts, resolved by the REAL pure shaping — no database.
@@ -126,10 +126,9 @@ vi.mock('@/lib/pricing/catalog-config', async (importOriginal) => {
 import { syncPricingCatalogToStripe, catalogProductMetaKey, catalogItemHasFoundingRate } from './pricing-products'
 import { catalogItem, catalogPriceKey } from './pricing-keys'
 
-/** THE FROZEN KEY SET. Every key the catalog sync writes, byte for byte, sorted. The operator seat
- *  is live at $12 (LIVE-229), so it is in this set even while `catalog_operator_seat_active` is OFF:
- *  the switch now gates checkout, not the mint. If the product split ever moved a key, this list is
- *  what fails. */
+/** THE FROZEN KEY SET. Every key the catalog sync writes, byte for byte, sorted. The $12 operator
+ *  seat is retired (ADR-1810), so no operator_seat key is minted any more. If the product split ever
+ *  moved a key, this list is what fails. */
 const FROZEN_SYNCED_KEYS = [
   'addon_ai_month',
   'addon_ai_month_list',
@@ -175,10 +174,6 @@ const FROZEN_SYNCED_KEYS = [
   'nonprofit_seat_month_list',
   'nonprofit_seat_year',
   'nonprofit_seat_year_list',
-  'operator_seat_month',
-  'operator_seat_month_list',
-  'operator_seat_year',
-  'operator_seat_year_list',
 ]
 
 const rowFor = (key: string) => written.find((r) => r.key === key)
@@ -208,12 +203,10 @@ describe('the price KEY set is unchanged by the product split (ADR-1062)', () =>
     expect(FROZEN_SYNCED_KEYS).toContain(catalogPriceKey('business_base', 'month'))
   })
 
-  it('the operator seat mints at $12 even while its sell switch is OFF (LIVE-229)', async () => {
+  it('the retired operator seat is never minted (ADR-1810)', async () => {
     await syncPricingCatalogToStripe('op-1')
-    expect(written.some((r) => r.key.startsWith('operator_seat'))).toBe(true)
-    expect(store.products.some((p) => p.metadata.frequency_catalog_item === 'operator_seat')).toBe(true)
-    expect(priceById(rowFor('operator_seat_month')?.priceId)?.unit_amount).toBe(1200)
-    expect(priceById(rowFor('operator_seat_year')?.priceId)?.unit_amount).toBe(12000)
+    expect(written.some((r) => r.key.startsWith('operator_seat'))).toBe(false)
+    expect(store.products.some((p) => p.metadata.frequency_catalog_item === 'operator_seat')).toBe(false)
   })
 
   it('the PRICE metadata still carries the row key, which the webhook reads back off a subscription item', async () => {
@@ -245,7 +238,7 @@ describe('standard pricing carries no founding rate (LIVE-228 flat catalog)', ()
 
   it('every live item is flat: founding == list, one standard product each', async () => {
     await syncPricingCatalogToStripe('op-1')
-    for (const key of ['business_base', 'independent_base', 'nonprofit_seat', 'addon_ai', 'operator_seat'] as const) {
+    for (const key of ['business_base', 'independent_base', 'nonprofit_seat', 'addon_ai'] as const) {
       expect(catalogItemHasFoundingRate(catalogItem(key))).toBe(false)
       expect(store.products.some((p) => p.metadata.frequency_pricing_key === `${key}_founding`)).toBe(false)
       expect(rowFor(`${key}_month`)?.productId).toBe(rowFor(`${key}_month_list`)?.productId)
@@ -307,10 +300,10 @@ describe('a re-sync is idempotent', () => {
     expect(store.prices.map((p) => p.id)).toEqual(pricesAfterFirst)
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 8 live items (ADR-1709 added three Collective items) plus the custom domain add-on (LIVE-821):
-    // 9 standard products plus Collective's founding product ($99 Founding Collective, owner 2026-10-06), 36 price keys.
-    expect(store.products).toHaveLength(13)
-    expect(store.prices).toHaveLength(48)
+    // 11 live items (the operator seat left the catalog, ADR-1810): 11 standard products plus
+    // Collective's founding product ($99 Founding Collective, owner 2026-10-06), 44 price keys.
+    expect(store.products).toHaveLength(12)
+    expect(store.prices).toHaveLength(44)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {

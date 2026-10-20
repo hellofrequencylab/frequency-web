@@ -24,7 +24,6 @@ const STRIPE_REACHING = [
   'createDashboardLink',
   'createSpaceBillingPortal',
   'createSpaceLoadoutCheckout',
-  'updateOperatorSeats',
 ]
 
 describe('viaStripe - the wrapper itself', () => {

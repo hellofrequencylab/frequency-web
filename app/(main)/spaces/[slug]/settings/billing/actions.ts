@@ -5,7 +5,6 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { createSpaceLoadoutCheckout, createSpaceBillingPortal, recordSpacePlanFromSessionId } from '@/lib/billing/space-plan-checkout'
-import { updateOperatorSeats } from '@/lib/billing/operator-seats'
 import { type BillingInterval } from '@/lib/billing/pricing-keys'
 import { asAddonKey, asSpacePlan } from '@/lib/pricing/plans'
 import { viaStripe } from '@/lib/billing/via-stripe'
@@ -22,7 +21,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 //
 // Every action re-resolves the space + gates on the OWNER (SCAN-1009; the billing page render still
 // opens at the ADMIN floor so an admin can read the bill). These actions mutate the OWNER's live Stripe
-// subscription (checkout, portal, seats), so neither an EDITOR (the canManage/canEditProfile level) nor
+// subscription (checkout, portal), so neither an EDITOR (the canManage/canEditProfile level) nor
 // an admin reaches them. No em dashes. The retired white-label lead
 // capture was removed with the multi-tier UI (ADR-552). startSpacePlanCheckout (the single-item plan
 // checkout action) was DELETED by OWNER RULING (LIVE-062 batch 6, 2026-08-20): the ADR-811 loadout
@@ -31,7 +30,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 /** Authorize the caller as the OWNER of `slug`'s space — the billing floor. Returns { spaceId, brandName }
  *  or null. Billing is not an editor-level action (it changes the owner's bill), and since SCAN-1009
  *  (owner ruling 2026-10-19, "Owner only") it is not an admin-level one either: the Stripe customer is
- *  the owner, so the portal, the seat count and a plan checkout move the owner's own money. A Network's
+ *  the owner, so the portal and a plan checkout move the owner's own money. A Network's
  *  central admins (SCAN-983) are admins of the parent and never isOwner, so this is what keeps billing
  *  the owner's. Staff viewing a Space are not its owner either and stay out. */
 async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandName: string } | null> {
@@ -44,7 +43,7 @@ async function authorizeOwner(slug: string): Promise<{ spaceId: string; brandNam
 }
 
 /** Open the Stripe billing portal for a Space owner to MANAGE the Space's subscription (payment method,
- *  plan change/cancel, seats where the portal allows). Owner-gated; returns a clean error when the Space
+ *  plan change/cancel). Owner-gated; returns a clean error when the Space
  *  has no Stripe customer yet (nothing to manage) so the button never routes to a broken URL. */
 export async function openSpaceBillingPortal(slug: string): Promise<ActionResult<{ url: string }>> {
   const auth = await authorizeOwner(slug)
@@ -57,27 +56,11 @@ export async function openSpaceBillingPortal(slug: string): Promise<ActionResult
   return ok({ url: portal.value })
 }
 
-/** Set the Space's licensed operator-seat count directly on the live subscription (add / change / remove
- *  the operator_seat item with proration). Owner-gated; GATED inside updateOperatorSeats on billingLive()
- *  + seats-sellable + a live subscription, so this returns a clean error (never a broken charge) while
- *  billing is OFF or seats are inactive. */
-export async function setOperatorSeats(slug: string, seats: number): Promise<ActionResult<{ seats: number }>> {
-  const auth = await authorizeOwner(slug)
-  if (!auth) return fail('Only the Space owner can manage billing.')
-  const seatChange = await viaStripe('spaces/billing setOperatorSeats', () =>
-    updateOperatorSeats(auth.spaceId, seats),
-  )
-  if ('error' in seatChange) return fail(seatChange.error)
-  const res = seatChange.value
-  if (!res.ok) return fail(res.error)
-  return ok({ seats: res.seats })
-}
-
 /** The base tiers the multi-item loadout checkout sells (ADR-811, ADR-1709): Business runs on its base
  *  plus the optional AI add-on; Collective and Non Profit Collective bill their own base with Vera AI
  *  included; Independent is the flat standalone white-label base; Nonprofit is the flat per-mission
- *  item. All go through the SAME createSpaceLoadoutCheckout, so interval + seat count thread
- *  identically, and each gates on its own per-plan switch inside the checkout. */
+ *  item. All go through the SAME createSpaceLoadoutCheckout, so the interval threads identically, and
+ *  each gates on its own per-plan switch inside the checkout. Seats are included per tier (ADR-1810). */
 const LOADOUT_PLANS = ['business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective', 'network'] as const
 type LoadoutPlan = (typeof LOADOUT_PLANS)[number]
 function asLoadoutPlan(plan: string | undefined): LoadoutPlan {
@@ -86,9 +69,8 @@ function asLoadoutPlan(plan: string | undefined): LoadoutPlan {
 }
 
 /** Begin a Stripe Checkout for a multi-item LOADOUT (ADR-460/463). Defaults to the Pro base plus its
- *  active add-ons; `plan` also selects the Nonprofit (per-seat) or Organization (flat) checkout, which
- *  ride the SAME createSpaceLoadoutCheckout so the monthly/yearly interval + seat count thread the same
- *  way (no parallel path). DOUBLE-GATED: authorizeOwner re-resolves the space + checks canManage
+ *  active add-ons; `plan` also selects the Non Profit, Collective or Network checkout, which ride the
+ *  SAME createSpaceLoadoutCheckout so the monthly/yearly interval threads the same way (no parallel path). DOUBLE-GATED: authorizeOwner re-resolves the space + checks canManage
  *  server-side, then createSpaceLoadoutCheckout itself gates on billingLive() AND the per-plan switch, so
  *  this returns a clean error (never a broken URL) while billing is OFF. The charged price is the
  *  FOUNDING price, or the space's grandfathered locked price when it holds one (the lock is honored
@@ -99,7 +81,6 @@ export async function startSpaceLoadoutCheckout(
     plan?: string
     addons?: string[]
     interval?: BillingInterval
-    seatQuantity?: number
     forceHosted?: boolean
   },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
@@ -122,12 +103,7 @@ export async function startSpaceLoadoutCheckout(
   const checkout = await viaStripe('spaces/billing startSpaceLoadoutCheckout', () =>
     createSpaceLoadoutCheckout(
       auth.spaceId,
-      {
-        plan,
-        addons,
-        interval,
-        seatQuantity: input.seatQuantity,
-      },
+      { plan, addons, interval },
       { ui },
     ),
   )

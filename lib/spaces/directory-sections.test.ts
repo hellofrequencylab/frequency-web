@@ -47,6 +47,13 @@ describe('buildDirectorySections', () => {
     expect(s.featuredPicked).toBe(false)
   })
 
+  it('does not repeat the lead rows in the results', () => {
+    const s = buildDirectorySections(ALL, ALL, {})
+    const lead = new Set([...s.featured, ...s.founding].map((x) => x.id))
+    expect(s.results.some((x) => lead.has(x.id))).toBe(false)
+    expect(s.total).toBe(ALL.length - lead.size)
+  })
+
   it('keeps a featured Space out of the Founding row and lists the rest', () => {
     const picked = ALL.map((x) => (x.id === 'b' ? { ...x, directoryFeatured: true } : x))
     const s = buildDirectorySections(picked, picked, {})
