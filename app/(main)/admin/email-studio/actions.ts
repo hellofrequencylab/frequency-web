@@ -25,13 +25,14 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { writerGate } from '@/lib/outbound/guard'
 import {
   parseEntityLayout,
-  sanitizeEntityLayout,
   starterRows,
   type EntityLayout,
 } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
-import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
+import { applyMergeTags } from '@/lib/email-studio/render'
+import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
+import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
 import { sanitizeFromName, loadCampaignFromName, loadCampaignReplyMode, resolveCampaignFromHeader } from '@/lib/email-studio/send'
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
@@ -368,11 +369,13 @@ export async function saveEmailCampaign(
   if (!gate.ok) return { error: gate.error }
 
   const db = createAdminClient()
+  let prepared: EmailRenderLayout | null = null
   if (patch.layout) {
-    if (legacySpaceLayoutWriteError(patch.layout, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
     const { data: stored, error: readError } = await db.from('campaigns').select('block_json').eq('id', id).maybeSingle()
     if (readError || !stored) return { error: 'Could not read the saved email design.' }
-    if (legacySpaceLayoutWriteError(stored.block_json, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
+    const write = await prepareEmailLayoutWrite(patch.layout, stored.block_json, starterEmailLayout)
+    if ('error' in write) return { error: NODE_LAYOUT_WRITE_ERROR }
+    prepared = write.layout
   }
   const update: Database['public']['Tables']['campaigns']['Update'] = {}
 
@@ -411,8 +414,7 @@ export async function saveEmailCampaign(
     // Sanitize the wire layout (kind 'email'), THEN rewrite every rich `textarea` field to allowlist inline
     // HTML (Email Studio canvas, Slice A) so a stored bold/italic/link is safe and the renderer emits exactly
     // what was stored. Plain `text` fields are untouched (escaped at render). Never trusts the wire.
-    const clean = sanitizeEntityLayout(patch.layout as EntityLayout, 'email')
-    const layout = clean ? sanitizeEmailRichContent(clean) : starterEmailLayout()
+    const layout = prepared ?? starterEmailLayout()
     update.block_json = layout as unknown as never
     // Refresh the cached send-ready HTML from the freshest subject/preheader (this patch, else the row).
     try {

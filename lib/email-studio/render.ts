@@ -10,7 +10,7 @@
 // already sanitized by lib/entity-blocks/block-content (urls made safe, strings bounded); each renderer is
 // FAIL-SAFE (an empty bag renders nothing). Voice canon: no em dashes in any copy this module emits.
 
-import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { EMAIL_PALETTE_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { resolveRows } from '@/lib/entity-blocks/layout'
@@ -783,6 +783,29 @@ export function sanitizeEmailRichContent(layout: EntityLayout): EntityLayout {
     content[id] = next
   }
   return { ...layout, content }
+}
+
+/** The node-document twin of sanitizeEmailRichContent: every placed AND benched node's rich `textarea` field is
+ *  sanitised to allowlist HTML, by that node's own type. The written keys are the block's declared field keys
+ *  (fixed registry values); a node's type and id are only ever read. Pure + fail-safe. */
+export function sanitizeEmailRichNodes(layout: NodeLayout): NodeLayout {
+  const clean = (node: BlockNode): BlockNode => {
+    if (!node.content) return node
+    const next: Record<string, unknown> = { ...node.content }
+    for (const field of fieldsForBlock(node.type)) {
+      if (field.type === 'textarea' && typeof next[field.key] === 'string') {
+        const html = sanitizeInlineHtml(next[field.key] as string)
+        if (html) next[field.key] = html
+        else delete next[field.key]
+      }
+    }
+    return { ...node, content: next }
+  }
+  return {
+    ...layout,
+    rows: layout.rows.map((row) => ({ ...row, cells: row.cells.map((stack) => stack.map(clean)) })),
+    bench: layout.bench.map(clean),
+  }
 }
 
 // ── Merge tags ──────────────────────────────────────────────────────────────────────────────────────────
