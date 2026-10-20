@@ -11,6 +11,16 @@ import { embedBlock } from './embed'
 import { recordingBlock } from './recording'
 import { buttonBlock } from './button'
 import { contactFormBlock } from './contactForm'
+import { photoHeroBlock } from './photoHero'
+import { editorialBlock } from './editorial'
+import { cardGridBlock } from './cardGrid'
+import { zigzagBlock } from './zigzag'
+import { accentBeatBlock } from './accentBeat'
+import { displayHeadingBlock } from './displayHeading'
+import { proseBlock } from './prose'
+import { productCardBlock } from './productCard'
+import { eventCardBlock } from './eventCard'
+import { circleCardBlock } from './circleCard'
 
 // THE ADOPTED BLOCKS (E1). A block joins the contract by being listed here, one at a time, and from that
 // moment `check:blocks` holds it to the whole of it (scripts/check-blocks.mjs). The registry (../registry.ts)
@@ -30,4 +40,14 @@ export const ADOPTED_BLOCKS = [
   recordingBlock,
   buttonBlock,
   contactFormBlock,
+  photoHeroBlock,
+  editorialBlock,
+  cardGridBlock,
+  zigzagBlock,
+  accentBeatBlock,
+  displayHeadingBlock,
+  proseBlock,
+  productCardBlock,
+  eventCardBlock,
+  circleCardBlock,
 ] as const
