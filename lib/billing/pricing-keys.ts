@@ -463,6 +463,7 @@ export const CATALOG_ITEM_KEYS = [
   'network_base',
   'network_chapter',
   'nonprofit_network',
+  'nonprofit_network_chapter',
   'independent_base',
   'addon_ai',
   'addon_custom_domain',
@@ -550,8 +551,8 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
 // Monthly amounts: Business $49 (selling starts here), Collective $149 list with a $99 Founding intro
 // (owner 2026-10-19, a standing per-item offer: lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), an extra
 // member Space $29 for Collectives that already run member Spaces, Non Profit $39 FLAT, Non Profit
-// Collective $119, Network from $599 (lib/pricing/plans.ts NETWORK_PLAN), Independent $249 hand-sold,
-// Vera AI +$20 (included in Collective and Network), operator seats $12. Yearly derives as two months
+// Collective $119, Network $149 plus $59 a chapter, three to start (lib/pricing/plans.ts NETWORK_PLAN, ADR-1815), Independent $249 hand-sold,
+// Vera AI +$20 (included in Collective and Network); operator seats are not sold (ADR-1810). Yearly derives as two months
 // free. Every item but Collective carries founding == list (no beta rate): the $19/$49 beta anchors
 // closed on 2026-08-17 (ADR-1060, ADR-1067), and a founding amount here mints a second, immutable
 // Stripe Price. The marketing/team/branding add-on items stay RETIRED (their depth folds into the
@@ -607,28 +608,36 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     ...amountsFromMonthly(11900, 11900), // $119/mo flat
   },
   network_base: {
-    // NETWORK (SCAN-980): one owner running many chapters, the rung above Collective. Ten chapters are
-    // included (more ride `network_chapter`), Vera AI is included, the network fee is the 2% rung. Every
-    // figure is NETWORK_PLAN (lib/pricing/plans.ts); the Stripe objects exist (owner "Create all six",
-    // 2026-10-16), so the sync finds them by metadata rather than minting new ones.
+    // NETWORK (SCAN-980, repriced 2026-10-20): one owner running many chapters, the rung above Collective.
+    // The Partner Network is priced as $149 plus $59 a chapter (NETWORK_PLAN); the starting price covers the
+    // first three chapters, more ride `network_chapter`. Vera AI is included, the network fee is the 2% rung.
+    // The Founding offer (a year for nine months, first year) is a one-time coupon on the first yearly
+    // invoice, so founding == list here and no second price is minted.
     key: 'network_base',
     label: 'Frequency Network',
     perSeat: false,
     ...amountsFromMonthly(NETWORK_PLAN.monthlyCents, NETWORK_PLAN.monthlyCents),
   },
   network_chapter: {
-    // A chapter past the ten a Network includes, up to 25 (SCAN-980). A quantity item.
+    // A chapter past the three a Network's starting price includes, up to 25 (SCAN-980). A quantity item.
     key: 'network_chapter',
     label: 'Network chapter',
     perSeat: true,
     ...amountsFromMonthly(NETWORK_PLAN.extraChapterCents, NETWORK_PLAN.extraChapterCents),
   },
   nonprofit_network: {
-    // The Network for a verified 501(c)(3) (SCAN-980). The plan is still `network`; only the base differs.
+    // The Network for a verified 501(c)(3) (SCAN-1008). The plan is still `network`; only the base differs.
     key: 'nonprofit_network',
     label: 'Frequency Non Profit Network',
     perSeat: false,
     ...amountsFromMonthly(NETWORK_PLAN.nonprofitMonthlyCents, NETWORK_PLAN.nonprofitMonthlyCents),
+  },
+  nonprofit_network_chapter: {
+    // A chapter past the three included, for a verified 501(c)(3) Network. Stored as `network_chapter`.
+    key: 'nonprofit_network_chapter',
+    label: 'Non Profit Network chapter',
+    perSeat: true,
+    ...amountsFromMonthly(NETWORK_PLAN.nonprofitExtraChapterCents, NETWORK_PLAN.nonprofitExtraChapterCents),
   },
   addon_ai: {
     key: 'addon_ai',

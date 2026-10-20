@@ -77,7 +77,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
       ]
     : []
 
-  // Network (SCAN-961): one organization with chapters, quoted until its Stripe price exists. Every
+  // Network (SCAN-961): one organization with chapters, self-serve once its Stripe price exists. Every
   // figure reads NETWORK_PLAN through the offering.
   const network = spaces.find((s) => s.id === 'network')
   const networkFaq = network

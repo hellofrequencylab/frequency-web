@@ -61,7 +61,7 @@ import {
   type PriceRow,
 } from './display'
 import { allowanceAt, allowanceLabel, currentMeterStepIndex, featureMeter, siblingAllowanceText } from './feature-meters'
-import { FOUNDING_RATE_NOTE, isBetaPricingActive } from './beta'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDING_RATE_NOTE, isBetaPricingActive, networkFoundingOpen } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 import { planTakesPayments } from './payments-plan'
 import { PLAN_STORY } from './plan-story'
@@ -70,6 +70,8 @@ import {
   SPACE_PLAN_LABEL,
   NETWORK_PLAN,
   networkCheckoutOpen,
+  networkFoundingYearCents,
+  networkPackageYearCents,
   planEntitlementKeys,
   type AddonKey,
   type SpacePlan,
@@ -196,7 +198,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   },
   network: {
     tagline: 'Run every chapter as one organization.',
-    forWho: `One organization with chapters: ${NETWORK_PLAN.includedChapters} chapters and ${NETWORK_PLAN.centralAdmins} central admins included, one membership that works in every chapter, one network calendar and home, and a roll-up report. Chapter leaders see only their own chapter.`,
+    forWho: `One organization with chapters: ${NETWORK_PLAN.includedChapters} chapters to start and ${NETWORK_PLAN.centralAdmins} central admins included, one membership that works in every chapter, one network calendar and home, and a roll-up report. Chapter leaders see only their own chapter.`,
   },
   nonprofit: {
     tagline: 'Business tools, verified.',
@@ -354,13 +356,20 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         },
       }
     }),
-    networkOffering(rate('network'), sells('network') ? rateBps('network') : 0),
+    networkOffering(rate('network'), sells('network') ? rateBps('network') : 0, trial),
   ]
 }
 
 /** The Network card (SCAN-961). Once its Stripe price exists (networkCheckoutOpen, SCAN-980) the button
  *  starts a Network; before that it opens the Networks page. The price reads "from". Every figure is NETWORK_PLAN. */
-function networkOffering(takeRate: string, networkRateBps: number): Offering {
+/** The Network Founding line, present only while the offer is open (owner 2026-10-20). */
+function networkFoundingNote(): string | null {
+  if (!networkFoundingOpen()) return null
+  const first = networkFoundingYearCents(NETWORK_PLAN.includedChapters)
+  return first === null ? null : `Founding offer: pay for the year and get it for nine months, ${formatCents(first)} for the first year, then ${formatCents(yearlyFromMonthly(NETWORK_PLAN.monthlyCents))}. Ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}.`
+}
+
+function networkOffering(takeRate: string, networkRateBps: number, trial: string | null): Offering {
   const from = formatCents(NETWORK_PLAN.monthlyCents)
   return {
     id: 'network',
@@ -372,9 +381,9 @@ function networkOffering(takeRate: string, networkRateBps: number): Offering {
     monthlyCents: NETWORK_PLAN.monthlyCents,
     yearly: `from ${formatCents(yearlyFromMonthly(NETWORK_PLAN.monthlyCents))}/yr`,
     listAnchor: null,
-    betaNote: null,
-    trial: null,
-    billing: `${NETWORK_PLAN.includedChapters} chapters included, ${formatCents(NETWORK_PLAN.extraChapterCents)} a month for each extra chapter up to ${NETWORK_PLAN.maxChapters}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitMonthlyCents)}.`,
+    betaNote: networkFoundingNote(),
+    trial,
+    billing: `${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, with ${NETWORK_PLAN.includedChapters} chapters to start, up to ${NETWORK_PLAN.maxChapters}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free, or take the yearly package: ${NETWORK_PLAN.packageChapters} chapters for the price of ${NETWORK_PLAN.packagePaidChapters}, ${formatCents(networkPackageYearCents())} a year, with an onboarding session and priority support.`,
     takeRate,
     networkRateBps,
     sells: true,
