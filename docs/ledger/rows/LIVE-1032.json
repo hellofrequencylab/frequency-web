@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1032",
+  "title": "Store, Housing, Spaces, Around You and Members wait on the same kit skeleton as every other index",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/index-loading.test.tsx",
+    "ref": "Daniel 2026-10-19 design list (30 items), items 6 and 30"
+  },
+  "detail": "Final load-artifact recheck after the page threads landed. The Store's loading screen still painted the DAWN photo band (a tall grey slab above a header that no longer has an image), Housing had no loading boundary at all, and Spaces, Around You and Members waited on DAWN skeletons (Members with a tab strip and rail it no longer draws). Under Frequency all five now render FqIndexLoading, the kit head, find row, chips and grid that Circles, Channels, Market and Classifieds already use. Housing gets a DAWN skeleton too.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];for(const p of ['app/(main)/(marketplace)/store/loading.tsx','app/(main)/(marketplace)/housing/loading.tsx','app/(main)/spaces/directory/loading.tsx','app/(main)/nearby/loading.tsx','app/(main)/network/loading.tsx']){if(!fs.existsSync(p)){bad.push(p+' is missing');continue}if(!/SITE_DESIGN === 'frequency'\\) return <FqIndexLoading/.test(fs.readFileSync(p,'utf8')))bad.push(p+' has no kit skeleton')}if(bad.length){console.error('LIVE-1032: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when an index loading screen loses its Frequency kit skeleton. Behavior is index-loading.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

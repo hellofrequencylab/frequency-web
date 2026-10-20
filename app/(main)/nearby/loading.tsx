@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqIndexLoading } from '@/components/frequency/members/community-states'
 
 // Route-level loading UI for /nearby (PAGE-FRAMEWORK §5). Mirrors the page under the map: the
 // Dispatch ticker strip, the four stat tiles, the events + circles row, and the Dispatch stream, so
@@ -17,6 +19,8 @@ function DispatchCardSkeleton() {
 }
 
 export default function NearbyLoading() {
+  // Under Frequency the wait wears the kit skeleton every other index uses (LIVE-1032).
+  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Around You" shape="items" />
   return (
     <div className="space-y-8">
       <div className="space-y-2">
