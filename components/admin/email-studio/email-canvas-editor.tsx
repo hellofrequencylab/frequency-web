@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, GripVertical, Loader2, Monitor, Plus, Settings2, Smartphone, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChevronDown, ChevronUp, GripVertical, Loader2, Monitor, Plus, Settings2, Smartphone, Trash2, Undo2 } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
@@ -108,6 +108,23 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   // the five so the server and client renders agree; each send picks one at random.
   const heroHtml = useMemo(() => emailHeroHtml({ brand: { colors: C }, hero: 0 }), [C])
 
+  // Ctrl/Cmd+Z steps back one edit; ignored inside a text field or a rich slot so it never fights the
+  // browser's own undo of the characters being typed.
+  const undo = store?.undo
+  useEffect(() => {
+    if (!undo) return
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return
+      const el = e.target as HTMLElement | null
+      const tag = el?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return
+      e.preventDefault()
+      undo()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo])
+
 
   if (!store || !store.seeded) {
     return (
@@ -147,8 +164,20 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
       <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
           <h3 className="text-body-sm font-bold text-text">Blocks</h3>
-          <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
-            {store.saving ? <><Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving</> : 'Saved'}
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={store.undo}
+              disabled={!store.canUndo}
+              aria-label="Undo the last change"
+              title="Undo (Ctrl or Cmd + Z)"
+              className="inline-flex items-center gap-1 rounded-control px-1.5 py-0.5 text-2xs font-semibold text-muted transition-colors hover:text-text disabled:opacity-30"
+            >
+              <Undo2 className="h-3 w-3" aria-hidden /> Undo
+            </button>
+            <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
+              {store.saving ? <><Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving</> : 'Saved'}
+            </span>
           </span>
         </div>
 

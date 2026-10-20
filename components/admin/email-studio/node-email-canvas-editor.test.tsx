@@ -70,4 +70,11 @@ describe('NodeEmailCanvasEditor', () => {
     expect(canvas()?.getAttribute('data-fq-preview-device')).toBe('mobile')
     expect(container.querySelector('.max-w-\\[375px\\]')).not.toBeNull()
   })
+
+  it('undoes the last move from the Undo button', async () => {
+    await click(byLabel('Move Text down')[0])
+    expect(texts()).toEqual(['Two', 'One'])
+    await click(byLabel('Undo the last change')[0])
+    expect(texts()).toEqual(['One', 'Two'])
+  })
 })
