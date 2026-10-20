@@ -14,6 +14,7 @@ const sources=new Map([
  ['@/lib/supabase/server',`export const createClient=async()=>({auth:{getUser:async()=>({data:{user:globalThis.__memberNodeWriteProbe.user}})},from:()=>({select:()=>({eq:(...args)=>{globalThis.__memberNodeWriteProbe.queries.push(args);return {maybeSingle:async()=>({data:globalThis.__memberNodeWriteProbe.me})}}}),update:()=>{throw Error('Whole profile update forbidden')} }),rpc:async(name,args)=>{globalThis.__memberNodeWriteProbe.rpcs.push([name,args]);return {data:{},error:null}}})`],
  ['@/lib/supabase/admin','export const createAdminClient=()=>{throw Error("Admin writer forbidden")}'],
  ['@/lib/awards/holdings','export const memberHeldItems=()=>[]'],
+ ['@/lib/platform-flags','export const renderPathEnabled=async()=>false'],
  ['@/lib/spotlight/top-friends','export const normalizeTopFriendIds=()=>[];export const keepAcceptedFriends=()=>[];export const toTopFriendRows=()=>[];export const rewriteTopFriends=()=>{};export const deleteOneTopFriend=()=>{};export const getOwnerTopFriendIds=()=>[]'],
 ])
 registerHooks({resolve(spec,context,next){if(sources.has(spec))return {url:`data:text/javascript,${encodeURIComponent(sources.get(spec))}`,shortCircuit:true};return next(spec,context)}})

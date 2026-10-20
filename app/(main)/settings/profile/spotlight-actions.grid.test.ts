@@ -20,6 +20,8 @@ const { getUser, maybeSingle, update, rpc, profileEq } = vi.hoisted(() => ({
   profileEq: vi.fn(),
 }))
 
+const flag = vi.hoisted(() => ({ on: false }))
+vi.mock('@/lib/platform-flags', () => ({ renderPathEnabled: async () => flag.on }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () => ({}) }) }))
 vi.mock('@/lib/supabase/server', () => ({
@@ -40,6 +42,7 @@ import { saveMemberGridLayout } from './spotlight-actions'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  flag.on = false
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
   rpc.mockResolvedValue({ data: {}, error: null })
   maybeSingle.mockResolvedValue({ data: { id: 'prof-1', handle: 'ada', meta: {} } })
@@ -120,5 +123,21 @@ describe('member grid native storage compatibility', () => {
     maybeSingle.mockResolvedValue({ data: null })
     expect(await saveMemberGridLayout(native)).toEqual({ error: 'Profile not found' })
     expect(rpc).not.toHaveBeenCalled()
+  })
+})
+
+describe('saveMemberGridLayout - node documents behind render_path_space_profile', () => {
+  const nodeDoc = { rows: [{ id: 'r0', columns: 1, cells: [[{ nid: 'nmember01', type: 'about', content: { text: 'Hi' } }]] }], bench: [] }
+
+  it('refuses a node document while the switch is off', async () => {
+    expect(await saveMemberGridLayout(nodeDoc)).toEqual({ error: NODE_LAYOUT_WRITE_ERROR })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('stores a sanitised node document while the switch is on', async () => {
+    flag.on = true
+    expect(await saveMemberGridLayout(nodeDoc)).toEqual({})
+    const [, args] = rpc.mock.calls[0] as [string, { p_patch: { entityGrid: { rows: Array<{ cells: Array<Array<{ nid: string }>> }> } } }]
+    expect(args.p_patch.entityGrid.rows[0].cells[0][0].nid).toBe('nmember01')
   })
 })
