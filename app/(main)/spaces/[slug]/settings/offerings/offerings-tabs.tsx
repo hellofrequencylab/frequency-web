@@ -16,7 +16,7 @@ export function OfferingsTabs({ active }: { active: OfferingTab }) {
   const search = useSearchParams()
 
   const hrefFor = (tab: OfferingTab) => {
-    const next = new URLSearchParams(search.toString())
+    const next = new URLSearchParams(search?.toString() ?? '')
     next.set('tab', tab)
     return `${pathname}?${next.toString()}`
   }

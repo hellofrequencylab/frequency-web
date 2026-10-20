@@ -13,6 +13,9 @@ import { Select } from '@/components/ui/select'
 // setSpaceEventAccess action, which manages the event's members-only FREE ticket (ADR-823).
 // The same state is editable from each event's own ticket editor; both write the same rows.
 
+/** Events listed before the rest fold behind Show all, so a Space with 30 events is not a 30 row wall. */
+const EVENTS_SHOWN = 8
+
 export function MembershipEventAccess({
   spaceId,
   slug,
@@ -34,6 +37,7 @@ export function MembershipEventAccess({
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   if (rows.length === 0) {
@@ -77,7 +81,7 @@ export function MembershipEventAccess({
     <div className="space-y-2">
       {error && <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
       <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
-        {rows.map((r) => (
+        {(showAll ? rows : rows.slice(0, EVENTS_SHOWN)).map((r) => (
           <li key={r.eventId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
               <Link
@@ -111,6 +115,15 @@ export function MembershipEventAccess({
           </li>
         ))}
       </ul>
+      {rows.length > EVENTS_SHOWN && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="text-body-sm font-medium text-primary hover:underline"
+        >
+          {showAll ? 'Show fewer events' : `Show all ${rows.length} events`}
+        </button>
+      )}
       <p className="text-meta text-subtle">
         Included means the event gets a free Members ticket only that audience can claim. It shows
         on the join cards automatically, next to any paid tickets the event sells.

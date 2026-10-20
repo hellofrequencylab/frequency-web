@@ -51,7 +51,7 @@ const PANEL_BODIES: Record<string, PanelBody> = {
   checkin: CheckinBody,
 }
 
-export function SpaceBodyPanel({ slug, panel, area, tab }: { slug: string; panel: string; area?: string; tab?: string }) {
+export function SpaceBodyPanel({ slug, panel, area, tab, view }: { slug: string; panel: string; area?: string; tab?: string; view?: string }) {
   const entry = SURFACE_PANELS[panel]
   if (!entry) return null
   // The Manage dashboard takes an extra `area` (which management area to open), so it is dispatched
@@ -60,7 +60,7 @@ export function SpaceBodyPanel({ slug, panel, area, tab }: { slug: string; panel
   const body = panel === 'manage'
     ? <ManageDashboard slug={slug} area={area} />
     : panel === 'offerings'
-    ? <OfferingsBody slug={slug} tab={tab} />
+    ? <OfferingsBody slug={slug} tab={tab} view={view} />
     : Body ? <Body slug={slug} /> : null
   if (!body) return null
 

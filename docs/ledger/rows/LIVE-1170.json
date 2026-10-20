@@ -1,12 +1,15 @@
 {
   "id": "LIVE-1170",
-  "title": "Editor E3: first Spotlight and Site baseline pictures (parked, needs a capture run)",
+  "title": "Editor E3: first Spotlight baseline picture (needs a capture run)",
   "status": "open",
   "priority": "P2",
   "lane": "live",
   "size": "S",
-  "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "§7.1 and §8.1 item 2" },
-  "detail": "The Spotlight and Site surfaces are declared (LIVE-1157) but no picture exists. The first capture dispatch (run 133) was refused by the environment stamp: the committed set is stamped PREVIEW and the dispatch pointed at production. Nothing was photographed or committed. Re-dispatch e2e-manual with update_baselines on a preview base_url when the owner is next in Actions; it is not blocking E2 or the density work. The shell half will report PARTIAL without a member session, which is expected.",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "\u00a77.1 and \u00a78.1 item 2"
+  },
+  "detail": "The Spotlight surface is declared (LIVE-1157) but no picture exists. The first capture dispatch (run 133) was refused by the environment stamp: the committed set is stamped PREVIEW and the dispatch pointed at production. Nothing was photographed or committed. Re-dispatch e2e-manual with update_baselines on a preview base_url when the owner is next in Actions; it is not blocking E2 or the density work. The shell half will report PARTIAL without a member session, which is expected. 2026-10-20: the Site surface is dropped from the suite. /sites/<slug> only redirects to /spaces/<slug>, and a real Site renders only on its own host, which the single-base preview suite cannot reach. The Site zero-diff proof stays on LIVE-1172.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const d='test/e2e/__screenshots__';const f=fs.readdirSync(d,{recursive:true}).map(String);if(!f.some(x=>/editor-spotlight/.test(x)))process.exit(1)\"",

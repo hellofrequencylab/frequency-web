@@ -24,8 +24,13 @@ describe('hrefScore', () => {
 describe('the Space console sidebar', () => {
   const items = spaceNavItems('royal-temple', true)
   it('is the hub tabs in order, with the website editor door after Home', () => {
-    expect(items.map((i) => i.key)).toEqual(['dashboard', 'editor', 'resonance', 'marketing', 'offerings', 'programs', 'settings'])
+    expect(items.map((i) => i.key)).toEqual(['dashboard', 'editor', 'resonance', 'marketing', 'offerings', 'checkin', 'programs', 'settings'])
     expect(items.find((i) => i.key === 'editor')).toMatchObject({ external: true, href: '/spaces/royal-temple/manage/leadership/open?to=editor' })
+  })
+  it('gives Check in its own row, lit only on its tab of the Offerings page', () => {
+    expect(activeNav(items, '/spaces/royal-temple/settings/offerings', q('tab=checkin')).item?.key).toBe('checkin')
+    expect(activeNav(items, '/spaces/royal-temple/settings/offerings', q('tab=memberships')).item?.key).toBe('offerings')
+    expect(activeNav(items, '/spaces/royal-temple/settings/offerings', q()).item?.key).toBe('offerings')
   })
   it('drops the editor door for a staff preview', () => {
     expect(spaceNavItems('royal-temple', false).some((i) => i.key === 'editor')).toBe(false)

@@ -141,6 +141,9 @@ export const MAX_COLUMNS_BY_KIND: Record<EntityKind, RowColumns> = {
   // email layout that renders identically across every mail client (multi-column can come later); the email
   // renderer never emits a side-by-side grid.
   email: 1,
+  // Site (E3, LIVE-1171) is a Space's public page, so it keeps the Space's two-column ceiling. It is a separate
+  // entry so the two can diverge (a roomier public page) without touching the Space editor.
+  site: 2,
 }
 
 /** The max columns for a kind (see MAX_COLUMNS_BY_KIND). */
@@ -653,6 +656,7 @@ export const STARTER_LAYOUTS: Record<EntityKind, Record<StarterId, readonly RowD
   member: MEMBER_STARTERS,
   space: SPACE_STARTERS,
   email: EMAIL_STARTERS,
+  site: SPACE_STARTERS,
 }
 
 /** A fresh, deep-copied RowDef[] for a starter seed (safe to hand to a mutable editor / renderer). */

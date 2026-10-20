@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1173",
+  "title": "Editor E3: a Site's Home resolves its rows as kind site",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "§8.1 E3" },
+  "detail": "The house Home (components/sites/house-home.tsx) resolved its rows as a Space. It now resolves them as kind site, which has the Space's legality, ceiling and starters (LIVE-1171), so the output is identical by construction; site-kind.test.ts pins that over six saved layouts. This is the first place the site kind is read at render.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/sites/house-home.tsx','utf8');process.exit(/resolveRows\\(grid, 'site'\\)/.test(s)?0:1)\"",
+    "note": "Passes while the house Home resolves its rows as kind site.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}
