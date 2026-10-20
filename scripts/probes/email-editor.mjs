@@ -46,6 +46,14 @@ const checks = {
     assert.ok(/create table public\.email_saved_sections/.test(read('supabase/migrations/20270346015100_email_saved_sections.sql')), 'a shared table holds the saved sections')
     assert.ok(read('components/admin/email-studio/editor-pane.tsx').includes('library={sharedLibrary}'), 'the Email Studio editor uses the shared library')
   },
+  fullwidth: () => {
+    for (const f of ['lib/email.ts', 'lib/email-studio/shell.ts']) {
+      const t = read(f)
+      assert.ok(t.includes('[data-fq=fq-wrap]{padding:0 0 24px!important}') && t.includes('[data-fq=fq-card]{border-radius:0!important'), `${f} squares the card and drops the gutter on a phone`)
+    }
+    assert.ok(read('lib/email.ts').includes('wrap: `padding:36px 0 48px;`'), 'the shared shell has no side gutter')
+    assert.ok(read('lib/email-react/shell.tsx').includes('fq-head'), 'the React shell marks its header cell')
+  },
   duplicate: () => {
     assert.ok(read('lib/email-studio/duplicate.ts').includes('duplicateCampaign'), 'a campaign can be duplicated')
   },
