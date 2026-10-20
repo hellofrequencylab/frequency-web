@@ -16,6 +16,7 @@ import { CircleLocationSearch } from '@/components/circles/circle-location-searc
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ContactCard } from '@/components/people/contact-card'
+import { PersonTile } from '@/components/people/person-tile'
 import { DirectoryFacets } from '@/components/people/directory-facets'
 import { PeopleSuggestions } from '@/components/people/people-suggestions'
 import { OnlineMembersCard, CommunityStatsCard } from '@/components/people/community-sidebar'
@@ -44,7 +45,6 @@ import {
   type DirectoryScope,
 } from '@/lib/connections/directory-page'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 import { NetworkHubBar } from '@/components/people/network-hub-bar'
 import { SITE_DESIGN } from '@/lib/theme/design'
@@ -180,7 +180,7 @@ export default async function CommunityPage({
   // Moderator.
   const hideDemo = await hideDemoPromise
   const baseScope: DirectoryScope = { hideDemo }
-  // "Members Worldwide" / Total members: an exact count of the listable community.
+  // Total members: an exact count of the listable community.
   const totalPromise = scopeDirectoryQuery(
     admin.from('profiles').select('id', { count: 'exact', head: true }),
     baseScope,
@@ -202,7 +202,7 @@ export default async function CommunityPage({
   })()
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, body, ctaLabel, ctaHref } = await contentPromise
+  const { title, description, ctaLabel, ctaHref } = await contentPromise
 
   // Geolocation / city-autocomplete search → nearest REAL circles (the
   // circles_near RPC hard-excludes demo content). Only runs when a place is set.
@@ -384,21 +384,15 @@ export default async function CommunityPage({
 
   return (
     <div>
-      {/* Header: unified hero band with the operator-editable title/description, Invite on
-          the right. Globe glyph rides the title; the stats row + filters follow in the body. */}
+      {/* Header: the plain heading Events wears (title, description, Invite on the right). The
+          filters follow in the body; no icon, intro paragraph or stats band (LIVE-1086). */}
       <IndexTemplate
         // The plain heading, no photo band (LIVE-1021). Stated, not omitted: the LIVE-117 probe asks every
         // IndexTemplate page to take a position on the hero band.
         heroOverlay={false}
         eyebrow="Your network"
-        title={
-          <span className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            {title}
-          </span>
-        }
+        title={title}
         description={description}
-        intro={body}
         action={
           <div className="flex items-center gap-2">
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
@@ -416,20 +410,6 @@ export default async function CommunityPage({
       >
       {/* One header, one tab strip, one how-to notice across Members, Friends and My Contacts. */}
       <NetworkHubBar active="/network" />
-      {/* Community size, pinned right against a baseline rule under the header. */}
-      <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-1 border-b border-border">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-body-sm text-muted">
-          <span>
-            <span className="font-bold text-text">{totalMembers}</span> Members Worldwide
-          </span>
-          {connectionSettings.proximityEnabled && bandByProfileId.size > 0 && (
-            <span>
-              <span className="font-bold text-text">{bandByProfileId.size}</span> Members Near You
-            </span>
-          )}
-        </div>
-      </div>
-
       {/* Filter row — one aligned baseline against the divider above: the city
           search grows on the left; the "Use my location" + "Online now" actions
           pin to the right (the toggle rides in the search island's trailing slot
@@ -441,11 +421,15 @@ export default async function CommunityPage({
             <Link
               href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
               aria-pressed={!!onlineFilter}
-              className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-body-sm font-medium transition-colors ${
-                onlineFilter
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'
-              }`}
+              className={
+                SITE_DESIGN === 'frequency'
+                  ? onlineFilter ? 'chip on' : 'chip'
+                  : `inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-body-sm font-medium transition-colors ${
+                      onlineFilter
+                        ? 'border-primary bg-primary text-on-primary'
+                        : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'
+                    }`
+              }
             >
               <span className={`h-1.5 w-1.5 rounded-pill ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
               Online now
@@ -456,7 +440,7 @@ export default async function CommunityPage({
             real data on the page; each dropdown hides itself when there's
             nothing to filter by (components/people/directory-facets). */}
         <Suspense fallback={null}>
-          <SampledFacets vocab={vocabPromise} circles={circleList} />
+          <SampledFacets vocab={vocabPromise} circles={circleList} current={{ ...base }} />
         </Suspense>
         {/* No-location affordance — nudge the viewer to set a location so the
             directory can lead with who's nearby. Subtle, on the page background. */}
@@ -509,26 +493,16 @@ export default async function CommunityPage({
               <SectionHeader title="People you’ve met" count={metLeads.length} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {metLeads.map((l) => (
-                  <Link
+                  <PersonTile
                     key={l.id}
                     href={l.href ?? '#'}
-                    className="flex items-center gap-3 rounded-card border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none">
-                      {getInitials(l.displayName)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate text-body-sm font-semibold text-text">{l.displayName}</span>
-                        <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">Lead</span>
-                      </span>
-                      <span className="mt-0.5 block truncate text-meta text-muted">
-                        {[l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null]
-                          .filter(Boolean)
-                          .join(' · ') || 'Saved contact'}
-                      </span>
-                    </span>
-                  </Link>
+                    name={l.displayName}
+                    sub={
+                      [l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null].filter(Boolean).join(' · ') ||
+                      'Saved contact'
+                    }
+                    tags={['Lead']}
+                  />
                 ))}
               </div>
             </div>
@@ -804,13 +778,15 @@ function DirectoryListingSkeleton() {
 async function SampledFacets({
   vocab,
   circles,
+  current,
 }: {
   vocab: Promise<Profile[]>
   circles: { id: string; city: string | null }[]
+  current: Record<string, string | undefined>
 }) {
   // Directory facets (P5): Topic / City / Role, options derived from real listed members; each
   // dropdown hides itself when there's nothing to filter by (components/people/directory-facets).
-  return <DirectoryFacets profiles={await vocab} circles={circles} className="mt-3" />
+  return <DirectoryFacets profiles={await vocab} circles={circles} className="mt-3" base="/network" current={current} />
 }
 
 async function SampledStats({ vocab, totalMembers }: { vocab: Promise<Profile[]>; totalMembers: number }) {

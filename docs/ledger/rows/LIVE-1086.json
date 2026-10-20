@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1086",
+  "title": "Members, Friends and My Contacts finish on one kit layout: no title glyph, intro or stats band, one width, kit cards, notice and filters",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Daniel design changes 2026-10-19, items 18 and 19 (second pass 2026-10-20)"
+  },
+  "detail": "Daniel 2026-10-20: double check every item and make sure it is fully evolved. The plan thread found LIVE-1021 partial. Members loses the Globe glyph, the operator intro paragraph and the 'Members Worldwide' stats band, so its header matches Events. Friends and My Contacts lose the max-w-5xl wrapper, so all three share Members' width, and My Contacts puts only the hub strip in the toolbar slot (its facet tabs, sort and search move into the body as one filter row). Under the Frequency design the cards, notice and controls are the kit's: ContactCard renders PersonCard (the kit .card), PersonTile covers leads, the how-to notice is .fa-notice, DirectoryFacets draws FqFacetMenu chips, My Contacts sort and search are FqFacetMenu and FqFindField, buttons go through buttonClasses, and chips are .tag. DAWN keeps its markup. No migration. The Members side rail (online now, community stats, pulse) is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const m=fs.readFileSync('app/(main)/network/page.tsx','utf8');if(m.includes('Members Worldwide'))bad.push('Members keeps the stats band');if(m.includes('intro={body}'))bad.push('Members keeps the intro paragraph');for(const f of ['app/(main)/network/friends/page.tsx','app/(main)/network/contacts/page.tsx']){if(fs.readFileSync(f,'utf8').includes('max-w-5xl'))bad.push(f+' is narrower than Members')}if(bad.length){console.error('LIVE-1086: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when Members regrows the stats band or intro, or Friends or My Contacts go back to a narrower column.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

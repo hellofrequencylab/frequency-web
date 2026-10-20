@@ -474,11 +474,13 @@ export function FqHousingBody({
       {items.length === 0 ? (
         <EmptyState
           title={savedOnly ? 'Nothing saved yet' : hasFacets ? 'Nothing matches those filters' : 'No housing listed near you yet'}
-          description={savedOnly
+          description={
+            savedOnly
               ? 'Tap the heart on a home to keep it here.'
               : hasFacets
                 ? 'Try widening the price range or clearing an amenity.'
-                : 'List a room, a rental or a sublet. Roommate listings match to members you would get along with.'}
+                : 'List a room, a rental or a sublet. Roommate listings match to members you would get along with.'
+          }
         />
       ) : (
         <FqItemGrid sections={[{ items }]} placeholder="Search housing" nearMe={homes.some((h) => h.lat != null)} />
