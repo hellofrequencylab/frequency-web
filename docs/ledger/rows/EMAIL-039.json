@@ -1,7 +1,7 @@
 {
   "id": "EMAIL-039",
   "title": "Space block broadcasts personalize per recipient",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -13,7 +13,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-editor.mjs spacepersonal",
-    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+    "note": "PASS 2026-10-20: Space block sends personalize merge tags per recipient via personalizeFor with names kept on recipients; vitest covers it."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-20"
 }

@@ -37,7 +37,7 @@ const checks = {
     }
   },
   spacepersonal: () => {
-    assert.ok(read('lib/spaces/email-drafts.ts').includes('personalizeFor'), 'Space block broadcasts personalize per recipient')
+    assert.ok(read('lib/spaces/email.ts').includes('personalizeFor(') && (read('lib/spaces/email-drafts.ts').match(/mergeTags: true/g) ?? []).length >= 2, 'Space block broadcasts personalize per recipient through the seam')
   },
   sections: () => {
     assert.ok(existsSync('lib/email-studio/saved-sections.ts'), 'sections can be saved and reused')

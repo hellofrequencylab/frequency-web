@@ -69,6 +69,7 @@ vi.mock('./entitlements', async (orig) => ({
 const sends: {
   to: string
   subject: string
+  html?: string
   from?: string
   replyTo?: string
   headers?: Record<string, string>
@@ -96,7 +97,7 @@ vi.mock('@/lib/queue/outbox', async (orig) => ({
     opts?: { lane?: string; runAfter?: Date },
   ) => {
     sends.push({
-      ...(payload as { to: string; subject: string; from?: string; headers?: Record<string, string> }),
+      ...(payload as { to: string; subject: string; html?: string; from?: string; headers?: Record<string, string> }),
       __kind: kind,
       __lane: opts?.lane,
       __runAfter: opts?.runAfter,
@@ -537,6 +538,26 @@ describe('sendSpaceCampaign: happy path + headers', () => {
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 0, failed: 2 })
     expect(db.outreach.every((o) => o.status === 'failed')).toBe(true)
+  })
+})
+
+describe('sendSpaceCampaign: per-recipient merge tags (EMAIL-039)', () => {
+  it('fills each recipient name in the subject and body when mergeTags is set', async () => {
+    const r = await sendSpaceCampaign('space-A', {
+      subject: 'Hi {{ contact.first_name | "there" }}',
+      html: '<p>Hi {{ contact.first_name | "there" }}</p>',
+      mergeTags: true,
+      recipients: [{ email: 'a@b.com', firstName: 'Maya' }, { email: 'c@d.com' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(sends.map((x) => x.subject)).toEqual(['Hi Maya', 'Hi there'])
+    expect(sends[0]!.html).toContain('Hi Maya')
+    expect(sends[1]!.html).toContain('Hi there')
+  })
+
+  it('leaves the tags alone when mergeTags is not set', async () => {
+    await sendSpaceCampaign('space-A', { subject: 'Hi {{ contact.first_name }}', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect(sends[0]!.subject).toBe('Hi {{ contact.first_name }}')
   })
 })
 
