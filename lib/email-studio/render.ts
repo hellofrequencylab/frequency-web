@@ -31,6 +31,7 @@ import {
 } from '@/lib/entity-blocks/block-content'
 import { isLucideIconName } from '@/lib/entity-blocks/icon-tokens'
 import { palette } from '@/lib/theme/palette'
+import { emailType } from '@/lib/theme/email-type'
 
 // ── Brand palette → literal hex (mirrors app/globals.css DAWN tokens) ─────────────────────────────────────
 
@@ -70,10 +71,10 @@ export const DEFAULT_EMAIL_COLORS: EmailColors = {
   heading: palette.emailHeading,
   muted: palette.textMuted,
   subtle: palette.emailSubtle,
-  primary: palette.primary,
+  primary: palette.emailAction,
   primaryStrong: palette.emailPrimaryStrong,
-  primaryBg: palette.primaryBg,
-  onPrimary: palette.onPrimary,
+  primaryBg: palette.emailAccentSoft,
+  onPrimary: palette.emailActionInk,
   success: palette.emailSuccess,
   info: palette.emailInfo,
   danger: palette.danger,
@@ -200,9 +201,12 @@ const DEFAULT_GAP_PX = 24
  *  headings to match it, so every heading-family title renders at the LIGHTER of the two prior weights
  *  (semibold 600, not bold 700) — a soft charcoal headline rather than a heavy black slab. An operator's
  *  explicit Weight step still overrides it per block. */
-const HEADING_WEIGHT = 600
+const HEADING_WEIGHT = emailType.displayWeight
 
-const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
+/** Body face from the design-keyed email type (lib/theme/email-type.ts). */
+const FONT_STACK = emailType.sans
+/** Display face for the heading family, the eyebrow label and numerals. */
+const DISPLAY_STACK = emailType.display
 
 /** Join non-empty inline-style fragments into a single `style="..."` value (no trailing semicolons fuss). */
 function styleAttr(parts: Array<string | false | undefined>): string {
@@ -232,11 +236,12 @@ function frameBlock(inner: string, { style, colors, defaultGap = DEFAULT_GAP_PX 
     pad > 0 && `padding:${pad}px`,
     card && `background:${colors.surface}`,
     card && `border:1px solid ${colors.border}`,
-    card && `border-radius:16px`,
+    card && `border-radius:24px`,
+    card && emailType.cardShadow && `box-shadow:${emailType.cardShadow}`,
     `text-align:${align}`,
   ])
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin:${mt}px 0 ${mb}px 0;">
-  <tr><td${cellStyle}>${inner}</td></tr>
+  <tr><td${card ? ' data-fq="fq-panel"' : ''}${cellStyle}>${inner}</td></tr>
 </table>`
 }
 
@@ -268,7 +273,7 @@ function heading(
   const w = weightOf(style?.text) ?? baseWeight
   const color = style?.text?.color ? textColorHex(style.text.color, colors) : (colors.heading ?? colors.text)
   const body = rich ? renderInlineRich(text) : escapeHtml(text)
-  return `<h2${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.25`, `font-weight:${w}`, `color:${color}`])}>${body}</h2>`
+  return `<h2 data-fq="fq-strong"${styleAttr([`margin:0`, `font-family:${DISPLAY_STACK}`, `font-size:${px}px`, `line-height:1.1`, `letter-spacing:${px >= 28 ? emailType.displayTracking : '-0.025em'}`, `font-weight:${w}`, `color:${color}`])}>${body}</h2>`
 }
 
 /** A paragraph fragment. Every paragraph on an email block is a rich `textarea` field, so it emits sanitized
@@ -279,7 +284,7 @@ function paragraph(text: string, style: BlockStyle | undefined, colors: EmailCol
   const parts = textStyleParts(style, colors, colors.muted)
   // renderInlineRich escapes non-allowlisted content, keeps <b>/<i>/<a href>, and turns newlines into <br>.
   const body = renderInlineRich(text)
-  return `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.65`, ...parts])}>${body}</p>`
+  return `<p data-fq="fq-p"${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.55`, ...parts])}>${body}</p>`
 }
 
 /** A plain-text body (blank lines between paragraphs) as Studio-styled paragraphs: every character escaped,
@@ -291,7 +296,7 @@ export function plainTextBodyHtml(body: string, colors: EmailColors): string {
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean)
-    .map((p) => `<p${styleAttr([`margin:0 0 16px`, `font-family:${FONT_STACK}`, `font-size:15px`, `line-height:1.65`, `color:${colors.text}`])}>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .map((p) => `<p data-fq="fq-p"${styleAttr([`margin:0 0 16px`, `font-family:${FONT_STACK}`, `font-size:16px`, `line-height:1.55`, `color:${colors.text}`])}>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
     .join('')
 }
 
@@ -303,15 +308,20 @@ export function audienceLineHtml(text: string, colors: EmailColors): string {
 
 function eyebrow(text: string, colors: EmailColors): string {
   if (!text) return ''
-  return `<p${styleAttr([`margin:0 0 8px 0`, `font-family:${FONT_STACK}`, `font-size:11px`, `font-weight:700`, `letter-spacing:0.12em`, `text-transform:uppercase`, `color:${colors.primaryStrong}`])}>${escapeHtml(text)}</p>`
+  return `<p data-fq="fq-muted"${styleAttr([`margin:0 0 10px 0`, `font-family:${DISPLAY_STACK}`, `font-size:11px`, `font-weight:500`, `letter-spacing:0.14em`, `text-transform:uppercase`, `line-height:1`, `color:${colors.subtle}`])}>${escapeHtml(text)}</p>`
 }
 
 /** A CTA button rendered as a bulletproof inline-block link inside an alignment wrapper. */
 function ctaButton(label: string, url: string, align: 'left' | 'center' | 'right', colors: EmailColors): string {
   if (!label) return ''
   const href = safeUrl(url) || '#'
-  const btn = `<a href="${escapeHtml(href)}"${styleAttr([`display:inline-block`, `background:${colors.primary}`, `color:${colors.onPrimary}`, `font-family:${FONT_STACK}`, `font-size:15px`, `font-weight:700`, `text-decoration:none`, `padding:13px 30px`, `border-radius:10px`])}>${escapeHtml(label)}</a>`
-  return `<div${styleAttr([`text-align:${align}`])}>${btn}</div>`
+  const anchor = `<a href="${escapeHtml(href)}"${styleAttr([`display:inline-block`, `color:${colors.onPrimary}`, `font-family:${FONT_STACK}`, `font-size:15px`, `font-weight:600`, `line-height:1`, `text-decoration:none`, `padding:16px 24px`, `border-radius:999px`])}>${escapeHtml(label)}</a>`
+  // The platform action is the pastel --pa pill (lib/theme/email-type.ts) over its solid lavender fallback;
+  // a Space that set its own accent gets a solid pill in that accent. The cell carries the fill and radius
+  // too, so Outlook paints a full 48px target around the label.
+  const platform = colors.primary === DEFAULT_EMAIL_COLORS.primary
+  const fill = [`background:${colors.primary}`, platform && emailType.actionBackground && `background-image:${emailType.actionBackground}`, `border-radius:999px`, platform && emailType.actionGlow && `box-shadow:${emailType.actionGlow}`]
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td align="${align}"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td data-fq="fq-btn" bgcolor="${colors.primary}"${styleAttr(fill)}>${anchor}</td></tr></table></td></tr></table>`
 }
 
 /** An email-safe <img> (plain, absolute URL, full-width, no next/image). Empty when the src is unsafe. */
@@ -351,7 +361,7 @@ function featureCell(it: FeatureItem, colors: EmailColors): string {
   const titleNode = it.link
     ? `<a href="${escapeHtml(it.link)}"${styleAttr([`color:${colors.primaryStrong}`, `text-decoration:none`])}>${titleInner}</a>`
     : titleInner
-  const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>` : ''
+  const h = it.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${DISPLAY_STACK}`, `font-size:16px`, `font-weight:${HEADING_WEIGHT}`, `letter-spacing:-0.01em`, `line-height:1.3`, `color:${colors.heading ?? colors.text}`])}>${titleNode}</p>` : ''
   const b = it.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(it.text).replace(/\n/g, '<br>')}</p>` : ''
   return `${icon}${h}${b}`
 }
@@ -465,18 +475,18 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
       const media = c.image
         ? `${image(c.image, '', 8)}<div style="height:12px;line-height:12px;font-size:0;">&nbsp;</div>`
         : c.statValue || c.statLabel
-          ? `<div${styleAttr([`margin:0 0 10px 0`])}><div${styleAttr([`font-family:${FONT_STACK}`, `font-size:32px`, `font-weight:800`, `line-height:1`, `color:${colors.primaryStrong}`])}>${escapeHtml(c.statValue)}</div>${c.statLabel ? `<div${styleAttr([`margin-top:4px`, `font-family:${FONT_STACK}`, `font-size:12px`, `font-weight:700`, `letter-spacing:0.08em`, `text-transform:uppercase`, `color:${colors.subtle}`])}>${escapeHtml(c.statLabel)}</div>` : ''}</div>`
+          ? `<div${styleAttr([`margin:0 0 10px 0`])}><div${styleAttr([`font-family:${DISPLAY_STACK}`, `font-size:32px`, `font-weight:${HEADING_WEIGHT}`, `letter-spacing:-0.02em`, `line-height:1`, `color:${colors.heading ?? colors.text}`])}>${escapeHtml(c.statValue)}</div>${c.statLabel ? `<div${styleAttr([`margin-top:4px`, `font-family:${DISPLAY_STACK}`, `font-size:11px`, `font-weight:500`, `letter-spacing:0.14em`, `text-transform:uppercase`, `color:${colors.subtle}`])}>${escapeHtml(c.statLabel)}</div>` : ''}</div>`
           : ''
       const titleInner = escapeHtml(c.title)
       const titleNode = c.link
         ? `<a href="${escapeHtml(c.link)}"${styleAttr([`color:${colors.text}`, `text-decoration:none`])}>${titleInner}</a>`
         : titleInner
-      const h = c.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:16px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>` : ''
+      const h = c.title ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${DISPLAY_STACK}`, `font-size:16px`, `font-weight:${HEADING_WEIGHT}`, `letter-spacing:-0.01em`, `line-height:1.3`, `color:${colors.heading ?? colors.text}`])}>${titleNode}</p>` : ''
       const b = c.text ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.6`, `color:${colors.muted}`])}>${escapeHtml(c.text).replace(/\n/g, '<br>')}</p>` : ''
       const btn = c.buttonLabel
         ? `<div style="height:12px;line-height:12px;font-size:0;">&nbsp;</div>${ctaButton(c.buttonLabel, c.buttonHref, 'left', colors)}`
         : ''
-      return `<tr><td${styleAttr([`padding:16px`, `background:${colors.surfaceElevated}`, `border-radius:12px`])}>${media}${h}${b}${btn}</td></tr><tr><td style="height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>`
+      return `<tr><td${styleAttr([`padding:18px 20px`, `background:${colors.primaryBg}`, emailType.softBackground && `background-image:${emailType.softBackground}`, `border-radius:20px`])}>${media}${h}${b}${btn}</td></tr><tr><td style="height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>`
     })
     .join('')
   const grid = cardRows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-top:12px;">${cardRows}</table>` : ''
@@ -516,7 +526,7 @@ function productCard(props: Record<string, unknown>, style: BlockStyle | undefin
     ? `<a href="${escapeHtml(url)}"${styleAttr([`color:${colors.text}`, `text-decoration:none`])}>${titleInner}</a>`
     : titleInner
   const h = title
-    ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:17px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>`
+    ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${DISPLAY_STACK}`, `font-size:17px`, `font-weight:${HEADING_WEIGHT}`, `letter-spacing:-0.01em`, `line-height:1.3`, `color:${colors.heading ?? colors.text}`])}>${titleNode}</p>`
     : ''
   const p = price
     ? `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:15px`, `font-weight:700`, `color:${colors.primaryStrong}`])}>${escapeHtml(price)}</p>`
@@ -528,7 +538,7 @@ function productCard(props: Record<string, unknown>, style: BlockStyle | undefin
   const inner = `${media}${h}${p}${btn}`
   const wrapped = style?.background === false
     ? inner
-    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:16px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:16px`])}>${inner}</td></tr></table>`
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:20px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:24px`, emailType.cardShadow && `box-shadow:${emailType.cardShadow}`])}>${inner}</td></tr></table>`
   const text = [title, price, url && `${cta}: ${url}`].filter(Boolean).join('\n')
   return { html: wrapped, text }
 }
@@ -549,7 +559,7 @@ function dataCard(
     ? `<a href="${escapeHtml(url)}"${styleAttr([`color:${colors.text}`, `text-decoration:none`])}>${titleInner}</a>`
     : titleInner
   const h = title
-    ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${FONT_STACK}`, `font-size:17px`, `font-weight:700`, `color:${colors.text}`])}>${titleNode}</p>`
+    ? `<p${styleAttr([`margin:0 0 4px 0`, `font-family:${DISPLAY_STACK}`, `font-size:17px`, `font-weight:${HEADING_WEIGHT}`, `letter-spacing:-0.01em`, `line-height:1.3`, `color:${colors.heading ?? colors.text}`])}>${titleNode}</p>`
     : ''
   const d = detail
     .map((line) => `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:14px`, `line-height:1.5`, `color:${colors.muted}`])}>${escapeHtml(line)}</p>`)
@@ -560,7 +570,7 @@ function dataCard(
   const inner = `${media}${h}${d}${btn}`
   const wrapped = style?.background === false
     ? inner
-    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:16px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:16px`])}>${inner}</td></tr></table>`
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:20px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:24px`, emailType.cardShadow && `box-shadow:${emailType.cardShadow}`])}>${inner}</td></tr></table>`
   const text = [title, ...detail, url && `${cta}: ${url}`].filter(Boolean).join('\n')
   return { html: wrapped, text }
 }
@@ -601,7 +611,7 @@ function callout(props: Record<string, unknown>, style: BlockStyle | undefined, 
   const inner = `${imgHtml}${h}${b}${btn}`
   const wrapped = forceFlat
     ? inner
-    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:24px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:16px`])}>${inner}</td></tr></table>`
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:24px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:24px`, emailType.cardShadow && `box-shadow:${emailType.cardShadow}`])}>${inner}</td></tr></table>`
   // `title` is a plain `text` field; `body` is a rich `textarea` field.
   const text = [title, richToText(body), hasButton && `${buttonLabel}: ${safeUrl(s(props, 'buttonUrl'))}`].filter(Boolean).join('\n')
   return { html: wrapped, text }
@@ -675,7 +685,7 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
       if (!text) return { html: '', text: '' }
       const by = s(props, 'by')
       // The quote body is a rich `textarea` field; the attribution is a plain `text` field.
-      const q = `<blockquote${styleAttr([`margin:0`, `padding:0 0 0 16px`, `border-left:3px solid ${colors.primary}`, `font-family:${FONT_STACK}`, `font-size:18px`, `font-style:italic`, `color:${colors.text}`, `line-height:1.5`])}>${renderInlineRich(text)}</blockquote>`
+      const q = `<blockquote data-fq="fq-strong"${styleAttr([`margin:0`, `padding:0 0 0 18px`, `border-left:2px solid ${colors.primary}`, `font-family:${emailType.serif}`, `font-size:24px`, `font-style:italic`, `letter-spacing:-0.01em`, `color:${colors.heading ?? colors.text}`, `line-height:1.3`])}>${renderInlineRich(text)}</blockquote>`
       const cite = by ? `<p${styleAttr([`margin:8px 0 0 0`, `font-family:${FONT_STACK}`, `font-size:14px`, `color:${colors.muted}`])}>${escapeHtml(by)}</p>` : ''
       const plain = richToText(text)
       return { html: `${q}${cite}`, text: by ? `"${plain}" - ${by}` : `"${plain}"` }

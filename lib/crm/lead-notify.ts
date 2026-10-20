@@ -1,6 +1,6 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail, emailShell, EMAIL_P, type EmailPayload } from '@/lib/email'
+import { enqueueEmail, emailButton, emailShell, EMAIL_P, type EmailPayload } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 
 // TELL THE OPERATOR A LEAD ARRIVED.
@@ -182,7 +182,7 @@ export function buildContactLeadEmail(parts: {
       bodyHtml,
       `<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(consentLine)}</p>`,
       ...(limitLine ? [`<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(limitLine)}</p>`] : []),
-      `<a href="${parts.crmUrl}" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">Open your CRM</a>`,
+      `${emailButton(`Open your CRM`, parts.crmUrl)}`,
     ].join('\n'),
     // Account mail about the owner's own Space: no membership claim and no unsubscribe control.
     { text: `You are receiving this because you run ${safeSpace} on Frequency.`, unsubscribe: false },

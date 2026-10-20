@@ -51,6 +51,7 @@ import {
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
 import type { BlockStyle, MarginStep } from '@/lib/entity-blocks/block-content'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { MarginControl } from './controls/field-controls'
 import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
 import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
@@ -100,6 +101,9 @@ export interface BuilderRailData {
   content?: Record<string, Record<string, unknown>>
   style?: Record<string, BlockStyle>
   customized: boolean
+  /** The stored document as nodes, present only while render_path_space_profile is on; the Space rail then
+   *  mounts the node page builder (SpacePageBuilderSwitch) instead of this one. */
+  nodeLayout?: NodeLayout
   lockedIds?: string[]
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Absent on the member builder (no function-backed blocks). */
@@ -1111,6 +1115,7 @@ export function SpacePageBuilder({
           customized: d.customized,
           lockedIds: d.lockedIds,
           pickerData: d.pickerData,
+          nodeLayout: d.nodeLayout,
         }
       : null
   }, [slug])
@@ -1139,7 +1144,7 @@ const SPACE_BLOCK_ADMIN_PATH: Record<string, string> = {
   booking: 'settings/offerings#availability',
   team: 'settings/members',
 }
-function spaceBlockAdminHref(slug: string, blockId: string): string | null {
+export function spaceBlockAdminHref(slug: string, blockId: string): string | null {
   const path = SPACE_BLOCK_ADMIN_PATH[blockId]
   if (path) return `/spaces/${slug}/${path}`
   return entityBlockById(blockId)?.category === 'data' ? `/spaces/${slug}/manage` : null

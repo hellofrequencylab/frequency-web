@@ -17,6 +17,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { readSiteStyle, type SiteStyle } from '@/lib/theme/site-style'
 import { getCallerProfile } from '@/lib/auth'
+import { renderPathEnabled } from '@/lib/platform-flags'
+import { ownerNodeLayout } from '@/lib/entity-blocks/node-seed'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import {
   resolveSpaceManageAccess,
@@ -429,6 +432,9 @@ interface SpaceLayoutRailData {
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Keyed by block id; a block absent here has no picker. Serializable (plain data). */
   pickerData: Record<string, BlockPickerData>
+  /** The stored document read as NODES, present ONLY while render_path_space_profile is on (E0 task 12b): the
+   *  rail then mounts the node page builder instead of the type-keyed one. Absent (undefined) otherwise. */
+  nodeLayout?: NodeLayout
   /** The pinned Top Hero's current values (operator overrides, else the Space's brand name / tagline), so the
    *  fixed hero editor opens showing what is on the page. Serializable (plain strings). */
   hero: HeroEditorValues
@@ -476,9 +482,10 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
   // item 6 (existing-function gate) + item 5 (picker data) resolve independently — one parallel pass on the
   // rail's open path. Both are fail-safe (a reader that throws yields an empty set / empty item list), so a
   // transient miss degrades to "the block stays locked" / "the picker shows the create link", never a crash.
-  const [existing, pickerData] = await Promise.all([
+  const [existing, pickerData, nodePath] = await Promise.all([
     existingFunctionBackedBlocks(space.id),
     spaceBlockPickerData(space.id, space.slug, PICKER_DATA_BLOCK_IDS),
+    renderPathEnabled('space_profile'),
   ])
   const { lockedIds } = partitionSpaceBlocks(enabledFunctionKeys(space), {
     functionBacked: new Set(FUNCTION_BACKED_BLOCK_TYPES),
@@ -497,6 +504,7 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     lockedIds,
     pickerData,
     // The pinned Top Hero seed: operator overrides atop the Space's brand name / tagline (pure; buildHero).
+    ...(nodePath ? { nodeLayout: ownerNodeLayout(saved) } : {}),
     hero: buildHero(space),
   }
 }

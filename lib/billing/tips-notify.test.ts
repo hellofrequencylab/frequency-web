@@ -141,7 +141,7 @@ describe('the shell', () => {
     const html = String(m.enqueueEmail.mock.calls[0][0].html)
     expect(html).toContain('<!DOCTYPE html>')
     expect(html).toContain('<meta charset="UTF-8">')
-    expect(html).toContain('>frequency</a>')
+    expect(html).toContain('alt="Frequency, ')
     expect(html).toContain('Unsubscribe or manage emails')
     expect(html).not.toMatch(/[\u2014\u2013]/)
   })

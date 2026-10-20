@@ -271,7 +271,7 @@ describe('the rendered message', () => {
     // React Email (LIVE-695) writes the doctype and attributes in its own spelling.
     expect(html).toMatch(/^<!DOCTYPE html/i)
     expect(html).toMatch(/<meta charset="UTF-8"\/?>/i)
-    expect(html).toContain('>frequency</a>')
+    expect(html).toContain('alt="Frequency, ')
     expect(html).not.toMatch(/[\u2014\u2013]/)
   })
 

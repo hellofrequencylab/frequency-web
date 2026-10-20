@@ -6,7 +6,7 @@ import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
-import { emailFooterHtml, emailHeaderHtml } from '@/lib/email-studio/shell'
+import { emailFooterHtml, emailHeaderHtml, emailHeroHtml } from '@/lib/email-studio/shell'
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
@@ -101,6 +101,9 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
     () => emailHeaderHtml({ brand: { colors: C } }),
     [C],
   )
+  // The stock hero crowns the card on the platform brand, as it does in the sent email. Pinned to the first of
+  // the five so the server and client renders agree; each send picks one at random.
+  const heroHtml = useMemo(() => emailHeroHtml({ brand: { colors: C }, hero: 0 }), [C])
 
 
   if (!store || !store.seeded) {
@@ -310,11 +313,13 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
         aria-label="Email canvas"
       >
         <div
-          className="mx-auto w-full max-w-[600px] rounded-2xl p-6 sm:p-9"
-          style={{ background: C.surface, border: `1px solid ${C.border}` }}
+          className="mx-auto w-full max-w-[600px] overflow-hidden rounded-3xl"
+          style={{ background: C.surface, border: `1px solid ${C.border}`, boxShadow: '0 1px 2px rgba(60,40,20,.04),0 22px 50px -36px rgba(80,50,20,.34)' }} // token-ok: mirrors the email card shadow
         >
+          {heroHtml ? <div dangerouslySetInnerHTML={{ __html: heroHtml }} /> : null}
+          <div className="p-6 sm:p-9">
           {/* Brand header — the SAME wordmark + tagline lockup the sent email renders (no hand-rolled copy). */}
-          <div className="mb-6" dangerouslySetInnerHTML={{ __html: headerHtml }} />
+          {heroHtml ? null : <div className="mb-6" dangerouslySetInnerHTML={{ __html: headerHtml }} />}
 
           {blocks.length === 0 ? (
             <p className="py-10 text-center text-body-sm" style={{ color: C.subtle }}>
@@ -337,6 +342,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
               ))}
             </div>
           )}
+          </div>
         </div>
 
         {/* The legal FOOTER — non-editable chrome BELOW the card, so the WYSIWYG shows the whole email (wordmark,
