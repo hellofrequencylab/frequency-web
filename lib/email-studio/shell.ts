@@ -1,14 +1,17 @@
 import type { EmailRenderLayout } from './render-layout'
 // Email Studio (2026) — the themed EMAIL SHELL. Wraps a rendered block body (lib/email-studio/render.ts) in
-// the outer email document: a warm DAWN canvas, a centered white card, a Frequency brand header (wordmark or
+// the outer email document: the Commons canvas, a centered linen card, a Frequency brand header (wordmark or
 // logo image), the body, and a CAN-SPAM footer (physical address + one-click unsubscribe link). Mirrors the
 // look of lib/email.ts's `emailShell`, themed and inline-styled. Kept lean to stay well under the Gmail
 // 102 KB clip. Pure + framework-free; voice canon (no em dashes in the copy it emits).
 
 import { DEFAULT_EMAIL_COLORS, escapeHtml, type EmailColors } from './render'
 import { EMAIL_TAGLINE, PLATFORM_POSTAL_LINE } from './postal'
+import { emailType, pickStockHero } from '@/lib/theme/email-type'
+import { palette } from '@/lib/theme/palette'
 
-const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
+const FONT_STACK = emailType.sans
+const DISPLAY_STACK = emailType.display
 
 /** The sender BRAND an email document is themed with. Every field optional so a default Frequency-branded
  *  shell renders with no config; the send agent can pass a per-Space brand later. */
@@ -57,29 +60,32 @@ interface EmailDocumentShellInput extends EmailFooterInput {
   body: string
   /** Optional preview / preheader text shown beside the subject in the inbox. */
   preheader?: string
+  /** Which stock hero crowns the platform card; unset picks one at random per dispatch. */
+  hero?: number
 }
 
-/** A hidden preheader span: the inbox preview text, then whitespace to stop the client pulling body copy in. */
+/** A hidden preheader: the inbox preview text, then whitespace to stop the client pulling body copy in. */
 function preheaderSpan(text: string): string {
   if (!text) return ''
   const filler = '&nbsp;&zwnj;'.repeat(60)
-  return `<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;max-height:0;max-width:0;overflow:hidden;mso-hide:all;">${escapeHtml(text)}${filler}</span>`
+  return `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${escapeHtml(text)}${filler}</div>`
 }
 
 /** The brand HEADER: a wordmark TEXT lockup by default (the Frequency text logo). A per-brand logo IMAGE is
  *  used only when a Space explicitly supplies `logoUrl` — the platform shell and text-wordmark brands stay text. */
 function header(brand: EmailBrand, colors: EmailColors, baseUrl: string): string {
-  // Text wordmark is the default (the platform "Frequency" text logo). Only an explicit per-brand logoUrl swaps
-  // in an image; we never stamp a raster logo on the default shell.
-  const logoUrl = brand.logoUrl
+  // The platform shell prints the Frequency wordmark image (the member kit's .ap-logo); a Space's own
+  // logoUrl replaces it, and a Space with only a name prints that name in the display face.
+  const logoUrl = brand.logoUrl ?? (brand.wordmark ? undefined : `${baseUrl.replace(/\/$/, '')}${emailType.wordmark.path}`)
+  const alt = brand.wordmark ?? `Frequency, ${DEFAULT_TAGLINE}`
   const inner = logoUrl
-    ? `<a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand.wordmark ?? 'Frequency')}" width="168" height="30" style="display:block;border:0;width:168px;height:auto;font-family:${FONT_STACK};font-size:24px;font-weight:700;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;"></a>`
-    : `<a href="${escapeHtml(baseUrl)}" style="font-family:${FONT_STACK};font-size:26px;font-weight:900;letter-spacing:-0.5px;color:${colors.primaryStrong};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'Frequency')}</a>`
-  const tagline = brand.tagline ?? DEFAULT_TAGLINE
+    ? `<a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(alt)}" width="${brand.logoUrl ? 168 : emailType.wordmark.width}" height="${brand.logoUrl ? 30 : emailType.wordmark.height}" data-fq="fq-logo" style="display:block;border:0;width:${brand.logoUrl ? 168 : emailType.wordmark.width}px;height:auto;font-family:${DISPLAY_STACK};font-size:16px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;color:${colors.heading ?? colors.text};text-decoration:none;"></a>`
+    : `<a href="${escapeHtml(baseUrl)}" data-fq="fq-logo" style="font-family:${DISPLAY_STACK};font-size:18px;font-weight:600;letter-spacing:-0.03em;color:${colors.heading ?? colors.text};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'Frequency')}</a>`
+  const tagline = brand.logoUrl || !brand.wordmark ? '' : (brand.tagline ?? '')
   const tag = tagline
-    ? `<p style="font-family:${FONT_STACK};font-size:11px;color:${colors.subtle};letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 0;">${escapeHtml(tagline)}</p>`
+    ? `<p data-fq="fq-muted" style="font-family:${DISPLAY_STACK};font-size:11px;font-weight:500;color:${colors.subtle};letter-spacing:0.14em;text-transform:uppercase;line-height:1;margin:6px 0 0;">${escapeHtml(tagline)}</p>`
     : ''
-  return `${inner}${tag}<div style="height:24px;line-height:24px;font-size:0;">&nbsp;</div>`
+  return `${inner}${tag}`
 }
 
 /** The FOOTER: a full, CAN-SPAM-shaped legal footer. Identifies the sender (name + one-line description),
@@ -98,7 +104,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const year = new Date().getFullYear()
   // PROMINENT links: the marketing/nav row reads in body ink at a clear size so members actually click through.
   const link = (href: string, label: string): string =>
-    `<a href="${escapeHtml(href)}" style="color:${colors.text};text-decoration:none;font-weight:600;">${label}</a>`
+    `<a href="${escapeHtml(href)}" data-fq="fq-foot" style="color:${colors.text};text-decoration:none;font-weight:600;">${label}</a>`
   const sep = `<span style="color:${colors.subtle};">&nbsp;&middot;&nbsp;</span>`
   const links = [link(`${base}/privacy`, 'Privacy'), link(`${base}/terms`, 'Terms'), link(`${base}/help`, 'Help')].join(sep)
   // SUBTLE fine print, but the two account links ALWAYS resolve to a live destination. "Unsubscribe" links to
@@ -113,13 +119,13 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const unsubscribeHref = input.unsubscribeUrl ?? manageFallback
   const manageHref = input.manageUrl ?? manageFallback
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
-    <tr><td align="center" style="font-family:${FONT_STACK};padding:24px 16px 0;text-align:center;">
-      <p style="margin:0 0 3px;font-size:15px;font-weight:700;letter-spacing:-0.2px;color:${colors.heading ?? colors.text};">${name}</p>
-      ${desc ? `<p style="margin:0 0 16px;font-size:12px;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>`}
-      <p style="margin:0 0 14px;font-size:13px;line-height:1.6;">${links}</p>
-      <p style="margin:0 0 4px;font-size:11px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
-      <p style="margin:0;font-size:10px;color:${colors.subtle};line-height:1.7;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
-      ${input.sentWithFrequency ? `<p style="margin:8px 0 0;font-size:11px;color:${colors.subtle};line-height:1.6;">Sent with <a href="${escapeHtml(base)}" style="color:${colors.subtle};">Frequency</a>.</p>` : ''}
+    <tr><td align="center" data-fq="fq-foot" style="font-family:${FONT_STACK};padding:28px 8px 0;text-align:center;color:${colors.muted};">
+      <p style="margin:0 0 2px;font-family:${DISPLAY_STACK};font-size:14px;font-weight:${emailType.displayWeight};letter-spacing:-0.02em;color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
+      ${desc ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
+      <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${links}</p>
+      <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
+      <p style="margin:0;font-size:12px;color:${colors.subtle};line-height:1.6;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
+      ${input.sentWithFrequency ? `<p style="margin:10px 0 0;font-size:12px;color:${colors.subtle};line-height:1.6;">Sent with <a href="${escapeHtml(base)}" style="color:${colors.subtle};text-decoration:underline;">Frequency</a>.</p>` : ''}
     </td></tr>
   </table>`
 }
@@ -133,6 +139,27 @@ export function emailFooterHtml(input: EmailFooterInput = {}): string {
   const colors = brand.colors ?? DEFAULT_EMAIL_COLORS
   const baseUrl = brand.baseUrl ?? DEFAULT_BASE_URL
   return footer(input, colors, baseUrl)
+}
+
+/** The STOCK HERO row crowning the platform card (emailType.hero): the photo, the wash and the wordmark in
+ *  one image. A Space with its own logo or wordmark keeps the text/logo header instead, so '' for it. */
+function heroRow(brand: EmailBrand, baseUrl: string, pick?: number): string {
+  if (brand.logoUrl || brand.wordmark) return ''
+  const hero = pickStockHero(pick)
+  if (!hero) return ''
+  const origin = baseUrl.replace(/\/$/, '')
+  return `<tr><td style="padding:0;line-height:0;"><a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(origin)}${hero.path}" alt="Frequency, ${escapeHtml(DEFAULT_TAGLINE)}" width="${hero.width}" height="${hero.height}" data-fq="fq-hero" style="display:block;border:0;width:100%;max-width:600px;height:auto;border-radius:23px 23px 0 0;"></a></td></tr>`
+}
+
+/** The stock hero as a bare, full-width image (no table row), for a surface that frames it itself such as the
+ *  editor canvas. '' when the brand has its own header or the design has no hero. `input.hero` pins the pick. */
+export function emailHeroHtml(input: EmailFooterInput & { hero?: number } = {}): string {
+  const brand = input.brand ?? {}
+  if (brand.logoUrl || brand.wordmark) return ''
+  const hero = pickStockHero(input.hero)
+  if (!hero) return ''
+  const baseUrl = (brand.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '')
+  return `<img src="${escapeHtml(baseUrl)}${hero.path}" alt="Frequency, ${escapeHtml(DEFAULT_TAGLINE)}" width="${hero.width}" height="${hero.height}" style="display:block;border:0;width:100%;height:auto;">`
 }
 
 /** The brand HEADER html (wordmark/logo + tagline), from the SAME builder the sent email uses — so the
@@ -152,20 +179,52 @@ export function emailDocumentShell(input: EmailDocumentShellInput): string {
   const brand = input.brand ?? {}
   const colors = brand.colors ?? DEFAULT_EMAIL_COLORS
   const baseUrl = brand.baseUrl ?? DEFAULT_BASE_URL
+  const fonts = emailType.stylesheet
+    ? `<!--[if !mso]><!--><link rel="stylesheet" href="${emailType.stylesheet}"><!--<![endif]-->`
+    : ''
+  // The pastel wash belongs to the platform page; a Space with its own palette gets its plain canvas.
+  const platformWash = colors.canvas === DEFAULT_EMAIL_COLORS.canvas ? emailType.wash : ''
+  const hero = heroRow(brand, baseUrl, input.hero)
+  // The night room (docs/EMAIL-LAYOUT.md): every colour the light layout sets inline is re-set here under
+  // prefers-color-scheme for the clients that honour it (Apple Mail, iOS Mail, the Outlook apps). The
+  // values are the platform's; a Space's brand accent stays its own in the light layout only.
+  const night = `@media (prefers-color-scheme:dark){
+body,[data-fq=fq-bg]{background:${palette.emailNightCanvas}!important}
+[data-fq=fq-card],[data-fq=fq-panel]{background:${palette.emailNightSurface}!important;border-color:${palette.emailNightBorder}!important}
+[data-fq=fq-h1],[data-fq=fq-strong],[data-fq=fq-logo]{color:${palette.emailNightStrong}!important}
+[data-fq=fq-p],[data-fq=fq-body]{color:${palette.emailNightBody}!important}
+[data-fq=fq-muted],[data-fq=fq-foot],[data-fq=fq-foot] a{color:${palette.emailNightMuted}!important}
+[data-fq=fq-rule]{border-color:${palette.emailNightBorder}!important}
+[data-fq=fq-btn]{background:${palette.emailNightAction}!important;background-image:none!important;box-shadow:none!important}
+[data-fq=fq-btn] a{color:${palette.emailNightOnAction}!important}
+[data-fq=fq-bg]{background-image:none!important}
+[data-fq=fq-link]{color:${palette.emailNightLink}!important}
+}`
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
-<body style="margin:0;padding:0;background:${colors.canvas};">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${fonts}<style>
+body{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+@media only screen and (max-width:620px){[data-fq=fq-wrap]{padding:20px 12px!important}[data-fq=fq-card]{border-radius:20px!important}[data-fq=fq-body]{padding:28px 22px 26px!important}}
+${night}
+</style></head>
+<body data-fq="fq-bg" style="margin:0;padding:0;background:${colors.canvas};">
   ${preheaderSpan(input.preheader ?? '')}
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;background:${colors.canvas};">
-    <tr><td align="center" style="padding:32px 16px;">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;border-collapse:collapse;">
-        <tr><td style="background:${colors.surface};border:1px solid ${colors.border};border-radius:16px;padding:36px 36px 30px;">
-          ${header(brand, colors, baseUrl)}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-bg" style="width:100%;border-collapse:collapse;background:${colors.canvas};${platformWash ? `background-image:${platformWash};` : ''}">
+    <tr><td align="center" data-fq="fq-wrap" style="padding:36px 16px 48px;">
+      <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:collapse;">
+        ${hero ? '' : `<tr><td style="padding:0 4px 22px;text-align:left;">${header(brand, colors, baseUrl)}</td></tr>`}
+        <tr><td data-fq="fq-card" style="background:${colors.surface};border:1px solid ${colors.border};border-radius:24px;padding:0;overflow:hidden;font-family:${FONT_STACK};${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
+            ${hero}
+            <tr><td data-fq="fq-body" style="padding:40px 40px 32px;font-family:${FONT_STACK};">
           ${input.body}
+            </td></tr>
+          </table>
         </td></tr>
         <tr><td>${footer(input, colors, baseUrl)}</td></tr>
       </table>
+      <!--[if mso]></td></tr></table><![endif]-->
     </td></tr>
   </table>
 </body>

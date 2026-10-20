@@ -56,6 +56,8 @@ describe('the stock email catalog', () => {
       expect(r.html.length, r.id).toBeGreaterThan(200)
       // A fixture that missed a field prints the word; a template that reads one wrong prints the other.
       expect(r.html, r.id).not.toMatch(/\b(undefined|null|NaN)\b/)
+      // EMAIL-029: the crossover violet is not an email colour (owner 2026-10-19), in any template.
+      expect(r.html.toLowerCase(), r.id).not.toContain('#5b3fd0')
       expect(r.subject, r.id).not.toMatch(/[–—]/)
       // CONTENT-VOICE: no emoji in a subject line.
       expect(r.subject, r.id).not.toMatch(/[\u{1F300}-\u{1FAFF}☀-➿]/u)

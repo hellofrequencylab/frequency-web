@@ -19,6 +19,8 @@
 
 import { eventInstant, resolveZone, zoneAbbrev } from '@/lib/time/zone'
 import { palette } from '@/lib/theme/palette'
+import { emailType } from '@/lib/theme/email-type'
+import { emailButton, emailKicker, emailRow } from '@/lib/email'
 
 /** The look-ahead: the next seven days from the moment the cron runs. */
 const THIS_WEEK_WINDOW_DAYS = 7
@@ -225,33 +227,21 @@ export function renderThisWeek(input: RenderThisWeekInput): RenderedThisWeek {
   const calendarUrl = `${baseUrl}/discover/events`
 
   const rowsHtml = events
-    .map(
-      (e) => `
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};">
-            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:${palette.text};">${escapeHtml(e.title)}</p>
-            <p style="margin:0;font-size:13px;color:${palette.emailSubtle};">
-              ${escapeHtml(formatThisWeekWhen(e.startsAt, e.timeZone))}${e.where ? ` · ${escapeHtml(e.where)}` : ''}
-            </p>
-          </td>
-          <td style="padding:10px 0;border-bottom:1px solid ${palette.emailBorder};text-align:right;">
-            <a href="${e.url}" style="font-size:13px;font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Go</a>
-          </td>
-        </tr>`,
+    .map((e) =>
+      emailRow(
+        escapeHtml(e.title),
+        `${escapeHtml(formatThisWeekWhen(e.startsAt, e.timeZone))}${e.where ? ` · ${escapeHtml(e.where)}` : ''}`,
+        e.url,
+      ),
     )
     .join('')
 
   const bodyHtml = `
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      ${escapeHtml(subject)}
-    </p>
-    <h1 style="font-size:24px;font-weight:800;color:${palette.text};margin:22px 0 12px;line-height:1.25;">Hi ${escapeHtml(recipientName)},</h1>
+    ${emailKicker(`${escapeHtml(subject)}`)}
+    <h1 style="font-family:${emailType.display};font-size:34px;font-weight:${emailType.displayWeight};letter-spacing:${emailType.displayTracking};color:${palette.emailHeading};margin:0 0 16px;line-height:1.05;">Hi ${escapeHtml(recipientName)},</h1>
     <p style="font-size:15px;color:${palette.textMuted};line-height:1.65;margin:0 0 20px;">${escapeHtml(lead)}</p>
-    <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">${rowsHtml}
-    </table>
-    <p style="margin:26px 0 0;">
-      <a href="${calendarUrl}" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px;">See the whole calendar</a>
-    </p>
+    ${rowsHtml}
+    ${emailButton(`See the whole calendar`, calendarUrl)}
     <hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:26px 0;">
     <p style="font-size:13px;color:${palette.emailSubtle};">
       You get this on Thursdays because ${escapeHtml(regionName)} is your home region on Frequency.

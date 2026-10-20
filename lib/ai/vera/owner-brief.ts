@@ -17,7 +17,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { enqueueEmail, emailShell, listUnsubscribeHeaders } from '@/lib/email'
+import { enqueueEmail, emailButton, emailKicker, emailShell, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { withVoice } from '@/lib/ai/voice'
@@ -119,7 +119,7 @@ export function briefHtml(intro: string, cards: TodayCard[], laterCount: number)
   const rows = cards
     .map(
       (c) => `
-    <div style="border-left:3px solid ${palette.primary};padding:2px 0 2px 14px;margin:0 0 16px;">
+    <div style="border-left:3px solid ${palette.emailBorderStrong};padding:2px 0 2px 14px;margin:0 0 16px;">
       <p style="margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${palette.emailSubtle};">${escapeHtml(c.context)} · ${escapeHtml(c.playbookName)}</p>
       <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:${palette.text};">${escapeHtml(c.name)}</p>
       <p style="margin:0 0 4px;font-size:14px;color:${palette.textMuted};line-height:1.55;">${escapeHtml(c.whyNow)}</p>
@@ -128,11 +128,11 @@ export function briefHtml(intro: string, cards: TodayCard[], laterCount: number)
     )
     .join('')
   const later = laterCount > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:${palette.emailSubtle};">${laterCount} more are on the Later shelf.</p>` : ''
-  return `<p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">Vera · Today</p>
+  return `${emailKicker(`Vera · Today`)}
     <p style="font-size:16px;color:${palette.text};line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
     ${rows}
     ${later}
-    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/intelligence" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>`
+    ${emailButton('Open Today', `${BASE_URL}/admin/crm/intelligence`)}`
 }
 
 export function briefText(intro: string, cards: TodayCard[], laterCount: number): string {

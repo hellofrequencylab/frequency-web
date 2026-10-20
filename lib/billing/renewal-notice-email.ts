@@ -1,7 +1,7 @@
 // The manual-agreement renewal notice (EMAIL-027): the per-touch copy and the owner's email, in the
 // member shell, where the cron used to build the HTML inline through the conversation wrapper with
 // no wordmark or address line. PURE, so the stock catalog renders every touch with fixtures.
-import { emailShell, EMAIL_P, escapeHtml, type EmailPayload } from '@/lib/email'
+import { emailButton, emailShell, EMAIL_P, escapeHtml, type EmailPayload } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 
 type RenewalTouch = 'reminder_30' | 'reminder_7' | 'overdue'
@@ -65,7 +65,7 @@ export function buildRenewalNoticeEmail(parts: {
     [
       `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
       ...copy.body.map((p) => `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
-      `<a href="${parts.billingUrl}" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">View plan and billing</a>`,
+      `${emailButton(`View plan and billing`, parts.billingUrl)}`,
     ].join('\n'),
     { text: escapeHtml(why), unsubscribe: false },
   )

@@ -36,6 +36,9 @@ export async function verifyEmailDeliveryContract() {
       // The design-keyed email palette (pure constants, no transport): lib/email.ts reads its colours there.
       if (name === '@/lib/theme/palette') return load('lib/theme/palette.ts')
       if (name === './design' && file === 'lib/theme/palette.ts') return load('lib/theme/design.ts')
+      // EMAIL-029: the email faces, gradients and stock hero (pure constants) that lib/email.ts reads beside the palette.
+      if (name === '@/lib/theme/email-type') return load('lib/theme/email-type.ts')
+      if (name === './design' && file === 'lib/theme/email-type.ts') return load('lib/theme/design.ts')
       throw Error(`Unexpected probe dependency: ${name}`)
     }
     new Function('module','exports','require',compiled)(compiledModule,compiledModule.exports,localRequire)
