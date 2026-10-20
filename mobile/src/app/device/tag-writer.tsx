@@ -5,18 +5,25 @@ import { useDeviceAction } from '@/device/DeviceProvider'
 import { utf8Encode } from '@/device/bytes'
 import { encodeRequest, MAX_REQUEST_BYTES } from '@/device/protocol'
 import type { TagRead, TagWritten } from '@/device/types'
+import { api } from '@/lib/api'
+import { useAuth } from '@/lib/auth'
+import { memberConfigured } from '@/lib/env'
 import { parseNodeLink, SITE_HOST } from '@/lib/node-link'
-import { Badge, Body, BodySmall, Button, Card, Field, Meta, Notice, Panel, SectionHeader, Soft, Subheading, useConfirm } from '@/ui'
+import { useRemote } from '@/lib/use-remote'
+import { Badge, Body, BodySmall, Button, Card, Field, Meta, Notice, Panel, Row, SectionHeader, Skeleton, Soft, Subheading, useConfirm } from '@/ui'
 
-// Write a Frequency check-in tag with the CyberUnicorn's PN532. Paste the Space's check-in link (Space,
-// Settings, Check in, Copy), then `frequency.write_tag {url}`. The tag holds ONE NDEF URI record and
-// nothing else (docs/LOYALTY.md §6), so no label is sent. The link is never built or retyped here: it
-// is the server-signed one, checked only for its /n/<id>?s= shape. `frequency.read_tag` reads a tag
-// back and the screen compares its URL with the one sent.
+// Write a Frequency check-in tag with the CyberUnicorn's PN532. Signed in, the Spaces the owner runs
+// offer their signed check-in links (GET /api/v1/spaces/checkin-links); otherwise paste the Space's
+// link (Space, Settings, Check in, Copy). Then `frequency.write_tag {url}`. The tag holds ONE NDEF URI
+// record and nothing else (docs/LOYALTY.md §6), so no label is sent. The link is never built or retyped
+// here: it is the server-signed one, checked only for its /n/<id>?s= shape. `frequency.read_tag` reads
+// a tag back and the screen compares its URL with the one sent.
 
 export default function TagWriter() {
   const confirm = useConfirm()
   const { run, busy, error } = useDeviceAction()
+  const { session } = useAuth()
+  const links = useRemote(session ? session.user.id : null, api.checkinLinks)
   const [pasted, setPasted] = useState('')
   const [written, setWritten] = useState<TagWritten | null>(null)
   const [read, setRead] = useState<TagRead | null>(null)
@@ -57,6 +64,32 @@ export default function TagWriter() {
         <BodySmall>2. Paste it below and hold a blank NTAG215 sticker or card on the NFC hat (DIP 3 on).</BodySmall>
         <BodySmall>3. Write it, then read it back. Members tap it with their phone to check in.</BodySmall>
       </Soft>
+
+      {session ? (
+        <View style={{ gap: 14 }}>
+          <SectionHeader title="Your Spaces" count={links.data?.length} />
+          <Card padded={false} gap={0} style={{ padding: 6 }}>
+            {links.error ? (
+              <Notice tone="warning">{links.error}</Notice>
+            ) : !links.data ? (
+              <View style={{ padding: 12, gap: 10 }}>
+                <Skeleton width="60%" />
+                <Skeleton width="40%" height={12} />
+              </View>
+            ) : links.data.length === 0 ? (
+              <View style={{ padding: 12 }}>
+                <BodySmall>You run no Space with check-in yet. Paste a link instead.</BodySmall>
+              </View>
+            ) : (
+              links.data.map((l) => (
+                <Row key={l.spaceId} icon="space" title={l.spaceName} detail={pasted === l.url ? 'Ready to write' : 'Use this Space\u2019s check-in link'} selected={pasted === l.url} onPress={() => setPasted(l.url)} />
+              ))
+            )}
+          </Card>
+        </View>
+      ) : memberConfigured ? (
+        <Meta>Sign in on the Frequency tab to pick one of your Spaces instead of pasting its link.</Meta>
+      ) : null}
 
       <Panel>
         <Field
