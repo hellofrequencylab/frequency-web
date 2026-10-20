@@ -690,7 +690,6 @@ components/sidebar/demo-notice.tsx
 components/sidebar/rail-panels.tsx
 components/sidebar/right-sidebar.tsx
 components/sites/editor/editor-page.tsx
-modules/crm/components/space-member-composer-actions.ts
 components/walkthroughs/feed-role-promotion.tsx
 components/walkthroughs/feed-walkthrough.tsx
 components/widgets/admin/admin-hubs-roster.tsx
@@ -924,6 +923,7 @@ lib/elements/store.ts
 lib/email-studio/analytics.ts
 lib/email-studio/data-blocks.ts
 lib/email-studio/loom-actions.ts
+lib/email-studio/saved-sections-actions.ts
 lib/email-studio/send.ts
 lib/engagement/capture.ts
 lib/engagement/events.ts

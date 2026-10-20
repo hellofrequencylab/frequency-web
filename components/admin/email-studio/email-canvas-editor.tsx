@@ -6,7 +6,7 @@ import { Bookmark, ChevronDown, ChevronUp, GripVertical, Loader2, Monitor, Plus,
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
-import { deleteSection, loadSavedSections, saveSection, type SavedSection } from '@/lib/email-studio/saved-sections'
+import { deleteSection, loadSavedSections, saveSection, type SavedLibrary, type SavedSection } from '@/lib/email-studio/saved-sections'
 import { emailFooterHtml, emailHeaderHtml, emailHeroHtml } from '@/lib/email-studio/shell'
 import { useLegacyEmailModel, useNodeEmailModel, type EmailCanvasModel } from './email-canvas-model'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
@@ -70,17 +70,17 @@ function browserStorage(): Storage | null {
 const EDITOR_UNSUBSCRIBE_PLACEHOLDER = 'https://frequencylocal.com/unsubscribe'
 
 /** The legacy (type-keyed) email canvas editor. */
-export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
-  return <EmailCanvasView model={useLegacyEmailModel()} colors={colors} />
+export function EmailCanvasEditor({ colors, library }: { colors?: EmailColors; library?: SavedLibrary } = {}) {
+  return <EmailCanvasView model={useLegacyEmailModel()} colors={colors} library={library} />
 }
 
 /** The same editor on the node store (E0 task 12b): each block is its own node, so a type can repeat. Mounted
  *  only when the campaign carries a node document (render_path_email). */
-export function NodeEmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
-  return <EmailCanvasView model={useNodeEmailModel()} colors={colors} />
+export function NodeEmailCanvasEditor({ colors, library }: { colors?: EmailColors; library?: SavedLibrary } = {}) {
+  return <EmailCanvasView model={useNodeEmailModel()} colors={colors} library={library} />
 }
 
-function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; colors?: EmailColors }) {
+function EmailCanvasView({ model, colors, library }: { model: EmailCanvasModel | null; colors?: EmailColors; library?: SavedLibrary }) {
   // The canvas chrome (the framing canvas, the card surface/border, the brand wordmark ink) mirrors the email
   // palette so the WYSIWYG surface reads in the same colors the email will send in. Defaults to the platform
   // DAWN palette; a per-Space editor passes its brand-seeded palette (spaceEmailColors) so a business Space's
@@ -96,9 +96,19 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   const [overId, setOverId] = useState<string | null>(null)
   // The preview width: the 600px desktop card, or the 375px a phone gives it (the shell is fluid below 600).
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
-  // Saved sections: blocks the operator kept to reuse in other emails (this browser's storage; see saved-sections).
-  // Read once at mount; the panel only renders after the store seeds on the client, so the server render never differs.
-  const [saved, setSaved] = useState<SavedSection[]>(() => loadSavedSections(browserStorage()))
+  // Saved sections: blocks kept to reuse in other emails. With a `library` (the Email Studio's shared table) they
+  // load after mount; without one they sit in this browser's storage (see saved-sections).
+  const [saved, setSaved] = useState<SavedSection[]>(() => (library ? [] : loadSavedSections(browserStorage())))
+  useEffect(() => {
+    if (!library) return
+    let live = true
+    library.list().then((list) => {
+      if (live && list) setSaved(list)
+    }).catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [library])
 
   // The single-column email block list, in reading order (each row is one block).
   const blocks = store?.blocks ?? []
@@ -173,8 +183,25 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   }
 
   const keepSection = (block: { type: string; content: Record<string, unknown> }, name: string) => {
-    const next = saveSection(browserStorage(), { name, type: block.type, content: block.content }, label(block.type))
+    const input = { name, type: block.type, content: block.content }
+    if (library) {
+      library.save(input, label(block.type)).then((next) => {
+        if (next) setSaved(next)
+      }).catch(() => {})
+      return
+    }
+    const next = saveSection(browserStorage(), input, label(block.type))
     if (next) setSaved(next)
+  }
+
+  const removeSaved = (id: string) => {
+    if (library) {
+      library.remove(id).then((next) => {
+        if (next) setSaved(next)
+      }).catch(() => {})
+      return
+    }
+    setSaved(deleteSection(browserStorage(), id))
   }
 
   const remove = (key: string) => {
@@ -458,7 +485,7 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSaved(deleteSection(browserStorage(), sec.id))}
+                    onClick={() => removeSaved(sec.id)}
                     aria-label={`Delete saved section ${sec.name}`}
                     className="px-1.5 py-1 transition-colors hover:text-danger"
                   >
