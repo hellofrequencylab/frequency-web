@@ -1,6 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
-import { siteTheme } from '@/lib/theme/site-style'
-import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
+import { siteTheme, type SiteThemeId } from '@/lib/theme/site-style'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
@@ -142,6 +141,10 @@ export function readWebsiteEditor(preferences: unknown): WebsiteEditorState | nu
   return s as unknown as WebsiteEditorState
 }
 
+/** The editor's stored theme id for each site theme (ADR-1726); the same table as EDITOR_THEME_OF in
+ *  lib/sites/site-render-style.ts, restated here because that module pulls the render styles into every reader of this file. */
+const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network' }
+
 export function publishedWebsitePage(preferences: unknown, slug: string): WebsitePage | null {
   return publishedWebsiteSnapshot(preferences)?.pages.find((p) => p.slug === slug) ?? null
 }
@@ -162,7 +165,7 @@ export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteThe
 export function publishedWebsiteSnapshot(preferences: unknown): WebsiteSnapshot | null {
   const editor = record(preferences) ? preferences.websiteEditor : null
   const published = record(editor) ? editor.published : null
-  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) && published.theme === EDITOR_THEME_OF[siteTheme(preferences)] ? published : null
+  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) && published.theme === WORN_EDITOR_THEME[siteTheme(preferences)] ? published : null
 }
 
 export function withoutWebsiteDrafts<T>(preferences: T): T {
