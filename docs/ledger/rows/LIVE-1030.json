@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1030",
+  "title": "A mega footer holds the full site index, every legal link and the calls to action, and publishes where its top edge is for the bottom docks",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1847"
+  },
+  "detail": "Owner 2026-10-19 (item 2): the member footer was one line. FqMegaFooter (components/frequency/shared/mega-footer.tsx) is a bar that is always visible (brand, Help, Settings, a Site index toggle), a native details panel with the whole index in columns plus the calls to action, and a legal row that stays visible with the index shut (Privacy, Terms, Guidelines, Space email policy, Accessibility, Contact). The columns are the registry's footer columns, gate-filtered by lib/nav/footer-access.ts (the member site map shares that gate), and the legal set is one list, lib/nav/legal-links.ts, read by the registry, the public footer, the mega footer, llms.txt and the site map. The public footer gains Around you and Marketplace columns, a Contact link and SiteNavigationElement JSON-LD written from the columns it draws. llms.txt gains Marketplace and Legal sections. MegaFooterLift publishes --fq-foot-lift on html: 0 closed, the footer's rise above the window bottom when open (capped at 55% of the window); the docks (LIVE-1011) read it as bottom: var(--fq-foot-lift, 0px). Nothing here moves a dock. Honest gaps: the public footer keeps its dark designed panel and is not collapsible; no Download link because the repo has no app download page.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const f=fs.readFileSync('components/frequency/shared/mega-footer.tsx','utf8');const l=fs.readFileSync('components/frequency/shared/mega-footer-lift.tsx','utf8');const m=fs.readFileSync('components/frequency/members/shell/members-shell.tsx','utf8');if(!f.includes('LEGAL_LINKS'))bad.push('footer does not read the shared legal list');if(!l.includes('--fq-foot-lift'))bad.push('footer does not publish its lift');if(!m.includes('<FqMegaFooter'))bad.push('member shell does not draw the mega footer');if(bad.length){console.error('LIVE-1030: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the member shell goes back to a one-line footer, the legal row stops reading the shared list, or the lift contract is dropped. Behavior is mega-footer.test.tsx.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
