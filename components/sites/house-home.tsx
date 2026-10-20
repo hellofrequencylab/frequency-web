@@ -69,7 +69,7 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   const prefs = space.preferences
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
   const bag = (id: string | null): Bag => (id ? (content[id] ?? {}) : {})
-  const rows = resolveRows(grid, 'space')
+  const rows = resolveRows(grid, 'site')
   const plan = planHouseSections(rows, (id) => isFeatureDataSource(content[id]))
   // The Space on Frequency: only the clearly labelled On Frequency section links here.
   const spaceBase = `${origin}/spaces/${space.slug}`

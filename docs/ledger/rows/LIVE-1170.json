@@ -5,8 +5,11 @@
   "priority": "P2",
   "lane": "live",
   "size": "S",
-  "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "§7.1 and §8.1 item 2" },
-  "detail": "The Spotlight and Site surfaces are declared (LIVE-1157) but no picture exists. The first capture dispatch (run 133) was refused by the environment stamp: the committed set is stamped PREVIEW and the dispatch pointed at production. Nothing was photographed or committed. Re-dispatch e2e-manual with update_baselines on a preview base_url when the owner is next in Actions; it is not blocking E2 or the density work. The shell half will report PARTIAL without a member session, which is expected.",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "§7.1 and §8.1 item 2"
+  },
+  "detail": "The Spotlight and Site surfaces are declared (LIVE-1157) but no picture exists. The first capture dispatch (run 133) was refused by the environment stamp: the committed set is stamped PREVIEW and the dispatch pointed at production. Nothing was photographed or committed. Re-dispatch e2e-manual with update_baselines on a preview base_url when the owner is next in Actions; it is not blocking E2 or the density work. The shell half will report PARTIAL without a member session, which is expected. FINDING 2026-10-20: /sites/<slug> only redirects to /spaces/<slug> (app/sites/[slug]/page.tsx), so the editor-site surface declared in LIVE-1157 photographs the Space's public page, not a Site. A real Site renders only on its own host (a <slug>.<apex> subdomain or custom domain, rewritten by proxy.ts to /hosted/<host>). Before capturing, point the editor-site surface at a path that renders the site, or give the suite a second base URL for the site host.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const d='test/e2e/__screenshots__';const f=fs.readdirSync(d,{recursive:true}).map(String);if(!f.some(x=>/editor-spotlight/.test(x)))process.exit(1)\"",
