@@ -8,6 +8,7 @@ import { SHOW_STEP, type DirectoryParams, type DirectorySections } from '@/lib/s
 import { FqFacetMenu, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
+import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 
 // BUSINESS SPACES DIRECTORY, FREQUENCY BODY (LIVE-1018). The header is the shared index header the page
 // passes in (MarketHero; LIVE-1012 gives it the kit head with the search on its own row and no photo), so
@@ -45,14 +46,17 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
     <Link className="card fqm-card" href={`/spaces/${s.slug}`}>
       <span className="ph" style={{ backgroundImage: `url('${art}')` }}>
         <span className="tag glass fqm-corner">{s.kindLabel}</span>
+        {s.isFoundingBusiness && (
+          <span className="fqm-corner-b">
+            <FounderMark />
+          </span>
+        )}
       </span>
       <span className="fqm-card-b">
         <span className="h3">{s.name}</span>
         {s.tagline && <span className="t2">{s.tagline}</span>}
         {stats && <span className="t2 fqm-body-ink">{stats}</span>}
-        {(s.isFoundingBusiness || s.boosted) && (
-          <span className="t2 fqm-body-ink">{[s.isFoundingBusiness ? 'Founding Business' : null, s.boosted ? 'Boosted' : null].filter(Boolean).join(' · ')}</span>
-        )}
+        {s.boosted && <span className="t2 fqm-body-ink">Boosted</span>}
       </span>
     </Link>
   )
