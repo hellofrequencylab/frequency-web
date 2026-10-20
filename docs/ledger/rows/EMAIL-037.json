@@ -1,7 +1,7 @@
 {
   "id": "EMAIL-037",
   "title": "Every block type can be placed more than once in an email",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -13,7 +13,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-editor.mjs repeat",
-    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+    "note": "PASS 2026-10-20: a test places every email block type twice in the node store and the editor allows it (lib/email-studio/repeatable.test.ts). Live exposure follows the render_path_email switch; project memory says it is on since 2026-10-20 05:07Z, though the live value was not read from here."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-20"
 }
