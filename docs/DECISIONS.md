@@ -7093,7 +7093,7 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 ## ADR-294: Route-scoped module sets — a page only offers (and renders) its own blocks
 
-**Status:** Accepted (2026-06-16) — the page-to-module migration ("make all sections layout modules; no hand-built pages") needs page-specific blocks, and the ADR-270/272 engine resolved every page against the **global** catalog (`LAYOUT_MODULE_IDS`), so any new module appeared on every module-driven page. Code is the source of truth: [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) (`ROUTE_MODULE_IDS` / `moduleIdsForScope`) + [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) + [`lib/page-settings/actions.ts`](../lib/page-settings/actions.ts). **No migration** — only the in-memory module set varies by route; the `page_settings.layout` store is unchanged.
+**Status:** Accepted (2026-06-16) — the page-to-module migration ("make all sections layout modules; no hand-built pages") needs page-specific blocks, and the ADR-270/272 engine resolved every page against the **global** catalog (`LAYOUT_MODULE_IDS`), so any new module appeared on every module-driven page. Code is the source of truth: [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) (`ROUTE_MODULE_IDS` / `moduleIdsForScope`) + [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) + [`lib/page-settings/actions.ts`](../lib/page-settings/actions.ts). **No migration** — only the in-memory module set varies by route; the `page_settings.layout` store is unchanged. · **Superseded in part or whole by [ADR-1763](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context:** ADR-270/271/272 gave each route a saved `{ template, slots }` layout but a single, **global** module catalog. Converting a real page (My Quest `/crew`, admin Journeys) into modules means introducing blocks that belong to *that page only* (the Season Map, the circle Leaderboard, the Journey review queue). Under the global catalog the resolver appends every unplaced known module to the default slot, so My Quest's gauges would leak onto the Leadership dashboard and vice versa. The editor had the same leak: its Layout panel listed the whole catalog regardless of which page you opened it on.
 
@@ -14304,7 +14304,7 @@ The band itself is unchanged. This is an ordering decision inside existing chrom
 
 ## ADR-799: Operator seats (per-seat billing) and collaborator spaces (space↔space) are two different systems
 
-**Status:** Accepted (2026-07-21). Owner decisions. Full plan of record: `docs/SPACE-COLLABORATION-AND-SEATS.md`.
+**Status:** Accepted (2026-07-21). Owner decisions. Full plan of record: `docs/SPACE-COLLABORATION-AND-SEATS.md`. · **Superseded in part or whole by [ADR-1810](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** An operator asked for two capabilities that sound related but are architecturally distinct: (A) adding extra **operators** who manage a space's back end for an additional paid seat, and (B) hosting **collaborator spaces** — separate businesses that operate inside a venue/event (Royal Temple, a salon, a healing center: shared physical space, separate businesses). A prior attempt (ADR-465) to wire `spaces.seat_quantity` from subscription items was reverted because it rode the RETIRED per-seat pricing (every flat tier is `perSeat:false`), so it zeroed Business seats and arbitrarily +1'd nonprofit. This ADR sets the correct model for both.
 
@@ -14357,7 +14357,7 @@ Both A and B management surfaces live under the console's **Profile & Settings**
 
 ## ADR-803: The pricing admin gaps get real console editors; the catalog sync reads operator amounts, and the operator seat gets an activation switch
 
-**Status:** Accepted (2026-07-22). Implements the "Known gaps" of `docs/PRICING-OPERATIONS.md`. Code: `lib/pricing/founding.ts` (`sanitizeFoundingConfig`), `lib/pricing/settings.ts` (the `catalog_operator_seat_active` flag), `lib/billing/pricing-products.ts` (`isCatalogItemInertPlaceholder` + the catalog sync reading operator amounts), `app/(main)/admin/pricing/{actions,load,pricing-console}.tsx`, migration `20261198000000_pricing_admin_gaps.sql`; tests `lib/pricing/founding-config.test.ts` + `lib/billing/pricing-products-placeholder.test.ts`.
+**Status:** Accepted (2026-07-22). Implements the "Known gaps" of `docs/PRICING-OPERATIONS.md`. Code: `lib/pricing/founding.ts` (`sanitizeFoundingConfig`), `lib/pricing/settings.ts` (the `catalog_operator_seat_active` flag), `lib/billing/pricing-products.ts` (`isCatalogItemInertPlaceholder` + the catalog sync reading operator amounts), `app/(main)/admin/pricing/{actions,load,pricing-console}.tsx`, migration `20261198000000_pricing_admin_gaps.sql`; tests `lib/pricing/founding-config.test.ts` + `lib/billing/pricing-products-placeholder.test.ts`. · **Superseded in part or whole by [ADR-1810](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** Five pricing knobs were settable only by editing `pricing_settings` / `platform_flags` by hand: the `founding` config (member one-time + cap, business monthly + take bps + city cap), the operator-seat price + activation, the 8% member take-rate (`take_rate.member_bps`), and the three beta controls (`beta_ends_at`, `beta_invite_only`, `beta_host_prompts`). Each is config that ships OFF/inert (ADR-362); moving them onto `/admin/pricing` must not change that.
 
@@ -46095,7 +46095,7 @@ Numbered **1434** because **1426–1433** landed on main while this PR was open.
 
 ## ADR-1435: The operator seat is $12, and the switch is the sell gate (LIVE-229)
 
-**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.2 · **Amends** [ADR-803](DECISIONS.md) (the switch was the mint gate while the amount was a stand-in) · backlog `LIVE-229` · corroborated by `lib/billing/pricing-keys.ts` (`operator_seat` at 1200 cents, no `placeholder`) · numbered **1435** because **1434** is one Space create door on main
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.2 · **Amends** [ADR-803](DECISIONS.md) (the switch was the mint gate while the amount was a stand-in) · backlog `LIVE-229` · corroborated by `lib/billing/pricing-keys.ts` (`operator_seat` at 1200 cents, no `placeholder`) · numbered **1435** because **1434** is one Space create door on main · **Superseded in part or whole by [ADR-1810](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The seat machinery has been built since ADR-799: catalog item, loadout line, webhook reconciler, seat editor, invite check. The catalog shipped `placeholder: true` at a $9 stand-in so a routine sync could never mint a price the owner had not approved (ADR-362 / ADR-803). CORE-MODEL named $12 as the live amount. On 2026-08-19 the activation switch was flipped while the stand-in was still the code amount, and the first live catalog sync minted four Stripe prices at $9/$90. Stripe prices are immutable; they could only be archived. `setOperatorSeatActive(true)` then refused without an operator override.
 
@@ -52288,3 +52288,1002 @@ The audit's merges ship in the same change: `/start` → `/join` (`/start/[flow]
 **Rejected.** Renaming the stored id (a migration across every Space's preferences, and a stored `frequency` would then need a read alias anyway). Another descriptive label such as "House" (the owner chose Default, and "house theme" is already barred in copy by NAMING.md).
 
 **Consequences.** `scripts/probes/default-site-theme-label.mjs` holds the labels for LIVE-919. Code comments that say "the Frequency theme" for the Space look are history from ADR-1726 and read with this ADR.
+
+## ADR-1749: A member RSVP on an approval-gated event starts as a request, even if they delete and re-insert (SCAN-844)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-844` · extends the SCAN-696 write guard (`20270345011900`) · corroborated by `supabase/migrations/20270346009400_event_rsvps_approval_gated_insert.sql` and `supabase/tests/event_rsvps_member_write_guard.test.sql`
+
+**Context.** SCAN-696 stopped a member PATCHing their own RSVP to `approved` or marking themselves attended. It left INSERT as `approval_status in ('none', 'pending')` for every event. Admission readers (`lib/events/admission.ts` `isAdmitted`, capacity, going counts, hidden-venue disclosure) treat not-pending as admitted, so `going` plus `none` is a seat. Delete-own is allowed. A member with a pending request, or a declined one whose row the host deleted, could re-insert `none` through PostgREST and skip the host's queue. The app's first-RSVP insert already writes `pending` when `events.rsvp_requires_approval` is true; the database did not.
+
+Premise re-tested 2026-10-19 on main: no later migration replaced `guard_event_rsvp_member_write` with a read of `rsvp_requires_approval`. Authenticated is still withheld SELECT on that column (`20270330000000`).
+
+**Decision.** On a caller-role INSERT, if the event requires approval, `approval_status` must be `pending`. The flag is read through `private.event_rsvp_requires_approval`, a SECURITY DEFINER helper, because the trigger stays SECURITY INVOKER so `current_user` still names the caller (a definer body would read its owner and exempt every write, which is SCAN-696's lesson). Missing events fail closed. Trusted writers (`service_role`, `postgres`, `supabase_admin`) and guest seats (`profile_id` is null) stay exempt. Open events still accept `none`.
+
+**Rejected.** Making the trigger SECURITY DEFINER and reading `request.jwt.claims` for the role (guest doors such as `capture_guest_rsvp` would then look like anon and get the member guard). Revoking delete-own (withdrawing a request is a real member action; the skip is the re-insert, not the delete).
+
+**Consequences.** Migration `20270346009400`. pgTAP adds the delete-then-insert-none refusal and an open-event `none` insert. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346009400`; the `apply-migration` workflow is the sanctioned path. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1750: Founder first-week rewards stay paid once, even if a member clears their own profile meta (SCAN-845)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-845` · extends the SCAN-759 compare-and-set (`20270345013100`) · corroborated by `supabase/migrations/20270346009500_prevent_founder_meta_self_edit.sql` and `supabase/tests/prevent_founder_meta_self_edit.test.sql`
+
+**Context.** SCAN-759 stopped two overlapping `claimFounderRewards` calls from each paying the first-week Gems. The once-only record still lived in `profiles.meta.founder`. The `profiles: self update` policy lets a member PATCH their own `meta`, and `prevent_economy_self_edit` guards the economy columns, not a jsonb key. `merge_profile_meta` and `remove_profile_meta_keys` are granted to authenticated. `awardGems` for action `achievement` has no daily cap. Premise re-tested 2026-10-19 on main: no later migration moved the record or refused a member write to `meta.founder`. So `PATCH meta.founder={}` then claim paid the per-task and completion Gems again.
+
+**Decision.** A `BEFORE UPDATE` trigger on `profiles` refuses a change to `meta->'founder'` unless `auth.role()` is `service_role`. The JWT role is the check, not `current_user`: the write paths include SECURITY DEFINER RPCs owned by postgres, and a `current_user` check would exempt every write. `claim_founder_flags` still stamps through the admin client. Other meta keys stay member-writable.
+
+**Rejected.** A new service-role-only table (correct long-term, and a larger move of the RPC, the readers, and existing rows). Extending `prevent_economy_self_edit` (that function guards columns; this is one jsonb key).
+
+**Consequences.** Migration `20270346009500`. pgTAP refuses a member PATCH, merge, and key-remove of `founder`, and still lets `claim_founder_flags` stamp. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346009500`; the `apply-migration` workflow is the sanctioned path. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1751: An unlisted public event page is noindex, with no canonical (SCAN-1014)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-1014` · extends [ADR-202](DECISIONS.md) (unlisted is a link, not a listing) and [ADR-903](DECISIONS.md) (the slug resolver admits unlisted)
+
+**Context.** `public_event_by_slug` admits `visibility in ('public','unlisted')` so a shared link resolves. ADR-202 says unlisted is a link, not a listing: the sitemap and `public_events` stay public-only. After SCAN-867/876 the public share page `/events/<slug>` is a full page with a guest join box. `generateMetadata` set a canonical on every resolved event and only noindexed past dates and extra series occurrences, so a crawler that followed the shared link could keep an unlisted event. The RPC does not return `visibility`, and widening it is a DROP + CREATE on a SECURITY DEFINER function granted to anon.
+
+**Decision.** (1) The public share page reads `visibility` on the same service-role row it already loads for series facts (`shareEventSeo`). (2) `publicEventIndexPlan` noindexes an unlisted event (`index: false, follow: true`) and omits the canonical. A public date keeps the past and series rules, with a self-canonical. Unlisted wins over those rules. (3) Fail-open when the read cannot see visibility: a missed noindex on one unlisted page is quieter than noindexing every public event. OG tags stay, so a pasted link still previews.
+
+**Rejected.** Returning `visibility` from `public_event_by_slug` (a DROP + CREATE on an anon-granted definer, the blast radius `getEventEnrichment` already refused for cover and time zone). Keeping a self-canonical on the noindex unlisted page (that pairing is for a public date that has ended; a canonical still names the URL as the document).
+
+**Consequences.** `lib/events/series-seo.test.ts` pins the plan and the page wiring. The SCAN-1014 probe fails unless `generateMetadata` names unlisted. Hosts already pick "Anyone with the link"; the help article now says search engines are told not to list that page.
+
+## ADR-1752: Delete the staff Claim listing link that nothing imported (SCAN-863)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-863` · corroborated by the removal of `components/marketplace/listing-claim-link.tsx`
+
+**Context.** Site scan 2026-10-14 found `listing-claim-link.tsx` with zero importers. `ListingOwnerControls` accepted an optional `claimShareUrl` and rendered a copy row when it was passed, but the only caller (`components/studio/market/listing-builder.tsx`) never passed it. Claim URLs exist at seed time only. Premise re-tested 2026-10-19: still no importer, still no caller of `claimShareUrl`.
+
+**Decision.** Delete the orphan file and the dead prop branch. Do not wire a staff-only copy row that has had no caller since it was filed.
+
+**Rejected.** Wiring `claimShareUrl` from seed into the builder. Staff still share listings through `ListingShareButton` (the public QR and link) on the same Manage block.
+
+**Consequences.** `ListingOwnerControls` is id + status only. No migration.
+
+## ADR-1754: An email data block is a Space row picked once and refreshed at send, on the Product card's contract
+
+**Status:** Accepted · 2026-10-19 · backlog `EMAIL-025` · builds on [ADR-977](DECISIONS.md) (T-2: `reads` + `resolveAt` is the email boundary) and [ADR-1768](DECISIONS.md) (one shell for every email)
+
+**Context.** The owner asked on 2026-10-19 for the email block editor to feel like the page editor and to carry auto data blocks (products, events, circles) an operator can drop into an email. The Product card already did this for one kind of row: a `content` block, email-only, that stores a reference and a snapshot, with the live read in a separate compile step (`resolveProductRefs`) so the renderer stays pure. Events and circles had no email block at all; the web shows them through the `events` and `circles` data blocks, which read live at render and are therefore illegal in email.
+
+**Decision.** (1) **`eventCard` and `circleCard` are the Product card's siblings**: `content` category, `kinds: ['email']`, in `EMAIL_PALETTE_BLOCK_IDS`, each storing a ref under its own key (`event` / `circle`, sanitized like the product ref) plus the snapshot the renderer reads (title, the date and venue lines or the blurb, image, url, `ctaLabel`). (2) **`lib/email-studio/data-blocks.ts` is the one live read.** `resolveDataBlockRefs` runs in the send compile right after `resolveProductRefs`, walks the native node tree or the legacy bag, and overwrites each placed card's snapshot from the live row: an event's title (prefixed `Cancelled:` when it is), `formatEventWhen` in the event's zone, the venue (the city alone when the host hides the address), the hero through `resolveEventHeroUrl`, the `/events/<slug>` link; a circle's name, a bounded blurb from `about`, `image_url`, the `/circles/<slug>` link. A removed event or a non-listable circle keeps the last-known snapshot; an empty live value never erases a stored one; hidden and benched nodes stay as stored; any error yields the input. (3) **The pickers search a Space, then its rows.** `data-picker-actions.ts` (server actions behind `writerGate`) search Spaces by name and list one Space's upcoming events (operator view, any visibility, not removed) or live circles (`LISTABLE_CIRCLE_STATUS`); `data-picker.tsx` is one `SpaceItemPicker` with two copies, so the rail reads like the product picker. (4) **The renderer draws both through one `dataCard`** (cover, linked title, muted detail lines, CTA) in the Product card's frame, so the three cards read as one family; the canvas previews them read-only, like the Product card.
+
+**Rejected.** Letting the web `events` / `circles` data blocks into the email palette (they read live at render; T-2 forbids it). A multi-item "upcoming events" list block (a card per placement keeps the editor's one-block-one-thing model and the send resolver simple; a list is a later block if asked for). Scoping the picker to the current Space by context (the editor store carries no Space id today; parity with the product picker, which searches by name, and a Space operator finds their Space in one keystroke).
+
+**Consequences.** `scripts/probes/email-data-blocks.mjs` reads the registry, the field schema, the renderer (and that it holds no live read), the resolver, the send seam, the canvas, the rail, the actions and the doc count. `lib/email-studio/data-blocks.test.ts` pins the snapshots, the refresh, the fallbacks and the no-mutation rule; `render.test.ts` pins both renders. `docs/EDITOR-ARCHITECTURE.md` §2.2 counts three email-only blocks.
+
+## ADR-1755: Two on/off switches keep their activation gate in RUNBOOKS (SCAN-864)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-864` · corroborated by `docs/RUNBOOKS.md` "House conversation email bridge" and "SMS provisioning"
+
+**Context.** AGENTS.md requires every on/off env switch to read `envFlag` (`1` / `true` / `on`), sit blank in `.env.example`, and keep its activation gate in `docs/RUNBOOKS.md`. `CONVERSATION_EMAIL_BRIDGE` (ADR-814, `lib/comms/inbound.ts`) and `SMS_PROVISIONING_ENABLED` (ADR-256, `lib/comms/sms.ts`) already did the first two. Neither name appeared in RUNBOOKS. `.env.example` and `docs/A2P-REGISTRATION.md` also said the SMS switch had to be the literal string `true`, which is not what `envFlag` accepts. Premise re-tested 2026-10-19: both still `envFlag`, both still missing from RUNBOOKS, SMS comment still `"true"`-only.
+
+**Decision.** Write both gates in RUNBOOKS. The house bridge turns on only after inbound receiving and `CONVERSATION_TOKEN_SECRET` are live, and a staff-owned thread has completed the forward-and-reply loop; turning it off stops new forwards and still honors issued house addresses. SMS turns on only after A2P 10DLC approval, `sms_consent`, the Twilio ids, and a consented staff test; the platform switch at `/admin/sms` stays off until that test. Document the SMS switch as `envFlag`, not a `"true"`-only string.
+
+**Rejected.** Leaving the SMS comment as `"true"` because tests happened to use that spelling. `1` and `on` already open the gate.
+
+**Consequences.** No code path change. No migration. `.env.example` and `A2P-REGISTRATION.md` point at the gates.
+
+## ADR-1756: Every stock email has a sample in one catalog, and one command mails the set
+
+**Status:** Accepted · 2026-10-19 · backlog `EMAIL-026` · builds on [ADR-1767](DECISIONS.md), [ADR-1768](DECISIONS.md) and [ADR-1754](DECISIONS.md) (the email redesign this catalog reads)
+
+**Context.** The owner asked on 2026-10-19 to be sent every stock template once the emails were redesigned. There was no list of the stock templates: lib/email.ts holds thirty-odd senders and builders, the receipts render through React Email, block campaigns through the Studio shell, plain campaigns through `plainTextEmail`, replies through the conversation wrapper. Reading the set meant reading the senders, and a new transactional email could ship with no one looking at it in a mail client.
+
+**Decision.** (1) **`lib/email-samples/catalog.ts` is the one list.** Each `SampleSpec` renders one stock template with fixture data: a pure builder returns its payload; a transactional sender is called for real and its `enqueueEmail` is captured by the catalog test's outbox mock, so the sample is the sender's own subject, html and text, never a copy. The catalog also places a showcase block email with one of every palette block, including the three data cards, in the Space shell and in the Frequency shell. Nothing in app code imports the catalog. (2) **`lib/email-samples/catalog.test.ts` is the contract**: every sample renders with a subject and a body, prints no `undefined`, `null` or `NaN`, carries no em dash or emoji in its subject, and every commercial template carries the postal line and an unsubscribe link. With `EMAIL_SAMPLES_OUT` set it also writes the rendered set to disk. (3) **`pnpm email:samples --to <inbox>`** (`scripts/email-samples.mjs`) renders the set through that test and posts each email to Resend's REST API with `EMAIL_FROM`, the subject prefixed `[Sample n/N: group]`, spaced under the rate limit; `--only` narrows the set and `--dry` prints the index and sends nothing. Nothing is queued and nothing touches the database. (4) **The probe makes coverage a gate**: `scripts/probes/email-samples.mjs` reads every `send*Email` / `build*Email` export in lib/email.ts (the transport `sendRawEmail` aside) and fails when the catalog has no sample for one.
+
+**Rejected.** An admin page that previews templates (a route on the send path adds fan-out for a reading an operator does twice a year; the mail client is the real preview). Sending through the outbox (it would write queue rows and delivery context for samples). A hand-kept list of template names (the probe reads the exports, so the list cannot drift).
+
+**Consequences.** The three crons' inline emails that are not exported (the week-ahead reminder in the event-reminders route, the waitlist promotion) are not in the catalog; exporting their builders is the way in, and the probe will then require it.
+
+## ADR-1757: Website drafts and the Executive Overview leave the anon-readable Space row (SCAN-827)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-827` · extends the column-grant lock from `20270127000000` · corroborated by `supabase/migrations/20270346009800_space_private_state.sql` and `supabase/tests/space_private_state.test.sql`
+
+**Context.** `20270127000000` dropped table-wide SELECT on `spaces` and re-granted named columns, including `preferences`, to `anon` and `authenticated`. `spaces_read_active` still lets anon read every active non-private Space. LIVE-EDITOR-STATE stored the unpublished draft, scheduled snapshot, version history and review comments at `preferences.websiteEditor`. LIVE-862/864 stored the managers-only Executive Overview at `preferences.programOverview`. `GET /rest/v1/spaces?select=slug,preferences` with the publishable anon key returned all of it. `withoutWebsiteDrafts` and `withoutLeadershipPreferences` only strip the server-rendered projection.
+
+Premise re-tested 2026-10-19 on main: the newest `grant select (...) on public.spaces to anon` still names `preferences`, and no migration created `space_private_state`.
+
+**Decision.** A service-role-only table `space_private_state(space_id pk, website_editor jsonb, program_overview text)` holds the private editor state and the overview. `spaces.preferences` may keep only a comment-free published snapshot plus revision. `save_website_editor` and `publish_due_websites` write both. Editors overlay the private row. The overview save upserts the private table and no longer writes `preferences`. RLS on, no policies; browser roles revoked.
+
+**Rejected.** Revoking `preferences` from anon outright (every public site, directory card and crawler reads other keys on that blob; that needs its own audit). Leaving the keys in `preferences` and stripping them only in app code (the anon REST grant is the leak, and a projection helper is not a grant).
+
+**Consequences.** Migration `20270346009800`. pgTAP: anon/authenticated cannot read or write the private table; a save keeps the draft and comments off `spaces.preferences`; `publish_due_websites` reads the private scheduled snapshot. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346009800`; the `apply-migration` workflow is the sanctioned path. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1758: A draft Circle leaves draft only through publish, even on a direct update (SCAN-848)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-848` · extends SCAN-688 (`#3145`, the Settings rail draft guard) · corroborated by `supabase/migrations/20270346009900_guard_circle_draft_status.sql` and `supabase/tests/guard_circle_draft_status.test.sql`
+
+**Context.** SCAN-688 stopped `updateCircleSettings` from writing any status onto a draft. The `circles: host/guide/mentor update` policy still has no column limits, and the BEFORE UPDATE triggers on `circles` check access shape and the Space-primary row, not the status move. So `status` `draft` to `active` through PostgREST skipped `publishCircleAction`'s create gate, hosting allowance, `circle_start` reward and pinned announcement. Premise re-tested 2026-10-19 on main: no later migration attached a leave-draft guard to `public.circles`. Every app writer that publishes (`publishCircle`, the admin editor, `setSpaceCircleOn`) already uses the admin client.
+
+**Decision.** A `BEFORE UPDATE` trigger on `public.circles` refuses `old.status = 'draft'` and `new.status <> 'draft'` when `auth.role()` is `authenticated` or `anon`. The JWT role is the check, not `current_user`: pgTAP's `throws_ok` and a SECURITY DEFINER door run as postgres, and a `current_user` check exempts the write (CI run 39278455526). `publishCircle` still stamps through the admin client. A statement with no JWT (the migration runner) is allowed. Session-client edits that stay on draft still land. Live Circles can still change status.
+
+**Rejected.** Revoking UPDATE on `circles` from authenticated (hosts still edit draft fields and live status through the session policy; the hole is the leave-draft move). Checking `current_user` (pgTAP and DEFINER doors look like postgres). Folding the hosting allowance into the trigger (the allowance is an app entitlement; the database's job is to refuse the untrusted writer).
+
+**Consequences.** Migration `20270346009900`. pgTAP refuses a host or guide PATCH from draft to active or forming, still allows a draft rename and a live status change, and still lets `service_role` publish. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346009900`; the `apply-migration` workflow is the sanctioned path. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1759: The email block gate lands first, on the tree it protects (LIVE-933)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-933` · executes [ADR-977](DECISIONS.md) D-10 (the five editor gates land at E0) in the order [ADR-1325](DECISIONS.md) set (gates first, then the critical path) · beside [ADR-1005](DECISIONS.md) (E1 adopts `ENTITY_BLOCKS`; the 14 and 14 email bijection starts green on it)
+
+**Context.** The owner reopened the editor program on 2026-10-19 ("Begin the editor program"). EDITOR-ARCHITECTURE §8 and EDITOR-GATES §7 say all five editor gates land at E0, and §8 of EDITOR-GATES says `check:email-blocks` is the one that passes on today's tree with no other change: the curated email palette and the email renderer's switch already agree, 14 and 14. The bounded round-trip half (`check:node-document-safety`, LIVE-871) landed 2026-10-08. Email is on the send path of two crons and has no visual gate, so a block id that moves in the registry but not in the renderer ships as an empty frame in outbound mail. E1 (the contract) and E2 (consolidation) are about to move block ids on purpose.
+
+**Decision.** `scripts/check-email-blocks.mjs` proves EDITOR-GATES §5 E1 to E9 statically over the TypeScript AST and runs in the `checks` guards array. Three choices beyond the spec: (1) the renderer-purity arm is an import check (render.ts may import nothing from the Supabase layer), because "no live read inside a renderer" (§3 rule 3) is otherwise unmeasurable without running it; (2) the send-path arm walks each cron hop by hop (route imports runner, runner imports and calls `compileEmailDoc`, shell imports and calls `renderEmailLayout`) rather than asserting one grep, so a detached hop names itself; (3) `SEND_RESOLVERS` is declared in the gate today (`productCard` to `resolveProductRefs`), and the gate also reads the E1 fields `reads` and `resolveAt` off registry rows so the assertion turns on by itself when E1 adds them. Integrity floors (10 palette ids, 10 cases, 20 registry blocks) make an empty instrument a failure.
+
+**Rejected.** A regex over `case '`: it returns 30 hits in render.ts against the 14 that matter. Pinning `KNOWN_BLOCK_IDS` to the switch (the first draft of §7.2): it fails on a clean tree, since that set is all 36 ids by design. Landing `check:blocks`, `check:surface-binding` or `check:loom-integrity` in the same PR: each hard-fails on an absent registry root, and `defineBlock` is not in the tree, so they would ship permissive, which is a gate that cannot fire.
+
+**Consequences.** The guards array grows by one; `scripts/check-email-blocks.test.ts` proves each assertion fires on a mutated copy of the real files. EDITOR-ARCHITECTURE §7.2 and §8 and EDITOR-GATES §5 now say this gate is live. PROG-E0's remaining gate work is `check:blocks` and `check:surface-binding`, which wait on E1's registry root; the critical path (task 10, per-type limits in place of the six dedupe sets) is the next E0 PR.
+
+## ADR-1760: Collective lists at $149 and sells at the $99 Founding price, held open per catalog item after the beta cutover
+
+**Status:** Accepted · 2026-10-19 · owner ruling (Daniel, project chat 2026-10-19: "collective is $149 with a $99 intro price") · backlog `OWN-096` · **Amends** [ADR-1709](DECISIONS.md) item 1 (Collective's price) and [ADR-1060](DECISIONS.md) (the beta cutover now has one named exception) · **Keeps** [ADR-1709](DECISIONS.md)'s ladder, fee ladder and limits, and `BETA_PRICING_ENDS_AT` where it is
+
+**Context.** ADR-1709 priced Collective at $149 a month and the code catalog (`lib/billing/pricing-keys.ts`) carried `collective_base` as `amountsFromMonthly(14900, 9900)`: a $149 list over a $99 founding amount, with Stripe prices minted for both. ADR-1060 closed the beta window on 2026-08-17, and every surface resolved a price through `effectiveCatalogAmounts(amounts, isBetaPricingActive())`, which collapses founding to list once the window is shut. So the checkout billed `price_collective_base_*_list` ($149), the grid quoted $149 flat, and the ladder blurb said "5 member Spaces included" while the help centre, the marketing template and the NAMING doc disagreed on whether Collective was $99, $149, or $149 with an intro. The `pricing_settings.plan.collective` row in production still read `{14900, 149000}` from the flat days. On 2026-10-19 the owner ruled the intent: Collective lists at $149 and a new Collective starts on a $99 Founding price it keeps for as long as it keeps the plan.
+
+**Decision.**
+
+1. **The Founding intro is a per-item switch, not a date.** `lib/pricing/beta.ts` gains `FOUNDING_OPEN_ITEMS` (today `collective_base` alone) and `foundingOpenFor(item, betaActive)`: true while the beta window is open, and after it only for an item in the set. `foundingOpenForPlan(plan, betaActive)` maps a Space plan to its base item. Every surface that read `isBetaPricingActive()` to pick founding versus list now passes it through this helper: the checkout key (`resolveLoadoutPriceId`), the ladder (`spacePlanPriceCents`, `spacePlanRows`), the grid (`spaceOfferings`), the pricing table (`pricingTiers`) and the comparison block. Closing the intro is one line: remove the item from the set.
+2. **The catalog is the price; the stored row is not.** `lib/pricing/settings.ts` derives `plan.collective` from the `collective_base` catalog config (`planPriceFromAmounts`), so the stale `pricing_settings.plan.collective` row is ignored rather than migrated. No migration, no new flag, so the ADR-1111 migration gate does not block this change.
+3. **One phrase on every surface.** `FOUNDING_RATE_NOTE` ("Founding price. Yours for as long as you keep the plan.") is the caption beside Collective's struck $149 wherever the anchor shows: the grid, the plan ladder, the what-is-frequency template, the pricing FAQ, the community-builders funnel, the help centre. Copy says "Founding", never "beta"; the beta-grant tests still sweep "Beta rate" off every public surface.
+4. **Collective is the partner hub; Network is the chapter tier.** Collective's blurbs and help describe a hub that links up to ten partner Spaces, cross-listed Circles and Journeys, a shared calendar and Vera AI, each partner keeping its own members and payouts. Member Spaces stay a grandfathered feature for the Collectives that already run them; one organization with chapters takes Network. The ladder line is six tiers: Members join. Crew hosts. A Space runs. Business sells. Collective connects. Network unites. The plan ladder's Choose button covers Business, Collective and Network.
+
+**Rejected.** A `pricing_settings` or `platform_flags` switch for the intro (a migration PR waits on the ADR-1111 gate for an owner SQL paste, and the catalog already holds both amounts). Moving `BETA_PRICING_ENDS_AT` (it would re-open the Business $29 anchor the owner closed in ADR-1060). Editing the stale production row by hand (the code now reads past it, and a row nobody reads is not worth an owner paste).
+
+**Consequences.** Tests that pinned "Collective flat" or "after the cutover every plan is list" now assert the per-item rule: `space-plan-checkout.test.ts` expects `price_collective_base_year`, `pricing-grid.test.ts` lets Collective alone keep an anchor and the Founding caption with the window shut, `beta-grant.test.ts` quotes $99 and $990 with $149 and $1,490 as struck anchors and nothing else. `lib/pricing/beta.test.ts` covers `foundingOpenFor`. The pricing docs (`docs/PRICING.md`, `docs/VALUE-LADDER.md`, `docs/NAMING.md`) and the three help articles say the same thing. Network's own card and page stay with `SCAN-1008`.
+
+## ADR-1761: One explainer, one operator guide: the public site merges its duplicate pages and links the pages it kept (SCAN-1017)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-1017` · extends [ADR-1747](DECISIONS.md) (the 2026-10-14 page merges) and [ADR-1737](DECISIONS.md) (the Frequency design's coded pages)
+
+**Context.** After the 2026-10-14 merges the site still advertised 31 static marketing URLs. `/about` (the founding narrative, 600 words) and `/what-is-frequency` (a 2,100-word explainer with a twelve-question FAQ) told the same story, and the explainer still described four Pillars and Channels the Frequency pages no longer show. `/tools-for-community-builders` repeated `/how-to-build-community` in internal nouns (Runs, Dispatch, Zaps, Gems) and was linked from one card on `/spaces`. Under the Frequency design nothing linked the six `/for` doors, nothing but `/pricing` linked `/networks`, and the pillar guides CONTENT-VOICE §7 describes as a cross-linked cluster had no site-wide link. The owner asked for a tight, strategic page set with a best-practice count for search and discovery.
+
+**Decision.** (1) `/what-is-frequency` 308s to `/about`, which takes five of its answers (what it is, how it works, whether it is social media, how it makes money, where it is available) as an Accordion FAQ, so one URL carries the explainer and the FAQPage node. (2) `/tools-for-community-builders` 308s to `/how-to-build-community`, which carries the four jobs as one section and one FAQ answer in plain nouns. (3) `/subscribe` is noindex,follow and off the sitemap: a retention page, not a search landing. (4) The kept pages get their links: the `/spaces` type cards open the four doors, the footer gains Networks and a Guides column, and the header hint reads "Free, Business, Collective, Network". (5) The redirects are route-level `permanentRedirect` stubs, not `next.config` rules, because the LIVE-912 probe reads both page files by path and `redirect-shadow.test.ts` refuses a rule over a live route; the templates stay as source, as the-lab's and the-quest's did under ADR-1747. HYG-043 is right that a redirect belongs in `next.config`, so each stub reads its destination from the module that owns it (the route table's About entry, the guide spec's slug) rather than repeating a path literal, and says in its header that it leaves the day that probe's scope drops it. (6) All six niche doors stay: the LIVE-911 probe pins six trustLines, and each is a distinct funnel once something links it.
+
+**Rejected.** Deleting the two page files now, the-lab's path (the LIVE-912 probe script would need its scope trimmed in the same change, and this session could not remove tracked files; it is the right next step). Merging `/about` into `/what-is-frequency` instead (`/about` is the URL people and the member shell already use, and the explainer's URL is the one that carried the stale taxonomy). Cutting the home page's Story band and swapping the audience pages' headlines (both are design-handoff pages; left for the owner). Dropping the community-builders and teachers doors (the probe count, and the pricing persona strip, pin six).
+
+**Consequences.** 28 indexable static marketing URLs. `scripts/check-seo.mjs` allowlists the two stubs with the reason. `EDITABLE_PAGES`, `render-path-bodies.txt` and the fingerprint baselines drop the two slugs, and the LIVE-007 probe (the eight seeker articles in `EDITABLE_PAGES`) is re-scoped by fragment to the six that are still pages. The SCAN-1017 probe fails if the sitemap re-advertises a merged page, a stub stops redirecting, About loses its FAQ, the footer loses Guides, or the type cards stop linking the doors.
+
+## ADR-1762: A failed Space inbox address stops retrying after 24 hours (SCAN-1011)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-1011` · amends [ADR-1732](DECISIONS.md) (the Space inbox address) · corroborated by `lib/comms/space-inbox-address.ts` and `app/api/cron/space-inbox-verify/route.ts`
+
+**Context.** ADR-1732 and the `space-inbox-verify` cron give a `failed` inbox address 24 hours of automatic retries, then wait for the owner. `listSpaceInboxAddressesToFinish` keyed that window on `updated_at`. `saveRow` restamped `updated_at` on every write, and both `checkSpaceInboxAddress` and `provisionSpaceInboxAddress` wrote on every run, even when the provider still said failed. So a failed row never aged out: the 15-minute cron called Resend verify and inspect for it indefinitely. Premise re-tested 2026-10-19 on main after SCAN-864: the list filter was still `state.eq.pending,and(state.eq.failed,updated_at.gte…)`, and `saveRow` still set `updated_at: new Date()`.
+
+**Decision.** A failed-to-failed re-read does not write. The first failure's `updated_at` is the clock. The list loads every `pending` row first (those still restamp, so the tail is the next run's head), then fills the remaining budget with `failed` rows whose `updated_at` is inside 24 hours. Set up my address passes `restartFailureWindow` so the owner button opens a fresh 24 hours. No new column.
+
+**Rejected.** A `failed_at` column (correct, and a migration in a window that already has 09600-09800 claimed on other PRs). Skipping the provider inspect once failed (the 24 hours would then inspect nothing; transients would never recover on their own).
+
+**Consequences.** A failed row occupies the budget only while it is still in the window, and cannot starve pending rows. After 24 hours it waits for Set up my address. The cron still skips an old failure that slips through the list. No migration. Apply nothing.
+
+## ADR-1763: The Pages workspace is a page index, and Edit appears only where the block editor builds the page (LIVE-934)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-934` · extends [ADR-262](DECISIONS.md) (one editable page Library) and [ADR-1737](DECISIONS.md) (the design switch); supersedes in part [ADR-294](DECISIONS.md)'s four-area layout of `/pages`
+
+**Context.** The owner asked for the Pages admin area cleaned up: the main site pages first, the unlinked lead and SEO pages in their own list, a view-only index for pages with nothing to edit, most important first, every page easy to find. The workspace drew four modules (In-app / Member, In-app / Focus surfaces, Funnels, Marketing pages). Every in-app row offered "Open & edit" (`?edit=1`), a parameter no page in that list reads: `useEditMode` is read on event pages only, so the link opened the page with nothing switched on. The Marketing list offered Edit on Home, The Community, Spaces, Pricing and Circles, whose bodies under the Frequency design are coded pages (each route file's `SITE_DESIGN === 'frequency'` branch), so the editor it opened produced a document the visitor never sees. The site's own non-block pages (Features, Vision, Help, Discover, the events calendar, Get started) and every system page were listed nowhere.
+
+**Decision.** (1) `lib/pages/index-catalog.ts` is the page index: three public lists, Site pages (the site nav's own links), Lead and SEO pages (reached from search, a share or a campaign; nothing in the nav links them) and System pages (fixed copy), each row carrying `editor`, the truth of what produces the body: `blocks`, `coded`, `live`, `help`, `funnel` or `fixed`. Block rows derive from `EDITABLE_PAGES`, so enrolling or retiring a slug there is what adds or removes the row; the five design-switched slugs read `coded` on a Frequency build (`CODED_UNDER_FREQUENCY`, pinned to the route files by test). Page families (the comparisons, the niche doors) are one row with a live count. (2) `/pages` renders five modules in order: Site pages, Lead and SEO pages, Funnels, In-app pages, System pages. Every list shows for admin+; only a janitor gets an Edit button, and only on a `blocks` row. A row the block editor does not build says what does build it and offers View. (3) The in-app list is one table (Member, then Focus surfaces) whose rows name what the page's own Settings button edits (Layout, header, SEO on a module route; header, SEO elsewhere) and offer View; `?edit=1` is gone from it; a patterned row stands for one page per Space and carries no View. (4) `pages-in-app-focus` is retired; `pages-marketing` keeps its id, which saved layouts name, and draws the Site list.
+
+**Rejected.** Giving the coded site pages an Edit button into the block editor (its document is not the page the visitor sees; the Editor program, PROG-E4, is where click-to-edit on those surfaces lands). Deciding here which marketing pages to remove (the marketing trim, SCAN-1017, owns that; its removals leave the index with their `EDITABLE_PAGES` rows). Hiding the public lists from a Site Admin (finding a page is admin work; only the editor is Executive-Admin).
+
+**Consequences.** `lib/pages/index-catalog.test.ts` fails on an enrolled slug the catalog does not place, a row with no route, a design-switch set that drifts from the route files, and a site-nav route the index does not cover. The LIVE-934 probe fails if the lists leave their order or the in-app list links `?edit=1` again. `docs/EMBEDDED-ADMIN.md` describes the index.
+
+## ADR-1765: A Collective cannot pass ten live partners, even from two invites at once (SCAN-1010)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-1010` · extends SCAN-982 (`20270346009200`) · corroborated by `supabase/migrations/20270346010000_collective_partner_cap.sql` and `supabase/tests/collective_partner_cap.test.sql`
+
+**Context.** A Collective hub links up to ten partner Spaces. `invitePartnerSpace` counted pending and accepted rows, then inserted. `validate_collective_partner` checked consent and share-locked both Spaces, but it did not count and did not take an exclusive lock on the hub. Two overlapping invites could both read nine live rows and both insert. Premise re-tested 2026-10-19 on this tree: the latest `validate_collective_partner` body still had no `FOR UPDATE` and no `count(`.
+
+**Decision.** On INSERT of a pending or accepted row, and on UPDATE that brings a declined or revoked row back to a live status, lock both Space rows `FOR UPDATE` in id order and refuse when ten pending or accepted rows already exist. Declined and revoked do not count. The app-side count stays as the polite refusal.
+
+**Rejected.** An advisory lock keyed only on the hub (weaker than a row lock when the hub row is missing). Raising the cap in this change.
+
+**Consequences.** Migration `20270346010000`. pgTAP: ten pending invites land, an eleventh is refused, a second hub is not blocked, declining or revoking frees a slot, and a declined-to-pending UPDATE at cap is refused. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346010000`; the `apply-migration` workflow is the sanctioned path. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1766: A full loyalty card is claimed once, even from two taps at the same moment (SCAN-841)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-841` · extends LIVE-710 (`20270346002600`) · corroborated by `supabase/migrations/20270346010100_claim_loyalty_reward_atomic.sql` and `supabase/tests/claim_loyalty_reward_atomic.test.sql`
+
+**Context.** `claimLoyaltyReward` reads the member's visit count, then inserts a `partner_redemptions` row with source `loyalty`. There is no lock and no uniqueness rule. Two concurrent requests from two tabs both see earned and both insert. Counter staff see only a Claimed-at time. Premise re-tested 2026-10-19 on main: the action is still that unguarded insert, and `20270346002600` still adds only an index.
+
+**Decision.** Add `claim_loyalty_reward(_profile, _offer)`, a `SECURITY DEFINER` RPC, service-role only. It takes `pg_advisory_xact_lock(hashtextextended(profile || ':' || offer))`, re-reads the live card, counts plaque taps at that partner since the latest loyalty claim of THIS card (the same rule as `loyaltyProgress`), and inserts only when the count still meets `visits_required`. The action keeps its pre-check as fast-fail UX; the RPC is the source of truth. A missing RPC fails closed.
+
+**Rejected.** A unique index on `(offer_id, profile_id)` (a later cycle of the same card must still claim). Storing the last counted visit on the claim row (correct, and a larger data-model change than the lock).
+
+**Consequences.** Migration `20270346010100`. pgTAP refuses a second claim of the same cycle, still pays a later cycle, and keeps the function off anon and authenticated. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346010100`; the `apply-migration` workflow is the sanctioned path. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1767: An outgoing email's colour comes from the palette, never from the file that sends it
+
+**Status:** Accepted · 2026-10-19 · backlog `EMAIL-023` · builds on [ADR-1737](DECISIONS.md) (one design switch) and [ADR-1740](DECISIONS.md) (the Frequency palette mirrors the export)
+
+**Context.** The owner asked on 2026-10-19 for every outgoing email to follow the design system, template and token alike. A read-only scan of the tree found four wrappers and about ten builders that write their own HTML. The member shell (`lib/email.ts`) and the Studio shell (`lib/email-studio/shell.ts`) read `lib/theme/palette.ts`, so a Frequency deploy recolours them; the reply wrapper (`lib/comms/email-template.ts`) carried its own grey ramp (`#111827`, `#ececec`, `#9aa0a6`, `#6b7280`), six files held a private `bodyToHtml` with its own `#111`, the week-to-go reminder cron shipped a bare fragment in the pre-DAWN indigo with no doctype, wordmark or footer and an emoji in the subject, and the member shell itself still carried twenty-four hand-typed greys (`#777`, `#888`, `#999`, `#f9fafb`) beside its palette reads. The three shells spelled the tagline three ways. `scripts/check-tokens.mjs` waived every one of these files whole, on the reasoning that mail clients need literal hex, so the guard could not tell a palette read from a typed grey.
+
+**Decision.** (1) **Literal hex in email is legal only as `${palette.x}`.** Mail clients resolve no CSS variables, so the value is still a literal at send time, but the source of it is `lib/theme/palette.ts`, which already carries the email-only keys (`emailCanvas`, `emailBorder`, `emailSubtle`, `emailFaint`, `emailSurfaceElevated`, `emailPrimaryStrong`, …) for both designs. A grey nobody can name in the palette is not a colour an email may use. (2) **The token guard holds the files that are clean.** `lib/email.ts`, `lib/comms/email-template.ts`, `lib/comms/outbound-batch.ts`, `lib/events/waitlist-notify.ts`, `lib/this-week.ts` and the event-reminders cron leave the waiver list in the same change that cleans them, so a planted hex fails `pnpm check:tokens` from now on. The files still on the list (the plain-text campaign, drip, nurture, automation, agent and Vera builders) leave it as they move to a shell under the next rows. (3) **One tagline, one body helper.** `EMAIL_TAGLINE` in `lib/email-studio/postal.ts` (mirrors `SITE_TAGLINE`, kept local so the shells stay framework-free) is what every shell prints. `bodyToHtml` in `lib/comms/email-template.ts` is the one plain-text-to-HTML body; the reply actions, the leader send, the inbound bridge and the batch flush import it. (4) **A reminder is a member email.** The week-to-go reminder renders through `emailShell` with the RSVP footer; its subject carries no emoji (CONTENT-VOICE: emoji only in game UI and social).
+
+**Rejected.** Importing `lib/site.ts` into the shells for the tagline (it drags the nav registry into every send path, the fan-out AGENTS.md warns about). Leaving the waivers in place with a comment (a guard that waives the file cannot see the next typed grey). Changing any colour value in this pass (the Frequency and DAWN palettes are the export's; a recolour is a palette change, which has its own test).
+
+**Consequences.** `scripts/probes/email-palette.mjs` reads the ten files for typed hex, the guard for the removed waivers, the three shells for `EMAIL_TAGLINE` and the six importers for the shared `bodyToHtml`. The receipt goldens were recaptured for the tagline and nothing else. Rows EMAIL-024 (the plain-text builders adopt a shell) and the block-editor data blocks follow under the same program.
+
+## ADR-1768: A plain-text email is the block shell with one paragraph block, never its own template
+
+**Status:** Accepted · 2026-10-19 · backlog `EMAIL-024` · builds on [ADR-1767](DECISIONS.md) (email colour comes from the palette), [ADR-1709](DECISIONS.md) (a Space's send looks like the Space's) and [ADR-1663](DECISIONS.md) (one postal source)
+
+**Context.** Seven senders each hand-rolled the same bare template for a plain-text body: the Space campaign composer and its scheduled-send cron (a byte-for-byte duplicate), the Space drip cron, the event broadcast through the composer's render, Studio campaigns, the Studio agent, member automations and plain nurture steps. Each had a `div`, `#333` paragraphs, an `#eee` rule, a `#999` unsubscribe line and `postalFooterHtml()`. None had a doctype, a wordmark, a preheader slot, a manage-emails link, or the Privacy, Terms and Help row the block shell prints, and a Space's plain-text campaign went out with no Space brand at all, while the same Space's block campaign wore its palette and wordmark. The token guard waived all seven files whole.
+
+**Decision.** (1) **`plainTextEmail(body, opts)` in `lib/email-studio/shell.ts` is the one render for a plain body.** It escapes the body, splits it on blank lines into paragraphs inside `emailDocumentShell`, prints the audience line the caller names in muted type under the body, and returns the HTML and the text part (the body, the unsubscribe URL, the manage link, the free-plan line, the postal line). A sender that wants different chrome edits the shell, never a copy. (2) **A Space's plain send carries the Space's brand.** `lib/spaces/campaign-html.ts` `renderCampaignHtml(body, { brand, sentWithFrequency })` is the Space seam; it keeps the per-recipient unsubscribe placeholder the send loop swaps. The composer passes `spaceEmailBrand(space)` (now in `lib/spaces/email-colors.ts`, shared with the Studio drafts); the scheduled-send and drip crons read `brand_name`, `brand_logo_url`, `brand_accent` and `preferences` from the Space row and pass the same. The free-plan "Sent with Frequency" line is the shell's `sentWithFrequency`, so `frequencyFooterHtml` is gone; `campaignCarriesFrequencyFooter(plan)` still decides. (3) **Frequency's own plain senders (Studio campaigns, nurture, automations, the agent) call `plainTextEmail` with no brand**, so they wear the Frequency shell with the same footer as a block campaign. (4) **The seven files leave the token guard's waiver list**; a planted hex in any of them fails `pnpm check:tokens`. (5) LIVE-728's probe is re-pinned on this seam: it still measures the consequence (every plain commercial email carries the postal address) and now reads it through `plainTextEmail` instead of the retired `postalFooterHtml()` call sites. The Vera shells (SCAN-648) are untouched and move under their own row.
+
+**Rejected.** A second, lighter shell for plain mail (two shells drift; the complaint was drift). Rendering a plain body as a block document through `compileEmailDoc` (it would need a document row and a block id per send; the shell is the shared part, not the block model). Keeping `frequencyFooterHtml` beside the shell's line (two footers, one of them unbranded).
+
+**Consequences.** `scripts/probes/email-shells.mjs` reads the eight senders for the seam and for typed hex, the guard for the removed waivers and the Space senders for the brand read. `lib/email-studio/plain-text-email.test.ts` pins the escape, the paragraphs, the brand recolour, the free-plan line and the text part's order. The event hub's Email channel inherits the Space shell through `renderCampaignHtml` with no change of its own.
+
+## ADR-1769: A stock email built outside lib/email.ts is a pure exported builder in a shell, sampled by the catalog
+
+**Status:** Accepted · 2026-10-19 · backlog `EMAIL-027` · builds on [ADR-1756](DECISIONS.md) (the stock catalog), [ADR-1767](DECISIONS.md) and [ADR-1768](DECISIONS.md) (one shell, palette colour)
+
+**Context.** The email redesign (EMAIL-023 to 026) read lib/email.ts and the Studio shells. Eight stock emails are composed elsewhere, next to the code that decides to send them: the owner's contact-form lead notice (lib/crm/lead-notify.ts), the waitlist's promoted seat (lib/events/waitlist-notify.ts), Vera's daily owner brief (lib/ai/vera/owner-brief.ts), the manual-agreement renewal notice (the billing-renewals cron), the ticket sale and the tip (lib/billing), the shipped order (lib/commerce/fulfilment.ts) and the automation note (lib/automations.ts). Three were bare fragments with no doctype, wordmark, footer or address line, the renewal rode the conversation wrapper, and none had a sample, so the owner's set was short and the EMAIL-026 probe could not see them.
+
+**Decision.** (1) **A stock email composed outside lib/email.ts is a pure, exported builder** that returns the payload or its HTML and text from plain inputs, and the sender or cron calls it. The builder holds no read; what it needs is resolved by the caller. (2) **It renders through a shell**: `emailShell` for member and owner mail, the receipt shell for money, `plainTextEmail` for a plain body. Account mail about the owner's own Space (a lead, a sale, a tip, a renewal) passes `{ text, unsubscribe: false }`, since it follows from running the Space, not from membership. (3) **The catalog samples each builder** under an Owner notices group where the reader is the operator, and the catalog test names the account mail by id as exempt from the unsubscribe check and nothing else. (4) **The probe reads the modules, not lib/email.ts**: a fixed list of module, export and shell, the three former fragments for a bare div, the crons for the builder call, and the token guard for owner-brief.ts's removed waiver.
+
+**Rejected.** Moving the eight into lib/email.ts (a 1,900-line module would grow by a third, and SCAN-849 and EMAIL-023 pin the week-ahead reminder inside its cron, so the probes decide where a template may live). Moving the week-ahead reminder (same reason; it already wears emailShell). Touching Vera's two outbound shells (SCAN-648's probe pins their footer string; a later row re-pins it when they adopt plainTextEmail). Rendering the owner brief as a block document (the cards are a list the AI composes; the shell is the shared part).
+
+**Consequences.** `scripts/probes/email-stock-shells.mjs` is the gate. `textToInnerHtml` in lib/comms/email-template.ts is no longer exported (its one caller was the renewal cron), which keeps SCAN-502's dead-export count at its cap. Three type exports that were only used in their own file lost the keyword for the same reason.
+
+## ADR-1770: A Network website reads its chapters from its member Spaces (SCAN-1018)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-1018` · builds on [ADR-1709](DECISIONS.md) (Collective vs Network) and SCAN-960 (a Network runs chapters as member Spaces)
+
+**Context.** The Group's website is built from the Network block family. Its chapter chips (NetworkChapters) and event filters (NetworkEvents) were lists typed into the page document by the seed, so a chapter added or renamed under Plan and usage never reached the site, and a central admin could not fix it without the seed. The handoff of 2026-10-19 (task A5) asked the blocks to read the real chapter tree. The same handoff found the seed still writing plan collective and the old owner (A1), and the roll-up report admitting the owner only while the /networks copy promises it to central admins (A3).
+
+**Decision.** `getSpaceContentData` carries `chapters`: the Space itself first (`self: true`), then its active, non-private member Spaces, one bounded read that is empty for a Space with no chapters. The two blocks draw from it whenever the Space runs chapters; a chip's label is the member Space's name with the parent's name trimmed off the front ("The Group La Jolla" reads "La Jolla"), the parent reads as its city, and an event with no declared host files under the parent. Each block gains a `Chapters from` field (`live`, the default, or `typed`) so an owner can keep a hand-written list, and the typed list stays in force for a Space with no chapters. The seed writes no chapter list any more. The report policy takes an optional `centralAdmin` dependency, confirmed once before any child or finance read and only for plan `network`, wired to `networkToolsAccess` (named in `network_central_admins` with an active admin membership on the parent). The seed writes owner @frequency, plan network, six chapters (Encinitas joins) and the handoff's exact circle names, so a re-run no longer reverts production.
+
+**Rejected.** Always preferring the live list: it would silently discard a list an owner wrote on purpose, so the field decides and live wins only by default. Deriving chapters inside the block from `metadata.space.events` hosts: an empty calendar would hide chapters. Opening the report to every chapter admin: the /networks promise names central admins, and the report carries revenue.
+
+**Consequences.** Production data (the Encinitas chapter, the circle renames and the three new circles) is a paste for the owner (`the-group/2026-10-19-the-group-data.sql`), not code; once applied, the site lists Encinitas by itself. `scripts/probes/network-theme.mjs` asserts six chapters. Handoff tasks A4 (Partners tab and cross-listing for Network), A6 (a Chapters menu row; re-approval of an edited event) and A7 are not in this change.
+
+## ADR-1771: A plan-only tool gets a catalog row on every Space, and its page answers by plan
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-939` · builds on [ADR-553](DECISIONS.md) (the menu contract), [ADR-782](DECISIONS.md) (the access badge does not gate) and SCAN-983 (Network-only tools)
+
+**Context.** The Space menu catalog gates a row by a function key or not at all; it has no plan gate, by design (ADR-553, ADR-782: the Premium badge is a label, gating lives in pricing). SCAN-983 therefore left the Chapters area without a menu row, reachable only from a button on the network home, and the handoff for The Group asked for the row. The same row also asked for an approval to be forgotten when the approved event is edited, which SCAN-983 had left out.
+
+**Decision.** (1) **A plan-only tool is still one catalog row.** `space.chapters` is a Premium-badged `link` row under Your page, beside Plan and billing. No new gate kind, no plan read in the resolver, no rail edit. (2) **The page, not the menu, answers by plan.** A Network's owner and central admins run the area (the SCAN-983 gate, unchanged). A Collective owner is redirected to its member Spaces on Plan and billing. Any other owner reads a short account of what Network adds and a See plans button. A non-manager gets the same 404 as before. (3) **A decision rests on what was approved.** `approvalResetOnEdit` names the four fields (title, start, end, place); when an edit changes one, `updateEvent` deletes the event's `network_event_approvals` rows after the save, and the event queues again. Other edits keep the decision. The reset is best effort and logged, never a failed save.
+
+**Rejected.** A `plan` gate kind on the catalog (a second gating axis the rail, console and `check:menu` would each have to learn, for one row). Hiding the row with a stored menu override per Space (status in data, drifts). Resetting on every edit (a cover change would send a chapter back to the queue). A new migration or trigger for the reset (the edit path already knows what changed; a trigger would re-derive it).
+
+**Consequences.** `LIVE-939`'s probe reads the row, the pure rule, the `updateEvent` call and the page's plan answer. `lib/collective/network-tools.test.ts` pins which fields reset. The Chapters door on the network home stays; the row is a second door to the same page.
+
+## ADR-1772: Shared listings follow the chapter-parent plans; Partners stays a Collective tool
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-950` · builds on SCAN-982 (Collective Partners and cross-listing) and SCAN-960 (a Network Space runs chapters)
+
+**Context.** The Network tier's help copy said it includes everything Collective does. Two Collective tools checked `isCollectivePlan` alone: the Partners tab and the cross-listing of Circles and Journeys between a parent and the Spaces under it. A Network parent and its chapters could not list with each other, and a Network could not open Partners. The handoff for The Group asked for either the features or the copy to be corrected.
+
+**Decision.** (1) **Cross-listing reads the chapter-parent plans.** Every plan check in `lib/collective/cross-listing-store.ts` uses `isChapterParentPlan`, so a Network parent, its chapters and its live partners are listing Spaces on the same terms as a Collective, its member Spaces and its partners. The readers that draw accepted listings never checked a plan and are unchanged. (2) **Partners stays Collective-only.** `spacePlanTab` keeps its rule: the plan decides one tab, Partners for a Collective and Network for a Network, never both. Collective is many owners working together and Network is one owner running many groups; a Space the Network's owner would partner with is a chapter. (3) **The copy says what is true.** The Network help page and the plans page say Network includes everything Collective does except Partners, and name the chapter tools it adds.
+
+**Rejected.** Opening Partners to Network (two tabs on one Space, and a partner that is really a chapter). Leaving the copy as it was and the feature off (a promise the product did not keep). A Network-specific listings store (the table carries no plan; one store, one rule).
+
+**Consequences.** `LIVE-950`'s probe counts the `isChapterParentPlan` reads in the store, refuses a hand-typed Collective literal, holds the Partners rule in `partners.ts`, and reads the help page for the exception. The cross-listing menu row keeps its label; a later naming pass may generalise it.
+
+## ADR-1773: A parent's calendar feed is network-wide, and the plan has one console control
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-953` · builds on ADR-800 (the Space calendar feed), SCAN-983 (Network tools and the approval queue) and SCAN-980 (Network checkout)
+
+**Context.** A member who subscribed to The Group's calendar feed got the parent's own events and none of its six chapters', while the Space's Network tab showed both. The console page for a Space could record an off-Stripe deal but said the plan "is set separately", which meant SQL. The Network help page still said Talk to us although the Network Stripe price exists and checkout is open.
+
+**Decision.** (1) **The parent's feed composes the Network the way its Network tab does.** `app/spaces/[slug]/calendar.ics` reads each public chapter with the same anon-safe RPC in batches of four and adds the rows `networkFeedRows` keeps: on a Network, events with an approved decision, a series' occurrences riding on the anchor's decision; on a Collective, every member Space row. A chapter's feed stays its own. (2) **One console control sets a plan.** The Plan section on `/admin/spaces/[id]` calls `setSpacePlan` with `force` through a janitor-gated, audited action (`space.plan`), so the billing entitlements are set exactly as the Stripe webhook sets them. It never charges or refunds; Manual billing records the money. (3) **The help page says how to start a Network** and reserves Talk to us for more than 25 chapters. The pricing page's Network column keeps its words for now: the visual fingerprint test pins them, and a recapture is a separate, manual job.
+
+**Rejected.** A second RPC that joins chapters in SQL (the approval rule lives in TypeScript, and the feed would carry undecided chapter events or duplicate the rule). A plan field on the manual billing form (money and plan are different writes with different audiences). Changing the pricing column in this PR (its words are pinned by the fingerprint baselines, which only the manual e2e job can recapture).
+
+**Consequences.** A Network's feed makes up to one RPC call per chapter per poll, cached for five minutes like the parent's. An operator can now move The Group to Network, or a Space to Non Profit, without a database session; the audit log carries from and to. `LIVE-953`'s probe reads the route's composition calls, the action's gate and audit, the page's panel and the help copy.
+
+## ADR-1780: Regulars is a stamp card on the Space door code, not a second points system (LIVE-940)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-940` to `LIVE-946` · spec `docs/LOYALTY.md`
+
+**Context.** The owner asked for a loyalty and check-in program for Spaces with a physical location: the owner sets the reward value, the member earns 25 Zaps a check-in, businesses can run scavenger hunts together, and the program should use the best-practice psychology of loyalty programs. The survey (2026-10-19) found the existing partner loyalty card (`partner_offers.visits_required`, LIVE-710) hangs on a member persona and an admin-minted plaque, pays no Zaps and knows no Space; the Space door check-in (`nodes.kind='checkin'`, `zaps_value 0`) already runs the signed-code, exactly-once capture pipeline once per member-local day; and `award_zaps_atomic` already enforces a daily cap per action. A follow-up ask the same day added three tap modes: tap for loyalty, tap at events, and phone-to-phone taps at meetups.
+
+**Decision.** Build Regulars on the door check-in. One program row per Space, a stamp card (3 to 12 stamps, default 6, up to 2 welcome stamps), a named reward with an owner-set dollar value, 25 Zaps a check-in through a new capped `zap_config` action `space_checkin` (75 a day), and one SQL writer (`loyalty_record_visit`) under an advisory lock per card so two taps earn one reward. The owner edits it inside the Check-in panel; no new module, panel or menu row. Eligibility is the Space's own: a mappable coordinate and a plan at or above Business, read in `loyaltyEligibility`, with the launch switch `LOYALTY_ENABLED`. The persona partner card is left as is. The tap check-in is the door link on an NFC tag: a tag carrying a URL opens on iPhone and Android with no app, and Web NFC reading exists only on Android Chrome, so nothing is built for the phone to read. Hunts, the surprise stamp, the Regular badge, streaks, owner numbers, discovery, event tap and Tap to meet are their own rows and PRs. True phone-to-phone NFC waits for the iOS app; the web Tap to meet is a 60-second code one member shows and the other opens.
+
+**Rejected.** Extending `partner_offers` to Spaces (two owners, two gates, admin-minted plaques). A points balance (research favours a visible countdown to a reward). Per-dollar points (no POS data). Background location (privacy, battery). Rotating tag tokens in phase 1 (the geofence option already refuses a copied link from home; rotation can come with event tap). A new FEATURE_GATES key now (the gates are not live and each key owes a tier ladder and a grid row; the plan floor is read directly and joins the gate map when the gates go live).
+
+**Consequences.** Migration `20270346010200` (three service-role tables, one RPC, one config row). `lib/loyalty/*` is the one module; `lib/engagement/capture.ts` gains one call after the ledger accepts the day. The claim result carries the card. `/rewards` is a member page. `check:adoption`, `check:admin-client` and the migration gates pass with the two loyalty files on the admin-client baseline.
+
+## ADR-1781: A hunt is a set of Regulars stamps inside a window, not a second check-in (LIVE-942)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-942` · spec `docs/LOYALTY.md` · builds on [ADR-1780](#adr-1780)
+
+**Context.** The owner asked for businesses to run scavenger hunts together, where members must visit every location to get the points and the full reward. Phase 1 (ADR-1780) already stamps a member's card once per Space per local day under an advisory lock, so every stop a hunt could want is already a verified, exactly-once event with a date.
+
+**Decision.** A hunt is a host Space, a 2 to 10 week window, 3 to 12 stops that each accepted an invite, and one completion reward from the host. Progress is READ off `loyalty_stamps` (kind `visit`, `visit_day` inside the window) by one SQL writer, `loyalty_hunt_progress`, called right after the stamp landed and under the same per-(space, member) lock, so a hunt never needs its own code, scan or geofence and two taps at the last stop mint one reward. The completion is a `loyalty_rewards` row at the HOST with `hunt_id` set, so the host hands it out through the roster that already exists, and `hunt_complete` pays 100 Zaps once. An invited Space must run Regulars (its stamps are the progress). The host edits hunts inside the Check-in panel under Regulars; no new module, panel or menu row. The hunt page `/hunts/[slug]` is public but noindex until discovery (LIVE-944).
+
+**Rejected.** A per-stop reward written by the hunt (every stop already stamps that Space's own card and pays 25 Zaps; a second stop reward doubles the cost for the stop with no new visit). Reusing the season `qr_scan` campaign challenges (ADR-094): those hang on a member Journey and admin-minted QR codes, not on two shop owners agreeing. Automatic stops (a host adding any Space): the stop's owner must say yes, because their counter sees the hunt's traffic.
+
+**Consequences.** Migration `20270346010300` (three service-role tables, one column, one RPC, one config row). `lib/loyalty/hunts.ts` (pure), `hunt-store.ts`, `hunts-visit.ts`, `hunt-actions.ts`; `capture.ts` gains one call after the stamp. The claim result and `/rewards` show the hunts the stamp moved.
+
+## ADR-1782: Standing on a Regulars card is computed from visit days, never stored, and the only chance is a stated one-in-ten stamp (LIVE-943)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-943` · spec `docs/LOYALTY.md` · builds on [ADR-1780](#adr-1780)
+
+**Context.** The owner asked for a program that uses the best-practice psychology of loyalty programs. The research condensed in `docs/LOYALTY.md` names five levers past the stamp card itself: a small, transparent variable reward; attainable local status; a streak that forgives; a nudge at the goal-gradient moment; and numbers that show the business what the program did.
+
+**Decision.** The surprise stamp is rolled inside `loyalty_record_visit` (one visit in ten, only on a visit that wrote its stamp, odds printed on the card, the owner can turn it off) and never a wheel, a box or a hidden multiplier. The Regular badge (three visits inside a rolling 30 days) and the weekly streak (consecutive weeks with a visit, one missed week forgiven) are COMPUTED from the member's visit days by `readStanding`, returned by the same RPC, and stored nowhere, so both lapse quietly and no job, column or reset exists. The nudge is one push through the notification registry (`loyalty.nudge`, lifecycle, push only, per-Space mute honoured), sent by the stamp that leaves exactly one visit, so it fires once per card by construction. The owner's panel reads four numbers from stamps and rewards: new versus returning members this month, rewards handed out and their cost, members a hunt neighbor sent, and the regulars by name.
+
+**Rejected.** A stored `regular_since` or streak counter (needs a nightly job and resets silently). Tiers (need a year of history). Any chance mechanic with hidden odds. An email nudge (the moment is on the phone at the door, and lifecycle email would feel like marketing).
+
+**Consequences.** Migration `20270346010400` (one column, one rewritten writer). `lib/loyalty/program.ts` gains the standing math; `visit.ts` sends the nudge; the registry gains one row; the card prints the odds, the badge and the streak; the owner panel gains the numbers and the regulars.
+
+## ADR-1783: Regulars is discovered where a member already looks, never through a second map or a coded marketing section (LIVE-944)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-944` · spec `docs/LOYALTY.md` · builds on [ADR-1780](#adr-1780)
+
+**Context.** Phases 1 to 3 made a stamp card nobody can find unless they already stand at a door. The plan's phase 4 named four surfaces: `/rewards`, the map, the Space website and the marketing page.
+
+**Decision.** `/rewards` gains the public Spaces running Regulars nearest the member (ranked by the home pin, else the member's own city first) and the hunts live today, read by `lib/loyalty/discover.ts` through the service-role client and ranked by the pure `lib/loyalty/nearby.ts`. A Space's public page carries one Regulars line while the program is on, in both designs. A Space website whose Space runs Regulars carries a "Check in with Frequency" door beside the Partner badge, a labeled Frequency CTA that points at the Space's page in the app (the websites stay stand-alone otherwise). A member help article explains the program. Two surfaces the plan named are not built: the discover map plots city centroids on purpose (no street address reaches the client) and gains no Space pins; the Spaces marketing page is operator content under the one-render-path gate, so its Regulars section is an operator edit, not code.
+
+**Rejected.** A second map for Regulars (a privacy exception for one feature). A coded marketing section (refused by `check:render-path`). A visitor-facing check-in from the website itself (the door code is the check-in; the website only points at the app).
+
+**Consequences.** No migration. `lib/loyalty/discover.ts` joins the admin-client baseline. The website chrome gains an optional `checkIn` prop; a site that passes none renders exactly as before.
+
+## ADR-1784: An event's tap check-in is a dynamic event code on the existing resolver, never a second door (LIVE-945)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-945` · spec `docs/LOYALTY.md` · builds on [ADR-1780](#adr-1780)
+
+**Context.** The owner asked for tap to check in at events, in the web app, before the iOS app. The `/q/<slug>` resolver's event branch already does everything a door needs: a signed-out guest lands on the guest RSVP door, a member is marked going and checked in through `checkInEvent` once the event has started, with the host's switch, the window, the approval gate and the ticket seat all enforced in the action. What was missing was a code per event that a host could reach.
+
+**Decision.** `ensureEventDoorCode` mints one `qr_codes` row per event (`destination_type` 'event', `purpose` 'event_door:<event id>' because the (owner, purpose) index is a full unique index, no `owner_profile_id` so an anonymous tap reaches the guest door rather than the inviter capture form) and reuses it. The Manage page's Home tab shows it while the host's check-in switch is on: the QR, copy and download, and the same link stamped `?m=nfc` for a tag, so the scan log tells a tap from a scan. Zaps, verification and attendance flow through `checkInEvent` exactly as before.
+
+**Rejected.** A signed `/n/<node>` node per event (a second capture pipeline for a door that exists). A new table or column. A tap that checks in without a seat (the RSVP and ticket gates are the point of the door).
+
+**Consequences.** No migration. `lib/events/door-code.ts` and the Manage door section join the admin-client baseline. One row per event in `qr_codes`, created the first time a host opens Manage with check-in on.
+
+## ADR-1785: Tap to meet is a 60-second code both members must be present for, paid through the Zap ledger, never phone-to-phone NFC on the web (LIVE-946)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-946` · spec `docs/LOYALTY.md` · builds on [ADR-1780](#adr-1780)
+
+**Context.** The owner asked for members to tap phones when they meet in person and earn points, in the web app before the iOS app. Safari exposes no Web NFC, and Chrome's Web NFC is Android only, so a web page cannot read or emit a tag on an iPhone. The nearest honest version is a code one phone shows and the other opens.
+
+**Decision.** `meet_codes` holds a code a member minted with a 60-second expiry; `/meet` shows it as a QR of `/meet/<code>` plus eight unambiguous letters and refreshes it before it lapses, so a screenshot is worthless and both members have to be there. `/meet/<code>` is what the other camera lands on; one press runs the `meet_tap` writer, which refuses the member's own code and an expired one, holds a pair to once a week (`meet_taps` unique on the ordered pair and the week start) and a member to three meets a day, under one advisory lock per pair. On ok the TypeScript side pays both members `meetup_tap` through `awardZapsForAction` (so the daily cap also binds in `award_zaps_atomic`) and files each as the other's contact through the existing QR capture, met at "Tap to meet". A typed code works for a camera that will not focus. It rides the `LOYALTY_ENABLED` switch.
+
+**Rejected.** Web NFC (Android Chrome only; a feature half the members cannot use is not the feature). A long-lived personal code (a screenshot would pay two people who never met). Paying only the tapper (the other member did the showing). A new connection kind (the contact seam already carries where two people met).
+
+**Consequences.** Migration `20270346011300` (two service-role tables, one writer, one `zap_config` row). `lib/meet/store.ts` joins the admin-client baseline. True phone-to-phone NFC is an iOS app item, not a web one.
+
+## ADR-1786: A Space's street address is private until its owner chooses otherwise (LIVE-947)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-947` · builds on [ADR-1026](#adr-1026)
+
+**Context.** `spaces.location_precision` defaulted to `exact`, so the first pin an owner saved published the street without asking. The owner asked for the address to be private by default.
+
+**Decision.** The column default and the code default (`DEFAULT_SPACE_LOCATION_PRECISION`) are `approximate`: street and ZIP are withheld and the map draws a roughly 1 km cell. An owner picks "Show my exact spot" to publish more. Spaces with no pin yet flip to `approximate` in the migration (nothing is published, so no page changes). Spaces with a pin keep their value, so no live listing narrows.
+
+**Rejected.** Flipping every Space (it would hide a street an owner may have chosen to show). Changing how stored values are read: an unrecognised value still resolves to `exact` on purpose, pinned by `lib/nearby/map-pins.test.ts`.
+
+**Consequences.** One migration, applied by hand. Regulars no longer needs a pin ([ADR-1787](#adr-1787)), so a private address costs a Space nothing.
+
+## ADR-1787: A map pin is optional for Regulars; the Business plan is the only gate (LIVE-948)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-948` · spec `docs/LOYALTY.md` · amends [ADR-1780](#adr-1780)
+
+**Context.** Regulars required a mappable address and pin before it could be turned on. A check-in comes from a signed door code (an NFC tag or QR), so the pin only powers the optional distance check. A Space that keeps its street address private, or has none, was locked out for no reason the check-in needed.
+
+**Decision.** `loyaltyEligibility` answers only `plan` or null. The geofence option stays, but it is stored only when the Space has a pin (`spaceHasPin`) and the form disables it with a hint until one exists. Hunts and the Check in panel follow the same gate.
+
+**Rejected.** Keeping the pin gate for hunts only (hunt stops are Spaces that run Regulars, so the same rule applies). Requiring a city instead (nothing reads it at check-in).
+
+**Consequences.** No migration. Nearby discovery already ranks a Space with no pin by city, so no read changes.
+
+## ADR-1788: Check in returns to the Space Manage page as a quick link onto the existing panel (LIVE-949)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-949` · builds on [ADR-1787](#adr-1787)
+
+**Context.** LIVE-226 retired the `space.checkin` menu row and its function key because it duplicated an event mechanic, but the `?panel=checkin` workspace stayed and became the home of the door code, the NFC link and Regulars. With the row gone, no tab led to it: an owner setting up a tag could not find it.
+
+**Decision.** A Check in shortcut joins the Manage quick links (Web editor, Website builder, Website, Menu and features) and opens the same inline panel. The module catalog is not touched: `space.checkin` stays retired, and the box and row counts that LIVE-246 pins stay as they are.
+
+**Rejected.** A new catalog row (it changes the counted rows and pushes the LIVE-246 probe red). Reviving `space.checkin` (it contradicts the LIVE-226 retirement and its pin).
+
+**Consequences.** No migration. Only the enumerated list in `manage-quick-links.test.ts` grew by one.
+
+## ADR-1789: The Check in panel writes the NFC tag itself through Web NFC (LIVE-1113)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1113` · builds on [ADR-1788](#adr-1788)
+
+**Context.** An owner setting up a door tag had to copy the link into a separate tag-writer app. Web NFC can write a tag from the page, but only in Chrome on Android.
+
+**Decision.** The Check in code card gets a Write to NFC tag button. It feature-detects `NDEFReader`, writes one URL record holding the link exactly as shown (no `?m=nfc`, unlike the admin QR writer, so the signed code stays as issued), then asks for a second tap and compares the record it reads. Everywhere else it says to use Chrome on Android, the Frequency app, or a tag-writer app. The Android app writes the same single record.
+
+**Rejected.** Reusing the admin `NfcWriter` (it stamps `?m=nfc` and has no read-back). A server-side write (no browser can reach a tag without Web NFC).
+
+**Consequences.** No migration. Pure helpers live in `lib/qr/nfc-tag.ts` with tests.
+
+## ADR-1790: A verified toll-free number is a second way through the SMS gate, and START lifts a STOP
+
+**Status:** Accepted · 2026-10-19 · backlog `DEF-A2P` · builds on [ADR-256](DECISIONS.md) (the refuse-first SMS gate) and [ADR-376](DECISIONS.md) (the Twilio send path)
+
+**Context.** `isSmsProvisioned()` accepted exactly one US carrier registration: an A2P 10DLC brand plus campaign, which needs an EIN-matched brand, a one-time brand fee, campaign vetting and a monthly campaign fee, and 10 to 15 days of review. Twilio also accepts a verified toll-free number: no brand, no campaign, no registration fee, one number, review usually one to three weeks. With launch on 2026-12-01 and the owner's cost-beats-speed rule, the cheaper path had no way to open the gate. Two smaller gaps sat beside it: the inbound webhook recorded STOP but ignored START, so a member who texted STOP then START was unblocked at the carrier and still `opted_out` on our ledger; and the webhook answered inbound texts with JSON, which Twilio logs as a warning on every message because an inbound-message webhook expects TwiML.
+
+**Decision.** (1) **`smsSenderRegistration()` in `lib/comms/sms.ts` names the registration** the env describes: `a2p_10dlc` when both `SMS_A2P_BRAND_ID` and `SMS_A2P_CAMPAIGN_ID` are set, else `toll_free` when `SMS_TOLLFREE_VERIFICATION_SID` is set, else null. `isSmsProvisioned()` is the switch, the Messaging Service SID and a non-null registration. The 10DLC pair wins when both exist. Nothing else in the gate moves: consent, preference, quiet hours and the platform switch still stand. (2) **START, UNSTOP and YES lift a STOP on the ledger.** `recordSmsRestart` in `lib/crm/contact-consent.ts` appends an `opted_in` row for every member whose latest row on that phone is `opted_out`, and nobody else: START is not consent, so a member who never verified stays where they were. (3) **Every verified inbound text is answered with empty TwiML** (`text/xml`); status callbacks keep the JSON ack. (4) `/admin/sms` shows the toll-free id's presence and which registration is live; `docs/A2P-REGISTRATION.md` §8 is the toll-free filing path; the runbook gate lists both.
+
+**Rejected.** Dropping the two A2P ids in favour of a single generic registration id (loses the audit of which registration the sends ride). Treating START as consent for a pending member (consent is captured against a verified phone in Settings, not inferred from a keyword). Keeping JSON on inbound replies (a warning per text in the Twilio log hides the real ones).
+
+**Consequences.** `lib/comms/sms.test.ts` pins the toll-free path and the precedence. `app/api/webhooks/twilio/route.test.ts` pins the 401, STOP, START, HELP and the TwiML reply. The owner chooses toll-free or 10DLC in the console; the code accepts either.
+
+## ADR-1791: The solid violet accent is retired; the primary action is the pastel pill with ink text, and links and focus rings are ink
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-961` · amends [ADR-1740](DECISIONS.md) (the Frequency export is the app's design) and the 2026-10-15 mobile cohesion override in `app/themes/frequency.css`
+
+**Context.** The Frequency export's Commons theme binds `--action-primary`, `--accent`, `--text-link` and `--focus-ring` to its violet crossover hue `#5B3FD0` (hover `#4A31B8`), and the dark theme to `#A68BFF`. `app/themes/frequency/core.css` mirrors those tokens, and `app/themes/frequency.css` bridges them to `--color-primary`, `--color-primary-strong`, `--color-primary-bg` and `--design-map-pin`, so seven hundred components wear them through `bg-primary`, `text-primary-strong` and `bg-primary-bg`. A 2026-10-15 override had already moved the action, link and focus roles to aqua presence, but the violet kept surfacing: `--fq-accent` on tags, stat icons, calendar picks and map pins; thirty direct `var(--fq-x-violet-deep)` uses for editor selection rings, focus rings and card hover shadows; two hardcoded texts in the ig components; the website editor chrome; and `lib/theme/palette.ts`, the static mirror that email, OG images, share cards, claim cards and the Wallet pass read. On 2026-10-19 the owner said the violet is not the right accent and wants it off the site, and chose, from the options the email thread put to him, the pastel pill with ink text for buttons and ink for links, focus rings and small accents.
+
+**Decision.** (1) **The Commons action, accent, link and focus roles bind to the ink** (`--fq-ink`, `#1E1B18`) in `core.css`; the dark theme binds them to its bone text (`#FBF2E6`); the per-room override in `frequency.css` binds them to `--fq-text-strong`, so Stage, night and skins get their own ink and the button is always the room's strongest text colour on the room's canvas. `--fq-accent-soft` is a 7% ink wash, so `primarySoft` reads as a quiet sand chip with ink text. (2) **The primary action on the public site is the pastel pill**: the site kit's `.btn` and the site-blocks CTA draw `--fq-pa` with ink text and the pa glow, the same pill the member `Button` primitive already drew under Frequency (ADR-1740). (3) **Chrome stops reaching for the hue.** Editor selection, insert and focus rings use `--fq-focus-ring`; card hover shadows tint from `--fq-ink`; the two hardcoded violet texts use `--fq-text-strong`; the website editor's `--x-violet-deep`, `--focus-ring` and `--text-link` resolve to its `--text-strong`. (4) **The static mirror follows**: `palette.frequency.primary` and `emailPrimaryStrong` are the ink, `onPrimary` the canvas, `primaryBg` the sunken sand, and `ogAccent` the pa sky stop `#A3D4FF` so the OG accent bar stays visible on the ink card. (5) **What stays.** The `--fq-pa` stops, lilac `#C4B8FF` among them, by the owner's choice of the pastel pill; `--fq-x-violet-neon` in the Stage aura, wing and mood washes, which are blurred atmospherics rather than a solid accent; the `[data-tone="violet"]` entity tone; the Stage theme's UV palette; and `design_handoff/frequency/`, which is never edited without the owner's word. The export's `tokens/themes.css` still says violet; the app's `core.css` is where the binding differs, and the comment there names this ADR.
+
+**Rejected.** Redefining `--fq-x-violet-deep` itself to ink (the hue token would lie about its colour, and the Stage aura reads it). Keeping the aqua presence binding from 2026-10-15 for links and focus (the owner chose ink). A gradient `--color-primary` (a gradient is not a colour; `border-primary`, `text-primary` and `ring-primary` would break). Editing `design_handoff/frequency/tokens/themes.css` to match (the export is the owner's source of truth and is only changed on his word).
+
+**Consequences.** `LIVE-961`'s probe fails if `#5B3FD0` or `#4A31B8` returns to `app/`, `components/` or `lib/` outside tests and the two hue-token lines, if `core.css` stops binding the action or link role to the ink, if the site kit `.btn` stops drawing `--fq-pa`, or if `palette.frequency.primary` leaves the ink. The email thread restyles the email templates on the same palette values. Space websites on the DAWN Default theme are unchanged.
+
+## ADR-1792: The violet and indigo family is retired from Frequency's own surfaces; the only violet left is the lilac stop inside the handoff pastel pill
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-962` · extends [ADR-1791](DECISIONS.md) (which moved the accent roles to ink and the pastel pill)
+
+**Context.** ADR-1791 re-pointed the action, accent, link and focus roles off `#5B3FD0`, but the family stayed in the tree under other names: the `--fq-x-violet-neon` and `--fq-uv-violet` tokens (the Stage aura, the site wing and mood washes, calendar and map halos), the purple-black Stage and night grounds (`#0A0612`, `#140B22`, `#1E1232`), lavender text (`#F6F0FF`, `#D9CFEA`, `#A89BC2`), the violet entity tone on the Menu tiles, lilac hover glows and the lilac iridescent stops, the editor's range accent, the OG card indigo `#6366F1`, and the Indigo rank ramp. On 2026-10-19 the owner said he still saw the violet and wanted it removed from the system, not re-pointed.
+
+**Decision.** (1) `--fq-x-violet-neon` becomes `--fq-x-sky-neon` (`#A3D4FF`, the pastel pill's sky stop) and `--fq-x-violet-deep` is deleted; `--fq-uv-violet` is deleted and its uses take the sky token. (2) The Stage and night ladder is the cool blue-black the Stage already wore (`#070B14`, `#0C1424`, `#121C2E`, `#1B2A44`), and its text steps are cool greys (`#F2F5FA`, `#C9D3E0`, `#98A6BC`, `#7E8DA6`). (3) The Menu tile tone `violet` is `ink` and draws the room's strongest text colour. (4) Lilac hover glows, rings and iridescent stops take the sky stop; `#6A4BD6`, `#C24BFF` and `#3B2A7A` take blue, magenta and navy. (5) The editor's range accent is ink. (6) The OG card accent on DAWN is the amber the platform already uses, so no raster card is indigo; the Indigo rank ramp is slate blue on Frequency. (7) `scripts/probes/violet-family.mjs` fails when any hex in the violet band (hue 235 to 295, saturation over .25) returns to `app/`, `components/` or `lib/`.
+
+**What stays.** The `--fq-pa`, `--fq-pa-soft` and `--fq-pa-orb` definitions, whose lilac stop is part of the handoff pastel pill the owner chose in [ADR-1791](DECISIONS.md); the DAWN design's own tokens in `app/globals.css` and their two TypeScript mirrors, because Space websites wear DAWN; the Wildheart brand palette; the Spotlight theme presets members choose themselves; and `design_handoff/frequency/`, never edited without the owner's word.
+
+**Rejected.** Keeping the token names and changing only their values (a token named violet that paints sky would lie, and the probe could not tell the two apart). Editing the DAWN tokens (they sync from the DAWN export). Removing the pill's lilac stop (it is the handoff gradient the owner picked).
+
+**Consequences.** The probe is the guard. The one test pin that named the old token (`lib/frequency/site-nav.test.ts`, the home mood hue) moved with it on the owner's word to remove the color. Email templates carry their own palette and are handled in the email thread.
+
+## ADR-1800: Every outgoing email follows the member kit, with a stock hero and no crossover violet (EMAIL-029)
+
+**Status:** Accepted · 2026-10-19 · backlog `EMAIL-029` · builds on [ADR-1767](DECISIONS.md) and [ADR-1769](DECISIONS.md) (one shell, every stock email wears it)
+
+**Context.** EMAIL-023 to 027 moved every email onto the palette and the shared shell, but only re-coloured the old DAWN layout, and read the Commons token file instead of the member kit. The owner rejected the result three times: system fonts, a flat layout, and a violet (#5B3FD0) button and link colour that the member kit overrides everywhere. That violet is declared in `tokens/themes.css` as the Commons action and link colour, so any surface built from the token file alone shows it.
+
+**Decision.** The look is read off the member kit (`design_handoff/frequency/templates/members/app/app.css`), mirrored by hand because a mail client reads no CSS variable: colours in `lib/theme/palette.ts` (one hex each), faces, gradients, shadows and the hero in the new `lib/theme/email-type.ts`. The page is the linen canvas under the `--wash` radial gradients, the content a raised white card at radius 24 under a STOCK HERO, a photo of adults at play with a blue orb bottom left, a purple orb top right and the ink wordmark set into it. Five heroes ship as pre-composed images (`public/brand/frequency/email/hero-1..5.jpg`, built by `scripts/email-hero.py`), because mail clients paint no overlay reliably, and one is picked at random per dispatch; a Space with its own logo or name keeps its own header. The one action is the pastel `--pa` pill with ink text, links are ink, titles are Unbounded with one Instrument Serif italic word, and structure comes from four shared pieces in `lib/email.ts`: `emailKicker` (a pastel pill over the headline), `emailFacts` (when, where and host on a soft field), `emailSection` (a display-face section title) and `emailRow` (a list row with a round pastel go). The night room follows `prefers-color-scheme: dark` through `data-fq` attribute selectors, because the renderer test forbids `class=`. The shells set a fluid 600px column with an Outlook ghost table. `#5B3FD0` appears in no email.
+
+**Rejected.** Solid violet or any one-hex button: the member kit's action is a gradient. A CSS overlay on the photo: Gmail and Outlook drop it. An animated header: a five-frame GIF would outweigh the message. Per-template restyling: the four helpers make a new template inherit the look.
+
+**Consequences.** On the owner's tap, the pins on the old look were recaptured in the same change: the LIVE-877 render fixture and its SHA, the wordmark test in `render.test.ts`, three receipt shell checks and the receipt goldens. `docs/EMAIL-LAYOUT.md` is the standard. The site-wide removal of the violet (the Commons theme files, the palette `primary` that feeds OG cards and the Wallet pass) is the design thread's, not this change's.
+
+## ADR-1810: The $12 operator seat is retired; seats are included per tier and never sold
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-993` · supersedes the seat add-on in [ADR-799](DECISIONS.md), [ADR-803](DECISIONS.md) and [ADR-1435](DECISIONS.md)
+
+**Context.** The owner's ruling on 2026-10-19 ("Remove the $12 operator completely. That was an OLD plan that snuck back in") closed a seat add-on that had grown on every paid plan: a per-seat `operator_seat` catalog item at $12/seat/mo, a seat picker on the Go Business card, a seat editor on the Space billing page that prorated the live subscription, an admin activation switch (`catalog_operator_seat_active`) with its own row in the pricing console, a "seats" row and extras card on /pricing and in the page template, a seats FAQ, an llms.txt line, and a comparison-table disclaimer written to defend charging per seat. Every tier already includes its seats through the `space_team` meter (Free 1, Business 2, Collective 3 plus two per member Space, Network 10), so the add-on sold a thing the ladder already gives and contradicted the brand promise that a plan is one flat price with seats included.
+
+**Decision.** (1) `operator_seat` leaves `CATALOG_ITEM_KEYS` and `CATALOG` and joins `RETIRED_CATALOG_ITEM_KEYS`, so its four price keys stay resolvable for a legacy subscription row and the catalog sync never mints them again. (2) `createSpaceLoadoutCheckout` takes no seat quantity and bills every item at quantity 1; `operatorSeatsSellable`, `updateOperatorSeats` (`lib/billing/operator-seats.ts`), `setOperatorSeats` and the seat editor are deleted. (3) The Go Business card, the pricing grid, `planExtras`, the pricing FAQ, the page template, the llms.txt line and the comparison disclaimer stop mentioning a seat price; the FAQ answer reads the included counts off `PLACEHOLDER_METER_LIMITS.space_team`. (4) `catalog_operator_seat_active` leaves `PRICING_FLAG_KEYS` and the admin console; `loadPricingFlags` filters a leftover `platform_flags` row, so no migration is needed. (5) The reconciler's `seatQuantityFromItems` stays: a grandfathered subscription that still carries an `operator_seat` line keeps writing its quantity to `spaces.seat_quantity`, so nobody loses seats they paid for.
+
+**Rejected.** Hiding the seat behind the switch (the picker and the row would keep reading as a plan). Deleting the retired price keys (a legacy row could no longer resolve its locked price). Dropping `seatQuantityFromItems` (a grandfathered Space would fall to its base allowance on the next reconcile).
+
+**Consequences.** `lib/billing/pricing-catalog.test.ts` pins the key out of the catalog and its price keys in the retired set; `pricing-catalog-sync.test.ts` pins that no operator_seat key is minted; `pricing-grid.test.ts` pins that the grid has no seat row and no seat card. `docs/PRICING.md` records the retirement. Stripe's existing operator_seat prices stay archived-in-place; nothing points at them except a legacy subscription.
+
+## ADR-1811: A verified nonprofit pays the $39 Non Profit plan; approval unlocks checkout instead of granting it free
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-994` · amends [ADR-552](DECISIONS.md) and [ADR-811](DECISIONS.md) on how approval takes effect
+
+**Context.** `approveVerification` called `setSpacePlan(spaceId, 'nonprofit', { force: true })`, so an operator tapping Approve gave a verified 501(c)(3) the full Business depth at no charge, while /pricing, the FAQ and the catalog all quote a flat $39 a month (`nonprofit_seat`). The owner's decision on 2026-10-20 ("Charge $39"): verified nonprofits pay the Non Profit plan, with the same trial as every paid plan.
+
+**Decision.** (1) Approval only marks the verification `verified` and credits the submitter; it no longer touches `spaces.plan`. (2) The Space billing page shows a Choose Non Profit button for a verified, free Space when `spaceLoadoutSellable('nonprofit')`, with the trial length; `ChoosePlanButton` accepts `'nonprofit'`. (3) `startSpaceLoadoutCheckout` already refuses `nonprofit` unless the Space is verified, so the server stays the authority. (4) Verify page, admin console and form copy say approval unlocks checkout.
+
+**Rejected.** Keeping the free grant for a founding cohort (no such cohort was ruled). Auto-starting checkout on approval (the owner chooses when to start the trial).
+
+**Consequences.** A Space already on Non Profit keeps its plan. A Space already on a paid plan who is later verified changes plans through the billing portal. No migration.
+
+## ADR-1812: The Collective Founding intro has its own end date, January 1, and every surface reads it from one constant
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-995` · amends [ADR-1709](DECISIONS.md) section 7 (the standing Founding intro)
+
+**Context.** The $99 Founding price for Collective was a standing per-item offer with no end, while the owner wants visitors to see that it ends January 1 (2026-10-20: "make sure people realize the beta pricing offer on Collective ends Jan 1"). That is a different date from the site-wide beta end (December 1, `BETA_ENDS_LABEL`, the `beta_grace` window). The intro never read `beta_grace`: it is open through `FOUNDING_OPEN_ITEMS`, which the checkout (`resolveLoadoutPriceId`), the pricing grid, the plan ladder and the comparison table all share.
+
+**Decision.** (1) `COLLECTIVE_FOUNDING_ENDS_AT` (midnight Pacific, 2027-01-01) and `COLLECTIVE_FOUNDING_ENDS_LABEL` ("January 1") live in `lib/pricing/beta.ts`. (2) `foundingOpenFor` and `foundingOpenForPlan` take an optional `now` and close the standing offer at the end instant, so the charge and every price surface stop together: after it a new Collective pays the $149 list. A subscription that took the Founding price keeps it (`readLockedPriceId`). (3) `FOUNDING_RATE_NOTE` names the date; it renders on the pricing cards, in the plan ladder beside Choose Collective, and in the FAQ, funnel copy and what-is-Frequency template, which import the label. (4) The two static help articles state the date in plain text; a test pins that they contain the label.
+
+**Rejected.** Tying the intro to `beta_grace` (that would end it December 1, a month early). A display-only date with the charge left open (the display-versus-charge split the pricing canon forbids).
+
+**Consequences.** Tests that assume the intro is open read the real clock and pass until January 1, 2027, the same property the beta window tests had; the constant moves them. The Stripe `collective_base` founding price stays minted for locks.
+
+## ADR-1813: Collective's Founding price runs to January 1 but the founder badge stays December 1
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-996` · builds on [ADR-1812](DECISIONS.md); leaves [ADR-875](DECISIONS.md) and [ADR-880](DECISIONS.md) unchanged
+
+**Context.** The founder badge is granted by `grantBetaFounding` to a subscription created before the `beta_grace` window ends (December 1). The Collective $99 Founding price now runs to January 1 (ADR-1812). The owner asked the copy to say grandfathered pricing and a founder badge, then ruled "Badge till December 1 for founders. Beta runs Dec 1 to Jan": the badge is for early founders only.
+
+**Decision.** No billing or grant behavior changes. A Collective that takes the $99 any time before January 1 keeps it for as long as it keeps the plan (the locked price id re-bills it); only one that starts before December 1 earns the badge. `FOUNDER_BADGE_ENDS_LABEL` ("December 1") lives beside the Collective end constants, is pinned equal to `BETA_ENDS_LABEL`, and feeds the shared Founding note, the pricing FAQ, the funnel copy and (as pinned text) two help articles.
+
+**Rejected.** Extending the badge to January 1 (briefly built, dropped on the owner's follow-up). Moving `beta_grace` (it gates every paid feature wall).
+
+**Consequences.** A Collective bought December 1 to January 1 gets the price lock and no badge; the copy says exactly that.
+
+## ADR-1814: A scan or docs pass may start Editor, Sites, Etsy and App Platform rows
+
+**Status:** Accepted · 2026-10-20 · backlog `OWN-097` · amends the product-first line in `AGENTS.md` that cited [ADR-1403](DECISIONS.md)
+
+**Context.** `AGENTS.md` told every agent not to start Editor, Sites, Etsy or App Platform from a scan or a docs pass. The owner was asked on a decision card on 2026-10-20 whether to relax it and chose Relax it. ADR-1403's ruling table (the Quest, join free, product over craft) never contained that bar; it lived only in the session index.
+
+**Decision.** The index line now says product work still outranks craft when they collide (ADR-1403, unchanged) and that a scan or docs pass may start those rows. Nothing else moves: Editor program order stays in `docs/EDITOR-ARCHITECTURE.md`, and status stays in `docs/BUILD-BACKLOG.json`.
+
+**Rejected.** Deleting the product-first line outright (the collision rule still holds). Editing ADR-1403 (it never said this).
+
+**Consequences.** A meta scan may file and start Editor, Sites, Etsy and App Platform rows like any other. The owner keeps the call on which of them runs first.
+
+## ADR-1820: The /join account check is one indexed database question, not a walk of every auth user (SCAN-1013)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-1013` · extends SCAN-906 (the silent account check) and SCAN-1007 (the per-mailbox throttle) · corroborated by `supabase/migrations/20270346011000_auth_email_exists.sql` and `supabase/tests/auth_email_exists.test.sql`
+
+**Context.** `joinEmailHasAccount` answers an anonymous yes/no about an address so the induction can send a returning member to sign-in instead of a second account. It did so by paging `auth.admin.listUsers` 1,000 rows at a time, up to 50 pages per call: up to 50 admin API reads per keystroke-confirmed address, growing with the member count, and unbounded when Upstash is unconfigured because both throttles are `whenUnconfigured: 'allow'`. Premise re-tested 2026-10-19 on main: the loop was still there. The admin API has no lookup-by-email, and the server has no read on `auth.users` through PostgREST.
+
+**Decision.** A `SECURITY DEFINER` function `public.auth_email_exists(text)` reads `auth.users` by the address as GoTrue stores it (lowercased, trimmed) and returns a boolean: one probe of the unique email index. It is granted to `service_role` only and revoked by role name from `public`, `anon` and `authenticated`, because the answer is an account-existence oracle and the browser must keep going through the server action's two throttles. The action calls it through the admin client; a lookup error reads as "no account", as the paging loop did.
+
+**Rejected.** A view over `auth.users` (publishes the table shape to PostgREST). Caching the listUsers walk (still a walk, and stale for the one case that matters, a just-created account). Dropping the check (SCAN-906 exists because a duplicate account at /join is the worse outcome).
+
+**Consequences.** Migration `20270346011000`; `scripts/function-grants.txt` records `auth_email_exists internal`. pgTAP asserts the grants and the answer for a seeded, a mixed-case, an unknown, a blank and a null address. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346011000`. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1821: An email domain setup operation is unique per Space, and the global claim lives where the proof is (SCAN-830)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-830` · extends EMAIL-012 (`#3365`, manual Space email domain onboarding) · corroborated by `supabase/migrations/20270346011100_space_email_domain_operation_per_space.sql` and `supabase/tests/space_email_domain_operation_per_space.test.sql`
+
+**Context.** `prepareEmailDomainSetup` inserts a `space_email_domain_operations` row to mint the TXT ownership challenge, which is before any proof. The table carried an inline `unique (domain)`, and `spaces.domain` is saved without proof. So a paid Space could connect a domain it does not own, prepare email, and leave the operation behind; the real owner's prepare then always read `This domain is already being connected`. Premise re-tested 2026-10-19 on main: the constraint and the pre-proof insert were both still there.
+
+**Decision.** The operation row is a per-Space setup record, so its uniqueness is `unique (space_id, domain)`. The global uniqueness of a domain stays on `space_email_domains`, whose `domain` and `provider_domain_id` are unique and which is written only after `verifyEmailDomainOwnership` passes. The lease function `claim_space_email_domain_operation` and the onboarding code are unchanged: they already read the operation by `(space_id, domain, owner_profile_id)`, and the duplicate-key retry in `operation()` now only fires for the same Space.
+
+**Rejected.** Letting an expired pending operation with no provider id be taken over by another Space (a second writer rewriting a row another owner's challenge token is bound to). Proving ownership before inserting the row (the challenge token is bound to the row's nonce, so the row must exist first). Deleting stale operations on a schedule (still a window in which the real owner is refused).
+
+**Consequences.** Migration `20270346011100`. pgTAP asserts the constraint moved, two Spaces can each hold an operation for the same unproven domain, one Space still gets one row per domain, and the proven table still refuses a second owner. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346011100`. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1822: Space preference writers send the keys they own, not the whole blob (SCAN-833)
+
+**Status:** Accepted · 2026-10-19 · backlog `SCAN-833` · extends ADR-1728 (the editor's Theme tab saves the shared style) and ADR-1757 (SCAN-827, `space_private_state`) · corroborated by `supabase/migrations/20270346011200_set_space_preferences.sql`, `supabase/tests/set_space_preferences.test.sql` and `lib/sites/editor/style-action.test.ts`
+
+**Context.** `spaces.preferences` is one jsonb blob shared by the website editor's published stub (`save_website_editor` writes `websiteEditor` into it on every autosave and publish), the site menu, the header logo, the sky-marker opt-in and the site style. Every one of those writers read the blob, changed its key, and wrote the whole blob back with no lock, so an autosave landing between a read and a write was reverted and the editor reported `Someone saved a newer draft`. `saveWebsiteStyle` guarded its whole-blob write on the stub's revision, which protected the editor but could still revert a concurrent menu, logo or sky-marker save. Premise re-tested 2026-10-19 on main after SCAN-827: the stub write and every whole-blob writer were still there.
+
+**Decision.** One key-scoped database writer, `public.set_space_preferences(p_space_id uuid, p_patch jsonb)`: each top-level key in the patch is set in place with a jsonb merge inside one UPDATE, a JSON null deletes its key, and every key the patch does not name is left exactly as stored. It is `SECURITY INVOKER`, revoked by role name from `public`, `anon` and `authenticated` and granted to `service_role`, because `spaces` has no UPDATE policy and every caller is a gated server action on the admin client. It refuses `websiteEditor` and `programOverview`, which SCAN-827 moved behind `save_website_editor` and `space_private_state`. `patchSpacePreferences` in `lib/spaces/store.ts` is the TypeScript door. `saveWebsiteStyle` sends `theme` and `siteStyle` and drops its revision guard and retry loop, since it no longer touches `websiteEditor`; the menu, logo and sky-marker actions send their one key. `writeSpacePreferences` stays for the writers not yet converted (profile, modules, spotlight, layout, edit-page, shop, email style, library usage, importer), with its doc pointing here.
+
+**Rejected.** A row lock around every writer (a lock in application code across a PostgREST round trip is not a lock). Guarding every writer on the `websiteEditor` revision as the style did (protects the editor only, and makes every settings save fail while the editor is open). Moving every key into `space_private_state` (the keys here are public site state and are read by the public renderer).
+
+**Consequences.** Migration `20270346011200`; `scripts/function-grants.txt` records `set_space_preferences internal`. pgTAP asserts the grants, a set, a delete, an untouched `websiteEditor` stub, the refused key and an unknown Space. The remaining whole-blob writers convert one at a time under this ADR as they are touched. Apply with execute_sql then an insert into `supabase_migrations.schema_migrations` at version `20270346011200`. Do not `apply_migration`. Do not `db push`.
+
+## ADR-1830: One per-type block limit replaces six dedupe sets (LIVE-960)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-960` · E0 task 10 of [ADR-1129](DECISIONS.md)'s sequence, next on the critical path [ADR-1325](DECISIONS.md) set (gates first, then 9 → 10 → 11) · ports the policy of `lib/page-editor/block-limits.ts` · leaves [ADR-978](DECISIONS.md) (never discard a document over an unknown type) untouched
+
+**Context.** Until today a block type could appear once per entity-block document, and that rule was enforced by six independent `seen` sets: `normalize` in rows-ops.ts and `parseRows`, `sanitizeRows`, `sanitizeEntityLayout`, `mergeEntityLayout` and `resolveRows` in layout.ts (EDITOR-E0 §1.1). Two Text blocks on one page were illegal, which is acceptable for a profile and fatal for a Site. The node tree (task 8, [ADR-1129](DECISIONS.md)) already expresses duplicate placements with their own ids, and `check:node-document-safety` already protects them on the read path, so the legacy pipeline was the only thing still dropping them.
+
+**Decision.** `lib/entity-blocks/block-limits.ts` is the one policy: a `data` block is capped at one per document (it is the canonical section for its live content, so a second instance double-renders the same rows), the seven `DESIGN_ENTITY_BLOCK_IDS` at three, every other content block unlimited. `typeLimiter()` returns a per-document `admit(id)` predicate, and all six sites call it in place of their sets, so the gate in EDITOR-E0 §8 ("two `text` blocks coexist; two `offerings` refused") is proven at every site by `block-limits.test.ts`. `mergeEntityLayout` keeps a presence set for one purpose only: a fresh default id is appended when the author placed none of that type, never beside a placement they already have. `entity-grid.tsx` keys each block by position (row, column, index) instead of by id, so two siblings of one type cannot collide.
+
+**Rejected.** Capping `CORE_PROFILE_BLOCK_IDS` at one, as EDITOR-E0 §1.3 first phrased it: that set is the offered palette and includes `heading`, `text`, `links` and `image`, so it would have made the two Text blocks the gate asks for illegal again. The cap reads the registry category instead. Converting the writers to node ops in the same PR: that is task 11, it touches the content and style fold and the per-node sanitize, and it is the change with the CodeQL surface; keeping it separate keeps this PR to nine files.
+
+**Consequences.** Two Text blocks survive every data boundary. What is still keyed by type until task 11: a legacy document's `content` / `style` bags (two Text blocks share one bag) and `hidden` (hiding a type hides every placement). No editor can create a duplicate yet, because every picker offers "palette minus placed" and `placeBlock` is a move by id; that exposure arrives with task 12's `renderNode` and `selectedNid`. The stored bench already exists on `NodeLayout.bench` (task 8); the writers reach it at task 11. EDITOR-E0 §1.1 and §8 and EDITOR-ARCHITECTURE §4 now say so.
+
+## ADR-1831: Node ops, a per-node write guard and a node render resolver land as pure modules before any writer switches (LIVE-1000)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1000` · E0 task 11 of [ADR-1129](DECISIONS.md)'s sequence (9 → 10 → 11), after [ADR-1830](DECISIONS.md) · keeps [ADR-978](DECISIONS.md) (never discard a document over an unknown type) and the LIVE-875 / LIVE-877 / LIVE-887 writer boundaries intact
+
+**Context.** rows-ops.ts addresses a placement by its block id, so "move the Text block" became ambiguous the moment a page could hold two (task 10), and its `content` / `style` live in sibling maps keyed by that same id, so two Text blocks share one bag and `hidden` hides every placement of a type. The node tree (task 8) already gives each placement a stable `nid` and its own bags, and `upgradeLayout` already reads every stored shape into it, but nothing could MUTATE a node document, sanitize one for a write, or resolve one for a render. EDITOR-E0 §1.2 also fixes the security property the conversion must keep: no `Record<nid, …>` anywhere, because a node id arrives over the wire and must never be a write property name (CodeQL `js/remote-property-injection`).
+
+**Decision.** `lib/entity-blocks/node-ops.ts` is one pure module with three parts. (1) The mutations rows-ops performs on ids, performed on nodes: `addNode` (from the palette, refusing an unknown type and a type at its per-type cap), `placeNode`, `nudgeNode`, `benchNode` (to the STORED bench, bags travelling with the node), `hideNode` / `unhideNode` (one node, not a type), `removeNode`, `setNodeContent` / `setNodeStyle`, all immutable and total and all re-run through `normalizeNodeLayout`, which re-mints a missing or duplicate id deterministically from the node's coordinates and holds each known type to its cap across the placed rows. (2) `sanitizeNodeLayout(raw, kind)`, the node-shaped `sanitizeEntityLayout`: it reads any shape through `upgradeLayout`, rewrites every KNOWN node's bags through that block's own `sanitizeBlockContent` / `sanitizeBlockStyle` (so every written key is a fixed FieldDef value and the two map sanitizers have nothing left to do for node documents), drops a wrong-kind known type, preserves an unknown type byte-for-byte, and FOLDS a too-wide row onto the kind's column maximum instead of dropping the overflow nodes, because they carry bags now and dropping a bag is loss. (3) `resolveNodeRows(layout, kind)`, the node-shaped `resolveRows`. No writer, renderer or editor is switched: every action still writes the legacy document behind the three compatibility boundaries, and the grid still renders `RowDef`.
+
+**Rejected.** Switching the Space action to `sanitizeNodeLayout` in the same PR: the three boundaries exist precisely because a native write with no native reader on the same path erases work, and the renderers are task 12; the writers switch at task 14 behind the `render_path` flag with both in place. Random row-id regeneration in `normalizeNodeLayout` (what rows-ops does): it would make the function non-idempotent and churn `layout-equal` on every read, so a regenerated row id is positional. Dropping an unknown type's bag because it has no schema to sanitize: ADR-978 and EDITOR-GATES D2 say it round-trips; the bag is kept by reference and never re-keyed, and the renderer never draws it.
+
+**Consequences.** Task 11's three parts exist and are proven by `node-ops.test.ts` (immutability, bags travel, the guard rewrites known bags and preserves unknown ones, idempotence, and every node identity the upgrade mints on the 37 frozen documents survives the guard). What remains of E0's critical path is adoption: task 12 (`renderNode`, the 13 renderer and editor files, `selectedNid`) and task 14 (actions, routes, importer, AI) behind the `render_path` flag, then task 15's backfill. Until then the stored shape does not change.
+
+## ADR-1832: The read renderers switch to nodes first, proven byte-identical by goldens frozen before the switch (LIVE-1001)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1001` · E0 task 12, read half, of [ADR-1129](DECISIONS.md)'s sequence (10 → 11 → 12), after [ADR-1831](DECISIONS.md) · keeps [ADR-978](DECISIONS.md) and the LIVE-875 / LIVE-877 / LIVE-887 writer boundaries intact
+
+**Context.** Task 11 gave the node document its operations, its write guard and its resolver, and nothing rendered one. The two profile renderers (`member-profile-modules.tsx`, `space-profile-modules.tsx`) still read `resolveRows` and then `layout.content[id]` / `layout.style[id]`, so a second Text block drew the first one's words and a native node document (object cells) rendered as an empty page, which is why the LIVE-875 boundary had to refuse native writes in the first place. EDITOR-E0 §8 row 12 names the whole of task 12 as thirteen renderer and editor files plus the store's `selectedId → selectedNid`, and sets its gate: old and new `renderToStaticMarkup` equal per block.
+
+**Decision.** Task 12 lands in two halves and the READ half goes first, because a native reader must exist before any writer may produce native documents (the reverse order is what erases work). (1) `EntityGrid` is generic over its cell item: it never read a cell, so `GridRow<T>` with `renderBlock(item: T)` renders ids and nodes with identical markup. (2) `resolveNodeRowsFor(layout, kind)` in node-ops is the renderers' one entry: a `rows` document renders from its nodes (`parseEntityLayout` already attaches them, task 9), and the two pre-`rows` shapes keep the legacy resolver's geometry (a template's slot grid, the kind's starter) and are upgraded afterwards, so each placement arrives as a node holding the bag the sibling maps keep for its type. (3) Both profile renderers render nodes on their grid paths; their flat paths and the editor's render-all-once node maps wrap a registry id in a transient node and stay type-keyed, as do `OwnerBlockFrame` and `editHref`. (4) The gate is two golden files rendered by the type-keyed renderer BEFORE the switch, over every stored shape each kind takes, and two tests that require the node renderer to reproduce them byte for byte. One difference is documented and asserted rather than hidden: a row wider than the kind allows folds its overflow onto the last column, as the ADR-1831 write guard does, instead of dropping it.
+
+**Rejected.** Switching the store, the live grid, the builders and the Space canvas in the same PR: that is eleven more files and the `selectedNid` contract, and a renderer switch that is proven equal needs nothing from them; they are 12b (LIVE-1002). Reproducing the legacy clamp on the render path for byte identity on a malformed wide row: a stored document is clamped on write, so the case is hand-written only, and rendering an author's node beats dropping it. Keying the owner frame by `nid` in the editor href: the rail builder is type-keyed until 12b, so a nid in the href would address nothing yet.
+
+**Consequences.** A native node document renders on the member and Space profile pages, so the task-14 writers can switch behind `render_path` with a reader already in place. Two Text blocks on one page draw two bags. The goldens are the record of what the type-keyed renderer emitted; a change to either is a change to the published page and must say so in its PR body. Next: 12b (store `selectedNid`, live grid, builders, Space canvas, email studio editor, the owner previews), then 13 (email, goldens first) and 14.
+
+## ADR-1833: The render_path flags land before the editor adopts nodes, seeded false and read fail-closed (LIVE-1002)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1002` · E0 task 2 of [ADR-1129](DECISIONS.md)'s sequence, pulled ahead of 12b and 14 by [ADR-1832](DECISIONS.md)
+
+**Context.** The read renderers draw nodes (ADR-1832), but the editor store, the builders and the save actions are still type-keyed, and the LIVE-875 / 877 / 887 boundaries refuse native writes. Switching the store to `selectedNid` without a native writer would save a type-keyed document that drops every nid, so 12b and task 14 are one change that must ship behind a per-surface switch. EDITOR-E0 section 5 specifies that switch and nothing implemented it (0 of 5 keys existed).
+
+**Decision.** One boolean `platform_flags` row per surface (`platform_flags.value` is a boolean, so a map cannot live in one row), seeded false by migration 20270346011400. `lib/render-path.ts` reads fail-closed: a missing row, an error or any non-true value means the old path, the opposite of `demoModeEnabled`, because this flag protects a live page from an unproven renderer rather than protecting visibility. The switch sits on `/admin/page-layout` and writes through `setPlatformFlag`, so every flip lands in `platform_flag_events`; no admin menu row is needed.
+
+**Rejected.** Reading the flag in the profile renderers now: both paths are byte-identical (ADR-1832), so a branch would be dead code. A JSON string in `platform_settings`: it loses the audit ledger.
+
+**Consequences.** The first real branch point is the task 14 writer switch. Until then the switches only record intent. Next: the native writers and the editor store (12b and 14) behind these flags.
+
+## ADR-1834: The Space page writer stores node documents when render_path_space_profile is on (LIVE-1003)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1003` · E0 task 14, Space slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1833](DECISIONS.md)
+
+**Context.** LIVE-887 makes the Space layout actions refuse every native node document, because the editor still sends type-keyed rows and a legacy save over stored nodes would drop nids, bags and bench. ADR-1833 added the per-surface switch but nothing read it on a write.
+
+**Decision.** `saveSpaceProfileLayout` is the first real branch point of `render_path_space_profile`. Switched on and given a native document (`hasNativeNodeStorage`), it sanitizes with `sanitizeNodeLayout` and stores nodes. Every other case keeps the LIVE-887 refusal, so a stale legacy save over stored nodes is still refused with the flag on. Publish and discard copy or drop stored bytes and never downgrade them, so with the flag on they no longer refuse over native storage. Switched off, or on any flag read error, behaviour is unchanged.
+
+**Rejected.** Converting the editor store in the same change: nothing sends a node document yet, so the writer ships first and is proven by tests. Skipping `sanitizeNodeLayout`: the wire is never trusted.
+
+**Consequences.** A native draft is never auto-cleared when it matches the published page (`layoutRendersSame` is type-keyed); the owner discards or publishes it. The member, email and importer writers keep their LIVE-875 / 877 boundaries. Next: the store (`selectedNid`) and the Space canvas editor sending nodes.
+
+## ADR-1835: The node layout store is a separate store, not a mode of the live one (LIVE-1004)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1004` · E0 task 12b, store slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1834](DECISIONS.md)
+
+**Context.** The Space writer now accepts node documents behind `render_path_space_profile` (ADR-1834), but the editor store holds type-keyed rows and selects a block by its type, so two Text blocks cannot be told apart and nothing can send nodes. The live store's undo stack, debounced save, failure retention and subject handoff are pinned by tests and serve every Space owner.
+
+**Decision.** `components/entity-blocks/node-layout-store.tsx` is a node-keyed twin: it holds a `NodeLayout`, selects by `selectedNid`, folds every change over the freshest layout (`edit`), coalesces undo, and saves the whole node document debounced and serialized, keeping a failed draft for the next edit. It is mounted per subject by the caller. Nothing imports it yet, so no live surface changes.
+
+**Rejected.** Adding a node mode to the live store: it would share refs with the pinned save pipeline and put every Space owner's editor at risk for a surface that is switched off. Duplication is accepted and bounded: the type-keyed store is deleted when the flag is retired.
+
+**Consequences.** Next slices move the Space canvas, live grid and page builder onto this store behind the flag, then the email studio editor. The member store is untouched (its writer still refuses nodes, LIVE-875).
+
+## ADR-1836: The node layout store mounts in the app shell, light and subject-aware (LIVE-1005)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1005` · E0 task 12b, mount slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1835](DECISIONS.md)
+
+**Context.** The page grid and the admin-rail builder share one editor store because `EntityLayoutMount` sits above both in the app shell. The node store (ADR-1835) has to share the same position for the same reason. Anything statically reachable from the shell is parsed on every phone on every route (DEPLOY-SAFETY), and the shell-weight gates only run in a production build.
+
+**Decision.** `EntityLayoutMount` wraps its children in `NodeLayoutMount` (a wrapper exported by the store file, so the mount file names one provider type, as the LIVE-477 probe expects), always, inside the live provider, so the position never changes type or key (LIVE-472). The store imports types only from the node modules (its one runtime need, whether a node id still exists, is a six-line local walk), so it adds react and nothing else to the shell. A subject change (`space:<slug>` or `member`) resets it in place with the live store's two-half pattern, and the outgoing edit still saves to the outgoing subject. Node saves go to `saveSpaceGridLayout` on a Space route and report "cannot save yet" on a member route (the member writer still refuses nodes, LIVE-875). Inert until something seeds it.
+
+**Rejected.** A `key` on the provider, which remounts the shell. A dynamic import of the provider: a provider cannot be lazily absent from a context tree its consumers read.
+
+**Consequences.** Verified with a real `pnpm build` and the postbuild gates before merge, since CI never builds. Next: the on-page node grid, the builder and the Space canvas read this store behind render_path_space_profile.
+
+## ADR-1837: The canvas block and the publish bar read the editor through one binding, so they serve both stores (LIVE-1006)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1006` · E0 task 12b, binding slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1836](DECISIONS.md)
+
+**Context.** Moving the on-page Space editor onto the node store (ADR-1835) means the shared consumers must work with either store: `SpaceCanvasBlock` (1,068 lines) reads the selected item and selects a block, and `SpacePublishFab` reads the autosave state and undo. Forking each into a node copy would double a large, tested surface for a flag that is later retired.
+
+**Decision.** `components/entity-blocks/editor-binding.tsx` returns the narrow slice both need (`select`, `selectItem`, `selectedItemIndex`, `saving`, `dirty`, `canUndo`, `undo`) from the node store once a node document is seeded into it, and from the live store otherwise. Nothing seeds the node store yet, so every surface behaves exactly as before. `SpaceCanvasBlock` takes an optional `nid`: selection is keyed by it when given (two Text blocks are two selections), by the block type otherwise. The node store gains the same item selection as the live one.
+
+**Rejected.** Node copies of the canvas block and the publish bar. A prop-drilled store handle: both components are reached through grids and previews that do not pass one.
+
+**Consequences.** Re-estimate recorded: 12b is larger than first scoped. Still to come, each dormant until the end: the on-page node grid, the page builder (1,494 lines) and `block-edit-panel`, the owner preview choosing the node grid, then the email studio editor and the member side. The render_path switch stays off until the Space set is complete.
+
+## ADR-1838: The Space page grows a node grid, a twin of the live grid that reads the node store (LIVE-1007)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1007` · E0 task 12b, grid slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1837](DECISIONS.md)
+
+**Context.** `LiveProfileGrid` places server-rendered blocks by block id and repaints from the type-keyed store, so two Text blocks cannot exist on it. The node store (ADR-1835) and the generic `EntityGrid` (ADR-1832) already carry what a node page needs.
+
+**Decision.** `LiveNodeGrid` takes the same props shape with a node document in place of rows, hidden, content and style. Rows come from `resolveNodeRows(layout, 'space')`; each cell is a `BlockNode` drawn from its own content and style. Edit mode wraps each node in the canvas block with its `nid`, so selection, scroll sync and the publish bar work by node id through the binding (ADR-1837). Field edits fold over the freshest layout, so the photo popup's `image` then `alt` both land. Block refs live in a `Map`: a Record keyed by a node id is a CodeQL property-injection sink. The server prerender stays keyed by block type, which is valid because a data block is capped at one per type and a content block draws from its node's bag.
+
+**Rejected.** A mode flag on `LiveProfileGrid`: its tests pin the type-keyed behaviour and the file is deleted when `render_path_space_profile` is retired, which is cleaner if the twin is a separate file.
+
+**Consequences.** Dormant: nothing renders the node grid. Still to come: the page builder and `block-edit-panel` on the node store, then the owner preview choosing the node grid behind the flag, then email studio and the member side.
+
+## ADR-1839: Row operations for a node document, so the node page builder can arrange sections (LIVE-1008)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1008` · E0 task 12b, row ops slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1838](DECISIONS.md)
+
+**Context.** `node-ops.ts` (ADR-1831) covers block-level operations on nodes but not the row-level ones the page builder uses: add, remove, move, column count, split ratio, title, header toggle and margin. Those exist only in `rows-ops.ts`, on the type-keyed `BuilderLayout`.
+
+**Decision.** `node-row-ops.ts` performs the same operations on a `NodeLayout`, with the same contract as `node-ops.ts`: pure, immutable, total, every result re-run through `normalizeNodeLayout`. Removing a row sends its nodes to the stored bench with their content and style, matching the "bench keeps the bag" rule of ADR-1831. Narrowing a row folds the dropped columns onto the last kept one, so nothing is lost.
+
+**Rejected.** Making `rows-ops.ts` generic over the cell item: its normalizer is written around block ids and the derived bench, and its tests pin that.
+
+**Consequences.** Dormant: nothing calls these yet. The node page builder (a Space-only twin of the in-rail builder, reusing its pills and tray) is next, then the owner preview choosing the node grid behind `render_path_space_profile`.
+
+## ADR-1840: The Feed's empty sections become notices, and the Feed ends in a way out (LIVE-1022)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1022` · design changes plan items 23 and 24 (`/mnt/project-files/changed-plan/build-plan-2026-10-19.md`)
+
+**Context.** The top of the Feed (Up next, Near you, Needs you) reads well. Below it every empty section fell to a thin italic line ("All clear.", "Nothing that fits within 5 mi.") and the stream ended on a single "You're caught up" card. The Feed said nothing about what to do next, so the page read as a scroll that stops, not a place that gathers things to act on.
+
+**Decision.** One shared `SystemNotice` (icon, one-line title, one line of why, up to two links, one of them the pastel pill) replaces each empty state: Needs you, Near you, the stream, the Story lens. Every notice points at making something or going to look. The Feed gains one band, `ExploreSection`: three live, listed Circles the member is not in (nearest first with a home base, busiest otherwise). A member in fewer than three Circles sees it as "Find your people" under Needs you; everyone else sees "Keep exploring" after the caught-up card. It reads one bounded query and fails quiet.
+
+**Rejected.** New aggregate sections (people to meet, marketplace picks) in this pass: each needs its own ranked loader and is filed as follow-on work, not guessed at. A notice component per section, which is how the five italic lines drifted apart.
+
+**Consequences.** Item 23 (empty-section notices) ships inside this row; LIVE-1023 in the plan folds into it. The Circles page (LIVE-1020) reuses `SystemNotice` for its empty sections.
+
+## ADR-1841: The Business Spaces directory is a kit page with an operator Featured switch (LIVE-1018)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1018` · follows [ADR-1737](DECISIONS.md) (the Frequency design switch) and [ADR-887](DECISIONS.md) (subject and kind)
+
+**Context.** The directory opened on a photo band whose search was unreadable over the photo, a pill strip that clipped at the right edge, and one flat grid. Daniel's list (items 5, 7, 26, 27, 28, 2026-10-19) asked for the Around You and Events header, modern search and filters, a featured area, truncation and system prompts.
+
+**Decision.** Under Frequency the page renders `FqSpacesBody`, built like the Circles body: every control is a URL, the sections come from one pure builder (`lib/spaces/directory-sections.ts`), the page stays a Server Component. Featured is an operator pick stored as `preferences.directoryFeatured` (a jsonb key, so no migration), written through the key-scoped `patchSpacePreferences` from a janitor-gated, audited switch on `/admin/spaces/[id]`. With no picks the row shows the three most active Spaces and says so. City and Has events narrow in app code over the cached discovery read, which does not carry them. Founding Businesses get their own row but stay out of the standing score, as before.
+
+**Rejected.** A platform flag holding a list of ids: it needs a migration and an editor. Ranking featured Spaces into the default order: exposure here is earned (LIVE-262).
+
+**Consequences.** DAWN keeps its hero and toolbar unchanged. The shared index header (LIVE-1012) replaces the local head when it merges. Type-ahead suggestions and an open-now filter are not built: a Space has no opening-hours data.
+
+## ADR-1842: Around You under the map is a ticker, a stat row and an action row, not a column and a rail (LIVE-1017)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1017` · Daniel's list item 4
+
+**Context.** Under the map the page was one narrow Dispatch column beside a 288px rail, with empty width to its right and an empty-state card as its first impression whenever no Dispatch existed. Dashboards that hold attention (Strava's feed header, Meetup and Luma's "this week" rows, Eventbrite's near-you grid, Nextdoor's pinned notices) share a shape: one live line of what is being said, a few numbers that are also doors, the next things to attend in a grid, and a closing prompt to do something.
+
+**Decision.** Dispatches become a ticker (`components/nearby/dispatch-marquee.tsx`), a Server Component on the existing `.animate-marquee` keyframe with the list rendered twice and the second copy `aria-hidden`. It pauses on hover and keyboard focus and, under reduced motion, becomes a scrollable row. The shell's own `DispatchTicker` is not reused: it is a client component with a timer, reachable from the app shell, and Around You needs a strip in the page body, not another shell cost. Below it: four stat tiles that link to their surfaces, events and forming circles side by side with Today and Tomorrow badges, the Dispatch stream in two columns, and a Host, Start, Join prompt row. Members appear only as counts.
+
+**Consequences.** `loading.tsx` mirrors the new shape. The page's event read filters (status, visibility, removed_at) are unchanged and still pinned by `page.test.ts`. A viewer-city scope for Circles forming and a new-members list are left as later rows.
+
+## ADR-1843: The Circles index is shelves by who runs them, community before business (LIVE-1020)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1020` · design changes plan items 25 and 26
+
+**Context.** `/circles` was one flat alphabetical grid of every circle (the member's own, starters, platform chapters, community circles and Business Space circles), then a second list of twenty more. Nothing said which circles were close, which were for starting, or who ran them, and business circles sat among members' own.
+
+**Decision.** With no filter, the page is shelves in this order: Your Circles, a featured strip of three top Business Spaces (earned standing order, `listNetworkedSpacesPage`), Resonant near you (in-person, within 40 miles of the member's home base, nearest first), Starter Circles, Where people are gathering (most members, not labeled popular), Frequency Circles, Community Circles (with the Channel chips), Business Circles last. A sticky section index links each shelf that exists. Each shelf shows six and opens the rest behind a native `<details>` Show more. Any filter, search or sort falls back to one flat Results list as before.
+
+The shelf is derived, never stored (`lib/circles/kind.ts`): a circle owned by a non-root Space is business; an unowned circle that is operator-featured or belongs to a hub is Frequency; every other is community. Empty shelves use `SystemNotice` (ADR-1840) or are dropped.
+
+**Rejected.** A stored `kind` column and a migration: the three inputs already exist, and a column would drift from them. A shared-interest ranking for Resonant: needs member interests on this read; distance and size are what the index has today. Revisit if the Frequency rule misfiles a primary circle; the fix is one function.
+
+**Consequences.** The old Featured row for circles is gone: a featured circle is on the Frequency shelf and keeps its Featured tag. No migration.
+
+## ADR-1844: Circles order, primary list and art; the Feed's other empty states (LIVE-1081)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1081` · amends [ADR-1843](DECISIONS.md); design changes plan items 23, 25, 26
+
+**Context.** A review of the first Circles and Feed pass against the owner's list found it partial: Frequency Circles sat above Community, the "Up next" and "Your people's plans" empty states were not notices, "All Business Spaces" pointed at the wrong page, circles with no image drew a blank beige block, and "Resonant near you" ranked by distance alone.
+
+**Decision.** Community Circles now precede Frequency Circles. The platform's primary circles are an explicit list (`FREQUENCY_PRIMARY_SLUGS`: Meld, Wildheart), which wins over Space ownership; the derived rule stays for the rest. Resonant near you leads with circles sharing a Channel with the member's own, with a 15 mile head start, and works without a home base. The highlight shelves (Resonant, Gathering) draw from community circles only, so Frequency and Business circles each appear on their own shelf. Every circle falls back to a brand photo picked from its slug. The featured Business strip is capped at three and links to `/spaces/directory`. "Up next" and "Your people's plans" use `SystemNotice` and no longer vanish.
+
+**Consequences.** One list to edit when a primary circle is added. No migration.
+
+## ADR-1845: The Channels index is a forum board list, not a card grid with a photo hero (LIVE-1028)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1028` · design changes plan item 29
+
+**Context.** A Channel is a global topic with a forum inside it, but the index showed a photo hero, a stats band and a grid of identical cards with no sign of any conversation. A member could not tell which Channel was alive, and a search or sort did not exist. The Frequency design is also moving every index to the plain kit head with one toolbar.
+
+**Decision.** Under the Frequency design the page renders `FqChannelsBody`. The head is the kit's plain heading. One toolbar carries search, Pillar, Show (tuned in or not) and Sort (most active, most tuned in, most Circles, A to Z), all as URL parameters so the page stays a Server Component and every view is shareable. The board runs Your Channels, "Talking about this week" (the three Channels with the most new threads, never shown when none has any), a start-a-thread prompt, then each Pillar as rows: art, name, description, the latest thread with its author and age, tuned-in and Circle counts and the tune-in control. An unfiltered Pillar shows six rows and links to the rest; any narrowing switches to one flat result list. The read (`loadChannelsForum`) takes the caller's service-role client and counts only PUBLIC top-level posts, the same ones a signed-out visitor sees on the Channel page, over a window of the newest 800, so the index leaks no private thread and one query serves every Channel.
+
+**Rejected.** A per-Channel RPC for the latest thread (one call per row). A migration for thread counts: the window read is enough at this size and a counter column is filed if the window ever truncates a live Channel. Keeping the layout-module (`channels-list`) for Frequency: it has no search facet and cannot show conversation. DAWN keeps it.
+
+**Consequences.** "Start a thread" opens the Channel, where the composer lives; a composer on the index itself needs a Channel picker and is left for a later row. The loading skeleton for this route still paints the DAWN hero until LIVE-1012 reshapes `channels/loading.tsx`.
+
+## ADR-1846: The Founding Business mark is a Frequency pill inside the cover photo (LIVE-1019)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1019` · follows [ADR-1849](DECISIONS.md)
+
+**Context.** The Founding Business chip was a beige rank badge beside the Space name. On the directory and on the page header it crowded the title and did not read as Frequency's. The owner asked for a Frequency-themed badge in the header image, and for House of Fates, Shannon Rose and Daniel Tyack to carry it.
+
+**Decision.** `FounderMark` is the design's pastel `--pa` pill with ink type and a gem, drawn through the chrome's `coverBadge` slot at the cover photo's top-left on both Space trees. It is a status only and takes no rate. The three Spaces are granted by a data paste (active `founding_members` rows, kind business, rate columns null), not a migration, because the schema already holds the record.
+
+**Rejected.** Restyling `FoundingBusinessBadge` in place, which every DAWN surface also uses. A migration for three rows.
+
+**Consequences.** The Spaces directory card keeps the old tag until its rebuild (LIVE-1018) imports `FounderMark`.
+
+## ADR-1847: The mega footer holds the site index, one legal list, and the dock lift contract (LIVE-1030)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1030` · **Superseded in part by [ADR-1861](DECISIONS.md)** (the inline panel and the dock lift)
+
+**Context.** The Frequency member footer was one line. The owner asked for a full index of the site with every legal link and the calls to action, built to SEO and GEO practice, and for the two bottom docks to stay attached to the footer's top edge: stuck to the window's bottom while it is closed, riding up to rest on it while it is open.
+
+**Decision.** `FqMegaFooter` is a bar plus a native `<details>` panel plus a legal row outside it. The index is in the HTML closed or open, so a crawler reads it either way, and the policies and contact never sit behind the toggle. Columns come from the registry's footer nodes through `visibleFooterColumns` (the member site map's own gate, moved to `lib/nav/footer-access.ts`), so the footer cannot offer a link the rail would hide. The legal set is one list, `lib/nav/legal-links.ts`, read by the registry, the public footer, the mega footer, `llms.txt` and the site map. The public footer writes `SiteNavigationElement` JSON-LD from the columns it draws. `MegaFooterLift` sets `--fq-foot-lift` on `<html>`: 0 closed, the footer's rise above the window bottom when open, capped at 55% of the window. A dock reads `bottom: var(--fq-foot-lift, 0px)`; this change positions no dock.
+
+**Rejected.** A fixed drawer over the page, which covers content and the docks. Positioning the docks from the footer, which would put two owners on `dock-bar.tsx`. A second legal list per surface.
+
+**Consequences.** The dock thread adopts one CSS variable and nothing else. A new policy is one line in `legal-links.ts`. The public footer is not collapsible and keeps its dark panel; a Download link waits for a download page.
+
+## ADR-1848: Members, Friends and My Contacts share one plain header, one tab strip and a closable how-to notice (LIVE-1021)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1021` · design changes plan items 18 and 19
+
+**Context.** Members opened on a photo hero while Events and Around You open on the plain kit heading, and the three Network pages each carried their own header and tab placement. A member could not tell they were one hub, and nothing said what each page was for.
+
+**Decision.** The three pages stop spreading the resolved photo hero into `IndexTemplate`, so the template renders its plain `PageHeading` (the kit `.head`) with the eyebrow "Your network". One `NetworkHubBar` (the tab row plus `NetworkNotice`) sits directly under that heading on all three. The notice explains Members, Friends and My Contacts in one line each and can be closed; the close is a cookie keyed on the member, read on the server, so it never flashes back and needs no column. Contacts passes the strip through its toolbar so the strip leads its own facet row.
+
+**Rejected.** A new header component for the hub (the shared index header is LIVE-1012 and this must not fork it). Browser storage for the close, which would flash the notice on every cold load.
+
+**Consequences.** DAWN builds also lose the Members photo band; that is the owner's request. No migration. Once LIVE-1012 lands the heading inherits its action-row placement with no change here.
+
+## ADR-1849: The public Space page wears DAWN's header layout, reskinned in Frequency (LIVE-1029)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1029` · refines [ADR-1737](DECISIONS.md)
+
+**Context.** ADR-1737 gave the Space page the Circle's cover-card grammar: the name, badges, tagline and buttons sit on the photo under a dark scrim. The owner called the result poor on 2026-10-19 and asked for the DAWN layout back, "just find that and re skin it with Frequency", with no redesign.
+
+**Decision.** `FqSpaceChrome` draws DAWN's Header size by default: a clean cover band (24vw, 176 to 260px) with the logo chip hanging off its bottom edge, then one identity row on the page ground, the name, badges and tagline on the left and the buttons on the right, then the sticky tab row and the full-width body. The Hero size (`tall`) keeps the identity on the photo. The change is in the chrome and the `space-page` sheet only, so both Space trees (member profile, signed-out share page) get it and no render path moves. A `coverBadge` slot is added for marks that belong inside the photo.
+
+**Rejected.** Rebuilding the page on `DetailTemplate` under Frequency, which would fork the chrome from the Circle and Event pages that share the kit. A second layout per tree.
+
+**Consequences.** The frosted buttons now read as plain kit buttons on the page ground (the frost rule is scoped to the Hero). Existing Spaces with the Header cover size change look; Hero-size Spaces do not.
+
+## ADR-1850: The node page builder arranges a Space page by node id, reusing the legacy builder's parts (LIVE-1009)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1009` · E0 task 12b, builder slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1839](DECISIONS.md)
+
+**Context.** `EntityPageBuilder` (1,494 lines) addresses every block by its type: pills, tray, picker, move and delete all take a block id, and the settings panel reads the type-keyed store. On a node document that breaks the one thing nodes exist for, two Text blocks with two bags.
+
+**Decision.** `NodePageBuilder` is the Space half of the builder on the node store: rows through `node-row-ops` (ADR-1839), blocks through `node-ops` (ADR-1831), selection by node id, each node's settings panel reading its own bag. It reuses the legacy builder's `BlockPill`, `BlocksTray`, `Menu`, `MenuItem` and `RowLayoutPicker`, now exported, with an optional `type` / `typeOf` so a pill labelled from a node id shows its block type. New blocks come from the picker (a type at its per-type cap is greyed out); the tray shows the stored bench, so benching keeps the words. Every mutation folds over the freshest layout through the store's `edit`. `BlockEditPanel` reads the editor binding (ADR-1837), which serves both stores.
+
+**Rejected.** A copy of the whole builder: the pills and tray are the bulk of the markup and are pinned by tests. A generic builder over the cell item: the member list, Spotlight and email paths differ enough that the abstraction would cost more than the twin that is deleted with the flag.
+
+**Consequences.** Dormant: nothing mounts it. Starter layouts, the member list and the Spotlight stay on the legacy builder. Next: `SpacePageBuilder` and the owner preview choose the node builder and node grid behind `render_path_space_profile` (the wiring slice, checked in a real build because it touches what a page mounts), then the email studio editor and the member side.
+
+## ADR-1851: With the Space switch on, the owner page and the rail run on nodes (LIVE-1050)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1050` · E0 task 12b, wiring slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1850](DECISIONS.md)
+
+**Context.** The node grid (ADR-1838) and node page builder (ADR-1850) exist but nothing mounts them. [ADR-1833](DECISIONS.md) put the first branch behind `render_path_space_profile`, off by default and read fail-closed.
+
+**Decision.** The owner preview reads the switch on the server and renders `LiveNodeGrid`, seeded by `ownerNodeLayout`: the stored document read as nodes, data blocks filled with their effective content (so an editor opens showing what the section shows), content blocks keeping exactly their own bag so two Text nodes never share one. The rail data carries `nodeLayout` only while the switch is on, and `SpacePageBuilderSwitch` mounts the node builder when the data carries one. The choice rides the data, not a second client flag read, so the two surfaces follow the one server read and stay fail-closed.
+
+**Rejected.** A client-side flag read in the rail: a second source of truth that can disagree with the page for a request.
+
+**Consequences.** With the switch off, nothing changes. The switch must not be turned on yet: the `/manage/layout` canvas editor and the Spotlight still write the type-keyed document, which the LIVE-887 guard refuses once a Space stores nodes. Next: the canvas editor on the node store, then the email studio editor and the member side; turning the switch on is the owner's call.
+
+## ADR-1852: The on-canvas Space editor reads one canvas model, so both stores drive it (LIVE-1051)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1051` · E0 task 12b, canvas slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1851](DECISIONS.md)
+
+**Context.** `/manage/layout` mounts a 550-line two-pane canvas editor over the type-keyed store, saving through `saveSpaceGridLayout`. Once a Space stores a node document ([ADR-1834](DECISIONS.md)) that editor's legacy write is refused, so it must run on the node store before the Space switch can be turned on.
+
+**Decision.** `canvas-model.ts` is the shape the editor needs: sections of blocks (key, type, content bag), the addable palette, and the operations. `useLegacyCanvasModel` adapts the live store with its existing operations; `useNodeCanvasModel` adapts the node store with `node-ops` and `node-row-ops`. The editor is written once as a view over the model (`SpaceCanvasEditor` unchanged for callers; `NodeSpaceCanvasEditor` new). A block's key is its type on the live store and its node id on the node store, so selection, tile alignment and the canvas block select by node id. Refs are Maps. The mount runs its own node store and saves the node document when its server section passes `nodeLayout`, which it does only while `render_path_space_profile` is on. A focus request names a block TYPE and resolves to the first block of that type once the store has seeded.
+
+**Rejected.** A copy of the editor for nodes: it would fork 550 lines and their tests for a surface deleted when the flag is retired.
+
+**Consequences.** Switch off: no change. The Spotlight editor still writes the type-keyed document, so the switch stays off until it moves too. Then the email studio editor and the member side.
+
+## ADR-1853: The Space Spotlight stores a node document behind render_path_spotlight (LIVE-1052)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1052` · E0 task 12b, Spotlight storage slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1852](DECISIONS.md)
+
+**Context.** The Spotlight is its own document (`preferences.spotlight.layout`), narrowed to one column of link blocks, with its own writer. A node document cannot pass through that narrowing or through the type-keyed writer, so before its editor and renders can move, the Spotlight has to store and read nodes.
+
+**Decision.** `readSpaceSpotlight` reads a stored native document as nodes and narrows it with the node twin of the one-column rule: one row per placed Spotlight node in reading order, each node keeping its id, bag and hidden flag, the bench keeping its Spotlight nodes. `spaceSpotlightNodes` gives the saved nodes, else the starter. `nextSpotlightPreferences` stores a node document only when told `native`; a publish toggle keeps the stored layout byte for byte. `legacySpotlightWriteError` is the LIVE-887 guard for the Spotlight, and `saveSpaceSpotlightLayout` passes `native` only while `render_path_spotlight` is on and otherwise refuses a node document.
+
+**Rejected.** A separate `spotlight.nodes` key: two stored copies that disagree when the flag moves.
+
+**Consequences.** Switch off: no change. Nothing reads `layout.nodes` yet and a native Spotlight has no type-keyed projection, so the switch stays off until the Spotlight editor, the public render and the website render move. They are the next slices.
+
+## ADR-1854: The Spotlight's list builder runs on the node store (LIVE-1053)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1053` · E0 task 12b, link list slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1853](DECISIONS.md)
+
+**Context.** The Spotlight editor mounts `EntityPageBuilder` with `maxColumns={1}`, which on the live store is a flat list of strips, not rows. The node page builder is the rows half only, so the Spotlight cannot move to nodes with it.
+
+**Decision.** `NodeLinkListBuilder` is the list half for the node store, in its own file so the 680-line rows builder does not grow a second mode. A Spotlight is one node per one-column row, so up/down is a row move and a drag drop onto a strip moves its row. The palette is a prop. It reuses `BlockPill` and `BlockEditPanel`, with content edited in the rail because the Spotlight preview has no slug. Adding takes a benched node first, else a new node of each palette type below its cap.
+
+**Rejected.** A `maxColumns` mode inside `NodePageBuilder`: it would interleave two layouts in one render tree and one test file.
+
+**Consequences.** Dormant. The Spotlight editor and preview pick it behind `render_path_spotlight` next.
+
+## ADR-1855: The Spotlight editor and its console preview run on nodes behind render_path_spotlight (LIVE-1054)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1054` · E0 task 12b, Spotlight editor slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1854](DECISIONS.md)
+
+**Context.** With the Spotlight able to store nodes ([ADR-1853](DECISIONS.md)) and a list builder for the node store ([ADR-1854](DECISIONS.md)), the console editor can move.
+
+**Decision.** The console page reads the switch on the server. On, it seeds the builder with the Spotlight as nodes and draws the preview with `LiveNodeGrid`, whose server-rendered blocks come from the first authored bag of each type. The editor picks its provider and builder from whether the seed carries a node layout, the same data-driven choice the Space page makes ([ADR-1851](DECISIONS.md)), so a fail-closed switch read leaves the legacy path whole.
+
+**Rejected.** A client-side flag read in the editor: it could disagree with the server's seed.
+
+**Consequences.** Switch off: no change. The public Spotlight and the website Spotlight still read the type-keyed projection, which is empty for a stored node document, so the switch must stay off until they move too (next slice).
+
+## ADR-1856: A stored node Spotlight reads with a type-keyed projection so every render draws it (LIVE-1055)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1055` · E0 task 12b, Spotlight read slice, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1855](DECISIONS.md)
+
+**Context.** The public Spotlight and the website Spotlight draw through `SpaceProfileModules`, which resolves nodes with `resolveNodeRowsFor`. That function reads `layout.nodes` only when `layout.rows` is non-empty and otherwise draws the starter. A stored node document read with empty `rows` would therefore show every visitor the starter, not the owner's page.
+
+**Decision.** `readSpaceSpotlight` returns a stored node document as `layout.nodes` plus a projection in `layout.rows`: each shown type once, in reading order, with the first node's content and style bags. Nodes stay the truth for every node-aware renderer; the projection keeps the renderers off the starter and gives a legacy reader a sensible page if the switch goes back off. `spotlightSiteGrid` narrows nodes by the same site-safe set it applies to rows.
+
+**Rejected.** Teaching `resolveNodeRowsFor` to read nodes when `rows` is empty: it is shared by every surface and its fallback is pinned.
+
+**Consequences.** Switch off: no change. The Space and Spotlight editors, writers and renders no longer depend on the type-keyed path, so the two switches can be turned on after the owner's QA. The email studio editor and the member side remain.
+
+## ADR-1857: Readers that ask which block types a Space places read a node document through one type-keyed view (LIVE-1056)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1056` · E0 task 12b, leftover readers, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1856](DECISIONS.md)
+
+**Context.** A stored native node document parses to rows with empty cells, with the nodes beside them. The node renderers read the nodes, but the website seed, the menu catalog, the module nav, the Contact tab and page and the house theme ask "which types are placed, and what do their bags say" through the legacy rows, and would have seen an empty page once a Space saved one. The importer composes a type-keyed layout and would have written it over a stored node document.
+
+**Decision.** `readTypeKeyedGrid(raw)` returns the plain parse for every non-native document and, for a native one, a projection of its shown nodes (each type once, first node's bags, `nodes` carried through). The six readers call it. The importer treats a stored node layout, published or draft, like a locked one. The projection moved out of `spotlight.ts` so the Spotlight and the Space share one.
+
+**Rejected.** Making `parseEntityLayout` project: legacy writers, sanitizers and the equality check depend on its present shape, and the write guard reads the raw document first.
+
+**Consequences.** Switches off: no change for any legacy document. With them on, no Space or Spotlight reader or writer depends on the type-keyed path.
+
+## ADR-1858: One decision stores an email body: nodes behind `render_path_email`, legacy as before (LIVE-1057)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1057` · E0 task 14, email writer, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1857](DECISIONS.md)
+
+**Context.** The email compiler has read node documents since LIVE-877, but both email body saves (the admin campaign and the Space draft) refused every node document, so no editor could store one. The two saves each held their own copy of the guard and the sanitize step.
+
+**Decision.** `prepareEmailLayoutWrite` is the one decision for both. A node document is sanitised per node (`sanitizeNodeLayout` for kind `email`, then `sanitizeEmailRichNodes`, which runs the inline-HTML allowlist over each node's rich fields by that node's own type) and stored as nodes only while `render_path_email` is on. The flag read is fail-closed. A node document with the switch off, and a legacy save over a stored node document, return `NODE_LAYOUT_WRITE_ERROR` before any write, so a stale tab cannot erase authored identities. A legacy document is sanitised and stored exactly as before.
+
+**Rejected.** Letting the editor decide by a client flag: the server is the only place the switch can be trusted. Reusing `sanitizeEmailRichContent` on nodes: it is keyed by type and would collapse repeated blocks.
+
+**Consequences.** Switch off: no change. No editor sends nodes yet, so turning the switch on alone changes nothing; the email canvas editor and the campaign load come next, then nurture.
+
+## ADR-1859: The email canvas editor is one view over a model with two stores (LIVE-1058)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1058` · E0 task 12b, email editor, of [ADR-1129](DECISIONS.md)'s sequence; follows [ADR-1858](DECISIONS.md)
+
+**Context.** The email canvas editor read the type-keyed profile layout store directly, so it could not show two blocks of one type. The email body writer already stores nodes behind `render_path_email` (LIVE-1057), but nothing sent them.
+
+**Decision.** `email-canvas-model.ts` adapts both stores to one `EmailCanvasModel` keyed by an opaque block key (the block type for the legacy store, the node id for the node store). `EmailCanvasView` renders only the model. `EmailCanvasEditor` keeps the legacy store; `NodeEmailCanvasEditor` runs on the node store. Removing a node deletes its row, since removing a row alone would lift the node to the bench.
+
+**Rejected.** A second editor copy for nodes: the two would drift. Switching the legacy editor in place: the flag is off in production and the legacy path stays byte-for-byte what members use today.
+
+**Consequences.** Switch off: no change. Neither wrapper is mounted by a new route yet; the editor pane and the campaign load behind `render_path_email` come next.
+
+## ADR-1860: Around You under the map is one board in the members kit, with the stat tiles as the tabs (LIVE-1073)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1073` · Daniel's list item 4, re-audited as partial after LIVE-1017. Keeps the ticker from ADR-1842 and replaces its stacked layout under Frequency.
+
+**Context.** LIVE-1017 gave the page a ticker, a stat row and lists, but the lists were still DAWN Tailwind cards stacked one after another (events, circles, new faces, then eight Dispatch cards in two columns). Daniel asked for clean, smart and fun, and read it as the old page with a ticker added.
+
+**Decision.** Under `SITE_DESIGN === 'frequency'` the area under the map is `components/nearby/around-you-board.tsx`, built from kit classes (`panel`, `tag`, `btn`, `av`, `a.panel` lift) plus an `ay-` group in `members-community.css`. Order: the glass Dispatch ticker, four big tally tiles in the display face, one panel, then three doors (Host, Start, Join). The tiles are links to `?tab=events|circles|people|dispatches`; the chosen tile lights the `--pa` pastel and the panel below shows only that list. That folds the Dispatch stream into the tab model instead of a second long column, so the page is one screen of choice rather than a scroll. Tabs are server-rendered query params, not client state, so the page keeps its single read and a tab is shareable. The DAWN branch keeps the previous layout until DAWN is retired. The page owns no right rail: the shell's `railFor(pathname)` default stays, so the board uses the full centre column.
+
+**Consequences.** Every read, filter and visibility rule stays in `page.tsx` (pinned by `page.test.ts`); the board is presentation only. `?compose=true` opens the Dispatches tab so the compose control is in view. Visual masks move to `nearby-board-stats` and `nearby-board-panel` for this branch.
+
+## ADR-1861: The site index opens as a centred pop-up, and the footer is one quiet row (LIVE-1115)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1115` · **Supersedes** [ADR-1847](DECISIONS.md) in part (the inline panel and the dock lift) · **Superseded in whole by [ADR-1862](DECISIONS.md)** (the tabbed bottom mega menu)
+
+**Context.** The owner, on a Space's Manage console (2026-10-20): the footer's menu buttons floated in space across the width, and the index that unrolled under the page was boring. He asked for the buttons to be toned down and for a pop-up mega menu in the middle of the screen, styled like the site header and its logo.
+
+**Decision.** The footer is one centred row: a single trigger sitting on the footer's top rule (the ink pill with the iridescent rim and the roundel), and under it the flowing wordmark and the copyright. The trigger opens a native `popover` (`popovertarget`), so opening, Escape and an outside click work with no script and every link stays in the HTML. The pop-up carries `data-surface="stage"`, so it wears the night stage the site header's mega panel wears, with the same iridescent rim, the sheen wordmark in its head, the index in columns, the calls to action and the legal row. At phone width it rises as a bottom sheet. `MegaFooterDialog`, the one client island, adds the modal's manners: focus to Close, Tab held inside, the page held still, focus back to the trigger, and a link inside closes it. The registry's Legal column (`LEGAL_LINKS`) stays in the grid, as LIVE-1095 put it back. ADR-1847's one legal list, registry gate and JSON-LD stand.
+
+**Rejected.** Keeping the inline `<details>` panel with restyled buttons, which leaves the index under the fold. A `<dialog>` opened by script, which needs JavaScript to open at all. Keeping `MegaFooterLift`: the footer no longer grows, so the lift would always be 0, which is what the docks read when nothing publishes it.
+
+**Consequences.** `--fq-foot-lift` is no longer published; its consumers in members-shell.css keep their `0px` fallback, so the docks behave as they did with the footer closed. On the anonymous Feed the join gate still stops the trigger, as it stopped the old toggle.
+
+## ADR-1862: The member footer is the header's mega menu upside down, pinned between the rail docks (LIVE-1116)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1116` · **Supersedes** [ADR-1861](DECISIONS.md) · **Superseded in whole by [ADR-1867](DECISIONS.md)** (the in-flow footer band)
+
+**Context.** The centred pop-up behind one Site index button (ADR-1861) was not what the owner asked for. His words, 2026-10-20: "The footer should be just like a mega menu. Bunch of tabs, that pop open into nav areas. Except this is upside down so it pops up. The left and right menus ALWAYS stay pinned to the bottom. The middle of the mega menu opens up on activation." And: "There's no site index button. Make the menu look good like the top one. Follow the design system."
+
+**Decision.** The footer is a glass tab bar fixed to the window's bottom edge, centred between the two rail docks at their height and glass. One tab per registry footer column (Explore, The Quest, Connect, Support, Frequency, Legal), drawn as the member header's nav pills with its pastel "on" state. A tab opens its column's panel upward: the header's light glass mega menu, with a glyph per destination, the serif foot line and the pastel call to action (`.ap-mega-foot`, `.btn.pa`). The footer leaves the page flow apart from a 24px strip, so the sticky rails end exactly where they ride and the docks never move. At phone width the docks give way to the tab bar, so the footer's tabs end the page and a panel rises as a sheet. Every panel is in the HTML closed, and the index is also JSON-LD. `mega-footer-tabs.tsx` is the one client island.
+
+**Rejected.** A single trigger opening the whole index (ADR-1861): the owner wants the areas as tabs. Positioning the docks from the footer (the `--fq-foot-lift` contract): the docks are pinned and the footer no longer moves them.
+
+**Consequences.** `--fq-foot-lift` stays unpublished; its consumers keep their `0px` fallback. The anonymous Feed's join gate still stops the tabs for signed-out visitors, as it stopped every earlier footer control.
+
+## ADR-1865: Frequency Experience, the Expo app in `mobile/`, starts as the CyberUnicorn remote on the Frequency design, sharing `lib/contract` without a workspace (LIVE-1121)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1121`, `DEF-MOBILE` · owner requests 2026-10-19, relayed by the coordinating session: build the app now, Android first, named "Frequency Experience"; then the scope ruling "I want to set this up for deep integration with the site and all kinds of functional tools. Right now, I just want a phone app to control it."; and the design ruling "Use the frequency system." Builds on [ADR-1643](DECISIONS.md) (the contract) and [ADR-1650](DECISIONS.md) (the Expo / React Native stack).
+
+**Context.** `DEF-MOBILE` was parked with the stack decided and `/api/v1` built for it. The owner wants the app now, first as a remote for his ESP32 gadget, the CyberUnicorn 5000, over USB OTG or Bluetooth LE with the phone on its own Wi-Fi, and later as the full member app. APP-CONTRACT §6.2 says the app compiles against `lib/contract/index.ts` as it is, but the repo is a single Next.js package, not a workspace.
+
+**Decision.**
+1. **Where.** The app is `mobile/`, its own package (Expo SDK 58, Expo Router, pnpm with `node-linker=hoisted`). Generated `android/` and `ios/` are gitignored.
+2. **Scope of this pass: device control only.** No sign-in and no network are needed; the manifest asks for Bluetooth (`neverForLocation`) and USB host only. A "Frequency" tab is the placeholder for the member experience. The member half that was first written (sign-in, Rewards, check-in, push and two `/api/v1` endpoints) was taken out before merge and is kept in the branch history at `73dc345f4` so it can return without a rewrite (docs/MOBILE-APP.md §6).
+3. **Sharing the contract, smallest change.** No workspace. `mobile/tsconfig.json` and `mobile/metro.config.js` point `@frequency/contract` at `../lib/contract/index.ts` and resolve its `zod` from `mobile/node_modules`. The app pins the web's zod version. The root `tsconfig.json`, `eslint.config.mjs` and `vitest.config.ts` exclude `mobile/`.
+4. **The device link** follows `cyberpunkunicorn-os/apps/remote/PROTOCOL.md` v1. USB is a local Kotlin Expo module over usb-serial-for-android that opens the CH340 at 115200 8N1 and sets DTR and RTS false once, with no API to change them (they reset the board). BLE uses react-native-ble-plx on Bruce's serial service. The tag writer sends a pasted, server-signed `/n/` link as `frequency.write_tag {url}` only. The internet relay is a "coming soon" placeholder until PROTOCOL.md §6's server pieces exist.
+5. **Design: the Frequency system only.** The tokens are the live Frequency theme's values (`app/themes/frequency.css` over `app/themes/frequency/core.css` and the members kit), ported into `mobile/src/theme/tokens.ts`. The UI is a small kit in `mobile/src/ui/` that mirrors the web's components (button, icon button, segmented control, meter and progress track, counter, badge, panel and card, field and switch, empty state, skeleton, section header, stage timeline, dialog and toast) with their variants, sizes, states and motion. Icons and logos are generated from `design_handoff/frequency/assets/`.
+
+**Consequences.** `DEF-MOBILE` has a real Expo project. A change to `lib/contract/index.ts` can now break the app's typecheck, so run `pnpm --dir mobile typecheck` when editing it. When the web's Frequency theme changes a value, `tokens.ts` follows. The USB and BLE paths, and every device command, are untested until they run against the real board. Store submission, iOS, attestation, Sign in with Apple and in-app purchase stay with `DEF-MOBILE`.
+
+## ADR-1866: Frequency Experience carries the member experience in its Frequency tab, on `/api/v1` and the Frequency kit (LIVE-1122)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1122`, `DEF-MOBILE` · extends [ADR-1865](DECISIONS.md) (its decision 2 held the member half at `73dc345f4` for later; this lands it) · owner request 2026-10-19, relayed by the coordinating session: deep site integration next, after the remote
+
+**Context.** ADR-1865 shipped `mobile/` as the CyberUnicorn 5000 remote only and kept the first member half (sign-in, Rewards, NFC check-in, push, two `/api/v1` endpoints) in the branch history, with a placeholder Frequency tab. The owner's scope ruling always had a second half: "I want to set this up for deep integration with the site and all kinds of functional tools." That half is now asked for. The old screens were written on the pre-kit `components/` set, which ADR-1865 replaced with `mobile/src/ui/`, the port of the web's design-system components on the live Frequency theme.
+
+**Decision.**
+1. **Where it lives.** The member experience is the Frequency tab, not more tabs: signed out it offers sign-in and says what is here; signed in it is what the web's `/rewards` shows (Zaps, streak, stamp cards, reward codes) plus the one way to check in. Check in, sign in, the auth callback and the `/n/<id>` deep link are stack screens. The Device tab is unchanged and works signed out, with no `EXPO_PUBLIC_*` settings at all.
+2. **Restored, not rewritten.** `lib/` (the `/api/v1` client, supabase-js session in chunked SecureStore, bootstrap, push, capture, the phone's NFC reader) and the two endpoints (`GET /api/v1/rewards`, `GET /api/v1/spaces/checkin-links` with their contract schemas, views and tests) come back from `73dc345f4` as they were. Only the screens are rebuilt, on the kit: `Panel`, `Card`, `StatTile` and `StampCard` from `Count`, `Label`, `Badge` and `ProgressTrack`, `StageTimeline` for the check-in beats, `Notice` tones and `EmptyState` for every honest state, one primary button per screen.
+3. **The contract's rules stay the app's rules** (APP-CONTRACT §2, §11): every answer parsed with its envelope schema from the shared `lib/contract/index.ts`; a `401` refreshes once and retries, a second signs out; `profile_required` shows one step left and opens the web's `/onboarding`; supabase-js is for sign-in and the session only, never for tables.
+4. **The tag writer uses the site when it can.** Signed in, it lists the owner's Spaces with their server-signed check-in links from `GET /api/v1/spaces/checkin-links` (run as the caller, so a Space the caller does not edit is left out); signed out it still takes a pasted link. It still sends `frequency.write_tag {url}` only.
+5. **Manifest.** NFC, foreground location (`isAndroidBackgroundLocationEnabled: false`) and notifications join Bluetooth and USB host, with the `https://frequencylocal.com/n/` and `/auth/native` intent filters (autoVerify, pending `ANDROID_SHA256_FINGERPRINTS`, LIVE-714). Runtime settings are `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`, documented blank in `mobile/.env.example`; all public.
+
+**Rejected.** A Rewards tab and a Check in tab beside Device and Frequency (four tabs for two jobs; the owner's app is a remote first). Reading tables with supabase-js from the phone (the contract is the one door, ADR-1643). Keeping the first screens' component set beside the kit (two kits).
+
+**Consequences.** `LIVE-1122` is open on a consequence: no phone has signed in against the live site. Before it can, the owner adds both redirect URLs to the Supabase Auth allow-list (`OWN-091`), the signing fingerprints to `assetlinks.json` (`LIVE-714`) and, for push, an EAS project with Firebase. `lib/contract/index.ts` grew two schemas at its end; `live/device-relay` appends there too, so expect a trivial merge there. `DEF-MOBILE` stays parked for iOS, store submission, attestation, Sign in with Apple (`LIVE-725`) and in-app purchase (`LIVE-726`).
+
+## ADR-1867: The member footer is the design system's site footer at the end of the page, its area headings opening mega panels upward (LIVE-1154)
+
+**Status:** Accepted · 2026-10-20 · backlog `LIVE-1154` · **Supersedes** [ADR-1862](DECISIONS.md)
+
+**Context.** ADR-1862 shipped the footer as a floating rounded tab bar pinned over the page. The owner, 2026-10-20: "I don't want a floating menu in the footer. I want a FOOTER at the BOTTOM of the page. The design system does not have a round menu. That's DAWN." Then: "Make it so it looks like a footer menu, but has a mega menu that also opens up." Standing from the same day: the left and right docks always stay pinned to the bottom.
+
+**Decision.** The footer is the Frequency design system's site footer (`.ft2`, design_handoff/frequency/templates/website/web/site.css), rendered after the rail grid at the end of the page. It is a dark band on the stage surface under an iridescent rule: the sheen wordmark, the area headings (Explore, The Quest, Connect, Support, Frequency, Legal) in the `.ft2` heading type, then the copyright, legal row and contact. Each heading is a square tab. It opens its area's panel up out of the footer's top edge, in the same band with `.ft2-top`'s grid: the area name, the line, the iridescent calls to action and the links. At phone width the panel is a sheet above the tab bar. The two rail foot tabs are fixed to the window bottom at their rail's width, so they never ride up, and at the page end they rest over the footer's two ends; the bottom strip keeps its text clear of them.
+
+**Rejected.** A floating tab bar (ADR-1862) and a single pop-up behind one button (ADR-1861). Rounded pill tabs: they are DAWN's grammar, not Frequency's.
+
+**Consequences.** Sticky rails are stacking contexts, so the rails take `z-index:2` (above the footer band) and an open panel takes 3 (above the rails). `--fq-foot-lift` stays unpublished.
+
+## ADR-1870: A CyberUnicorn joins its own private Realtime channel with a server-signed anon token, and a phone joins it with the member session (LIVE-1155)
+
+**Status:** Accepted · 2026-10-19 · backlog `LIVE-1155` · builds on the counter scanner device credential (`LIVE-1125`)
+
+**Context.** The Frequency Experience app controls the owner's CyberUnicorn 5000 over USB and BLE; its "Internet" transport was a placeholder because the server half did not exist. The device protocol (cyberpunkunicorn-os `apps/remote/PROTOCOL.md` §6) has both ends meet as clients of Supabase Realtime on a private channel per device, so neither opens a port. The device already holds an `X-Frequency-Device` credential from the counter scanner API, and has no Frequency account.
+
+**Decision.** `POST /api/v1/devices/realtime-token` authenticates the device credential exactly as `/devices/scan` does and returns a 15 minute HS256 token, signed with the project JWT secret, for that device only: role `anon`, `sub` and `device_id` = the device id, `frequency_kind: "device"`. A member joins with their own session. Four `realtime.messages` policies admit a device token to `device:<its id>` and a member to `device:<id>` for a device they manage, both only while the device is active and its relay is on. "Manages" is one SQL function, `public.relay_manageable_devices`, used by the policy and by `GET /api/v1/me/devices`, so the list and the join cannot drift. Per-device settings live in `device_relay_settings` (relay off by default, a personal owner, a command allow-list that can never hold `cli.run`). The rollout switch is `DEVICE_RELAY_ENABLED`.
+
+**Rejected.** A device token with role `authenticated` and `sub: "device:<id>"` as the protocol drafted: `authenticated` opens every signed-in read in PostgREST to a device, and a non-uuid `sub` makes `auth.uid()` raise in any other policy evaluated for the join. A custom Postgres role: cleaner in principle, but Realtime's handling of a role outside anon and authenticated is not something this repo can verify before a preview, so it waits for a measured need. Enforcing the command allow-list in the insert policy: Realtime authorizes at join, not per message, so a payload check would either deny the join or check nothing; the device enforces the list it receives in the token reply. A new JWT library: Node's crypto signs HS256 in a few lines.
+
+**Consequences.** Off by default, and the migration is unapplied: nothing changes until the RUNBOOKS gate is met. The device relies on a shared-secret signing key; if the project moves wholly to asymmetric signing keys, minting needs the new key and this ADR is revisited. Turning the switch off stops new tokens; live joins end within 15 minutes. Not built: the optional audit table, and a web panel for the switch.

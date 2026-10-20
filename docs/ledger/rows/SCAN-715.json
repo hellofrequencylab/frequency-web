@@ -1,9 +1,0 @@
-{
-  "id": "SCAN-715",
-  "patch": {
-    "source": {
-      "file": "app/(main)/(marketplace)/market/service-actions.ts",
-      "ref": "found 2026-10-05 by the scan-seven commerce finder; confirmed by an independent skeptic"
-    }
-  }
-}
