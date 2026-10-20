@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-// THE SITE INDEX POP-UP'S MODAL MANNERS (LIVE-1113). The pop-up itself is a native `popover` (it opens,
+// THE SITE INDEX POP-UP'S MODAL MANNERS (LIVE-1114). The pop-up itself is a native `popover` (it opens,
 // closes on Escape and on an outside click with no script). This island adds the rest of what a modal
 // dialog owes: focus moves to Close as it opens, Tab and Shift+Tab stay inside it, the page behind holds
 // still, and closing hands focus back to the trigger. A link inside closes it too: the footer outlives a

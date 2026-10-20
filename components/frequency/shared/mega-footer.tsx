@@ -5,7 +5,7 @@ import { CONTACT_EMAIL, ORG_LEGAL_NAME } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
 import { siteNavigationSchema } from "@/lib/jsonld";
 
-// THE FREQUENCY MEGA FOOTER (LIVE-1030, reworked LIVE-1113). The owner's read of the first cut: loose
+// THE FREQUENCY MEGA FOOTER (LIVE-1030, reworked LIVE-1114). The owner's read of the first cut: loose
 // buttons floating across the width, and an index that unrolled under the page. So the footer is now one
 // quiet, centred row (the flowing wordmark, one trigger, the copyright) and the whole index opens as a
 // pop-up in the middle of the window, dressed like the site header's mega panel: the night stage surface,
