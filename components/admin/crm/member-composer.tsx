@@ -19,7 +19,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { Loader2, Mail, Plus, Search, Send, Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
-import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
+import { EmailEditorPane } from '@/modules/email-design/client'
 import {
   createEmailDraft,
   loadEmailCampaign,

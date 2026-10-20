@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Loader2, Send, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
-import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
+import { EmailEditorPane } from '@/modules/email-design/client'
 import { SpaceSendPanel } from './space-send-panel'
 import {
   createSpaceEmailDraft,

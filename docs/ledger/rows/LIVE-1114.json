@@ -6,7 +6,7 @@
   "size": "L",
   "lane": "live",
   "wave": "W7",
-  "detail": "PROG-A1 closed on its probe with the CRM barrel and the import-boundary rule (modules/crm/index.ts, modules/crm/client.ts, eslint.config.mjs). What is left of the A1 scope: the booking, email-design and QR modules get their own barrels under modules/; the CRM files move from components/spaces/crm to modules/crm/components with no import changing outside the barrel; the four CRM route trees keep their paths but share the module, which lets scripts/check-crm-parity.mjs retire.",
+  "detail": "PROG-A1 closed on its probe with the CRM barrel and the import-boundary rule (modules/crm/index.ts, modules/crm/client.ts, eslint.config.mjs). What is left of the A1 scope: the booking, email-design and QR modules get their own barrels under modules/; the CRM files move from components/spaces/crm to modules/crm/components with no import changing outside the barrel; the four CRM route trees keep their paths but share the module, which lets scripts/check-crm-parity.mjs retire. SLICE 2 (2026-10-20): modules/booking, modules/email-design and modules/qr now have index.ts (server) and client.ts barrels, every outside importer uses them, and the ESLint boundary covers all four modules. STILL OPEN: CRM files move under modules/crm/components, and check:crm-parity retires.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const need=['modules/crm/components','modules/booking/index.ts','modules/email-design/index.ts','modules/qr/index.ts'];const miss=need.filter(p=>!fs.existsSync(p));if(miss.length){console.error('LIVE-1114: missing '+miss.join(', '));process.exit(1)}\""
