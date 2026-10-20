@@ -20,8 +20,8 @@ import { SpacePublishFab } from './space-publish-fab'
 // type. The server still pre-renders each candidate block once, keyed by block TYPE (a data block is capped
 // at one per type, and a content block draws client-side from its node's own bag), so `nodes` is unchanged.
 //
-// DORMANT: nothing renders this yet. The owner preview picks it behind `render_path_space_profile` once
-// the builder is on the node store too (ADR-1833). Until then `LiveProfileGrid` stays the only grid.
+// The Space spotlight page and the member's own profile preview pick it behind `render_path_space_profile`;
+// with the switch off `LiveProfileGrid` stays the only grid.
 
 export function LiveNodeGrid({
   nodes,
@@ -29,6 +29,7 @@ export function LiveNodeGrid({
   spaceSlug,
   profilePublished = true,
   hasUnpublishedChanges = false,
+  kind = 'space',
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block TYPE. */
   nodes: Record<string, ReactNode>
@@ -37,6 +38,8 @@ export function LiveNodeGrid({
   spaceSlug?: string
   profilePublished?: boolean
   hasUnpublishedChanges?: boolean
+  /** Whose grid this is: sets the column cap. A member's grid has no Space slug, so it is never edited in place. */
+  kind?: 'space' | 'member'
 }) {
   const store = useNodeLayout()
   const editMode = useSpaceEditMode()
@@ -51,7 +54,7 @@ export function LiveNodeGrid({
   }, [store, initialLayout])
 
   const layout = store?.seeded && store.layout ? store.layout : initialLayout
-  const rows = resolveNodeRows(layout, 'space')
+  const rows = resolveNodeRows(layout, kind)
 
   const editable = editMode && !!spaceSlug && !!store?.seeded
   const selectedNid = store?.selectedNid ?? null

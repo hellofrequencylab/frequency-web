@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1064",
+  "title": "Editor E0 task 12b, the member's own profile preview runs on the node grid behind render_path_space_profile",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "\u00a78 task 12b"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. OwnerProfileLayoutPreview renders LiveNodeGrid (now takes kind, default space) seeded from ownerNodeLayout(grid, {}, 'member') only while render_path_space_profile is on, and LiveProfileGrid otherwise. Switch off: no change. Next: the importer's member node layouts, then the marketing and site surfaces and the task 15 backfill.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/profile/owner-profile-layout-preview.tsx','utf8');const bad=[];if(!s.includes(\\\"renderPathEnabled('space_profile')\\\"))bad.push('preview not behind the switch');if(!s.includes('LiveNodeGrid'))bad.push('no node grid');if(!s.includes('LiveProfileGrid'))bad.push('legacy grid dropped');if(!fs.readFileSync('components/entity-blocks/live-node-grid.tsx','utf8').includes('resolveNodeRows(layout, kind)'))bad.push('grid ignores kind');if(bad.length){console.error('LIVE-1064: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the owner preview serves the node grid without the switch or LiveNodeGrid stops honouring kind. Behavior is live-node-grid.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}
