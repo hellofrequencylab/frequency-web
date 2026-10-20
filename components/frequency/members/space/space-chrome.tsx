@@ -58,7 +58,7 @@ export function FqSpaceChrome({
   name: string
   /** The Founding Business and Boosted marks, beside the name. */
   badges?: ReactNode
-  /** Marks drawn inside the cover photo's top-left corner (Header size only; the Hero size uses `badges`). */
+  /** Marks drawn inside the cover photo's top-left corner (both sizes). */
   coverBadge?: ReactNode
   /** The tagline, or the owner's "add a tagline" prompt. */
   tagline?: ReactNode
@@ -107,6 +107,7 @@ export function FqSpaceChrome({
           className="ph fqs-hero tall"
           style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
         >
+          {coverBadge && <div className="fqs-cover-badge">{coverBadge}</div>}
           <div className="fqs-hero-in">
             {identity}
             {actions && <div className="fqs-acts">{actions}</div>}
