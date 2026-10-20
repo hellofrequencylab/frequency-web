@@ -51,6 +51,7 @@ describe('scanCard', () => {
       actorProfileId: 'p-1',
       presentedSecret: `v1.signed.${NODE}`,
       location: { lat: 33.1, lng: -117.2 },
+      medium: 'device',
     })
     expect(out).toEqual({
       ok: true,

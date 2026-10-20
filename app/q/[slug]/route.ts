@@ -326,7 +326,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     return withReferral(NextResponse.redirect(new URL(target, origin)))
   }
   if (code.destination_type === 'node' && code.node_id) {
-    return withReferral(to(`/n/${code.node_id}`))
+    // Carry the tap marker through so the check-in counts as an NFC tap, not a QR scan.
+    return withReferral(to(`/n/${code.node_id}${medium === 'nfc' ? '?m=nfc' : ''}`))
   }
 
   // One-tap circle join: join on scan (signed-in), then land on the circle.

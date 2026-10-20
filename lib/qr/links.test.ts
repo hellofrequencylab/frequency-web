@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { nodeUrl, connectUrl, isSiteLink, toAbsoluteSiteUrl } from './links'
+import { nodeUrl, connectUrl, isSiteLink, toAbsoluteSiteUrl, readScanMedium } from './links'
 import { SITE_URL } from '@/lib/site'
 
 describe('qr links', () => {
@@ -25,5 +25,14 @@ describe('qr links', () => {
   it('resolves root-relative paths to absolute, leaves absolute untouched', () => {
     expect(toAbsoluteSiteUrl('/n/abc')).toBe(`${SITE_URL}/n/abc`)
     expect(toAbsoluteSiteUrl(`${SITE_URL}/n/abc`)).toBe(`${SITE_URL}/n/abc`)
+  })
+})
+
+describe('readScanMedium', () => {
+  it('reads only an exact nfc marker as a tap', () => {
+    expect(readScanMedium('nfc')).toBe('nfc')
+    expect(readScanMedium('NFC')).toBe('qr')
+    expect(readScanMedium(null)).toBe('qr')
+    expect(readScanMedium(undefined)).toBe('qr')
   })
 })

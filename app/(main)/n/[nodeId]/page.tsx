@@ -29,10 +29,10 @@ export default async function NodePage({
   searchParams,
 }: {
   params: Promise<{ nodeId: string }>
-  searchParams: Promise<{ s?: string }>
+  searchParams: Promise<{ s?: string; m?: string }>
 }) {
   const { nodeId } = await params
-  const { s: secret } = await searchParams
+  const { s: secret, m: medium } = await searchParams
   const admin = createAdminClient()
 
   const { data: node } = await admin
@@ -71,7 +71,7 @@ export default async function NodePage({
         </p>
 
         <div className="mt-6 flex justify-center">
-          <ClaimButton nodeId={node.id} secret={secret ?? null} />
+          <ClaimButton nodeId={node.id} secret={secret ?? null} medium={medium ?? null} />
         </div>
       </div>
     </FocusTemplate>

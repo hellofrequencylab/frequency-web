@@ -88,6 +88,17 @@ One tap system, all in the web app, before the iOS app:
 Every phase reads `envFlag('LOYALTY_ENABLED')` until the launch switch is thrown; the gate lives in
 `docs/RUNBOOKS.md`.
 
+### One link for the placard and its QR (`LIVE-1185`)
+
+A Space's NFC placard and its QR code are the same check-in point. The QR encodes
+`signedNodeUrl(node)`; the placard (and any NFC tag for a node) holds `signedPlacardUrl(node)`, the
+same link plus a trailing `&m=nfc`. The verifier reads only `s`, so the marker never touches the
+signature. The `/n` page passes `m` to `claimNode`, and `captureNode` records the medium the member
+used (`qr`, `nfc`, or `device` for a card at a counter scanner) on the `node_capture` ledger row as
+`context.medium`, with the ledger `source` following it. Admin Scan stats counts check-ins next to
+scans, split by medium, per Space. QR Studio prints a "Tap or scan" placard
+(`/print/qr?node=<id>&placard=1`) and links a check-in node to the placard portal.
+
 ## 7. Counter scanners (`LIVE-1125`)
 
 The door code turned around: instead of the member's phone reading the Space's code, the Space's own
@@ -255,6 +266,41 @@ and "Scans through the cable").
   device secret: revoke the scanner either way.
 - The on-screen device log runs every line through `redactLine` (`lib/device/protocol.ts`), which masks
   `secret`, `password`, `card_token` and `signature`.
+
+### Check-in placards (`LIVE-1182`)
+
+A placard is an NFC sticker with a Space's door check-in link on it. A member taps it with their phone
+and lands on the same check-in the door QR code runs, which stamps their Regulars card. No app, no card,
+no scanner at the counter. Staff (Admin and Janitor) write placards from the CyberUnicorn console at
+`/admin/cyberunicorn` with the Unicorn plugged in over USB.
+
+- **Pick a Space.** Any Space, not only ones you run. `startSpaceTag` (`lib/devices/tag-actions.ts`)
+  finds the Space's door node, or makes one through `ensureCheckinNodeForStaff` (`lib/spaces/checkin.ts`)
+  if it has none, and returns its signed link from `signedNodeUrl` (`lib/qr/node-code.ts`):
+  `/n/<node>?s=<code>`.
+- **Write it.** The console sends `frequency.write_tag` with that link, and you hold an NTAG213, 215 or
+  216 sticker on the reader. The link is about 95 characters, so the smallest chip, the NTAG213, holds
+  it with room to spare.
+- **List it.** `finishSpaceTag` records the chip the board read back (its serial, chip type, a label like
+  "front door", and who wrote it) in `public.space_tags`. The console shows the Space's placards, and
+  `dropSpaceTag` takes one off the list.
+- **Try it.** The console then asks you to tap the placard with your phone. `checkPlacardTap` polls
+  check-ins (captures) on that node since the write and shows "<name> checked in" when one lands.
+
+The table is service role only (RLS on, revoked from `public`, `anon` and `authenticated`; `internal` in
+`scripts/table-grants.txt` and listed in `scripts/rls-deny-all.txt`). Every read and write in
+`lib/devices/space-tags.ts` runs behind `consoleStaffGate`. The table is an inventory and takes no part
+in the check-in itself. **Removing a placard from the list does not turn it off.** Signed node codes do
+not expire, so the link on the sticker keeps working. To stop a placard, peel it off the wall.
+
+**The screen mirror.** The console also shows a live copy of the Unicorn's screen, with Next, Prev,
+Select and Back buttons that send `screen.nav`, and plays the board's boot animation while it boots. It
+rides Bruce's `display start` stream (`lib/device/screen-mirror.ts`). Its limits:
+
+- USB only. Nothing mirrors over Wi-Fi or the internet relay.
+- Bruce mirrors drawing calls, not pixels, so screens drawn from sprites (the boot scene, Light Show,
+  Spectrum) show as blank or as a placeholder. The board itself looks fine.
+- Bruce can stop the stream without saying so. If the mirror freezes, press **Refresh** in the console.
 
 ### Try it locally
 

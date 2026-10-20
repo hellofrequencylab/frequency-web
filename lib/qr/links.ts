@@ -45,9 +45,15 @@ export function toAbsoluteSiteUrl(text: string): string {
 }
 
 /** The scan medium a code's URL is tagged with. 'qr' is the default (a printed
- *  code) and carries no marker; 'nfc' appends `?m=nfc` so the `/q` resolver can
- *  attribute the tap. Used when writing a tag — the same code, channel-stamped. */
+ *  code) and carries no marker; 'nfc' appends `?m=nfc` so the `/q` resolver and the
+ *  `/n` check-in page can attribute the tap. Used when writing a tag: the same code,
+ *  channel-stamped. */
 type ScanMedium = 'qr' | 'nfc'
+
+/** Read the `m` marker off a scanned URL. Anything but `nfc` is a printed code. */
+export function readScanMedium(raw: string | null | undefined): ScanMedium {
+  return raw === 'nfc' ? 'nfc' : 'qr'
+}
 
 /** Stamp a code URL with its scan medium for attribution. NFC tags encode the
  *  result so a tap records `medium='nfc'`; QR returns the URL unchanged. */

@@ -13,7 +13,10 @@ import { CheckinNfcWriter } from './checkin-nfc-writer'
 //
 // Copy obeys CONTENT-VOICE: plain, no narrated feelings, no em/en dashes.
 
-export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
+// `link` is what the QR encodes and the Copy button copies. `nfcLink` is what the NFC writer puts on a
+// tag: the same link with a trailing `&m=nfc` marker (signedPlacardUrl for a Space node, the door code's
+// nfcUrl for an event), built server-side so the tag and its read-back check agree.
+export function CheckinCodeCard({ svg, link, nfcLink }: { svg: string; link: string; nfcLink: string }) {
   const [copied, setCopied] = useState(false)
   const qrApi = `/api/qr?text=${encodeURIComponent(link.replace(/^https?:\/\/[^/]+/, ''))}`
 
@@ -68,7 +71,7 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
               <Download className="h-3.5 w-3.5" aria-hidden /> SVG
             </a>
           </div>
-          <CheckinNfcWriter link={link} />
+          <CheckinNfcWriter link={nfcLink} />
         </div>
       </div>
     </div>
