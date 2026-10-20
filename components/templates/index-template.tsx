@@ -97,7 +97,10 @@ export function IndexTemplate({
   // OVERLAY hero: one composed header band — image + bottom-heavy ink scrim + the page heading
   // grammar (eyebrow / h1 / description on-ink, the action bottom-right) anchored over it. The
   // standard PageHeading is suppressed (its h1 would double), but the admin-bar rule below stays.
-  if (heroOverlay) {
+  // FREQUENCY (LIVE-1012): a hub page carries no photo band (owner 2026-10-14 and 2026-10-19), so the
+  // overlay hero falls through to the standard kit `.head` below, the header Around You and Events
+  // open on. The page's copy, actions and secondary controls are unchanged; only the photo is gone.
+  if (heroOverlay && !FREQUENCY) {
     // The overlaid index hero now renders the ONE canonical PageHero (the single-source header band),
     // so this branch and every entity/commerce hero share one component + one edit point. A page may
     // pass `heroOverlay` with no `heroImage` (or an explicit null) to get the band with the neutral
@@ -141,10 +144,10 @@ export function IndexTemplate({
 
   return (
     <div>
-      {(trail || heroImage || banner || underHero) && (
+      {(trail || (heroImage && !(FREQUENCY && heroOverlay)) || banner || underHero) && (
         <div>
           {trail && <Breadcrumbs trail={trail} />}
-          {heroImage && (
+          {heroImage && !(FREQUENCY && heroOverlay) && (
             // The standardized header banner: cropped (object-cover) to a consistent height so
             // every index reads the same, regardless of the uploaded image's aspect ratio.
             // Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
