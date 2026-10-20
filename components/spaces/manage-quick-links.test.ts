@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { manageQuickLinks } from './manage-quick-links'
 
 describe('manageQuickLinks (SCAN-971)', () => {
-  it('gives the in-place Manage panel doors to the full console, web editor, website builder, website and menu', () => {
+  it('gives the in-place Manage panel doors to the full console, web editor, website builder, website, check in and menu', () => {
     const links = manageQuickLinks({ slug: 'the-group', published: false, inPanel: true })
     expect(links.map((l) => l.href)).toEqual([
       '/spaces/the-group/manage',
       '/spaces/the-group/edit-page',
       '/spaces/the-group/manage/leadership/open?to=editor',
       '/spaces/the-group?panel=manage&area=settings',
+      '/spaces/the-group?panel=checkin',
       '/spaces/the-group/manage/modules',
     ])
   })
