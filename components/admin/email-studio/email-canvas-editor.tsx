@@ -2,12 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
-import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
+import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
-import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
 import { emailFooterHtml, emailHeaderHtml, emailHeroHtml } from '@/lib/email-studio/shell'
-import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
+import { useLegacyEmailModel, useNodeEmailModel, type EmailCanvasModel } from './email-canvas-model'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
 import { ProductCardEditor } from './product-picker'
@@ -60,13 +59,24 @@ const label = (id: string) => entityBlockById(id)?.label ?? id
 // just makes the shared footer's unsubscribe read as a live link so the operator sees the compliant control.
 const EDITOR_UNSUBSCRIBE_PLACEHOLDER = 'https://frequencylocal.com/unsubscribe'
 
+/** The legacy (type-keyed) email canvas editor. */
 export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
+  return <EmailCanvasView model={useLegacyEmailModel()} colors={colors} />
+}
+
+/** The same editor on the node store (E0 task 12b): each block is its own node, so a type can repeat. Mounted
+ *  only when the campaign carries a node document (render_path_email). */
+export function NodeEmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
+  return <EmailCanvasView model={useNodeEmailModel()} colors={colors} />
+}
+
+function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; colors?: EmailColors }) {
   // The canvas chrome (the framing canvas, the card surface/border, the brand wordmark ink) mirrors the email
   // palette so the WYSIWYG surface reads in the same colors the email will send in. Defaults to the platform
   // DAWN palette; a per-Space editor passes its brand-seeded palette (spaceEmailColors) so a business Space's
   // canvas paints in its own brand.
   const C = colors ?? DEFAULT_EMAIL_COLORS
-  const store = useProfileLayout()
+  const store = model
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // The LEFT block list stays STATIONARY (no translate-to-canvas alignment): the tiles are a plain stacked
   // list, so an expanding tile can never shift the list over the palette below it.
@@ -76,17 +86,8 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
   const [overId, setOverId] = useState<string | null>(null)
 
   // The single-column email block list, in reading order (each row is one block).
-  const blocks = useMemo(() => {
-    const rows = store?.rows ?? []
-    return rows.map((r) => r.cells[0]?.[0] ?? null).filter((s): s is string => s !== null)
-  }, [store?.rows])
-
-  // The blocks NOT yet on this email: the whole curated EMAIL palette minus what is already placed. A block id
-  // is unique across the layout (rows-ops normalize), so each type is offered until it is added.
-  const addable = useMemo(() => {
-    const placed = new Set(blocks)
-    return emailPalette().filter((b) => !placed.has(b.id))
-  }, [blocks])
+  const blocks = store?.blocks ?? []
+  const addable = store?.addable ?? []
 
   // The legal FOOTER chrome, built from the SAME shell builder the sent email uses (emailFooterHtml — no fork),
   // painted in this editor's brand palette. Rendered as non-editable chrome below the block canvas so the
@@ -114,51 +115,29 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
     )
   }
 
-  const layout: BuilderLayout = { rows: store.rows, hidden: store.hidden, content: store.content, style: store.style }
+  const reorder = (key: string, delta: -1 | 1) => store.reorder(key, delta)
 
-  const reorder = (id: string, delta: -1 | 1) => {
-    const from = store.rows.findIndex((r) => r.cells[0]?.[0] === id)
-    if (from < 0) return
-    store.apply(moveRow(layout, from, from + delta))
-  }
-
-  // Drop the dragged block onto `targetId`: move its row to the target's row index and persist via moveRow
-  // (the same rows op the chevrons use). Each email row holds one block, so a block id maps 1:1 to its row;
-  // we resolve indices by id (never by list position) so a filtered/empty row can never misalign the move.
+  // Drop the dragged block onto `targetId`. Keys, never list positions, so a filtered row can never misalign it.
   const reorderByDrag = (targetId: string) => {
     const source = dragId
     setDragId(null)
     setOverId(null)
     if (!source || source === targetId) return
-    const from = store.rows.findIndex((r) => r.cells[0]?.[0] === source)
-    const to = store.rows.findIndex((r) => r.cells[0]?.[0] === targetId)
-    if (from < 0 || to < 0) return
-    store.apply(moveRow(layout, from, to))
+    store.reorderTo(source, targetId)
   }
 
-  // Add one email block: append a fresh single-column row and place the block into it, then select it so its
-  // settings open. rows-ops keep a block id unique, so the same type can never double-add.
-  const addBlock = (blockId: string) => {
-    const withRow = addRow(layout)
-    const newRow = withRow.rows[withRow.rows.length - 1]
-    if (!newRow) return
-    store.apply(placeBlock(withRow, blockId, newRow.id, 0))
-    setSelectedId(blockId)
+  // Add one email block, then select it so its settings open.
+  const addBlock = (type: string) => {
+    const key = store.add(type)
+    if (key) setSelectedId(key)
   }
 
-  const remove = (id: string) => {
-    store.apply(removeBlock(layout, id))
-    if (selectedId === id) setSelectedId(null)
+  const remove = (key: string) => {
+    store.remove(key)
+    if (selectedId === key) setSelectedId(null)
   }
 
-  // Merge one content field against the freshest store bag (sparse: an empty value clears the key). It goes
-  // through patchContent, not applyContent: rebuilding the whole bag from the render-time `store.content`
-  // snapshot loses every field but the last when several land in the SAME tick — which is exactly what the
-  // product picker does (product / title / price / image / url, back to back) and what the photo popup does
-  // (image then alt). See the note in components/entity-blocks/live-profile-grid.tsx.
-  const setField = (blockId: string, key: string, value: unknown) => {
-    store.patchContent(blockId, { [key]: value })
-  }
+  const setField = (key: string, field: string, value: unknown) => store.setField(key, field, value)
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(220px,25%)_minmax(0,1fr)]">
@@ -178,9 +157,11 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
         ) : (
           <ol className="space-y-1.5">
 
-            {blocks.map((id, i) => {
+            {blocks.map((block, i) => {
+              const id = block.key
+              const type = block.type
               const active = id === selectedId
-              const fields = fieldsForBlock(id).filter(isCoreField)
+              const fields = fieldsForBlock(type).filter(isCoreField)
               return (
                 <li
                   key={id}
@@ -222,7 +203,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                           reorder(id, 1)
                         }
                       }}
-                      aria-label={`Reorder ${label(id)}. Drag, or press the up and down arrow keys to move it.`}
+                      aria-label={`Reorder ${label(type)}. Drag, or press the up and down arrow keys to move it.`}
                       className="shrink-0 cursor-grab rounded p-0.5 text-subtle transition-colors hover:text-text active:cursor-grabbing"
                     >
                       <GripVertical className="h-3.5 w-3.5" aria-hidden />
@@ -235,11 +216,11 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                       className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-meta font-semibold text-text"
                     >
                       <Settings2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate">{label(id)}</span>
+                      <span className="min-w-0 flex-1 truncate">{label(type)}</span>
                     </button>
                     <button
                       type="button"
-                      aria-label={`Move ${label(id)} up`}
+                      aria-label={`Move ${label(type)} up`}
                       disabled={i === 0}
                       onClick={() => reorder(id, -1)}
                       className="shrink-0 rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
@@ -248,7 +229,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                     </button>
                     <button
                       type="button"
-                      aria-label={`Move ${label(id)} down`}
+                      aria-label={`Move ${label(type)} down`}
                       disabled={i === blocks.length - 1}
                       onClick={() => reorder(id, 1)}
                       className="shrink-0 rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
@@ -261,17 +242,17 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                       which is edited on the canvas). Issue #1 + #2: the same `selectedId` a canvas click sets. */}
                   {active && (
                     <div className="space-y-3 border-t border-border px-2.5 pb-3 pt-2">
-                      {id === 'productCard' ? (
+                      {type === 'productCard' ? (
                         // The data-bound Product card has its own search-by-owner picker (Phase 4), not the
                         // generic field list.
                         <ProductCardEditor
-                          content={store.content[id] ?? {}}
+                          content={block.content}
                           onField={(k, v) => setField(id, k, v)}
                         />
-                      ) : id === 'eventCard' ? (
-                        <EventCardEditor content={store.content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
-                      ) : id === 'circleCard' ? (
-                        <CircleCardEditor content={store.content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+                      ) : type === 'eventCard' ? (
+                        <EventCardEditor content={block.content} onField={(k, v) => setField(id, k, v)} />
+                      ) : type === 'circleCard' ? (
+                        <CircleCardEditor content={block.content} onField={(k, v) => setField(id, k, v)} />
                       ) : fields.length === 0 ? (
                         <p className="text-2xs text-muted">
                           This block has no structural settings. Edit its text on the canvas.
@@ -281,7 +262,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                           <FieldEditor
                             key={f.key}
                             field={f}
-                            value={store.content[id]?.[f.key]}
+                            value={block.content[f.key]}
                             textOnCanvas
                             onChange={(v) => setField(id, f.key, v)}
                           />
@@ -327,17 +308,17 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
             </p>
           ) : (
             <div className="space-y-6">
-              {blocks.map((id) => (
+              {blocks.map((block) => (
                 // Selecting a block (mousedown) surfaces its settings in its LEFT-rail tile (issue #2), which is
                 // the selection affordance. No ring is painted on the canvas: clicking into a text slot must not
                 // draw an amber box around the field (owner directive), so the block wrapper stays outline-free.
                 <div
-                  key={id}
+                  key={block.key}
                   role="group"
-                  onMouseDown={() => setSelectedId(id)}
+                  onMouseDown={() => setSelectedId(block.key)}
                   className="rounded-lg p-2"
                 >
-                  <CanvasBlock id={id} props={store.content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+                  <CanvasBlock id={block.type} props={block.content} onField={(k, v) => setField(block.key, k, v)} />
                 </div>
               ))}
             </div>
