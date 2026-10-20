@@ -37,7 +37,7 @@ export interface EmailWorkspaceActions {
     patch: { layout?: BuilderLayout | EntityLayout | NodeLayout; subject?: string; preheader?: string },
   ) => Promise<{ error?: string }>
   /** Test-send to the operator (injected into the compose toolbar). */
-  sendTest: (id: string) => Promise<ActionResult<{ to: string }>>
+  sendTest: (id: string, to?: string) => Promise<ActionResult<{ to: string }>>
 }
 
 /** The default action bundle: the admin Email Studio's server actions (unchanged behavior). */

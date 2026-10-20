@@ -1,6 +1,8 @@
 'use server'
 
 
+import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
@@ -359,13 +361,20 @@ export async function saveSpaceEmailDraft(
 export async function sendSpaceTestEmail(
   spaceId: string,
   id: string,
+  toRaw?: string,
 ): Promise<ActionResult<{ to: string }>> {
   const gate = await requireSpaceEditor(spaceId)
   if (!gate.ok) return fail(gate.error)
   const { space } = gate
 
-  const to = (await getCachedUser())?.email ?? null
-  if (!to) return fail('We could not find an email on your account to send the test to.')
+  const user = await getCachedUser()
+  const target = parseTestRecipient(toRaw, user?.email ?? null)
+  if (!target.ok) return fail(target.error)
+  const to = target.to
+  // A test to somebody else is the one door here that mails an outsider, so it is throttled per editor.
+  if (!target.own && !(await rateLimitOk('space-email-test', `${spaceId}:${user?.id ?? 'anon'}`, 10, '1 h'))) {
+    return fail('That is a lot of test emails to other people. Try again in an hour, or send the test to yourself.')
+  }
 
   const row = await readDraft(id, spaceId)
   if (!row) return fail('That email no longer exists.')

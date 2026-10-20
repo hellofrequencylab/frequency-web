@@ -1,7 +1,7 @@
 {
   "id": "EMAIL-035",
   "title": "A test send can go to any address, not only the sender",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -13,7 +13,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-editor.mjs testsend",
-    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+    "note": "PASS 2026-10-20: the compose toolbar has a Test to field; parseTestRecipient validates it and Space sends to others are rate limited; vitest covers both."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-20"
 }
