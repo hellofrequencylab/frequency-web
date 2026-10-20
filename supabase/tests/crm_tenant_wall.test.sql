@@ -2,7 +2,7 @@
 -- route trees; each reads only its tenant's rows, and the database is what makes that true.
 --
 -- A definition guard, on purpose: it needs no seed graph and fails the moment a CRM table loses RLS,
--- loses its space_id, or becomes readable by anon. The behavioral cross-tenant proof (operator A vs
+-- loses its space_id, or gains a read policy that opens every row to anon. The behavioral cross-tenant proof (operator A vs
 -- Space B, plain member, anon) is space_tenancy_walls.test.sql, which seeds both Spaces and runs
 -- the CRM rows through every seat.
 --
@@ -35,11 +35,41 @@ select has_column('public', 'crm_deals', 'space_id', 'crm_deals is stamped with 
 select has_column('public', 'crm_activities', 'space_id', 'crm_activities is stamped with its owning Space');
 select has_column('public', 'crm_tasks', 'space_id', 'crm_tasks is stamped with its owning Space');
 
-select is(has_table_privilege('anon', 'public.contacts', 'select'), false, 'anon cannot read contacts');
-select is(has_table_privilege('anon', 'public.crm_stages', 'select'), false, 'anon cannot read crm_stages');
-select is(has_table_privilege('anon', 'public.crm_deals', 'select'), false, 'anon cannot read crm_deals');
-select is(has_table_privilege('anon', 'public.crm_activities', 'select'), false, 'anon cannot read crm_activities');
-select is(has_table_privilege('anon', 'public.crm_tasks', 'select'), false, 'anon cannot read crm_tasks');
+select is(
+  (select count(*)::int from pg_policy
+    where polrelid = 'public.contacts'::regclass and polpermissive and polcmd in ('r', '*')
+      and (polroles = '{0}'::oid[] or (select oid from pg_roles where rolname = 'anon') = any (polroles))
+      and pg_get_expr(polqual, polrelid) = 'true'),
+  0,
+  'contacts has no read policy that opens every row to anon');
+select is(
+  (select count(*)::int from pg_policy
+    where polrelid = 'public.crm_stages'::regclass and polpermissive and polcmd in ('r', '*')
+      and (polroles = '{0}'::oid[] or (select oid from pg_roles where rolname = 'anon') = any (polroles))
+      and pg_get_expr(polqual, polrelid) = 'true'),
+  0,
+  'crm_stages has no read policy that opens every row to anon');
+select is(
+  (select count(*)::int from pg_policy
+    where polrelid = 'public.crm_deals'::regclass and polpermissive and polcmd in ('r', '*')
+      and (polroles = '{0}'::oid[] or (select oid from pg_roles where rolname = 'anon') = any (polroles))
+      and pg_get_expr(polqual, polrelid) = 'true'),
+  0,
+  'crm_deals has no read policy that opens every row to anon');
+select is(
+  (select count(*)::int from pg_policy
+    where polrelid = 'public.crm_activities'::regclass and polpermissive and polcmd in ('r', '*')
+      and (polroles = '{0}'::oid[] or (select oid from pg_roles where rolname = 'anon') = any (polroles))
+      and pg_get_expr(polqual, polrelid) = 'true'),
+  0,
+  'crm_activities has no read policy that opens every row to anon');
+select is(
+  (select count(*)::int from pg_policy
+    where polrelid = 'public.crm_tasks'::regclass and polpermissive and polcmd in ('r', '*')
+      and (polroles = '{0}'::oid[] or (select oid from pg_roles where rolname = 'anon') = any (polroles))
+      and pg_get_expr(polqual, polrelid) = 'true'),
+  0,
+  'crm_tasks has no read policy that opens every row to anon');
 
 select * from finish();
 rollback;
