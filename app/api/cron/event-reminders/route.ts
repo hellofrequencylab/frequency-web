@@ -39,10 +39,14 @@ import {
   sendEventReminderEmail,
   sendGuestEventReminderEmail,
   enqueueEmail,
+  emailButton,
+  emailFacts,
+  emailKicker,
   emailShell,
   escapeHtml,
   listUnsubscribeHeaders,
   EMAIL_P,
+  EMAIL_H1,
 } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
@@ -596,18 +600,14 @@ async function sendWeekAheadEmail(params: {
   // body used to be a bare fragment in the pre-DAWN indigo with no doctype, wordmark or footer.
   const html = emailShell(
     `
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:28px 0 8px;">
-      A week to go
-    </p>
-    <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;color:${palette.text};">${escapeHtml(eventTitle)}</h1>
+    ${emailKicker(`A week to go`)}
+    <h1 data-fq="fq-h1" style="${EMAIL_H1}">${escapeHtml(eventTitle)}</h1>
     <p style="${EMAIL_P}color:${palette.textMuted};">
       Hi ${escapeHtml(recipientName)}, just a gentle note that we'll see you in about a week. No need to do anything now; we're looking forward to having you there.
     </p>
-    <p style="${EMAIL_P}color:${palette.text};">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:${palette.emailSubtle};">${escapeHtml(location)}</span>` : ''}
-    </p>
+    ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
     ${proofLine ? `<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(proofLine)}</p>` : ''}
-    <a href="${eventUrl}" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700;">View event</a>
+    ${emailButton('View event', eventUrl)}
     <hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:28px 0;">
     <p style="font-size:13px;color:${palette.emailFaint};">
       Plans change, and that's okay. <a href="${eventUrl}" style="color:${palette.emailFaint};">Update your RSVP</a> any time.

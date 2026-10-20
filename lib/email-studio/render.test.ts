@@ -272,13 +272,13 @@ describe('shell + compileEmailDoc', () => {
     expect(out.text).toContain('Unsubscribe: https://x/u')
   })
 
-  it('default header renders the Frequency TEXT wordmark (no raster logo)', () => {
+  it('default header renders the Frequency wordmark image (EMAIL-029, pin recaptured on the owner go)', () => {
     const html = emailDocumentShell({ body: '<p>hi</p>' })
-    // The default shell is the text wordmark lockup, not an image.
-    expect(html).toContain('>Frequency</a>')
-    expect(html).toContain('font-weight:900')
+    // The platform shell crowns the card with the wordmark image: the stock hero where the design has one,
+    // else the header wordmark. Either way it is an image with the brand alt, never a text lockup.
+    expect(html).toContain('alt="Frequency, ')
     expect(html).not.toContain('frequency-logo.png')
-    expect(html).not.toContain('<img')
+    expect(html).toContain('<img')
   })
 
   it('a per-Space logoUrl brand swaps in its image logo', () => {
