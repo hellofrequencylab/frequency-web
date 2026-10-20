@@ -43,7 +43,7 @@ vi.mock('@/lib/commerce/products', () => ({
 vi.mock('@/lib/commerce/checkout', () => ({ createCommerceCheckout: vi.fn() }))
 vi.mock('@/lib/ai/listing-copy', () => ({ draftListingCopy }))
 // The Spark is a client island; the page test only cares that the page CHOSE to render it.
-vi.mock('./../market/sell/product-spark', () => ({ ProductSpark: () => null }))
+vi.mock('../(marketplace)/market/sell/product-spark', () => ({ ProductSpark: () => null }))
 // The page resolves the maker's Connect prompt (LIVE-537); that is two admin reads and not this file's
 // subject. lib/billing/connect-prompt.test.tsx pins the seam.
 vi.mock('@/lib/pricing/business-offer', () => ({
@@ -64,8 +64,8 @@ vi.mock('@/lib/ai/vera/create-entity', () => ({
 }))
 
 import { createMakerProductAction, draftMakerProductCopyAction } from './commerce-actions'
-import MarketSellPage from '../market/sell/page'
-import { ProductSpark } from '../market/sell/product-spark'
+import MarketSellPage from '../(marketplace)/market/sell/page'
+import { ProductSpark } from '../(marketplace)/market/sell/product-spark'
 import {
   memberNetworkTakeRateBps,
   sourceAwareMemberTakeRateCents,
@@ -226,7 +226,7 @@ describe('the Crew feature gates that remain are untouched (the repeat stays gat
 // nothing (a wall could be spelled differently), which is why the behavioural tests above come first.
 describe('source shape: neither Market listing surface walls a member behind a paid tier', () => {
   const root = join(__dirname, '..', '..', '..')
-  const files = ['app/(main)/market/sell/page.tsx', 'app/(main)/marketplace/commerce-actions.ts']
+  const files = ['app/(main)/(marketplace)/market/sell/page.tsx', 'app/(main)/marketplace/commerce-actions.ts']
 
   it.each(files)('%s has no isPaid gate and no /upgrade redirect', (rel) => {
     const src = readFileSync(join(root, rel), 'utf8')

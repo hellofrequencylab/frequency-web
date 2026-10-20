@@ -25,7 +25,7 @@ const CONTENT_FALLBACK = {
   description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment, just neighbors helping out. Arrange the handoff offline.',
 }
 
-// Same posture as the Frequency Store index (app/(main)/store/page.tsx:19-23): no /discover twin
+// Same posture as the Frequency Store index (app/(main)/(marketplace)/store/page.tsx:19-23): no /discover twin
 // exists for Classifieds, and this kind-filtered board is not the SEO surface — the individual
 // /classifieds/<id> pages are (self-canonical, Product schema, and the ones app/sitemap.ts
 // advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk through to the

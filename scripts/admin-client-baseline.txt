@@ -556,7 +556,7 @@ app/(main)/journeys/run-actions.ts
 app/(main)/lead/inbox/actions.ts
 app/(main)/lead/load-led-circles.ts
 app/(main)/library/actions.ts
-app/(main)/market/service-actions.ts
+app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/messages/actions.ts
 app/(main)/messages/inbox-data.ts
 app/(main)/messages/r/[roomId]/page.tsx

@@ -38,7 +38,7 @@ export async function payoutsLive(): Promise<boolean> {
 // dead end, not a safeguard.
 //
 // 🔴 THIS REPAIRS AN EXISTING BROKEN LINK RATHER THAN OPENING A NEW SURFACE.
-// app/(main)/market/manage/page.tsx:127-130 already renders a "Set up payouts" button to
+// app/(main)/(marketplace)/market/manage/page.tsx:127-130 already renders a "Set up payouts" button to
 // /settings/billing for any maker whose `connect.ready` is false — and the card at that
 // destination was hidden by this predicate. The funnel was already advertised and already
 // unreachable for a plain member.

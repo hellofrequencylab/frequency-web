@@ -16,7 +16,7 @@ import type { CommerceProduct } from '@/lib/commerce/types'
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
 import { OrderShareNote } from '@/components/marketplace/order-share-note'
 import { listOrdersForSeller, type CommerceOrder } from '@/lib/commerce/orders'
-import { setMyProductStatusAction, deleteMyProductAction, setMyOrderFulfillmentAction } from '../../marketplace/commerce-actions'
+import { setMyProductStatusAction, deleteMyProductAction, setMyOrderFulfillmentAction } from '@/app/(main)/marketplace/commerce-actions'
 
 // Seller storefront manager — a maker's own products + payout readiness + recent sales.
 // Listing is free; getting paid needs a payout account (Stripe Connect) at /settings/billing.
