@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1120",
+  "title": "A phone controls its CyberUnicorn from any network over a private Realtime channel the server authorizes",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "§8 Internet relay. cyberpunkunicorn-os apps/remote/PROTOCOL.md §6 'What frequency-web needs to add'; the Frequency Experience app's Internet transport (LIVE-1115) waits on it."
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. PREMISE RE-TESTED: no route minted a Realtime token, realtime.messages had one policy (the LIVE-671 member reward topic), and scanner_devices (LIVE-1056, branch live/nfc-device-checkin, which this branch builds on) linked a device to a Space only. Built: migration 20270346015000_device_relay.sql (device_relay_settings, service role only, relay off by default, personal owner, allow-list that cannot hold cli.run; public.relay_manageable_devices, internal; four realtime.messages policies for Broadcast and Presence on device:<id>). lib/devices/relay.ts signs a 15 minute HS256 token (role anon, sub and device_id = the device, frequency_kind device) with SUPABASE_JWT_SECRET; lib/devices/relay-store.ts mints it, lists and patches through the one manage rule. POST /api/v1/devices/realtime-token (device wire, 404 while DEVICE_RELAY_ENABLED is off), GET /api/v1/me/devices and PATCH /api/v1/me/devices/{id} (app contract). ADR-1870. OPEN EVIDENCE 2026-10-19: the migration is unapplied, DEVICE_RELAY_ENABLED and SUPABASE_JWT_SECRET are unset everywhere, nothing was run against Realtime; the gate is docs/RUNBOOKS.md Internet relay. Not built: the optional audit table and a web panel for the switch.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const bad=[];const rl=r('lib/devices/relay.ts');if(!/role: 'anon'/.test(rl)||!/frequency_kind: 'device'/.test(rl))bad.push('the device token is no longer an anon device token');if(/'cli\\.run'/.test((rl.match(/RELAY_COMMANDS = \\[[^\\]]*\\]/)||[''])[0]))bad.push('cli.run is on the relay allow-list');const st=r('lib/devices/relay-store.ts');if(!/relay_manageable_devices/.test(st))bad.push('the member side no longer asks the one manage rule');if(!/relay_disabled/.test(st))bad.push('the mint no longer refuses a switched-off relay');const rt=r('app/api/v1/devices/realtime-token/route.ts');if(!/admitDevice\\(/.test(rt)||!/deviceRelayEnabled\\(\\)/.test(rt))bad.push('the token route skips the device credential or the switch');const m=fs.readdirSync('supabase/migrations').filter(f=>/device_relay\\.sql$/.test(f)).map(f=>r('supabase/migrations/'+f)).join('');if(!/relay_member_may_join/.test(m)||!/relay_device_may_join/.test(m)||!/revoke execute on function public\\.relay_manageable_devices\\(uuid\\) from public, anon, authenticated/.test(m))bad.push('the realtime policies or the manage-rule revoke are gone');for(const p of ['app/api/v1/me/devices/route.ts','app/api/v1/me/devices/[id]/route.ts','lib/devices/relay.test.ts','lib/devices/relay-store.test.ts','app/api/v1/devices/realtime-token/route.test.ts','app/api/v1/me/devices/route.test.ts'])if(!fs.existsSync(p))bad.push('missing '+p);if(!/^device_relay_settings\\s+internal/m.test(r('scripts/table-grants.txt')))bad.push('device_relay_settings is not service-role only');if(bad.length){console.error('LIVE-1120: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the device token stops being an anon device token, cli.run joins the allow-list, the member routes stop asking relay_manageable_devices, the mint stops refusing a switched-off relay, the token route skips the device credential or the switch, the realtime policies or the manage-rule revoke leave the migration, a route or its test is deleted, or the settings table stops being service-role only. Behaviour is lib/devices/relay*.test.ts and the route tests in the test job.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}
