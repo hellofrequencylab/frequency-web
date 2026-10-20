@@ -1034,6 +1034,13 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] .fqd-link:hover{background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent)}
 [data-design="frequency"] .fqd-panel .fqd-find svg{color:var(--fqd-mute)}
 
+/* The push save-failed note (components/push/registration.tsx, LIVE-1100): bottom centre where the kit toast
+   lands, above the docks and the phone tab bar, rising with the open footer. */
+[data-design="frequency"] .fq-push-note{left:50%;right:auto;bottom:calc(76px + var(--fq-foot-lift, 0px));transform:translateX(-50%);width:max-content;max-width:min(360px, calc(100vw - 32px));border:none;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);color:var(--fq-text-body);box-shadow:inset 0 0 0 1px var(--fq-border-hair),0 18px 40px -24px color-mix(in oklab,var(--fq-ink) 40%,transparent)}
+[data-design="frequency"] .fq-push-note button{color:var(--fq-text-link)}
+@media (max-width:767px){
+  [data-design="frequency"] .fq-push-note{bottom:calc(var(--tab-bar-h, 72px) + 28px + var(--fq-foot-lift, 0px))}}
+
 /* The open panel rests on the open mega footer's top edge, like the docks (LIVE-1030, LIVE-1043). From md
    only: below md the panel is a bottom sheet over everything. An inline anchor (DAWN's bar) still wins. */
 @media (min-width:768px){
