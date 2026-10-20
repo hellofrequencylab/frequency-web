@@ -130,9 +130,6 @@ export type MapEngineProps = {
 }
 
 export type MapCanvasProps = MapEngineProps & {
-  /** Pin the engine to the keyless MapLibre map even when a Google key is set. For a decorative still
-   *  (the rail's Around you tile) that would otherwise bill a Google map load on every page view. */
-  engine?: 'maplibre'
   /** Render an expand control that reopens this same map full screen.
    *
    *  The overlay is components/ui/dialog.tsx with `align="sheet"`, which already owns the

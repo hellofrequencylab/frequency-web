@@ -35,8 +35,9 @@ const MapCanvas = dynamic(() => import('@/components/maps/map-canvas').then((m) 
   loading: () => <div className="evm-ph" aria-hidden="true" />,
 })
 
-/** The tile's backdrop: a real, still basemap under the pins. Pinned to keyless MapLibre so a Google key
- *  never bills a map load per page view; the SVG below it stays as the paint while tiles arrive. */
+/** The tile's backdrop: a real, still basemap under the pins, through the seam so it is Google Maps when the
+ *  browsable key is set (owner 2026-10-20) and MapLibre otherwise. The SVG below it stays as the paint while
+ *  tiles arrive. */
 function TileBasemap({ items }: { items: AyMapItem[] }) {
   const pins: MapPin[] = useMemo(
     () => items.map((i) => ({ id: i.id, lat: i.lat, lng: i.lng, kind: 'event' as const, label: i.title })),
@@ -49,7 +50,6 @@ function TileBasemap({ items }: { items: AyMapItem[] }) {
   return (
     <span className="evm-tile-live" aria-hidden="true">
       <MapCanvas
-        engine="maplibre"
         interactive={false}
         center={center}
         zoom={10}
