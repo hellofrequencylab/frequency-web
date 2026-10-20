@@ -20,8 +20,8 @@ const checks = {
     assert.ok(s.includes('onInsert'), 'the merge tag picker inserts at the cursor through onInsert')
   },
   testsend: () => {
-    const s = read('lib/email-studio/send.ts')
-    assert.ok(/sendTestEmail[\s\S]{0,400}\bto\b/.test(s) && read('lib/email-studio/test-recipient.ts').includes('parseTestRecipient'), 'a test send takes any valid address through parseTestRecipient')
+    assert.ok(read('lib/email-studio/test-recipient.ts').includes('export function parseTestRecipient'), 'a test recipient is parsed in one place')
+    assert.ok(read('app/(main)/admin/email-studio/actions.ts').includes('parseTestRecipient(toRaw') && read('lib/spaces/email-drafts.ts').includes('parseTestRecipient(toRaw'), 'both test sends take any valid address through parseTestRecipient')
   },
   utm: () => {
     assert.ok(read('lib/email-studio/utm.ts').includes('export function appendUtm') && read('lib/email-studio/send.ts').includes('appendUtm('), 'campaign links carry utm parameters')

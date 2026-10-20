@@ -117,7 +117,7 @@ export function EmailEditorPane({
    *  editor injects its own space-scoped, brand-compiling save (saveSpaceEmailDraft). */
   saveCampaign?: SaveCampaign
   /** The test-send action, injected into the compose toolbar (defaults to the admin sendTestEmail). */
-  sendTest?: (id: string) => Promise<ActionResult<{ to: string }>>
+  sendTest?: (id: string, to?: string) => Promise<ActionResult<{ to: string }>>
   /** Brand palette for the canvas + live preview (spaceEmailColors for a Space). Defaults to DAWN. */
   colors?: EmailColors
   /** 'stacked' (default): toolbar on top, canvas below, preview toggled beside it. 'trio': a full-width

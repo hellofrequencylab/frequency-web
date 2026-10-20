@@ -1,5 +1,6 @@
 'use server'
 
+import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
 import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
@@ -461,12 +462,13 @@ export async function saveEmailCampaign(
  * Never sends to a list, never clears the approval gate; records test_sent_at so the lifecycle UI can show
  * "tested".
  */
-export async function sendTestEmail(id: string): Promise<ActionResult<{ to: string }>> {
+export async function sendTestEmail(id: string, toRaw?: string): Promise<ActionResult<{ to: string }>> {
   const gate = await writerGate()
   if (!gate.ok) return fail(gate.error)
 
-  const to = (await getCachedUser())?.email ?? null
-  if (!to) return fail('We could not find an email on your account to send the test to.')
+  const target = parseTestRecipient(toRaw, (await getCachedUser())?.email ?? null)
+  if (!target.ok) return fail(target.error)
+  const to = target.to
 
   const db = createAdminClient()
   const { data, error } = await db
