@@ -1,0 +1,6 @@
+{
+  "id": "DEF-MOBILE",
+  "append": {
+    "detail": "── 2026-10-19 (ADR-1865, LIVE-1115). OWNER REQUEST, relayed by the coordinating session: build the app now, Android first, named Frequency Experience, combining the member experience with control of the owner's CyberUnicorn 5000. The Expo project now exists in mobile/ (branch live/frequency-experience): the shell on the shared contract and the design tokens, NFC reading, deep-link capture and the native push client. The row stays parked for what it still holds: iOS, store submission, App Attest / Play Integrity on the earning paths, Sign in with Apple (LIVE-725), in-app purchase (LIVE-726), geofencing and the sync-engine pilot. The premise 'no Expo project in the tree' is no longer true."
+  }
+}

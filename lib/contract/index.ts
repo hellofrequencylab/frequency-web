@@ -492,3 +492,58 @@ export type PushDeviceInput = z.infer<typeof pushDeviceInput>
 export const pushDeviceRevokeInput = z.object({ token: z.string().min(8).max(4096) })
 
 export const pushDeviceResponse = envelope(z.object({ registered: z.boolean() }))
+
+// ── GET /api/v1/rewards: Regulars cards and the member's game counts (LIVE-1115) ────────────────
+
+/** A reward earned at a Space and not yet handed out: the code the member shows at the counter. */
+const loyaltyRewardView = z.object({
+  id: z.string(),
+  code: z.string(),
+  rewardTitle: z.string(),
+  rewardValueCents: z.number(),
+  earnedAt: z.string(),
+})
+
+/** The member's stamp card at one Space, what the web's /rewards renders (lib/loyalty/program.ts
+ *  `LoyaltyCard`). `regular` and `streakWeeks` are the computed standing (LIVE-943). */
+const loyaltyCardView = z.object({
+  spaceId: z.string(),
+  spaceName: z.string(),
+  spaceSlug: z.string(),
+  stamps: z.number(),
+  required: z.number(),
+  rewardTitle: z.string(),
+  rewardValueCents: z.number(),
+  openRewards: z.array(loyaltyRewardView),
+  regular: z.boolean(),
+  streakWeeks: z.number(),
+  surpriseOdds: z.number(),
+})
+export type LoyaltyCardView = z.infer<typeof loyaltyCardView>
+
+/** GET /api/v1/rewards. `enabled` is the Regulars launch switch: off, `cards` is empty and the app
+ *  says the program is not open yet. `seasonZaps` and `streak` are the caller's own game counts, the
+ *  same profile columns the web's Vault reads; null when the row has none. */
+const rewardsView = z.object({
+  enabled: z.boolean(),
+  seasonZaps: z.number().nullable(),
+  streak: z.number().nullable(),
+  cards: z.array(loyaltyCardView),
+})
+export type RewardsView = z.infer<typeof rewardsView>
+export const rewardsResponse = envelope(rewardsView)
+
+// ── GET /api/v1/spaces/checkin-links: an operator's door links (LIVE-1115) ──────────────────────
+
+/** One Space the caller runs, with its signed check-in link (`/n/<nodeId>?s=<code>`, the same link
+ *  the Space's printed door code carries). An app writes it to an NFC tag. A Space whose check-in node
+ *  could not be ensured (the per-Space check-in function is off for the caller's role) is left out. */
+const checkinLinkView = z.object({
+  spaceId: z.string(),
+  spaceSlug: z.string(),
+  spaceName: z.string(),
+  nodeId: z.string(),
+  url: z.string(),
+})
+export type CheckinLinkView = z.infer<typeof checkinLinkView>
+export const checkinLinksResponse = envelope(z.object({ items: z.array(checkinLinkView) }))

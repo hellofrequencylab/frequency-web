@@ -1,0 +1,25 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.frequencylocal.experience'
+version = '0.1.0'
+
+expoModule {
+  v2 true
+}
+
+android {
+  namespace "expo.modules.usbserial"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+dependencies {
+  // CH340 (and CP210x, FTDI, CDC) drivers over Android USB host. Served from jitpack.io, which
+  // app.config.ts adds through expo-build-properties `extraMavenRepos`.
+  implementation 'com.github.mik3y:usb-serial-for-android:3.11.0'
+}

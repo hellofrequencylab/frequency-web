@@ -1,6 +1,7 @@
 import 'server-only'
 import type {
   CircleView,
+  LoyaltyCardView,
   EventView,
   FeedPostView,
   PeerView,
@@ -10,6 +11,7 @@ import type {
 import type { FeedRow } from '@/lib/feed/feed-page'
 import type { Practice } from '@/lib/practices'
 import type { NotificationItem } from '@/lib/notifications-map'
+import type { LoyaltyCard } from '@/lib/loyalty/program'
 
 // The lib rows a /api/v1 route reads, mapped to the contract's view models (LIVE-716). The views
 // are camelCase and carry only what the app shows; a lib row can grow a column without the wire
@@ -139,5 +141,30 @@ export function toProfileView(p: ProfileRow): ProfileView {
     communityRole: p.community_role ?? null,
     membershipTier: p.membership_tier ?? null,
     createdAt: p.created_at ?? null,
+  }
+}
+
+/** GET /api/v1/rewards (LIVE-1115): one Regulars card as the web's /rewards renders it. The standing
+ *  object is flattened; the rewards keep only what the counter needs (a handed-out reward never
+ *  reaches here: listMyLoyaltyCards keeps open ones only). */
+export function toLoyaltyCardView(c: LoyaltyCard): LoyaltyCardView {
+  return {
+    spaceId: c.spaceId,
+    spaceName: c.spaceName,
+    spaceSlug: c.spaceSlug,
+    stamps: c.stamps,
+    required: c.required,
+    rewardTitle: c.rewardTitle,
+    rewardValueCents: c.rewardValueCents,
+    openRewards: c.openRewards.map((r) => ({
+      id: r.id,
+      code: r.code,
+      rewardTitle: r.rewardTitle,
+      rewardValueCents: r.rewardValueCents,
+      earnedAt: r.earnedAt,
+    })),
+    regular: c.standing.regular,
+    streakWeeks: c.standing.streakWeeks,
+    surpriseOdds: c.surpriseOdds,
   }
 }
