@@ -8,7 +8,7 @@
 #   node scripts/check-templates.mjs --update --allow-raise --reason="why"
 #
 # ⚠️ Three entries are compliant pages the gate cannot see (ADR-986): app/(main)/classifieds/new,
-# app/(main)/spaces/[slug]/settings/services/new and app/(main)/market/sell are SERVER pages that
+# app/(main)/spaces/[slug]/settings/services/new and app/(main)/(marketplace)/market/sell are SERVER pages that
 # gate and then delegate to a client Spark which composes SparkShell. The gate matches literal tags
 # in the page file by design — it over-reports rather than certifying a hand-rolled layout — so they
 # are listed here. market/sell joined them on 2026-08-24 (ADR-914 / OWN-032): its FocusTemplate was
@@ -62,7 +62,7 @@ app/(main)/events/page.tsx
 app/(main)/journeys/[slug]/edit/page.tsx
 app/(main)/journeys/[slug]/guide/page.tsx
 app/(main)/journeys/new/page.tsx
-app/(main)/market/sell/page.tsx
+app/(main)/(marketplace)/market/sell/page.tsx
 app/(main)/messages/[id]/page.tsx
 app/(main)/messages/r/[roomId]/page.tsx
 app/(main)/practices/[id]/edit/page.tsx

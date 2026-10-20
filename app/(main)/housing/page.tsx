@@ -25,7 +25,7 @@ import { resolveMarketHero } from '@/lib/layout/index-hero'
 // URL-driven and shareable without any client JS: the server reads searchParams and narrows the read
 // through listHousingListings(facets). No em or en dashes.
 
-// Same posture as the Frequency Store index (app/(main)/store/page.tsx:19-23): no /discover twin
+// Same posture as the Frequency Store index (app/(main)/(marketplace)/store/page.tsx:19-23): no /discover twin
 // exists for Housing, and this facet-filtered index is not the SEO surface — the individual
 // /housing/<id> pages are (self-canonical, Accommodation schema, and the ones app/sitemap.ts
 // advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk through to the

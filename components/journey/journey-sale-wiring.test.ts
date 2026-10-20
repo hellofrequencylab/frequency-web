@@ -363,7 +363,7 @@ describe('listing areas open the Journey sales page, not a product uuid', () => 
   })
 
   it('the Market grid attaches the Journey slug before rendering cards', () => {
-    expect(code('app', '(main)', 'market', 'page.tsx')).toContain('withJourneySalesHref')
+    expect(code('app', '(main)', '(marketplace)', 'market', 'page.tsx')).toContain('withJourneySalesHref')
   })
 
   it('the public pitch sends a paid visitor to sign-in, not a Market uuid', () => {

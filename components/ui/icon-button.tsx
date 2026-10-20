@@ -6,7 +6,7 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 // The modern icon-group control: a tight 32px icon-only affordance for row-action (44px on
 // touch, see TOUCH TARGET below)
 // clusters (Edit / Duplicate / Delete and friends), the density the marketplace
-// storefront shipped as the exemplar (app/(main)/market/manage/page.tsx). The `label`
+// storefront shipped as the exemplar (app/(main)/(marketplace)/market/manage/page.tsx). The `label`
 // is BOTH the accessible name and the hover tooltip, so nothing is lost by dropping
 // the visible text. Compose these side by side in a `flex items-center gap-1` cluster.
 // `danger` tints the hover for destructive actions. Token-only, with a focus ring.

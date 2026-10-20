@@ -147,7 +147,7 @@ describe('member-facing links into a thread open the dock instead', () => {
   }
 
   it('the service enquiry action returns an id, not a URL', () => {
-    const src = readFileSync('app/(main)/market/service-actions.ts', 'utf8')
+    const src = readFileSync('app/(main)/(marketplace)/market/service-actions.ts', 'utf8')
     expect(src).toContain('conversationId?: string')
     expect(src).not.toContain('url: `/messages/')
   })

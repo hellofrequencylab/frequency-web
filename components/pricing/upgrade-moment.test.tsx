@@ -135,7 +135,7 @@ describe('the upgrade moment', () => {
       'app/(main)/events/new/event-form.tsx',
       'app/(main)/spaces/[slug]/settings/memberships/section.tsx',
       'app/(main)/spaces/[slug]/settings/services/new/service-spark.tsx',
-      'app/(main)/market/sell/product-spark.tsx',
+      'app/(main)/(marketplace)/market/sell/product-spark.tsx',
     ]
     for (const f of files) expect(readFileSync(f, 'utf8'), f).toMatch(/upgrade-moment/)
   })
