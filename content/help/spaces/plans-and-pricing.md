@@ -44,8 +44,8 @@ Two more plans sit beside the ladder:
   directly rather than bought from this page, so if that is what you need, [ask us](/help).
 
 The price you start on is yours for as long as you keep the plan. Collective has a Founding price
-under its list price while the intro is open (the offer ends January 1), and a Collective that starts on it keeps it. Paying
-yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
+under its list price while the intro is open (the offer ends January 1), and a Collective that starts on it keeps it, grandfathered, and with the
+founder badge if it starts before December 1. Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
 ## What a free Space gives you
 

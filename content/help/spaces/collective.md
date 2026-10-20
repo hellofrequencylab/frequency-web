@@ -37,7 +37,7 @@ Each of these is explained below.
 
 The price and the yearly price are on the [pricing page](/pricing). While the Founding intro is open,
 a new Collective starts on the Founding price under the list price and keeps it for as long as it
-keeps the plan. The Founding offer ends January 1. Paying yearly gives you two months free, the same as every plan.
+keeps the plan. The Founding offer ends January 1; a Collective that takes it has grandfathered pricing, and one that starts before December 1 also gets the founder badge. Paying yearly gives you two months free, the same as every plan.
 
 ## Manage your member Spaces
 
