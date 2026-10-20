@@ -181,11 +181,11 @@ export function FqItemGrid({
                   <Link className="ph fqm-item-ph" href={i.href} aria-label={i.title} style={i.image ? { backgroundImage: `url('${i.image}')` } : undefined}>
                     {i.tag && <span className="tag glass fqm-corner">{i.tag}</span>}
                   </Link>
-                  <span className="row">
+                  <span className="row fqm-item-head">
                     <Link className="t1 grow" href={i.href}>
                       {i.title}
                     </Link>
-                    <span className="t1">{i.price}</span>
+                    <span className="t1 fqm-item-price">{i.price}</span>
                   </span>
                   {(i.sub || km != null) && <span className="t2">{[i.sub, km != null ? miles(km) : null].filter(Boolean).join(' · ')}</span>}
                   <Link className="btn sm" href={i.href}>
