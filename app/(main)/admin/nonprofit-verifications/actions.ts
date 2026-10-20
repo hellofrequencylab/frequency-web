@@ -2,7 +2,7 @@
 
 // Review-queue mutations for the Non Profit (501(c)(3)) verification admin (ADR-552, AUDIT #6). Every
 // action RE-CHECKS the platform staff axis server-side (the page gate is UX only; the admin client
-// bypasses RLS, so the action is the authority). Approval grants the discounted Non Profit plan through
+// bypasses RLS, so the action is the authority). Approval unlocks the Non Profit checkout (the Space pays $39 a month, LIVE-994) through
 // the existing plan-set path (setSpacePlan) inside the lib; rejection stores a reason. The gate matches
 // the billing-adjacent admin surfaces (Pricing / Payments): platform staff only (janitor axis).
 
@@ -22,7 +22,7 @@ async function requireReviewer(): Promise<{ id: string } | string> {
   return 'Platform staff access required.'
 }
 
-/** Approve a verification: marks it verified and grants the Non Profit plan (setSpacePlan). */
+/** Approve a verification: marks it verified, which unlocks the Non Profit checkout. */
 export async function approveNonprofitVerification(id: string): Promise<ActionResult> {
   const who = await requireReviewer()
   if (typeof who === 'string') return fail(who)
