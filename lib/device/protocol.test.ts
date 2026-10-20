@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { encodeRequest, LineSplitter, MAX_REQUEST_BYTES, parseLine, timeoutFor } from './protocol'
+import { encodeRequest, LineSplitter, MAX_REQUEST_BYTES, parseLine, redactLine, timeoutFor } from './protocol'
 import { RpcClient } from './client'
 import { Emitter, type Transport } from './transport'
 
@@ -79,5 +79,19 @@ describe('RpcClient', () => {
     text.emit('@rpc {"id":1,"ok":false,"error":"write_failed","message":"Write failed - hold still"}\n')
     await expect(failed).rejects.toMatchObject({ code: 'write_failed' })
     await expect(client.call('system.status', {}, { timeoutMs: 5 })).rejects.toMatchObject({ code: 'timeout' })
+  })
+})
+
+describe('redactLine', () => {
+  it('masks the provision secret, a Wi-Fi password and a relayed card token', () => {
+    const provision = encodeRequest(3, 'frequency.provision', { device_id: 'd-1', secret: 'S'.repeat(43) }).trimEnd()
+    expect(redactLine(provision)).toBe('rpc {"id":3,"cmd":"frequency.provision","args":{"device_id":"d-1","secret":"***"}}')
+    expect(redactLine(encodeRequest(4, 'wifi.join', { ssid: 'Cafe', password: 'hunter22' }))).not.toContain('hunter22')
+    const relay = `@evt ${JSON.stringify({ event: 'frequency.scan_relay', data: { nonce: 'n1', body: JSON.stringify({ card_token: 'T'.repeat(22), nonce: 'n1' }), signature: 'v1=abc' } })}`
+    const out = redactLine(relay)
+    expect(out).not.toContain('T'.repeat(22))
+    expect(out).not.toContain('v1=abc')
+    expect(out).toContain('frequency.scan_relay')
+    expect(redactLine('write https://frequencylocal.com/c/abcdefghijklmnopqrstuv ok')).toBe('write https://frequencylocal.com/c/... ok')
   })
 })

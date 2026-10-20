@@ -17,6 +17,11 @@ import { signingSecret } from '@/lib/signing-secret'
 /** The request header a scanner authenticates with. */
 export const DEVICE_HEADER = 'x-frequency-device'
 
+/** A scan relayed through the USB cable (build plan phase 5) carries the device id and the board's own
+ *  signature instead: the computer forwarding it never holds the secret. */
+export const DEVICE_ID_HEADER = 'x-frequency-device-id'
+export const SIGNATURE_HEADER = 'x-frequency-signature'
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const B64URL = /^[A-Za-z0-9_-]+$/
 
@@ -54,6 +59,21 @@ export function secretMatches(presented: string, storedHash: string | null | und
   const a = Buffer.from(sha256Hex(presented), 'hex')
   const b = Buffer.from(storedHash, 'hex')
   return a.length === b.length && timingSafeEqual(a, b)
+}
+
+/**
+ * Check a relayed scan's signature (cyberpunkunicorn-os/apps/remote/PROTOCOL.md "Scans through the
+ * cable"). The board signs `scan:v1:<device id>:<body>` with HMAC-SHA256 keyed on the 32 raw bytes of
+ * sha256(secret), which is exactly what the row stores as hex, and sends `v1=<hex>`. `body` must be the
+ * exact bytes posted. Constant-time.
+ */
+export function signatureMatches(storedHash: string | null | undefined, deviceId: string, body: string, presented: string | null | undefined): boolean {
+  if (!storedHash || !/^[0-9a-f]{64}$/i.test(storedHash) || typeof presented !== 'string') return false
+  const m = /^v1=([0-9a-f]{64})$/i.exec(presented.trim())
+  if (!m) return false
+  const want = createHmac('sha256', Buffer.from(storedHash, 'hex')).update(`scan:v1:${deviceId}:${body}`).digest()
+  const got = Buffer.from(m[1]!, 'hex')
+  return got.length === want.length && timingSafeEqual(got, want)
 }
 
 /** A card token as the device read it, or null when it cannot be one. */

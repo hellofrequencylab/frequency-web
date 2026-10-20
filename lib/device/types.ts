@@ -48,6 +48,33 @@ export type TagRead = { uid?: string; type?: string; ntag?: boolean; locked?: bo
 /** frequency.write_tag: the tag after the write, plus `written` as host + path (no query string). */
 export type TagWritten = TagRead & { written?: string }
 export type CliResult = { output?: string; result?: boolean; truncated?: boolean }
+/** system.caps: every command this build answers. */
+export type SystemCaps = { proto?: number; version?: string; commit?: string; commands?: string[] }
+/** frequency.config / provision / unprovision (apps/frequency/provision.cpp). The secret never comes back. */
+export type FrequencyConfig = {
+  reader?: boolean
+  base?: string
+  device_id?: string
+  secret_set?: boolean
+  ready?: boolean
+  queued?: number
+  clock_set?: boolean
+  cable?: boolean
+}
+export type WifiNetwork = { ssid?: string; rssi?: number; channel?: number; auth?: string; saved?: boolean }
+export type WifiScan = { networks?: WifiNetwork[] }
+export type WifiJoin = { ssid?: string; ip?: string; saved?: boolean; internet?: string; portal?: string }
+/** A scan the board signed and wants this computer to forward (`frequency.scan_relay`, or a
+ *  `frequency.scan` reply's `relay`). `body` is a JSON string: post it byte for byte. */
+export type ScanRelay = { nonce?: string; device_id?: string; body?: string; signature?: string }
+/** frequency.scan's reply: the result, or `relay` when it went through the cable. */
+export type ScanResult = {
+  card?: TagRead
+  relay?: ScanRelay
+  member?: { display_name?: string }
+  zapsAwarded?: number
+  loyalty?: { stamps?: number; required?: number; earned?: boolean; reward_code?: string }
+}
 
 /** The hat modules `hat.live` can name, as a person reads them. */
 export const HAT_NAMES: Record<string, string> = {

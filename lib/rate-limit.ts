@@ -116,3 +116,18 @@ export async function rateLimitOk(
     return true
   }
 }
+
+/**
+ * Claim `key` once for `ttlSeconds` (Redis SET NX EX). `true` = this caller is the first. Used to refuse
+ * a replayed device nonce (a scan relayed through the USB cable, lib/devices/http.ts). Without Upstash
+ * it answers `true`: the caller's own time window and the check-in ledger's once-a-day rule still bound
+ * a replay. A Redis error also answers `true`, like the limiter above.
+ */
+export async function claimOnce(key: string, ttlSeconds: number): Promise<boolean> {
+  if (!redis) return true
+  try {
+    return (await redis.set(`once:${key}`, 1, { nx: true, ex: ttlSeconds })) === 'OK'
+  } catch {
+    return true
+  }
+}

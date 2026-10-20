@@ -12,6 +12,9 @@ let enabled = true
 let allowed = true
 let device: { id: string; spaceId: string; label: string } | null = { id: ID, spaceId: 's-1', label: 'Front counter' }
 const authenticate = vi.fn(async (_h: string | null) => device)
+const authenticateSigned = vi.fn(async (_id: string | null, _sig: string | null, _body: string) => device)
+let fresh = true
+const claimOnce = vi.fn(async () => fresh)
 const touchDevice = vi.fn(async () => {})
 const scan = vi.fn(async () => ({
   ok: true,
@@ -24,11 +27,12 @@ const issue = vi.fn(async () => ({ ok: true, token: TOKEN, displayName: 'Maya' }
 vi.mock('@/lib/devices/store', () => ({
   scannerDevicesEnabled: () => enabled,
   authenticateDevice: authenticate,
+  authenticateSignedDevice: authenticateSigned,
   touchDevice,
   issueCardForHandle: issue,
 }))
 vi.mock('@/lib/devices/scan', () => ({ scanCard: scan }))
-vi.mock('@/lib/rate-limit', () => ({ clientIp: () => '203.0.113.9', rateLimitOk: async () => allowed }))
+vi.mock('@/lib/rate-limit', () => ({ clientIp: () => '203.0.113.9', rateLimitOk: async () => allowed, claimOnce }))
 vi.mock('@/lib/site', () => ({ SITE_URL: 'https://frequencylocal.com' }))
 
 function post(path: string, body: unknown, header: string | null = `${ID}.${SECRET}`) {
@@ -41,7 +45,10 @@ beforeEach(() => {
   enabled = true
   allowed = true
   device = { id: ID, spaceId: 's-1', label: 'Front counter' }
+  fresh = true
   authenticate.mockClear()
+  authenticateSigned.mockClear()
+  claimOnce.mockClear()
   touchDevice.mockClear()
   scan.mockClear()
   issue.mockClear()
@@ -85,6 +92,47 @@ describe('POST /api/v1/devices/scan', () => {
     const limited = await POST(post('/api/v1/devices/scan', { card_token: TOKEN }))
     expect(limited.status).toBe(429)
     expect(limited.headers.get('retry-after')).toBe('30')
+    expect(scan).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/v1/devices/scan relayed through the cable', () => {
+  const SIG = 'v1=' + 'a'.repeat(64)
+  function relayed(body: Record<string, unknown>) {
+    const text = JSON.stringify(body)
+    const req = new Request('https://frequencylocal.com/api/v1/devices/scan', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'X-Frequency-Device-Id': ID, 'X-Frequency-Signature': SIG },
+      body: text,
+    })
+    return { req, text }
+  }
+  const now = () => Math.floor(Date.now() / 1000)
+
+  it('checks the signature over the exact bytes and scans', async () => {
+    const { POST } = await import('./route')
+    const { req, text } = relayed({ card_token: TOKEN, uid: '04A1B2C3', scanned_at: now(), nonce: '9f86d081' })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    expect(authenticateSigned).toHaveBeenCalledWith(ID, SIG, text)
+    expect(authenticate).not.toHaveBeenCalled()
+    expect(claimOnce).toHaveBeenCalledWith(`device-scan:${ID}:9f86d081`, 600)
+    expect(scan).toHaveBeenCalledWith(device, { cardToken: TOKEN, uid: '04A1B2C3' })
+  })
+
+  it('refuses a bad signature, a stale clock, a missing nonce and a replay', async () => {
+    const { POST } = await import('./route')
+    device = null
+    expect((await POST(relayed({ card_token: TOKEN, scanned_at: now(), nonce: 'abcd1234' }).req)).status).toBe(401)
+    device = { id: ID, spaceId: 's-1', label: 'Front counter' }
+    const stale = await POST(relayed({ card_token: TOKEN, scanned_at: now() - 3600, nonce: 'abcd1234' }).req)
+    expect(stale.status).toBe(400)
+    expect(await stale.json()).toEqual({ ok: false, reason: 'stale_scan' })
+    expect((await POST(relayed({ card_token: TOKEN, scanned_at: now() }).req)).status).toBe(400)
+    fresh = false
+    const again = await POST(relayed({ card_token: TOKEN, scanned_at: now(), nonce: 'abcd1234' }).req)
+    expect(again.status).toBe(409)
+    expect(await again.json()).toEqual({ ok: false, reason: 'replayed' })
     expect(scan).not.toHaveBeenCalled()
   })
 })

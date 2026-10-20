@@ -16,7 +16,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor, isStaff } from '@/lib/core/roles'
 import { envFlag } from '@/lib/env/string'
 import type { Space } from '@/lib/spaces/types'
-import { newCardToken, newDeviceSecret, parseDeviceHeader, secretMatches, sha256Hex } from './credentials'
+import { newCardToken, newDeviceSecret, parseDeviceHeader, secretMatches, sha256Hex, signatureMatches } from './credentials'
 
 /** The launch switch (`SCANNER_DEVICES_ENABLED`, envFlag; gate in docs/RUNBOOKS.md "Counter scanners").
  *  Off: both device endpoints answer 404 (the firmware reads that as "backend not set up"), /c/<token>
@@ -62,6 +62,27 @@ export async function authenticateDevice(header: string | null): Promise<Scanner
       .eq('id', parsed.id)
       .maybeSingle()
     if (!data || !data.active || !secretMatches(parsed.secret, data.secret_hash)) return null
+    return { id: data.id, spaceId: data.space_id, label: data.label }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Resolve a scan relayed through the USB cable (X-Frequency-Device-Id + X-Frequency-Signature) to an
+ * active device, or null. The board signed the exact body with a key derived from its secret, so the
+ * computer that forwarded it never held the secret. Same one read and same silent null as above.
+ */
+export async function authenticateSignedDevice(rawId: string | null, signature: string | null, body: string): Promise<ScannerDevice | null> {
+  const id = typeof rawId === 'string' ? rawId.trim().toLowerCase() : ''
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) return null
+  try {
+    const { data } = await createAdminClient()
+      .from('scanner_devices')
+      .select('id, space_id, label, secret_hash, active')
+      .eq('id', id)
+      .maybeSingle()
+    if (!data || !data.active || !signatureMatches(data.secret_hash, data.id, body, signature)) return null
     return { id: data.id, spaceId: data.space_id, label: data.label }
   } catch {
     return null
@@ -380,6 +401,70 @@ export async function discardConsoleCard(spaceId: string, cardId: string): Promi
       .is('issued_by', null)
       .is('uid_hash', null)
       .is('last_used_at', null)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Register a counter scanner for any Space from the CyberUnicorn console, so staff can make the board
+ * plugged into their computer that Space's scanner and hand it the secret over USB (build plan phase 3).
+ * Staff only (consoleStaffGate). Same per-Space cap and one-time secret as the owner path.
+ */
+export async function registerScannerFromConsole(
+  spaceId: string,
+  label: string,
+): Promise<{ id: string; secret: string } | 'forbidden' | 'limit' | null> {
+  const gate = await consoleStaffGate()
+  if (!gate) return 'forbidden'
+  try {
+    const db = createAdminClient()
+    const { count } = await db
+      .from('scanner_devices')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+      .eq('active', true)
+    if ((count ?? 0) >= SCANNER_LIMITS.devicesPerSpace) return 'limit'
+    const secret = newDeviceSecret()
+    const { data, error } = await db
+      .from('scanner_devices')
+      .insert({ space_id: spaceId, label, secret_hash: sha256Hex(secret), created_by: gate.callerId })
+      .select('id')
+      .maybeSingle()
+    if (error || !data) return null
+    return { id: data.id, secret }
+  } catch {
+    return null
+  }
+}
+
+/** Which Space a board's scanner id belongs to, for the console's status line. Staff only. */
+export async function describeScannerForConsole(deviceId: string): Promise<{ spaceId: string; spaceName: string; label: string; active: boolean } | null> {
+  if (!(await consoleStaffGate())) return null
+  try {
+    const { data } = await createAdminClient()
+      .from('scanner_devices')
+      .select('space_id, label, active, spaces(name, brand_name)')
+      .eq('id', deviceId)
+      .maybeSingle()
+    if (!data) return null
+    const sp = data.spaces as unknown as { name: string | null; brand_name: string | null } | null
+    return { spaceId: data.space_id, spaceName: sp?.brand_name?.trim() || sp?.name?.trim() || 'Space', label: data.label, active: data.active }
+  } catch {
+    return null
+  }
+}
+
+/** Revoke a scanner from the console when its board forgets the setup. Staff only. */
+export async function revokeScannerFromConsole(deviceId: string): Promise<boolean> {
+  if (!(await consoleStaffGate())) return false
+  try {
+    const { error } = await createAdminClient()
+      .from('scanner_devices')
+      .update({ active: false, revoked_at: new Date().toISOString() })
+      .eq('id', deviceId)
+      .eq('active', true)
     return !error
   } catch {
     return false

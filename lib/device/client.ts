@@ -1,9 +1,10 @@
-import { describeDeviceError, encodeRequest, LineSplitter, parseLine, timeoutFor, type Command, type DeviceErrorCode, type DeviceEvent } from './protocol'
+import { describeDeviceError, encodeRequest, LineSplitter, parseLine, redactLine, timeoutFor, type Command, type DeviceErrorCode, type DeviceEvent } from './protocol'
 import { Emitter, type Transport } from './transport'
 
 // The RPC client: one request at a time per transport, each waiting for its `@rpc` reply or a timeout
 // (PROTOCOL.md §1 "Concurrency": on BLE a second write before the device read the first overwrites
-// it). Lines that are not protocol lines go to the console log; events go to subscribers.
+// it). Lines that are not protocol lines go to the console log; events go to subscribers. Every log line
+// passes redactLine first, so a secret, a Wi-Fi password or a card token never reaches the screen.
 
 export class DeviceError extends Error {
   readonly code: DeviceErrorCode
@@ -57,7 +58,7 @@ export class RpcClient {
         reject(new DeviceError('timeout'))
       }, timeoutMs ?? timeoutFor(cmd))
       this.pending = { id, resolve: resolve as (d: unknown) => void, reject, timer }
-      this.log.emit({ at: Date.now(), dir: 'out', text: line.trimEnd() })
+      this.log.emit({ at: Date.now(), dir: 'out', text: redactLine(line.trimEnd()) })
       this.transport.write(line).catch((e: unknown) => {
         clearTimeout(timer)
         if (this.pending?.id === id) this.pending = null
@@ -70,10 +71,10 @@ export class RpcClient {
     for (const raw of this.splitter.push(text)) {
       const parsed = parseLine(raw)
       if (parsed.kind === 'other') {
-        this.log.emit({ at: Date.now(), dir: 'in', text: parsed.text })
+        this.log.emit({ at: Date.now(), dir: 'in', text: redactLine(parsed.text) })
         continue
       }
-      this.log.emit({ at: Date.now(), dir: 'in', text: raw })
+      this.log.emit({ at: Date.now(), dir: 'in', text: redactLine(raw) })
       if (parsed.kind === 'evt') {
         this.events.emit(parsed.event)
         continue
