@@ -59,3 +59,45 @@ export async function resolveSpaceEmailBrand(spaceId: string | null | undefined)
     return null
   }
 }
+
+/** Where a conversation email came from, as a "Back to ..." link in the footer (owner ruling
+ *  2026-10-20): the Circle, Event or Journey the thread belongs to; otherwise a direct message links to
+ *  the sender's profile. null when none applies (the footer then falls back to the Space page). */
+export interface EmailOrigin {
+  label: string
+  url: string
+}
+
+interface EmailOriginSource {
+  scopeKind?: string | null
+  scopeId?: string | null
+  ownerProfileId?: string | null
+}
+
+const ORIGIN_TABLES: Record<string, { table: 'circles' | 'events' | 'journey_plans'; nameCol: 'name' | 'title'; path: string }> = {
+  circle: { table: 'circles', nameCol: 'name', path: 'circles' },
+  event: { table: 'events', nameCol: 'title', path: 'events' },
+  journey: { table: 'journey_plans', nameCol: 'title', path: 'journeys' },
+}
+
+/** FAIL-SAFE to null: a read fault drops the link, never the send. */
+export async function resolveEmailOrigin(src: EmailOriginSource): Promise<EmailOrigin | null> {
+  try {
+    const db = createAdminClient()
+    const spec = src.scopeKind ? ORIGIN_TABLES[src.scopeKind] : undefined
+    if (spec && src.scopeId) {
+      const { data } = await db.from(spec.table).select(`slug, ${spec.nameCol}`).eq('id', src.scopeId).maybeSingle()
+      const row = data as unknown as Record<string, string | null> | null
+      const name = (row?.[spec.nameCol] ?? '').trim()
+      if (row?.slug && name) return { label: name, url: `${APP}/${spec.path}/${encodeURIComponent(row.slug)}` }
+    }
+    if (!src.scopeKind && src.ownerProfileId) {
+      const { data } = await db.from('profiles').select('handle, display_name').eq('id', src.ownerProfileId).maybeSingle()
+      const name = (data?.display_name ?? '').trim()
+      if (data?.handle && name) return { label: name, url: `${APP}/people/${encodeURIComponent(data.handle)}` }
+    }
+    return null
+  } catch {
+    return null
+  }
+}

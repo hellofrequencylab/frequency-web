@@ -20,7 +20,7 @@ import {
 // the roster load, and the bound actions; this wrapper owns the uniform presentation. Scope color
 // comes through the small optional knobs (extra facets, search placeholder, no-results copy), never
 // a parallel mount. Server Component shell over the one client island, same pattern as
-// components/spaces/crm/space-member-viewer.tsx.
+// modules/crm/components/space-member-viewer.tsx.
 
 export function LeaderCrmViewer({
   members,

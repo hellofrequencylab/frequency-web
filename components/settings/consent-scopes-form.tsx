@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ConsentScope } from '@/lib/consent/scopes'
 import { saveConsentScope } from '@/app/(main)/settings/notifications/actions'
 import { isError } from '@/lib/action-result'
+import { Switch } from '@/components/ui/switch'
 
 // The member-controllable consent scopes surfaced as toggles (Phase 6). These were
 // ledger-only until now: recorded on grant/revoke elsewhere, with no member control.
@@ -78,21 +79,7 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
                 <p className="text-body-sm font-medium text-text">{label}</p>
                 <p className="mt-0.5 text-meta text-muted">{help}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => toggle(scope)}
-                role="switch"
-                aria-checked={checked}
-                aria-label={label}
-                className={`
-                  relative inline-flex items-center justify-center w-10 h-6 rounded-pill transition-colors shrink-0
-                  ${checked ? 'bg-primary' : 'bg-border hover:bg-border-strong'}
-                `}
-              >
-                <span
-                  className={`inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform ${checked ? 'translate-x-2' : '-translate-x-2'}`}
-                />
-              </button>
+              <Switch checked={checked} onCheckedChange={() => toggle(scope)} aria-label={label} />
             </div>
           )
         })}

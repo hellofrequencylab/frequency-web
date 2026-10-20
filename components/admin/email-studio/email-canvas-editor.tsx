@@ -80,7 +80,7 @@ function EmailCanvasView({ model, colors }: { model: EmailCanvasModel | null; co
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // The LEFT block list stays STATIONARY (no translate-to-canvas alignment): the tiles are a plain stacked
   // list, so an expanding tile can never shift the list over the palette below it.
-  // Native HTML5 drag-reorder of the LEFT block list (mirrors components/spaces/crm/stage-editor.tsx, no new
+  // Native HTML5 drag-reorder of the LEFT block list (mirrors modules/crm/components/stage-editor.tsx, no new
   // library). `dragId` is the block being dragged; `overId` the tile currently hovered as the drop target.
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)

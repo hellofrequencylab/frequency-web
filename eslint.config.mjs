@@ -58,19 +58,20 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // PROG-A1 (App Platform A1): a feature module is reached through its barrel only. CRM first: the
-  // pages import `@/modules/crm` (server) or `@/modules/crm/client` (a client component), never
-  // `@/components/spaces/crm/*` or a file inside modules/. The module's own files are exempt.
+  // PROG-A1 (App Platform A1): a feature module is reached through its barrel only. The pages import
+  // `@/modules/<app>` (server) or `@/modules/<app>/client` (a client component), never the module's
+  // files or a file inside modules/. Modules so far: crm, booking, email-design, qr. The module's own
+  // files are exempt.
   {
-    ignores: ["modules/**", "components/spaces/crm/**"],
+    ignores: ["modules/**", "components/qr/**", "components/admin/email-studio/**", "components/spaces/booking-*"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              group: ["@/components/spaces/crm/*"],
-              message: "Import CRM through its module barrel: '@/modules/crm' (server) or '@/modules/crm/client' (client). PROG-A1.",
+              group: ["@/components/spaces/booking-*", "@/components/qr/*", "@/components/admin/email-studio/*"],
+              message: "Import this feature through its module barrel: '@/modules/<crm|booking|qr|email-design>' (server) or '/client' (client component). PROG-A1.",
             },
             {
               group: ["@/modules/*/*", "!@/modules/*/client"],

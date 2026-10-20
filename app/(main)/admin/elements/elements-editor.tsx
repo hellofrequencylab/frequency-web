@@ -9,6 +9,7 @@ import { ELEMENT_ROLES, ELEMENT_ROLE_LABEL, type ElementDef, type ElementRole } 
 import type { ResolvedElement, StoredElementConfig } from '@/lib/elements/config'
 import { ElementPreview } from '@/components/elements/previews'
 import { saveElementSettings } from './actions'
+import { Switch } from '@/components/ui/switch'
 
 // One card per registered element: edit its feature settings (toggles / choices) + per-feature ROLE
 // GATE (who may use each). Saving writes the PLATFORM MASTER, so every occurrence of the element
@@ -59,16 +60,7 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
             {/* Value: a toggle, or a choice select. The switch is named by the feature label
                 sitting to its left, so the spoken name is the one on screen. */}
             {f.kind === 'toggle' ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={settings[f.key] === true}
-                aria-labelledby={`${cardId}-${f.key}`}
-                onClick={() => setSettings((s) => ({ ...s, [f.key]: !(s[f.key] === true) }))}
-                className={`inline-flex h-6 w-11 shrink-0 items-center rounded-pill border transition-colors ${settings[f.key] === true ? 'border-primary bg-primary' : 'border-border bg-surface-elevated'}`}
-              >
-                <span className={`ml-0.5 h-5 w-5 rounded-pill bg-canvas shadow transition-transform ${settings[f.key] === true ? 'translate-x-5' : ''}`} />
-              </button>
+              <Switch checked={settings[f.key] === true} onCheckedChange={() => setSettings((s) => ({ ...s, [f.key]: !(s[f.key] === true) }))} aria-labelledby={`${cardId}-${f.key}`} />
             ) : (
               <Select
                 // Named by the same feature label the toggle branch uses. Both branches render
