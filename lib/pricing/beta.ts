@@ -105,6 +105,12 @@ export function collectiveFoundingOpen(now: Date = new Date()): boolean {
   return Number.isFinite(ends) && now.getTime() < ends
 }
 
+/** Is the Network Founding offer (a year for nine months, first year) open at `now`? It closes with the
+ *  Collective intro on January 1 (owner 2026-10-20), so it shares the one end instant. PURE. */
+export function networkFoundingOpen(now: Date = new Date()): boolean {
+  return collectiveFoundingOpen(now)
+}
+
 /** The catalog items whose FOUNDING amount is charged today regardless of the beta window, until
  *  COLLECTIVE_FOUNDING_ENDS_AT. */
 export const FOUNDING_OPEN_ITEMS: ReadonlySet<CatalogItemKey> = new Set<CatalogItemKey>(['collective_base'])

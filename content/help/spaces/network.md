@@ -4,7 +4,7 @@ description: What the Network plan is for, how it differs from Collective, what 
 category: spaces
 order: 6
 published: 2026-10-16
-updated: 2026-10-19
+updated: 2026-10-20
 audience: member
 featureKeys: [billing, collective]
 status: published
@@ -29,8 +29,8 @@ Everything Collective does except Partners, plus the chapter tools below. A Netw
 Spaces under it are chapters you own rather than partners; a chapter lists its Circles and Journeys with
 the parent and with other chapters the same way a Collective's member Spaces do.
 
-- **Chapters.** Ten chapters are included, each with the Business tools. More chapters are priced on
-  the [pricing page](/pricing).
+- **Chapters.** Three chapters are included to start, each with the Business tools. Each chapter after
+  that is a flat monthly price, up to 25. See the [pricing page](/pricing).
 - **One membership.** A member who joins the network is a member in every chapter.
 - **One network calendar and home**, with every chapter's events in one place.
 - **A roll-up report** of members, Events and revenue across every chapter.
@@ -38,6 +38,20 @@ the parent and with other chapters the same way a Collective's member Spaces do.
 - **Vera AI and a custom domain**, included.
 - **The lowest network fee** on customers the network introduces. Your own people and your tips stay
   at **0%**, as they are on every plan.
+
+## Two ways to run a Network
+
+- **Partner Network** keeps your chapters in the Frequency community. Your network and every chapter wear
+  the Frequency Partner badge, your events show on the Frequency calendar, and tickets and memberships
+  run through Frequency checkout. You are listed in discovery. You start it yourself, with a 14 day trial.
+  Paying for the year is two months free, and there is a yearly package: ten chapters for the price of
+  eight, with a live onboarding session, priority support and a yearly network health review.
+- **Independent Network** is your own community, fully separate from Frequency: your brand, your domain,
+  your members and your data, with no Partner badge and no listing. It starts with a call and includes
+  setup and onboarding. It is a yearly agreement with a one-time setup fee; the [Networks page](/networks) has the figures. Select **Talk to us** on the [Networks page](/networks).
+
+If you remove the Partner badge or disconnect your chapters from Frequency, your plan moves to
+Independent pricing at your next renewal. Talk to us before you do.
 
 ## Add a chapter
 
@@ -49,7 +63,8 @@ Nothing it has built is deleted or moved.
 
 Open the [Networks page](/networks) and select **Start a Network**: you create or pick the Space that
 will be the parent, choose Network on its billing page, then add your chapters. Running more than 25
-chapters is a quote, so select **Talk to us** there instead and tell us how many chapters you run.
+chapters, or wanting an Independent Network, is a call, so select **Talk to us** there and tell us how
+many chapters you run.
 
 ## Subscribe to the whole Network's calendar
 

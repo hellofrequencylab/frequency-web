@@ -93,14 +93,14 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
       'Three operator seats, plus two per member Space',
     ],
   },
-  // Network (SCAN-961): one organization running many chapters. Quote only until its Stripe price exists.
+  // Network (SCAN-961): one organization running many chapters. Self-serve with a free trial once its Stripe price exists.
   network: {
     inherits: true,
     features: [
       'For one organization with chapters',
       'Chapter leaders who see only their own chapter, and central admins who see them all',
       'One membership in every chapter, one network calendar and a roll-up report',
-      'Talk to us to set it up',
+      'Start it yourself, with a free trial',
     ],
   },
   nonprofit: {
