@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1104",
+  "title": "The Vault Store draws its items in the Frequency kit instead of DAWN cards",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/vault/store-grid.test.tsx",
+    "ref": "LIVE-938 area 4 (Vault) and the members-ui.css bridge cleanup"
+  },
+  "detail": "The Frequency Vault body mounted DAWN's VaultStore widget: SectionHeader rows and StoreGrid cards with bg-primary buttons that only fit the kit because members-ui.css repainted them. FqVaultStore and FqStoreGrid draw the same categories and items with the same redeem, equip and remove server actions in the kit's g3, card, ic, t1/t2, tag and btn pieces. Gift Gems keeps its dialog; its opener is now a kit button through a triggerClassName prop. DAWN's VaultStore is unchanged for the DAWN build.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/frequency/members/vault/vault-body.tsx','utf8');if(s.includes(\\\"from '@/components/widgets/vault/vault-store'\\\")||!s.includes('<FqVaultStore />')){console.error('LIVE-1104: the Frequency Vault nests the DAWN Vault Store');process.exit(1)}\"",
+    "note": "Fails when the Frequency Vault goes back to DAWN's VaultStore. Behavior is store-grid.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}
