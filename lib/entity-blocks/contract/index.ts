@@ -21,6 +21,15 @@ import { proseBlock } from './prose'
 import { productCardBlock } from './productCard'
 import { eventCardBlock } from './eventCard'
 import { circleCardBlock } from './circleCard'
+import { aboutBlock } from './about'
+import { storyBlock } from './story'
+import { statsBlock } from './stats'
+import { offeringsBlock } from './offerings'
+import { bookingBlock } from './booking'
+import { membershipsBlock } from './memberships'
+import { eventsBlock } from './events'
+import { practicesBlock } from './practices'
+import { journeysBlock } from './journeys'
 
 // THE ADOPTED BLOCKS (E1). A block joins the contract by being listed here, one at a time, and from that
 // moment `check:blocks` holds it to the whole of it (scripts/check-blocks.mjs). The registry (../registry.ts)
@@ -50,4 +59,13 @@ export const ADOPTED_BLOCKS = [
   productCardBlock,
   eventCardBlock,
   circleCardBlock,
+  aboutBlock,
+  storyBlock,
+  statsBlock,
+  offeringsBlock,
+  bookingBlock,
+  membershipsBlock,
+  eventsBlock,
+  practicesBlock,
+  journeysBlock,
 ] as const
