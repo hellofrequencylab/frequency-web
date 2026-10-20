@@ -7,8 +7,8 @@
   "size": "S",
   "wave": "W7",
   "source": {
-    "file": "/mnt/project-files/the-group/README.md",
-    "ref": "Paste README 'Not in this paste (section D)'."
+    "file": "scripts/seed-the-group.mts",
+    "ref": "The Group handoff (2026-10-19): Paste README 'Not in this paste (section D)'."
   },
   "detail": "Section D of The Group handoff. The Network Space has no central admins, so nobody but the owner can read the roll-up report or approve chapter events for the Network calendar. Chapter leaders and circle hosts are not recorded either. WAITS ON JUNE: who leads each of the six chapters, who the central admins are, and who hosts each circle. When she answers, a thread writes an idempotent role paste (space_members admin rows, circle host rows) for Daniel to run in Supabase.",
   "notes": "Filed 2026-10-20 at Daniel's request (\"Put June's work in the backlog\"). Open and blocked on June An's answers, not on code. Not parked: parking needs a ruling ADR (HYG-161).",
