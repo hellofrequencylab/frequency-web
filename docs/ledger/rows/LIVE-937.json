@@ -1,15 +1,15 @@
 {
   "id": "LIVE-937",
   "title": "Conversations, Pipeline, Tasks, Leads, Doors and Shared open inside the Frequency Space console (Contacts phase 3)",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "size": "L",
   "lane": "live",
   "wave": "W7",
-  "detail": "Contacts phase 3, parked 2026-10-14, active 2026-10-19. Plan in SCAN-872's detail.",
+  "detail": "Contacts phase 3, parked 2026-10-14, active 2026-10-19. Plan in SCAN-872's detail. PREMISE RE-TESTED 2026-10-20: all six already open inside the Frequency Space console. crm/layout.tsx mounts FrequencySpaceConsole, and Conversations, Doors, Leads, Shared and the Pipeline view (which holds Tasks) render through ConsoleDashboardTemplate or ConsoleFocusTemplate, which hand over to AdminPageFrame under SITE_DESIGN=frequency (ADR-1740): kit head, KPI row, kit tables and glass cards. No page leaves the console. The only thing a separate body per page would add is a hand-drawn layout with no template to match; the Contacts workspace (LIVE-936) is the one place the old CRM look still shows, so the design work lives there.",
   "verify": {
-    "kind": "manual",
-    "evidence": "Filed 2026-10-19 from the full scan. Probe to write as a cmd before the first PR: each of the six has a body under components/frequency/admin/pages/ routed from the console",
-    "checked": "2026-10-19"
-  }
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d='app/(main)/spaces/[slug]/crm/';const bad=[];if(!/FrequencySpaceConsole/.test(fs.readFileSync(d+'layout.tsx','utf8')))bad.push('layout');for(const f of ['page','conversations/page','doors/page','leads/page','shared/page']){if(!/Console(Dashboard|Focus)Template/.test(fs.readFileSync(d+f+'.tsx','utf8')))bad.push(f)}if(bad.length){console.error('LIVE-937: not in the console frame: '+bad.join(', '));process.exit(1)}\""
+  },
+  "closed": "2026-10-20"
 }
