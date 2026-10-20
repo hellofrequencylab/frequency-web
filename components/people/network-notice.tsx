@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { NetworkNoticeClose } from './network-notice-close'
 import { networkNoticeCookie } from './network-notice-cookie'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // THE HOW-TO NOTICE for the three Network surfaces (Members, Friends, My Contacts). Closable, and the
 // close is remembered per member (a cookie, no column), so it greets a new member once and then gets out
@@ -23,10 +26,10 @@ export async function NetworkNotice() {
   return (
     <NetworkNoticeClose>
       <p className="h3">Three ways to keep your people close</p>
-      <ul className="mt-2 grid gap-2 sm:grid-cols-3">
+      <ul className={FREQUENCY ? 'fqm-net-notice-list' : 'mt-2 grid gap-2 sm:grid-cols-3'}>
         {ROWS.map((r) => (
           <li key={r.href} className="t2">
-            <Link href={r.href} className="font-semibold text-text underline-offset-2 hover:underline">
+            <Link href={r.href} className={FREQUENCY ? undefined : 'font-semibold text-text underline-offset-2 hover:underline'}>
               {r.name}
             </Link>
             {'. '}

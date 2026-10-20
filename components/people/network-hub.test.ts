@@ -23,6 +23,33 @@ describe('Network hub pages (source shape)', () => {
   }
 })
 
+// LIVE-1086: the second pass. Members drops the glyph, intro paragraph and stats band; the three pages share one
+// width (no max-w wrapper) and one slot for the hub strip; the cards, notice and filters have a kit branch.
+describe('Network hub pages: one layout (LIVE-1086)', () => {
+  const members = sourceWithoutComments(join(ROOT, 'page.tsx'), { imports: true })
+  it('Members has no title glyph, intro paragraph or stats band', () => {
+    expect(members).not.toContain('<Globe className="h-5 w-5"')
+    expect(members).not.toContain('intro={')
+    expect(members).not.toContain('Members Worldwide')
+  })
+  for (const page of PAGES.slice(1)) {
+    const src = sourceWithoutComments(join(ROOT, page), { imports: true })
+    it(`${page} is full width, like Members`, () => {
+      expect(src).not.toContain('max-w-5xl')
+    })
+  }
+  it('My Contacts puts only the hub strip in the toolbar slot', () => {
+    const src = sourceWithoutComments(join(ROOT, 'contacts', 'page.tsx'), { imports: true })
+    expect(src).toContain('toolbar={<NetworkHubBar active="/network/contacts" />}')
+  })
+  it('the notice and the person card have a kit branch', () => {
+    const notice = sourceWithoutComments(join(__dirname, 'network-notice-close.tsx'), { imports: true })
+    expect(notice).toContain('fa-notice')
+    const card = sourceWithoutComments(join(__dirname, 'contact-card.tsx'), { imports: true })
+    expect(card).toContain('<PersonCard')
+  })
+})
+
 describe('Network how-to notice', () => {
   it('remembers the close per member', () => {
     expect(networkNoticeCookie('abc')).not.toBe(networkNoticeCookie('def'))

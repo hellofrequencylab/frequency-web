@@ -7,6 +7,14 @@ import { RoleBadge } from '@/lib/community-roles'
 import type { RoleChipKey } from '@/lib/community-roles'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { BAND_LABEL, type ProximityBand } from '@/lib/connections/location'
+import { PersonCard } from '@/components/cards/person-card'
+import { ROLE_LABEL } from '@/lib/community-roles'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (LIVE-1086): the members kit's `.card`, the same <PersonCard> Friends and the suggestions draw,
+// so a person reads identically on all three Network pages (role and proximity band as `.tag` chips).
+// Inlined at build; DAWN's portrait tile below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Portrait contact card for the Community directory — a vertical, browse-first
 // card: a prominent centered avatar, then the name, @handle, a role badge and
@@ -37,6 +45,25 @@ export function ContactCard({
   band?: ProximityBand
 }) {
   const showBand = band != null && band !== 'unknown'
+  if (FREQUENCY) {
+    return (
+      <PersonCard
+        handle={handle}
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        online={online}
+        isDemo={isDemo}
+        context={`@${handle}`}
+        meta={
+          <>
+            <span className="tag">{ROLE_LABEL[role]}</span>
+            {showBand && <span className="tag">{BAND_LABEL[band]}</span>}
+            {location && <span>{location}</span>}
+          </>
+        }
+      />
+    )
+  }
   return (
     <Link
       href={`/people/${handle}`}
