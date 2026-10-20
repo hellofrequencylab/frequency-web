@@ -4622,6 +4622,34 @@ export type Database = {
         }
         Relationships: []
       }
+      email_saved_sections: {
+        Row: {
+          block_type: string
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          block_type: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          block_type?: string
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+        ]
+      }
       email_events: {
         Row: {
           campaign_id: string | null

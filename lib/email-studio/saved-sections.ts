@@ -1,13 +1,21 @@
 // SAVED SECTIONS (EMAIL-040). An operator can keep a block they built (its type and content) and drop a copy into
-// any other email. They live in this browser's storage, so they need no migration and follow the operator's own
-// device only; a shared library is a database table, which the owner decides separately. Storage is injected so
-// the rules (cap, name, bad data) are testable and the editor can run without storage (private windows).
+// any other email. This file is the browser-storage library, the fallback for an editor with no shared one; the
+// Email Studio uses the shared table instead (EMAIL-042, saved-sections-actions.ts) through the same SavedLibrary
+// shape. Storage is injected so the rules (cap, name, bad data) are testable and the editor can run without
+// storage (private windows).
 
 export interface SavedSection {
   id: string
   name: string
   type: string
   content: Record<string, unknown>
+}
+
+/** Where an editor keeps its saved sections. Each call resolves to the new list, or null when it was refused. */
+export interface SavedLibrary {
+  list(): Promise<SavedSection[] | null>
+  save(input: { name: string; type: string; content: Record<string, unknown> }, fallbackName: string): Promise<SavedSection[] | null>
+  remove(id: string): Promise<SavedSection[] | null>
 }
 
 const SAVED_SECTIONS_KEY = 'fq-email-saved-sections'
