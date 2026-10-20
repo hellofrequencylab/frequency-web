@@ -9,6 +9,7 @@ import { getPricingValues, billingLive } from '@/lib/pricing/settings'
 import { ChoosePlanButton } from './choose-plan'
 import { spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { TierChip } from '@/components/pricing/tier-chip'
 import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
 import { getSeatUsage } from '@/lib/spaces/seats'
@@ -152,7 +153,7 @@ export async function BillingBody({ slug }: { slug: string }) {
       <div className="space-y-8">
         <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
           <p className="eyebrow text-subtle">Current plan</p>
-          <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
+          <p className="mt-1.5"><TierChip tier={currentPlan} size="lg" /></p>
           {hasInheritedBusiness && <p className="mt-2 text-body-sm text-muted">Business tools are included through the Network this Space belongs to. It keeps its own free plan.</p>}
         </div>
 

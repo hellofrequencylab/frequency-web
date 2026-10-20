@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Check, Globe, Network, ShieldCheck, Users } from 'lucide-react'
 import type { BillingInterval } from '@/lib/billing/pricing-keys'
 import type { SpacePlan } from '@/lib/pricing/plans'
+import { TierChip } from '@/components/pricing/tier-chip'
 import { ChoosePlanButton } from './choose-plan'
 import { BillingIntervalSwitch } from './interval-switch'
 
@@ -72,7 +73,7 @@ export function PlanLadderRungs({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-body-sm font-bold text-text">{rung.label}</span>
+                  <TierChip tier={rung.plan} size="md" />
                   <span className="text-body-sm font-semibold text-text">{rung.price[interval]}</span>
                   {note && <span className="text-2xs font-medium text-primary-strong">{note}</span>}
                 </div>

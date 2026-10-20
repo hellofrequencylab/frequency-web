@@ -21,6 +21,7 @@ import { DirectoryFacets } from '@/components/people/directory-facets'
 import { PeopleSuggestions } from '@/components/people/people-suggestions'
 import { OnlineMembersCard, CommunityStatsCard } from '@/components/people/community-sidebar'
 import { formatDistance } from '@/lib/geocode'
+import { isEndorsed } from '@/lib/season-ranks'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { ProfileIdentity } from '@/lib/types/profile'
@@ -57,6 +58,8 @@ type Profile = ProfileIdentity & {
   is_system: boolean | null
   last_seen_at: string | null
   is_demo: boolean
+  membership_tier: string | null
+  is_founding_member: boolean | null
   entity_types: string[] | null
   nexus_regions: { name: string } | null
 }
@@ -90,7 +93,7 @@ type NearbyCircle = CircleCardData & { distanceLabel: string }
 // `.range()`, so a member anywhere in the community can be found and reached. It used to be the
 // first 500 profiles by name, filtered here, which made everyone past the 500th unfindable.
 // The card columns, with the four privacy columns selected by the shared constant.
-const CARD_SELECT = `id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, ${DIRECTORY_VISIBILITY_COLUMNS}, nexus_regions!nexus_region_id ( name )` as const
+const CARD_SELECT = `id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, membership_tier, is_founding_member, ${DIRECTORY_VISIBILITY_COLUMNS}, nexus_regions!nexus_region_id ( name )` as const
 
 // The facet vocabulary (Topic / Role options, the Most popular place) is still read from a bounded
 // sample: PostgREST has no DISTINCT or GROUP BY, and these only choose which OPTIONS to offer. The
@@ -697,6 +700,8 @@ async function DirectoryListing({
             online={isOnline(p.last_seen_at)}
             isDemo={p.is_demo}
             band={bandByProfileId.get(p.id)}
+            crew={isEndorsed(p.membership_tier)}
+            founding={!!p.is_founding_member}
           />
         ))}
       </div>

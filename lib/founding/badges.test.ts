@@ -1,3 +1,4 @@
+import { TIER_MARKS } from '@/lib/pricing/tier-marks'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -185,10 +186,12 @@ describe('source shape: the public Founding Business badge never renders the loc
   })
 
   it('the chip carries the locked label and a tooltip with no pricing in it', () => {
-    expect(body).toContain('Founding Business')
-    const title = body.match(/title="([^"]+)"/)?.[1] ?? ''
-    expect(title).toContain('Founding Business')
-    expect(title).not.toMatch(/\$|\d|month|rate|price|cents/i)
+    // The words and the tooltip live in the one tier-mark registry now (LIVE-1190); the chip names its key.
+    expect(body).toContain('tier="founding_business"')
+    const mark = TIER_MARKS.founding_business
+    expect(mark.label).toBe('Founding Business')
+    expect(mark.title).toContain('Founding Business')
+    expect(mark.title).not.toMatch(/\$|\d|month|rate|price|cents/i)
   })
 
   it('the public mount sites hand it a boolean, never the founding record', () => {

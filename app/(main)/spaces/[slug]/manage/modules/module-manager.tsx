@@ -14,6 +14,8 @@ import {
 } from '@/lib/admin/modules/space-modules'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership-core'
+import { TierChip } from '@/components/pricing/tier-chip'
+import { TIER_MARKS, type ModuleTierRead } from '@/lib/pricing/tier-marks'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Switch } from '@/components/ui/switch'
 import { setSpaceFeatureEnabled, setSpaceFeatureMinRole, saveSpaceModuleMenu } from './actions'
@@ -29,10 +31,11 @@ import { setSpaceFeatureEnabled, setSpaceFeatureMinRole, saveSpaceModuleMenu } f
 // family; reorder moves a module within its family only (families stay coherent in the menu). Plain owner
 // copy, no em dashes (CONTENT-VOICE); DAWN tokens only.
 
-/** The three-tier band a module sits in, shown as a small badge. */
+/** Where a module sits in the menu (always shown, main menu, under More). Plain text beside the row: the
+ *  word "tier" belongs to the plan chip, which is the only tier mark on this page. */
 type ModuleTier = 'standard' | 'primary' | 'extra'
 
-const TIER_LABEL: Record<ModuleTier, string> = {
+const BAND_LABEL: Record<ModuleTier, string> = {
   standard: 'Always shown',
   primary: 'Main menu',
   extra: 'Under More',
@@ -53,6 +56,8 @@ export interface ModuleManagerRow {
   desc: string
   family: SpaceModuleFamily
   tier: ModuleTier
+  /** The plan this feature belongs to, drawn as the shared TierChip. */
+  plan: ModuleTierRead
   /** The feature this module toggles, or null for a shell module with no on/off. */
   featureKey: SpaceFunctionKey | null
   /** Current on/off (default-on). Only meaningful when featureKey is set. */
@@ -253,9 +258,15 @@ export function ModuleManager({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-body-sm font-semibold text-text">{row.label}</span>
-                          <span className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
-                            {TIER_LABEL[row.tier]}
-                          </span>
+                          <TierChip
+                            tier={row.plan.mark}
+                            label={
+                              row.plan.capped
+                                ? `${TIER_MARKS[row.plan.mark].label}, more on ${TIER_MARKS.business.label}`
+                                : undefined
+                            }
+                          />
+                          <span className="text-2xs font-medium text-muted">{BAND_LABEL[row.tier]}</span>
                           {isHidden && (
                             <span className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                               Hidden

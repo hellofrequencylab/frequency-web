@@ -24,7 +24,8 @@ import { AdoptMasterProfileButton } from './adopt-master-profile-button'
 import { listSpaces } from '@/lib/spaces/store'
 import { intakeIdsBySpaceIds } from '@/lib/importer/store'
 import { resolveMode } from '@/lib/spaces/modes'
-import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
+import { asSpacePlan } from '@/lib/pricing/plans'
+import { TierChip } from '@/components/pricing/tier-chip'
 import {
   HEALTH_BUCKETS,
   HEALTH_BUCKET_LABEL,
@@ -63,7 +64,6 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
   // The root Space serves the app itself; it has no public /spaces/<slug> profile or owner settings.
   const hasProfile = s.type !== 'root'
   const brandName = s.brandName || s.name
-  const planLabel = SPACE_PLAN_LABEL[asSpacePlan(s.plan)]
   const active = signals.activeMembers
   const total = signals.totalMembers
   const memberCount =
@@ -89,9 +89,7 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
           <StatusChip tone={STATUS_TONE[s.status]} size="sm">
             {s.status}
           </StatusChip>
-          <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
-            {planLabel}
-          </span>
+          <TierChip tier={asSpacePlan(s.plan)} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
           <span>/{s.slug}</span>

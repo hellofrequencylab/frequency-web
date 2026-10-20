@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1190",
+  "title": "Every tier, rank and status mark on people and Spaces is one chip, and the Menu and features index says which plan each feature belongs to",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/pricing/tier-chip.tsx",
+    "ref": "Owner 2026-10-20 in the project thread: analyse how membership tiers are displayed on every page, list the inconsistencies, unify them everywhere; the member index (the features list in the Space admin) read as horrible."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. PREMISE RE-TESTED. INCONSISTENCIES FOUND: Founder was a gold rank-badge in one place and a frosted sparkle on cover photos; Boosted was a primary Badge, a plain .tag, and a bare <i>; Crew was iridescent text on the profile and a plain 'Member' tag on directory cards (every member card read Member, with no Crew or Founder); plan names were grey pills, bold text or plain words on the plan ladder, billing and the Spaces admin; the Menu and features index called the menu band (Always shown, Main menu, Under More) a tier and said nothing about the plan a feature needs. FIX: lib/pricing/tier-marks.ts is the one registry (name from the naming canon, spectrum colour, glyph), components/pricing/tier-chip.tsx draws it through RankBadge, and components/people/member-tier-marks.tsx is the person cluster (role above Member, Crew, Founder, else one quiet Member). Applied to the member directory, profile header, Space cards and directories, the Menu and features index (a plan chip per row, the menu band is plain text), plan ladder, billing and the staff Spaces list. The cover-photo FounderMark keeps its frosted skin but reads its words from the registry. No prices changed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/tier-chip.mjs",
+    "note": "Fails when a Founder, Founding Business, Boosted, Crew or plan mark goes back to a hand-rolled pill, or the Menu and features index stops naming each feature's plan."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

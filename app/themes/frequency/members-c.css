@@ -89,7 +89,6 @@
 [data-design="frequency"] [data-kit="members"] .mc-initials{display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);font:500 40px/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .g4.mc-stats{margin-top:44px}
 [data-design="frequency"] [data-kit="members"] .mc-gap-24{gap:24px}
-[data-design="frequency"] [data-kit="members"] .mc-crew{font:600 var(--fq-text-body-s)/1 var(--fq-font-sans)}
 
 /* Help. */
 [data-design="frequency"] [data-kit="members"] .ap-main.mc-narrow{max-width:900px}
