@@ -205,7 +205,7 @@ export async function FqOverviewBody({
       icon: 'membership',
       title: `${pastDue} ${pastDue === 1 ? 'membership needs' : 'memberships need'} a new card`,
       sub: 'The last payment did not go through',
-      href: `/spaces/${slug}/settings/offerings#memberships`,
+      href: `/spaces/${slug}/settings/offerings?tab=memberships`,
       cta: 'View',
       ctaIcon: 'membership',
     })
@@ -250,6 +250,10 @@ export async function FqOverviewBody({
             <Link className="btn" href={`/spaces/${slug}?edit=page`}>
               <FqIcon name="edit" />
               Edit page
+            </Link>
+            <Link className="btn" href={`/spaces/${slug}/settings/offerings?tab=checkin`}>
+              <FqIcon name="checkin" />
+              Check in
             </Link>
             <Link className="btn pa" href={`/events/new?space=${encodeURIComponent(spaceId)}`}>
               <FqIcon name="event" />
