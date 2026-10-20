@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import {
   EmailStudioWorkspace,
   type EmailWorkspaceActions,
-} from '@/components/admin/email-studio/workspace'
+} from '@/modules/email-design/client'
 import type { EmailCampaignCard } from '@/app/(main)/admin/email-studio/actions'
 import type { EmailColors } from '@/lib/email-studio/render'
 import {

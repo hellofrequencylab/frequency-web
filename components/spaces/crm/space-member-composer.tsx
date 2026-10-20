@@ -21,7 +21,7 @@ import { Loader2, Mail, Plus, Search, Send, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Banner } from '@/components/admin/status'
-import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
+import { EmailEditorPane } from '@/modules/email-design/client'
 import {
   createSpaceEmailDraft,
   loadSpaceEmailDraft,

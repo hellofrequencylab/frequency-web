@@ -12,7 +12,7 @@ import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
-import { SpaceStockQr } from '@/components/qr/space-stock-qr'
+import { SpaceStockQr } from '@/modules/qr'
 import { stockSpaceUrl } from '@/lib/qr/stock-space'
 import { SITE_URL } from '@/lib/site'
 

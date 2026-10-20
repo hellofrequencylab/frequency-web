@@ -2,7 +2,7 @@
 
 import { Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
+import { QrShareDropdown } from '@/modules/qr/client'
 import { meetsAccess } from '@/lib/nav-areas'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { openAdminBar } from '@/components/admin/open-admin-bar'

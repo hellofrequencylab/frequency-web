@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { CalendarDays, Loader2 } from 'lucide-react'
 import { listGuestOpenSlotsAction } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, ServiceType } from '@/lib/spaces/booking'
-import { BookingPicker } from '@/components/spaces/booking-picker'
-import { BookingServiceMember } from '@/components/spaces/booking-service-member'
+import { BookingPicker } from '@/modules/booking/client'
+import { BookingServiceMember } from '@/modules/booking/client'
 import { EmptyState } from '@/components/ui/empty-state'
 
 // THE WEBSITE'S BOOK PAGE BODY (LIVE-835, client). The same service-first picker a member uses on the Space
