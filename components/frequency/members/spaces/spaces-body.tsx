@@ -1,0 +1,264 @@
+import type { ReactNode } from 'react'
+import Link from 'next/link'
+import '@/app/themes/active/members-b'
+import type { NetworkedSpace } from '@/lib/spaces/discovery'
+import { SPACE_KINDS, isSpaceKind, spaceKindLabel } from '@/lib/spaces/categories'
+import { SUBJECTS, findSubject } from '@/lib/taxonomy/subjects'
+import { SHOW_STEP, type DirectoryParams, type DirectorySections } from '@/lib/spaces/directory-sections'
+import { FqFacetMenu, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
+import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
+
+// BUSINESS SPACES DIRECTORY, FREQUENCY BODY (LIVE-1018). The header is the shared index header the page
+// passes in (MarketHero; LIVE-1012 gives it the kit head with the search on its own row and no photo), so
+// this body never forks it. Under it: one find row (Subject, City, Has events, Following, Sort), the kind strip with real counts, then the lead rows
+// (Featured, Founding Businesses) and the results grid that grows a page at a time.
+//
+// EVERY CONTROL IS A URL, like the Circles body: the find pill is a GET form, each menu item is a link
+// that keeps the others (`hrefWith`), and the sections come from one pure builder
+// (lib/spaces/directory-sections.ts), so any view is shareable and the page stays a Server Component.
+// A filter change drops `show`, so a new query starts at the top of its results.
+
+const SORTS = [
+  { value: 'standing', label: 'Most active' },
+  { value: 'name', label: 'Name (A to Z)' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'members', label: 'Most members' },
+]
+
+const BASE = '/spaces/directory'
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`
+}
+
+function SpaceTile({ s }: { s: NetworkedSpace }) {
+  const art = s.coverUrl || fqPlaceholderArt(s.slug)
+  const stats = [
+    s.memberCount ? plural(s.memberCount, 'member', 'members') : null,
+    s.upcomingEventCount ? plural(s.upcomingEventCount, 'event', 'events') : null,
+    s.city,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <Link className="card fqm-card" href={`/spaces/${s.slug}`}>
+      <span className="ph" style={{ backgroundImage: `url('${art}')` }}>
+        <span className="tag glass fqm-corner">{s.kindLabel}</span>
+      </span>
+      <span className="fqm-card-b">
+        <span className="h3">{s.name}</span>
+        {s.tagline && <span className="t2">{s.tagline}</span>}
+        {stats && <span className="t2 fqm-body-ink">{stats}</span>}
+        {(s.isFoundingBusiness || s.boosted) && (
+          <span className="t2 fqm-body-ink">{[s.isFoundingBusiness ? 'Founding Business' : null, s.boosted ? 'Boosted' : null].filter(Boolean).join(' · ')}</span>
+        )}
+      </span>
+    </Link>
+  )
+}
+
+export function FqSpacesBody({
+  sections,
+  params,
+  signedIn,
+  header,
+}: {
+  /** The page header, owned by the shared index header (MarketHero, LIVE-1012): this body never draws its own. */
+  header: ReactNode
+  sections: DirectorySections
+  params: DirectoryParams & Params
+  signedIn: boolean
+}) {
+  const { filtering, featured, featuredPicked, founding, results, total, limit, hasMore, kindCounts, cities } = sections
+  // Menus and chips build links off the params WITHOUT the grid window, so a new filter starts at the top.
+  const cur: Params = { ...params, show: undefined }
+  const anyFilter = filtering || !!params.sort
+  const subjectLabel = findSubject(params.subject)?.label ?? null
+  const kind = isSpaceKind(params.category) ? params.category : null
+
+  const active: { label: string; clear: string }[] = []
+  if ((params.q ?? '').trim()) active.push({ label: `"${params.q!.trim()}"`, clear: hrefWith(BASE, cur, { q: null }) })
+  if (subjectLabel) active.push({ label: subjectLabel, clear: hrefWith(BASE, cur, { subject: null }) })
+  if (kind) active.push({ label: spaceKindLabel(kind), clear: hrefWith(BASE, cur, { category: null }) })
+  if (params.city) {
+    const c = cities.find((x) => x.value === params.city?.toLowerCase())
+    active.push({ label: c?.label ?? params.city, clear: hrefWith(BASE, cur, { city: null }) })
+  }
+  if (params.events === '1') active.push({ label: 'Has events', clear: hrefWith(BASE, cur, { events: null }) })
+  if (params.following === '1') active.push({ label: 'Following', clear: hrefWith(BASE, cur, { following: null }) })
+
+  const toggle = (key: 'events' | 'following', label: string) => {
+    const on = params[key] === '1'
+    return (
+      <Link className={on ? 'chip on' : 'chip'} href={hrefWith(BASE, cur, { [key]: on ? null : '1' })} aria-pressed={on}>
+        {label}
+      </Link>
+    )
+  }
+
+  return (
+    <MembersBody>
+      {header}
+
+      <div className="fqm-tools">
+        <FqFacetMenu
+          label="Subject"
+          paramKey="subject"
+          options={SUBJECTS.map((s) => ({ value: s.key, label: s.label }))}
+          base={BASE}
+          current={cur}
+        />
+        {cities.length > 0 && (
+          <FqFacetMenu
+            label="City"
+            paramKey="city"
+            icon="pin"
+            options={cities.map((c) => ({ value: c.value, label: `${c.label} · ${c.n}` }))}
+            base={BASE}
+            current={cur}
+          />
+        )}
+        {toggle('events', 'Has events')}
+        {signedIn && toggle('following', 'Following')}
+        <FqFacetMenu
+          label="Sort"
+          paramKey="sort"
+          options={SORTS}
+          base={BASE}
+          current={params.sort ? cur : { ...cur, sort: 'standing' }}
+          clearable={false}
+          icon="chart"
+        />
+        <FqClearLink base={BASE} active={anyFilter} />
+      </div>
+
+      <nav className="chips fqm-chips" aria-label="Kinds of Space">
+        <Link className={kind ? 'chip' : 'chip on'} href={hrefWith(BASE, cur, { category: null })}>
+          Everything
+        </Link>
+        {kindCounts.map((k) => (
+          <Link
+            key={k.key}
+            className={kind === k.key ? 'chip on' : 'chip'}
+            href={hrefWith(BASE, cur, { category: k.key })}
+            aria-current={kind === k.key ? 'true' : undefined}
+          >
+            {k.label} <span className="t2">{k.n}</span>
+          </Link>
+        ))}
+      </nav>
+
+      {active.length > 0 && (
+        <div className="row wrap" aria-label="Active filters">
+          {active.map((a) => (
+            <Link key={a.label} className="chip on" href={a.clear} aria-label={`Remove filter ${a.label}`}>
+              {a.label} <span aria-hidden>×</span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {featured.length > 0 && (
+        <section className="sec" aria-labelledby="fq-spaces-featured">
+          <div className="sec-h">
+            <span id="fq-spaces-featured" className="h2">
+              Featured Spaces
+            </span>
+            <span className="meta">
+              {featuredPicked ? 'Picked by the people who run this community' : 'The most active Spaces right now'}
+            </span>
+          </div>
+          <div className="g3">
+            {featured.map((s) => (
+              <SpaceTile key={s.id} s={s} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {founding.length > 0 && (
+        <section className="sec" aria-labelledby="fq-spaces-founding">
+          <div className="sec-h">
+            <span id="fq-spaces-founding" className="h2">
+              Founding Businesses
+            </span>
+            <span className="meta">The first to build a home here</span>
+          </div>
+          <div className="g3">
+            {founding.map((s) => (
+              <SpaceTile key={s.id} s={s} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="sec" aria-labelledby="fq-spaces-all">
+        <div className="sec-h">
+          <span id="fq-spaces-all" className="h2">
+            {filtering ? 'Results' : 'All Spaces'}
+          </span>
+          <span className="meta">{plural(total, 'Space', 'Spaces')}</span>
+        </div>
+        {results.length > 0 ? (
+          <>
+            <div className="g3">
+              {results.map((s) => (
+                <SpaceTile key={s.id} s={s} />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="row wrap">
+                <Link
+                  className="btn"
+                  href={hrefWith(BASE, params, { show: String(limit + SHOW_STEP) })}
+                  scroll={false}
+                >
+                  Show more ({total - limit} left)
+                </Link>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="empty stack">
+            <span className="h3">
+              {params.following === '1' ? 'You are not following any Spaces yet.' : filtering ? 'No Spaces match.' : 'No Spaces here yet.'}
+            </span>
+            <span className="t2">
+              {filtering
+                ? 'Try a wider search, or start from a kind of Space below.'
+                : 'A Space is the home a studio, a shop or a nonprofit keeps here. If you run something in town, this is where it goes.'}
+            </span>
+            {filtering && (
+              <nav className="chips" aria-label="Try a kind of Space">
+                {SPACE_KINDS.map((k) => (
+                  <Link key={k.key} className="chip" href={`${BASE}?category=${k.key}`}>
+                    {k.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+            {filtering && (
+              <Link className="btn sm fqm-tag-start" href={BASE}>
+                See every Space
+              </Link>
+            )}
+          </div>
+        )}
+      </section>
+
+      <div className="soft row wrap sec">
+        <span className="grow stack fqm-gap-sm">
+          <span className="h3">Run something in town?</span>
+          <span className="t2">
+            A Space is one home for the Circles you gather, the Events you put on and everything you offer. Hosting is
+            free. You pay when you start charging.
+          </span>
+        </span>
+        <Link className="btn pa" href="/spaces/new">
+          {signedIn ? 'Create a Space' : 'Sign up to create a Space'}
+        </Link>
+      </div>
+    </MembersBody>
+  )
+}
