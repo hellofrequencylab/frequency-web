@@ -478,7 +478,11 @@ export async function sendTestEmail(id: string, toRaw?: string): Promise<ActionR
     .maybeSingle()
   if (error || !data) return fail('That email no longer exists.')
 
-  const layout = layoutFromBlockJson(data.block_json)
+  // A test shows the same live Event and Circle cards a real send will, not the snapshot saved with the draft.
+  // Loaded on demand: data-blocks is server-only and reads the database, and the draft-preservation probe (LIVE-877)
+  // imports this module with only the draft transports stubbed.
+  const { resolveDataBlockRefs } = await import('@/lib/email-studio/data-blocks')
+  const layout = await resolveDataBlockRefs(layoutFromBlockJson(data.block_json))
   const doc = { layout, subject: data.subject ?? '', preheader: data.preheader ?? '' }
   // A TEST is delivered to the operator's OWN address, so build REAL footer links for them (their own
   // (profileId, lifecycle) token). This makes the footer's "Unsubscribe" + "Manage emails" links live in the
