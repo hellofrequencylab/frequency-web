@@ -455,7 +455,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     />
   )
 
-  // THE MEGA FOOTER (LIVE-1030, LIVE-1114): the full site index, role-gated through the same registry columns
+  // THE MEGA FOOTER (LIVE-1030, LIVE-1115): the full site index, role-gated through the same registry columns
   // as the rail (lib/nav/footer-access.ts), its Legal column, and the calls to action, in a pop-up the footer's
   // one trigger opens. Help is in the Support column; Settings rides the pop-up's last row.
   const footerColumns = visibleFooterColumns(gateRole, props.staffRole ?? null, navAccess as Record<string, AccessLevel> | undefined)

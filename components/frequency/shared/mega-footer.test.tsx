@@ -15,7 +15,7 @@ const render = (extra: { title: string; links: { label: string; href: string }[]
     />,
   )
 
-describe('the mega footer (LIVE-1030, LIVE-1114)', () => {
+describe('the mega footer (LIVE-1030, LIVE-1115)', () => {
   it('draws the index in the HTML while closed, so a crawler reads it', () => {
     const html = render()
     expect(html).not.toContain('<details')

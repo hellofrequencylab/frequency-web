@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1115",
+  "title": "The member footer is one quiet row, and its site index opens as a centred pop-up dressed like the site header",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1861"
+  },
+  "detail": "Daniel 2026-10-20 (screenshot of House of Fates' Manage console): 'This footer section looks terrible. The menu buttons are floating in space. Let's tone those down and build a pop up mega menu in the middle. The one you did is super boring. This should be stylized like the header styles and logo.' FqMegaFooter (components/frequency/shared/mega-footer.tsx) is now one centred row: a single Site index trigger on the footer's top rule, the flowing wordmark and the copyright under it. The trigger opens a native popover in the middle of the window (a bottom sheet at phone width) on the night stage surface with the header mega panel's iridescent rim and sheen wordmark, holding the registry index (its Legal column is the shared legal list), the calls to action, the copyright, Settings and the contact. mega-footer-dialog.tsx adds focus to Close, a Tab trap, scroll lock, focus return, and closes on a link. MegaFooterLift is retired; --fq-foot-lift is no longer published and the docks read their 0px fallback. Tokens only (mega-footer.css).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const f=fs.readFileSync('components/frequency/shared/mega-footer.tsx','utf8');const d=fs.readFileSync('components/frequency/shared/mega-footer-dialog.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/mega-footer.css','utf8');if(/<details/.test(f))bad.push('the index unrolls inline again');if(!f.includes('popover=\\\"auto\\\"')||!f.includes('popoverTarget'))bad.push('the index is not a native pop-up');if(!f.includes('data-surface=\\\"stage\\\"'))bad.push('the pop-up does not wear the header stage');if(!f.includes('role=\\\"dialog\\\"')||!f.includes('aria-modal'))bad.push('the pop-up is not announced as a dialog');if(!/key !== 'Tab'/.test(d)||!d.includes('hidePopover'))bad.push('no focus trap or link close');if(!c.includes('.fq-mf-pop:popover-open')||!c.includes('@media (max-width:760px)'))bad.push('no centred pop-up or phone sheet');if(/#[0-9a-fA-F]{3,8}\\b(?![^{]*url)/.test(c.replace(/url\\([^)]*\\)/g,'').replace(/#000 0 0/g,'')))bad.push('a hex colour in the footer sheet');if(bad.length){console.error('LIVE-1115: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the index goes back to an inline panel, stops being a native pop-up on the stage surface, loses its dialog semantics, focus trap or phone sheet, or the sheet takes a hex colour. Behavior is mega-footer.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

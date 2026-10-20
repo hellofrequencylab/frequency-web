@@ -1,4 +1,4 @@
-/* THE FREQUENCY MEGA FOOTER (LIVE-1030, reworked LIVE-1114, components/frequency/shared/mega-footer.tsx).
+/* THE FREQUENCY MEGA FOOTER (LIVE-1030, reworked LIVE-1115, components/frequency/shared/mega-footer.tsx).
    Hand-kept. --fq- tokens only: the bar reads the page's tokens, and the pop-up carries data-surface="stage",
    so it wears the night stage the site header's mega panel wears in every room and both times of day.
    Not scoped to a kit (`.fq-mf` is its own root), so the member shell and the public site share the sheet.
