@@ -455,9 +455,9 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     />
   )
 
-  // THE MEGA FOOTER (LIVE-1030, LIVE-1115): the site index as an upside-down mega menu pinned between the
-  // rail docks, one tab per area, role-gated through the same registry columns as the rail
-  // (lib/nav/footer-access.ts), its Legal column included, and the calls to action in each panel's foot.
+  // THE MEGA FOOTER (LIVE-1030, LIVE-1154): the design system's site footer at the end of the page, whose area
+  // headings each open a mega panel upward, role-gated through the same registry columns as the rail
+  // (lib/nav/footer-access.ts), its Legal column included, and the calls to action in each panel.
   const footerColumns = visibleFooterColumns(gateRole, props.staffRole ?? null, navAccess as Record<string, AccessLevel> | undefined)
     .map((c) => ({ title: c.title, links: c.links.map((l) => ({ label: l.label, href: l.href })) }))
   const footer = (

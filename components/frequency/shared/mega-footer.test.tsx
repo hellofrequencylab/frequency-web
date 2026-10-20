@@ -14,7 +14,7 @@ const render = (extra: { title: string; links: { label: string; href: string }[]
     />,
   )
 
-describe('the mega footer (LIVE-1030, LIVE-1116)', () => {
+describe('the mega footer (LIVE-1030, LIVE-1154)', () => {
   it('draws every panel in the HTML while closed, so a crawler reads the whole index', () => {
     const html = render([{ title: 'The Quest', links: [{ label: 'Journeys', href: '/journeys' }] }])
     expect(html).toContain('href="/circles"')
@@ -23,24 +23,23 @@ describe('the mega footer (LIVE-1030, LIVE-1116)', () => {
     expect(html.match(/class="fq-mf-mega"[^>]*hidden=""/g)).toHaveLength(2)
   })
 
-  it('is a bar of tabs, one per area, each a disclosure for its own panel; no lone index button', () => {
+  it('is a footer band on the stage surface whose area headings are the tabs; no lone index button', () => {
     const html = render([{ title: 'Support', links: [{ label: 'Help', href: '/help' }] }])
-    const bar = html.slice(html.indexOf('class="fq-mf-bar"'))
-    expect(bar.match(/<button/g)).toHaveLength(2)
-    expect(bar).toContain('aria-controls="fq-mf-p0"')
-    expect(bar).toContain('aria-controls="fq-mf-p1"')
-    expect(bar).toContain('aria-expanded="false"')
-    expect(bar).toContain('>Explore<')
-    expect(bar).toContain('>Support<')
-    expect(html).not.toContain('Site index</button>')
+    expect(html).toContain('data-surface="stage"')
+    const tabs = html.slice(html.indexOf('class="fq-mf-tabs"'), html.indexOf('class="fq-mf-wrap fq-mf-bot"'))
+    expect(tabs.match(/<button/g)).toHaveLength(2)
+    expect(tabs).toContain('aria-controls="fq-mf-p0"')
+    expect(tabs).toContain('aria-controls="fq-mf-p1"')
+    expect(tabs).toContain('aria-expanded="false"')
     expect(html).not.toContain('popover')
   })
 
-  it('keeps the Legal column as its own tab, from the shared list, with the contact', () => {
+  it('keeps the legal row and the contact in the footer itself, and the Legal tab from the shared list', () => {
     const html = render([{ title: 'Legal', links: LEGAL_LINKS.map((l) => ({ label: l.label, href: l.href })) }])
+    const bot = html.slice(html.indexOf('class="fq-mf-wrap fq-mf-bot"'))
+    for (const l of LEGAL_LINKS) expect(bot).toContain(`href="${l.href}"`)
+    expect(bot).toContain('mailto:')
     expect(html).toContain('>Legal<')
-    for (const l of LEGAL_LINKS) expect(html.match(new RegExp(`href="${l.href}"`, 'g'))).toHaveLength(1)
-    expect(html).toContain('mailto:')
   })
 
   it('writes the index as SiteNavigationElement JSON-LD in the footer itself (LIVE-1095)', () => {

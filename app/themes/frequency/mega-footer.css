@@ -1,62 +1,59 @@
-/* THE FREQUENCY MEGA FOOTER (LIVE-1030, LIVE-1115, components/frequency/shared/mega-footer-tabs.tsx). Hand-kept.
-   The member header's mega menu turned upside down: a tab bar pinned to the window's bottom edge between the
-   two rail docks, each tab opening its area's panel upward. The pieces are the header's own (kit-members.css):
-   the nav pill and its pastel "on" tab, the light glass .ap-mega panel, its columns, foot line and pastel
-   call to action. --fq- tokens only. An off-scale step left as a literal is the design's own value (token-ok). */
-/* The footer box itself is an empty 24px strip after the rails, so at the end of the page the sticky rails stop
-   24px short of the window edge, exactly where they ride while scrolling: the docks never move. */
-[data-design="frequency"] .fq-mf{position:relative;height:24px;margin:0}
-[data-design="frequency"] .fq-mf a{text-decoration:none}
-[data-design="frequency"] .fq-mf :is(a,button):focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+/* THE FREQUENCY MEGA FOOTER (LIVE-1030, LIVE-1154, components/frequency/shared/mega-footer-tabs.tsx). Hand-kept.
+   The design system's site footer (`.ft2`, design_handoff/frequency/templates/website/web/site.css) at the end
+   of the member page: a dark band under an iridescent rule, the wordmark, the area headings, the copyright
+   and the legal row. The headings are tabs; each opens its area's mega panel up out of the footer, in the
+   same band. The footer carries data-surface="stage", so the band's ink and text are the stage tokens.
+   --fq- tokens only. An off-scale step left as a literal is the design's own value (token-ok). */
+[data-design="frequency"] .fq-mf{grid-column:1/-1;position:relative;margin:40px -40px 0;background:var(--fq-bg-canvas);color:var(--fq-text-body);font:400 var(--fq-text-body-s)/1.5 var(--fq-font-sans)}
+[data-design="frequency"] .fq-mf::before,[data-design="frequency"] .fq-mf-mega::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--fq-iridescent-sweep);background-size:220% 100%;opacity:.6;pointer-events:none}
+[data-design="frequency"] .fq-mf a{color:var(--fq-text-body);text-decoration:none}
+[data-design="frequency"] .fq-mf a:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] .fq-mf :is(a,button):focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px}
+[data-design="frequency"] .fq-mf-wrap{padding-inline:40px}
 
-/* ── The bar: one glass pill, the same height, glass and lift as the rail docks it sits between. ── */
-[data-design="frequency"] .fq-mf-dock{position:fixed;left:50%;bottom:24px;z-index:45;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 640px)}
-[data-design="frequency"] .fq-mf-bar{display:flex;align-items:center;gap:2px;height:60px;padding:0 8px;border-radius:var(--fq-radius-orb);background:var(--fqm-glass-tab,var(--fq-surface-card));backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px color-mix(in oklab,var(--fq-ink) 45%,transparent),inset 0 0 0 1px var(--fqm-white-90,var(--fq-border-hair));overflow-x:auto;scrollbar-width:none}
-[data-design="frequency"] .fq-mf-bar::-webkit-scrollbar{display:none}
-[data-design="frequency"] .fq-mf-logo{flex:none;width:92px;margin:0 10px 0 12px}
-[data-design="frequency"] .fq-mf-bar button{flex:none;height:44px;display:flex;align-items:center;gap:8px;padding:0 16px 0 12px;border:none;border-radius:var(--fq-radius-orb);background:transparent;color:var(--fq-text-muted);font:500 var(--fq-text-body-s)/1 var(--fq-font-sans);letter-spacing:-.01em;white-space:nowrap;cursor:pointer;transition:background var(--fq-dur-fast,120ms),color var(--fq-dur-fast,120ms)}
-[data-design="frequency"] .fq-mf-bar button .fq-icon{width:17px;height:17px;opacity:.75}
-[data-design="frequency"] .fq-mf-bar button:hover{color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-surface-raised) 60%,transparent)}
-[data-design="frequency"] .fq-mf-bar button.on{background:var(--fq-pa);color:var(--fq-text-strong);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
-[data-design="frequency"] .fq-mf-bar button.on .fq-icon{opacity:1}
+/* The row: the wordmark (the header's iridescent sheen through the logo) and the area headings as tabs. */
+[data-design="frequency"] .fq-mf-row{display:flex;align-items:center;justify-content:space-between;gap:24px 40px;flex-wrap:wrap;padding-top:40px}
+[data-design="frequency"] .fq-mf-logo{flex:none;width:176px;aspect-ratio:1920/389;background:var(--fq-iridescent-sweep);background-size:220% 100%;animation:fq-sweep 10s linear infinite;-webkit-mask:url('/brand/frequency/logo/frequency-wordmark.png') no-repeat left center/contain;mask:url('/brand/frequency/logo/frequency-wordmark.png') no-repeat left center/contain}
+[data-design="frequency"] .fq-mf-tabs{display:flex;flex-wrap:wrap;gap:0 32px}
+[data-design="frequency"] .fq-mf-tabs button{position:relative;display:inline-flex;align-items:center;gap:8px;height:var(--fq-hit-min);padding:0;border:0;background:none;cursor:pointer;font:600 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted);transition:color var(--fq-dur-fast,120ms)}
+[data-design="frequency"] .fq-mf-tabs button:hover,[data-design="frequency"] .fq-mf-tabs button[aria-expanded="true"]{color:var(--fq-text-strong)}
+[data-design="frequency"] .fq-mf-tabs button::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--fq-iridescent-sweep);background-size:220% 100%;opacity:0;transition:opacity var(--fq-dur-fast,120ms)}
+[data-design="frequency"] .fq-mf-tabs button[aria-expanded="true"]::before{opacity:1}
+[data-design="frequency"] .fq-mf-tabs svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.6;transition:transform 340ms var(--fq-ease-out)}
+[data-design="frequency"] .fq-mf-tabs button[aria-expanded="true"] svg{transform:rotate(180deg)}
 
-/* ── A panel: the header's light glass mega menu, rising out of the bar instead of dropping from it. ── */
-@keyframes fq-mf-rise{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
-[data-design="frequency"] .fq-mf-mega{position:fixed;left:50%;bottom:96px;z-index:46;transform:translateX(-50%);box-sizing:border-box;width:min(1120px,calc(100vw - 48px));max-height:calc(100dvh - 200px);overflow-y:auto;overscroll-behavior:contain;border-radius:28px;background:var(--fq-surface-card);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 40px 80px -30px color-mix(in oklab,var(--fq-ink) 30%,transparent),inset 0 0 0 1px var(--fqm-white-90,var(--fq-border-hair));color:var(--fq-text-strong);animation:fq-mf-rise 340ms var(--fq-ease-out)}
+/* The bottom strip (.ft2-bot): the copyright and the legal row, kept clear of the two docks fixed over its
+   ends, at the docks' own height so the three read as one line at the end of the page. */
+[data-design="frequency"] .fq-mf-bot{display:flex;align-items:center;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;min-height:108px;margin-top:28px;padding-inline:calc(40px + var(--fqm-lw,0px) + 32px) calc(40px + var(--fqm-rw,0px) + 32px);border-top:1px solid var(--fq-border-hair);font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] .fq-mf-legal{display:flex;flex-wrap:wrap;gap:0 18px}
+[data-design="frequency"] .fq-mf-legal a{display:inline-flex;align-items:center;min-height:var(--fq-hit-min);color:var(--fq-text-faint)}
+
+/* A panel: the same band, rising out of the footer's top edge over the page (.ft2-top's grid inside). */
+@keyframes fq-mf-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+[data-design="frequency"] .fq-mf-mega{position:absolute;left:0;right:0;bottom:100%;z-index:3;max-height:calc(100dvh - 180px);overflow-y:auto;overscroll-behavior:contain;background:var(--fq-bg-canvas);box-shadow:0 -40px 80px -30px color-mix(in oklab,var(--fq-ink) 45%,transparent);animation:fq-mf-rise 340ms var(--fq-ease-out)}
 [data-design="frequency"] .fq-mf-mega[hidden]{display:none}
-[data-design="frequency"] .fq-mf-in{padding:32px 32px 0}
-[data-design="frequency"] .fq-mf-in .k{display:block;color:var(--fq-text-faint);padding-bottom:14px}
-[data-design="frequency"] .fq-mf-links{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 40px}
-[data-design="frequency"] .fq-mf-links a{display:flex;gap:14px;align-items:center;padding:10px 0;color:var(--fq-text-strong)}
-[data-design="frequency"] .fq-mf-links a:hover{opacity:.65;color:var(--fq-text-strong)}
-[data-design="frequency"] .fq-mf-links .fq-icon{width:20px;height:20px;flex:none;color:var(--fq-text-muted)}
-[data-design="frequency"] .fq-mf-links b{font:600 15px/1.15 var(--fq-font-sans)}
-[data-design="frequency"] .fq-mf-foot.ap-mega-foot{margin-top:24px;border-top-color:var(--fq-border-hair)}
-[data-design="frequency"] .fq-mf-foot .btn.fq-mf-ghost{background:transparent;color:var(--fq-text-strong);box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] .fq-mf-top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr);gap:clamp(32px,6vw,96px);padding-block:56px 40px}
+[data-design="frequency"] .fq-mf-brand{display:flex;flex-direction:column;gap:20px;align-items:flex-start}
+[data-design="frequency"] .fq-mf-h{font:600 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-strong)}
+[data-design="frequency"] .fq-mf-brand p{margin:0;max-width:42ch;font:400 15px/1.6 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] .fq-mf-ctas{display:flex;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] .fq-mf-ctas .btn{height:44px;font-size:14px;padding:0 18px}
+[data-design="frequency"] .fq-mf .btn.fq-mf-ghost{background:transparent;color:var(--fq-text-strong)}
+[data-design="frequency"] .fq-mf-links{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 24px;align-content:start}
+[data-design="frequency"] .fq-mf-links a{font:500 15px/1.3 var(--fq-font-sans)}
 
-/* Narrower windows: the rails fold to their micro width, so the bar may run wider; then the tabs drop their
-   labels to icons, as the header's do under 1180px. */
-@media (max-width:1439px){[data-design="frequency"] .fq-mf-logo{display:none}}
-@media (max-width:1239px){[data-design="frequency"] .fq-mf-dock{max-width:calc(100vw - 240px)}}
-@media (max-width:1180px){
-[data-design="frequency"] .fq-mf-bar button span{display:none}
-[data-design="frequency"] .fq-mf-bar button{padding:0 13px}}
-
-/* ── Phone: no rail docks (the tab bar replaces them), so the footer's tabs end the page and a panel rises
-   as a sheet above the tab bar. ── */
+/* Phone: no docks (the tab bar replaces them). The headings wrap under the wordmark and a panel takes one
+   column with two runs of links. */
 @media (max-width:767px){
-[data-design="frequency"] .fq-mf{height:auto;padding:8px var(--fq-gutter-mobile,16px) calc(var(--tab-bar-clearance,0px) + 24px)}
-[data-design="frequency"] .fq-mf-dock{position:static;transform:none;width:auto;max-width:none}
-[data-design="frequency"] .fq-mf-bar{height:56px;justify-content:flex-start}
-[data-design="frequency"] .fq-mf-bar button span{display:inline}
-[data-design="frequency"] .fq-mf-bar button{padding:0 14px 0 10px}
-[data-design="frequency"] .fq-mf-mega{left:8px;right:8px;width:auto;transform:none;bottom:calc(var(--tab-bar-clearance,0px) + 12px);max-height:calc(100dvh - var(--tab-bar-clearance,0px) - 96px);animation-name:fq-mf-rise-sheet}
-[data-design="frequency"] .fq-mf-in{padding:24px 20px 0}
-[data-design="frequency"] .fq-mf-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
-[data-design="frequency"] .fq-mf-links a{min-height:var(--fq-hit-min);padding:6px 0}
-[data-design="frequency"] .fq-mf-foot.ap-mega-foot{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px 20px 20px}
-[data-design="frequency"] .fq-mf-foot.ap-mega-foot span{grid-column:1/-1;font-size:18px}
-[data-design="frequency"] .fq-mf-foot .btn{width:100%;padding-inline:12px}}
-@keyframes fq-mf-rise-sheet{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+[data-design="frequency"] .fq-mf{margin:32px calc(-1 * var(--fq-gutter-mobile,16px)) -48px}
+[data-design="frequency"] .fq-mf-wrap{padding-inline:var(--fq-gutter-mobile,16px)}
+[data-design="frequency"] .fq-mf-row{flex-direction:column;align-items:flex-start;padding-top:32px}
+[data-design="frequency"] .fq-mf-logo{width:144px}
+[data-design="frequency"] .fq-mf-tabs{gap:0 22px}
+[data-design="frequency"] .fq-mf-bot{min-height:0;margin-top:20px;padding:16px var(--fq-gutter-mobile,16px) calc(var(--tab-bar-clearance,0px) + 20px);flex-direction:column;align-items:flex-start}
+[data-design="frequency"] .fq-mf-top{grid-template-columns:minmax(0,1fr);gap:28px;padding-block:36px 28px}
+[data-design="frequency"] .fq-mf-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-design="frequency"] .fq-mf-links a{display:inline-flex;align-items:center;min-height:var(--fq-hit-min)}
+[data-design="frequency"] .fq-mf-mega{position:fixed;bottom:calc(var(--tab-bar-clearance,0px) + 8px);max-height:calc(100dvh - var(--tab-bar-clearance,0px) - 96px);z-index:46;border-radius:var(--fq-radius-l) var(--fq-radius-l) 0 0}}
 
-@media (prefers-reduced-motion:reduce){[data-design="frequency"] .fq-mf-mega{animation:none}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] .fq-mf-mega,[data-design="frequency"] .fq-mf-logo{animation:none}}

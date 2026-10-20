@@ -260,6 +260,17 @@
 [data-design="frequency"] [data-kit="members"] .fqm-rail-r .fqm-rise{right:0;transform-origin:bottom right}
 [data-design="frequency"] [data-kit="members"] .fqm-rise[data-open]{opacity:1;transform:none;pointer-events:auto}
 /* The console's corner dock: the right rail's foot tab, fixed bottom-right while the rails are away. */
+/* THE DOCKS ARE PINNED (owner 2026-10-20, LIVE-1154: "The left and right menus ALWAYS stay pinned to the
+   bottom"). Each rail's foot tab is fixed to the window's bottom edge at its rail's width, so it never rides
+   up with the page; at the end of the page it rests over an end of the footer. The rail keeps the tab's room
+   with a spacer, so its last row never slides under it. */
+@media (min-width:768px){
+[data-design="frequency"] [data-kit="members"] .fqm-rail-l>.fqm-tab-wrap{position:fixed;left:40px;bottom:24px;z-index:45;width:var(--fqm-lw)}
+[data-design="frequency"] [data-kit="members"] .fqm-rail-r>.fqm-tab-wrap{position:fixed;right:calc(40px + var(--fqm-panel, 0px));bottom:24px;z-index:45;width:var(--fqm-rw)}
+[data-design="frequency"] [data-kit="members"] .fqm-rail::after{content:"";flex:none;height:60px}
+/* A sticky rail is its own stacking layer, so the docks inside it rise only as high as the rail does: the
+   rail sits above the footer band (whose open panel, at 3, sits above the rails). */
+[data-design="frequency"] [data-kit="members"] .fqm-rail{z-index:2}}
 [data-design="frequency"] [data-kit="members"] .fqm-console-dock{position:fixed;right:24px;bottom:calc(20px + var(--fq-foot-lift, 0px));transition:bottom 340ms var(--fq-ease-out);z-index:45;width:248px}
 [data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-micro{display:none}
 [data-design="frequency"] [data-kit="members"] .fqm-console-dock .fqm-rise{right:0;transform-origin:bottom right}
