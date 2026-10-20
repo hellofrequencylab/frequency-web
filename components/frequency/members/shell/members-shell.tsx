@@ -457,9 +457,8 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
 
   // THE MEGA FOOTER (LIVE-1030): the full site index, role-gated through the same registry columns as the
   // rail (lib/nav/footer-access.ts), the shared legal row, and the calls to action. Closed, it is a bar with
-  // the brand, Help and Settings; the Legal column is the bar's own row, so the grid leaves it out.
+  // the brand, Help and Settings; the Legal column stays in the grid and the bar's legal row repeats it.
   const footerColumns = visibleFooterColumns(gateRole, props.staffRole ?? null, navAccess as Record<string, AccessLevel> | undefined)
-    .filter((c) => c.title !== 'Legal')
     .map((c) => ({ title: c.title, links: c.links.map((l) => ({ label: l.label, href: l.href })) }))
   const footer = (
     <FqMegaFooter

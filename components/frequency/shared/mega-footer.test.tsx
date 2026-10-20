@@ -32,6 +32,12 @@ describe('the mega footer (LIVE-1030)', () => {
     expect(afterPanel).toContain('mailto:')
   })
 
+  it('writes the index as SiteNavigationElement JSON-LD in the footer itself (LIVE-1095)', () => {
+    const html = render()
+    expect(html).toContain('application/ld+json')
+    expect(html).toContain('SiteNavigationElement')
+  })
+
   it('shows a visitor no member-only column, and a member the Quest', () => {
     const visitor = visibleFooterColumns(null).flatMap((c) => c.links.map((l) => l.href))
     expect(visitor).not.toContain('/crew/leaderboard')
