@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { countCirclesPerChannel } from '@/lib/circles/channels'
 import { listSecondaryCarriers } from '@/lib/circles/channel-carriers'
 
-// THE CHANNELS INDEX AS A FORUM (LIVE-1028, ADR-1847).
+// THE CHANNELS INDEX AS A FORUM (LIVE-1028, ADR-1845).
 //
 // A Channel is a global topic with a forum inside it (posts scoped to the Channel), so the index reads
 // like a forum's board list: each row says what the Channel is, how many people are tuned in, how much
