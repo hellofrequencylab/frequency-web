@@ -1,5 +1,5 @@
 {
-  "unboundPageDescriptors": 146,
-  "reading": "page Apps whose surfaces.page descriptor is an empty object literal (lib/apps/catalog.ts PAGE_APPS), measured 2026-10-20. NOT the number of page surfaces that fail to resolve to a component, which is 0.",
+  "unboundPageDescriptors": 0,
+  "reading": "page Apps whose surfaces.page descriptor is an empty object literal (lib/apps/catalog.ts PAGE_APPS), measured 2026-10-20 after LIVE-1156. NOT the number of page surfaces that fail to resolve to a component.",
   "target": 0
 }

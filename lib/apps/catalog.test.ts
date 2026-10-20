@@ -5,6 +5,7 @@ import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES } from '@/lib/widgets/modules'
 import { REGISTRY_NAMES, TEMPLATE_PILLARS } from '@/lib/library/element-catalog'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
+import { DEFAULT_TEMPLATE, defaultSlotId, isTemplateId, slotIds } from '@/lib/widgets/templates'
 import { groupIntoTiers, tierForApp } from '@/lib/admin/modules/spine'
 
 // LP1 superset conformance + adapter round-trip (docs/LOOM-PLATFORM.md §7): every existing registry id
@@ -147,6 +148,24 @@ describe('page superset ← LAYOUT_MODULES', () => {
       expect(matches, `expected one page App for '${m.id}'`).toHaveLength(1)
       expect(toLayoutMeta(matches[0])).toEqual(m)
     }
+  })
+
+  it('every page App declares a default template and a slot that template has', () => {
+    for (const a of APPS.filter((x) => x.surfaces.page)) {
+      const { defaultTemplate, defaultSlot } = a.surfaces.page!
+      expect(isTemplateId(defaultTemplate), `'${a.id}' template`).toBe(true)
+      expect(slotIds(defaultTemplate!), `'${a.id}' slot`).toContain(defaultSlot)
+    }
+  })
+
+  it('an unplaced page App falls back to the engine default template and first slot', () => {
+    const unplaced = APPS.find((a) => a.surfaces.page?.defaultTemplate === 'single')
+    expect(unplaced?.surfaces.page).toEqual({ defaultTemplate: DEFAULT_TEMPLATE, defaultSlot: defaultSlotId(DEFAULT_TEMPLATE) })
+  })
+
+  it("a page App takes the slot its route's coded default layout places it in", () => {
+    expect(appById('circle-feed')?.surfaces.page).toEqual({ defaultTemplate: 'header-side', defaultSlot: 'main' })
+    expect(appById('circle-events')?.surfaces.page).toEqual({ defaultTemplate: 'header-side', defaultSlot: 'side' })
   })
 
   it('page Apps map 1:1 with LAYOUT_MODULES', () => {
