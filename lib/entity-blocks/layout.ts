@@ -1,5 +1,6 @@
 import { entityBlockById, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
 import { typeLimiter } from './block-limits'
+import { applyBlockAliases } from './aliases'
 import { upgradeLayout, type NodeLayout } from './node-tree'
 import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle, type MarginStep } from './block-content'
 import {
@@ -358,7 +359,8 @@ export function parseEntityLayout(raw: unknown): EntityLayout | null {
   // to the starter and compile to an EMPTY BODY. Keep the gate first.
   if (!Object.keys(out).length) return null
   if (nodes) out.nodes = nodes
-  return out
+  // PROG-E2 step 1: a retired block id reads as its replacement. A no-op while the alias map is empty.
+  return applyBlockAliases(out)
 }
 
 /**
