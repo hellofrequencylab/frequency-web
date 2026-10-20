@@ -140,27 +140,19 @@ function RainbowFrame({ children }: { children: ReactNode }) {
 /** cyberRainbowFill(): the boot loader's bar with its cyan outline. `value` 0 to 1. */
 function RainbowBar({ value, label }: { value: number; label: string }) {
   const t = useTick()
-  const ref = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  const done = Math.round(Math.max(0, Math.min(1, value)) * width)
+  const v = Math.max(0, Math.min(1, value))
+  // The hue walks 2 degrees per px from the bar's left edge, laid out over a 640 px track and clipped
+  // by the fill's own width, so no layout read is needed.
   return (
     <div
-      ref={ref}
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={Math.round(value * 100)}
+      aria-valuenow={Math.round(v * 100)}
       className="h-2.5 w-full border border-[var(--cu-secondary)]"
     >
-      <div className="h-full" style={{ width: done, background: rainbowFillCss(done, t * 10) }} />
+      <div className="h-full" style={{ width: `${v * 100}%`, background: rainbowFillCss(640, t * 10), backgroundSize: '640px 100%' }} />
     </div>
   )
 }
