@@ -23,10 +23,15 @@ import { AcceptDeclineButtons, CancelOutgoingButton } from './friend-row-actions
 import { IntroduceForm } from './introduce-form'
 import { IntroductionsInbox } from './introductions-inbox'
 import { PageModules } from '@/components/widgets/page-modules'
+import { buttonClasses } from '@/components/ui/button'
+import { SystemNotice } from '@/components/frequency/members/shared/system-notice'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Personal member surface: titled for the tab, kept out of the index.
 export const metadata = { title: 'Friends', robots: { index: false } }
 
+// FREQUENCY (LIVE-1086): the kit's `.btn` pill and notice. Inlined at build; DAWN keeps its own.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 const GRID = 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'
 
 function PendingCard({ profile, action }: { profile: FriendEntry['other']; action: React.ReactNode }) {
@@ -52,7 +57,7 @@ export default async function FriendsPage() {
     (data as FriendshipRpcRow[] | null) ?? [],
   )
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <IndexTemplate
         // The plain heading, no photo band (LIVE-1021). Stated, not omitted: the LIVE-117 probe asks every
         // IndexTemplate page to take a position on the hero band.
@@ -81,7 +86,11 @@ export default async function FriendsPage() {
                 Server Component with no island to hydrate. */}
             <Link
               href={dockThreadPath('/network/friends', { kind: 'inbox' })}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong"
+              className={
+                FREQUENCY
+                  ? buttonClasses('secondary', 'md')
+                  : 'inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong'
+              }
             >
               <MessageSquare className="h-4 w-4" /> Messages
             </Link>
@@ -129,7 +138,10 @@ async function PeopleMode({
 
   return (
     <div className="space-y-8">
-      {reward.rewarded > 0 && (
+      {reward.rewarded > 0 && FREQUENCY && (
+        <SystemNotice icon="gem" title={`Your introduction stuck. +${reward.gems} Gems for bringing two people together.`} />
+      )}
+      {reward.rewarded > 0 && !FREQUENCY && (
         <div className="rounded-card border border-success bg-success-bg px-5 py-4">
           <p className="text-body-sm font-semibold text-success">
             Your introduction stuck. +{reward.gems} Gems for bringing two people together 🎉
