@@ -7,7 +7,7 @@
   "size": "S",
   "source": {
     "file": "docs/DECISIONS.md",
-    "ref": "ADR-1848"
+    "ref": "ADR-1846"
   },
   "detail": "Owner 2026-10-19 (item 8): the beige Founding Business chip crowded the Space title. FounderMark (components/frequency/members/space/founder-mark.tsx) is the design's pastel --pa pill with ink type and a gem, drawn in the chrome's new coverBadge slot at the cover photo's top-left on both Space trees (member profile and signed-out share page; the share page reads foundingBadgeForSpace, a service-role read, so ISR is untouched). Boosted stays beside the name. Data: /mnt/project-files/founding/founding-badge-three-spaces.sql inserts active business rows in founding_members for House of Fates, Shannon Rose and Daniel Tyack with both rate columns null, so billing is untouched; it is a paste for the owner. Honest gap: the Spaces directory card still draws the old tag, because the directory rebuild (LIVE-1018) owns the cards and can import FounderMark.",
   "verify": {
