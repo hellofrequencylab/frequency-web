@@ -1,0 +1,6 @@
+{
+  "id": "EMAIL-012",
+  "append": {
+    "detail": "\n\nEVIDENCE 2026-10-20: the SQL half is now proven in CI. db-tests boots a fresh local Postgres, applies every migration in order and runs the whole pgTAP suite, which includes supabase/tests/space_email_domain_operations.test.sql and space_email_domain_operation_per_space.test.sql; it passed on the last migration PRs merged to main (run 895 and earlier, all required-check green), and the migration is applied in production. Earlier notes saying the pgTAP was authored but not run no longer hold. WHAT REMAINS: the live pilot only (an authenticated send and reply on the Daniel Tyack Space, then a second-Space isolation check), which needs Daniel's hands; steps are in the thread."
+  }
+}
