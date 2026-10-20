@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Press_Start_2P, VT323 } from 'next/font/google'
-import { ChevronDown, ChevronUp, CircleDot, CornerUpLeft, Gamepad2, IdCard, MonitorPlay, Nfc, ScanLine, Usb, Wrench, type LucideIcon } from 'lucide-react'
+import { ChevronDown, ChevronUp, CircleDot, CornerUpLeft, Download, Gamepad2, IdCard, MonitorPlay, Nfc, ScanLine, Usb, Wifi, Wrench, type LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SidebarCard } from '@/components/ui/sidebar-card'
@@ -22,13 +22,19 @@ import { dismissBadgeRequest, lookupConsoleSpace } from '@/lib/devices/badge-act
 import type { BadgeRequestRow } from '@/lib/devices/badges'
 import { checkPlacardTap, dropSpaceTag, finishSpaceTag, readSpaceTags, startSpaceTag } from '@/lib/devices/tag-actions'
 import type { SpaceTagRow } from '@/lib/devices/space-tags'
+import { listRelayDevicesForConsole, setConsoleRelay } from '@/lib/devices/relay-actions'
+import type { ConsoleRelayDevice } from '@/lib/devices/relay-store'
+import type { FirmwareRelease } from '@/lib/devices/firmware'
 import { RpcClient, DeviceError } from '@/lib/device/client'
 import { openWebSerial, pickPort, rememberedPort, webSerialAvailable } from '@/lib/device/web-serial'
 import { forwardScan, scanReasonText, type RelayAnswer } from '@/lib/device/cable-scan'
 import { ScreenMirror, SCREEN_H, SCREEN_W } from '@/lib/device/screen-mirror'
+import { openRelayTransport } from '@/lib/device/relay-transport'
+import { flashApp } from '@/lib/device/flasher'
 import type {
   FrequencyConfig,
   HatProbe,
+  LightShowState,
   ScanRelay,
   ScanResult,
   SystemCaps,
@@ -303,8 +309,21 @@ function outcomeUnknown(e: unknown): boolean {
 type Target = { spaceId: string; spaceName: string }
 type Scanner = { spaceId: string; spaceName: string; label: string; active: boolean }
 type CheckIn = { at: number; name: string; ok: boolean; detail: string }
-type Mode = 'placards' | 'badges' | 'scanner' | 'screen'
-const MODE_TITLE: Record<Mode, string> = { placards: 'CHECK-IN PLACARDS', badges: 'MEMBER BADGES', scanner: 'COUNTER SCANNER', screen: 'LIVE SCREEN' }
+type Mode = 'placards' | 'badges' | 'scanner' | 'screen' | 'remote' | 'update'
+const MODE_TITLE: Record<Mode, string> = {
+  placards: 'CHECK-IN PLACARDS',
+  badges: 'MEMBER BADGES',
+  scanner: 'COUNTER SCANNER',
+  screen: 'LIVE SCREEN',
+  remote: 'WI-FI REMOTE',
+  update: 'UPDATE FIRMWARE',
+}
+/** The jobs that write to a chip or set the board up. They need the cable: the relay allows none of them. */
+const CABLE_MODES: Mode[] = ['placards', 'badges', 'scanner']
+type Link = 'usb' | 'wifi'
+/** Where a firmware install is: downloading the checked image, writing it, or finished either way. */
+type Flash = { stage: 'download' | 'write' | 'done' | 'failed'; progress: number; version: string; message?: string }
+type LogLine = { dir: string; text: string }
 /** A placard just written, waiting for its phone tap. `since` is when the write started. */
 type Placard = { nodeId: string; since: string; label: string; chip: string; spaceName: string }
 type NavKey = 'prev' | 'next' | 'sel' | 'esc'
@@ -376,6 +395,21 @@ export function CyberUnicornConsole({
     void readSpaceTags(initialSpace.spaceId).then((out) => setTags(isError(out) ? [] : out.data))
   }, [initialSpace])
   const [mirror, setMirror] = useState(false)
+  const [link, setLink] = useState<Link>('usb')
+  const [relayDevices, setRelayDevices] = useState<ConsoleRelayDevice[] | null>(null)
+  const [relayNote, setRelayNote] = useState<string | null>(null)
+  const [show, setShow] = useState<LightShowState | null>(null)
+  const [firmware, setFirmware] = useState<{ release: FirmwareRelease | null; error: string | null } | null>(null)
+  const [flash, setFlash] = useState<Flash | null>(null)
+  const flashing = flash?.stage === 'download' || flash?.stage === 'write'
+
+  // Leaving mid-install leaves the board without a working OS until an install finishes, so ask first.
+  useEffect(() => {
+    if (!flashing) return
+    const hold = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', hold)
+    return () => window.removeEventListener('beforeunload', hold)
+  }, [flashing])
 
   // The countdown under "TAP THE CARD", and the boot bar while the board restarts.
   useEffect(() => {
@@ -400,6 +434,8 @@ export function CyberUnicornConsole({
     setScanner(null)
     setNetworks(null)
     setMirror(false)
+    setShow(null)
+    setLink('usb')
     await c?.close().catch(() => undefined)
   }, [])
 
@@ -477,7 +513,12 @@ export function CyberUnicornConsole({
     }
   }, [phase, placard])
 
+  function logLine(l: LogLine) {
+    setLog((prev) => [...prev.slice(-39), `${l.dir === 'out' ? '>' : l.dir === 'in' ? '<' : '#'} ${l.text}`])
+  }
+
   async function connect() {
+    if (flashing) return
     setProblem(null)
     setDone(null)
     let port
@@ -500,7 +541,7 @@ export function CyberUnicornConsole({
       setLog([])
       next.log.on((l) => {
         if (l.dir === 'in') heard++
-        setLog((prev) => [...prev.slice(-39), `${l.dir === 'out' ? '>' : l.dir === 'in' ? '<' : '#'} ${l.text}`])
+        logLine(l)
       })
       next.events.on((e) => {
         if (e.event === 'frequency.waiting_for_tag') {
@@ -556,6 +597,132 @@ export function CyberUnicornConsole({
     } catch (e) {
       await disconnect()
       setProblem(e instanceof Error ? e.message : 'Could not connect.')
+    }
+  }
+
+  // ── Over Wi-Fi: the internet relay (lib/device/relay-transport.ts). The board answers only its relay
+  // allow-list there (status, Light Show, LED, sound, sensors, reading a tag), so writing placards and
+  // badges, setting up a scanner and the live screen stay on the cable.
+
+  async function loadRelayDevices() {
+    setRelayNote(null)
+    const out = await listRelayDevicesForConsole()
+    if (isError(out)) {
+      setRelayDevices([])
+      setRelayNote(out.error)
+      return
+    }
+    setRelayDevices(out.data)
+  }
+
+  async function toggleRelay(d: ConsoleRelayDevice, on: boolean) {
+    setRelayNote(null)
+    const out = await setConsoleRelay(d.deviceId, on)
+    if (isError(out)) setRelayNote(out.error)
+    await loadRelayDevices()
+  }
+
+  async function connectRelay(d: ConsoleRelayDevice) {
+    if (flashing || clientRef.current) return
+    setProblem(null)
+    setDone(null)
+    setRelayNote(null)
+    setPhase('connecting')
+    try {
+      const transport = await openRelayTransport(d.deviceId, { label: d.label })
+      const next = new RpcClient(transport)
+      clientRef.current = next
+      setClient(next)
+      setLink('wifi')
+      setLog([])
+      next.log.on(logLine)
+      next.events.on((e) => {
+        if (e.event === 'lightshow.state') setShow((e.data ?? null) as LightShowState | null)
+      })
+      transport.onClose((reason) => {
+        if (clientRef.current !== next) return
+        clientRef.current = null
+        setClient(null)
+        setPhase('idle')
+        setStatus(null)
+        setShow(null)
+        setLink('usb')
+        setProblem(`${reason} Connect again once it is back on Wi-Fi.`)
+      })
+      setStatus(await next.call<SystemStatus>('system.status', {}, { timeoutMs: 8000 }))
+      setCaps([])
+      setShow(await next.call<LightShowState>('lightshow.state').catch(() => null))
+      setPhase('ready')
+    } catch (e) {
+      await disconnect()
+      setProblem(e instanceof Error ? e.message : 'Could not reach the CyberUnicorn over Wi-Fi.')
+    }
+  }
+
+  /** One remote command; a refusal or a timeout lands in the problem line. */
+  async function remote<T>(cmd: Parameters<RpcClient['call']>[0], args: Record<string, unknown> = {}): Promise<T | null> {
+    const c = clientRef.current
+    if (!c || busyRef.current) return null
+    setProblem(null)
+    try {
+      return await c.call<T>(cmd, args)
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : 'The CyberUnicorn did not answer.')
+      return null
+    }
+  }
+
+  async function setLightShow(args: Record<string, unknown>) {
+    const s = await remote<LightShowState>('lightshow.set', args)
+    if (s) setShow(s)
+  }
+
+  // ── Firmware: the newest cu5k-v release, written over the cable with esptool (lib/device/flasher.ts).
+
+  async function loadFirmware() {
+    setFirmware(null)
+    try {
+      const res = await fetch('/api/v1/devices/firmware', { cache: 'no-store' })
+      const json = (await res.json().catch(() => null)) as { data?: { release?: FirmwareRelease | null } | null; error?: { message?: string } | null } | null
+      if (!res.ok || !json?.data) {
+        setFirmware({ release: null, error: json?.error?.message ?? 'Could not check for an update. Try again.' })
+        return
+      }
+      setFirmware({ release: json.data.release ?? null, error: null })
+    } catch {
+      setFirmware({ release: null, error: 'Could not check for an update. Check your connection and try again.' })
+    }
+  }
+
+  async function installFirmware(release: FirmwareRelease) {
+    if (flashing) return
+    setProblem(null)
+    setNotice(null)
+    // Ask for the port first, while the click still counts as the person choosing it.
+    let port
+    try {
+      port = (await rememberedPort()) ?? (await pickPort())
+    } catch (e) {
+      if (e instanceof Error && e.name === 'NotFoundError') return
+      setProblem(e instanceof Error ? e.message : 'Could not open the port picker.')
+      return
+    }
+    // esptool opens the port itself, so the console lets go of it first.
+    if (clientRef.current) await disconnect()
+    setFlash({ stage: 'download', progress: 0, version: release.version })
+    try {
+      const res = await fetch(release.app.url, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Could not download the update. Try again.')
+      const bytes = new Uint8Array(await res.arrayBuffer())
+      setFlash({ stage: 'write', progress: 0, version: release.version })
+      await flashApp(port, bytes, {
+        expectedSha256: release.app.sha256,
+        onProgress: (p) => setFlash((f) => (f ? { ...f, progress: p } : f)),
+        onLog: (text) => logLine({ dir: 'note', text }),
+      })
+      setFlash({ stage: 'done', progress: 1, version: release.version })
+    } catch (e) {
+      setFlash({ stage: 'failed', progress: 0, version: release.version, message: e instanceof Error ? e.message : 'The update did not finish.' })
     }
   }
 
@@ -925,7 +1092,8 @@ export function CyberUnicornConsole({
 
   const connected = phase !== 'idle' && phase !== 'connecting'
   const ready = phase === 'ready'
-  const readerOk = hat?.pn532 === true
+  // Over Wi-Fi the board cannot be asked to probe its hat, so a read is just tried.
+  const readerOk = link === 'wifi' ? connected : hat?.pn532 === true
   const version = status?.version ? `CU5K ${status.version}` : 'CU5K'
   const remaining = tapStarted === null ? 0 : Math.max(0, 1 - (now - tapStarted) / TAP_MS)
   const canMirror = client?.canMirror === true
@@ -936,11 +1104,179 @@ export function CyberUnicornConsole({
   function selectMode(next: Mode) {
     if (next === mode) return
     setMode(next)
+    if (next === 'remote' && !client) void loadRelayDevices()
+    if (next === 'update' && firmware === null) void loadFirmware()
     if (next === 'screen' && ready && !mirror) void startMirror()
     if (next !== 'screen' && mirror) void stopMirror()
   }
 
   const padOn = connected && mirror && (ready || phase === 'verify' || phase === 'done')
+
+  const release = firmware?.release ?? null
+  const installed = link === 'usb' ? status?.version : undefined
+  const firmwareScreen = !supported ? (
+    <Screen icon="rfid" title="USE CHROME OR EDGE">
+      <p>Updating the CyberUnicorn needs a USB port. Open this page in Chrome or Edge on a computer.</p>
+    </Screen>
+  ) : flashing && flash ? (
+    <Screen icon="frequency" title="UPDATING THE UNICORN" big>
+      <p>
+        {flash.stage === 'download'
+          ? `Downloading CU5K ${flash.version}...`
+          : `Writing CU5K ${flash.version} to the CyberUnicorn. Keep the cable in and this tab open. It takes about a minute.`}
+      </p>
+      <RainbowBar value={flash.stage === 'download' ? 0.02 : flash.progress} label="Update progress" />
+    </Screen>
+  ) : flash?.stage === 'done' ? (
+    <Screen icon="frequency" title="UPDATE DONE" big>
+      <p>CU5K {flash.version} is on the CyberUnicorn. Its Wi-Fi, its Space and its settings stayed put.</p>
+      <p className="text-[var(--cu-muted)]">Unplug it for 5 seconds, plug it back in, wait for its main menu, then connect.</p>
+      <div className="flex flex-wrap gap-3">
+        <CuButton
+          onClick={() => {
+            setFlash(null)
+            void connect()
+          }}
+        >
+          Connect over USB
+        </CuButton>
+      </div>
+    </Screen>
+  ) : flash?.stage === 'failed' ? (
+    <Screen icon="rfid" title="UPDATE STOPPED">
+      <p className="text-[var(--cu-attention)]">{flash.message}</p>
+      <p className="text-[var(--cu-muted)]">If it stopped while writing, the CyberUnicorn will not start until an update finishes. Its settings are safe. Try again.</p>
+      <div className="flex flex-wrap gap-3">
+        <CuButton onClick={() => setFlash(null)}>Back</CuButton>
+      </div>
+    </Screen>
+  ) : connected && link === 'wifi' ? (
+    <Screen icon="rfid" title="UPDATES GO OVER USB">
+      <p>Disconnect, plug the CyberUnicorn into this computer with a USB cable, and come back here.</p>
+    </Screen>
+  ) : firmware === null ? (
+    <Screen icon="frequency" title="CHECKING FOR UPDATES">
+      <WaitingBar />
+    </Screen>
+  ) : firmware.error ? (
+    <Screen icon="rfid" title="COULD NOT CHECK">
+      <p className="text-[var(--cu-attention)]">{firmware.error}</p>
+      <div className="flex flex-wrap gap-3">
+        <CuButton tone="secondary" onClick={() => void loadFirmware()}>
+          Try again
+        </CuButton>
+      </div>
+    </Screen>
+  ) : !release ? (
+    <Screen icon="frequency" title="NO UPDATE YET">
+      <p>No CyberUnicorn OS release has been published yet. When one is, it shows up here.</p>
+      {installed && <p className="text-[var(--cu-muted)]">This Unicorn runs CU5K {installed}.</p>}
+    </Screen>
+  ) : (
+    <Screen icon="frequency" title={installed === release.version ? 'UP TO DATE' : 'UPDATE READY'} big>
+      <dl className="space-y-1">
+        <Row label="On board" value={installed ? `CU5K ${installed}` : connected ? 'Unknown' : 'Connect to see'} />
+        <Row label="Newest" value={`CU5K ${release.version}`} tone="ok" />
+        <Row label="Size" value={`${(release.app.size / 1048576).toFixed(1)} MB`} />
+      </dl>
+      <p className="text-[var(--cu-muted)]">
+        Only the OS is replaced. Wi-Fi, the Space it scans for and its settings stay on the board. Installing restarts the CyberUnicorn. Pick its USB port if your browser asks.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <CuButton onClick={() => void installFirmware(release)}>
+          {installed === release.version ? 'Install again' : `Install CU5K ${release.version}`}
+        </CuButton>
+        {release.notesUrl && (
+          <a href={release.notesUrl} target="_blank" rel="noreferrer" className="self-center text-[var(--cu-muted)] underline-offset-4 hover:text-[var(--cu-text)] hover:underline">
+            What changed
+          </a>
+        )}
+      </div>
+    </Screen>
+  )
+
+  const remoteList = (
+    <Screen icon="frequency" title="WI-FI REMOTE">
+      <p>Drive a CyberUnicorn that is on Wi-Fi anywhere, without the cable. Its own Internet remote setting has to be on too.</p>
+      {relayNote && <p className="text-[var(--cu-attention)]">{relayNote}</p>}
+      {relayDevices === null ? (
+        <WaitingBar />
+      ) : relayDevices.length === 0 ? (
+        !relayNote && <p className="text-[var(--cu-muted)]">No CyberUnicorns are set up yet. Set one up as a counter scanner over USB first.</p>
+      ) : (
+        <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+          {relayDevices.map((d) => (
+            <li key={d.deviceId} className="flex flex-wrap items-center gap-3 px-3 py-2">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[var(--cu-text)]">{d.label}</span>
+                <span className="block truncate text-[var(--cu-muted)]">
+                  {d.spaceName}
+                  {d.lastSeenAt ? `  seen ${new Date(d.lastSeenAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}
+                </span>
+              </span>
+              {d.relayEnabled ? (
+                <>
+                  <CuButton onClick={() => void connectRelay(d)} disabled={phase === 'connecting' || flashing}>
+                    Connect
+                  </CuButton>
+                  <CuButton tone="quiet" onClick={() => void toggleRelay(d, false)}>
+                    Turn off
+                  </CuButton>
+                </>
+              ) : (
+                <CuButton tone="secondary" onClick={() => void toggleRelay(d, true)}>
+                  Turn on remote
+                </CuButton>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <CuButton tone="quiet" onClick={() => void loadRelayDevices()}>
+          Refresh
+        </CuButton>
+      </div>
+    </Screen>
+  )
+
+  const scenes = show?.scenes ?? []
+  const remotePanel = (
+    <div className="space-y-4">
+      <Screen icon="frequency" title="LIGHT SHOW">
+        <dl className="space-y-1">
+          <Row label="Show" value={show ? (show.running ? 'Playing' : 'Stopped') : 'Unknown'} tone={show?.running ? 'ok' : 'text'} />
+          {show?.scene_name && <Row label="Scene" value={show.scene_name} tone="secondary" />}
+          {typeof show?.level_percent === 'number' && <Row label="Bright" value={`${show.level_percent}%`} />}
+        </dl>
+        <div className="flex flex-wrap gap-3">
+          <CuButton onClick={() => void setLightShow({ running: !show?.running })}>{show?.running ? 'Stop' : 'Play'}</CuButton>
+          {scenes.length > 1 && typeof show?.scene === 'number' && (
+            <CuButton tone="secondary" onClick={() => void setLightShow({ scene: ((show.scene ?? 0) + 1) % scenes.length })}>
+              Next scene
+            </CuButton>
+          )}
+          {typeof show?.level === 'number' && typeof show.level_count === 'number' && show.level_count > 1 && (
+            <CuButton tone="secondary" onClick={() => void setLightShow({ level: ((show.level ?? 0) + 1) % (show.level_count ?? 1) })}>
+              Brightness
+            </CuButton>
+          )}
+        </div>
+        <p className="text-[var(--cu-dim)]">Play works from the Unicorn&apos;s main menu.</p>
+      </Screen>
+      <Screen icon="rfid" title="SAY HELLO">
+        <p>Play a chime on the CyberUnicorn, or read the tag someone holds on it.</p>
+        <div className="flex flex-wrap gap-3">
+          <CuButton tone="secondary" onClick={() => void remote('sound.tone', { hz: 880, ms: 200 })}>
+            Play a chime
+          </CuButton>
+          <CuButton tone="secondary" onClick={() => void checkCard()}>
+            Read a tag
+          </CuButton>
+        </div>
+      </Screen>
+    </div>
+  )
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]">
@@ -960,7 +1296,7 @@ export function CyberUnicornConsole({
               </span>
             </span>
             <span className="flex shrink-0 gap-3">
-              <span className="text-[var(--cu-secondary)]">USB</span>
+              <span className="text-[var(--cu-secondary)]">{link === 'wifi' ? 'WI-FI' : 'USB'}</span>
               {mirror && <span className="text-[var(--cu-primary)]">LIVE</span>}
               <span className={connected ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-dim)]'}>{connected ? 'LINKED' : 'NO LINK'}</span>
             </span>
@@ -978,11 +1314,13 @@ export function CyberUnicornConsole({
                   <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
                     <Unicorn cell={4} />
                     <p className="text-[var(--cu-muted)]">
-                      {!canMirror
-                        ? 'The live screen needs a newer console. Reload the page.'
-                        : ready
-                          ? 'The live screen is off. Turn it on from the buttons beside this screen.'
-                          : 'The live screen comes back when the Unicorn is free.'}
+                      {link === 'wifi'
+                        ? 'The live screen works over the USB cable only.'
+                        : !canMirror
+                          ? 'The live screen needs a newer console. Reload the page.'
+                          : ready
+                            ? 'The live screen is off. Turn it on from the buttons beside this screen.'
+                            : 'The live screen comes back when the Unicorn is free.'}
                     </p>
                   </div>
                 )}
@@ -990,7 +1328,11 @@ export function CyberUnicornConsole({
             )}
 
             <div role="status" aria-live="polite" className="space-y-4">
-              {!supported ? (
+              {mode === 'update' ? (
+                firmwareScreen
+              ) : mode === 'remote' && phase === 'idle' ? (
+                remoteList
+              ) : !supported && link === 'usb' ? (
                 <Screen icon="rfid" title="USE CHROME OR EDGE">
                   <p>This browser cannot open a USB port. Open this page in Chrome or Edge on a computer.</p>
                 </Screen>
@@ -1057,7 +1399,7 @@ export function CyberUnicornConsole({
                         setPhase('ready')
                       }}
                     >
-                      {mode === 'placards' ? 'Write another' : 'Program another'}
+                      {mode === 'placards' ? 'Write another' : mode === 'badges' ? 'Program another' : 'Done'}
                     </CuButton>
                   </div>
                 </Screen>
@@ -1072,7 +1414,21 @@ export function CyberUnicornConsole({
               )}
             </div>
 
-            {showModes && mode !== 'screen' && (
+            {showModes && CABLE_MODES.includes(mode) && connected && link === 'wifi' && (
+              <Screen icon="rfid" title="USE THE CABLE FOR THIS">
+                <p>Writing placards and badges and setting up a scanner only work over USB. Disconnect, plug the CyberUnicorn into this computer, and connect over USB.</p>
+              </Screen>
+            )}
+
+            {mode === 'remote' && ready && link === 'wifi' && remotePanel}
+
+            {mode === 'remote' && connected && link === 'usb' && (
+              <Screen icon="rfid" title="LINKED OVER USB">
+                <p>This Unicorn is on the cable, so everything works from the other features. To drive a Unicorn somewhere else over Wi-Fi, disconnect first.</p>
+              </Screen>
+            )}
+
+            {showModes && CABLE_MODES.includes(mode) && !(connected && link === 'wifi') && (
               <div className="space-y-5">
                 {/* Which Space: every job below works for the one chosen here. */}
                 {target ? (
@@ -1279,11 +1635,12 @@ export function CyberUnicornConsole({
               <>
                 <dl className="space-y-1 text-body-sm">
                   <RailRow label="Device" value={[status?.os ?? 'CyberUnicorn', status?.version].filter(Boolean).join(' ')} />
-                  <RailRow label="Reader" value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Not found. Turn DIP 3 on.'} />
+                  <RailRow label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
+                  {link === 'usb' && <RailRow label="Reader" value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Not found. Turn DIP 3 on.'} />}
                   <RailRow label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Not connected'} />
                 </dl>
                 <div className="flex flex-wrap gap-2">
-                  {ready && !readerOk && (
+                  {ready && link === 'usb' && !readerOk && (
                     <Button size="sm" variant="secondary" onClick={() => void recheckReader()}>
                       Look for the reader
                     </Button>
@@ -1296,8 +1653,11 @@ export function CyberUnicornConsole({
             ) : (
               <>
                 <p className="text-body-sm text-subtle">Plug the CyberUnicorn into this computer with a USB cable. Chrome or Edge only.</p>
-                <Button className="w-full" onClick={() => void connect()} disabled={!supported} loading={phase === 'connecting'}>
+                <Button className="w-full" onClick={() => void connect()} disabled={!supported || flashing} loading={phase === 'connecting' && mode !== 'remote'}>
                   Connect over USB
+                </Button>
+                <Button className="w-full" variant="secondary" onClick={() => selectMode('remote')} disabled={flashing}>
+                  Connect over Wi-Fi
                 </Button>
               </>
             )}
@@ -1310,6 +1670,8 @@ export function CyberUnicornConsole({
             <RailItem Icon={IdCard} label="Member badges" hint="Program a member's card" count={requests.length} on={mode === 'badges'} onClick={() => selectMode('badges')} />
             <RailItem Icon={ScanLine} label="Counter scanner" hint="Members tap the Unicorn" on={mode === 'scanner'} onClick={() => selectMode('scanner')} />
             <RailItem Icon={MonitorPlay} label="Live screen" hint="See and drive the Unicorn" on={mode === 'screen'} onClick={() => selectMode('screen')} />
+            <RailItem Icon={Wifi} label="Wi-Fi remote" hint="Drive a Unicorn from anywhere" on={mode === 'remote'} onClick={() => selectMode('remote')} />
+            <RailItem Icon={Download} label="Update firmware" hint="Install the newest OS" on={mode === 'update'} onClick={() => selectMode('update')} />
           </nav>
         </SidebarCard>
 
@@ -1351,7 +1713,7 @@ export function CyberUnicornConsole({
               <Button size="sm" variant="secondary" onClick={() => void checkCard()} disabled={!ready || !readerOk}>
                 Read a tag or card
               </Button>
-              {target && (
+              {target && CABLE_MODES.includes(mode) && (
                 <Button size="sm" variant="ghost" onClick={() => chooseSpace(null)}>
                   Choose another Space
                 </Button>
