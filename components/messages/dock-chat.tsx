@@ -326,7 +326,7 @@ export function DockChat({
 
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+        <div className="fqd-tools fqd-thead flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
           {/* IconButton owns the density here: 32px for a mouse, 44px on a coarse pointer, so
               the dock header keeps its thumb-reachable back control without a hand-rolled box. */}
           <IconButton label="Back to inbox" onClick={back} className="-ml-1 shrink-0">
@@ -405,12 +405,12 @@ export function DockChat({
           strings: `primarySoft` is the muted amber the dock tab already wears, `secondary` is
           the bordered neighbour. That also takes the pair off the literal `rounded-lg` step and
           onto the skinnable role radius, which is what the rest of the panel is on. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+      <div className="fqd-tools flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
         {/* A LIVE FIELD, not a link out (owner, 2026-08-11). This was `<Link href="/people">
             Message someone</Link>`, which closed the dock and navigated away — so the one control
             for starting a conversation was also the one that ended your visit to the panel. The
             markup mirrors the launcher's own help-search field so the two in-panel searches match. */}
-        <div className="relative flex-1">
+        <div className="fqd-find relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
           {/* The kit's Input, not a raw <input>. check:adoption caught the raw one the moment it
               landed (raw-input 119 → 120) and was right to: the primitive already carries the
@@ -464,7 +464,7 @@ export function DockChat({
                   type="button"
                   onClick={() => startDm(p)}
                   disabled={picking !== null}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated disabled:opacity-60"
+                  className="fqd-row flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated disabled:opacity-60"
                 >
                   <Avatar src={p.avatar_url} name={p.display_name || p.handle} size="sm" />
                   <div className="min-w-0 flex-1">
@@ -511,7 +511,7 @@ export function DockChat({
             changes is that it now carries DAWN's icon-chip anatomy and the dashed first-use
             frame, so a quiet inbox reads as a state rather than as a failed load. */}
         {empty && (
-          <div className="px-3 py-4">
+          <div className="fqd-empty px-3 py-4">
             <EmptyState
               icon={MessageSquare}
               title="No conversations yet."
@@ -526,7 +526,7 @@ export function DockChat({
               const title = c.name ?? peer?.display_name ?? 'Conversation'
               return (
                 <li key={c.id}>
-                  <button type="button" onClick={() => openDm(c.id, title)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
+                  <button type="button" onClick={() => openDm(c.id, title)} className="fqd-row flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
                     {/* THE kit avatar. This row hand-rolled both halves of it — a raw next/image
                         with its own focal style, and an initials disc — which is exactly the
                         duplication components/ui/avatar.tsx was extracted to end. `sm` is 36px,
@@ -552,11 +552,11 @@ export function DockChat({
             })}
             {rooms.map((r) => (
               <li key={r.id}>
-                <button type="button" onClick={() => openRoom(r.id, r.name)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
+                <button type="button" onClick={() => openRoom(r.id, r.name)} className="fqd-row flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
                   {/* NOT an Avatar: a room is not a person, and DAWN's message-board draws it as
                       a hash mark rather than a face. The rounded-square keeps that distinction
                       readable at a glance beside the round avatars above it. */}
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-subtle">
+                  <div className="fqd-room-ic flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-subtle">
                     <Hash className="h-4 w-4" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -574,7 +574,7 @@ export function DockChat({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-border px-3 py-2">
+      <div className="fqd-foot shrink-0 border-t border-border px-3 py-2">
         <Link href="/messages" onClick={onNavigate} className="flex items-center justify-center gap-1.5 text-meta font-medium text-primary-strong hover:underline">
           Open all messages <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>

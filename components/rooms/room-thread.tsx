@@ -149,7 +149,7 @@ export function RoomThread({
   return (
     <div className="flex-1 min-w-0 flex flex-col">
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3">
+      <div ref={listRef} className="fqd-scroll flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-3">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-body-sm text-subtle">No messages yet. Start the conversation.</p>
@@ -164,7 +164,7 @@ export function RoomThread({
             const a = m.author
 
             return (
-              <div key={m.id} className={`flex gap-3 ${showAuthor ? 'mt-3' : ''}`}>
+              <div key={m.id} className={`fqd-msg flex gap-3 ${showAuthor ? 'mt-3' : ''}`}>
                 {showAuthor && a ? (
                   a.avatar_url ? (
                     <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={36} height={36} className="w-9 h-9 rounded-pill object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
@@ -210,7 +210,7 @@ export function RoomThread({
             </button>
           </div>
         ) : (
-          <form onSubmit={submit} className="px-5 py-3 border-t border-border bg-surface shrink-0">
+          <form onSubmit={submit} className="fqd-compose px-5 py-3 border-t border-border bg-surface shrink-0">
             <div className="lift-1 rounded-card border border-border bg-surface p-3">
               <div className="mb-2 flex items-center gap-1.5">
                 {(Object.keys(KIND_COPY) as ComposeKind[]).map(k => {

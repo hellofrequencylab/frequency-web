@@ -714,6 +714,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                     provide. Without this, deleting that tab would strand a member in Vera. */}
                 {helpOpen || tab === 'vera' ? (
                   <IconButton
+                    className="fqd-back"
                     label={helpOpen ? 'Back' : 'Back to messages'}
                     onClick={() => {
                       if (helpOpen) { setHelpOpen(false); setQ(''); return }
@@ -735,6 +736,29 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 <IconButton label="Close" onClick={close}>
                   <X className="h-4 w-4" aria-hidden />
                 </IconButton>
+              </div>
+
+              {/* The Frequency look swaps the Back button for three plain tabs under the header (a group of
+                  pressed-state buttons, not a tablist, which dock-parity forbids; hidden under DAWN, which keeps its Back + footer link): Messages, Vera and Help are one tap
+                  apart, and the orb above changes colour with the one you are on. */}
+              <div role="group" aria-label="Chat views" className="fqd-tabs hidden">
+                {([['chat', 'Messages'], ['vera', 'Vera'], ['help', 'Help']] as const).map(([k, label]) => {
+                  const on = k === 'help' ? helpOpen : !helpOpen && tab === k
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      aria-pressed={on}
+                      data-mode={k === 'chat' ? 'messages' : k === 'help' ? 'support' : 'vera'}
+                      onClick={() => {
+                        if (k === 'help') { setHelpOpen(true); return }
+                        setHelpOpen(false); setQ(''); setTab(k)
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
 
               {/* THE MESSAGES PILL IS GONE (owner, 2026-08-11: "remove the Messages button,
@@ -762,7 +786,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 /* ── Help & support SECTION (link-opened, never a tab) — the deterministic
                       tiers: article search → Ask Vera → the help center → a human. ─────────── */
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-surface px-4 py-4">
-                  <div className="relative">
+                  <div className="fqd-find relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
                     <input
                       type="search"
@@ -794,7 +818,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   <button
                     type="button"
                     onClick={() => { setHelpOpen(false); setTab('vera') }}
-                    className="mt-3 flex w-full items-center gap-3 rounded-card border border-border px-3 py-2.5 text-left transition-colors hover:border-primary"
+                    className="fqd-card fqd-askvera mt-3 flex w-full items-center gap-3 rounded-card border border-border px-3 py-2.5 text-left transition-colors hover:border-primary"
                   >
                     <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                     <span className="min-w-0 flex-1">
@@ -813,11 +837,11 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                     <button
                       type="button"
                       onClick={() => { close(); openSupport('bug') }}
-                      className="flex w-full items-center gap-3 rounded-control px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
+                      className="fqd-link flex w-full items-center gap-3 rounded-control px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
                     >
                       <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
                     </button>
-                    <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-control px-3 py-2 text-body-sm text-text hover:bg-surface-elevated">
+                    <Link href="/help" onClick={close} className="fqd-link flex items-center gap-3 rounded-control px-3 py-2 text-body-sm text-text hover:bg-surface-elevated">
                       <BookOpen className="h-4 w-4 text-muted" aria-hidden /> Browse the help center
                     </Link>
                   </div>
@@ -843,7 +867,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 <button
                   type="button"
                   onClick={() => setHelpOpen(true)}
-                  className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border bg-canvas px-4 py-2 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                  className="fqd-helpfoot flex shrink-0 items-center justify-center gap-1.5 border-t border-border bg-canvas px-4 py-2 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
                 >
                   <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> Help &amp; support
                 </button>
