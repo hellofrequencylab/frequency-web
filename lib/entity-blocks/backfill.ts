@@ -8,7 +8,7 @@ import type { EntityKind } from './registry'
 // pins the behaviour share it. Re-running over its own output is a no-op: a document that already carries
 // node storage is `skip`, and a converted one is native by construction.
 
-export type BackfillVerdict =
+type BackfillVerdict =
   | { action: 'skip'; reason: 'empty' | 'already-native' }
   | { action: 'invalid' }
   | { action: 'convert'; next: NodeLayout }
