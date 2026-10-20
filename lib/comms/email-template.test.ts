@@ -88,6 +88,21 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
     expect(html).toContain('href="https://frequencylocal.com/spaces/riverside-makers" style="color:')
   })
 
+  it('the back link goes to where the conversation started, not the Space, when there is an origin', () => {
+    const origin = { label: 'Sunrise Circle', url: 'https://frequencylocal.com/circles/sunrise' }
+    const { html, text } = renderReplyEmail('Hello', null, BRAND, origin)
+    expect(html).toContain(`>Back to Sunrise Circle on ${SITE_NAME}</a>`)
+    expect(html).toContain('href="https://frequencylocal.com/circles/sunrise"')
+    expect(html).not.toContain('Back to Riverside Makers')
+    expect(text).toContain('Sunrise Circle · https://frequencylocal.com/circles/sunrise')
+  })
+
+  it('an origin links back even on the platform lane with no Space brand', () => {
+    const origin = { label: 'Dana Lee', url: 'https://frequencylocal.com/people/dana' }
+    const { html } = renderReplyEmail('Hello', null, null, origin)
+    expect(html).toContain(`>Back to Dana Lee on ${SITE_NAME}</a>`)
+  })
+
   it('without a logo or accent: the name alone in the heading ink, no avatar', () => {
     const { html } = renderReplyEmail('Hello', null, { ...BRAND, logoUrl: null, accent: null })
     expect(html).not.toContain('border-radius:50%')

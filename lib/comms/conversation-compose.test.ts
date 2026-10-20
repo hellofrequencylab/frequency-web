@@ -36,6 +36,7 @@ vi.mock('@/lib/spaces/email-domain-onboarding', () => ({
 const resolveBrand = vi.fn(async (_spaceId: string | null): Promise<Record<string, unknown> | null> => null)
 vi.mock('@/lib/comms/email-brand', () => ({
   resolveSpaceEmailBrand: (spaceId: string | null) => resolveBrand(spaceId),
+  resolveEmailOrigin: async () => null,
 }))
 
 import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from './conversation-compose'

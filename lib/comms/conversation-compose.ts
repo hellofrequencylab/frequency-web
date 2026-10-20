@@ -26,7 +26,7 @@ import { buildSpaceConversationReplyAddress, spaceReplyAliasReady } from './tena
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
-import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
+import { resolveEmailOrigin, resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { resolveSpaceEmailDefaultIdentity } from '@/lib/spaces/email-domain-onboarding'
 
 // SINGLE-SOURCE sentinel (check:crm-parity): the compose block below — open conversation + reply
@@ -146,9 +146,12 @@ export async function startConversationMessage(
   // read fault, which renders the plain Frequency wrapper rather than refusing the send). Batching
   // stores the CLEAN body and stamps chrome, brand included, at flush.
   const brand = await resolveSpaceEmailBrand(input.spaceId ?? null)
+  const origin = input.bodyHtml
+    ? null
+    : await resolveEmailOrigin({ scopeKind: input.scope?.kind, scopeId: input.scope?.id, ownerProfileId: input.ownerProfileId })
   const rendered = input.bodyHtml
     ? { html: input.bodyHtml, text: body }
-    : renderReplyEmail(body, input.signature, brand)
+    : renderReplyEmail(body, input.signature, brand, origin)
 
   if (conversationBatchWindowMinutes() > 0) {
     const queued = await queueOutboundMessage({
