@@ -1,8 +1,9 @@
 // USB transport for the browser: Web Serial (Chrome and Edge on a computer). The CYD's own USB port is
 // a WCH CH340 at 115200 8N1, no flow control (PROTOCOL.md §2). Its DTR and RTS lines drive the ESP32's
 // EN and IO0 through the auto-reset circuit, so both are set LOW together straight after open and never
-// toggled again. If the OS raised them on open and the board rebooted anyway, the console re-sends
-// `system.status` until it answers (waitForDevice), which covers the 3 to 5 s boot.
+// toggled again. Measured on Daniel's Mac (2026-10-20): the CH340 driver resets the ESP32 on open
+// anyway, so every connect is a reboot (about 18 s to the main menu). The console keeps one connection
+// open and re-sends `system.status` until it answers.
 //
 // Client-only: nothing here runs on the server. TypeScript's DOM lib has no Web Serial types yet, so the
 // handful this file touches are declared below.

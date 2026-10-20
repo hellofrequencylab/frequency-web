@@ -191,8 +191,10 @@ talks to the board over Web Serial (Chrome or Edge on a computer) in the device'
 No scanner registration and no device secret are needed: the owner's own session mints the card.
 
 1. Connect. The port opens at 115200 8N1 with DTR and RTS set low in one call (the CYD's auto-reset
-   circuit resets the ESP32 when they differ), then `system.status` is re-sent until the board answers,
-   which covers a reboot on open. `hat.probe` reports whether the PN532 is live (DIP 3).
+   circuit resets the ESP32 when they differ), then `system.status` is re-sent for up to 40 s until the
+   board answers. Measured 2026-10-20: on macOS the CH340 driver resets the board on open regardless, and
+   it takes about 18 s to reach the main menu, so every connect is a reboot and the console keeps one
+   connection open. `hat.probe` reports whether the PN532 is live (DIP 3).
 2. Program. `startConsoleCard(spaceId, handle)` mints a card for this Space (same token, hash and
    5-per-member cap as a scanner-issued one, `issued_by` null). The page sends
    `frequency.write_tag { url, label, timeout_ms: 30000 }`; the device emits `frequency.waiting_for_tag`,

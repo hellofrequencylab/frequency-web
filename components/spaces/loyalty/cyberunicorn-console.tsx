@@ -39,7 +39,11 @@ const body = VT323({ weight: '400', subsets: ['latin'], display: 'swap', preload
 
 /** How long the device waits for a card, and how long the page waits for the device's answer. */
 const TAP_MS = 30000
-const TAP_REPLY_MS = TAP_MS + 8000
+// The device probes the hat (about 6 s) before it starts its own 30 s wait, so the page waits longer.
+const TAP_REPLY_MS = TAP_MS + 15000
+/** Opening the port reboots the CYD on macOS (the CH340 driver pulses EN), and a boot to the main menu
+ *  takes about 18 s, so the page keeps asking for up to this long. Measured on hardware 2026-10-20. */
+const BOOT_WAIT_MS = 40000
 
 // ── The 25 fps tick (FRAME_MS = 40), one rAF for the whole panel, frozen under reduced motion. ─────
 
@@ -273,13 +277,14 @@ export function CyberUnicornConsole({
   const [tapStarted, setTapStarted] = useState<number | null>(null)
   const [now, setNow] = useState(0)
   const [log, setLog] = useState<string[]>([])
+  const [bootStarted, setBootStarted] = useState<number | null>(null)
 
-  // The countdown under "TAP THE CARD".
+  // The countdown under "TAP THE CARD", and the boot bar while the board restarts.
   useEffect(() => {
-    if (tapStarted === null) return
+    if (tapStarted === null && bootStarted === null) return
     const id = setInterval(() => setNow(Date.now()), 200)
     return () => clearInterval(id)
-  }, [tapStarted])
+  }, [tapStarted, bootStarted])
 
   // Close the port when the panel goes away, so the next visit can open it.
   useEffect(() => () => void clientRef.current?.close(), [])
@@ -328,12 +333,16 @@ export function CyberUnicornConsole({
         setProblem(`${reason} Plug the CyberUnicorn back in and connect.`)
       })
 
-      // The board may have rebooted on open (the OS can raise DTR/RTS before the page lowers them).
-      // Ask until it answers: a boot takes 3 to 5 s, longer with the unicorn scene.
+      // Opening the port reboots the board (measured: the CH340 driver on macOS pulses EN however the page
+      // sets DTR and RTS), and it reads nothing until its setup ends, about 18 s later. Ask every few
+      // seconds until a status comes back. Pings sent during boot are answered late and ignored by id.
       let s: SystemStatus | null = null
-      for (let i = 0; i < 10 && !s && clientRef.current === client; i++) {
-        s = await client.call<SystemStatus>('system.status', {}, { timeoutMs: 1500 }).catch(() => null)
+      const until = Date.now() + BOOT_WAIT_MS
+      setBootStarted(Date.now())
+      while (!s && Date.now() < until && clientRef.current === client) {
+        s = await client.call<SystemStatus>('system.status', {}, { timeoutMs: 3000 }).catch(() => null)
       }
+      setBootStarted(null)
       if (!s) {
         await disconnect()
         setProblem('The CyberUnicorn did not answer. Wait for it to finish booting, then connect again. If it still says nothing, it needs the CyberUnicorn OS build with the remote app.')
@@ -472,7 +481,8 @@ export function CyberUnicornConsole({
               </Screen>
             ) : phase === 'connecting' ? (
               <Screen icon="frequency" title="WAKING THE UNICORN">
-                <RainbowBar value={0.68} label="Connecting" />
+                <p>Connecting restarts the CyberUnicorn. It takes about 20 seconds to come back. Leave it plugged in.</p>
+                <RainbowBar value={bootStarted === null ? 0.05 : Math.min(1, (now - bootStarted) / 20000)} label="Waking the CyberUnicorn" />
                 <p className="text-[var(--cu-muted)]">Reticulating rainbows...</p>
               </Screen>
             ) : phase === 'tap' || phase === 'checking' || phase === 'minting' ? (
