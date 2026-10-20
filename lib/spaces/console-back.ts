@@ -3,8 +3,19 @@
 // by habit. The sidebar lights that same tab for the page (space-console.tsx `match`), so the back link and
 // the highlighted row always agree. PURE: no React, no reads.
 
-import { SPACE_HUB_SECTION_LABEL, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
+import type { SpaceHubSection } from '@/lib/admin/modules/space-modules'
 import { isConsoleSpaceType, spaceManageHref, type SpaceType } from '@/lib/spaces/types'
+
+// The tab names, kept here (a test pins them to SPACE_HUB_SECTION_LABEL) so the ~30 console pages that build a
+// back link do not each pull the whole module catalog and its icons into their bundle.
+const TAB_LABEL: Record<SpaceHubSection, string> = {
+  dashboard: 'Home',
+  resonance: 'Community Resonance',
+  marketing: 'Marketing',
+  offerings: 'Offerings & Money',
+  programs: 'Content & Programs',
+  settings: 'Profile & Settings',
+}
 
 interface ConsoleBack {
   href: string
@@ -15,7 +26,7 @@ interface ConsoleBack {
  *  /manage?section=<tab> and wears the tab's own name. */
 export function consoleBack(slug: string, tab: SpaceHubSection): ConsoleBack {
   const base = `/spaces/${slug}/manage`
-  return { href: tab === 'dashboard' ? base : `${base}?section=${tab}`, label: SPACE_HUB_SECTION_LABEL[tab] }
+  return { href: tab === 'dashboard' ? base : `${base}?section=${tab}`, label: TAB_LABEL[tab] }
 }
 
 /** The same link for a page that also serves a Space type with no console (it keeps its legacy settings
