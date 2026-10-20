@@ -26,6 +26,14 @@ function Navigator() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="device/connect" options={{ title: 'Connect', presentation: 'modal' }} />
+        <Stack.Screen name="device/light-show" options={{ title: 'Light Show' }} />
+        <Stack.Screen name="device/led" options={{ title: 'LED colour' }} />
+        <Stack.Screen name="device/sound" options={{ title: 'Sound' }} />
+        <Stack.Screen name="device/sensors" options={{ title: 'Sensors' }} />
+        <Stack.Screen name="device/remote" options={{ title: 'Screen remote' }} />
+        <Stack.Screen name="device/console" options={{ title: 'Console' }} />
+        <Stack.Screen name="device/tag-writer" options={{ title: 'Tag writer' }} />
       </Stack>
     </>
   )

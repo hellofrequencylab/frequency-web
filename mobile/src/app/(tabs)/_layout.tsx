@@ -2,10 +2,13 @@ import { Tabs } from 'expo-router'
 import { Icon, type IconName } from '@/ui'
 import { fonts, useTheme } from '@/theme'
 
-// The tab bar. One tab in this layer, the CyberUnicorn remote; the Frequency tab (the member
-// experience, docs/MOBILE-APP.md §6) joins it with the screens. Active is shown by colour, as on the web.
+// Two tabs for now: the CyberUnicorn remote, and Frequency, where the member experience (stamp cards,
+// Zaps, check-in) lands later (docs/MOBILE-APP.md §6). Active is shown by colour, as on the web.
 
-const TABS: { name: string; title: string; icon: IconName }[] = [{ name: 'index', title: 'Device', icon: 'sound' }]
+const TABS: { name: string; title: string; icon: IconName }[] = [
+  { name: 'index', title: 'Device', icon: 'sound' },
+  { name: 'frequency', title: 'Frequency', icon: 'globe' },
+]
 
 export default function TabsLayout() {
   const { c } = useTheme()
