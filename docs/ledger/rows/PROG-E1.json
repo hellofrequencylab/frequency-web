@@ -2,6 +2,6 @@
   "id": "PROG-E1",
   "wave": "W7",
   "append": {
-    "detail": "\n\n── ACTIVE by owner ruling 2026-10-19 (project thread, decision card \"Make active\"): every deferred item except the iOS app build returns to the active build list. Earlier park or hold text in this row no longer applies."
+    "detail": "\n\n── ACTIVE by owner ruling 2026-10-19 (project thread, decision card \"Make active\"): every deferred item except the iOS app build returns to the active build list. Earlier park or hold text in this row no longer applies.\n\n2026-10-20 (LIVE-1069). Slice 1: defineBlock and check:blocks exist; heading and divider are adopted. Still open: adopt the remaining registry blocks (ADR-1005 targets ENTITY_BLOCKS, 41 rows today), check:surface-binding, and the binding layer. The probe stays red until check:surface-binding lands."
   }
 }

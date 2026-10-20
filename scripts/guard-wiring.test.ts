@@ -123,6 +123,10 @@ const UNWIRED: Record<string, string> = {
  *  still pass. Naming the file here is a deliberate, reviewable act; the test below then checks the
  *  named file EXISTS and actually imports the script, so the claim cannot rot into a lie. */
 const VITEST_ENFORCED: Record<string, string> = {
+  // Added 2026-10-20 (PROG-E1). Holds every ADOPTED block definition (lib/entity-blocks/contract) to the block
+  // contract. The adopted set is TypeScript with Zod schemas, so the enforcing arm runs under vitest where it is
+  // importable; its sibling test drives each arm against a broken copy of a real definition.
+  'check:blocks': 'scripts/check-blocks.test.ts',
   'check:crm-parity': 'scripts/check-crm-parity.test.ts',
   'check:vocab': 'scripts/check-vocab.test.ts',
   'check:studio': 'scripts/check-studio.test.ts',
