@@ -10,7 +10,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZaps } from '@/lib/zaps'
-import { verifyCapture, type CaptureAttempt, type VerifyReason } from './verify'
+import { verifyCapture, type CaptureAttempt, type CaptureMedium, type VerifyReason } from './verify'
 import { recordEngagementEvent } from './events'
 import { currencyForSource } from './currency'
 import { trustSource } from '@/lib/trust'
@@ -28,6 +28,18 @@ const NODE_TYPE_SOURCE: Record<string, EngagementSource> = {
   qr: 'qr',
   nfc: 'nfc',
   ghost: 'geo',
+}
+
+/**
+ * The ledger source for a capture (NFC + QR unification). One Space check-in node is reached by a
+ * printed QR AND a tapped NFC placard, so the node's own type can no longer say which channel a
+ * capture came through. The medium the member actually used wins; the node type is the fallback for
+ * callers that do not know it. A card at a counter scanner is an NFC read. A ghost node is always geo.
+ */
+function captureSource(nodeType: string | null | undefined, medium: CaptureMedium | null | undefined): EngagementSource {
+  const byType = NODE_TYPE_SOURCE[nodeType ?? ''] ?? 'qr'
+  if (byType === 'geo' || !medium) return byType
+  return medium === 'qr' ? 'qr' : 'nfc'
 }
 
 export interface CaptureResult {
@@ -84,7 +96,8 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   const day = captureRule === 'repeatable' ? await resolveMemberDay(attempt.actorProfileId) : null
   const windowKey = captureWindowKey(attempt.nodeId, attempt.actorProfileId, captureRule, day)
 
-  const source = NODE_TYPE_SOURCE[node.type as string] ?? 'qr'
+  const source = captureSource(node.type as string, attempt.medium)
+  const medium: CaptureMedium = attempt.medium ?? (source === 'nfc' ? 'nfc' : 'qr')
 
   // 2) Ledger, exactly-once. (Verifier already enforced once-per-user via the
   //    captures table; this is the second guard against retries. A repeatable
@@ -94,7 +107,8 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     source,
     eventType: 'node_capture',
     actorProfileId: attempt.actorProfileId,
-    context: { nodeId: attempt.nodeId },
+    // `medium` + `spaceId` feed the check-in split on Scan stats (QR scan, NFC tap, counter scanner).
+    context: { nodeId: attempt.nodeId, medium, spaceId: (node.space_id as string | null) ?? null },
     verifiedAt: new Date(),
   })
   if (!recorded) return { ok: false, reason: 'already_captured' }

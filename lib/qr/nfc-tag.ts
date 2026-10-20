@@ -1,6 +1,8 @@
 // Pure helpers for writing a check-in link to an NFC tag from the browser (LIVE-1113).
-// The tag holds ONE NDEF URL record, exactly the link shown on the Check in panel, with
-// no extra records and no ?m= stamp (the signed code must stay byte-for-byte as issued).
+// The tag holds ONE NDEF URL record and nothing else: the placard link, which is the signed
+// check-in link plus a trailing `&m=nfc` marker (signedPlacardUrl in lib/qr/node-code.ts) so a
+// tap is counted apart from a scan. The signed code itself stays byte-for-byte as issued; the
+// verifier reads only `s`. Read-back compares against exactly what was written.
 
 export interface NdefRecordLike {
   recordType: string

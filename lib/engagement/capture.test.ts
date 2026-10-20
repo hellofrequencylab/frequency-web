@@ -76,3 +76,32 @@ describe('captureNode partner attribution', () => {
     expect(redemption()).toMatchObject({ offer_id: null })
   })
 })
+
+
+// NFC + QR unification: one check-in node is reached by a printed QR and a tapped placard, so the
+// medium the member used decides the ledger source and is stored on the row; the node type
+// (here 'qr') is only the fallback.
+import { recordEngagementEvent } from './events'
+
+describe('captureNode medium', () => {
+  beforeEach(() => {
+    h.state.offers = []
+    h.state.inserts = []
+    vi.mocked(recordEngagementEvent).mockClear()
+  })
+  const ledger = () =>
+    vi.mocked(recordEngagementEvent).mock.calls.find((c) => c[0].eventType === 'node_capture')?.[0]
+
+  it('falls back to the node type when the medium is unknown', async () => {
+    await captureNode(attempt)
+    expect(ledger()).toMatchObject({ source: 'qr', context: { nodeId: 'node-1', medium: 'qr' } })
+  })
+  it('records a placard tap on a QR-type node as NFC', async () => {
+    await captureNode({ ...attempt, medium: 'nfc' })
+    expect(ledger()).toMatchObject({ source: 'nfc', context: { medium: 'nfc' } })
+  })
+  it('records a counter scanner card as an NFC read with the device medium', async () => {
+    await captureNode({ ...attempt, medium: 'device' })
+    expect(ledger()).toMatchObject({ source: 'nfc', context: { medium: 'device' } })
+  })
+})

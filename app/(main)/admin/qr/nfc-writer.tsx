@@ -10,8 +10,9 @@ import { withMedium } from '@/lib/qr/links'
 // The written URL is medium-stamped (?m=nfc) so taps are attributed in the scan log.
 //
 // `url` is the code's absolute destination (a /q/<slug> short link or /n/<id>).
-// `tagMedium` defaults to 'nfc' so dynamic-link codes record the channel; pass
-// 'qr' for nodes, whose channel is already carried by the node's own type.
+// `tagMedium` defaults to 'nfc' so every tag records the channel, nodes included: a
+// node's tag holds its signed URL plus `&m=nfc` (the same string signedPlacardUrl
+// builds), and /n records the check-in as a tap. The verifier reads only `s`.
 
 interface NDEFWriter {
   write(message: { records: { recordType: string; data: string }[] }): Promise<void>

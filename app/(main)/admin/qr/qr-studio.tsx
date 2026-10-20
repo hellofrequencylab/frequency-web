@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer, MapPin, Trash2 } from 'lucide-react'
+import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer, MapPin, Trash2, Nfc, Cpu } from 'lucide-react'
 import { createNode, updateNode, setNodeActive, deleteNode, type NodeInput } from './actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
@@ -37,6 +37,9 @@ export interface StudioNode {
   url: string
   /** Pre-rendered inline QR SVG (server-side, styled). */
   svg: string
+  /** Set only for a Space's check-in node (nodes.kind 'checkin'): the Space it opens the door of. */
+  spaceSlug?: string | null
+  spaceName?: string | null
 }
 
 export interface PartnerOption {
@@ -213,6 +216,7 @@ function NodeCard({
                 <Badge>{node.type.toUpperCase()}</Badge>
                 <Badge>{RULE_LABELS[node.capture_rule] ?? node.capture_rule}</Badge>
                 {partnerName && <Badge tone="signal">{partnerName}</Badge>}
+                {node.spaceName && <Badge>Check-in: {node.spaceName}</Badge>}
                 {!node.active && <Badge tone="danger">Retired</Badge>}
                 {node.lat != null && node.lng != null && (
                   <Badge tone="signal">📍 {node.proximityM ?? 100}m</Badge>
@@ -265,8 +269,9 @@ function NodeCard({
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
             </button>
-            {/* Node channel is carried by the node's own type, so write the plain URL. */}
-            <NfcWriter url={node.url} tagMedium="qr" />
+            {/* A tag holds the placard URL: the same signed link plus `&m=nfc` (the default tagMedium),
+                so a tap is counted apart from a scan. Same string as signedPlacardUrl(node.id). */}
+            <NfcWriter url={node.url} />
             <a
               href={`/print/qr?node=${encodeURIComponent(node.id)}`}
               target="_blank"
@@ -275,6 +280,22 @@ function NodeCard({
             >
               <Printer className="w-3 h-3" /> Print
             </a>
+            <a
+              href={`/print/qr?node=${encodeURIComponent(node.id)}&placard=1`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Nfc className="w-3 h-3" /> Placard
+            </a>
+            {node.spaceSlug && (
+              <a
+                href={`/admin/cyberunicorn?space=${encodeURIComponent(node.spaceSlug)}`}
+                className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Cpu className="w-3 h-3" /> Program placard
+              </a>
+            )}
             <a
               href={node.url}
               target="_blank"

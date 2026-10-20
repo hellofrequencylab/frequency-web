@@ -5,6 +5,7 @@
 
 import { getMyProfileId } from '@/lib/auth'
 import { captureNode } from '@/lib/engagement/capture'
+import { readScanMedium } from '@/lib/qr/links'
 import type { LoyaltyVisitOutcome } from '@/lib/loyalty/program'
 import type { HuntProgress } from '@/lib/loyalty/hunts'
 
@@ -23,6 +24,8 @@ export async function claimNode(
   nodeId: string,
   coords?: { lat: number; lng: number } | null,
   secret?: string | null,
+  /** The `m` marker off the scanned URL: `nfc` for a tapped placard, anything else is a QR scan. */
+  medium?: string | null,
 ): Promise<ClaimResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return { ok: false, reason: 'not_signed_in' }
@@ -39,6 +42,7 @@ export async function claimNode(
     actorProfileId: profileId,
     location,
     presentedSecret: secret ?? null,
+    medium: readScanMedium(medium),
   })
   return {
     ok: result.ok,

@@ -19,6 +19,7 @@ type NdefReaderCtor = new () => NdefReaderLike
 
 type Step = 'idle' | 'writing' | 'verifying' | 'done' | 'error'
 
+/** `link` is what goes on the tag: the placard URL (signed link plus `&m=nfc`), not the QR's link. */
 export function CheckinNfcWriter({ link }: { link: string }) {
   const [step, setStep] = useState<Step>('idle')
   const [note, setNote] = useState<string | null>(null)
