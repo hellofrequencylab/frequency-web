@@ -1,0 +1,15 @@
+{
+  "id": "PROG-W6",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Merged into PROG-E10 on 2026-10-20 (owner decision in the phase-plan thread, \"Yes, retire all 8\"). The row said it stays behind E10 and needs the same scheduling call; one row (E10) now carries member sites and the theme marketplace. Nothing left to measure on this row.",
+      "checked": "2026-10-20"
+    }
+  },
+  "append": {
+    "detail": "\n\nMERGED INTO PROG-E10 2026-10-20. The row said it stays behind E10 and needs the same scheduling call; one row (E10) now carries member sites and the theme marketplace. The original probe is unchanged in this row's history."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-860",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Merged into LIVE-938 on 2026-10-20 (owner decision in the phase-plan thread, \"Yes, retire all 8\"). Needs one design ruling for rank hues and sits in the same colour sweep as design area 4, which LIVE-938 carries. Nothing left to measure on this row.",
+      "checked": "2026-10-20"
+    }
+  },
+  "append": {
+    "detail": "\n\nMERGED INTO LIVE-938 2026-10-20. Needs one design ruling for rank hues and sits in the same colour sweep as design area 4, which LIVE-938 carries. The original probe is unchanged in this row's history."
+  }
+}
