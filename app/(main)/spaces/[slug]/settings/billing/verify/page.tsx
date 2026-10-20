@@ -30,7 +30,7 @@ const STATUS_UI = {
     icon: CheckCircle2,
     tone: 'text-success',
     title: 'Verified Non Profit',
-    body: 'Your organization is verified. This space is on the Non Profit plan: the full Business depth, discounted per licensed seat.',
+    body: 'Your organization is verified. You can now choose the Non Profit plan from Billing: the full Business depth at one flat monthly price.',
   },
   rejected: {
     icon: XCircle,

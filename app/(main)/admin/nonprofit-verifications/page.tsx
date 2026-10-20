@@ -9,7 +9,7 @@ import { ReviewConsole } from './review-console'
 
 // NON PROFIT (501(c)(3)) VERIFICATION REVIEW (ADR-552, AUDIT #6). The operator queue for Space owners who
 // requested the discounted Non Profit plan: each pending row shows the org legal name + EIN + who
-// submitted it, one console to approve (grants the Non Profit plan via setSpacePlan) or reject with a
+// submitted it, one console to approve (unlocks the Non Profit checkout) or reject with a
 // reason. Composes the kit: AdminTemplate, StatCard, AdminSection, EmptyState. Gate matches the
 // billing-adjacent admin surfaces (Pricing / Payments): platform staff only, re-checked in every action.
 
@@ -34,7 +34,7 @@ export default async function NonprofitVerificationsPage() {
 
       <AdminSection
         title={`${pending.length} pending`}
-        description="Confirm each organization's 501(c)(3) status against public records before approving. Approval grants the Non Profit plan (the full Business depth, discounted per seat)."
+        description="Confirm each organization's 501(c)(3) status against public records before approving. Approval unlocks the Non Profit plan checkout: the full Business depth at one flat monthly price."
       >
         {pending.length === 0 ? (
           <EmptyState
