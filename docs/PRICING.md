@@ -20,7 +20,7 @@
 >    extra member Space 2900 (`collective_space`, for Collectives that already run member Spaces), Non
 >    Profit 3900, Non Profit Collective 11900, Network from 59900 with 4900 per extra chapter and 47900
 >    for a verified nonprofit (`NETWORK_PLAN`), Independent 24900, Vera AI 2000 (included in Collective
->    and Network), operator seats 1200. Yearly is ten months.
+>    and Network). Operator seats are included per tier and never sold (ADR-1810). Yearly is ten months.
 > 3. **Selling is what Business is for.** The `space_payments` gate (Business floor, `LIVE-753`) guards
 >    paid tickets, paid memberships, donations, shop checkout and booking deposits. Personal selling is
 >    off on every personal tier. The gate does not wait for `beta_grace`. A refusal is never a dead end:
@@ -206,7 +206,7 @@
 > you want**, floor $4.99/mo, $10 suggested, no list anchor (see "Crew is PWYW" below) ·
 > **Free Space** (the first level of
 > Space) · Business (the Opening Beta price is CLOSED, ADR-1060) · Collective (same) · Non Profit flat ·
-> the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats $12/seat/mo (LIVE-229). **Independent
+> the **Vera AI** add-on +$20 (catalog key `addon_ai`) · seats included per tier, never sold (ADR-1810). **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
 > spaces keep resolving). ⚠️ "Opening Beta price" is RETIRED as a copy phrase (ADR-1060): no surface may
 > offer a beta rate, because the checkout no longer charges one.
@@ -345,9 +345,9 @@ value is editable at `/admin/pricing`; nothing charges while `billing_live` is O
 **Operator seats** are the count of operators who can administer the space, and they are built. The
 included allowance is read from the `space_team` meter (`lib/pricing/feature-meters.ts`), not from a
 constant — [ADR-917](DECISIONS.md) collapsed the two ladders that used to disagree about it. The seat
-arithmetic and the `featureGatesLive()`-gated enforcement live in `lib/spaces/seats.ts`; extra seats
-bill through the per-seat `operator_seat` catalog item (see below). The Seats column above records
-the per-plan intent this table was written with; the meter is what a Space actually gets.
+arithmetic and the `featureGatesLive()`-gated enforcement live in `lib/spaces/seats.ts`. Seats are
+included per tier and never sold (see below). The Seats column above records the per-plan intent this
+table was written with; the meter is what a Space actually gets.
 
 Other knobs: **Vera free cap** 10 messages/day · **annual discount** ≈ 2 months free · **trial** 14
 days on Space plans, card upfront (members have no trial, the free tier is theirs; editable). Take-rates
@@ -367,21 +367,17 @@ influencers and collaborators hosting a program; it is never offered through sel
 **Organization** keeps its $199/mo price but is positioned as **custom, built but not sold
 self-serve** (the same posture as white-label setup: a high-touch path, not a checkout button).
 
-**Per-seat operator billing shipped, and not in the shape ADR-373 sketched.**
-[ADR-373](DECISIONS.md) deferred it and described "3 included, +$9/seat";
-[ADR-799](DECISIONS.md) (2026-07-21) built a different model, and that is the one that runs.
-`operator_seat` is a real per-seat catalog item (`perSeat: true`) that `catalogKeysForLoadout`
-(`lib/billing/space-plan-checkout.ts`) adds to a loadout whenever the owner buys seats;
-`reconcileSpacePlanSubscription` writes `spaces.seat_quantity` back from **that** item's quantity,
-and `lib/billing/operator-seats.ts` mutates the line with proration on a Space that already pays.
-Included seats come from the `space_team` meter, never a hardcoded 3.
-
-**The seat price is $12/seat/mo in the catalog ([ADR-1435](DECISIONS.md), LIVE-229).** The
-`placeholder` flag is gone, so a catalog sync mints that amount. `catalog_operator_seat_active`
-still gates checkout (`operatorSeatsSellable`): flip it on after the price exists in Stripe.
-`setOperatorSeatActive(true)` still refuses if a future edit puts `placeholder` back without an
-operator override. That leftover is the 2026-08-19 guard: the first live catalog sync minted the
-$9 stand-in, and Stripe prices are immutable.
+**The $12 operator seat is retired ([ADR-1810](DECISIONS.md), owner 2026-10-19: "That was an OLD plan
+that snuck back in").** [ADR-799](DECISIONS.md) built a per-seat `operator_seat` catalog item that
+`catalogKeysForLoadout` added to a loadout, a seat picker on Go Business, a seat editor on the billing
+page, an admin activation switch (`catalog_operator_seat_active`) and a $12 catalog amount
+([ADR-1435](DECISIONS.md), LIVE-229). All of that is gone: the item is in `RETIRED_CATALOG_ITEM_KEYS`
+(its price keys stay resolvable for a legacy subscription row and the sync never mints them again),
+the loadout bills every item at quantity 1, and the flag is off the `PRICING_FLAG_KEYS` list. What
+stays is the reconciler's `seatQuantityFromItems` (`lib/billing/space-subscription-items.ts`), which
+still reads a legacy `operator_seat` line back into `spaces.seat_quantity` so a grandfathered Space
+keeps the seats it paid for. Included seats come from the `space_team` meter: Free 1, Business 2,
+Collective 3 plus two per member Space, Network 10.
 
 ## Feature gates (data, not code branches)
 

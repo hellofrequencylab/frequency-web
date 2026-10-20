@@ -42,7 +42,6 @@ const { created, beta, flags, grant, lock, db, verification } = vi.hoisted(() =>
     plan_collective_enabled: true,
     plan_nonprofit_enabled: true,
     plan_independent_enabled: true,
-    catalog_operator_seat_active: false,
   } as Record<string, boolean>,
 }))
 
@@ -94,7 +93,6 @@ vi.mock('@/lib/supabase/admin', () => ({
                   owner_profile_id: 'p-1',
                   slug: 'aset',
                   stripe_customer_id: db.spaceCustomerId,
-                  seat_quantity: 0,
                 },
                 error: null,
               },

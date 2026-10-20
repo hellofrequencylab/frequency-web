@@ -60,7 +60,7 @@ export function SupportConversationsPanel() {
               <button
                 type="button"
                 onClick={() => { setOpenRef(t.ref); setView('thread') }}
-                className="block w-full px-3 py-2 text-left hover:bg-surface-elevated"
+                className="fqd-row block w-full px-3 py-2 text-left hover:bg-surface-elevated"
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="min-w-0 truncate text-body-sm font-medium text-text">{t.subject}</span>
@@ -153,13 +153,13 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         </button>
         <span className="min-w-0 truncate text-body-sm font-semibold text-text">{detail?.subject ?? 'Support request'}</span>
       </div>
-      <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-4 py-3">
+      <div ref={listRef} className="fqd-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-4 py-3">
         {detail === null ? (
           <div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted" /></div>
         ) : (
           detail.messages.map((m) => (
             <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
-              <span className={`max-w-[80%] whitespace-pre-wrap rounded-card px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
+              <span className={`fqd-bub ${m.author === 'visitor' ? 'is-mine' : 'is-theirs'} max-w-[80%] whitespace-pre-wrap rounded-card px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
                 {m.body}
               </span>
             </div>
@@ -167,7 +167,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         )}
       </div>
       <ChatComposer
-        className="border-t border-border px-3 py-2"
+        className="fqd-compose border-t border-border px-3 py-2"
         value={reply}
         onValueChange={setReply}
         onSend={send}

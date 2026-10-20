@@ -26,8 +26,6 @@ import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
-import { FqSpaceFacts } from '@/components/frequency/members/space/space-facts'
-import { readPublicSpaceFacts } from '@/lib/spaces/public-facts'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 
@@ -258,15 +256,11 @@ export default async function PublicSpacePage({
   // cover carries no viewer actions because this tree has no viewer (markAnonymousRender above).
   //
   // THE PUBLIC FRAME (SCAN-883): `public` opens the centred container the site shell does not give this
-  // page, and `aside` is the key-facts column (where, when, contact, follow or book, coming up). The
-  // facts are read with no viewer (lib/spaces/public-facts.ts), so this document stays cacheable.
+  // page. The page is DAWN's: cover, name, tabs, the owner's blocks, the front door at the foot. No facts
+  // column; where, when and contact are the blocks' own cards.
   if (SITE_DESIGN === 'frequency') {
     // The Founding mark (LIVE-1019): a service-role read of SPACE data, no viewer, so ISR is untouched.
-    const [facts, founding] = await Promise.all([
-      readPublicSpaceFacts(space, { tagline }),
-      foundingBadgeForSpace(space.id),
-    ])
-    const calendarHref = tabs.find((t) => t.href === `/spaces/${space.slug}/calendar`)?.href ?? null
+    const founding = await foundingBadgeForSpace(space.id)
     return (
       <>
         {structuredData}
@@ -279,15 +273,6 @@ export default async function PublicSpacePage({
           coverBadge={founding?.isFounding ? <FounderMark /> : null}
           tagline={tagline ? <p className="fqs-tagline">{tagline}</p> : null}
           nav={menu}
-          aside={
-            <FqSpaceFacts
-              facts={facts}
-              brandName={brandName}
-              joinHref={BETA_CTA_HREF}
-              joinLabel={BETA_CTA_LABEL}
-              calendarHref={calendarHref}
-            />
-          }
         >
           {body}
         </FqSpaceChrome>

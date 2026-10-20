@@ -143,7 +143,7 @@ export async function FrequencyMessages({
             <div className="fa-msg-actions">
               {newMessage}
               <NewRoomCompose buttonLabel="Start a room" buttonClass="btn sm" />
-              <AskVeraButton className="btn glass sm" />
+              <AskVeraButton className="btn sm" />
             </div>
           }
           divider={false}

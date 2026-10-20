@@ -11,7 +11,7 @@
 // /pricing loadout copy (lib/pricing/pricing-page.ts). Tier selection does not happen here: the loadout
 // checkout picks its base per plan (`catalogKeysForLoadout` in lib/billing/space-plan-checkout.ts,
 // one of business_base / collective_base / nonprofit_seat / independent_base), seats bill through the
-// `operator_seat` item (ADR-799/803, lib/billing/operator-seats.ts), and the live rate ladder is
+// retired `operator_seat` item (ADR-799/803, retired by ADR-1810), and the live rate ladder is
 // docs/VALUE-LADDER.md (ADR-914). The tier-aware picker ADR-472's comments once promised here was
 // overtaken by those decisions and is not planned (LIVE-192, ADR-1247).
 //
@@ -87,9 +87,8 @@ export function normalizeAddons(
  *
  *  The base line is fixed at `business_base` and `seatQuantity` is unread: this is the Business-rung
  *  figure the pricing surfaces quote, not a per-tier quote. A checkout resolves its own base per plan in
- *  lib/billing/space-plan-checkout.ts, and seats bill through the `operator_seat` item there and in
- *  lib/billing/operator-seats.ts (ADR-799/803). No tier-aware rewrite of this function is planned
- *  (ADR-1247). */
+ *  lib/billing/space-plan-checkout.ts; seats are included per tier (ADR-1810), never a line item. No
+ *  tier-aware rewrite of this function is planned (ADR-1247). */
 export function computeLoadoutTotal(
   itemsByKey: Record<CatalogItemKey, ResolvedCatalogItem>,
   addons: readonly (AddonKey | string)[],

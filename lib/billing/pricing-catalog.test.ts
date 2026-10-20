@@ -23,7 +23,7 @@ describe('yearlyFromMonthly (two months free)', () => {
   it('is exactly 10x the monthly amount', () => {
     expect(yearlyFromMonthly(1900)).toBe(19000) // $19/mo -> $190/yr
     expect(yearlyFromMonthly(2900)).toBe(29000) // $29/mo -> $290/yr
-    expect(yearlyFromMonthly(1200)).toBe(12000) // $12 seat -> $120/yr
+    expect(yearlyFromMonthly(1200)).toBe(12000) // $12/mo -> $120/yr
   })
 
   it('is 0 for non-positive / invalid input', () => {
@@ -34,7 +34,7 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly twelve live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821; three Network items, SCAN-980)', () => {
+  it('holds exactly eleven live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821; three Network items, SCAN-980; no operator seat, ADR-1810)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
       'collective_base',
@@ -47,9 +47,8 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
       'addon_ai',
       'addon_custom_domain',
       'nonprofit_seat',
-      'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(12)
+    expect(catalogItems()).toHaveLength(11)
   })
 
   it('the custom domain add-on is $19/mo flat, yearly two months free, not per seat (LIVE-821)', () => {
@@ -92,17 +91,17 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(ind.perSeat).toBe(false)
   })
 
-  it('Operator seat: $12/seat/mo, live, a perSeat item beside the extra member Space (ADR-799 / LIVE-229)', () => {
-    const seat = catalogItem('operator_seat')
-    expect(seat.perSeat).toBe(true)
-    expect(seat.placeholder).toBeFalsy()
-    expect(seat.month.listCents).toBe(1200)
-    expect(seat.month.foundingCents).toBe(1200)
-    expect(seat.year.listCents).toBe(12000)
-    expect(seat.year.foundingCents).toBe(12000)
-    // The three quantity items are the extra member Space, the extra Network chapter and the operator
-    // seat; every flat plan/add-on stays perSeat:false.
-    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'network_chapter', 'operator_seat'])
+  it('the $12 operator seat is retired: not in the catalog, its price keys stay resolvable (ADR-1810)', () => {
+    expect(asCatalogItemKey('operator_seat')).toBeNull()
+    expect((CATALOG_ITEM_KEYS as readonly string[]).includes('operator_seat')).toBe(false)
+    // A legacy subscription row that still carries the seat item resolves its price key; the sync
+    // never mints it again.
+    for (const key of ['operator_seat_month', 'operator_seat_month_list', 'operator_seat_year', 'operator_seat_year_list']) {
+      expect(RETIRED_CATALOG_KEYS).toContain(key)
+    }
+    // The only quantity items left are the extra member Space and the extra Network chapter, both
+    // bought after checkout; every plan and add-on stays perSeat:false.
+    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'network_chapter'])
   })
 
   it('every item has a founding <= list amount on both intervals', () => {
@@ -144,9 +143,9 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 12 items x 2 intervals x 2 variants = 48 keys', () => {
+  it('allCatalogPriceKeys = 11 items x 2 intervals x 2 variants = 44 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(48)
+    expect(keys).toHaveLength(44)
     expect(keys).toContain('addon_custom_domain_month')
     expect(keys).toContain('addon_custom_domain_year_list')
     expect(keys).toContain('business_base_month')
@@ -160,6 +159,7 @@ describe('catalog price keys', () => {
     // the retired items are NOT in the live catalog
     expect(keys).not.toContain('pro_base_month')
     expect(keys).not.toContain('organization_month_list')
+    expect(keys).not.toContain('operator_seat_month')
     // every key is unique
     expect(new Set(keys).size).toBe(keys.length)
   })
