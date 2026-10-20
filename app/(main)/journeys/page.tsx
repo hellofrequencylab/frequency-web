@@ -38,7 +38,9 @@ export async function generateMetadata() {
   return { ...meta, alternates: { ...meta.alternates, canonical: '/discover/journeys' } }
 }
 
-export default async function JourneysPage() {
+export default async function JourneysPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const { q } = await searchParams
+  const query = (Array.isArray(q) ? q[0] : q)?.trim().slice(0, 80) ?? ''
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   const { title, description, body, heroImage, ctaLabel, ctaHref } =
     await resolvePageContent('/journeys', CONTENT_FALLBACK)
@@ -72,6 +74,7 @@ export default async function JourneysPage() {
         progress={progress}
         mine={mine}
         library={library.filter((p) => p.author_id !== profileId)}
+        query={query}
       />
     )
   }
