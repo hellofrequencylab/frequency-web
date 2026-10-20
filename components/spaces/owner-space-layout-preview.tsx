@@ -9,6 +9,9 @@ import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
+import { LiveNodeGrid } from '@/components/entity-blocks/live-node-grid'
+import { ownerNodeLayout } from '@/lib/entity-blocks/node-seed'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { SpaceProfileEditorEntry } from './space-profile-editor-entry'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 
@@ -110,6 +113,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   // network" toggle. Defaults TRUE when absent, so a Space that predates the flag is never shown as hidden.
   const profilePublished = !prefsObj || prefsObj.profilePublished !== false
 
+  const nodePath = await renderPathEnabled('space_profile')
   const nodes = renderSpaceBlockNodes(context, data, authored, saved)
   const rows = resolveRows(saved, 'space')
   const hidden = saved?.hidden ?? []
@@ -134,16 +138,28 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   return (
     <div className="@container/profile">
       <SpaceProfileEditorEntry slug={space.slug} spaceId={space.id} spaceType={space.type} moduleMenu={readModuleMenuPrefs(space.preferences)} />
-      <LiveProfileGrid
-        nodes={nodes}
-        initialRows={rows}
-        initialHidden={hidden}
-        initialContent={seedContent}
-        initialStyle={saved?.style ?? {}}
-        spaceSlug={context.slug}
-        profilePublished={profilePublished}
-        hasUnpublishedChanges={hasUnpublishedChanges}
-      />
+      {nodePath ? (
+        // render_path_space_profile (E0 task 12b): the node grid, so two Text blocks are two blocks. The
+        // rail's SpacePageBuilderSwitch reads the same flag and mounts the node page builder to match.
+        <LiveNodeGrid
+          nodes={nodes}
+          initialLayout={ownerNodeLayout(saved, seedContent)}
+          spaceSlug={context.slug}
+          profilePublished={profilePublished}
+          hasUnpublishedChanges={hasUnpublishedChanges}
+        />
+      ) : (
+        <LiveProfileGrid
+          nodes={nodes}
+          initialRows={rows}
+          initialHidden={hidden}
+          initialContent={seedContent}
+          initialStyle={saved?.style ?? {}}
+          spaceSlug={context.slug}
+          profilePublished={profilePublished}
+          hasUnpublishedChanges={hasUnpublishedChanges}
+        />
+      )}
     </div>
   )
 }
