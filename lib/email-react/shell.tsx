@@ -62,7 +62,7 @@ export function EmailShell({ children, footer, hero: pick }: { children: ReactNo
                   <tbody>
                     {!hero && (
                       <tr>
-                        <td style={S.header}>
+                        <td data-fq="fq-head" style={S.header}>
                           <a href={EMAIL_BASE_URL} style={{ textDecoration: 'none' }}>
                             {/* eslint-disable-next-line @next/next/no-img-element -- an email document, not a Next page */}
                             <img src={`${EMAIL_BASE_URL}${emailType.wordmark.path}`} alt={`Frequency, ${EMAIL_TAGLINE}`} width={emailType.wordmark.width} height={emailType.wordmark.height} data-fq="fq-logo" style={S.logo} />

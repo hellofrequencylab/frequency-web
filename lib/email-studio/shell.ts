@@ -119,7 +119,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const unsubscribeHref = input.unsubscribeUrl ?? manageFallback
   const manageHref = input.manageUrl ?? manageFallback
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
-    <tr><td align="center" data-fq="fq-foot" style="font-family:${FONT_STACK};padding:28px 8px 0;text-align:center;color:${colors.muted};">
+    <tr><td align="center" data-fq="fq-foot" style="font-family:${FONT_STACK};padding:28px 20px 0;text-align:center;color:${colors.muted};">
       <p style="margin:0 0 2px;font-family:${DISPLAY_STACK};font-size:14px;font-weight:${emailType.displayWeight};letter-spacing:-0.02em;color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
       ${desc ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${links}</p>
@@ -204,16 +204,16 @@ body,[data-fq=fq-bg]{background:${palette.emailNightCanvas}!important}
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">${fonts}<style>
 body{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
-@media only screen and (max-width:620px){[data-fq=fq-wrap]{padding:20px 12px!important}[data-fq=fq-card]{border-radius:20px!important}[data-fq=fq-body]{padding:28px 22px 26px!important}}
+@media only screen and (max-width:620px){[data-fq=fq-wrap]{padding:0 0 24px!important}[data-fq=fq-head]{padding-top:20px!important}[data-fq=fq-card]{border-radius:0!important;border-left:0!important;border-right:0!important;box-shadow:none!important}[data-fq=fq-hero]{border-radius:0!important}[data-fq=fq-body]{padding:28px 22px 26px!important}}
 ${night}
 </style></head>
 <body data-fq="fq-bg" style="margin:0;padding:0;background:${colors.canvas};">
   ${preheaderSpan(input.preheader ?? '')}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-bg" style="width:100%;border-collapse:collapse;background:${colors.canvas};${platformWash ? `background-image:${platformWash};` : ''}">
-    <tr><td align="center" data-fq="fq-wrap" style="padding:36px 16px 48px;">
+    <tr><td align="center" data-fq="fq-wrap" style="padding:36px 0 48px;">
       <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:collapse;">
-        ${hero ? '' : `<tr><td style="padding:0 4px 22px;text-align:left;">${header(brand, colors, baseUrl)}</td></tr>`}
+        ${hero ? '' : `<tr><td data-fq="fq-head" style="padding:0 20px 22px;text-align:left;">${header(brand, colors, baseUrl)}</td></tr>`}
         <tr><td data-fq="fq-card" style="background:${colors.surface};border:1px solid ${colors.border};border-radius:24px;padding:0;overflow:hidden;font-family:${FONT_STACK};${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
             ${hero}
