@@ -52,11 +52,16 @@ export function spaceNavItems(slug: string, editor: boolean): AdminNavItem[] {
     icon: SECTION_ICON[section.key],
     phone: PHONE_SLOT[section.key],
     match: SPACE_MODULES.flatMap((module) => {
-      if (sectionForModule(module) !== section.key || !module.deepLink) return []
+      // Check in has its own row below, so the Money tab does not also claim its page.
+      if (module.id === 'space.scanners' || sectionForModule(module) !== section.key || !module.deepLink) return []
       const path = module.deepLink(slug).split('#')[0]
       return path === `${base}/manage` ? [] : [path]
     }),
   }))
+  // CHECK IN (LIVE-1177): the door has its own sidebar row, right after the Money tab it lives under, so it is
+  // never a search. It has no phone slot, so under 960px it sits at the top of the More sheet's Console list.
+  const money = items.findIndex((item) => item.key === 'offerings')
+  items.splice(money + 1, 0, { key: 'checkin', label: 'Check in', href: `${base}/settings/offerings?tab=checkin`, icon: 'checkin' })
   if (editor) items.splice(1, 0, { key: 'editor', label: 'Page editor', href: siteAdminHandoffPath(slug, 'editor'), icon: 'page', external: true })
   return items
 }
