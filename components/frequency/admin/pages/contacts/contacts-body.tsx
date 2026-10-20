@@ -16,7 +16,7 @@ import { ContactsTable, ExportContactsButton, type ContactRow, type ContactTone 
 import { ContactsViews } from './contacts-views'
 
 // THE SPACE CONTACTS, FREQUENCY (design_handoff/frequency/templates/admin/Contacts.html). The console's
-// Resonance tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/crm/space-resonance-crm.tsx. The
+// Resonance tab under SITE_DESIGN=frequency; DAWN keeps modules/crm/components/space-resonance-crm.tsx. The
 // rows are the SAME roster the DAWN master-detail renders (loadSpaceResonanceRoster: every active member plus
 // every un-stitched imported contact), and the head counts are getSpaceHealth, the DAWN stat row's read. Each
 // row opens the existing detail: a member's profile, or a contact's page in the Space CRM. Import is the

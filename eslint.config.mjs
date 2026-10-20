@@ -60,14 +60,14 @@ const eslintConfig = defineConfig([
   // files or a file inside modules/. Modules so far: crm, booking, email-design, qr. The module's own
   // files are exempt.
   {
-    ignores: ["modules/**", "components/spaces/crm/**", "components/qr/**", "components/admin/email-studio/**", "components/spaces/booking-*"],
+    ignores: ["modules/**", "components/qr/**", "components/admin/email-studio/**", "components/spaces/booking-*"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              group: ["@/components/spaces/crm/*", "@/components/spaces/booking-*", "@/components/qr/*", "@/components/admin/email-studio/*"],
+              group: ["@/components/spaces/booking-*", "@/components/qr/*", "@/components/admin/email-studio/*"],
               message: "Import this feature through its module barrel: '@/modules/<crm|booking|qr|email-design>' (server) or '/client' (client component). PROG-A1.",
             },
             {
