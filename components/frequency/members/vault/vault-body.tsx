@@ -10,7 +10,7 @@ import { ledgerLabel } from '@/lib/economy/ledger'
 import { RANK_LABELS, RANK_ORDER, rankIndex } from '@/lib/season-ranks'
 import { getAchievementsData } from '@/app/(main)/crew/gamification-actions'
 import { getTrophyCase } from '@/lib/quest/trophies'
-import { TrophyCase } from '@/components/quest/trophy-case'
+import { FqTrophyCase } from './trophy-case'
 import { VaultStore } from '@/components/widgets/vault/vault-store'
 import { visibleModuleOrder } from '@/components/frequency/members/shared/module-order'
 
@@ -299,7 +299,7 @@ export async function VaultBody() {
           <span className="h2">Trophies</span>
           <span className="meta">Every Journey you finish stays here</span>
         </div>
-        <TrophyCase seasons={trophies.seasons} totalTrophies={trophies.totalTrophies} currentSeason={d.seasonNumber} />
+        <FqTrophyCase seasons={trophies.seasons} totalTrophies={trophies.totalTrophies} currentSeason={d.seasonNumber} />
       </div>
     ) : null
 
