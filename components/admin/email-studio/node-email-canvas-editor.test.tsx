@@ -62,4 +62,12 @@ describe('NodeEmailCanvasEditor', () => {
     await click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Heading')))
     expect(store.layout!.rows.length).toBe(before + 1)
   })
+
+  it('switches the preview between desktop and phone width', async () => {
+    const canvas = () => container.querySelector('[data-fq-preview-device]')
+    expect(canvas()?.getAttribute('data-fq-preview-device')).toBe('desktop')
+    await click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('Phone')))
+    expect(canvas()?.getAttribute('data-fq-preview-device')).toBe('mobile')
+    expect(container.querySelector('.max-w-\\[375px\\]')).not.toBeNull()
+  })
 })
