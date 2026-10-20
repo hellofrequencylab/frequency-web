@@ -1,0 +1,5 @@
+{
+  "id": "PROG-E2",
+  "patch": {},
+  "append": { "detail": " 2026-10-20 default target set: no two registered blocks share a renderer, so there is no provable exact duplicate and the alias map stays empty. Step 2 (platform-only stores) has nothing to fold under that rule; no migration is queued. Similar-but-not-identical bands (Space layout bands, Wildheart, Network, marketing MediaText/Hero/Statement/CallToAction) need a variant design before any alias. The eleven core Space blocks still wait on the owner. Plan: /mnt/project-files/editor/e2-census-and-plan-2026-10-20.md." }
+}

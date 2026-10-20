@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-1170",
+  "title": "Editor E3: first Spotlight and Site baseline pictures (parked, needs a capture run)",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "§7.1 and §8.1 item 2" },
+  "detail": "The Spotlight and Site surfaces are declared (LIVE-1157) but no picture exists. The first capture dispatch (run 133) was refused by the environment stamp: the committed set is stamped PREVIEW and the dispatch pointed at production. Nothing was photographed or committed. Re-dispatch e2e-manual with update_baselines on a preview base_url when the owner is next in Actions; it is not blocking E2 or the density work. The shell half will report PARTIAL without a member session, which is expected.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d='test/e2e/__screenshots__';const f=fs.readdirSync(d,{recursive:true}).map(String);if(!f.some(x=>/editor-spotlight/.test(x)))process.exit(1)\"",
+    "note": "Passes once an editor-spotlight baseline picture is committed.",
+    "checked": "2026-10-20"
+  },
+  "wave": "W4"
+}
