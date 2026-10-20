@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { FqIcon } from '@/components/frequency/icon'
 import type { SeasonBlock, JourneyTrophy } from '@/lib/quest/trophies'
@@ -8,7 +8,7 @@ import type { SeasonBlock, JourneyTrophy } from '@/lib/quest/trophies'
 // grouped by season, newest first, with each past season's stamped summary. Same data and rules as DAWN's
 // components/quest/trophy-case.tsx (a record, never a "% complete"); drawn in the members kit's own pieces (`.panel`,
 // `.card`, `.ic`, `.t1`/`.t2`) so the Vault stops nesting a DAWN card that members-ui.css had to repaint. The
-// rank keeps its data-driven hue through seasonRankStyle, pending the rank-colour ruling (SCAN-860).
+// rank is a RankBadge, which Frequency draws in one iridescent pill (owner ruling, SCAN-860).
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -17,7 +17,7 @@ function formatDate(iso: string): string {
 function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
   const inner = (
     <>
-      <span className="ic" style={seasonRankStyle(trophy.rankEarned)} aria-hidden>
+      <span className="ic" aria-hidden>
         {trophy.emoji ?? <FqIcon name="trophy" />}
       </span>
       <span className="stack grow mc-gap-4">
@@ -44,7 +44,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
 function SeasonSummary({ summary }: { summary: NonNullable<SeasonBlock['summary']> }) {
   const rank: SeasonRank = summary.finalRank
   return (
-    <div className="panel row wrap mc-gap-16" style={seasonRankStyle(rank)}>
+    <div className="panel row wrap mc-gap-16">
       <span className="row mc-gap-6">
         <span className="t2">Rank reached</span>
         <RankBadge rank={rank}>{RANK_LABELS[rank] ?? rank}</RankBadge>

@@ -441,3 +441,22 @@
     font-size: var(--fq-text-body-size) !important;
   }
 }
+
+/* Season ranks wear one iridescent look (owner ruling 2026-10-20, SCAN-860). The export gives ranks no
+   hues of its own; the members template shows the rank as iridescent text in a glass pill. So a reached
+   rank (Initiate, Adept, Master) is the --fq-pa pill with ink text, and Ghost, nothing reached yet, is a
+   plain track pill. The name tells them apart. RankBadge stamps [data-season-rank] only for a season
+   rank, so pillar dots and Space accents that share the DAWN spectrum keep their own hues. */
+[data-design="frequency"] .rank-badge[data-season-rank] {
+  background: var(--fq-pa);
+  color: var(--fq-ink);
+  border-color: transparent;
+  border-radius: var(--fq-radius-orb);
+}
+[data-design="frequency"] .rank-badge[data-season-rank="ghost"] {
+  background: var(--fq-track);
+  color: var(--fq-text-muted);
+}
+[data-design="frequency"] .rank-badge[data-season-rank] .rank-dot {
+  display: none;
+}
