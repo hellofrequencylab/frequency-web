@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { DeviceProvider } from '@/device/DeviceProvider'
+import { AuthProvider } from '@/lib/auth'
 import { fontAssets } from '@/theme/fonts'
 import { ThemeProvider, fonts, useTheme } from '@/theme'
 import { FeedbackProvider } from '@/ui'
@@ -26,6 +27,11 @@ function Navigator() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="sign-in" options={{ title: 'Sign in', presentation: 'modal' }} />
+        <Stack.Screen name="auth/callback" options={{ title: 'Signing in' }} />
+        <Stack.Screen name="auth/native" options={{ title: 'Signing in' }} />
+        <Stack.Screen name="check-in" options={{ title: 'Check in' }} />
+        <Stack.Screen name="n/[id]" options={{ title: 'Check in' }} />
         <Stack.Screen name="device/connect" options={{ title: 'Connect', presentation: 'modal' }} />
         <Stack.Screen name="device/light-show" options={{ title: 'Light Show' }} />
         <Stack.Screen name="device/led" options={{ title: 'LED colour' }} />
@@ -49,9 +55,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <FeedbackProvider>
-          <DeviceProvider>
-            <Navigator />
-          </DeviceProvider>
+          <AuthProvider>
+            <DeviceProvider>
+              <Navigator />
+            </DeviceProvider>
+          </AuthProvider>
         </FeedbackProvider>
       </ThemeProvider>
     </SafeAreaProvider>
