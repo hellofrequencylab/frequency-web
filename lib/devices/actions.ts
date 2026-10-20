@@ -3,13 +3,15 @@
 // COUNTER SCANNER owner actions (LIVE-1125, docs/LOYALTY.md "Counter scanners"). Every write runs
 // behind scannerOwnerGate(spaceId, 'write') inside ./store.ts (canEditProfile and the per-Space
 // check-in function). The device secret is returned ONCE, by registerScanner, and never again.
-// The last three are the USB console's card flow (cyberunicorn-console.tsx): mint, then bind the chip
-// the CyberUnicorn wrote, or discard the mint if the write never landed.
+// The last three are the USB console's card flow (cyberunicorn-console.tsx, in the admin menu): mint,
+// then bind the chip the CyberUnicorn wrote, or discard the mint if the write never landed. Those run
+// behind consoleStaffGate (platform staff) instead, and binding closes the member's badge request.
 
 import { revalidatePath } from 'next/cache'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { getSpaceById } from '@/lib/spaces/store'
 import { SITE_URL } from '@/lib/site'
+import { closeBadgeRequestForCard } from './badges'
 import { hashUid, normalizeHandle, normalizeUid } from './credentials'
 import {
   SCANNER_LIMITS,
@@ -66,7 +68,7 @@ export async function startConsoleCard(
   if (!out.ok) {
     if (out.reason === 'unknown_member') return fail(`No member has the handle @${handle}.`)
     if (out.reason === 'too_many_cards') return fail(`@${handle} already has ${SCANNER_LIMITS.cardsPerMember} cards here. Revoke one first.`)
-    if (out.reason === 'forbidden') return fail('Only people who run check-in here can write cards.')
+    if (out.reason === 'forbidden') return fail('Only Frequency staff can write cards.')
     return fail('Could not make that card. Try again.')
   }
   return ok({ cardId: out.cardId, url: `${SITE_URL}/c/${out.token}`, memberName: out.displayName })
@@ -77,7 +79,9 @@ export async function finishConsoleCard(spaceId: string, cardId: string, rawUid:
   const uid = normalizeUid(rawUid)
   if (typeof cardId !== 'string' || !uid) return fail('The card was written but its chip ID did not come back.')
   if (!(await bindConsoleCard(spaceId, cardId, hashUid(uid)))) return fail('The card was written but could not be locked to its chip.')
+  await closeBadgeRequestForCard(spaceId, cardId)
   await refresh(spaceId)
+  revalidatePath('/admin/cyberunicorn')
   return ok()
 }
 

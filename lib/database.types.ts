@@ -482,6 +482,58 @@ export type Database = {
           },
         ]
       }
+      badge_requests: {
+        Row: {
+          card_id: string | null
+          closed_at: string | null
+          created_at: string
+          id: string
+          profile_id: string
+          space_id: string
+          status: string
+        }
+        Insert: {
+          card_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          profile_id: string
+          space_id: string
+          status?: string
+        }
+        Update: {
+          card_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          profile_id?: string
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badge_requests_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "badge_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "badge_requests_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "member_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_cards: {
         Row: {
           active: boolean

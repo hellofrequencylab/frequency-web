@@ -919,6 +919,7 @@ lib/dashboard/scores.ts
 lib/demo/decay.ts
 lib/demo/engine.ts
 lib/demo/generate.ts
+lib/devices/badges.ts
 lib/devices/relay-store.ts
 lib/devices/store.ts
 lib/digest.ts

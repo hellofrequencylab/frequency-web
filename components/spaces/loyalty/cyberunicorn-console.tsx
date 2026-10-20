@@ -6,6 +6,8 @@ import { Press_Start_2P, VT323 } from 'next/font/google'
 import { Input } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { cancelConsoleCard, finishConsoleCard, startConsoleCard } from '@/lib/devices/actions'
+import { dismissBadgeRequest, lookupConsoleSpace } from '@/lib/devices/badge-actions'
+import type { BadgeRequestRow } from '@/lib/devices/badges'
 import { RpcClient, DeviceError } from '@/lib/device/client'
 import { openWebSerial, pickPort, rememberedPort, webSerialAvailable } from '@/lib/device/web-serial'
 import type { HatProbe, SystemStatus, TagRead, TagWritten } from '@/lib/device/types'
@@ -252,15 +254,9 @@ function outcomeUnknown(e: unknown): boolean {
   return e instanceof DeviceError && (e.code === 'disconnected' || (e.code === 'timeout' && !/no card/i.test(e.message)))
 }
 
-export function CyberUnicornConsole({
-  spaceId,
-  spaceName,
-  defaultHandle,
-}: {
-  spaceId: string
-  spaceName: string
-  defaultHandle: string | null
-}) {
+type Target = { spaceId: string; spaceName: string }
+
+export function CyberUnicornConsole({ requests, spaces }: { requests: BadgeRequestRow[]; spaces: { slug: string; name: string }[] }) {
   const router = useRouter()
   const supported = useSyncExternalStore(
     () => () => undefined,
@@ -271,13 +267,16 @@ export function CyberUnicornConsole({
   const [phase, setPhase] = useState<Phase>('idle')
   const [status, setStatus] = useState<SystemStatus | null>(null)
   const [hat, setHat] = useState<HatProbe | null>(null)
-  const [handle, setHandle] = useState(defaultHandle ? `@${defaultHandle}` : '')
+  const [handle, setHandle] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
   const [done, setDone] = useState<Done | null>(null)
   const [tapStarted, setTapStarted] = useState<number | null>(null)
   const [now, setNow] = useState(0)
   const [log, setLog] = useState<string[]>([])
   const [bootStarted, setBootStarted] = useState<number | null>(null)
+  const [cardFor, setCardFor] = useState<string | null>(null)
+  const [target, setTarget] = useState<Target | null>(null)
+  const [spaceSlug, setSpaceSlug] = useState('')
 
   // The countdown under "TAP THE CARD", and the boot bar while the board restarts.
   useEffect(() => {
@@ -298,6 +297,27 @@ export function CyberUnicornConsole({
     setTapStarted(null)
     await c?.close().catch(() => undefined)
   }, [])
+
+  // Let go of the port when the page goes away or the tab is hidden while nothing is in flight, so a
+  // flash or another tool can open it. Connecting again always takes a click (it reboots the board).
+  const busyRef = useRef(false)
+  useEffect(() => {
+    busyRef.current = phase === 'connecting' || phase === 'minting' || phase === 'tap' || phase === 'checking'
+  }, [phase])
+  useEffect(() => {
+    const release = () => {
+      if (clientRef.current) void disconnect()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden' && !busyRef.current) release()
+    }
+    window.addEventListener('pagehide', release)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', release)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [disconnect])
 
   async function connect() {
     setProblem(null)
@@ -357,9 +377,42 @@ export function CyberUnicornConsole({
     }
   }
 
-  async function program() {
+  // DIP 3 can be flipped after connecting, so the reader can be looked for again without a reconnect (a reboot).
+  async function recheckReader() {
     const client = clientRef.current
     if (!client) return
+    setProblem(null)
+    setHat(await client.call<HatProbe>('hat.probe').catch(() => null))
+  }
+
+  // A request in the queue fills in who and where; Program then writes it.
+  function pick(r: BadgeRequestRow) {
+    setProblem(null)
+    setDone(null)
+    setTarget({ spaceId: r.spaceId, spaceName: r.spaceName })
+    setHandle(r.memberHandle ? `@${r.memberHandle}` : '')
+  }
+
+  async function findSpace() {
+    setProblem(null)
+    const found = await lookupConsoleSpace(spaceSlug)
+    if (isError(found)) {
+      setProblem(found.error)
+      return
+    }
+    setTarget({ spaceId: found.data.id, spaceName: found.data.name })
+  }
+
+  async function dismiss(id: string) {
+    const out = await dismissBadgeRequest(id)
+    if (isError(out)) setProblem(out.error)
+    else router.refresh()
+  }
+
+  async function program() {
+    const client = clientRef.current
+    if (!client || !target) return
+    const { spaceId, spaceName } = target
     setProblem(null)
     setDone(null)
     setPhase('minting')
@@ -370,6 +423,7 @@ export function CyberUnicornConsole({
       return
     }
     const { cardId, url, memberName } = minted.data
+    setCardFor(memberName)
     setPhase('tap')
     setTapStarted(Date.now())
     setNow(Date.now())
@@ -465,7 +519,7 @@ export function CyberUnicornConsole({
                 <RainbowText text="CYBERUNICORN 5000" />
                 <sup className="ml-1 align-super text-[length:var(--cu-type-1)] text-[var(--cu-muted)]">TM</sup>
               </h3>
-              <p className="text-[var(--cu-muted)]">Program member cards for {spaceName} over USB.</p>
+              <p className="text-[var(--cu-muted)]">Program scannable member badges over USB.</p>
             </div>
           </header>
 
@@ -491,7 +545,7 @@ export function CyberUnicornConsole({
                   {phase === 'minting'
                     ? 'Making a card link for this member...'
                     : phase === 'tap'
-                      ? 'Hold the card flat on the CyberUnicorn reader and keep it still until it beeps.'
+                      ? `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until it beeps.`
                       : 'Hold any card or tag on the reader to see what it holds.'}
                 </p>
                 {phase !== 'minting' && <RainbowBar value={remaining} label="Time left to tap the card" />}
@@ -530,44 +584,123 @@ export function CyberUnicornConsole({
                 <Row label="Device" value={[status?.os ?? 'CyberUnicorn', status?.version].filter(Boolean).join(' ')} />
                 <Row
                   label="Reader"
-                  value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Turn DIP 3 ON'}
+                  value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Not found. Turn DIP 3 ON, then look again.'}
                   tone={readerOk ? 'ok' : 'attention'}
                 />
               </dl>
+              {target ? (
+                <dl className="space-y-1">
+                  <Row label="Space" value={target.spaceName} tone="secondary" />
+                </dl>
+              ) : (
+                <form
+                  className="flex flex-col gap-3 sm:flex-row sm:items-end"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    if (spaceSlug.trim()) void findSpace()
+                  }}
+                >
+                  <label className="flex-1 space-y-1">
+                    <span className="block font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">
+                      Which Space?
+                    </span>
+                    <Input
+                      value={spaceSlug}
+                      onChange={(e) => setSpaceSlug(e.target.value)}
+                      placeholder="Start typing a Space, like the-group"
+                      list="cu5k-spaces"
+                      autoComplete="off"
+                      spellCheck={false}
+                      maxLength={120}
+                      className="block min-h-11 w-full rounded-none border border-[var(--cu-secondary)] bg-[var(--cu-floor)] px-3 py-1 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] text-[var(--cu-text)] shadow-none caret-[var(--cu-primary)] outline-none ring-0 placeholder:text-[var(--cu-dim)] focus-visible:border-[var(--cu-primary)] focus-visible:ring-0"
+                    />
+                  </label>
+                  <datalist id="cu5k-spaces">
+                    {spaces.map((sp) => (
+                      <option key={sp.slug} value={sp.slug} label={sp.name} />
+                    ))}
+                  </datalist>
+                  <CuButton type="submit" tone="secondary" disabled={!spaceSlug.trim()}>
+                    Choose
+                  </CuButton>
+                </form>
+              )}
               <form
                 className="flex flex-col gap-3 sm:flex-row sm:items-end"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  if (handle.trim()) void program()
+                  if (handle.trim() && readerOk && target) void program()
                 }}
               >
                 <label className="flex-1 space-y-1">
                   <span className="block font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">
-                    Member handle
+                    Who is this card for?
                   </span>
                   <Input
                     value={handle}
                     onChange={(e) => setHandle(e.target.value)}
-                    placeholder="@maya"
+                    placeholder="Their handle, like @maya"
                     autoComplete="off"
                     spellCheck={false}
                     maxLength={41}
                     className="block min-h-11 w-full rounded-none border border-[var(--cu-secondary)] bg-[var(--cu-floor)] px-3 py-1 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] text-[var(--cu-text)] shadow-none caret-[var(--cu-primary)] outline-none ring-0 placeholder:text-[var(--cu-dim)] focus-visible:border-[var(--cu-primary)] focus-visible:ring-0"
                   />
                 </label>
-                <CuButton type="submit" disabled={!handle.trim()}>
+                <CuButton type="submit" disabled={!handle.trim() || !readerOk || !target}>
                   Program card
                 </CuButton>
               </form>
               <div className="flex flex-wrap items-center gap-3">
-                <CuButton tone="secondary" onClick={checkCard}>
-                  Check a card
-                </CuButton>
+                {readerOk ? (
+                  <CuButton tone="secondary" onClick={checkCard}>
+                    Check a card
+                  </CuButton>
+                ) : (
+                  <CuButton tone="secondary" onClick={recheckReader}>
+                    Look for the reader
+                  </CuButton>
+                )}
+                {target && (
+                  <CuButton tone="quiet" onClick={() => setTarget(null)}>
+                    Change Space
+                  </CuButton>
+                )}
                 <CuButton tone="quiet" onClick={disconnect}>
                   Disconnect
                 </CuButton>
               </div>
             </div>
+          )}
+
+          {(phase === 'idle' || phase === 'ready') && (
+            <section aria-labelledby="cu5k-queue" className="space-y-2">
+              <h4 id="cu5k-queue" className="font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase text-[var(--cu-muted)]">
+                Asked for a badge ({requests.length})
+              </h4>
+              {requests.length === 0 ? (
+                <p className="text-[var(--cu-dim)]">Nobody is waiting. Members ask from a Space&apos;s page.</p>
+              ) : (
+                <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+                  {requests.map((r) => (
+                    <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
+                      <span className="min-w-0 flex-1">
+                        <span className="text-[var(--cu-text)]">{r.memberName}</span>
+                        {r.memberHandle && <span className="text-[var(--cu-secondary)]"> @{r.memberHandle}</span>}
+                        <span className="block text-[var(--cu-muted)]">
+                          {r.spaceName} · {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
+                      </span>
+                      <CuButton tone="secondary" onClick={() => pick(r)} disabled={phase !== 'ready'}>
+                        Use
+                      </CuButton>
+                      <CuButton tone="quiet" onClick={() => void dismiss(r.id)}>
+                        Clear
+                      </CuButton>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
 
           {log.length > 0 && (
