@@ -1847,14 +1847,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 230,
+      "baseline": 228,
       "frozen": {
         "at": "2026-10-20",
-        "value": 230,
+        "value": 228,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "Nurture step editor (#3637) label moved to the eyebrow role, retiring one handrolled-eyebrow site",
-        "from": 231
+        "reason": "LIVE-1190: plan ladder, billing and the staff Spaces list draw plan names through TierChip, retiring two hand-rolled eyebrow labels",
+        "from": 230
       },
       "history": [
         {
@@ -1947,6 +1947,13 @@
           "to": 230,
           "direction": "lowered",
           "reason": "Nurture step editor (#3637) label moved to the eyebrow role, retiring one handrolled-eyebrow site"
+        },
+        {
+          "at": "2026-10-20",
+          "from": 230,
+          "to": 228,
+          "direction": "lowered",
+          "reason": "LIVE-1190: plan ladder, billing and the staff Spaces list draw plan names through TierChip, retiring two hand-rolled eyebrow labels"
         }
       ]
     }
