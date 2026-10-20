@@ -1204,6 +1204,12 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'Four tiles of live tallies: upcoming events, circles, members and Dispatches this week.',
   },
   {
+    value: 'nearby-new-members',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The newest members, with names, photos and how long ago each joined; the row changes with every sign-up.',
+  },
+  {
     value: 'nearby-dispatch-list',
     file: 'app/(main)/nearby/page.tsx',
     kind: 'live',
