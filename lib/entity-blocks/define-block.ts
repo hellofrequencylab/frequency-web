@@ -19,7 +19,7 @@ import type { FieldDef } from './block-content'
 type BlockSurface = 'profile-inapp' | 'spotlight-public' | 'space-profile' | 'space-site' | 'email'
 
 /** The spacing and type scale a surface asks of the one component (§3 rule 4: density is a prop). */
-type BlockDensity = 'compact' | 'standard' | 'roomy'
+export type BlockDensity = 'compact' | 'standard' | 'roomy'
 
 /** One step between stored versions. `migrations[i]` takes content at version `i + 1` to `i + 2` (`up`) and
  *  back (`down`), so a block at version `v` carries exactly `v - 1` of them and the chain has no gaps. */
@@ -27,6 +27,14 @@ interface BlockMigration {
   id: string
   up: (content: unknown) => unknown
   down: (content: unknown) => unknown
+}
+
+/** What one surface asks of a block: the density it paints at, and the fields that surface edits. */
+interface BlockSurfaceDisplay {
+  /** DECLARED here, never passed as a className by whoever mounts the component (E3, T-3). The scale's
+   *  spacing lives in density.ts. */
+  density: BlockDensity
+  fields: readonly string[] | '*'
 }
 
 interface BlockDefinition<S extends z.ZodType = z.ZodType> {
@@ -46,7 +54,7 @@ interface BlockDefinition<S extends z.ZodType = z.ZodType> {
   fields: readonly FieldDef[]
   migrations: readonly BlockMigration[]
   /** AXIS 2, per-surface display: a density, and the subset of `fields` that surface edits. */
-  surfaces: Partial<Record<BlockSurface, { density: BlockDensity; fields: readonly string[] | '*' }>>
+  surfaces: Partial<Record<BlockSurface, BlockSurfaceDisplay>>
   /** AXIS 3, render targets. `web` is ONE lazy component for every surface; `email` is null when the block
    *  does not render to email. */
   render: { web: () => Promise<unknown>; email: 'registered' | null }
