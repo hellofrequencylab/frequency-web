@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { BillingBody } from './billing-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE PLAN AND BILLING (Pricing P3, ADR-363/364). The owner-facing space plan ladder. This page owns the
 // ROUTE + AUTH gate once (resolveSpaceManageAccess, notFound on a miss so there is no existence leak), then
@@ -50,6 +51,7 @@ export default async function SpaceBillingPage({
   if (featureLocked) {
     return (
       <ConsoleFocusTemplate
+        back={consoleBack(slug, 'settings')}
         eyebrow={brandName}
         title="Plan and billing"
         description="The plan and billing for this space."
@@ -61,6 +63,7 @@ export default async function SpaceBillingPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'settings')}
       eyebrow={brandName}
       title="Plan and usage"
       description="See your current plan and how much of each tool you are using. Hosting tools are on every plan. Business is where selling starts, and a full meter only pauses new things, never what you built."

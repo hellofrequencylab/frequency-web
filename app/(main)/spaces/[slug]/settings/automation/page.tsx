@@ -8,6 +8,7 @@ import {
 } from '@/lib/spaces/entitlements'
 import { AutomationBody } from './automation-body'
 import { spaceAutomationAllowed } from '@/lib/spaces/automation-access'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // OWNER AUTOMATION SURFACE (R5, business-accounts Automation). A centered, no-rail-less Focus surface at
 // /spaces/<slug>/settings/automation, registered like the other owner settings sub-pages (it matches the
@@ -56,6 +57,7 @@ export default async function SpaceAutomationPage({
   if (featureLocked) {
     return (
       <ConsoleFocusTemplate
+        back={consoleBack(slug, 'resonance')}
         eyebrow={brandName}
         title="Automation"
         description="Rules and drip sequences for this space."
@@ -68,6 +70,7 @@ export default async function SpaceAutomationPage({
   void caps
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'resonance')}
       eyebrow={brandName}
       title="Automation"
       description="Set up rules that fire on a trigger, and drip sequences that email your own contacts on a schedule."

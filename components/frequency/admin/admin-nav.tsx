@@ -26,11 +26,15 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
   return (
     <>
     <nav className="ad-nav" aria-label={label}>
-      {items.map((item) => {
+      {items.map((item, index) => {
         const on = item.key === activeKey
+        // A heading wherever the job group changes (the Space console's layers); a console without groups draws none.
+        const heading = item.group && item.group !== items[index - 1]?.group ? item.group : null
         const badge = on && item.children?.length ? item.badge ?? 0 : itemBadge(item)
         return (
-          <div key={item.key} className="ad-nav-group">
+          <Fragment key={item.key}>
+          {heading && <span className="ad-nav-h">{heading}</span>}
+          <div className="ad-nav-group">
             {item.external ? (
               <a href={item.href}><FqIcon name={item.icon} />{item.label}</a>
             ) : (
@@ -54,6 +58,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
               </div>
             )}
           </div>
+          </Fragment>
         )
       })}
     </nav>

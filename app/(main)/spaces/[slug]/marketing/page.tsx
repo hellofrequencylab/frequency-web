@@ -9,6 +9,7 @@ import { listSpaceEmailDrafts } from '@/lib/spaces/email-drafts'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceEmailWorkspace } from '@/components/spaces/marketing/space-email-workspace'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE MARKETING (Email in the Business CRM, P1 · deliverable 2). The full on-canvas email editor embedded in
 // the business-space CRM. A wide, no-right-rail workspace (registered in page-chrome.ts) that resolves the
@@ -54,7 +55,7 @@ export default async function SpaceMarketingPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate eyebrow={brandName} title="Marketing" description="Branded emails for this space.">
+      <FocusTemplate back={consoleBack(slug, 'marketing')} eyebrow={brandName} title="Marketing" description="Branded emails for this space.">
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
@@ -78,6 +79,7 @@ export default async function SpaceMarketingPage({
 
   return (
     <FocusTemplate
+      back={consoleBack(slug, 'marketing')}
       eyebrow={brandName}
       title="Marketing"
       description="Design a branded email on the canvas, block by block. It starts in your space colors."

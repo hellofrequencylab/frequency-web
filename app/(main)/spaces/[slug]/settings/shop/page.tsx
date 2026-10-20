@@ -14,6 +14,7 @@ import { ShopTabs, toShopTab, type ShopTab } from '@/components/spaces/shop/shop
 import { CatalogTab } from './catalog-tab'
 import { OrdersTab } from './orders-tab'
 import { StorefrontTab } from './storefront-tab'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE BUSINESS-SPACE SHOP CONSOLE (ADR-596). One DashboardTemplate page, three tabs (Catalog / Orders /
 // Storefront), that REPLACES /settings/services. Mirrors the CRM board triad: this page owns the route +
@@ -69,6 +70,7 @@ export default async function SpaceShopConsolePage({
 
   return (
     <ConsoleDashboardTemplate
+      back={consoleBack(slug, 'offerings')}
       eyebrow={brandName}
       title={TAB_COPY[activeTab].title}
       description={TAB_COPY[activeTab].description}

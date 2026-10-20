@@ -34,6 +34,7 @@ import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
 import { CalendarPlanner, type PlannerUpNext } from '@/components/frequency/admin/calendar-planner'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
 // space's events: the month grid AND the chronological list (the calendar's own toggle), every item
@@ -162,6 +163,7 @@ export default async function SpaceCalendarConsolePage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'programs')}
       eyebrow={brandName}
       title="Calendar"
       description="Run your space's calendar. Your public events, plus private entries and unavailable time only your team can see."

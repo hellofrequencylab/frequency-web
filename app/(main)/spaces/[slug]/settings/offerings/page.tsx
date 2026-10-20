@@ -4,6 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { OfferingsBody } from './offerings-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE UNIFIED OFFERINGS SURFACE (the deeper Offerings merge). One adaptive, no-rail Focus surface that
 // stacks the commerce sub-surfaces a Space configures here, instead of the separate settings sub-pages it
@@ -64,6 +65,7 @@ export default async function SpaceOfferingsPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'offerings')}
       eyebrow={brandName}
       title="Offerings and Money"
       description="What people can book, join, support, or check in to. Pick a tab to set it up; it shows on your space page."

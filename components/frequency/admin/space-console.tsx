@@ -42,28 +42,59 @@ const PHONE_SLOT: Partial<Record<SpaceHubSection, { label: string; slot: number 
   offerings: { label: 'Money', slot: 3 },
 }
 
-/** The hub tabs as sidebar rows, each claiming its catalog rows' pages. PURE. */
+/** The sidebar's headings, top to bottom. Every row sits under one: what you show people, who and what you
+ *  run, how the money and the reach work, and the Space itself. Home sits above them, alone. */
+const NAV_GROUP = {
+  public: 'Your public pages',
+  run: 'Run',
+  grow: 'Money and reach',
+  space: 'Your Space',
+} as const
+
+/** The pages that belong to a tab but are not a catalog deep link: the page-layout, mode and menu pages and
+ *  the guided setup are settings of the Space itself, so they light Profile & Settings. */
+const SETTINGS_PAGES = ['manage/layout', 'manage/mode', 'manage/modules', 'setup']
+
+/** The hub tabs as sidebar rows, each claiming its catalog rows' pages, in groups. PURE. */
 export function spaceNavItems(slug: string, editor: boolean): AdminNavItem[] {
   const base = `/spaces/${slug}`
-  const items: AdminNavItem[] = SPACE_HUB_SECTIONS.map((section) => ({
+  const tab = new Map<string, AdminNavItem>(SPACE_HUB_SECTIONS.map((section) => [section.key, {
     key: section.key,
     label: section.label,
     href: section.key === 'dashboard' ? `${base}/manage` : `${base}/manage?section=${section.key}`,
     icon: SECTION_ICON[section.key],
     phone: PHONE_SLOT[section.key],
-    match: SPACE_MODULES.flatMap((module) => {
-      // Check in has its own row below, so the Money tab does not also claim its page.
-      if (module.id === 'space.scanners' || sectionForModule(module) !== section.key || !module.deepLink) return []
-      const path = module.deepLink(slug).split('#')[0]
-      return path === `${base}/manage` ? [] : [path]
-    }),
-  }))
-  // CHECK IN (LIVE-1177): the door has its own sidebar row, right after the Money tab it lives under, so it is
-  // never a search. It has no phone slot, so under 960px it sits at the top of the More sheet's Console list.
-  const money = items.findIndex((item) => item.key === 'offerings')
-  items.splice(money + 1, 0, { key: 'checkin', label: 'Check in', href: `${base}/settings/offerings?tab=checkin`, icon: 'checkin' })
-  if (editor) items.splice(1, 0, { key: 'editor', label: 'Page editor', href: siteAdminHandoffPath(slug, 'editor'), icon: 'page', external: true })
-  return items
+    match: [
+      ...SPACE_MODULES.flatMap((module) => {
+        // Check in has its own row below, so the Money tab does not also claim its page.
+        if (module.id === 'space.scanners' || sectionForModule(module) !== section.key || !module.deepLink) return []
+        const path = module.deepLink(slug).split('#')[0]
+        return path === `${base}/manage` ? [] : [path]
+      }),
+      ...(section.key === 'settings' ? SETTINGS_PAGES.map((page) => `${base}/${page}`) : []),
+    ],
+  }]))
+  const row = (key: string, group: string): AdminNavItem => ({ ...tab.get(key)!, group })
+  // SPOTLIGHT (LIVE-851): the link page you share. It is one of the two pages the public sees, so it sits
+  // beside the page editor near the top instead of inside a tab. Open to a staff preview too (read only).
+  const spotlight: AdminNavItem = { key: 'spotlight', label: 'Spotlight', href: `${base}/manage/spotlight`, icon: 'link', group: NAV_GROUP.public }
+  // CHECK IN (LIVE-1177): the door has its own row, right after the Money tab it lives under, so it is never
+  // a search. No phone slot, so under 960px it sits at the top of the More sheet's Console list.
+  const checkin: AdminNavItem = { key: 'checkin', label: 'Check in', href: `${base}/settings/offerings?tab=checkin`, icon: 'checkin', group: NAV_GROUP.grow }
+  const editorDoor: AdminNavItem[] = editor
+    ? [{ key: 'editor', label: 'Page editor', href: siteAdminHandoffPath(slug, 'editor'), icon: 'page', external: true, group: NAV_GROUP.public }]
+    : []
+  return [
+    tab.get('dashboard')!,
+    ...editorDoor,
+    spotlight,
+    row('resonance', NAV_GROUP.run),
+    row('programs', NAV_GROUP.run),
+    row('offerings', NAV_GROUP.grow),
+    checkin,
+    row('marketing', NAV_GROUP.grow),
+    row('settings', NAV_GROUP.space),
+  ]
 }
 
 export async function FrequencySpaceConsole({ slug, children }: { slug: string; children: ReactNode }) {

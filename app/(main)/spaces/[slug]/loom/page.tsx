@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceManageHref } from '@/lib/spaces/types'
+import { consoleBackFor } from '@/lib/spaces/console-back'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
 import { listSpaceLoomImages, listSpaceLoomTags } from '@/lib/library/space-loom-store'
 import { withLoomProofs } from '@/lib/library/asset-urls'
@@ -56,7 +56,7 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   return (
     <IndexTemplate
       {...hero}
-      back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
+      back={consoleBackFor(space, 'programs')}
       eyebrow={brandName}
       title="Loom Studio"
       description="Every image in your space's library. Upload new photos, search and filter by tag, and remove what you no longer need. These are the images the Loom picker offers everywhere you edit this space."

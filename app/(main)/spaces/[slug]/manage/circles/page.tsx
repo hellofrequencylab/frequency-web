@@ -4,7 +4,7 @@ import { UsersRound, Users, Route, PlayCircle, Eye } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceManageHref } from '@/lib/spaces/types'
+import { consoleBackFor } from '@/lib/spaces/console-back'
 import { listSpaceCirclesWithRuns } from '@/lib/circles/store'
 import { pendingOfferForCircle } from '@/lib/circles/handoff'
 import { journeysOfferedBySpace } from '@/lib/journeys/run-gate'
@@ -78,7 +78,7 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
   return (
     <IndexTemplate
       {...hero}
-      back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
+      back={consoleBackFor(space, 'programs')}
       eyebrow={space.brandName ?? space.name}
       title="Circles"
       description="The circles this space runs. Start a Run to move a circle through one of your Journeys together."

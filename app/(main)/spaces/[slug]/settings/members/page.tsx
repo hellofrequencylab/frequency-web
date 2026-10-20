@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { MembersBody } from './members-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // MEMBERS — the owner back-end's TEAM surface (entity-spaces owner hub). A centered, no-rail Focus
 // surface (registered 'none' for /spaces/<slug>/settings/members in page-chrome.ts, alongside the
@@ -55,7 +56,7 @@ export default async function SpaceMembersPage({
 
   if (featureLocked) {
     return (
-      <ConsoleFocusTemplate eyebrow={brandName} title="Members" description="The team for this space.">
+      <ConsoleFocusTemplate back={consoleBack(slug, 'settings')} eyebrow={brandName} title="Members" description="The team for this space.">
         <MembersBody slug={slug} />
       </ConsoleFocusTemplate>
     )
@@ -63,6 +64,7 @@ export default async function SpaceMembersPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'settings')}
       eyebrow={brandName}
       title="Members"
       description="Who is on your team, and the role each one holds. Invite a teammate by email below, then share their link until email delivery ships."

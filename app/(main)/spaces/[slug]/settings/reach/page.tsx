@@ -12,6 +12,7 @@ import { standingLevers, type StandingLever } from '@/lib/spaces/standing'
 import { ReachReceipt } from '@/components/spaces/reach-receipt'
 import { isChapterParentPlan } from '@/lib/collective/member-spaces'
 import { networkToolsAccess } from '@/lib/collective/network-tools-store'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE OPERATOR RECEIPT (LIVE-265 - docs/CORE-MODEL.md Phase 10 §8.4): "what did the network send
 // me, and what would send more". The reason an operator opens the app on a Tuesday.
@@ -70,6 +71,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'marketing')}
       eyebrow={brandName}
       title="Your reach"
       description="What the network sent you, and what would send more. Placement here is earned, never bought, so this page shows you the whole formula."

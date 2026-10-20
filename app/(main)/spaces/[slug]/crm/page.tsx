@@ -17,6 +17,7 @@ import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
 import { CrmBody, ListSkeleton } from './crm-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
 // its pipeline (per-segment stages + deals) plus its contacts, scoped to this space_id, with the
@@ -195,6 +196,7 @@ export default async function SpaceCrmBoardPage({
       eyebrow={brandName}
       title={viewCopy[activeView].title}
       description={viewCopy[activeView].description}
+      back={consoleBack(space.slug, 'resonance')}
       stats={
         <Suspense fallback={<StatsSkeleton />}>
           <CrmStats spaceId={space.id} />

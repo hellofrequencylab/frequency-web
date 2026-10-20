@@ -23,8 +23,21 @@ describe('hrefScore', () => {
 
 describe('the Space console sidebar', () => {
   const items = spaceNavItems('royal-temple', true)
-  it('is the hub tabs in order, with the website editor door after Home', () => {
-    expect(items.map((i) => i.key)).toEqual(['dashboard', 'editor', 'resonance', 'marketing', 'offerings', 'checkin', 'programs', 'settings'])
+  it('is Home, the two public pages, then the hub tabs in four groups', () => {
+    expect(items.map((i) => i.key)).toEqual(['dashboard', 'editor', 'spotlight', 'resonance', 'programs', 'offerings', 'checkin', 'marketing', 'settings'])
+    expect(items.map((i) => i.group)).toEqual([undefined, 'Your public pages', 'Your public pages', 'Run', 'Run', 'Money and reach', 'Money and reach', 'Money and reach', 'Your Space'])
+  })
+  it('puts Spotlight up with the page editor, and lights it on its own page', () => {
+    expect(items.find((i) => i.key === 'spotlight')).toMatchObject({ href: '/spaces/royal-temple/manage/spotlight' })
+    expect(activeNav(items, '/spaces/royal-temple/manage/spotlight', q()).item?.key).toBe('spotlight')
+    expect(spaceNavItems('royal-temple', false).some((i) => i.key === 'spotlight')).toBe(true)
+  })
+  it('lights Profile & Settings on the Space-wide pages', () => {
+    for (const page of ['manage/layout', 'manage/mode', 'manage/modules']) {
+      expect(activeNav(items, `/spaces/royal-temple/${page}`, q()).item?.key).toBe('settings')
+    }
+  })
+  it('opens the website editor through the handoff, as an external row', () => {
     expect(items.find((i) => i.key === 'editor')).toMatchObject({ external: true, href: '/spaces/royal-temple/manage/leadership/open?to=editor' })
   })
   it('gives Check in its own row, lit only on its tab of the Offerings page', () => {

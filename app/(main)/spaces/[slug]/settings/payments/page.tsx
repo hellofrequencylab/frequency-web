@@ -6,6 +6,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { PaymentsBody } from './payments-body'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqEconomyBody } from '@/components/frequency/admin/pages/economy/economy-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // GET PAID (LIVE-294, ADR-1313). The operator's payout home: where the money lands, which of the five
 // money paths are live, the rate actually in effect, and one line separating what the space RECEIVES
@@ -57,6 +58,7 @@ export default async function SpacePaymentsPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'offerings')}
       eyebrow={brandName}
       title="Get paid"
       description="Where your money lands, which of your money paths are live, and what the network takes."

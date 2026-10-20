@@ -15,6 +15,7 @@ import {
 } from '@/lib/spaces/modes'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { ModeSettings, type ModeView, type FocusChoice, type ModuleRow } from './mode-settings'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE MODE SETTINGS (Space Modes M3, ADR-461/464). The Focus surface in the unified console where an
 // operator sees their current Mode + Focus, switches it (non-destructively), reads a plain "what this
@@ -96,6 +97,7 @@ export default async function SpaceModePage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'settings')}
       eyebrow="Manage space"
       title="Mode and focus"
       description="Your Mode decides what leads on your console, the suggested pipeline, and the words for your people and offerings. Switching keeps all your data."
