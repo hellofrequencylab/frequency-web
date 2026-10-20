@@ -285,6 +285,18 @@
       "reason": "Internet relay token (LIVE-1155, ADR-1870, docs/LOYALTY.md section 8). No member session: the credential is the X-Frequency-Device header, resolved by admitDevice (lib/devices/http.ts) to an ACTIVE scanner_devices row by id and a constant-time sha256 compare, after the address limit and the DEVICE_RELAY_ENABLED switch and before any other read. The one service-role read is that device's own device_relay_settings row; the mint refuses unless its relay is on. The token is signed for the CREDENTIAL's device id only (no body is read), as role anon with frequency_kind device, and lives 15 minutes; the realtime.messages policy admits it to device:<that id> only while the device is active with the relay on. No writes beyond admitDevice's last_seen stamp.",
       "checked": "2026-10-19",
       "digest": "775ad3690a83a005"
+    },
+    "app/api/devices/firmware/route.ts": {
+      "verdict": "delegated",
+      "reason": "CyberUnicorn firmware manifest for the staff console's Update firmware button. The gate is consoleStaffGate (lib/devices/store.ts), which runs getCallerProfile (view-as aware) and admits only isStaff (web_role admin or janitor), the same gate the USB console's actions run behind; the route calls it unconditionally after the address limit and the SCANNER_DEVICES_ENABLED 404, and answers 403 on a miss before any read. No database and no admin client: the only read is GitHub's public release list and the release's manifest.json (lib/devices/firmware.ts), validated strictly, and the reply carries only public release metadata.",
+      "checked": "2026-10-20",
+      "digest": "a72e527527078340"
+    },
+    "app/api/devices/firmware/app/route.ts": {
+      "verdict": "delegated",
+      "reason": "CyberUnicorn app.bin download for the staff console's browser flasher. Same gate as ../route.ts: consoleStaffGate (lib/devices/store.ts: getCallerProfile, then isStaff) called unconditionally after the address limit and the SCANNER_DEVICES_ENABLED 404, 403 on a miss before any read. The tag query must match ^cu5k-v<semver>$ and be a published, non-draft, non-prerelease release; lib/devices/firmware.ts downloads that release's public app.bin from GitHub and checks its size and sha256 against the release manifest before returning it. No database and no admin client; the bytes are already public on GitHub, the gate only stops the route being an open proxy.",
+      "checked": "2026-10-20",
+      "digest": "5f73f7d53635aff3"
     }
   }
 }

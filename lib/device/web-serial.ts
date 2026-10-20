@@ -14,7 +14,7 @@ import { Emitter, type Transport } from './transport'
 export const BAUD_RATE = 115200
 export const CH340_VENDOR_ID = 0x1a86
 
-interface SerialPortLike {
+export interface SerialPortLike {
   readable: ReadableStream<Uint8Array> | null
   writable: WritableStream<Uint8Array> | null
   open(options: { baudRate: number; dataBits?: number; stopBits?: number; parity?: string; flowControl?: string }): Promise<void>
