@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { FqMarketNav } from './area-nav'
 import {
   AREA_LABEL,
   AREA_PREFIX,
@@ -13,22 +14,14 @@ import {
 // same read both commerce navs use), plus paid Events, which the Marketplace has always linked as
 // its Events tab. An operator looking at an area members cannot see gets one quiet panel saying so.
 
-export async function FqMarketAreas({ active }: { active: MarketArea | 'events' }) {
+export async function FqMarketAreas() {
   const areas = await browsableAreas()
   const doors: { key: MarketArea | 'events'; href: string; label: string }[] = [
     ...areas.map((a) => ({ key: a, href: AREA_PREFIX[a], label: AREA_LABEL[a] })),
     { key: 'events', href: '/events?price=paid', label: 'Events' },
   ]
   if (doors.length < 2) return null
-  return (
-    <nav className="tabs fqm-tabs" aria-label="Marketplace">
-      {doors.map((d) => (
-        <Link key={d.key} href={d.href} className={d.key === active ? 'on' : undefined} aria-current={d.key === active ? 'page' : undefined}>
-          {d.label}
-        </Link>
-      ))}
-    </nav>
-  )
+  return <FqMarketNav doors={doors} />
 }
 
 export async function FqHiddenAreaNote({ area }: { area: MarketArea }) {

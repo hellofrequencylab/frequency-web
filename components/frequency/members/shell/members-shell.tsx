@@ -349,9 +349,15 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           })}
         </nav>
       )}
-      <div className="fqm-you-foot">
+      {/* The critical doors first, then the full map (LIVE-1011, owner 2026-10-19: "add critical links like
+          Home | Account | Etc before Site Map"). Signed-out stand-ins get no Account door. */}
+      <nav className="fqm-you-foot" aria-label="Quick links">
+        <Link href="/feed">Home</Link>
+        {!props.anonymous && <Link href="/settings">Account</Link>}
+        <Link href="/notifications">Notifications</Link>
+        <Link href="/help">Help</Link>
         <Link href="/site-map">Site map</Link>
-      </div>
+      </nav>
     </>
   )
 

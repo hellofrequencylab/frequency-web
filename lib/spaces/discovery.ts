@@ -128,6 +128,16 @@ export interface NetworkedSpace {
    *  A MARK only (owner ruling 2026-10-06, "Circles only"): the card shows a Boosted badge, and the
    *  directory order ignores it. Exposure here is earned, never sold (LIVE-262). */
   boosted: boolean
+  /** True when an operator picked this Space for the directory's Featured row
+   *  (`preferences.directoryFeatured`, set from /admin/spaces/[id], LIVE-1018). A MARK for the row
+   *  only: like the Founding badge it never enters the standing score, so exposure stays earned. */
+  directoryFeatured: boolean
+}
+
+/** The operator's Featured pick, read from the preferences blob. Total: anything but `true` is off. */
+export function readDirectoryFeatured(preferences: unknown): boolean {
+  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return false
+  return (preferences as Record<string, unknown>).directoryFeatured === true
 }
 
 /** How the catalog is ordered. `standing` (earned placement, LIVE-262) is the default; `name` is
@@ -616,6 +626,7 @@ export const listNetworkedSpaces = cache(
           standing: standingDetail.score,
           standingDetail,
           boosted: boostedIds.has(r.id),
+          directoryFeatured: readDirectoryFeatured(r.preferences),
         }
       })
 

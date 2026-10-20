@@ -44,6 +44,7 @@ import { FoundingBusinessBadge } from '@/lib/community-roles'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
 import { FqSpaceFacts } from '@/components/frequency/members/space/space-facts'
+import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 import { readPublicSpaceFacts } from '@/lib/spaces/public-facts'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
@@ -743,10 +744,11 @@ export default async function SpaceProfileChromeLayout({
           logo={showLogoChip ? <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} /> : null}
           eyebrow={heroEyebrow}
           name={heroHeading}
+          // The Founding mark rides INSIDE the cover photo (LIVE-1019); Boosted stays beside the name.
+          coverBadge={isFoundingBusiness ? <FounderMark /> : null}
           badges={
-            isFoundingBusiness || isBoosted ? (
+            isBoosted ? (
               <div className="fqs-badges">
-                {isFoundingBusiness && <FoundingBusinessBadge founding className="text-3xs leading-tight" />}
                 <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
               </div>
             ) : null
