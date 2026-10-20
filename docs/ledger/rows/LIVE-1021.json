@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1021",
+  "title": "Members, Friends and My Contacts share one header with no photo, one tab strip, and a closable how-to notice",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Daniel design changes 2026-10-19, items 18 and 19"
+  },
+  "detail": "Daniel 2026-10-19: remove the header from the Members page and standardize with Events; make Members, Friends and My Contacts follow one header and nav layout, with a notice that can be closed explaining how to use the three. The three pages stop reading the photo hero (resolveIndexHero) and render IndexTemplate's plain heading with the eyebrow 'Your network'. NetworkHubBar (tabs plus NetworkNotice) is the one strip under the header. The notice is a Server Component that reads a per-member cookie, so a closed notice never flashes; the close is a server action (notice-actions.ts). No migration. Shared index header is LIVE-1012 (plan thread); this row only stops the three pages forking from it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];for(const f of ['app/(main)/network/page.tsx','app/(main)/network/friends/page.tsx','app/(main)/network/contacts/page.tsx']){const s=fs.readFileSync(f,'utf8');if(s.includes('resolveIndexHero'))bad.push(f+' still reads the photo hero');if(!s.includes('<NetworkHubBar active='))bad.push(f+' lacks the shared strip')}if(bad.length){console.error('LIVE-1021: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a Network page returns to the photo hero or drops the shared tab and notice strip.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

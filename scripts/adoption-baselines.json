@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 732,
+      "baseline": 726,
       "frozen": {
-        "at": "2026-10-14",
-        "value": 732,
+        "at": "2026-10-19",
+        "value": 726,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies",
-        "from": 736
+        "reason": "Around You loading skeleton and page moved literal rounded-2xl to rounded-card (LIVE-1017)",
+        "from": 732
       },
       "history": [
         {
@@ -343,6 +343,13 @@
           "to": 732,
           "direction": "lowered",
           "reason": "ADR-1747 page cuts deleted the /start, /discover/partners and /discover/places bodies"
+        },
+        {
+          "at": "2026-10-19",
+          "from": 732,
+          "to": 726,
+          "direction": "lowered",
+          "reason": "Around You loading skeleton and page moved literal rounded-2xl to rounded-card (LIVE-1017)"
         }
       ]
     },

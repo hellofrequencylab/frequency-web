@@ -55,7 +55,7 @@ function imageValue(raw: unknown): AssetValue {
   return isAssetRef(raw) || typeof raw === 'string' ? raw : ''
 }
 import { LoomPicker } from '@/components/loom/loom-picker'
-import { useProfileLayout } from './profile-layout-context'
+import { useEditorBinding } from './editor-binding'
 import { capsLabel } from '@/components/ui/caps-label'
 
 // THE INLINE BLOCK EDIT PANEL — redesigned control surface (ADR-528 → ADR-569). Expands under a block in the
@@ -898,7 +898,7 @@ function FeaturesEditor({
   // Per-item settings (ADR-585): only the ONE focused feature shows its full fields; the rest read as a
   // compact list. The focus index is the shared store's `selectedItemIndex` (set by the live canvas on a
   // card click), with a local fallback for surfaces mounted outside the store (the /manage builder tests).
-  const store = useProfileLayout()
+  const store = useEditorBinding()
   const [localItem, setLocalItem] = useState<number | null>(null)
   const selectedIndex = store ? store.selectedItemIndex : localItem
   const selectItem = store ? store.selectItem : setLocalItem
@@ -1091,7 +1091,7 @@ function CardsEditor({
   // Per-item settings (ADR-585): only the ONE focused card shows its full fields; the rest read as a compact
   // list. The focus index is the shared store's `selectedItemIndex` (set by the live canvas on a card click),
   // with a local fallback for surfaces mounted outside the store.
-  const store = useProfileLayout()
+  const store = useEditorBinding()
   const [localItem, setLocalItem] = useState<number | null>(null)
   const selectedIndex = store ? store.selectedItemIndex : localItem
   const selectItem = store ? store.selectItem : setLocalItem
