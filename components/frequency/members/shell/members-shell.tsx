@@ -31,6 +31,7 @@ import type { WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/staff'
 import { RANK_LABELS } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
+import { CircleMark } from './circle-mark'
 import { MembersKitRoot } from './kit-root'
 import { FqHeader } from './header'
 import { FqAmbient } from './ambient'
@@ -231,7 +232,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           {circles.slice(0, 5).map((c) => (
             <Link key={c.key} href={c.href} className="fqm-circle">
               <span className="fqm-circle-orb" data-live={c.notices > 0 ? '' : undefined} aria-hidden>
-                {getInitials(c.label).slice(0, 1)}
+                <CircleMark label={c.label} image={c.image} />
               </span>
               <span className="fqm-grow">
                 <b>{c.label}</b>
@@ -279,7 +280,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
       {circles.length > 0 && <span className="fqm-divider" aria-hidden />}
       {circles.slice(0, 5).map((c) => (
         <Link key={c.key} href={c.href} className="fqm-circle-orb" data-live={c.notices > 0 ? '' : undefined} aria-label={c.label} data-tip={c.label} data-tip-sub={c.notices > 0 ? `${c.notices} new` : ''}>
-          {getInitials(c.label).slice(0, 1)}
+          <CircleMark label={c.label} image={c.image} />
         </Link>
       ))}
       <Suspense fallback={null}>
