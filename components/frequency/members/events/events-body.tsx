@@ -17,7 +17,7 @@ import { buildCalendarMonth, resolveMonth } from './calendar-month'
 import { FqPeopleToMeet } from './events-lanes'
 import { FqAroundYou, FqAroundYouFrame } from './around-you'
 import { ayMapItems } from './around-you-items'
-import { EventsAddBox } from './events-add-box'
+import { EventsAddBox, EventsAddBoxSlot } from './events-add-box'
 import { FqEventsMapLightbox, FqMapButton } from './events-map-lightbox'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
@@ -524,12 +524,14 @@ export function FqEventsBody({
         </section>
       )}
 
-      <EventsAddBox signedIn={!!myProfileId} userHasEvents={userHasEvents} />
-
       {/* The hub's own doors (New event, Drafts, Manage) close the page, full width, so no side column
           grows beside Around you (SCAN-997). */}
       <Suspense fallback={null}>
         <HubLinks title="Events" links={(v) => hubLinks('/events', v)} />
+      </Suspense>
+
+      <Suspense fallback={<EventsAddBox state={myProfileId ? 'member' : 'visitor'} userHasEvents={userHasEvents} />}>
+        <EventsAddBoxSlot myProfileId={myProfileId} userHasEvents={userHasEvents} />
       </Suspense>
 
       <Suspense fallback={null}>
