@@ -25,7 +25,7 @@ import { PayoutPromptCard } from '@/components/billing/payout-prompt-card'
 import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
 import { CommerceSpark, type SparkDraft } from '@/components/studio/commerce/commerce-spark'
 import { PRODUCT_MANIFEST } from '@/lib/studio/entities/product'
-import { createMakerProductAction, draftMakerProductCopyAction } from '../../marketplace/commerce-actions'
+import { createMakerProductAction, draftMakerProductCopyAction } from '@/app/(main)/marketplace/commerce-actions'
 import { UpgradeMoment } from '@/components/pricing/upgrade-moment'
 import type { UpgradeOffer } from '@/lib/pricing/business-offer'
 

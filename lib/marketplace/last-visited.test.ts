@@ -81,7 +81,7 @@ describe('every surface has something that writes the cookie', () => {
   const LAYOUTS: [CommerceSurface, string][] = [
     ['classifieds', 'app/(main)/classifieds/layout.tsx'],
     ['housing', 'app/(main)/housing/layout.tsx'],
-    ['market', 'app/(main)/market/layout.tsx'],
+    ['market', 'app/(main)/(marketplace)/market/layout.tsx'],
   ]
 
   for (const [surface, path] of LAYOUTS) {

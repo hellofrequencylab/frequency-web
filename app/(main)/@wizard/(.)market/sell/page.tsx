@@ -1,5 +1,5 @@
 import { WizardModal } from '@/components/studio/wizard-modal'
-import MarketSellPage from '@/app/(main)/market/sell/page'
+import MarketSellPage from '@/app/(main)/(marketplace)/market/sell/page'
 
 // /market/sell as a modal. See `(.)circles/new/page.tsx` for the mechanism (ADR-1017).
 // The destination renders the upgrade wall instead of the Spark for a free member; that wall shows
