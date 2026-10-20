@@ -1,0 +1,21 @@
+{
+  "id": "SCAN-1020",
+  "title": "Revoking a counter scanner or a member card asks first, because a revoked one is retired for good",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "section 7"
+  },
+  "detail": "Meta scan 2026-10-20 of the work merged since 2026-10-19 (LIVE-1125). components/spaces/loyalty/scanner-panel.tsx revoked a scanner or a member card on one click. The runbook says a revoked scanner is retired for good, and a revoked scanner stops every counter that holds its key, so a stray tap on the list takes a Space's check-ins offline. Destructive buttons elsewhere ask first (components/ui/confirm-submit-button.tsx).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const t=require('fs').readFileSync('components/spaces/loyalty/scanner-panel.tsx','utf8');const i=t.indexOf('function revoke(');const j=t.indexOf('start(',i);if(i<0||j<0||!t.slice(i,j).includes('window.confirm'))process.exit(1)\"",
+    "note": "Fails when revoke() starts the server action without asking the owner to confirm first.",
+    "checked": "2026-10-20"
+  },
+  "wave": "W7",
+  "closed": "2026-10-20"
+}
