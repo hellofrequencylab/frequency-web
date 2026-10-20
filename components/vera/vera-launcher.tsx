@@ -610,7 +610,9 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           // The `md:` box here is now only the FALLBACK for surfaces that have no bar at all
           // ((marketing), (help), /discover — the EdgePill's neighbours). Wherever a bar exists,
           // `panelBox` above overrides left/width/right/bottom with the bar's own measurement.
-          'fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md md:mx-0 md:inset-x-auto md:bottom-6 md:right-6 md:z-30 md:w-96 md:max-w-none',
+          // `fqd-wrap` is the Frequency hook that lifts the fallback box with the open mega footer
+          // (members-shell.css, LIVE-1043); DAWN has no rule for it.
+          'fqd-wrap fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md md:mx-0 md:inset-x-auto md:bottom-6 md:right-6 md:z-30 md:w-96 md:max-w-none',
           // The reveal is unchanged: a grid row travelling 0fr → 1fr on `--motion-base`, which IS
           // the cue-pop beat the three docks arrive on, with `motion-reduce` collapsing it.
           //
