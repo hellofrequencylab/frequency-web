@@ -3,7 +3,7 @@
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-type NodeLink = { nodeId: string; secret: string | null }
+export type NodeLink = { nodeId: string; secret: string | null }
 
 /** The production site. A check-in link from any other host (a local or preview deployment) is still
  *  a valid link; the tag writer just says so. */

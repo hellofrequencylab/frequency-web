@@ -1,9 +1,9 @@
 # Frequency Experience
 
-The Frequency app for Android. This first version is a remote for your CyberUnicorn 5000, over a USB
-cable or Bluetooth. It works with no Frequency account and no internet. Your Frequency account (stamp
-cards, Zaps, check-in) comes to the app's Frequency tab next. How it is built:
-[`docs/MOBILE-APP.md`](../docs/MOBILE-APP.md).
+The Frequency app for Android. Two tabs: **Device** is a remote for your CyberUnicorn 5000, over a USB
+cable or Bluetooth, and works with no Frequency account and no internet. **Frequency** is your account:
+sign in with your email, see your stamp cards, reward codes, Zaps and streak, and check in by holding
+your phone to a venue tag. How it is built: [`docs/MOBILE-APP.md`](../docs/MOBILE-APP.md).
 
 ## Install it on your phone (no cable, no developer options)
 
@@ -45,8 +45,23 @@ Either way your phone stays on its own Wi-Fi.
 | Sound | Notes and chimes | `sound.tone` |
 | Sensors | Light level and any sensors, live | `light.read`, `sensors.read` |
 | Screen remote | Previous, next, select, back on the gadget's own screen | `screen.nav`, `apps.list` |
-| Tag writer | Write a pasted Frequency check-in link to an NFC tag and read it back | `frequency.write_tag`, `frequency.read_tag` |
+| Tag writer | Write a Frequency check-in link to an NFC tag and read it back. Signed in, pick one of your Spaces; otherwise paste the link | `frequency.write_tag`, `frequency.read_tag` |
 | Console | Run any Bruce command, or watch the serial stream | `cli.run` |
+
+## Your Frequency account
+
+The Frequency tab. Sign in with the email on your Frequency account: type the code from the email, or
+tap its link on the phone. New to Frequency? Make your account on the web first.
+
+| What | How |
+|---|---|
+| Zaps, streak and reward codes | The three tiles at the top, the same counts as Rewards on the web |
+| Stamp cards | Every Regulars card you hold, with any reward code waiting at the counter |
+| Check in | Tap **Check in**, then **Ready to tap**, and hold the back of the phone on the Frequency tag at the door. No NFC on your phone? Scan the door QR with your camera, or paste the link |
+| Notifications | Allowed once, when you first sign in; off until the build has its push keys |
+
+A build without its Frequency settings (`mobile/.env`, see below) is the remote only; the Frequency tab
+says so.
 
 A command whose app is not in the firmware yet answers "Not in this firmware yet." That is expected
 until its branch is merged.
@@ -58,6 +73,9 @@ From `mobile/`:
 ```bash
 pnpm install
 ```
+
+Copy `.env.example` to `.env` and fill in the API address and the Supabase project (all public values).
+Without it the Frequency tab is switched off and the remote still works.
 
 ```bash
 pnpm check
