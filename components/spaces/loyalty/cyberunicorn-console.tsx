@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Press_Start_2P, VT323 } from 'next/font/google'
-import { ChevronDown, ChevronUp, CircleDot, CornerUpLeft, Download, Gamepad2, IdCard, MonitorPlay, Nfc, ScanLine, Usb, Wifi, Wrench, type LucideIcon } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { SidebarCard } from '@/components/ui/sidebar-card'
+import { ChevronDown, ChevronUp, CircleDot, CornerUpLeft, Download, IdCard, MonitorPlay, Nfc, ScanLine, Wifi, type LucideIcon } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
@@ -222,12 +219,15 @@ function CuButton({
   disabled,
   tone = 'primary',
   type = 'button',
+  wide,
 }: {
   children: ReactNode
   onClick?: () => void
   disabled?: boolean
   tone?: 'primary' | 'secondary' | 'quiet'
   type?: 'button' | 'submit'
+  /** Fill the column (the controls beside the screen). */
+  wide?: boolean
 }) {
   const tones = {
     primary: 'bg-[var(--cu-primary)] text-[var(--cu-screen)] hover:bg-[var(--cu-attention)]',
@@ -239,7 +239,7 @@ function CuButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-11 px-4 py-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none tracking-normal outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cu-secondary)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[var(--cu-muted)] disabled:opacity-60 ${tones[tone]}`}
+      className={`${wide ? 'w-full' : ''} min-h-11 px-4 py-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none tracking-normal outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cu-secondary)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[var(--cu-muted)] disabled:opacity-60 ${tones[tone]}`}
     >
       {children}
     </button>
@@ -1287,15 +1287,14 @@ export function CyberUnicornConsole({
     </div>
   )
 
+  const showDisplay = !connected || mode === 'screen'
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]">
-      {/* ── The screen: the one block on the page in the CyberUnicorn skin. ── */}
-      <section
-        aria-labelledby="cu5k-title"
-        style={CU_SCOPE_STYLE}
-        className={`${display.variable} ${body.variable} min-w-0 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] leading-tight text-[var(--cu-text)] [--cu-radius:5px]`}
-      >
-        <RainbowFrame>
+    <section
+      aria-labelledby="cu5k-title"
+      style={CU_SCOPE_STYLE}
+      className={`${display.variable} ${body.variable} min-w-0 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] leading-tight text-[var(--cu-text)] [--cu-radius:5px]`}
+    >
+      <RainbowFrame>
           {/* Status bar: drawMainBorderWithTitle()'s top strip. */}
           <div className="flex items-center justify-between gap-3 border-b border-[var(--cu-panel)] px-4 py-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] leading-none">
             <span className="flex min-w-0 items-center gap-3">
@@ -1311,10 +1310,13 @@ export function CyberUnicornConsole({
             </span>
           </div>
 
-          <div className="min-h-[28rem] space-y-5 p-4 sm:p-6">
-            {/* The display: the board's boot scene until it is linked, its live screen on "Live screen". */}
-            {(!connected || mode === 'screen') && (
-              <div className="mx-auto aspect-[4/3] w-full max-w-[640px] overflow-hidden border border-[var(--cu-panel)] bg-[var(--cu-screen)]">
+          <div className="grid xl:grid-cols-[minmax(0,1fr)_15rem]">
+            {/* ── The screen and the job in hand. ── */}
+            <div className={`grid min-w-0 content-start gap-5 p-4 ${showDisplay ? 'lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]' : ''}`}>
+              {/* The display: the board's boot scene until it is linked, its live screen on "Live screen". */}
+              {showDisplay && (
+                <div className="space-y-4">
+              <div className="aspect-[4/3] w-full overflow-hidden border border-[var(--cu-panel)] bg-[var(--cu-screen)]">
                 {mode === 'screen' && mirror && client ? (
                   <MirrorCanvas client={client} onKey={(k) => void press(k)} />
                 ) : !connected ? (
@@ -1334,8 +1336,46 @@ export function CyberUnicornConsole({
                   </div>
                 )}
               </div>
-            )}
+                  {mode === 'screen' && (
+                    <RailBlock title="Buttons">
+                      <div className="flex items-start gap-4">
+                        <div className="grid w-36 shrink-0 grid-cols-3 gap-1.5" role="group" aria-label="CyberUnicorn buttons">
+                          <span />
+                          <IconButtonKey label="Previous" Icon={ChevronUp} onClick={() => void press('prev')} disabled={!padOn} />
+                          <span />
+                          <IconButtonKey label="Back" Icon={CornerUpLeft} onClick={() => void press('esc')} disabled={!padOn} />
+                          <IconButtonKey label="Select" Icon={CircleDot} onClick={() => void press('sel')} disabled={!padOn} primary />
+                          <span />
+                          <span />
+                          <IconButtonKey label="Next" Icon={ChevronDown} onClick={() => void press('next')} disabled={!padOn} />
+                          <span />
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                          {mirror ? (
+                            <>
+                              <CuButton wide tone="secondary" onClick={() => void refreshMirror()}>
+                                Refresh
+                              </CuButton>
+                              <CuButton wide tone="quiet" onClick={() => void stopMirror()}>
+                                Turn off
+                              </CuButton>
+                            </>
+                          ) : (
+                            <CuButton wide tone="secondary" onClick={() => void startMirror()} disabled={!ready || !canMirror}>
+                              Turn on
+                            </CuButton>
+                          )}
+                        </div>
+                      </div>
+                    </RailBlock>
+                  )}
+                  {mode === 'screen' && mirror && (
+                    <p className="text-[length:var(--cu-type-console)] text-[var(--cu-dim)]">Click the screen and use the arrow keys, Enter and Escape. Animated screens like the boot scene, Light Show and Spectrum do not show here.</p>
+                  )}
+                </div>
+              )}
 
+              <div className="min-w-0 space-y-5">
             <div role="status" aria-live="polite" className="space-y-4">
               {mode === 'update' ? (
                 firmwareScreen
@@ -1614,10 +1654,67 @@ export function CyberUnicornConsole({
                 )}
               </div>
             )}
+              </div>
+            </div>
 
-            {mode === 'screen' && mirror && (
-              <p className="text-center text-[var(--cu-dim)]">Click the screen and use the arrow keys, Enter and Escape. Animated screens like the boot scene, Light Show and Spectrum do not show here.</p>
-            )}
+            {/* ── Beside the screen: the Unicorn, its features and its tools, in the same skin. ── */}
+            <aside aria-label="CyberUnicorn controls" className="space-y-5 border-t border-[var(--cu-panel)] p-4 xl:border-l xl:border-t-0">
+              <RailBlock title="Unicorn" tag={connected ? 'LINKED' : phase === 'connecting' ? 'WAKING' : 'NO LINK'} tagOn={connected}>
+                {connected ? (
+                  <>
+                    <dl className="space-y-0.5 text-[length:var(--cu-type-console)]">
+                      <RailRow label="Device" value={[status?.os ?? 'CyberUnicorn', status?.version].filter(Boolean).join(' ')} />
+                      <RailRow label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
+                      {link === 'usb' && <RailRow label="Reader" value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Not found. Turn DIP 3 on.'} />}
+                      <RailRow label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Not connected'} />
+                    </dl>
+                    <div className="flex flex-col gap-2">
+                      {ready && link === 'usb' && !readerOk && (
+                        <CuButton wide tone="secondary" onClick={() => void recheckReader()}>
+                          Look for the reader
+                        </CuButton>
+                      )}
+                      <CuButton wide tone="quiet" onClick={() => void disconnect()}>
+                        Disconnect
+                      </CuButton>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <CuButton wide onClick={() => void connect()} disabled={!supported || flashing || phase === 'connecting'}>
+                      {phase === 'connecting' ? 'Waking...' : 'Connect USB'}
+                    </CuButton>
+                    <CuButton wide tone="secondary" onClick={() => selectMode('remote')} disabled={flashing || phase === 'connecting'}>
+                      Connect Wi-Fi
+                    </CuButton>
+                  </div>
+                )}
+              </RailBlock>
+
+              <RailBlock title="Features">
+                <nav aria-label="CyberUnicorn features" className="-mx-1 space-y-0.5">
+                  <RailItem Icon={Nfc} label="Check-in placards" hint="Write a Space's NFC placard" on={mode === 'placards'} onClick={() => selectMode('placards')} />
+                  <RailItem Icon={IdCard} label="Member badges" hint="Program a member's card" count={requests.length} on={mode === 'badges'} onClick={() => selectMode('badges')} />
+                  <RailItem Icon={ScanLine} label="Counter scanner" hint="Members tap the Unicorn" on={mode === 'scanner'} onClick={() => selectMode('scanner')} />
+                  <RailItem Icon={MonitorPlay} label="Live screen" hint="See and drive the Unicorn" on={mode === 'screen'} onClick={() => selectMode('screen')} />
+                  <RailItem Icon={Wifi} label="Wi-Fi remote" hint="Drive a Unicorn from anywhere" on={mode === 'remote'} onClick={() => selectMode('remote')} />
+                  <RailItem Icon={Download} label="Update firmware" hint="Install the newest OS" on={mode === 'update'} onClick={() => selectMode('update')} />
+                </nav>
+              </RailBlock>
+
+              <RailBlock title="Tools">
+                <div className="flex flex-col gap-2">
+                  <CuButton wide tone="secondary" onClick={() => void checkCard()} disabled={!ready || !readerOk}>
+                    Read a tag
+                  </CuButton>
+                  {target && CABLE_MODES.includes(mode) && (
+                    <CuButton wide tone="quiet" onClick={() => chooseSpace(null)}>
+                      Another Space
+                    </CuButton>
+                  )}
+                </div>
+              </RailBlock>
+            </aside>
           </div>
 
           {log.length > 0 && (
@@ -1634,143 +1731,68 @@ export function CyberUnicornConsole({
             {connected ? 'All systems fabulous.' : 'USB 115200  DTR/RTS low'}
           </p>
         </RainbowFrame>
-      </section>
-
-      {/* ── Beside the screen: features and options, in the page's own design. ── */}
-      <aside aria-label="CyberUnicorn controls" className="space-y-4 xl:sticky xl:top-24">
-        <SidebarCard title="Unicorn" Icon={Usb} action={<Badge tone={connected ? 'success' : 'neutral'}>{connected ? 'Linked' : phase === 'connecting' ? 'Waking' : 'Not linked'}</Badge>}>
-          <div className="space-y-3 p-4">
-            {connected ? (
-              <>
-                <dl className="space-y-1 text-body-sm">
-                  <RailRow label="Device" value={[status?.os ?? 'CyberUnicorn', status?.version].filter(Boolean).join(' ')} />
-                  <RailRow label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
-                  {link === 'usb' && <RailRow label="Reader" value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Not found. Turn DIP 3 on.'} />}
-                  <RailRow label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Not connected'} />
-                </dl>
-                <div className="flex flex-wrap gap-2">
-                  {ready && link === 'usb' && !readerOk && (
-                    <Button size="sm" variant="secondary" onClick={() => void recheckReader()}>
-                      Look for the reader
-                    </Button>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={() => void disconnect()}>
-                    Disconnect
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-body-sm text-subtle">Plug the CyberUnicorn into this computer with a USB cable. Chrome or Edge only.</p>
-                <Button className="w-full" onClick={() => void connect()} disabled={!supported || flashing} loading={phase === 'connecting' && mode !== 'remote'}>
-                  Connect over USB
-                </Button>
-                <Button className="w-full" variant="secondary" onClick={() => selectMode('remote')} disabled={flashing}>
-                  Connect over Wi-Fi
-                </Button>
-              </>
-            )}
-          </div>
-        </SidebarCard>
-
-        <SidebarCard title="Features">
-          <nav aria-label="CyberUnicorn features" className="p-2">
-            <RailItem Icon={Nfc} label="Check-in placards" hint="Write a Space's NFC placard" on={mode === 'placards'} onClick={() => selectMode('placards')} />
-            <RailItem Icon={IdCard} label="Member badges" hint="Program a member's card" count={requests.length} on={mode === 'badges'} onClick={() => selectMode('badges')} />
-            <RailItem Icon={ScanLine} label="Counter scanner" hint="Members tap the Unicorn" on={mode === 'scanner'} onClick={() => selectMode('scanner')} />
-            <RailItem Icon={MonitorPlay} label="Live screen" hint="See and drive the Unicorn" on={mode === 'screen'} onClick={() => selectMode('screen')} />
-            <RailItem Icon={Wifi} label="Wi-Fi remote" hint="Drive a Unicorn from anywhere" on={mode === 'remote'} onClick={() => selectMode('remote')} />
-            <RailItem Icon={Download} label="Update firmware" hint="Install the newest OS" on={mode === 'update'} onClick={() => selectMode('update')} />
-          </nav>
-        </SidebarCard>
-
-        {mode === 'screen' ? (
-          <SidebarCard title="Buttons" Icon={Gamepad2}>
-            <div className="space-y-3 p-4">
-              <div className="grid grid-cols-3 gap-2" role="group" aria-label="CyberUnicorn buttons">
-                <span />
-                <IconButtonKey label="Previous" Icon={ChevronUp} onClick={() => void press('prev')} disabled={!padOn} />
-                <span />
-                <IconButtonKey label="Back" Icon={CornerUpLeft} onClick={() => void press('esc')} disabled={!padOn} />
-                <IconButtonKey label="Select" Icon={CircleDot} onClick={() => void press('sel')} disabled={!padOn} primary />
-                <span />
-                <span />
-                <IconButtonKey label="Next" Icon={ChevronDown} onClick={() => void press('next')} disabled={!padOn} />
-                <span />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {mirror ? (
-                  <>
-                    <Button size="sm" variant="secondary" onClick={() => void refreshMirror()}>
-                      Refresh
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => void stopMirror()}>
-                      Turn off
-                    </Button>
-                  </>
-                ) : (
-                  <Button size="sm" variant="secondary" onClick={() => void startMirror()} disabled={!ready || !canMirror}>
-                    Turn on
-                  </Button>
-                )}
-              </div>
-            </div>
-          </SidebarCard>
-        ) : (
-          <SidebarCard title="Tools" Icon={Wrench}>
-            <div className="flex flex-col gap-2 p-4">
-              <Button size="sm" variant="secondary" onClick={() => void checkCard()} disabled={!ready || !readerOk}>
-                Read a tag or card
-              </Button>
-              {target && CABLE_MODES.includes(mode) && (
-                <Button size="sm" variant="ghost" onClick={() => chooseSpace(null)}>
-                  Choose another Space
-                </Button>
-              )}
-            </div>
-          </SidebarCard>
-        )}
-      </aside>
-    </div>
+    </section>
   )
 }
 
-/** One feature in the rail: icon, name, a one-line hint, and the selected state. */
+/** A titled group of controls: a pixel-face label, an optional state tag on the right. */
+function RailBlock({ title, tag, tagOn, children }: { title: string; tag?: string; tagOn?: boolean; children: ReactNode }) {
+  return (
+    <section className="space-y-2.5">
+      <h3 className="flex items-center justify-between gap-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none text-[var(--cu-muted)]">
+        <span>{title}</span>
+        {tag && <span className={tagOn ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-dim)]'}>{tag}</span>}
+      </h3>
+      {children}
+    </section>
+  )
+}
+
+/** One feature in the controls column: icon and name, the hint on hover, a magenta edge when selected. */
 function RailItem({ Icon, label, hint, count, on, onClick }: { Icon: LucideIcon; label: string; hint: string; count?: number; on: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       aria-current={on ? 'page' : undefined}
+      title={hint}
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
-        on ? 'bg-primary-bg text-text' : 'text-subtle hover:bg-surface-elevated hover:text-text'
+      className={`flex w-full items-center gap-2.5 border-l-2 px-2 py-1.5 text-left outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--cu-secondary)] ${
+        on ? 'border-[var(--cu-primary)] bg-[var(--cu-panel)] text-[var(--cu-text)]' : 'border-transparent text-[var(--cu-muted)] hover:bg-[var(--cu-floor)] hover:text-[var(--cu-text)]'
       }`}
     >
-      <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-primary-strong' : ''}`} aria-hidden />
-      <span className="min-w-0 flex-1">
-        <span className="block text-body-sm font-semibold">{label}</span>
-        <span className="block truncate text-meta text-subtle">{hint}</span>
-      </span>
-      {count ? <span className="text-meta font-medium tabular-nums text-subtle">{count}</span> : null}
+      <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-[var(--cu-primary)]' : 'text-[var(--cu-secondary)]'}`} aria-hidden />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {count ? <span className="tabular-nums text-[var(--cu-warn)]">{count}</span> : null}
     </button>
   )
 }
 
 function RailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-3">
-      <dt className="w-14 shrink-0 text-subtle">{label}</dt>
-      <dd className="min-w-0 break-words text-text">{value}</dd>
+    <div className="flex gap-2">
+      <dt className="w-14 shrink-0 text-[var(--cu-muted)]">{label}</dt>
+      <dd className="min-w-0 break-words">{value}</dd>
     </div>
   )
 }
 
-/** One of the board's four buttons. */
+/** One of the board's four buttons: cyan outline, magenta for Select, like the device's own keys. */
 function IconButtonKey({ label, Icon, onClick, disabled, primary }: { label: string; Icon: LucideIcon; onClick: () => void; disabled?: boolean; primary?: boolean }) {
   return (
-    <Button size="sm" variant={primary ? 'primary' : 'secondary'} onClick={onClick} disabled={disabled} aria-label={label} title={label} className="h-11 w-full">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex h-9 w-full items-center justify-center outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cu-secondary)] disabled:cursor-not-allowed disabled:opacity-40 ${
+        primary
+          ? 'bg-[var(--cu-primary)] text-[var(--cu-screen)] hover:bg-[var(--cu-attention)]'
+          : 'border border-[var(--cu-secondary)] text-[var(--cu-secondary)] hover:bg-[var(--cu-secondary)] hover:text-[var(--cu-screen)]'
+      }`}
+    >
       <Icon className="h-4 w-4" aria-hidden />
-    </Button>
+    </button>
   )
 }
 
@@ -1885,8 +1907,10 @@ function Screen({ icon, title, big, children }: { icon: keyof typeof CU_ICONS; t
   )
 }
 
+// Important (`!`) on purpose: the site skin's `.input` rule paints the field white with its own font and
+// radius after the utilities, and this field has to wear the Unicorn's colours instead.
 const FIELD_CLASS =
-  'block min-h-11 w-full rounded-none border border-[var(--cu-secondary)] bg-[var(--cu-floor)] px-3 py-1 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] text-[var(--cu-text)] shadow-none caret-[var(--cu-primary)] outline-none ring-0 placeholder:text-[var(--cu-dim)] focus-visible:border-[var(--cu-primary)] focus-visible:ring-0'
+  'block min-h-11 w-full rounded-none! border! border-[var(--cu-secondary)]! bg-[var(--cu-floor)]! px-3! py-1! font-[family-name:var(--cu-font-body)]! text-[length:var(--cu-type-body)]! text-[var(--cu-text)]! shadow-none! caret-[var(--cu-primary)] outline-none ring-0 placeholder:text-[var(--cu-dim)] focus-visible:border-[var(--cu-primary)]! focus-visible:ring-0'
 
 /** The board-as-counter-scanner block: which Space it answers for, how its scans travel, Wi-Fi. */
 function ScannerSetup(props: {

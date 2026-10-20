@@ -28,7 +28,7 @@ export default async function CyberUnicornPage({ searchParams }: { searchParams:
       eyebrow="Growth"
       icon={Nfc}
       width="wide"
-      description="Program NFC check-in placards for any Space with the CyberUnicorn over USB, then tap one with a phone to see the check-in land. Member badges, the counter scanner and the Unicorn's live screen are here too."
+      description="Program any Space's NFC check-in placard with the CyberUnicorn, then tap it with a phone."
     >
       <AdminSection>
         {on ? (
