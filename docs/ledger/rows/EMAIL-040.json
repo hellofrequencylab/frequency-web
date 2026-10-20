@@ -1,7 +1,7 @@
 {
   "id": "EMAIL-040",
   "title": "Sections can be saved and reused across emails",
-  "status": "open",
+  "status": "done",
   "priority": "P3",
   "lane": "live",
   "size": "M",
@@ -13,7 +13,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-editor.mjs sections",
-    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+    "note": "PASS 2026-10-20: a block can be saved by name from its tile and added back to any email from Saved sections (this browser's storage, no migration); vitest covers the library rules and the editor round trip. A shared database library stays an owner decision."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-20"
 }
