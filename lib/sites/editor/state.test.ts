@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { nextWebsiteState, overlayWebsiteEditor, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, WEBSITE_THEMES_LIVE, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
 const comment = (): SiteComment => ({ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false })
+// The site style a site wears when it is on the given editor theme (SCAN-831: the publish gate reads it too).
+const WORN: Record<string, string> = { Menswork: 'bold', DAWN: 'frequency', Wildheart: 'wildheart', Network: 'network' }
+const wears = (theme: string) => ({ siteStyle: { theme: WORN[theme] ?? 'frequency' } })
 const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [comment()] }] })
 const state = (): WebsiteEditorState => ({ v: 1, revision: 0, draft: snapshot(), published: null, versions: [] })
 describe('website draft boundary', () => {
@@ -61,7 +64,7 @@ describe('website draft boundary', () => {
   })
   it('overlays the private editor row onto a public preferences stub', () => {
     const live = nextWebsiteState(state(), snapshot(), true, 'owner')
-    const stub = { websiteEditor: { v: 1, revision: live.revision, published: live.published }, theme: 'kept' }
+    const stub = { websiteEditor: { v: 1, revision: live.revision, published: live.published }, theme: 'kept', ...wears('Menswork') }
     const merged = overlayWebsiteEditor(stub, live)
     expect(readWebsiteEditor(stub)).toBeNull()
     expect(readWebsiteEditor(merged)).toEqual(live)
@@ -73,11 +76,18 @@ describe('website draft boundary', () => {
     for (const theme of WEBSITE_THEMES) {
       const live = nextWebsiteState(state(), { ...snapshot(), theme }, true, 'owner')
       expect(live.published?.theme, theme).toBe(theme)
-      expect(publishedWebsiteSnapshot({ websiteEditor: live }) !== null, theme).toBe(WEBSITE_THEMES_LIVE.has(theme))
-      expect(publishedWebsitePage({ websiteEditor: live }, 'home') !== null, theme).toBe(WEBSITE_THEMES_LIVE.has(theme))
+      expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears(theme) }) !== null, theme).toBe(WEBSITE_THEMES_LIVE.has(theme))
+      expect(publishedWebsitePage({ websiteEditor: live, ...wears(theme) }, 'home') !== null, theme).toBe(WEBSITE_THEMES_LIVE.has(theme))
     }
     expect(WEBSITE_THEMES_LIVE.has('Menswork')).toBe(true)
     expect(WEBSITE_THEMES_LIVE.has('DAWN')).toBe(false)
+  })
+  it('serves a published document only while the site wears the theme it was written in (SCAN-831)', () => {
+    const live = nextWebsiteState(state(), snapshot(), true, 'owner')
+    expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('Menswork') })).not.toBeNull()
+    // A Bold site switched to Frequency keeps its Menswork snapshot but the public site falls back to the house look.
+    expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('DAWN') })).toBeNull()
+    expect(publishedWebsitePage({ websiteEditor: live, ...wears('Network') }, 'home')).toBeNull()
   })
   it('captures scheduled content independently from subsequent autosaves', () => {
     const scheduled = nextWebsiteState(state(), snapshot(), false, 'owner', '2026-10-08T12:00:00Z', '2026-10-09T12:00:00Z')
@@ -107,7 +117,7 @@ describe('website draft boundary', () => {
   it('reads public pages only from the published snapshot, excluding subsequent draft edits', () => {
     const live = nextWebsiteState(state(), snapshot(), true, 'owner')
     live.draft.pages[0].doc.content[0].props.text = 'Private later draft'
-    expect(publishedWebsitePage({ websiteEditor: live }, 'home')?.doc.content[0].props.text).toBe('Original')
+    expect(publishedWebsitePage({ websiteEditor: live, ...wears('Menswork') }, 'home')?.doc.content[0].props.text).toBe('Original')
     expect(publishedWebsitePage({ websiteEditor: live }, 'missing')).toBeNull()
     expect(publishedWebsitePage({ websiteEditor: state() }, 'home')).toBeNull()
   })
