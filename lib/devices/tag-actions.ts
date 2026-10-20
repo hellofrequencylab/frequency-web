@@ -7,7 +7,7 @@
 
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { ensureCheckinNodeForStaff } from '@/lib/spaces/checkin'
-import { signedNodeUrl } from '@/lib/qr/node-code'
+import { signedPlacardUrl } from '@/lib/qr/node-code'
 import { normalizeUid } from './credentials'
 import { latestCheckinSince, listSpaceTags, recordSpaceTag, removeSpaceTag, type SpaceTagRow } from './space-tags'
 
@@ -19,9 +19,8 @@ export async function startSpaceTag(spaceId: unknown): Promise<ActionResult<{ no
   const node = await ensureCheckinNodeForStaff(spaceId)
   if (!node) return fail('Could not get that Space’s check-in link. Only Frequency staff can write Space tags.')
   try {
-    // `m=nfc` comes after the signed code so Scan stats can count placard taps apart from QR scans;
-    // the /n page reads only `s`.
-    return ok({ nodeId: node.id, url: `${signedNodeUrl(node.id)}&m=nfc` })
+    // The placard link carries `m=nfc`, so Scan stats count placard taps apart from QR scans.
+    return ok({ nodeId: node.id, url: signedPlacardUrl(node.id) })
   } catch {
     return fail('Could not sign that Space’s check-in link. Try again.')
   }
