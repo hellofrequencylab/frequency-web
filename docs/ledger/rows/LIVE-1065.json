@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1065",
+  "title": "Editor E0 task 15, the one-time node backfill script (dry run by default; not run)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "\u00a78 task 12b"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. lib/entity-blocks/backfill.ts decides convert, skip or invalid per stored layout (pure, idempotent); scripts/upgrade-entity-layouts.mts walks spaces.preferences.profileLayout and profileLayoutDraft and profiles.meta.entityGrid, prints a per-store tally and per-row list, and writes only with --apply, after saving every replaced value to a backup file. Verified against a mock REST server: dry run, apply, then a re-run that converts 0. NOT RUN against production: run it only after render_path_space_profile is on and the editors are tested, because stored nodes make the type-keyed editors refuse writes. Email documents convert on next save behind render_path_email and are not touched.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('scripts/upgrade-entity-layouts.mts','utf8');const bad=[];if(!s.includes(\\\"includes('--apply')\\\"))bad.push('no apply gate');if(!/writeFileSync\\\\(BACKUP/.test(s))bad.push('no backup before write');if(!s.includes('backfillLayout'))bad.push('skips the shared decision');if(!fs.readFileSync('lib/entity-blocks/backfill.ts','utf8').includes('already-native'))bad.push('not idempotent');if(bad.length){console.error('LIVE-1065: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the backfill can write without --apply, writes without a backup, or stops skipping documents already stored as nodes. Behavior is backfill.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}
