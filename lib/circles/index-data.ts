@@ -85,9 +85,10 @@ function toCardData(c: CircleRow): CircleCardData {
     imageUrl: c.image_url ?? (c.space && c.space.type !== 'root' ? c.space.cover_image_url : null),
     isDemo: c.is_demo,
     isFeatured: !!c.featured_at,
-    kind: circleKind({ spaceType: c.space?.type, featuredAt: c.featured_at, hubId: c.hub?.id }),
+    kind: circleKind({ slug: c.slug, spaceType: c.space?.type, featuredAt: c.featured_at, hubId: c.hub?.id }),
     latitude: c.latitude,
     longitude: c.longitude,
+    channelIds: circleChannelIds(c),
   }
 }
 
