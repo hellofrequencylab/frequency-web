@@ -38,7 +38,7 @@ export type ScanReason =
   | 'capacity_reached'
 
 /** The device's reply, exactly as POST /api/v1/devices/scan sends it (docs/LOYALTY.md). */
-export interface ScanReply {
+interface ScanReply {
   ok: boolean
   reason?: ScanReason
   member: { display_name: string } | null

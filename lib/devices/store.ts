@@ -131,7 +131,7 @@ export async function readSpacePin(spaceId: string): Promise<{ lat: number; lng:
   }
 }
 
-export type IssueOutcome =
+type IssueOutcome =
   | { ok: true; token: string; displayName: string }
   | { ok: false; reason: 'unknown_member' | 'too_many_cards' | 'failed' }
 

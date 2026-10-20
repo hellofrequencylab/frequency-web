@@ -137,9 +137,9 @@ as $$
 $$;
 
 -- Policy helpers run as the joining role; they are not reachable over PostgREST (private schema).
-revoke execute on function private.relay_topic_device(text) from public;
-revoke execute on function private.relay_device_may_join(text) from public;
-revoke execute on function private.relay_member_may_join(text) from public;
+revoke execute on function private.relay_topic_device(text) from public, anon, authenticated;
+revoke execute on function private.relay_device_may_join(text) from public, anon, authenticated;
+revoke execute on function private.relay_member_may_join(text) from public, anon, authenticated;
 grant execute on function private.relay_topic_device(text) to anon, authenticated, service_role;
 grant execute on function private.relay_device_may_join(text) to anon, service_role;
 grant execute on function private.relay_member_may_join(text) to authenticated, service_role;
