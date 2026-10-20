@@ -1,7 +1,8 @@
 import { isAssetRef } from '@/lib/library/asset-ref'
 import type { Data, ContentItem } from '@/lib/page-editor/types'
 import { siteTheme } from '@/lib/theme/site-style'
-import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
+import { resolveRows } from '@/lib/entity-blocks/layout'
+import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { readSiteHero } from '@/lib/spaces/website'
 import { readHeroConfig } from '@/lib/spaces/hero-config'
 import type { WebsiteTheme } from './state'
@@ -21,7 +22,7 @@ const TYPES: Record<string, string> = {
 /** Import original content and original asset URLs once; never the screenshot crops. */
 export function seedWebsiteHome(space: Space, fallback: Data): Data {
   const prefs = (space.preferences ?? {}) as Record<string, unknown>
-  const grid = parseEntityLayout(prefs.profileLayout)
+  const grid = readTypeKeyedGrid(prefs.profileLayout)
   if (!grid) return withWebsiteIds(fallback)
   const name = space.brandName?.trim() || space.name
   const hero = readSiteHero(prefs)

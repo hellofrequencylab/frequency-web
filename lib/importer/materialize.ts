@@ -43,6 +43,7 @@ import { addSpaceMember } from '@/lib/spaces/membership'
 import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { withPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
@@ -449,7 +450,10 @@ async function writeProfileDataAndLayout(
   // images, live data and the Site doc all still refresh below; only the block arrangement is held.
   // The lock only bites when there IS an existing layout to protect, so it can never leave a Space
   // with no page at all.
-  const layoutLocked = lockLayout && !!currentPrefs.profileLayout
+  // A stored NODE document is held the same way whether or not the operator asked: the importer composes a
+  // type-keyed layout, and writing it over node identities and bench bags would erase authored work (the
+  // LIVE-887 guard the other legacy writers already honor).
+  const layoutLocked = (lockLayout && !!currentPrefs.profileLayout) || legacySpaceLayoutWriteError(null, currentPrefs) !== null
   if (safeLayout && !layoutLocked) next.profileLayout = safeLayout
   // (leave any existing profileLayout in place if sanitize returned null — do not wipe on a no-op)
 

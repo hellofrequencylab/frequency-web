@@ -1,4 +1,4 @@
-import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 
 // THE CONTACT TAB's two pure questions: what the form should say, and whether the Space has earned
 // the tab at all. Kept database-free and React-free so both can be unit-tested directly, which is
@@ -21,7 +21,7 @@ export function readContactFormContent(preferences: unknown): Record<string, unk
   // parseEntityLayout), so a bag the page renders and a bag this tab renders are one object, not
   // two readings of it. FAIL-SAFE: a malformed or absent layout parses to null and the form falls
   // back to its own default wording rather than throwing on a Space that never laid out a page.
-  const layout = parseEntityLayout(prefs.profileLayout)
+  const layout = readTypeKeyedGrid(prefs.profileLayout)
   const bag = layout?.content?.contactForm
   return bag && typeof bag === 'object' && !Array.isArray(bag) ? (bag as Record<string, unknown>) : {}
 }

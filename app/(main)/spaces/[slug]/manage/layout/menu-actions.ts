@@ -9,7 +9,8 @@ import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { publishedWebsiteSnapshot } from '@/lib/sites/editor/state'
 import { HOUSE_NAV, planHouseSections, siteHasContactPage } from '@/lib/sites/house-theme'
-import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
+import { resolveRows } from '@/lib/entity-blocks/layout'
+import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -77,7 +78,7 @@ async function websiteCatalog(space: Space): Promise<MenuCatalogEntry[]> {
   const prefs = space.preferences
   const pages = publishedWebsiteSnapshot(prefs)?.pages ?? readProfilePages(prefs)
   const node = prefs && typeof prefs === 'object' ? (prefs as Record<string, unknown>).profileLayout : null
-  const rows = resolveRows(parseEntityLayout(node) ?? {}, 'space')
+  const rows = resolveRows(readTypeKeyedGrid(node) ?? {}, 'space')
   const anchors = new Map<string, string>()
   for (const s of planHouseSections(rows)) {
     const nav = HOUSE_NAV[s.kind]

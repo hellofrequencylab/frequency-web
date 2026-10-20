@@ -1,6 +1,7 @@
 import { parseEntityLayout, sanitizeEntityLayout, type EntityLayout, type RowDef } from '@/lib/entity-blocks/layout'
 import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 import { normalizeNodeLayout, sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
+import { nodeProjection } from '@/lib/entity-blocks/node-projection'
 import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 
 // THE SPACE SPOTLIGHT (owner ask 2026-10-07: "use the exact same Spotlight app / editor for both personal
@@ -100,28 +101,6 @@ function toSpotlightNodes(layout: NodeLayout | null | undefined): NodeLayout | n
     rows: placed.map((n, i) => ({ id: `r${i}`, columns: 1 as const, cells: [[n]] })),
     bench,
   })
-}
-
-/** The type-keyed projection of a node document (see readSpaceSpotlight): the shown nodes, each type once, in
- *  reading order, with the first node's content and style bags. Maps then fromEntries: a node type is never an
- *  assigned property name (CodeQL js/remote-property-injection). PURE. */
-function nodeProjection(nodes: NodeLayout): EntityLayout {
-  const first = new Map<string, BlockNode>()
-  for (const n of nodes.rows.flatMap((row) => row.cells.flat())) if (n.hidden !== true && !first.has(n.type)) first.set(n.type, n)
-  const rows: RowDef[] = [...first.keys()].map((type, i) => ({ id: `r${i}`, columns: 1, cells: [[type]] }))
-  const bag = <T,>(pick: (n: BlockNode) => T | undefined) => {
-    const entries = [...first].flatMap(([type, n]) => {
-      const v = pick(n)
-      return v === undefined ? [] : [[type, v] as const]
-    })
-    return entries.length ? Object.fromEntries(entries) : undefined
-  }
-  const out: EntityLayout = { rows, nodes }
-  const content = bag((n) => n.content)
-  if (content) out.content = content
-  const style = bag((n) => n.style)
-  if (style) out.style = style
-  return out
 }
 
 /** Narrow a parsed / sanitized layout to a one-column Spotlight layout, or null when no block survives. */
