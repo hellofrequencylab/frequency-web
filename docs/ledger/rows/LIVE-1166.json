@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1166",
+  "title": "An owner writes a member card from Check-in & scanners with a CyberUnicorn plugged into their computer over USB",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "wave": "W7",
+  "status": "done",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "§7 Write a card over USB. Owner ask 2026-10-20: plug the CyberUnicorn into the laptop, open The Group's management page, hold the one demo card to the board and have the page program it. Only that panel wears the CyberUnicorn 5000 design system."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20 (build plan phases 1 to 3). PREMISE RE-TESTED: no Web Serial or WebUSB anywhere in the web app; cards could only be minted by a registered scanner with a device secret (POST /api/v1/devices/cards). The firmware already answers frequency.write_tag, frequency.read_tag, system.status and hat.probe over USB (cyberpunkunicorn-os/apps/remote/app_handlers.cpp), so no firmware change. Built: lib/device/ (protocol, client, transport and types copied from mobile/src/device/, mobile untouched; the client takes a per-call timeout), lib/device/web-serial.ts (CH340 filter, 115200 8N1, DTR and RTS low in one setSignals call, read loop that survives framing errors, unplug detection). lib/devices: issueCardFromConsole, bindConsoleCard and discardConsoleCard behind scannerOwnerGate write; actions startConsoleCard, finishConsoleCard, cancelConsoleCard. components/spaces/loyalty/cyberunicorn-console.tsx: the CyberUnicorn console at the top of Counter scanners, skinned from the CyberUnicorn 5000 design system (lib/theme/cyberunicorn.ts: scoped custom properties, rainbow.cpp hue maths quantised to RGB565, the Frequency Check-in and RFID pixel icons, the boot unicorn, Press Start 2P and VT323 via next/font with preload off), one shared 25 fps tick that stops under reduced motion. OPEN EVIDENCE 2026-10-20: SCANNER_DEVICES_ENABLED is off in Production, so the console does not show on frequencylocal.com until the docs/RUNBOOKS.md Counter scanners gate is run and the switch is on. Not yet run against hardware: needs the combined CyberUnicorn OS build (projects #7, #8, #9) on Daniel's board.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const bad=[];const ws=r('lib/device/web-serial.ts');if(!/setSignals\\(\\{ dataTerminalReady: false, requestToSend: false \\}\\)/.test(ws))bad.push('Web Serial no longer lowers DTR and RTS together, which resets the CYD');if(!/usbVendorId: CH340_VENDOR_ID/.test(ws))bad.push('the port picker is not filtered to the CH340');const c=r('components/spaces/loyalty/cyberunicorn-console.tsx');if(!/'frequency.write_tag'/.test(c)||!/startConsoleCard\\(/.test(c)||!/finishConsoleCard\\(/.test(c)||!/cancelConsoleCard\\(/.test(c))bad.push('the console no longer mints, writes, then binds or discards');if(!/CU_SCOPE_STYLE/.test(c))bad.push('the console lost its scoped CyberUnicorn skin');const st=r('lib/devices/store.ts');const i=st.indexOf('export async function discardConsoleCard');const d=st.slice(i,i+900);if(i<0||!/\\.is\\('uid_hash', null\\)/.test(d)||!/\\.is\\('issued_by', null\\)/.test(d)||!/\\.is\\('last_used_at', null\\)/.test(d))bad.push('discard could delete a card that is out in the world');for(const f of ['issueCardFromConsole','bindConsoleCard','discardConsoleCard']){const j=st.indexOf('export async function '+f);if(j<0||!/scannerOwnerGate\\(spaceId, 'write'\\)/.test(st.slice(j,j+600)))bad.push(f+' is ungated')}if(!/CyberUnicornConsole/.test(r('app/(main)/spaces/[slug]/settings/checkin/scanners-section.tsx')))bad.push('the console is not in Counter scanners');if(!fs.existsSync('lib/device/protocol.test.ts'))bad.push('missing lib/device/protocol.test.ts');if(bad.length){console.error('LIVE-1166: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when Web Serial stops lowering DTR and RTS in one call or stops filtering to the CH340, when the console stops minting, writing and then binding or discarding, when it loses its scoped skin, when discard could delete a bound, used or scanner-issued card, when an owner write loses its gate, or when the console leaves Counter scanners. Behaviour is lib/device/protocol.test.ts.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20"
+}

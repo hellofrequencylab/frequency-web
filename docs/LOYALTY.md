@@ -110,8 +110,8 @@ workspace); "Counter scanners" sits under Regulars (`scanners-section.tsx`).
 - A card is an opaque token (16 random bytes, base64url); only `sha256(token)` is stored. A card
   minted by a device works at that device's Space only. `space_id null` (a Frequency-wide card) is
   allowed by the schema and the scan, with no issuer yet.
-- The chip UID is bound on the card's first scan (an HMAC under the server signing key, never the
-  raw UID). After that, the token on another chip, or with no UID, is refused as `card_mismatch`.
+- The chip UID is bound on the card's first scan, or straight after the write when the owner's USB
+  console wrote it (an HMAC under the server signing key, never the raw UID). After that, the token on another chip, or with no UID, is refused as `card_mismatch`.
   A token copied before its first scan is the one gap: the owner revokes the card.
 - The device is the witness of presence. The scan presents a node code the server signs on the spot
   and the Space's own pin as the location, which satisfies the "must be here" geofence. A stolen
@@ -180,6 +180,30 @@ never stored in the clear. Refusals: `unknown_member`, `too_many_cards`.
 
 **`GET /c/<token>`** is what the card opens on a phone: the reader's **own** `/rewards` (through
 sign-in when signed out), or `/code-unavailable` for a revoked card. It checks nobody in.
+
+### Write a card over USB (the CyberUnicorn console, `LIVE-1166`)
+
+With the CyberUnicorn plugged into the owner's computer, "Counter scanners" opens with the
+**CyberUnicorn console** (`components/spaces/loyalty/cyberunicorn-console.tsx`), the one block on the
+page in the CyberUnicorn 5000 design system (`lib/theme/cyberunicorn.ts`, scoped to that block). It
+talks to the board over Web Serial (Chrome or Edge on a computer) in the device's remote protocol v1
+(`lib/device/`, a copy of `mobile/src/device/`; the device half is `cyberpunkunicorn-os/apps/remote/PROTOCOL.md`).
+No scanner registration and no device secret are needed: the owner's own session mints the card.
+
+1. Connect. The port opens at 115200 8N1 with DTR and RTS set low in one call (the CYD's auto-reset
+   circuit resets the ESP32 when they differ), then `system.status` is re-sent until the board answers,
+   which covers a reboot on open. `hat.probe` reports whether the PN532 is live (DIP 3).
+2. Program. `startConsoleCard(spaceId, handle)` mints a card for this Space (same token, hash and
+   5-per-member cap as a scanner-issued one, `issued_by` null). The page sends
+   `frequency.write_tag { url, label, timeout_ms: 30000 }`; the device emits `frequency.waiting_for_tag`,
+   writes the NDEF URI to the NTAG and reads it back.
+3. Bind or discard. On success `finishConsoleCard` binds the chip UID at once. On a definite device
+   failure (no card in time, not an NTAG, write failed) `cancelConsoleCard` deletes the mint, and it
+   deletes only an unbound, never-used, console-minted row. When the outcome is unknown (cable pulled,
+   no reply) the mint is kept: the card may be good, and its first counter scan binds it.
+
+"Check a card" runs `frequency.read_tag` and shows what a tag holds. The page never logs a card token
+(the device log in the panel masks `/c/<token>`), and the firmware's write log keeps host and path only.
 
 ### Try it locally
 
