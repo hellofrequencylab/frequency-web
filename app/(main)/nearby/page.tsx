@@ -26,6 +26,12 @@ import {
   TEASER_CARDS_PER_SERIES,
   type SeriesRow,
 } from '@/lib/events/series'
+import { pickNewMembers, type NewMemberRow } from '@/lib/nearby/new-members'
+import { Avatar } from '@/components/ui/avatar'
+import { DIRECTORY_VISIBILITY_COLUMNS } from '@/lib/connections/directory-visibility'
+import { scopeDirectoryQuery } from '@/lib/connections/directory-page'
+import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import { pickCirclesForming } from '@/lib/nearby/circles-forming'
 import { DispatchMarquee } from '@/components/nearby/dispatch-marquee'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
@@ -165,7 +171,9 @@ export default async function NearbyPage({
   const weekAgoIso = new Date(now.getTime() - 7 * 864e5).toISOString()
   const twoWeeksAgoIso = new Date(now.getTime() - 14 * 864e5).toISOString()
 
-  const [dispatchResults, eventsRes, newCirclesRes, membersRes, circlesCountRes, eventsCountRes, newMembersRes] = await Promise.all([
+  const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
+
+  const [dispatchResults, eventsRes, newCirclesRes, membersRes, circlesCountRes, eventsCountRes, newMembersRes, newMemberRowsRes] = await Promise.all([
     Promise.all(promises),
     // Everything happening soon across the community.
     //
@@ -212,6 +220,16 @@ export default async function NearbyPage({
     // Joined in the last seven days: one number, no names, so it says the neighborhood is growing
     // without exposing who.
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).gte('created_at', weekAgoIso),
+    // The faces behind that number (LIVE-1035). Scoped by the SAME directory gate the Members page
+    // uses (active, listed in the directory, not ghosting, the demo gate) and re-checked by the shared
+    // predicate in pickNewMembers, because this is a service-role read that answers to no policy.
+    scopeDirectoryQuery(
+      admin.from('profiles').select(`id, display_name, handle, avatar_url, created_at, is_system, ${DIRECTORY_VISIBILITY_COLUMNS}`),
+      { hideDemo },
+    )
+      .gte('created_at', twoWeeksAgoIso)
+      .order('created_at', { ascending: false })
+      .limit(24),
   ])
 
   const seen = new Set<string>()
@@ -239,6 +257,7 @@ export default async function NearbyPage({
   const role = (profile as { community_role: CommunityRole }).community_role
   const broadcastsThisWeek = dispatches.filter((d) => (d.published_at ?? '') >= weekAgoIso).length
   const newMembersCount = newMembersRes.count ?? 0
+  const newMembers = pickNewMembers((newMemberRowsRes.data ?? []) as unknown as NewMemberRow[], profile.id)
   const newCirclesCount = newestCircles.slice(0, 5).filter((c) => (c.created_at ?? '') >= twoWeeksAgoIso).length
 
   // Host+ compose targets.
@@ -406,6 +425,27 @@ export default async function NearbyPage({
           )}
         </section>
       </div>
+
+      {/* ── New to the community: faces, not a number. Only members the directory would list. ── */}
+      {newMembers.length > 0 && (
+        <section aria-label="New to the community">
+          <SectionHeader title="New to the community" href="/network" />
+          <ul data-visual-mask="nearby-new-members" className="flex gap-3 overflow-x-auto pb-1">
+            {newMembers.map((m) => (
+              <li key={m.id} className="shrink-0">
+                <Link
+                  href={`/people/${m.handle}`}
+                  className="flex w-28 flex-col items-center gap-1.5 rounded-card border border-border bg-surface p-3 text-center lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+                >
+                  <Avatar src={m.avatar_url} name={m.display_name ?? ''} size="md" />
+                  <span className="w-full truncate text-body-sm font-semibold text-text">{m.display_name}</span>
+                  <span className="text-meta text-subtle">Joined {relativeTime(m.created_at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ── The Dispatch stream, in two columns so it uses the width ── */}
       <section id="dispatches" aria-label="Latest Dispatches" className="scroll-mt-24">
