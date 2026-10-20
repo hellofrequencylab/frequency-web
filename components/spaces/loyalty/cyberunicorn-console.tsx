@@ -968,12 +968,21 @@ export function CyberUnicornConsole({
     setTapStarted(Date.now())
     setNow(Date.now())
     let tag: TagWritten
-    try {
-      tag = await c.call<TagWritten>(
+    const write = (url: string) =>
+      c.call<TagWritten>(
         'frequency.write_tag',
-        { url: link.data.url, label: label || `${spaceName} check-in`.slice(0, PLACARD_LABEL_MAX), timeout_ms: TAP_MS },
+        { url, label: label || `${spaceName} check-in`.slice(0, PLACARD_LABEL_MAX), timeout_ms: TAP_MS },
         { timeoutMs: TAP_REPLY_MS },
       )
+    try {
+      try {
+        tag = await write(link.data.url)
+      } catch (e) {
+        // CyberUnicorn OS 0.1.0 refuses `m=` on a /n/ link before it waits for a tag. Write the bare
+        // signed link instead: the check-in is the same, only Scan stats miss the "placard" tag.
+        if (!(e instanceof DeviceError) || !/\?m= is for/.test(e.message)) throw e
+        tag = await write(link.data.url.replace(/[?&]m=nfc$/, ''))
+      }
     } catch (e) {
       setTapStarted(null)
       setProblem(tagProblem(e))
