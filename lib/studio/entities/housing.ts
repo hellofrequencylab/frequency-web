@@ -6,7 +6,7 @@
 // messages the host, and everything after that happens between the two of them.
 //
 // WHY THIS FILE EXISTS. Housing sat OUTSIDE the Studio entirely — its member form
-// (app/(main)/housing/new/housing-form.tsx) hand-rolls 31 controls, and the listing-seeder's review
+// (app/(main)/(marketplace)/housing/new/housing-form.tsx) hand-rolls 31 controls, and the listing-seeder's review
 // board hand-rolled a second field list beside it, while both sibling seeders derive theirs from a
 // manifest. That is two independent descriptions of one entity, and they had already drifted.
 //
@@ -17,7 +17,7 @@
 // have. Merging them would give every classifieds post a bedroom count and every housing post a
 // price note that means nothing. Two entities, one kernel, which is what the kernel is for.
 //
-// The field paths mirror `HousingFormInitial` (app/(main)/housing/new/housing-form.tsx) EXACTLY,
+// The field paths mirror `HousingFormInitial` (app/(main)/(marketplace)/housing/new/housing-form.tsx) EXACTLY,
 // which is the same shape the edit surface prefills and the create/update actions read back. One
 // spelling of every field, so the form, the review board and the manifest cannot drift.
 //

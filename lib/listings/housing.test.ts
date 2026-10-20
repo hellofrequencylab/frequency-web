@@ -516,8 +516,8 @@ describe('migration 20270111000000 (housing Tier B) source shape', () => {
 describe('create/edit action parity (Tier B fields cannot drift)', () => {
   const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8')
   const createSrc = read('app/(main)/marketplace/actions.ts')
-  const editSrc = read('app/(main)/housing/[id]/edit/actions.ts')
-  const formSrc = read('app/(main)/housing/new/housing-form.tsx')
+  const editSrc = read('app/(main)/(marketplace)/housing/[id]/edit/actions.ts')
+  const formSrc = read('app/(main)/(marketplace)/housing/new/housing-form.tsx')
 
   /** Every form-data key a housing action source reads, however it reads it. */
   function formKeys(src: string, fn: string): Set<string> {

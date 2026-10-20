@@ -433,8 +433,8 @@ describe('check-creates · the live repo', () => {
   // Asserted on both housing actions and on the shared form, because all three have to agree.
   it('both housing actions and the shared form require a city (ADR-1262)', () => {
     const create = readFileSync(resolve(process.cwd(), 'app/(main)/marketplace/actions.ts'), 'utf8')
-    const edit = readFileSync(resolve(process.cwd(), 'app/(main)/housing/[id]/edit/actions.ts'), 'utf8')
-    const form = readFileSync(resolve(process.cwd(), 'app/(main)/housing/new/housing-form.tsx'), 'utf8')
+    const edit = readFileSync(resolve(process.cwd(), 'app/(main)/(marketplace)/housing/[id]/edit/actions.ts'), 'utf8')
+    const form = readFileSync(resolve(process.cwd(), 'app/(main)/(marketplace)/housing/new/housing-form.tsx'), 'utf8')
     for (const [name, src] of [['create', create], ['edit', edit]] as const) {
       expect(src, name).toMatch(/const city = String\(formData\.get\('city'\) \?\? ''\)\.trim\(\) \|\| null/)
       expect(src, name).toMatch(/if \(!city\) return/)

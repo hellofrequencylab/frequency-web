@@ -80,7 +80,7 @@ describe('every surface has something that writes the cookie', () => {
   // commerce path. Events does NOT, and that asymmetry is deliberate (see the page's comment).
   const LAYOUTS: [CommerceSurface, string][] = [
     ['classifieds', 'app/(main)/(marketplace)/classifieds/layout.tsx'],
-    ['housing', 'app/(main)/housing/layout.tsx'],
+    ['housing', 'app/(main)/(marketplace)/housing/layout.tsx'],
     ['market', 'app/(main)/(marketplace)/market/layout.tsx'],
   ]
 
