@@ -261,3 +261,16 @@ export const loadSpaceCircleTotals = cache(async (spaceId: string): Promise<Circ
     return null
   }
 })
+
+/** Names and logos of the Spaces that host events (events.host_space_id), keyed by Space id. Empty on a failed read. */
+export async function loadHostSpaces(spaceIds: readonly string[]): Promise<Map<string, { name: string; logoUrl: string | null }>> {
+  const out = new Map<string, { name: string; logoUrl: string | null }>()
+  const ids = [...new Set(spaceIds)]
+  if (ids.length === 0) return out
+  const { data, error } = await createAdminClient().from('spaces').select('id, name, brand_name, brand_logo_url').in('id', ids)
+  if (error) return out
+  for (const s of (data ?? []) as { id: string; name: string | null; brand_name: string | null; brand_logo_url: string | null }[]) {
+    out.set(s.id, { name: s.brand_name || s.name || 'Space', logoUrl: s.brand_logo_url })
+  }
+  return out
+}

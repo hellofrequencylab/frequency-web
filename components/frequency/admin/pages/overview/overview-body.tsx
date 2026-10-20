@@ -14,7 +14,7 @@ import { isPastDueSpaceMembership } from '@/lib/spaces/membership-dunning'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, WeekBars, n, trendOf, usd } from '../shared'
 import { checkinsByEvent, countBetween, firstTimers, percentChange, repeatShare, returnRate, rsvpShowRate, weeklyCounts } from '../checkin-stats'
-import { loadGoingRsvps, loadSpaceCheckins, loadSpaceCircleTotals, loadSpaceFollowerCounts, loadSpaceMembershipBilling } from '../space-reads'
+import { loadGoingRsvps, loadHostSpaces, loadSpaceCheckins, loadSpaceCircleTotals, loadSpaceFollowerCounts, loadSpaceMembershipBilling } from '../space-reads'
 
 // THE SPACE OVERVIEW, FREQUENCY (design_handoff/frequency/templates/admin/Overview.html). The console's
 // Home tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/dashboard/space-dashboard.tsx. The
@@ -116,10 +116,11 @@ export async function FqOverviewBody({
   const events = weekEvents.filter((e) => !e.is_cancelled)
   const past = pastEvents.filter((e) => !e.is_cancelled && Date.parse(e.starts_at) <= nowMs)
   const pastIds = past.map((e) => e.id)
-  const [going, hosts, pastGoing] = await Promise.all([
+  const [going, hosts, pastGoing, hostSpaces] = await Promise.all([
     goingCountsByEvent(events.map((e) => e.id)),
     getProfileSummaries(events.map((e) => e.host_id).filter((id): id is string => !!id)),
     loadGoingRsvps(pastIds),
+    loadHostSpaces(events.map((e) => e.host_space_id).filter((id): id is string => !!id)),
   ])
   const rsvpsWeek = events.reduce((sum, e) => sum + (going[e.id] ?? 0), 0)
   const upcoming30 = monthEvents.filter((e) => !e.is_cancelled).length
@@ -171,7 +172,7 @@ export async function FqOverviewBody({
       sub: circles && circles.circles > 0 ? `${n(circles.seats)} member ${circles.seats === 1 ? 'seat' : 'seats'}` : undefined,
     },
   ]
-  const noHost = events.filter((e) => !e.host_id).length
+  const noHost = events.filter((e) => !e.host_id && !e.host_space_id).length
   const unanswered = conversations.filter((r) => r.awaitingReply).length
   const firstName = viewer?.get(viewerProfileId ?? '')?.displayName?.trim().split(/\s+/)[0] ?? null
 
@@ -334,7 +335,11 @@ export async function FqOverviewBody({
                     </tr>
                   ) : (
                     events.map((e) => {
-                      const host = e.host_id ? hosts.get(e.host_id) : null
+                      // A Space that hosts the event (a chapter) is the host shown; the person who made it is the fallback.
+                      const hostSpace = e.host_space_id ? hostSpaces.get(e.host_space_id) : null
+                      const host = hostSpace
+                        ? { avatarUrl: hostSpace.logoUrl, displayName: hostSpace.name, handle: null }
+                        : e.host_id ? hosts.get(e.host_id) : null
                       const count = going[e.id] ?? 0
                       const full = e.capacity && e.capacity > 0 ? count / e.capacity : 0
                       return (
@@ -357,7 +362,7 @@ export async function FqOverviewBody({
                           </td>
                           <td>{e.capacity ? `${n(count)} / ${n(e.capacity)}` : n(count)}</td>
                           <td>
-                            {!e.host_id ? (
+                            {!e.host_id && !hostSpace ? (
                               <Link className="btn sm pa" href={`/events/${e.slug}/manage`} aria-label={`Find a host for ${e.title || 'this event'}`}>
                                 <FqIcon name="host" />
                                 Find a host
