@@ -547,3 +547,48 @@ const checkinLinkView = z.object({
 })
 export type CheckinLinkView = z.infer<typeof checkinLinkView>
 export const checkinLinksResponse = envelope(z.object({ items: z.array(checkinLinkView) }))
+
+// ── /api/v1/me/devices: devices the caller may control over the internet relay (LIVE-1155) ──────
+
+/** The commands that may ever cross the relay (lib/devices/relay.ts RELAY_COMMANDS; cli.run never). */
+export const relayCommand = z.enum([
+  'system.status',
+  'apps.list',
+  'lightshow.state',
+  'lightshow.set',
+  'led.set',
+  'led.mode',
+  'sound.tone',
+  'light.read',
+  'sensors.read',
+  'frequency.read_tag',
+])
+
+/** A device the caller manages: they own it, or own or admin its Space. `channel` is the private
+ *  Realtime topic to join with the member session (`config.private = true`). */
+const managedDeviceView = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  space: z.object({ id: z.uuid(), name: z.string(), slug: z.string().nullable() }).nullable(),
+  channel: z.string(),
+  relayEnabled: z.boolean(),
+  allowedCmds: z.array(relayCommand),
+  owned: z.boolean(),
+  lastSeenAt: z.string().nullable(),
+})
+
+/** `relayAvailable` is false while DEVICE_RELAY_ENABLED is off here: the list is then empty. */
+export const myDevicesResponse = envelope(z.object({ items: z.array(managedDeviceView), relayAvailable: z.boolean() }))
+
+/** PATCH body: switch the relay, narrow its commands, or claim the device as its personal owner. */
+export const deviceRelayPatchInput = z
+  .object({
+    relayEnabled: z.boolean().optional(),
+    allowedCmds: z.array(relayCommand).max(32).optional(),
+    owner: z.literal('me').optional(),
+  })
+  .refine((v) => v.relayEnabled !== undefined || v.allowedCmds !== undefined || v.owner !== undefined, {
+    message: 'Send relayEnabled, allowedCmds or owner.',
+  })
+
+export const myDeviceResponse = envelope(managedDeviceView)
