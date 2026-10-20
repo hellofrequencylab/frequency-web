@@ -236,10 +236,6 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // dead end, so a switch that could hide it would recreate exactly what it fixes, the same reasoning
   // `space.reachreceipt` carries.
   { id: 'space.payments', label: 'Get paid', desc: 'Where your money lands, which of your money paths are live, and the rate the network takes.', Icon: Wallet, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/payments`, order: 50.5, tier: 'primary', priority: 32.5, access: 'included', freeNote: '0% on your own people, always', parent: 'space.offerings' },
-  // Check in (LIVE-949): the door code, the link to write to an NFC tag, the roster, and the Regulars stamp card. The old
-  // `space.checkin` row was retired (LIVE-226) while its panel stayed, so nothing in any menu led there; this row is the
-  // new door onto that panel. It keeps its own id so the retired one stays retired.
-  { id: 'space.regulars', label: 'Check in', desc: 'Your door code and NFC link, who checked in, and the Regulars stamp card.', Icon: QrCode, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/full?panel=checkin`, order: 50.6, tier: 'primary', priority: 32.6, access: 'included', parent: 'space.offerings' },
   // Enrollment, Tickets and Check in used to be three more rows in this box. All three were retired
   // (LIVE-226): each named a second door onto a tool the space already had, so the box listed six products
   // where there were three. Enrollment is a Journey plus the Memberships roster; tickets are the EVENT

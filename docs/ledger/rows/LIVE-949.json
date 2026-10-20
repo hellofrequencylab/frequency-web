@@ -1,19 +1,19 @@
 {
   "id": "LIVE-949",
-  "title": "Check in has a door in the Space Manage menu: Offerings & Money lists it, and it opens the door code, the NFC link and Regulars",
+  "title": "Check in has a door on the Space Manage page: a Check in shortcut beside Web editor and Menu and features opens the door code, the NFC link and Regulars",
   "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "S",
   "wave": "W7",
   "source": {
-    "file": "lib/admin/modules/space-modules.ts",
+    "file": "components/spaces/manage-quick-links.tsx",
     "ref": "Owner report 2026-10-20 ('where the fuck is check in'): no tab led to the Check in panel. ADR-1788"
   },
-  "detail": "FILED AND CLOSED 2026-10-20. The old space.checkin row was retired (LIVE-226) but its ?panel=checkin panel stayed, so the only way in was a typed URL. A new row space.regulars (label Check in) sits in the Offerings and money box under a new 'At the door' group and opens that panel inline. space.checkin stays retired.",
+  "detail": "FILED AND CLOSED 2026-10-20. The old space.checkin catalog row was retired (LIVE-226) but its ?panel=checkin panel stayed, so nothing led to it. A Check in shortcut now sits in the Manage quick links and opens that panel in place. The catalog is untouched, so the LIVE-246 box count still holds.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.readFileSync(p,'utf8');const miss=[];if(!/id: 'space\\.regulars', label: 'Check in'/.test(r('lib/admin/modules/space-modules.ts')))miss.push('no Check in row');if(!/'space\\.regulars': 'checkin'/.test(r('lib/spaces/surface-hrefs.ts')))miss.push('row does not open the panel');if(!/space\\.regulars/.test(r('lib/admin/modules/space-hub.ts')))miss.push('row not in a hub group');if(miss.length){console.error('LIVE-949: '+miss.join('; '));process.exit(1)}\""
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/spaces/manage-quick-links.tsx','utf8');if(!s.includes(\\\"key: 'checkin', label: 'Check in'\\\")||!s.includes('panel=checkin')){console.error('LIVE-949: no Check in shortcut');process.exit(1)}\""
   },
   "closed": "2026-10-20"
 }

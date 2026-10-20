@@ -122,7 +122,6 @@ const MODULE_PANEL_ID: Record<string, string> = {
   'space.enroll': 'enroll', // Enrollment
   'space.tickets': 'tickets', // Tickets
   'space.checkin': 'checkin', // Check in
-  'space.regulars': 'checkin', // Check in (LIVE-949): the new row onto the same panel
 }
 
 /** THE MANAGE-CONSOLE href for a P1 module (docs/MODULAR-MENU.md — P1): prefer the module's ON-PAGE panel
