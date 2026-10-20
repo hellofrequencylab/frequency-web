@@ -5,8 +5,11 @@
   "priority": "P2",
   "lane": "live",
   "size": "M",
-  "source": { "file": "docs/EDITOR-ARCHITECTURE.md", "ref": "§1 Site's four things, §8.1 E3" },
-  "detail": "Site is a kind in the type system (LIVE-1171) but the published Space website still renders through its own path. It needs the web renderer mounted for kind site behind a surface filter (the filter lives only in git history today) and a zero-visual-diff proof against the Site baseline, which needs the first Spotlight and Site pictures (LIVE-1170). Start from lib/spaces/website.ts and the Site route.",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "§1 Site's four things, §8.1 E3"
+  },
+  "detail": "Site is a kind in the type system (LIVE-1171) but the published Space website still renders through its own path. It needs the web renderer mounted for kind site behind a surface filter (the filter lives only in git history today) and a zero-visual-diff proof against the Site baseline, which needs the first Spotlight and Site pictures (LIVE-1170). Start from lib/spaces/website.ts and the Site route. 2026-10-20: the house Home now resolves rows as kind site (LIVE-1173). Remaining here: a Site-only surface filter, and the zero-visual-diff proof, which needs a Site picture taken on the site host (see LIVE-1170).",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const f=fs.readdirSync('lib',{recursive:true}).map(String).filter(x=>/\\.tsx?$/.test(x)&&!/test/.test(x));const hit=f.some(x=>/resolveRows\\([^)]*'site'/.test(fs.readFileSync('lib/'+x,'utf8')));process.exit(hit?0:1)\"",
