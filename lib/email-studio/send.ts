@@ -38,6 +38,7 @@ import { compileEmailDoc } from './shell'
 import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 import { applyMergeTags } from './render'
+import { appendUtm } from './utm'
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { resolveDataBlockRefs } from './data-blocks'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from './types'
@@ -821,7 +822,8 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
       // Compile per recipient so the footer carries THIS recipient's unsubscribe link, then
       // resolve merge tags: HTML gets escaped values (default), text + subject stay raw.
       const compiled = compileEmailDoc(doc, { unsubscribeUrl, manageUrl })
-      const html = applyMergeTags(compiled.html, vars, { fallbacks })
+      // Links back to this site carry utm_source/medium/campaign so first-touch attribution names the email.
+      const html = appendUtm(applyMergeTags(compiled.html, vars, { fallbacks }), { siteUrl: SITE_URL, campaign: `email-${campaignId.slice(0, 8)}` })
       const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
       const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
 
