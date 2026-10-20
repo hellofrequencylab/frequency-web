@@ -102,6 +102,28 @@ function toSpotlightNodes(layout: NodeLayout | null | undefined): NodeLayout | n
   })
 }
 
+/** The type-keyed projection of a node document (see readSpaceSpotlight): the shown nodes, each type once, in
+ *  reading order, with the first node's content and style bags. Maps then fromEntries: a node type is never an
+ *  assigned property name (CodeQL js/remote-property-injection). PURE. */
+function nodeProjection(nodes: NodeLayout): EntityLayout {
+  const first = new Map<string, BlockNode>()
+  for (const n of nodes.rows.flatMap((row) => row.cells.flat())) if (n.hidden !== true && !first.has(n.type)) first.set(n.type, n)
+  const rows: RowDef[] = [...first.keys()].map((type, i) => ({ id: `r${i}`, columns: 1, cells: [[type]] }))
+  const bag = <T,>(pick: (n: BlockNode) => T | undefined) => {
+    const entries = [...first].flatMap(([type, n]) => {
+      const v = pick(n)
+      return v === undefined ? [] : [[type, v] as const]
+    })
+    return entries.length ? Object.fromEntries(entries) : undefined
+  }
+  const out: EntityLayout = { rows, nodes }
+  const content = bag((n) => n.content)
+  if (content) out.content = content
+  const style = bag((n) => n.style)
+  if (style) out.style = style
+  return out
+}
+
 /** Narrow a parsed / sanitized layout to a one-column Spotlight layout, or null when no block survives. */
 function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
   if (!layout?.rows?.length) return null
@@ -122,11 +144,13 @@ function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
 export function readSpaceSpotlight(preferences: unknown): SpaceSpotlight {
   const node = spotlightNode(preferences)
   if (!node) return { published: false, layout: null }
-  // A NATIVE node document has no type-keyed projection (inline nodes cannot live in `cells: string[][]`),
-  // so it reads as nodes only. The render path reads `layout.nodes`; the flag stays off until it is wired.
+  // A NATIVE node document: nodes are the truth (`layout.nodes`, which every renderer reads through
+  // resolveNodeRowsFor), and `rows` is a best-effort type-keyed projection, one row per distinct shown type with
+  // the first node's bags, so the same document still reads sensibly with the switch off. It must be non-empty:
+  // the renderers fall back to the starter when `rows` has none.
   if (hasNativeNodeStorage(node.layout)) {
     const nodes = toSpotlightNodes(upgradeLayout(node.layout))
-    return { published: node.published === true, layout: nodes ? { rows: [], nodes } : null }
+    return { published: node.published === true, layout: nodes ? nodeProjection(nodes) : null }
   }
   return { published: node.published === true, layout: toSpotlightLayout(parseEntityLayout(node.layout)) }
 }
@@ -156,7 +180,10 @@ const SITE_SAFE: ReadonlySet<string> = new Set([
 /** A Spotlight grid narrowed to the blocks a website host shows. PURE. */
 export function spotlightSiteGrid(grid: EntityLayout): EntityLayout {
   const rows = (grid.rows ?? []).filter((r) => r.cells.every((cell) => cell.every((id) => SITE_SAFE.has(id))))
-  return { ...grid, rows }
+  if (!grid.nodes) return { ...grid, rows }
+  // A node document narrows the same way, by node type, so a website never draws a Frequency-linking block.
+  const kept = grid.nodes.rows.filter((r) => r.cells.every((cell) => cell.every((n) => SITE_SAFE.has(n.type))))
+  return { ...grid, rows, nodes: { ...grid.nodes, rows: kept } }
 }
 
 /** The next preferences blob for a Spotlight change. Only the `spotlight` node is written. A layout is run
