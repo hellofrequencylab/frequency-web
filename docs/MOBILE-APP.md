@@ -1,7 +1,7 @@
 # Frequency Experience (the mobile app)
 
 The Frequency app for phones, in `mobile/`. Android first. Decided in [ADR-1865](DECISIONS.md). What is
-built and what is left is tracked in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`LIVE-1115`,
+built and what is left is tracked in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`LIVE-1121`,
 `DEF-MOBILE`), never here.
 
 **This pass is the CyberUnicorn 5000 remote only** (owner scope, 2026-10-19: "Right now, I just want a
