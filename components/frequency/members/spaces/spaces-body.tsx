@@ -5,8 +5,9 @@ import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { SPACE_KINDS, isSpaceKind, spaceKindLabel } from '@/lib/spaces/categories'
 import { SUBJECTS, findSubject } from '@/lib/taxonomy/subjects'
 import { SHOW_STEP, type DirectoryParams, type DirectorySections } from '@/lib/spaces/directory-sections'
-import { FqFacetMenu, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
+import { FqFacetMenu, FqFindField, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
+import { SystemNotice } from '@/components/frequency/members/shared/system-notice'
 import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 
@@ -56,7 +57,11 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
         <span className="h3">{s.name}</span>
         {s.tagline && <span className="t2">{s.tagline}</span>}
         {stats && <span className="t2 fqm-body-ink">{stats}</span>}
-        {s.boosted && <span className="t2 fqm-body-ink">Boosted</span>}
+        {s.boosted && (
+          <span className="row">
+            <span className="tag">Boosted</span>
+          </span>
+        )}
       </span>
     </Link>
   )
@@ -105,7 +110,20 @@ export function FqSpacesBody({
     <MembersBody>
       {header}
 
+      {!signedIn && (
+        <SystemNotice
+          icon="space"
+          title="Run something in town?"
+          body="A Space is one home for the Circles you gather and the Events you put on. Hosting is free."
+          actions={[
+            { href: '/join', label: 'Sign up to create a Space', primary: true },
+            { href: '/sign-in', label: 'Log in' },
+          ]}
+        />
+      )}
+
       <div className="fqm-tools">
+        <FqFindField action={BASE} value={params.q} placeholder="Search by name, place or subject" keep={{ ...cur, q: undefined }} />
         <FqFacetMenu
           label="Subject"
           paramKey="subject"
@@ -200,7 +218,7 @@ export function FqSpacesBody({
       <section className="sec" aria-labelledby="fq-spaces-all">
         <div className="sec-h">
           <span id="fq-spaces-all" className="h2">
-            {filtering ? 'Results' : 'All Spaces'}
+            {filtering ? 'Results' : featured.length + founding.length > 0 ? 'More Spaces' : 'All Spaces'}
           </span>
           <span className="meta">{plural(total, 'Space', 'Spaces')}</span>
         </div>
@@ -224,15 +242,25 @@ export function FqSpacesBody({
             )}
           </>
         ) : (
-          <div className="empty stack">
-            <span className="h3">
-              {params.following === '1' ? 'You are not following any Spaces yet.' : filtering ? 'No Spaces match.' : 'No Spaces here yet.'}
-            </span>
-            <span className="t2">
-              {filtering
-                ? 'Try a wider search, or start from a kind of Space below.'
-                : 'A Space is the home a studio, a shop or a nonprofit keeps here. If you run something in town, this is where it goes.'}
-            </span>
+          <>
+            <SystemNotice
+              icon={params.following === '1' ? 'space' : 'search'}
+              title={
+                params.following === '1'
+                  ? 'You are not following any Spaces yet.'
+                  : filtering
+                    ? 'No Spaces match.'
+                    : 'Every Space is in the rows above.'
+              }
+              body={
+                params.following === '1'
+                  ? 'Follow a Space from its page and its Circles and Events show up here.'
+                  : filtering
+                    ? 'Try a wider search, or start from a kind of Space below.'
+                    : 'More will appear here as Spaces open their doors.'
+              }
+              actions={filtering ? [{ href: BASE, label: 'See every Space', primary: true }] : undefined}
+            />
             {filtering && (
               <nav className="chips" aria-label="Try a kind of Space">
                 {SPACE_KINDS.map((k) => (
@@ -242,27 +270,19 @@ export function FqSpacesBody({
                 ))}
               </nav>
             )}
-            {filtering && (
-              <Link className="btn sm fqm-tag-start" href={BASE}>
-                See every Space
-              </Link>
-            )}
-          </div>
+          </>
         )}
       </section>
 
-      <div className="soft row wrap sec">
-        <span className="grow stack fqm-gap-sm">
-          <span className="h3">Run something in town?</span>
-          <span className="t2">
-            A Space is one home for the Circles you gather, the Events you put on and everything you offer. Hosting is
-            free. You pay when you start charging.
-          </span>
-        </span>
-        <Link className="btn pa" href="/spaces/new">
-          {signedIn ? 'Create a Space' : 'Sign up to create a Space'}
-        </Link>
-      </div>
+      {signedIn && (
+        <SystemNotice
+          className="sec"
+          icon="help"
+          title="Not sure what a Space is?"
+          body="It is one home for the Circles you gather, the Events you put on and everything you offer. Hosting is free. You pay when you start charging."
+          actions={[{ href: '/help', label: 'How Spaces work' }]}
+        />
+      )}
     </MembersBody>
   )
 }
