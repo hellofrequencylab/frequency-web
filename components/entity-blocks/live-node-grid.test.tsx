@@ -56,3 +56,10 @@ describe('LiveNodeGrid', () => {
     expect(container.textContent).not.toContain('Alpha')
   })
 })
+
+describe('LiveNodeGrid member kind', () => {
+  it('renders a member node document with no Space slug', () => {
+    act(() => root.render(<LiveNodeGrid nodes={nodes} initialLayout={doc} kind="member" />))
+    expect(container.textContent).toContain('Alpha')
+  })
+})
