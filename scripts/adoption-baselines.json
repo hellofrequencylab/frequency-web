@@ -702,14 +702,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 308,
+      "baseline": 299,
       "frozen": {
-        "at": "2026-10-19",
-        "value": 308,
+        "at": "2026-10-20",
+        "value": 299,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "LIVE-993 removed the operator-seat editor and picker from the Space billing page",
-        "from": 309
+        "reason": "Re-freeze to the current lower count: a landed sweep retired sites without re-freezing (owner approved, found on #3747)",
+        "from": 308
       },
       "history": [
         {
@@ -900,6 +900,13 @@
           "to": 308,
           "direction": "lowered",
           "reason": "LIVE-993 removed the operator-seat editor and picker from the Space billing page"
+        },
+        {
+          "at": "2026-10-20",
+          "from": 308,
+          "to": 299,
+          "direction": "lowered",
+          "reason": "Re-freeze to the current lower count: a landed sweep retired sites without re-freezing (owner approved, found on #3747)"
         }
       ]
     },
