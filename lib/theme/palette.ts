@@ -72,6 +72,26 @@ export interface Palette {
   emailInfo: string
   /** The cancelled / problem eyebrow in transactional email. */
   emailAlert: string
+  /** Body copy ink in email (Commons text-body); headings use emailHeading. */
+  emailBody: string
+  /** The primary action's solid fill: the fallback under emailType.actionBackground where no gradient paints. */
+  emailAction: string
+  /** Text on the primary action. */
+  emailActionInk: string
+  /** The outlined secondary pill's border (--border-strong flattened). */
+  emailBorderStrong: string
+  /** The soft accent panel behind a callout (Commons accent-soft). */
+  emailAccentSoft: string
+  /** The night room an email dims to under prefers-color-scheme: dark. */
+  emailNightCanvas: string
+  emailNightSurface: string
+  emailNightBorder: string
+  emailNightStrong: string
+  emailNightBody: string
+  emailNightMuted: string
+  emailNightAction: string
+  emailNightOnAction: string
+  emailNightLink: string
 
   // ── raster-card values (no CSS token) ─────────────────────────────────────────────────────
   /** The accent bar and brand mark on the dark-ground OG cards. */
@@ -110,6 +130,20 @@ const DAWN: Palette = {
   emailSuccess: '#11827A', // token-ok: palette source, email-only (pre-ADR-1317 success)
   emailInfo: '#2F6FB0', // token-ok: palette source, email-only (pre-ADR-1317 info)
   emailAlert: '#b91c1c', // token-ok: palette source, email-only
+  emailBody: '#3D352A', // token-ok: palette source, email-only
+  emailAction: '#E2912F', // token-ok: palette source, email-only, mirrors --color-primary
+  emailActionInk: '#FFFFFF', // token-ok: palette source, email-only
+  emailBorderStrong: '#D9D2C6', // token-ok: palette source, email-only
+  emailAccentSoft: '#FBEFD9', // token-ok: palette source, email-only
+  emailNightCanvas: '#17120B', // token-ok: palette source, email-only, mirrors .dark --color-canvas
+  emailNightSurface: '#211A10', // token-ok: palette source, email-only, mirrors .dark --color-surface
+  emailNightBorder: '#3C3220', // token-ok: palette source, email-only, mirrors .dark --color-border
+  emailNightStrong: '#F3EEE3', // token-ok: palette source, email-only
+  emailNightBody: '#EFE8DB', // token-ok: palette source, email-only, mirrors .dark --color-text
+  emailNightMuted: '#A99C88', // token-ok: palette source, email-only, mirrors .dark --color-text-muted
+  emailNightAction: '#E2912F', // token-ok: palette source, email-only
+  emailNightOnAction: '#17120B', // token-ok: palette source, email-only
+  emailNightLink: '#F0B468', // token-ok: palette source, email-only
 
   // DAWN's raster cards still carry the pre-DAWN events indigo; kept byte-identical here so a
   // Frequency deploy can replace it in one place.
@@ -139,16 +173,34 @@ export const PALETTES: Record<DesignId, Palette> = {
     signal: '#17788A', // token-ok: palette source, mirrors the Frequency export
     broadcast: '#B0287F', // token-ok: palette source, mirrors the Frequency export
     danger: '#C2362B', // token-ok: palette source, mirrors the Frequency export
-    emailCanvas: '#F2E9DC', // token-ok: palette source, mirrors the Frequency export
-    emailSurfaceElevated: '#F2E9DC', // token-ok: palette source, mirrors the Frequency export
-    emailBorder: '#E6E1DA', // token-ok: palette source, mirrors the Frequency export
-    emailHeading: '#1E1B18', // token-ok: palette source, mirrors the Frequency export
-    emailSubtle: '#675E56', // token-ok: palette source, mirrors the Frequency export
-    emailFaint: '#8F857B', // token-ok: palette source, mirrors the Frequency export
-    emailPrimaryStrong: '#1E1B18', // token-ok: palette source, ink (LIVE-961)
-    emailSuccess: '#2F7F5A', // token-ok: palette source, mirrors the Frequency export
-    emailInfo: '#2F6F8F', // token-ok: palette source, mirrors the Frequency export
-    emailAlert: '#C2362B', // token-ok: palette source, mirrors the Frequency export
+    // Commons, read off the MEMBER KIT (design_handoff/frequency/templates/members/app/app.css) and
+    // tokens/themes.css: the app body is the linen card colour with the wash over it, cards are raised
+    // white with a hairline, links are ink, the one action is the pastel --pa pill with ink text.
+    // The crossover violet is NOT used on any member surface, so it is not used here.
+    emailCanvas: '#FFFEFC', // token-ok: palette source, mirrors --surface-card (the app body)
+    emailSurfaceElevated: '#F4F2EF', // token-ok: palette source, rgba(30,27,24,.04) on white (.chip, .ic)
+    emailBorder: '#EFEEEC', // token-ok: palette source, --border-hair flattened on white
+    emailHeading: '#34312E', // token-ok: palette source, mirrors --text-strong
+    emailSubtle: '#7C766F', // token-ok: palette source, mirrors --text-muted
+    emailFaint: '#7C766F', // token-ok: palette source, the postal line stays readable (AA floor)
+    emailPrimaryStrong: '#34312E', // token-ok: palette source, links are ink (app.css a{color:var(--text-strong)})
+    emailSuccess: '#17788A', // token-ok: palette source, mirrors --presence (aqua deep)
+    emailInfo: '#34312E', // token-ok: palette source, ink
+    emailAlert: '#C2362B', // token-ok: palette source, mirrors --danger
+    emailBody: '#4D4945', // token-ok: palette source, mirrors --text-body
+    emailAction: '#C4B8FF', // token-ok: palette source, --pa: the pastel pill's lavender stop, the solid fallback
+    emailActionInk: '#1E1B18', // token-ok: palette source, mirrors .fq-pa color
+    emailBorderStrong: '#D2D0CD', // token-ok: palette source, --border-strong flattened on white
+    emailAccentSoft: '#F4EFF8', // token-ok: palette source, --pa-soft flattened on white
+    emailNightCanvas: '#0E0B09', // token-ok: palette source, mirrors Commons night --bg-canvas
+    emailNightSurface: '#18120E', // token-ok: palette source, mirrors Commons night --surface-card
+    emailNightBorder: '#2B221B', // token-ok: palette source, night --border-hair flattened
+    emailNightStrong: '#FBF2E6', // token-ok: palette source, mirrors Commons night --text-strong
+    emailNightBody: '#E3D6C6', // token-ok: palette source, mirrors Commons night --text-body
+    emailNightMuted: '#B3A391', // token-ok: palette source, mirrors Commons night --text-muted
+    emailNightAction: '#C4B8FF', // token-ok: palette source, --pa: the pastel pill's lavender stop, lifted
+    emailNightOnAction: '#120C08', // token-ok: palette source, mirrors Commons night --action-primary-text
+    emailNightLink: '#FBF2E6', // token-ok: palette source, links are ink at night too
     ogAccent: '#A3D4FF', // token-ok: palette source, the --fq-pa sky stop (LIVE-961)
     ogAccentSoft: '#E8F4FF', // token-ok: palette source, the sky stop lightened for text on the ink card
     walletBackground: '#070B14', // token-ok: palette source, mirrors the Frequency export

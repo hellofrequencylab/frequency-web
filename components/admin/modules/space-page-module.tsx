@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
-import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
+import { SpacePageBuilderSwitch } from '@/components/entity-blocks/space-page-builder-switch'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { RailModuleLoading } from './rail-module-loading'
 import { useSpaceRailExtras, useSpaceRailSlice } from './space-rail-data'
@@ -61,6 +61,7 @@ export function SpacePageModule() {
             customized: layout.customized,
             lockedIds: layout.lockedIds,
             pickerData: layout.pickerData,
+            nodeLayout: layout.nodeLayout,
             // NOTE: the publish bar (Draft / Publish / Undo / Visible) is no longer part of this in-rail
             // builder — it renders on the live page body (LiveProfileGrid), which reads profilePublished from
             // the owner preview and the shared store directly, so nothing about publish state is threaded here.
@@ -74,7 +75,7 @@ export function SpacePageModule() {
           Page" is removed). The builder below carries its own "Your page" heading + save cue. ADR-542
           (revised): the sidebar arranger — rows + columns + move a section between rows; the page shows the
           live result. It reads the shared space-layout store, so it only shows on the Space profile root. */}
-      <SpacePageBuilder slug={data.slug} seed={builderSeed} />
+      <SpacePageBuilderSwitch slug={data.slug} seed={builderSeed} />
       <SpacePagePanel
         slug={data.slug}
         pages={data.pages}

@@ -67,7 +67,7 @@ type Grab = { kind: 'row'; id: string } | { kind: 'block'; id: string } | null
 const EMPTY: NodeLayout = { rows: [], bench: [] }
 
 function seedLayout(d: BuilderRailData): NodeLayout {
-  return upgradeLayout({ rows: d.rows, hidden: d.hidden, content: d.content, style: d.style }) ?? EMPTY
+  return d.nodeLayout ?? upgradeLayout({ rows: d.rows, hidden: d.hidden, content: d.content, style: d.style }) ?? EMPTY
 }
 
 function nodeOf(layout: NodeLayout, nid: string): BlockNode | null {

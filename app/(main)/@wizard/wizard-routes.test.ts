@@ -45,7 +45,10 @@ function intercepts(): { file: string; url: string; destination: string }[] {
         walk(join(dir, e.name), [...trail, e.name])
       } else if (e.name === 'page.tsx' && trail.some((s) => /^\(\.{1,3}\)/.test(s))) {
         const url = '/' + trail.map((s) => s.replace(/^\(\.{1,3}\)/, '')).join('/')
-        out.push({ file: join(dir, e.name), url, destination: join('app', '(main)', ...url.slice(1).split('/'), 'page.tsx') })
+        // A destination may live in a route group under (main) (e.g. (marketplace)); groups add no URL segment.
+        const rel = join(...url.slice(1).split('/'), 'page.tsx')
+        const grouped = ['(marketplace)'].map((g) => join('app', '(main)', g, rel)).find((f) => existsSync(f))
+        out.push({ file: join(dir, e.name), url, destination: grouped ?? join('app', '(main)', rel) })
       }
     }
   }
@@ -119,10 +122,11 @@ describe('every intercepting route', () => {
   })
 
   // 🔴 ONE ROUTE, TWO PRESENTATIONS, NO FORKED COMPONENT.
-  it.each(routes)('$url renders the destination page module itself, not a copy of it', ({ file, url }) => {
+  it.each(routes)('$url renders the destination page module itself, not a copy of it', ({ file, url, destination }) => {
     const src = read(file)
     // The import must name the destination page, through the repo's `@/` alias.
-    expect(src).toContain(`from '@/app/(main)${url}/page'`)
+    const group = destination.includes('(marketplace)') ? '/(marketplace)' : ''
+    expect(src).toContain(`from '@/app/(main)${group}${url}/page'`)
     // And it must be wrapped in the modal rather than presented bare.
     expect(src).toContain("from '@/components/studio/wizard-modal'")
     expect(src).toMatch(/<WizardModal[\s>]/)
