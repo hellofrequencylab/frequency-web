@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
@@ -260,30 +261,30 @@ export function FqCirclesBody({
 
   const body = (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community</span>
-          <h1 className="h1">
-            Your <span className="serif">Circles.</span>
-          </h1>
-          <span className="meta">The groups you keep coming back to.</span>
-        </div>
-        {signedIn && (
-          <div className="row wrap">
-            <NewCircleCompose interests={interests} buttonLabel="Start a Circle" canCreate={canCreate} buttonClass="btn pa sm" />
-            {canCreate && (
-              <Link className="btn sm" href="/lead">
-                Manage my Circles
-              </Link>
+      <MemberHead
+        kicker="Community"
+        title={<>Your <span className="serif">Circles.</span></>}
+        meta="The groups you keep coming back to."
+        actions={
+          <>
+            {signedIn && (
+              <div className="row wrap">
+                <NewCircleCompose interests={interests} buttonLabel="Start a Circle" canCreate={canCreate} buttonClass="btn pa sm" />
+                {canCreate && (
+                  <Link className="btn sm" href="/lead">
+                    Manage my Circles
+                  </Link>
+                )}
+                {content.ctaLabel && content.ctaHref && (
+                  <a className="btn sm" href={content.ctaHref}>
+                    {content.ctaLabel}
+                  </a>
+                )}
+              </div>
             )}
-            {content.ctaLabel && content.ctaHref && (
-              <a className="btn sm" href={content.ctaHref}>
-                {content.ctaLabel}
-              </a>
-            )}
-          </div>
-        )}
-      </div>
+          </>
+        }
+      />
       {content.body && <p className="body fqm-intro">{content.body}</p>}
 
       <div className="fqm-tools">
