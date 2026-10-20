@@ -37,7 +37,7 @@ export const SIBLING_PLAN_TIERS: readonly string[] = ['nonprofit', 'independent'
  *
  *  Live mirrors that read a row here rather than keeping their own number:
  *   - space_qr     — lib/qr/space-codes.ts (the cap a Space hits IS this row).
- *   - space_team   — lib/spaces/seats.ts baseSeatAllowance (more seats stay the ADR-799 add-on).
+ *   - space_team   — lib/spaces/seats.ts baseSeatAllowance (seats are included per tier, never sold, ADR-1810).
  *   - vera_unlimited.free — PRICING_DEFAULTS.vera_free_daily_cap.
  *   - journey_publish / space_journey_publish — lib/journeys/publish-limits.ts (ADR-838).
  *  Separately, lib/spaces/email.ts DAILY_SEND_CAP is a per-day deliverability throttle on every plan,

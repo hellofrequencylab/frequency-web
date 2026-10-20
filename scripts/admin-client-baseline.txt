@@ -784,7 +784,6 @@ lib/billing/connect.ts
 lib/billing/crew-grants.ts
 lib/billing/donation-receipt.ts
 lib/billing/manual-agreements.ts
-lib/billing/operator-seats.ts
 lib/billing/payout-prompt-resolve.ts
 lib/billing/pricing-prices.ts
 lib/billing/receipt-email.ts
