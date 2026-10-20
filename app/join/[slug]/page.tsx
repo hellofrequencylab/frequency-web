@@ -9,6 +9,9 @@ import { FUNNELS, getFunnel } from '@/lib/funnels/definitions'
 import { getSplashOverride } from '@/lib/funnels/overrides'
 import { JoinButton } from './join-button'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
+import { FrequencyCircleInvite, FrequencyFunnelSplash } from '@/components/frequency/site/pages/funnel/frequency-join-slug'
 
 // ONE dynamic segment, two front doors (ADR-1090). `/join/<slug>` serves:
 //
@@ -67,6 +70,15 @@ async function FunnelSplashPage({ slug }: { slug: string }) {
   const override = await getSplashOverride(slug).catch(() => null)
   const splash = { ...funnel.splash, ...override }
   const start = `/join?seq=${funnel.slug}`
+
+  // The Frequency design (SCAN-852): the funnel kit's photo hero and start card, chrome-free like the DAWN splash.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <SiteShell chrome={false}>
+        <FrequencyFunnelSplash splash={splash} start={start} />
+      </SiteShell>
+    )
+  }
 
   return (
     <>
@@ -176,6 +188,48 @@ export default async function JoinPage({ params }: Props) {
   const spotsLeft = circle.member_cap > 0
     ? circle.member_cap - (circle.member_count ?? 0)
     : null
+
+  // The Frequency design (SCAN-852): the same three states, in the funnel kit's single-card frame.
+  if (SITE_DESIGN === 'frequency') {
+    const signIn = `/sign-in?next=/join/${token}`
+    return (
+      <SiteShell chrome={false}>
+        <FrequencyCircleInvite
+          circle={{
+            name: circle.name,
+            about: circle.about,
+            type: circle.type,
+            memberCount: circle.member_count ?? 0,
+            hubName: circle.hub?.name ?? null,
+          }}
+          spotsLeft={spotsLeft}
+          action={
+            alreadyMember ? (
+              <>
+                <p>You’re already a member of this circle.</p>
+                <div className="ctas">
+                  <Link className="btn fq-iri-btn" href="/circles">
+                    Go to Circles →
+                  </Link>
+                </div>
+              </>
+            ) : user ? (
+              <JoinButton token={token} circleName={circle.name} frequency />
+            ) : (
+              <>
+                <Link className="btn fq-iri-btn" href={signIn}>
+                  Sign in to join
+                </Link>
+                <p className="fn-micro">
+                  Don’t have an account? <Link href={signIn}>Get started</Link>
+                </p>
+              </>
+            )
+          }
+        />
+      </SiteShell>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-16">
