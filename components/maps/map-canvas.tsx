@@ -37,14 +37,13 @@ export function MapCanvas({
   expandControl = true,
   expanded: controlledExpanded,
   onExpandedChange,
-  engine: forcedEngine,
   ...engineProps
 }: MapCanvasProps) {
   // A Google load that fails at RUNTIME (bad key, referrer denied, quota, offline) falls
   // back to MapLibre in place, so a misconfigured key never costs anyone their map.
   const [googleUnavailable, setGoogleUnavailable] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const useGoogle = mapProvider() === 'google' && forcedEngine !== 'maplibre' && !googleUnavailable
+  const useGoogle = mapProvider() === 'google' && !googleUnavailable
 
   function engine(props: MapImplProps) {
     if (useGoogle) {
