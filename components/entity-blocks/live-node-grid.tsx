@@ -54,7 +54,7 @@ export function LiveNodeGrid({
   }, [store, initialLayout])
 
   const layout = store?.seeded && store.layout ? store.layout : initialLayout
-  const rows = resolveNodeRows(layout, kind)
+  const rows = kind === 'member' ? resolveNodeRows(layout, 'member') : resolveNodeRows(layout, 'space')
 
   const editable = editMode && !!spaceSlug && !!store?.seeded
   const selectedNid = store?.selectedNid ?? null
