@@ -68,7 +68,7 @@ export interface EmailOrigin {
   url: string
 }
 
-export interface EmailOriginSource {
+interface EmailOriginSource {
   scopeKind?: string | null
   scopeId?: string | null
   ownerProfileId?: string | null
