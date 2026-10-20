@@ -32,7 +32,9 @@ const checks = {
     assert.ok(read('lib/email-studio/repeatable.test.ts').includes('twice'), 'a test places the same block type twice')
   },
   refresh: () => {
-    assert.ok(read('lib/email-studio/data-blocks.ts').includes('refreshDataBlocks') && /refreshDataBlocks\(/.test(read('lib/email-studio/send.ts') + read('lib/nurture/runner.ts')), 'test sends and nurture refresh their data cards')
+    for (const f of ['lib/email-studio/send.ts', 'app/(main)/admin/email-studio/actions.ts', 'lib/nurture/runner.ts', 'lib/spaces/email-drafts.ts']) {
+      assert.ok(/resolveDataBlockRefs\(/.test(read(f)), `${f} refreshes the live event and circle cards before it renders`)
+    }
   },
   spacepersonal: () => {
     assert.ok(read('lib/spaces/email-drafts.ts').includes('personalizeFor'), 'Space block broadcasts personalize per recipient')

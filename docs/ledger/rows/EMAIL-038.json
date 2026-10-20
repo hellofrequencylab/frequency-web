@@ -1,7 +1,7 @@
 {
   "id": "EMAIL-038",
   "title": "Test sends and nurture steps refresh event, circle and product cards before they go",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "M",
@@ -13,7 +13,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-editor.mjs refresh",
-    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+    "note": "PASS 2026-10-20: data blocks refresh from live data at send time in campaign sends, test sends, nurture steps and Space sends via resolveDataBlockRefs."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-20"
 }

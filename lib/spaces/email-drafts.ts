@@ -1,6 +1,7 @@
 'use server'
 
 
+import { resolveDataBlockRefs } from '@/lib/email-studio/data-blocks'
 import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
@@ -382,7 +383,7 @@ export async function sendSpaceTestEmail(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending a test.')
@@ -473,7 +474,7 @@ export async function sendSpaceEmailDraft(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER, sentWithFrequency: campaignCarriesFrequencyFooter(space.plan) },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
@@ -545,7 +546,7 @@ export async function sendSpaceEmailDraftToRecipients(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER, sentWithFrequency: campaignCarriesFrequencyFooter(space.plan) },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
@@ -615,7 +616,7 @@ export async function sendSpaceEmailDraftAsConversations(
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
-    { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
+    { layout: await resolveDataBlockRefs(layout), subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
   )
   if (!compiled.html.trim()) return fail('Add some content before sending.')
