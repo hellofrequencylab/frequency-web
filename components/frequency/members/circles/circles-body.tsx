@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
 import type { CirclesIndexData } from '@/lib/circles/index-data'
@@ -427,15 +428,18 @@ export function FqCirclesBody({
             ))}
           </div>
         ) : (
-          <div className="empty stack">
-            <span className="h3">{filtering ? 'No Circles match these filters.' : 'Nothing here yet.'}</span>
-            <span className="t2">Try another Channel, or start the Circle you were looking for.</span>
-            {filtering && (
-              <Link className="btn sm fqm-tag-start" href="/circles">
-                See every Circle
-              </Link>
-            )}
-          </div>
+          <EmptyState
+            variant={filtering ? 'no-results' : 'first-use'}
+            title={filtering ? 'No Circles match these filters.' : 'Nothing here yet.'}
+            description="Try another Channel, or start the Circle you were looking for."
+            action={
+              filtering ? (
+                <Link className="btn sm" href="/circles">
+                  See every Circle
+                </Link>
+              ) : undefined
+            }
+          />
         )}
       </div>
 
