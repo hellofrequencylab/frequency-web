@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1020",
+  "title": "The Circles index is shelves by who runs them: near you, starters, gathering, Frequency, community, then business (LIVE-1020)",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/members/circles/circles-body.tsx",
+    "ref": "Owner design changes list 2026-10-19, items 25 and 26; Circles full-page screenshot (one flat alphabetical grid)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. Shelves replace the flat grid when no filter is set: Your Circles, featured Business Spaces strip, Resonant near you, Starter Circles, Where people are gathering, Frequency Circles, Community Circles, Business Circles, with a sticky section index and six-and-Show-more per shelf. Classification is derived in lib/circles/kind.ts (ADR-1843). No migration. The rule for 'Frequency' (unowned and featured or hub-attached) is the one judgment call; it is one function to change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circles-shelves.mjs"
+  },
+  "closed": "2026-10-19"
+}
