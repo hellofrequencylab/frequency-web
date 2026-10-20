@@ -35,6 +35,8 @@ export interface FqGridItem {
   at?: string | null
   lat?: number | null
   lng?: number | null
+  /** A control floated over the photo's corner (the Housing heart). Rendered beside the photo link, not inside it. */
+  corner?: React.ReactNode
 }
 
 interface FqGridSection {
@@ -178,9 +180,15 @@ export function FqItemGrid({
             <div className="g4">
               {s.rows.map(({ i, km }) => (
                 <div key={i.id} className="stack fqm-item">
-                  <Link className="ph fqm-item-ph" href={i.href} aria-label={i.title} style={i.image ? { backgroundImage: `url('${i.image}')` } : undefined}>
+                  <Link className={i.image ? 'ph fqm-item-ph' : 'ph fqm-item-ph fqm-item-art'} href={i.href} aria-label={i.title} style={i.image ? { backgroundImage: `url('${i.image}')` } : undefined}>
+                    {!i.image && (
+                      <span className="serif fqm-item-initial" aria-hidden>
+                        {i.title.trim().charAt(0).toUpperCase()}
+                      </span>
+                    )}
                     {i.tag && <span className="tag glass fqm-corner">{i.tag}</span>}
                   </Link>
+                  {i.corner && <span className="fqm-item-save">{i.corner}</span>}
                   <span className="row fqm-item-head">
                     <Link className="t1 grow" href={i.href}>
                       {i.title}

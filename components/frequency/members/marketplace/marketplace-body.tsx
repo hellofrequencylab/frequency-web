@@ -12,6 +12,10 @@ import { FqHiddenAreaNote } from './areas'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks, type FqMenuViewer } from '@/components/frequency/members/shell/nav'
 import { AREA_PREFIX } from '@/lib/marketplace/visibility'
+import { AMENITIES, PROPERTY_TYPES } from '@/lib/listings/types'
+import { Input } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { SaveListingButton } from '@/components/marketplace/save-listing-button'
 
 // MARKETPLACE, FREQUENCY BODIES (templates/members/Marketplace.html). Two doors share the one
 // reference layout: the head, the filter chips and the four-up portrait grid.
@@ -299,6 +303,191 @@ export function FqMarketBody({
       <Suspense fallback={null}>
         <HubLinks title="Marketplace" links={marketplaceHubLinks} />
       </Suspense>
+    </>
+  )
+}
+
+// THE STORE AND HOUSING, IN THE KIT (LIVE-1090). Same head, chips and portrait grid as the other
+// two doors, so all four areas read as one Marketplace under the pinned header.
+
+export function FqStoreBody({ products }: { products: MarketItem[] }) {
+  const items: FqGridItem[] = products.map((p) => {
+    const soldOut = p.status === 'sold_out' || p.stock === 0
+    return {
+      id: p.id,
+      href: `/store/${p.id}`,
+      title: p.title,
+      price: priceLabel(p),
+      sub: [p.category, soldOut ? 'Sold out' : null].filter(Boolean).join(' · ') || null,
+      image: p.images[0] ?? null,
+      text: `${p.title} ${p.description ?? ''}`,
+      cta: 'View',
+      category: p.category,
+      cents: p.priceCents,
+      at: p.createdAt ?? null,
+    }
+  })
+  return (
+    <>
+      <div className="head">
+        <div>
+          <span className="k">Community · Store</span>
+          <h2 className="h1">
+            Wear it, gift it, <span className="serif">show up.</span>
+          </h2>
+          <span className="meta">
+            Frequency merch, event passes and retreats, straight from us to you · {products.length} in stock · flat shipping
+          </span>
+        </div>
+      </div>
+      <FqHiddenAreaNote area="shop" />
+      {items.length === 0 ? (
+        <div className="empty stack">
+          <span className="h3">The Store is being stocked</span>
+          <span className="t2">Merch, event passes and retreats are coming. Check back soon.</span>
+        </div>
+      ) : (
+        <FqItemGrid sections={[{ items }]} placeholder="Search the Store" />
+      )}
+    </>
+  )
+}
+
+type FqHome = {
+  id: string
+  title: string
+  description: string | null
+  image: string | null
+  priceNote: string | null
+  category: string | null
+  city: string | null
+  lat: number | null
+  lng: number | null
+  createdAt: string
+  unclaimed: boolean
+}
+
+export function FqHousingBody({
+  homes,
+  savedIds,
+  selectedType,
+  savedOnly,
+  min,
+  max,
+  amenities,
+  hasFacets,
+}: {
+  homes: FqHome[]
+  savedIds: string[]
+  selectedType: string
+  savedOnly: boolean
+  min: string
+  max: string
+  amenities: string[]
+  hasFacets: boolean
+}) {
+  const saved = new Set(savedIds)
+  const items: FqGridItem[] = homes.map((h) => ({
+    id: h.id,
+    href: `/housing/${h.id}`,
+    title: h.title,
+    price: h.priceNote?.trim() || 'Free',
+    sub: [h.category, h.city].filter(Boolean).join(' · ') || null,
+    image: h.image,
+    text: `${h.title} ${h.description ?? ''}`,
+    cta: 'Open listing',
+    tag: h.unclaimed ? 'Unclaimed' : null,
+    at: h.createdAt,
+    lat: h.lat,
+    lng: h.lng,
+    corner: <SaveListingButton listingId={h.id} initialSaved={saved.has(h.id)} signedIn />,
+  }))
+  const typeHref = (slug?: string) => (slug ? `/housing?type=${slug}` : '/housing')
+  return (
+    <>
+      <div className="head">
+        <div>
+          <span className="k">Community · Housing</span>
+          <h2 className="h1">
+            Find your place, and <span className="serif">your people.</span>
+          </h2>
+          <span className="meta">Rentals, sublets and roommates who fit · {homes.length} {homes.length === 1 ? 'listing' : 'listings'}</span>
+        </div>
+        <div className="row wrap">
+          <Link className="btn sm" href="/housing/roommates">
+            Find a roommate
+          </Link>
+          <Link className="btn pa sm" href="/housing/new">
+            <FqIcon name="plus" />
+            List housing
+          </Link>
+        </div>
+      </div>
+      <FqHiddenAreaNote area="housing" />
+
+      <nav className="chips fqm-chips lg" aria-label="Property type">
+        <Link href="/housing" className={!selectedType && !savedOnly ? 'chip on' : 'chip'} aria-current={!selectedType && !savedOnly ? 'page' : undefined}>
+          All
+        </Link>
+        {PROPERTY_TYPES.map((t) => (
+          <Link key={t.slug} href={typeHref(t.slug)} className={selectedType === t.slug ? 'chip on' : 'chip'} aria-current={selectedType === t.slug ? 'page' : undefined}>
+            {t.label}
+          </Link>
+        ))}
+        <Link href={savedOnly ? '/housing' : '/housing?saved=1'} className={savedOnly ? 'chip on' : 'chip'} aria-current={savedOnly ? 'true' : undefined}>
+          Saved
+        </Link>
+      </nav>
+
+      {!savedOnly && (
+        <details className="fqm-more-filters" open={hasFacets}>
+          <summary className="chip">More filters</summary>
+          <form method="get" className="fqm-filter-form" aria-label="Filter housing">
+            {selectedType && <input type="hidden" name="type" value={selectedType} />}
+            <label className="stack">
+              <span className="t2">Min rent per month</span>
+              <Input name="min" type="number" min="0" inputMode="numeric" defaultValue={min} placeholder="Any" />
+            </label>
+            <label className="stack">
+              <span className="t2">Max rent per month</span>
+              <Input name="max" type="number" min="0" inputMode="numeric" defaultValue={max} placeholder="Any" />
+            </label>
+            <fieldset className="stack">
+              <legend className="t2">Amenities</legend>
+              <div className="row wrap">
+                {AMENITIES.map((a) => (
+                  <Checkbox key={a.slug} name="amenity" value={a.slug} defaultChecked={amenities.includes(a.slug)} label={a.label} />
+                ))}
+              </div>
+            </fieldset>
+            <div className="row wrap">
+              <button type="submit" className="btn pa sm">
+                Apply filters
+              </button>
+              {hasFacets && (
+                <Link className="btn sm" href="/housing">
+                  Clear
+                </Link>
+              )}
+            </div>
+          </form>
+        </details>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty stack">
+          <span className="h3">{savedOnly ? 'Nothing saved yet' : hasFacets ? 'Nothing matches those filters' : 'No housing listed near you yet'}</span>
+          <span className="t2">
+            {savedOnly
+              ? 'Tap the heart on a home to keep it here.'
+              : hasFacets
+                ? 'Try widening the price range or clearing an amenity.'
+                : 'List a room, a rental or a sublet. Roommate listings match to members you would get along with.'}
+          </span>
+        </div>
+      ) : (
+        <FqItemGrid sections={[{ items }]} placeholder="Search housing" nearMe={homes.some((h) => h.lat != null)} />
+      )}
     </>
   )
 }
