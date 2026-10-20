@@ -225,6 +225,8 @@
 [data-design="frequency"] [data-kit="members"] .fqm-micro .fqm-circle-orb{width:40px;height:40px}
 [data-design="frequency"] [data-kit="members"] .fqm-circle-img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block}
 [data-design="frequency"] [data-kit="members"] .fqm-circle-orb:has(.fqm-circle-img){background:var(--fq-surface-card)}
+/* The phone drawer's Your Circles rows draw the same mark at the row icon's size (LIVE-1043). */
+[data-design="frequency"] [data-kit="members"] .rl-row .fqm-drawer-orb{width:24px;height:24px}
 [data-design="frequency"] [data-kit="members"] .fqm-ring{position:relative;width:40px;height:40px;border-radius:50%;background:var(--fqm-ink-8)}
 [data-design="frequency"] [data-kit="members"] .fqm-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--fq-pa);-webkit-mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0);mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0)}
 [data-design="frequency"] [data-kit="members"] .fqm-ring>span{position:absolute;inset:3px;border-radius:50%;background:var(--fq-surface-card);display:flex;align-items:center;justify-content:center;color:var(--fq-text-strong)}
@@ -582,7 +584,8 @@
   [data-design="frequency"] [data-kit="members"] .ap-search{margin-left:auto}
 
   [data-design="frequency"] [data-kit="members"] .fqm-tabbar{
-    position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:62px;
+    position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom) + var(--fq-foot-lift, 0px));height:62px;
+    transition:bottom 340ms var(--fq-ease-out);
     display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;padding:0 4px;
     border-radius:var(--fq-radius-orb);
     background:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 98%,transparent),color-mix(in oklab,var(--fq-surface-card) 95%,transparent));
@@ -1030,6 +1033,11 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 [data-design="frequency"] .fqd-link{border-radius:var(--fq-radius-l);color:var(--fqd-in);font-weight:500}
 [data-design="frequency"] .fqd-link:hover{background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent)}
 [data-design="frequency"] .fqd-panel .fqd-find svg{color:var(--fqd-mute)}
+
+/* The open panel rests on the open mega footer's top edge, like the docks (LIVE-1030, LIVE-1043). From md
+   only: below md the panel is a bottom sheet over everything. An inline anchor (DAWN's bar) still wins. */
+@media (min-width:768px){
+  [data-design="frequency"] .fqd-wrap{bottom:calc(24px + var(--fq-foot-lift, 0px));transition-property:grid-template-rows,bottom}}
 
 /* token-ok: the three mode colours (Vera blue, Support green, Messages pink) are the owner's ruling for the dock orb; the design export has no tokens for them. */
 [data-design="frequency"] .fqd-orb[data-mode="vera"]{--orb-top:#FFFFFF;--orb-hi:#CFE2FF;--orb-mid:#8DB4FF;--orb-lo:#6FD8FF;--orb-glow:#6FA8FF}

@@ -497,7 +497,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             messagesUnread={props.messagesUnread}
             streak={stats.then((d) => d?.streak ?? 0)}
             viewer={{ role: gateRole, staffRole: props.staffRole, operatesSpaces: props.operatesSpaces }}
-            circles={circles.slice(0, 5).map((c) => ({ key: c.key, label: c.label, href: c.href, notices: c.notices }))}
+            circles={circles.slice(0, 5).map((c) => ({ key: c.key, label: c.label, href: c.href, notices: c.notices, image: c.image }))}
             accountGroups={accountGroups}
             workGroups={workGroups}
             skins={skins}
