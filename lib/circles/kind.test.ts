@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { circleKind } from './kind'
+import { circleKind, FREQUENCY_PRIMARY_SLUGS } from './kind'
 
 describe('circleKind', () => {
   it('puts a Space-owned circle on the business shelf', () => {
@@ -14,5 +14,9 @@ describe('circleKind', () => {
     expect(circleKind({ featuredAt: '2026-10-01' })).toBe('frequency')
     expect(circleKind({ hubId: 'h1' })).toBe('frequency')
     expect(circleKind({})).toBe('community')
+  })
+  it('keeps the named primary circles on the Frequency shelf even when a Space owns them', () => {
+    for (const slug of FREQUENCY_PRIMARY_SLUGS) expect(circleKind({ slug, spaceType: 'business' })).toBe('frequency')
+    expect(circleKind({ slug: 'some-other-circle', spaceType: 'business' })).toBe('business')
   })
 })
