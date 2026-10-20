@@ -406,3 +406,15 @@
 [data-design="frequency"] [data-kit="members"] .fa-explore-txt b{font:500 var(--fq-text-body-s)/1.25 var(--fq-font-sans);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fa-explore-about{font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 @media (max-width:680px){[data-design="frequency"] [data-kit="members"] .fa-explore{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:78%;overflow-x:auto;scrollbar-width:none}}
+
+/* MESSAGES START STATE (LIVE-1024). The header is the shared PageHeading; the empty pane offers
+   three ways in instead of a bare prompt. */
+[data-design="frequency"] [data-kit="members"] .fa-msg-actions{display:flex;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] [data-kit="members"] .fa-msg-wrap:not(.in-thread) .fa-pane{height:calc(100dvh - 330px);min-height:min(420px,calc(100dvh - 200px))}
+[data-design="frequency"] [data-kit="members"] .fa-start{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:560px;margin-top:8px}
+[data-design="frequency"] [data-kit="members"] .fa-start>:is(a,button){display:flex;align-items:center;gap:10px;min-height:var(--fq-hit-min);padding:12px 14px;border:none;cursor:pointer;text-align:left;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-strong);text-decoration:none}
+[data-design="frequency"] [data-kit="members"] .fa-start>.fa-start-vera{background:var(--fq-pa-soft),var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair),var(--fq-pa-glow)}
+[data-design="frequency"] [data-kit="members"] .fa-start b{display:block;font:600 var(--fq-text-body-s)/1.2 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fa-start small{display:block;margin-top:3px;font:400 var(--fq-text-meta)/1.25 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fa-count{margin-left:6px;padding:0 6px;border-radius:var(--fq-radius-orb);background:var(--fq-pa);color:var(--fq-ink);font:600 var(--fq-text-meta)/1.5 var(--fq-font-sans)}
+@media (max-width:1000px){[data-design="frequency"] [data-kit="members"] .fa-start{grid-template-columns:1fr}}

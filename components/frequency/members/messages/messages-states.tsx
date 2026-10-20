@@ -13,9 +13,19 @@ import { FqIcon } from '@/components/frequency/icon'
 /** The frame while it loads: the list's head, quiet rows and an empty pane (a status, not a spinner). */
 export function FqMessagesLoading({ inThread = false }: { inThread?: boolean }) {
   return (
-    <div className={inThread ? 'ap-cols l fa-msg in-thread' : 'ap-cols l fa-msg'} aria-busy="true">
+    <div className={inThread ? 'fa-msg-wrap in-thread' : 'fa-msg-wrap'} aria-busy="true">
+      {!inThread && (
+        <div className="head" aria-hidden>
+          <div>
+            <span className="k">Your conversations</span>
+            <span className="h1">Messages and rooms</span>
+            <span className="fqm-skel fqm-skel-line short" />
+          </div>
+        </div>
+      )}
+      <div className={inThread ? 'ap-cols l fa-msg in-thread' : 'ap-cols l fa-msg'}>
       <aside className="side">
-        <span className="h2">Messages</span>
+        {inThread && <span className="h2">Messages</span>}
         <div className="stack fa-threads" aria-hidden>
           {[0, 1, 2, 3, 4].map((i) => (
             <span key={i} className="fqm-skel-row">
@@ -35,6 +45,7 @@ export function FqMessagesLoading({ inThread = false }: { inThread?: boolean }) 
           </p>
         </div>
       </section>
+      </div>
     </div>
   )
 }
