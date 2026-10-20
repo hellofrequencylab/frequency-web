@@ -391,10 +391,10 @@
 [data-design="frequency"] [data-kit="members"] .fqs-ident.has-logo{padding-top:56px}
 [data-design="frequency"] [data-kit="members"] .fqs-ident .fqs-id{align-items:flex-start}
 [data-design="frequency"] [data-kit="members"] .fqs-ident .fqs-tagline{max-width:70ch}
-/* THE FOUNDING BUSINESS MARK (LIVE-1019): the design's pastel `--pa` pill with ink type and a soft lift so it
-   reads over any photo. Not scoped to a kit, so the Spaces directory can wear the same mark. */
-[data-design="frequency"] .fq-founder{display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 10px;border-radius:var(--fq-radius-pill, 999px);background:var(--fq-pa);color:var(--fq-ink);font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:var(--fq-pa-glow, var(--fq-shadow-1))}
-[data-design="frequency"] .fq-founder svg{width:14px;height:14px;flex:none}
+/* THE FOUNDING BUSINESS MARK (LIVE-1019, quieted LIVE-1110): a frosted pill with ink type and one small
+   sparkle, readable over any photo, and not an action, so it never takes a Space's accent or the pastel fill. Not scoped to a kit, so the Spaces directory can wear the same mark. */
+[data-design="frequency"] .fq-founder{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 10px;border-radius:var(--fq-radius-pill, 999px);background:color-mix(in oklab,var(--fq-surface-card) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--fq-text-strong);font:600 var(--fq-text-label)/1 var(--fq-font-sans);letter-spacing:.04em;white-space:nowrap;box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] .fq-founder svg{width:12px;height:12px;flex:none}
 [data-design="frequency"] [data-kit="members"] .fqs-badges{display:flex;gap:6px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqs-back{display:inline-block;margin-bottom:16px}
 [data-design="frequency"] [data-kit="members"] .fqs-ident .fqs-back{margin-bottom:0}

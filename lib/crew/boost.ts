@@ -93,6 +93,31 @@ export async function giveBoost(
 }
 
 /**
+ * What this member's Boost looks like right now, for the button's tooltip: whether they are Crew (the real
+ * effective tier, as giveBoost reads it) and how many Boosts they have left this calendar month (one a month,
+ * so 0 or 1). FAIL-SAFE: any error reads as a Crew member with one left, so a read failure never tells a
+ * member they cannot Boost; giveBoost stays the only gate.
+ */
+export async function boostStatus(
+  profileId: string,
+  now: Date = new Date(),
+): Promise<{ crew: boolean; left: 0 | 1 }> {
+  try {
+    const { effectiveTierFor } = await import('@/lib/billing/crew-grants')
+    const { data: profile } = await table('profiles').select('membership_tier').eq('id', profileId).maybeSingle()
+    const effective = await effectiveTierFor(profileId, (profile?.membership_tier as string | null) ?? null)
+    if (effective.tier !== 'crew') return { crew: false, left: 0 }
+    const { data } = await table('crew_boosts')
+      .select('id')
+      .eq('giver_profile_id', profileId)
+      .eq('boost_month', boostMonthOf(now))
+    return { crew: true, left: data && data.length > 0 ? 0 : 1 }
+  } catch {
+    return { crew: true, left: 1 }
+  }
+}
+
+/**
  * Which of these targets carry a Boost given in the last 7 days. One batched read over just the
  * passed ids. FAIL-SAFE to an empty set: a missing table or any error means no Circle is lifted and no
  * Space is marked.

@@ -61,7 +61,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-const { giveBoost, activeBoostIds } = await import('./boost')
+const { giveBoost, activeBoostIds, boostStatus } = await import('./boost')
 
 const ME = 'p-me'
 const NOW = new Date('2026-10-06T12:00:00Z')
@@ -135,5 +135,20 @@ describe('activeBoostIds', () => {
   it('reads nothing for no ids', async () => {
     expect((await activeBoostIds('circle', [], NOW)).size).toBe(0)
     expect(H.readCalls).toHaveLength(0)
+  })
+})
+
+describe('boostStatus (the button tooltip)', () => {
+  it('says a member who is not Crew has none to give', async () => {
+    H.tier = 'free'
+    expect(await boostStatus(ME, NOW)).toEqual({ crew: false, left: 0 })
+  })
+
+  it('says a Crew member has one left until they give this month\'s', async () => {
+    expect(await boostStatus(ME, NOW)).toEqual({ crew: true, left: 1 })
+    H.boosts = [{ giver_profile_id: ME, boost_month: '2026-10-01' }]
+    expect(await boostStatus(ME, NOW)).toEqual({ crew: true, left: 0 })
+    H.boosts = [{ giver_profile_id: ME, boost_month: '2026-09-01' }]
+    expect(await boostStatus(ME, NOW)).toEqual({ crew: true, left: 1 })
   })
 })

@@ -7,7 +7,7 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { giveBoost, type BoostRefusal } from './boost'
+import { boostStatus, giveBoost, type BoostRefusal } from './boost'
 
 /** Give this month's Boost to a Circle or a Space. A refusal the member can act on (not Crew, used,
  *  your own, gone) comes back as data so the button can say it in words; only a real failure is an
@@ -29,4 +29,12 @@ export async function giveCrewBoost(
     console.error('[crew-boost] give failed', e)
     return fail('Could not give the Boost. Please try again.')
   }
+}
+
+/** The viewer's Boost standing for the button's tooltip (Crew or not, how many left this month). Read on
+ *  hover or focus, never on the page, so the profile stays cacheable. */
+export async function readMyBoostStatus(): Promise<ActionResult<{ crew: boolean; left: 0 | 1 }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to give a Boost.')
+  return ok(await boostStatus(profileId))
 }
