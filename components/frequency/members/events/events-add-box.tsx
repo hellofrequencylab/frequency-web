@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
+import { memberAtEventCap } from '@/app/(main)/events/actions'
 
 // ADD AN EVENT (LIVE-1016, owner 2026-10-19: "an Add an Event feature box at the bottom ... a Login / Sign Up
 // lead capture box for roles that don't meet the tier"). The close of the Events page. Any signed-in member
 // may host (the `member` gate on /events/new), so they get the Create door with Drafts and Manage when they
 // have added one; a visitor gets the same box as a lead capture: sign up to host, or sign in, and what hosting
-// takes in one line each. Server component, no state.
+// takes in one line each. A member at their free allowance (LIVE-1070, memberAtEventCap, the same check createEvent enforces) sees
+// an upgrade door instead of a New event that would reject them. The box is the LAST thing on the page.
 
 const STEPS = [
   { icon: 'event', t: 'Post it', d: 'Date, place and a cover. Free or ticketed.' },
@@ -13,7 +15,17 @@ const STEPS = [
   { icon: 'check', t: 'Run it', d: 'Check people in and keep the crowd after.' },
 ] as const
 
-export function EventsAddBox({ signedIn, userHasEvents }: { signedIn: boolean; userHasEvents: boolean }) {
+export type AddBoxState = 'visitor' | 'member' | 'capped'
+
+/** Reads the allowance behind Suspense, so the page never waits on it. */
+export async function EventsAddBoxSlot({ myProfileId, userHasEvents }: { myProfileId: string | null; userHasEvents: boolean }) {
+  if (!myProfileId) return <EventsAddBox state="visitor" userHasEvents={false} />
+  const capped = await memberAtEventCap()
+  return <EventsAddBox state={capped ? 'capped' : 'member'} userHasEvents={userHasEvents} />
+}
+
+export function EventsAddBox({ state, userHasEvents }: { state: AddBoxState; userHasEvents: boolean }) {
+  const signedIn = state !== 'visitor'
   return (
     <section className="ev-add" aria-labelledby="ev-add-h">
       <div className="ev-add-in">
@@ -23,16 +35,24 @@ export function EventsAddBox({ signedIn, userHasEvents }: { signedIn: boolean; u
         </h2>
         <p className="body">
           {signedIn
-            ? 'Hosting something near you? Post it and it lands in front of the people around you.'
+            ? state === 'capped'
+              ? 'You have as many events running as your free membership includes. Join Crew to run more.'
+              : 'Hosting something near you? Post it and it lands in front of the people around you.'
             : 'Hosting something near you? Make a free Frequency account to post it in front of the people around you.'}
         </p>
         <div className="ev-add-acts">
           {signedIn ? (
             <>
-              <Link className="btn pa" href="/events/new">
-                <FqIcon name="plus" />
-                New event
-              </Link>
+              {state === 'capped' ? (
+                <Link className="btn pa" href="/upgrade">
+                  Join Crew
+                </Link>
+              ) : (
+                <Link className="btn pa" href="/events/new">
+                  <FqIcon name="plus" />
+                  New event
+                </Link>
+              )}
               {userHasEvents && (
                 <>
                   <Link className="btn" href="/drafts">
