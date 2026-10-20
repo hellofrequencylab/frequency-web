@@ -202,18 +202,18 @@ export function FeedPlanner({
           </div>
         </section>
       ) : (
-        <section className="fa-hero" aria-label="Up next for you">
+        <section className="fa-hero fa-hero-empty" aria-label="Up next for you">
           <div className="fa-hero-body">
             <span className="k">Up next for you</span>
-            <span className="fa-serif18">Nothing ranked for you this week yet.</span>
-            <div className="fa-actions">
-              <Link href="/events" className="btn pa">
-                Browse events
-              </Link>
-              <Link href="/events/new" className="btn">
-                Add an event
-              </Link>
-            </div>
+            <SystemNotice
+              icon="event"
+              title="Nothing ranked for you this week yet."
+              body="Tell us what you are into by joining a Circle, or put something on the calendar yourself."
+              actions={[
+                { href: '/events', label: 'Browse events', primary: true },
+                { href: '/events/new', label: 'Add an event' },
+              ]}
+            />
           </div>
         </section>
       )}
@@ -298,12 +298,19 @@ export function FeedPlanner({
         </button>
       )}
 
-      {plans.length > 0 && (
-        <>
+      <>
           <div className="fa-sh">
             <span className="fa-h18">Your people’s plans</span>
             <span className="fa-f13">This week</span>
           </div>
+          {plans.length === 0 && (
+            <SystemNotice
+              icon="contacts"
+              title="None of your people have plans yet this week."
+              body="Connect with a few people and what they are going to shows up here."
+              actions={[{ href: '/network/friends', label: 'Find people', primary: true }, { href: '/events', label: 'Browse events' }]}
+            />
+          )}
           <div className="fa-plans">
             {plans.map((p) => {
               const going = status[p.eventId] === 'going'
@@ -329,7 +336,6 @@ export function FeedPlanner({
             })}
           </div>
         </>
-      )}
     </>
   )
 }

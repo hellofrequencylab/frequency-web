@@ -46,6 +46,8 @@ export type CircleCardData = {
   /** Where it meets, for ranking near the viewer. */
   latitude?: number | null
   longitude?: number | null
+  /** Every Channel the circle carries, for ranking by shared interest. */
+  channelIds?: string[]
 }
 
 // Circle card — renders through the shared EntityCard so circles read identically
