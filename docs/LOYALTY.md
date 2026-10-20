@@ -96,7 +96,7 @@ counter. The server then runs the Space's own check-in through `captureNode`, so
 stamp, the 25 Zaps, hunts and the CRM timeline are the ones a phone scan gets. Nothing is
 re-implemented. Behind `SCANNER_DEVICES_ENABLED` (envFlag); the gate is in `docs/RUNBOOKS.md`.
 
-**Pieces.** Migration `20270346011500_scanner_devices.sql` (`scanner_devices`, `member_cards`,
+**Pieces.** Migration `20270346014500_scanner_devices.sql` (`scanner_devices`, `member_cards`,
 both service role only). `lib/devices/` (credentials, store, scan, the device wire). Routes
 `app/api/v1/devices/{scan,cards}` and `app/c/[token]`. Owner panel: the Space's Manage console,
 Offerings & Money, **Check-in & scanners** (catalog row `space.scanners`, which opens the `?panel=checkin`

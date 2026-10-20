@@ -18,8 +18,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Send, X } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
-import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
-import { SendPanel, type CampaignStatus, type SegmentOption } from '@/components/admin/email-studio/send-panel'
+import { EmailEditorPane } from '@/modules/email-design/client'
+import { SendPanel, type CampaignStatus, type SegmentOption } from '@/modules/email-design/client'
 import { createEmailDraft, discardDraftIfEmpty, loadEmailCampaign, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
 

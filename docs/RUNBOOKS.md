@@ -721,7 +721,7 @@ Then set `LOYALTY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset i
 
 **Gate before turning it on**, in order. All **owner** unless tagged.
 
-1. Migration `20270346011500_scanner_devices.sql` applied (`scanner_devices`, `member_cards`, both RLS on with anon and authenticated revoked). **agent** confirms from `pg_tables` and `information_schema.role_table_grants`.
+1. Migration `20270346014500_scanner_devices.sql` applied (`scanner_devices`, `member_cards`, both RLS on with anon and authenticated revoked). **agent** confirms from `pg_tables` and `information_schema.role_table_grants`.
 2. `UNSUBSCRIBE_SECRET` is set in Production (it already is: the door codes and the card UID hash sign with it). Rotating it voids every bound card UID as well as every printed door code.
 3. On a preview with the switch on: register a scanner on a staff Space, write a card from the device, tap it twice on one day (the second answers `already_captured`) and once on the next (a second stamp). Revoke the scanner and see the device show 401.
 

@@ -24,10 +24,10 @@ import {
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
-import { EmailPreview } from '@/components/admin/email-studio/preview'
+import { EmailPreview } from '@/modules/email-design/client'
 import { NodeLayoutProvider, useNodeLayout } from '@/components/entity-blocks/node-layout-store'
-import { NodeEmailCanvasEditor } from '@/components/admin/email-studio/email-canvas-editor'
-import { NodeSeeder } from '@/components/admin/email-studio/email-canvas-model'
+import { NodeEmailCanvasEditor } from '@/modules/email-design/client'
+import { NodeSeeder } from '@/modules/email-design/client'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { updateStepBlockJson } from './actions'
 

@@ -24,6 +24,7 @@ import {
   type OnboardingStepKey,
 } from '@/lib/onboarding/steps'
 import { updateWalkthrough, setWalkthroughActive } from '../actions'
+import { Switch } from '@/components/ui/switch'
 
 // The clever editor (Phase A centerpiece). A SPLIT layout: LEFT = controls (sequence
 // meta + a reorderable slide list + the per-slide editor), RIGHT = a LIVE PREVIEW that
@@ -264,23 +265,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                 <p className="text-body-sm font-semibold text-text">Live</p>
                 <p className="text-2xs text-muted">On = reaching members once Phase B fires it.</p>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={wt.active}
-                aria-label={wt.active ? 'Switch off' : 'Switch on'}
-                disabled={pending}
-                onClick={toggleActive}
-                className={`relative h-6 w-11 shrink-0 rounded-pill transition-colors disabled:opacity-50 ${
-                  wt.active ? 'bg-success' : 'bg-surface-elevated'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-pill bg-surface shadow transition-transform ${
-                    wt.active ? 'translate-x-[22px]' : 'translate-x-0.5'
-                  }`}
-                />
-              </button>
+              <Switch checked={wt.active} onCheckedChange={() => toggleActive()} aria-label={wt.active ? 'Switch off' : 'Switch on'} pending={pending} />
             </div>
           </div>
 
