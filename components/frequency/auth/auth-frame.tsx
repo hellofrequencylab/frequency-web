@@ -1,6 +1,11 @@
 // THE DOORWAY FRAME, under the Frequency design (ADR-1737): the room sign-in, "check your email" and the
-// standalone system screens stand in. The website's Commons look (sand canvas, the fixed wash, one glass
-// panel) with the site wordmark over it, linking home. Styles: app/themes/frequency/auth.css.
+// standalone system screens stand in. The website's Stage (the dark room the marketing site wears, owner
+// 2026-10-19), the fixed wash and one glass panel, with the site wordmark over it, linking home. Styles:
+// app/themes/frequency/auth.css.
+//
+// Stage is a SURFACE, not the mode: these pages are only ever seen signed out, and lib/theme/mode.ts keeps a
+// signed-out viewer light. `data-surface="stage"` re-declares the --fq- tokens on this subtree, so the
+// doorway is dark without touching the mode law.
 //
 // No hooks and no request data, so it renders from a Server Component (sign-in) and from a client error
 // boundary (global-error) alike. The panel is labelled by its own heading, which is the page's one <h1>.
@@ -30,7 +35,7 @@ export function AuthFrame({
   homeHref?: string
 }) {
   return (
-    <main id="main" className="fqa">
+    <main id="main" className="fqa" data-surface="stage">
       <div className="fq-wash" aria-hidden="true" />
       <header className="fqa-top">
         <Link href={homeHref} className="fqa-mark" aria-label="Frequency home">
