@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Sparkles } from 'lucide-react'
+import { FqIcon } from '@/components/frequency/icon'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // The circle-creation popup has been retired (Starter Circles). Every "start a
 // circle" entry point now routes to the full-page builder at /circles/new — the
@@ -36,7 +38,8 @@ export function NewCircleCompose({
 }) {
   return (
     <Link href="/circles/new" className={buttonClass}>
-      <Sparkles className="h-4 w-4" /> {buttonLabel}
+      {/* Under Frequency the kit's own plus, like New event (LIVE-1100); DAWN keeps its sparkle. */}
+      {SITE_DESIGN === 'frequency' ? <FqIcon name="plus" /> : <Sparkles className="h-4 w-4" />} {buttonLabel}
     </Link>
   )
 }
