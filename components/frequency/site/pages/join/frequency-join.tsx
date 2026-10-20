@@ -62,6 +62,9 @@ import { getInitials } from '@/lib/utils'
 const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 /** Where the emailed link lands: the finalizer that writes the profile. */
 const COMPLETE_PATH = '/join/complete'
+/** A visitor's funnel context survives the sign-in round-trip the way the induction carries it: 30-day cookies
+ *  completion reads (the cohort tag, the persona) and a `?to=` on the complete path (the landing). */
+const CONTEXT_MAX_AGE = 2592000
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 
@@ -122,12 +125,21 @@ export function FrequencyJoin({
   initialName = '',
   initialHandle = '',
   initialPlace = '',
+  sequence,
+  persona,
+  destinationUrl,
 }: {
   /** RESUME: 2 = this browser already parked its name and sent a link, so step 1 reopens saved. */
   initialStep?: 1 | 2
   initialName?: string
   initialHandle?: string
   initialPlace?: string
+  /** SCAN-851: the funnel the visitor came in on (?seq=). Tags the cohort at completion, as the induction does. */
+  sequence?: string
+  /** SCAN-851: the persona they picked in the lead flow (?persona=). Stamped at completion. */
+  persona?: string
+  /** SCAN-851: a safe in-app path (?next= or the funnel's landing) completion sends them to. */
+  destinationUrl?: string
 }) {
   const resumed = initialStep === 2
   const [side] = useSiteSide()
@@ -200,6 +212,16 @@ export function FrequencyJoin({
     }
   }, [query, place])
 
+  // SCAN-851: carry the funnel context through the emailed link. Same cookie names the induction writes,
+  // so /join/complete tags the cohort and the persona without knowing which design drew the form.
+  useEffect(() => {
+    if (sequence) document.cookie = `fq_beta_seq=${encodeURIComponent(sequence)}; path=/; max-age=${CONTEXT_MAX_AGE}; samesite=lax`
+    if (persona) {
+      document.cookie = `fq_persona=${encodeURIComponent(persona)}; path=/; max-age=${CONTEXT_MAX_AGE}; samesite=lax`
+      document.cookie = `fq_personas=${encodeURIComponent(persona)}; path=/; max-age=${CONTEXT_MAX_AGE}; samesite=lax`
+    }
+  }, [sequence, persona])
+
   function go(to: number) {
     const next = Math.max(0, Math.min(LAST, to))
     setError('')
@@ -226,7 +248,7 @@ export function FrequencyJoin({
   function send(address: string) {
     const fd = new FormData()
     fd.set('email', address)
-    fd.set('next', COMPLETE_PATH)
+    fd.set('next', destinationUrl ? `${COMPLETE_PATH}?to=${encodeURIComponent(destinationUrl)}` : COMPLETE_PATH)
     return sendSignupLink(fd)
   }
 
@@ -263,7 +285,7 @@ export function FrequencyJoin({
         await park({ displayName, handle: h, place, beat: 1 })
         setParkedName(displayName)
         await bounded(
-          captureLead({ email: address, step: 1, source: 'beta_induction', displayName, handle: h, payload: { entry: 'beta' } }),
+          captureLead({ email: address, step: 1, source: 'beta_induction', displayName, handle: h, payload: { entry: 'beta', ...(sequence ? { sequence } : {}), ...(persona ? { persona } : {}) } }),
         )
         // No mail here (SCAN-906): the draft is saved, the activation link waits for the confirm.
         const { exists } = await joinEmailHasAccount(address).catch(() => ({ exists: false }))
