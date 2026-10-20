@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-039",
+  "title": "Space block broadcasts personalize per recipient",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/admin/email-studio/email-canvas-editor.tsx",
+    "ref": "email editor audit 2026-10-19; owner 2026-10-19: a fully featured email editor; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-20. Gap 6: Space block broadcasts use fallbacks only and cannot be scheduled. Built one PR at a time under the serial rule.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-editor.mjs spacepersonal",
+    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+  },
+  "wave": "W7"
+}

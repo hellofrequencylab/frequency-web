@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-033",
+  "title": "The email editor has undo and redo buttons and keyboard shortcuts",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/admin/email-studio/email-canvas-editor.tsx",
+    "ref": "email editor audit 2026-10-19; owner 2026-10-19: a fully featured email editor; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-20. Gap 4: the store keeps an undo stack but the email editor exposes no button or shortcut and there is no redo. Built one PR at a time under the serial rule.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-editor.mjs undo",
+    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+  },
+  "wave": "W7"
+}

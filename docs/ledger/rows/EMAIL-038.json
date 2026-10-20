@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-038",
+  "title": "Test sends and nurture steps refresh event, circle and product cards before they go",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/admin/email-studio/email-canvas-editor.tsx",
+    "ref": "email editor audit 2026-10-19; owner 2026-10-19: a fully featured email editor; PROG-EMAIL1"
+  },
+  "detail": "FILED 2026-10-20. Gap 1: data cards refresh only in the admin send-now path, so a test send and nurture ship a stale snapshot. Built one PR at a time under the serial rule.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-editor.mjs refresh",
+    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+  },
+  "wave": "W7"
+}
