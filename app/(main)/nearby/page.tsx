@@ -26,6 +26,7 @@ import {
   TEASER_CARDS_PER_SERIES,
   type SeriesRow,
 } from '@/lib/events/series'
+import { DispatchMarquee } from '@/components/nearby/dispatch-marquee'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
@@ -163,7 +164,7 @@ export default async function NearbyPage({
   const weekAgoIso = new Date(now.getTime() - 7 * 864e5).toISOString()
   const twoWeeksAgoIso = new Date(now.getTime() - 14 * 864e5).toISOString()
 
-  const [dispatchResults, eventsRes, newCirclesRes, membersRes, circlesCountRes, eventsCountRes] = await Promise.all([
+  const [dispatchResults, eventsRes, newCirclesRes, membersRes, circlesCountRes, eventsCountRes, newMembersRes] = await Promise.all([
     Promise.all(promises),
     // Everything happening soon across the community.
     //
@@ -207,6 +208,9 @@ export default async function NearbyPage({
       .eq('is_cancelled', false).gte('starts_at', upcomingEventFloor())
       .eq('status', 'published').eq('visibility', 'public').is('removed_at', null)
       .limit(SERIES_WIDE_READ),
+    // Joined in the last seven days: one number, no names, so it says the neighborhood is growing
+    // without exposing who.
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).gte('created_at', weekAgoIso),
   ])
 
   const seen = new Set<string>()
@@ -226,6 +230,7 @@ export default async function NearbyPage({
   const newCircles = (newCirclesRes.data ?? []) as CircleRow[]
   const role = (profile as { community_role: CommunityRole }).community_role
   const broadcastsThisWeek = dispatches.filter((d) => (d.published_at ?? '') >= weekAgoIso).length
+  const newMembersCount = newMembersRes.count ?? 0
   const newCirclesCount = newCircles.filter((c) => (c.created_at ?? '') >= twoWeeksAgoIso).length
 
   // Host+ compose targets.
@@ -243,8 +248,6 @@ export default async function NearbyPage({
     namedNexuses = (await admin.from('nexuses').select('id, name').in('id', nexusIds)).data ?? []
   }
   const canCompose = isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0)
-
-  const latest = dispatches[0]
 
   // Operator-editable page header (ADR-180) + the operator-tunable header ELEMENT (ADR-793: which
   // layout, height and overlay the band paints in). Both are cached reads and neither depends on the
@@ -301,112 +304,73 @@ export default async function NearbyPage({
   )
 
   // Everything under the divider row except the map, which each design seats differently.
+  // ORDER: the Dispatch ticker (what is being said now), the three numbers, what is coming up and
+  // forming nearby, the Dispatch stream, then a "do something" row so the page ends on an action
+  // rather than a list. Full content width; the old narrow column with empty space beside it is gone.
+  const tickerItems = dispatches.slice(0, 12).map((d) => ({
+    id: d.id,
+    title: d.title,
+    authorName: d.author?.display_name ?? null,
+    timeLabel: relativeTime(d.published_at),
+    linked: !!d.linked_task,
+  }))
   const dispatchesAndRail = (
-    <>
-      {/* ── Highlight hero: the latest Dispatch ──────────────────────────────────────────────
-              The "next event" FALLBACK that used to sit here is gone: the four Coming up cards
-              beside the map now do that job, with four gatherings instead of one. Keeping both
-              would have led the page with the same event twice. */}
-      {latest ? (
-        <Link
-          href={`/nearby/${latest.id}`}
-          // The newest Dispatch in the community, by definition the fastest-moving box on the page.
-          data-visual-mask="nearby-latest-dispatch"
-          className="mb-6 flex items-center gap-4 rounded-card border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-primary text-on-primary">
-            {latest.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-meta font-medium text-subtle">Latest Dispatch</p>
-            <p className="text-body font-bold leading-tight text-text">{latest.title}</p>
-            {latest.excerpt && <p className="mt-0.5 line-clamp-1 text-body-sm leading-relaxed text-muted">{latest.excerpt}</p>}
-          </div>
-          <ArrowRight className="hidden h-4 w-4 shrink-0 text-primary-strong sm:block" />
-        </Link>
-      ) : null}
+    <div className="space-y-8">
+      {tickerItems.length > 0 && <DispatchMarquee items={tickerItems} />}
 
-      {/* ── Main: broadcasts (left) + happenings (right) ─────── */}
-      <div className="flex flex-col items-start gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          <SectionHeader
-            title="Latest Dispatches"
-            count={dispatches.length > 0 ? dispatches.length : undefined}
-            action={dispatchActions}
-          />
-          {dispatches.length === 0 ? (
-            <EmptyState
-              icon={Megaphone}
-              title="No Dispatches yet"
-              description="Your hosts and guides post announcements, events, and challenges here."
-            />
-          ) : (
-            /* The stream itself. The EmptyState above is NOT masked: an empty column is the same
-               picture on every capture, and it is design surface. The cards are the reading. */
-            <div data-visual-mask="nearby-dispatch-list" className="grid grid-cols-1 gap-3">
-              {dispatches.map((d) => (
-                <DispatchCard key={d.id} dispatch={d} viewerRole={role} myProfileId={profile.id} />
-              ))}
-            </div>
-          )}
-        </div>
+      {/* ── The numbers: a tap-through tile each, so the stat row is navigation, not decoration ── */}
+      <div data-visual-mask="nearby-stat-row" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile href="/events" Icon={CalendarDays} label="Upcoming events" value={upcomingEventTotal || upcomingEvents.length} tone="bg-primary-bg text-primary-strong" />
+        <StatTile href="/circles" Icon={CircleDot} label="Circles" value={circlesCountRes.count ?? 0} note={newCirclesCount > 0 ? `${newCirclesCount} new` : undefined} tone="bg-signal-bg text-signal-strong" />
+        <StatTile href="/network" Icon={Users} label="Members" value={membersRes.count ?? 0} note={newMembersCount ? `${newMembersCount} joined this week` : undefined} tone="bg-warning-bg text-warning" />
+        <StatTile href="#dispatches" Icon={Megaphone} label="Dispatches this week" value={broadcastsThisWeek} tone="bg-broadcast-bg text-broadcast-strong" />
+      </div>
 
-        <div className="w-full shrink-0 space-y-4 lg:w-72">
-          {/* ── COMING UP ────────────────────────────────────────────────────────────────────
-              The four next GATHERINGS (one card per series, not one per date). This block used to
-              sit beside the map in the main column, height-matched to it; the map is the page
-              header now, so it moved to the rail, which is where the retired "Happening soon"
-              block used to render the same four events off a second, unfolded read. There is still
-              exactly ONE of these on the page and it is still fed by `upcomingEvents`. */}
-          {upcomingEvents.length > 0 && (
-            /* Masked WITH ITS HEADER, unlike the Dispatches column above, and the difference is not
-               a style choice: this header's count comes from a WIDER read than the four cards under
-               it (SERIES_WIDE_READ, folded), so it can move while the four cards stay put — drift a
-               mask can answer. The Dispatches count cannot move without its list changing length,
-               and a length change is a HEIGHT, which no mask fixes (ADR-1277 §3). */
-            <div data-visual-mask="nearby-coming-up">
-              <SectionHeader title="Coming up" count={upcomingEventTotal || undefined} href="/events" />
-              <div className="grid gap-2">
-                {upcomingEvents.map((e) => (
+      {/* ── Coming up (wide) beside Circles forming (narrow) ── */}
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+        <section className="lg:col-span-2" aria-label="Coming up">
+          <SectionHeader title="Happening near you" count={upcomingEventTotal || undefined} href="/events" />
+          {upcomingEvents.length > 0 ? (
+            <div data-visual-mask="nearby-coming-up" className="grid gap-3 sm:grid-cols-2">
+              {upcomingEvents.map((e) => {
+                const when = dayBadge(e.starts_at, now)
+                return (
                   <Link
                     key={e.id}
                     href={`/events/${e.slug}`}
-                    className="group flex min-h-0 items-center gap-2.5 overflow-hidden rounded-xl border border-border bg-surface px-2.5 py-2 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+                    className="group flex items-center gap-3 rounded-card border border-border bg-surface p-3.5 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
                   >
-                    <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg text-primary-strong">
+                    <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                       <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
-                      <span className="text-body-sm font-bold leading-none">{eventDay(e.starts_at)}</span>
+                      <span className="text-body font-bold leading-none">{eventDay(e.starts_at)}</span>
                     </span>
                     <span className="min-w-0 flex-1">
+                      {when && (
+                        <span className="mb-0.5 inline-block rounded-full bg-primary px-2 py-px text-3xs font-bold uppercase text-on-primary">{when}</span>
+                      )}
                       <span className="block truncate text-body-sm font-semibold leading-tight text-text">{e.title}</span>
                       <span className="mt-0.5 block truncate text-meta leading-tight text-subtle">
                         {eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}
                       </span>
                     </span>
                   </Link>
-                ))}
-              </div>
+                )
+              })}
             </div>
+          ) : (
+            <EmptyState
+              icon={CalendarDays}
+              title="Nothing on the calendar yet"
+              description="Be the first to put a gathering on it. Hosts can start one in a minute."
+              action={<Link href="/events/new" className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover">Host an event</Link>}
+            />
           )}
+        </section>
 
-          {/* Quick links across community surfaces */}
-          <div className="grid grid-cols-2 gap-2">
-            <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s happening" color="bg-primary-bg text-primary-strong" />
-            <QuickLink href="/circles" Icon={CircleDot} label="Circles" sub="Find your people" color="bg-signal-bg text-signal-strong" />
-            <QuickLink href="/channels" Icon={Radio} label="Channels" sub="By topic" color="bg-broadcast-bg text-broadcast-strong" />
-            <QuickLink href="/network" Icon={Users} label="Directory" sub="The community" color="bg-warning-bg text-warning" />
-          </div>
-
-          {/* "Happening soon" USED TO SIT HERE and is gone deliberately. It rendered the exact
-              same `upcomingEvents` array the Coming up cards beside the map now render, so keeping
-              it would have printed the next four gatherings twice on one page, a screen apart.
-              (It was also the block that showed "Breathe Connect Expand" twice in five rows: it
-              never applied the series fold, which is fixed at the read now.) */}
-
-          {newCircles.length > 0 && (
-            /* The five newest circles, ordered by created_at: the list re-orders itself as the
-               community grows, so the module is a reading and declares itself one. */
-            <ModuleCard title="New circles" visualMask="nearby-new-circles">
+        <section aria-label="Circles forming">
+          <SectionHeader title="Circles forming" href="/circles" />
+          {newCircles.length > 0 ? (
+            <ModuleCard title="Newest first" visualMask="nearby-new-circles">
               <div className="space-y-0.5">
                 {newCircles.map((c) => (
                   <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated">
@@ -419,14 +383,53 @@ export default async function NearbyPage({
                         {c.member_count} {c.member_count === 1 ? 'member' : 'members'}{c.city ? ` · ${c.city}` : ''}
                       </p>
                     </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-subtle" />
                   </Link>
                 ))}
               </div>
             </ModuleCard>
+          ) : (
+            <EmptyState
+              icon={CircleDot}
+              title="No new circles this week"
+              description="Start one around something you care about and the first people to find it will be neighbors."
+              action={<Link href="/circles/new" className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover">Start a circle</Link>}
+            />
           )}
-        </div>
+        </section>
       </div>
-    </>
+
+      {/* ── The Dispatch stream, in two columns so it uses the width ── */}
+      <section id="dispatches" aria-label="Latest Dispatches" className="scroll-mt-24">
+        <SectionHeader
+          title="Latest Dispatches"
+          count={dispatches.length > 0 ? dispatches.length : undefined}
+          action={dispatchActions}
+        />
+        {dispatches.length === 0 ? (
+          <EmptyState
+            icon={Megaphone}
+            title="No Dispatches yet"
+            description="Your hosts and guides post announcements, events, and challenges here. When they do, they scroll across the top of this page."
+          />
+        ) : (
+          /* The cards are the reading, so they are masked; the EmptyState above is design surface
+             and is not (an empty column is the same picture on every capture). */
+          <div data-visual-mask="nearby-dispatch-list" className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {dispatches.slice(0, 8).map((d) => (
+              <DispatchCard key={d.id} dispatch={d} viewerRole={role} myProfileId={profile.id} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── One prompt to act, then the doors to the rest of the community ── */}
+      <section aria-label="Do something" className="grid gap-3 sm:grid-cols-3">
+        <PromptTile href="/events/new" Icon={CalendarDays} title="Host a gathering" body="Put a time and place on the calendar and let the neighborhood find it." tone="bg-primary-bg text-primary-strong" />
+        <PromptTile href="/circles/new" Icon={CircleDot} title="Start a circle" body="Gather a few people around one thing you keep coming back to." tone="bg-signal-bg text-signal-strong" />
+        <PromptTile href="/channels" Icon={Radio} title="Join a conversation" body="Pick a channel by topic and say hello." tone="bg-broadcast-bg text-broadcast-strong" />
+      </section>
+    </div>
   )
 
   // ── FREQUENCY: NO HEADER BAND (owner, 2026-10-14, SCAN-899) ────────────────────────────────────
@@ -499,19 +502,52 @@ export default async function NearbyPage({
   )
 }
 
-function QuickLink({ href, Icon, label, sub, color }: {
-  href: string; Icon: React.ElementType; label: string; sub: string; color: string
+/** "Today" / "Tomorrow" for an event in the next two days, else nothing. Local to the server's
+ *  clock, which is the same clock the dates beside it are formatted with. */
+function dayBadge(iso: string, now: Date): string | null {
+  const start = new Date(iso)
+  const days = Math.floor((new Date(start.toDateString()).getTime() - new Date(now.toDateString()).getTime()) / 864e5)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Tomorrow'
+  return null
+}
+
+function StatTile({ href, Icon, label, value, note, tone }: {
+  href: string; Icon: React.ElementType; label: string; value: number; note?: string; tone: string
 }) {
   return (
     <Link
       href={href}
-      className="group rounded-card border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+      className="group flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
     >
-      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-control ${color}`}>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control ${tone}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-lead font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
+        <span className="mt-1 block truncate text-meta text-muted">{label}</span>
+        {note && <span className="block truncate text-3xs font-semibold text-primary-strong">{note}</span>}
+      </span>
+    </Link>
+  )
+}
+
+function PromptTile({ href, Icon, title, body, tone }: {
+  href: string; Icon: React.ElementType; title: string; body: string; tone: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col gap-2 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
+    >
+      <span className={`flex h-9 w-9 items-center justify-center rounded-control ${tone}`}>
         <Icon className="h-4 w-4" />
-      </div>
-      <div className="text-body-sm font-semibold leading-none text-text">{label}</div>
-      <div className="mt-0.5 text-meta text-muted">{sub}</div>
+      </span>
+      <span className="flex items-center gap-1.5 text-body-sm font-bold text-text">
+        {title}
+        <ArrowRight className="h-3.5 w-3.5 text-subtle transition-transform group-hover:translate-x-0.5" />
+      </span>
+      <span className="text-meta leading-relaxed text-muted">{body}</span>
     </Link>
   )
 }
