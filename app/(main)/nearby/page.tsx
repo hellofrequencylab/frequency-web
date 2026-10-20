@@ -26,6 +26,7 @@ import {
   TEASER_CARDS_PER_SERIES,
   type SeriesRow,
 } from '@/lib/events/series'
+import { pickCirclesForming } from '@/lib/nearby/circles-forming'
 import { DispatchMarquee } from '@/components/nearby/dispatch-marquee'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
@@ -113,7 +114,7 @@ export default async function NearbyPage({
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, community_role')
+    .select('id, community_role, city')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) notFound()
@@ -193,7 +194,7 @@ export default async function NearbyPage({
     // in lib/circles/visibility.test.ts, which C1's own sweep missed it off.
     admin.from('circles').select('id, name, slug, city, member_count, created_at')
       .in('status', ['forming', 'active']).eq('unlisted', false)
-      .order('created_at', { ascending: false }).limit(5),
+      .order('created_at', { ascending: false }).limit(30),
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
     // The count tiles are public face, so they count what a stranger could actually find. Counting
     // the hidden rows too would advertise a community larger than the one on offer.
@@ -227,11 +228,18 @@ export default async function NearbyPage({
   }).slice(0, COMING_UP_COUNT)
   // The at-a-glance number, folded through the SAME helper as the cards beside it.
   const upcomingEventTotal = countSeries((eventsCountRes.data ?? []) as SeriesRow[])
-  const newCircles = (newCirclesRes.data ?? []) as CircleRow[]
+  // The newest circles, scoped to the viewer's own city when they have set one and it has any
+  // (LIVE-1034). The read over-fetches (30) so a city can be found past the community's newest five.
+  const newestCircles = (newCirclesRes.data ?? []) as CircleRow[]
+  const formingPick = pickCirclesForming(
+    newestCircles,
+    (profile as { city?: string | null }).city,
+  )
+  const newCircles = formingPick.circles
   const role = (profile as { community_role: CommunityRole }).community_role
   const broadcastsThisWeek = dispatches.filter((d) => (d.published_at ?? '') >= weekAgoIso).length
   const newMembersCount = newMembersRes.count ?? 0
-  const newCirclesCount = newCircles.filter((c) => (c.created_at ?? '') >= twoWeeksAgoIso).length
+  const newCirclesCount = newestCircles.slice(0, 5).filter((c) => (c.created_at ?? '') >= twoWeeksAgoIso).length
 
   // Host+ compose targets.
   const isHost = HOST_PLUS.includes(role)
@@ -368,7 +376,7 @@ export default async function NearbyPage({
         </section>
 
         <section aria-label="Circles forming">
-          <SectionHeader title="Circles forming" href="/circles" />
+          <SectionHeader title={formingPick.city ? `Circles forming in ${formingPick.city}` : 'Circles forming'} href="/circles" />
           {newCircles.length > 0 ? (
             <ModuleCard title="Newest first" visualMask="nearby-new-circles">
               <div className="space-y-0.5">

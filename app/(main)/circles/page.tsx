@@ -16,6 +16,8 @@ import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqCirclesBody } from '@/components/frequency/members/circles/circles-body'
+import { getCachedViewerProfile } from '@/lib/auth'
+import { listNetworkedSpacesPage } from '@/lib/spaces/discovery'
 import { loadNextMeetups } from '@/lib/circles/next-meetups'
 
 // The Circles index — a TEMPLATE + BLOCKS surface (PAGE-FRAMEWORK). It now opens on the SHARED
@@ -47,8 +49,20 @@ export default async function CirclesPage({
   // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the member kit's Circles page, on the
   // same live read. Build-time, so the DAWN block layout below is untouched when it is off.
   if (SITE_DESIGN === 'frequency') {
-    const nextMeetups = await loadNextMeetups(circlesIndex.myCircleIds)
-    return <FqCirclesBody data={circlesIndex} params={sp} nextMeetups={nextMeetups} />
+    const [nextMeetups, profile, spacesPage] = await Promise.all([
+      loadNextMeetups(circlesIndex.myCircleIds),
+      getCachedViewerProfile(),
+      listNetworkedSpacesPage({}, { limit: 3 }).catch(() => ({ spaces: [], total: 0 })),
+    ])
+    const home = profile?.home_lat != null && profile?.home_lng != null ? { lat: profile.home_lat, lng: profile.home_lng } : null
+    const featuredSpaces = spacesPage.spaces.map((sp) => ({
+      slug: sp.slug,
+      name: sp.name,
+      tagline: sp.tagline,
+      coverUrl: sp.coverUrl,
+      logoUrl: sp.logoUrl,
+    }))
+    return <FqCirclesBody data={circlesIndex} params={sp} nextMeetups={nextMeetups} home={home} featuredSpaces={featuredSpaces} />
   }
 
   // Block layout: an operator-published doc wins; else the coded default template.

@@ -14,6 +14,7 @@ import type { StarterSeed } from '@/lib/circles/starter-projection'
 import type { CircleCardData } from '@/components/circles/circle-card'
 import type { CircleBase } from '@/lib/types/circle'
 import type { PillarSlug } from '@/lib/pillars'
+import { circleKind } from '@/lib/circles/kind'
 import { isListedCircle, LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { carriesChannel, circleChannelIds, type CircleChannelLink } from '@/lib/circles/channels'
 
@@ -84,6 +85,9 @@ function toCardData(c: CircleRow): CircleCardData {
     imageUrl: c.image_url ?? (c.space && c.space.type !== 'root' ? c.space.cover_image_url : null),
     isDemo: c.is_demo,
     isFeatured: !!c.featured_at,
+    kind: circleKind({ spaceType: c.space?.type, featuredAt: c.featured_at, hubId: c.hub?.id }),
+    latitude: c.latitude,
+    longitude: c.longitude,
   }
 }
 

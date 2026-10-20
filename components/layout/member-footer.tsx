@@ -3,9 +3,7 @@
 import Link from 'next/link'
 import { Bug } from 'lucide-react'
 import { BrandMark } from '@/components/layout/brand-mark'
-import { meetsAccess, meetsStaff, NAV_AREA_DEFAULTS, type NavAccess } from '@/lib/nav-areas'
-import { footerColumns } from '@/lib/nav/registry'
-import type { NavNode } from '@/lib/nav/types'
+import { visibleFooterColumns } from '@/lib/nav/footer-access'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
 import type { AccessLevel } from '@/lib/core/access-matrix'
@@ -48,38 +46,8 @@ export interface MemberFooterProps {
   navAccess?: Record<string, AccessLevel>
 }
 
-// Can the viewer reach a link? For a nav-keyed link, defer to the rail's logic:
-// the matrix wins when present, else the default-access ladder unioned with staff.
-// For a keyless link, gate on its own `gate` (minAccess ladder unioned with staff).
-// This mirrors the registry canSee union exactly, plus the matrix short-circuit the
-// rail uses, so the member footer stays byte-identical to its previous output.
-function reachable(
-  node: NavNode,
-  role: CommunityRole | null,
-  staffRole: StaffRole | null,
-  navAccess: Record<string, AccessLevel> | undefined,
-): boolean {
-  if (node.navKey) {
-    if (navAccess && node.navKey in navAccess) return navAccess[node.navKey] !== 'none'
-    const access = NAV_AREA_DEFAULTS[node.navKey] ?? 'visitor'
-    return (
-      meetsAccess(access, role) ||
-      meetsStaff({ staffDomain: node.gate.staffDomain }, staffRole)
-    )
-  }
-  return (
-    meetsAccess((node.gate.minAccess as NavAccess) ?? 'visitor', role) ||
-    meetsStaff({ staffDomain: node.gate.staffDomain }, staffRole)
-  )
-}
-
 export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooterProps) {
-  const columns = footerColumns()
-    .map((col) => ({
-      ...col,
-      links: col.links.filter((l) => reachable(l, role, staffRole, navAccess)),
-    }))
-    .filter((col) => col.links.length > 0)
+  const columns = visibleFooterColumns(role, staffRole, navAccess)
 
   // Stable across the SSR → hydrate boundary (the year doesn't change mid-render),
   // so there's no hydration drift.

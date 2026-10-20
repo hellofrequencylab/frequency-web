@@ -9,7 +9,7 @@
 //               notifications and Zap (.ap-sheets), avatar
 //     banner    the announcement bar slot, unchanged
 //     rail grid left rail · <main id="main"> · right rail, resizable and collapsible (rail-layout.tsx)
-//     footer    "Frequency · Community Collective"
+//     footer    the mega footer: the site index, the legal row, the calls to action (LIVE-1030)
 //     toast     the kit's .ap-toast host
 //
 // A Server Component. The client islands are the header, the rail geometry, the two rail tabs, the kit
@@ -31,6 +31,7 @@ import type { WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/staff'
 import { RANK_LABELS } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
+import { CircleMark } from './circle-mark'
 import { MembersKitRoot } from './kit-root'
 import { FqHeader } from './header'
 import { FqAmbient } from './ambient'
@@ -52,6 +53,9 @@ import { meetsAccess } from '@/lib/nav-areas'
 import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 import { avatarBg } from './avatar'
 import { BETA_CTA_HREF } from '@/lib/site'
+import { FqMegaFooter } from '@/components/frequency/shared/mega-footer'
+import { visibleFooterColumns } from '@/lib/nav/footer-access'
+import type { AccessLevel } from '@/lib/core/access-matrix'
 
 type Stats = Promise<DockData | null>
 
@@ -231,7 +235,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           {circles.slice(0, 5).map((c) => (
             <Link key={c.key} href={c.href} className="fqm-circle">
               <span className="fqm-circle-orb" data-live={c.notices > 0 ? '' : undefined} aria-hidden>
-                {getInitials(c.label).slice(0, 1)}
+                <CircleMark label={c.label} image={c.image} />
               </span>
               <span className="fqm-grow">
                 <b>{c.label}</b>
@@ -279,7 +283,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
       {circles.length > 0 && <span className="fqm-divider" aria-hidden />}
       {circles.slice(0, 5).map((c) => (
         <Link key={c.key} href={c.href} className="fqm-circle-orb" data-live={c.notices > 0 ? '' : undefined} aria-label={c.label} data-tip={c.label} data-tip-sub={c.notices > 0 ? `${c.notices} new` : ''}>
-          {getInitials(c.label).slice(0, 1)}
+          <CircleMark label={c.label} image={c.image} />
         </Link>
       ))}
       <Suspense fallback={null}>
@@ -451,13 +455,29 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     />
   )
 
+  // THE MEGA FOOTER (LIVE-1030): the full site index, role-gated through the same registry columns as the
+  // rail (lib/nav/footer-access.ts), the shared legal row, and the calls to action. Closed, it is a bar with
+  // the brand, Help and Settings; the Legal column is the bar's own row, so the grid leaves it out.
+  const footerColumns = visibleFooterColumns(gateRole, props.staffRole ?? null, navAccess as Record<string, AccessLevel> | undefined)
+    .filter((c) => c.title !== 'Legal')
+    .map((c) => ({ title: c.title, links: c.links.map((l) => ({ label: l.label, href: l.href })) }))
   const footer = (
-    <footer className="ap-foot">
-      <span>Frequency · Community Collective</span>
-      <span className="ap-sp" />
-      <Link href="/help">Help</Link>
-      {!props.anonymous && <Link href="/settings">Settings</Link>}
-    </footer>
+    <FqMegaFooter
+      columns={footerColumns}
+      tagline="Local groups that keep meeting. Find your Circle, host an Event, open a Space."
+      ctas={
+        props.anonymous
+          ? [
+              { label: 'Find your Circle', href: BETA_CTA_HREF, primary: true },
+              { label: 'Open a Space', href: '/spaces' },
+            ]
+          : [
+              { label: 'Start a Circle', href: '/circles/new', primary: true },
+              { label: props.operatesSpaces ? 'Your Spaces' : 'Open a Space', href: props.operatesSpaces ? '/spaces/directory' : '/spaces/new' },
+            ]
+      }
+      quick={[{ label: 'Help', href: '/help' }, ...(props.anonymous ? [] : [{ label: 'Settings', href: '/settings' }])]}
+    />
   )
 
   return (
