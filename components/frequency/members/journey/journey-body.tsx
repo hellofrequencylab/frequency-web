@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import type { JourneyTree, Lesson } from '@/lib/journeys/tree'
 import type { JourneyFriend } from '@/lib/journeys/friends-on-journey'
 import { OnThisJourneyPanel, MoreJourneysPanel, peopleLine, type MoreJourney } from './journey-side'
@@ -101,16 +102,12 @@ export function JourneyBody({
   return (
     <MembersBody>
       {notice}
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Journey</span>
-          <h1 className="h1">
-            <SerifTail text={plan.title} />
-          </h1>
-          <span className="meta">{metaParts.join(' · ')}</span>
-        </div>
-        <div className="row wrap">{actions}</div>
-      </div>
+      <MemberHead
+        kicker="The Quest · Journey"
+        title={<SerifTail text={plan.title} />}
+        meta={metaParts.join(' · ')}
+        actions={<div className="row wrap">{actions}</div>}
+      />
 
       <section className="panel mc-hero">
         <div className="fq-aura" aria-hidden />

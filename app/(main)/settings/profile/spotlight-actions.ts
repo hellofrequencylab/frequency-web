@@ -18,7 +18,9 @@ import {
   deleteOneTopFriend,
   getOwnerTopFriendIds,
 } from '@/lib/spotlight/top-friends'
-import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
+import { hasNativeNodeStorage, legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
+import { sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 
@@ -55,10 +57,14 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
   const storedGrid = meta && typeof meta === 'object' && !Array.isArray(meta)
     ? (meta as Record<string, unknown>).entityGrid
     : undefined
-  const compatibilityError = legacySpaceLayoutWriteError(rawLayout, { profileLayout: storedGrid })
+  // Behind render_path_space_profile (the profile surface's switch) a NATIVE node document is accepted and
+  // stored as nodes; everything else keeps the LIVE-875 refusal, so a stale legacy save can never overwrite
+  // stored nodes. Switched off, or on a read error, nothing changes.
+  const nativeWrite = hasNativeNodeStorage(rawLayout) && (await renderPathEnabled('space_profile'))
+  const compatibilityError = nativeWrite ? null : legacySpaceLayoutWriteError(rawLayout, { profileLayout: storedGrid })
   if (compatibilityError) return { error: compatibilityError }
 
-  const safe = sanitizeEntityLayout(rawLayout, 'member')
+  const safe = nativeWrite ? sanitizeNodeLayout(rawLayout, 'member') : sanitizeEntityLayout(rawLayout, 'member')
   // 2026-09-05 (scan2 L6-09): the helper over an EMPTY base says whether `entityGrid` is set or dropped
   // (an empty layout deletes it), and ONLY that key is merged or removed server-side. The RPC checks
   // auth.uid() owns the row, so the write stays session-scoped.

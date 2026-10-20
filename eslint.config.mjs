@@ -58,6 +58,29 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // PROG-A1 (App Platform A1): a feature module is reached through its barrel only. CRM first: the
+  // pages import `@/modules/crm` (server) or `@/modules/crm/client` (a client component), never
+  // `@/components/spaces/crm/*` or a file inside modules/. The module's own files are exempt.
+  {
+    ignores: ["modules/**", "components/spaces/crm/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/spaces/crm/*"],
+              message: "Import CRM through its module barrel: '@/modules/crm' (server) or '@/modules/crm/client' (client). PROG-A1.",
+            },
+            {
+              group: ["@/modules/*/*", "!@/modules/*/client"],
+              message: "Import a feature module through its barrel (@/modules/<app>), or its /client entry from a client component. PROG-A1.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -50,7 +50,7 @@ import { GET } from '@/app/hosted/[host]/opengraph-image/route'
 const published = { theme: 'Menswork', chrome: { name: 'Published website name' }, brand: { logo: 'https://images.example/published.png' }, pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [] }, seo: { title: '', description: '' }, comments: [] }] }
 it('serves the published Menswork theme and logo independently from Space and private draft branding', async () => {
   routeMocks.image.mockReset().mockResolvedValue(null)
-  routeMocks.preferences = { websitePublished: true, websiteEditor: { published, draft: { ...published, chrome: { name: 'Private draft name' }, brand: { logo: 'https://images.example/private.png' } } } }
+  routeMocks.preferences = { siteStyle: { theme: 'bold' }, websitePublished: true, websiteEditor: { published, draft: { ...published, chrome: { name: 'Private draft name' }, brand: { logo: 'https://images.example/private.png' } } } }
   const response = await GET(new Request('https://site.example/opengraph-image'), { params: Promise.resolve({ host: 'site.example' }) })
   expect(response.status).toBe(200)
   const html = await response.text()

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1111",
+  "title": "The Boost button explains itself: a Member sees what Boost does and how to join Crew, a Crew member sees what they have left",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1709"
+  },
+  "detail": "Daniel 2026-10-20 ('I like it, leave a tooltip for member and crew roles'). BoostButton gets a tooltip on hover and keyboard focus. A Member who is not Crew reads what a Boost does on this Circle or Space, that Boosts come with Crew at one a month, and a Join Crew link. A Crew member reads how many Boosts they have left this month (one or none), what it does here, and what it does on the other kind. The viewer's standing comes from a new action, readMyBoostStatus (lib/crew/boost.ts boostStatus), called once on first hover or focus, so no profile page reads it and ISR is untouched; a read failure reads as Crew with one left, and giveBoost stays the only gate. Boost rules are unchanged: a Space Boost is a mark only. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const b=fs.readFileSync('components/crew/boost-button.tsx','utf8');const a=fs.readFileSync('lib/crew/boost-actions.ts','utf8');if(!b.includes('role=\\\"tooltip\\\"'))bad.push('Boost button has no tooltip');if(!b.includes('Join Crew'))bad.push('non-Crew tooltip has no way to join');if(!b.includes('Boost left this month'))bad.push('Crew tooltip does not say how many are left');if(!a.includes('readMyBoostStatus'))bad.push('tooltip has no standing read');if(bad.length){console.error('LIVE-1111: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the tooltip, its Join Crew link, the remaining-count line or the standing read is dropped.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

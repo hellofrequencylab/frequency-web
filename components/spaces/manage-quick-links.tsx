@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowUpRight, Globe, Hammer, LayoutDashboard, PencilRuler, SlidersHorizontal } from 'lucide-react'
+import { ArrowUpRight, Globe, Hammer, LayoutDashboard, PencilRuler, QrCode, SlidersHorizontal } from 'lucide-react'
 import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 
@@ -14,7 +14,7 @@ import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 // editor (SCAN-971's door).
 
 export type ManageQuickLink = {
-  key: 'console' | 'editor' | 'builder' | 'website' | 'menu'
+  key: 'console' | 'editor' | 'builder' | 'website' | 'checkin' | 'menu'
   label: string
   href: string
   external?: boolean
@@ -41,6 +41,9 @@ export function manageQuickLinks({
       ? { key: 'website', label: 'Website', href: siteUrl, external: true }
       : { key: 'website', label: 'Publish website', href: settingsHref },
   )
+  // Check in (LIVE-949): the door code, the NFC link, the roster and Regulars. The catalog row for it was retired
+  // (LIVE-226) while its panel stayed, so this door is the way in.
+  links.push({ key: 'checkin', label: 'Check in', href: `/spaces/${slug}?panel=checkin` })
   links.push({ key: 'menu', label: 'Menu and features', href: `/spaces/${slug}/manage/modules` })
   return links
 }
@@ -50,6 +53,7 @@ const ICONS = {
   editor: PencilRuler,
   builder: Hammer,
   website: Globe,
+  checkin: QrCode,
   menu: SlidersHorizontal,
 } as const
 

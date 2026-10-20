@@ -22,6 +22,8 @@ export interface NurtureStep {
    *  the arranger; null / undefined means the legacy plain `body` drives the send. Read-only carrier for the
    *  admin UI; the pure scheduling helpers below never read it. */
   blockJson?: import('@/lib/entity-blocks/layout').EntityLayout | null
+  /** The same body as a node document (null when unset), for the node editor behind render_path_email. */
+  nodeLayout?: import('@/lib/entity-blocks/node-tree').NodeLayout | null
 }
 
 /** Enabled steps, ascending by order — the canonical send order. */

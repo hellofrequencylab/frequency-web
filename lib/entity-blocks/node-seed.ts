@@ -12,11 +12,12 @@ import { upgradeLayout, type BlockNode, type NodeLayout } from './node-tree'
 export function ownerNodeLayout(
   saved: EntityLayout | null,
   effectiveContent: Record<string, Record<string, unknown>> = {},
+  kind: 'space' | 'member' = 'space',
 ): NodeLayout {
   const base: NodeLayout =
     saved?.nodes ??
     upgradeLayout({
-      rows: resolveRows(saved, 'space'),
+      rows: resolveRows(saved, kind),
       hidden: saved?.hidden ?? [],
       content: saved?.content ?? {},
       style: saved?.style ?? {},

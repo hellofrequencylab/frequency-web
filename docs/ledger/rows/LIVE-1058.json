@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1058",
+  "title": "Editor E0 task 12b, email canvas editor runs on the node store (NodeEmailCanvasEditor)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "\u00a78 task 12b"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. components/admin/email-studio/email-canvas-model.ts adapts the legacy profile-layout store and the node store to one EmailCanvasModel (blocks by key, reorder, add, remove, setField); email-canvas-editor.tsx is a view over it, exporting EmailCanvasEditor (legacy, unchanged behavior) and NodeEmailCanvasEditor (each block its own node, so a type can repeat). Not mounted yet: the editor pane and the campaign load behind render_path_email are next.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const e=fs.readFileSync('components/admin/email-studio/email-canvas-editor.tsx','utf8');if(!e.includes('NodeEmailCanvasEditor'))bad.push('no node email editor');if(!e.includes('./email-canvas-model'))bad.push('view not on the model');if(!fs.readFileSync('components/admin/email-studio/email-canvas-model.ts','utf8').includes('useNodeLayout'))bad.push('model has no node store');if(bad.length){console.error('LIVE-1058: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the email canvas editor loses its node-store twin or stops going through the model. Behavior is node-email-canvas-editor.test.tsx.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

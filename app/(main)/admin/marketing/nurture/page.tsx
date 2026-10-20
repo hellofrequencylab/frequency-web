@@ -7,12 +7,17 @@ import { StatCard } from '@/components/ui/stat-card'
 import { Mail, Users, Send } from 'lucide-react'
 import { listPersonas } from '@/lib/onboarding/personas'
 import { listSequencesWithStats } from '@/lib/nurture/store'
+import { starterRows } from '@/lib/entity-blocks/layout'
+import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { NurtureManager, type PersonaRow } from './nurture-client'
 
 export const dynamic = 'force-dynamic'
 
 export default async function NurturePage() {
   const stats = await listSequencesWithStats()
+  // Behind render_path_email the step designer runs on node documents (a legacy body is upgraded in memory).
+  const emailNodes = await renderPathEnabled('email')
   const byPersona = new Map(stats.map((s) => [s.sequence.persona, s]))
 
   const rows: PersonaRow[] = listPersonas().map((p) => {
@@ -36,6 +41,7 @@ export default async function NurturePage() {
               body: st.body,
               enabled: st.enabled,
               blockJson: st.blockJson ?? null,
+              nodeLayout: emailNodes ? (st.nodeLayout ?? upgradeLayout({ rows: starterRows('email', 'basic') })) : null,
             })),
           }
         : null,

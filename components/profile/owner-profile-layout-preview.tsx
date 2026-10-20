@@ -1,6 +1,9 @@
 import { getMemberProfileModules } from '@/lib/spotlight/data'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import { renderMemberBlockNodes } from '@/components/widgets/member-profile/member-profile-modules'
+import { LiveNodeGrid } from '@/components/entity-blocks/live-node-grid'
+import { ownerNodeLayout } from '@/lib/entity-blocks/node-seed'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
 
 // THE OWNER'S LIVE PAGE PREVIEW (ADR-516 Phase C; ADR-522). On the member's OWN profile this renders their
@@ -26,6 +29,14 @@ export async function OwnerProfileLayoutPreview({ handle }: { handle: string }) 
   if (!data) return null
 
   const nodes = renderMemberBlockNodes(data, data.grid)
+  const nodeLayout = (await renderPathEnabled('space_profile')) ? ownerNodeLayout(data.grid, {}, 'member') : null
+  if (nodeLayout) {
+    return (
+      <div className="@container/profile">
+        <LiveNodeGrid nodes={nodes} initialLayout={nodeLayout} kind="member" />
+      </div>
+    )
+  }
   const rows = resolveRows(data.grid, 'member')
   const hidden = data.grid?.hidden ?? []
 

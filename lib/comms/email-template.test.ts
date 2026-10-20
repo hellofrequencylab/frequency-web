@@ -40,19 +40,58 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
     url: 'https://frequencylocal.com/spaces/riverside-makers',
   }
 
-  it('header is the logo and the brand name, no Frequency masthead', () => {
+  it('header is the brand name, no Frequency masthead; the logo is the round avatar in the signature card', () => {
     const { html } = renderReplyEmail('Hello', 'Dana', BRAND)
-    expect(html).toContain('<img src="https://cdn.test/logo.png" alt="Riverside Makers"')
-    expect(html).toContain('max-height:40px')
     expect(html).toContain('color:#0a7f5a">Riverside Makers</div>')
-    expect(html).not.toContain(SITE_TAGLINE)
+    // Owner ask 2026-10-20: the Frequency wordmark sits top left and links to the home feed; a small one
+    // closes the footer. The card itself is headed by the Space, not by a Frequency masthead.
+    expect(html.indexOf('href="https://frequencylocal.com/feed"')).toBeLessThan(html.indexOf('Riverside Makers</div>'))
     expect(html).not.toContain(`>${SITE_NAME}</div>`)
+    // Owner ask 2026-10-20: the profile picture is a circle to the left of the signature.
+    expect(html).toContain('<img src="https://cdn.test/logo.png" alt="Riverside Makers" width="52" height="52"')
+    expect(html).toContain('border-radius:50%')
+    const avatar = html.indexOf('<img src="https://cdn.test/logo.png"')
+    expect(avatar).toBeLessThan(html.indexOf('Dana'))
+    expect(avatar).toBeGreaterThan(html.indexOf('Hello'))
   })
 
-  it('without a logo or accent: the name alone in the default ink', () => {
+  it('a Space with a logo and no signature still gets the card, named by the Space', () => {
+    const { html } = renderReplyEmail('Hello', null, BRAND)
+    expect(html).toContain('<img src="https://cdn.test/logo.png"')
+    expect(html).toContain('>Riverside Makers</div></td>')
+  })
+
+  it('the card sits on the Frequency page: wash, raised radius-24 card, body ink from the palette', () => {
+    const { html } = renderReplyEmail('Hello', 'Dana', BRAND)
+    expect(html).toContain('border-radius:24px')
+    expect(html).toContain(`background:${palette.surface}`)
+    expect(html).toContain(`color:${palette.emailBody}`)
+  })
+
+  it('the footer carries the shared legal lines: Privacy, Terms, Help, Manage emails, copyright and the postal line', () => {
+    const { html, text } = renderReplyEmail('Hello', null, BRAND)
+    for (const path of ['/privacy', '/terms', '/help', '/manage-emails']) {
+      expect(html).toContain(`href="https://frequencylocal.com${path}"`)
+      expect(text).toContain(`https://frequencylocal.com${path}`)
+    }
+    expect(html).toContain(`&copy; ${new Date().getFullYear()} Frequency Labs Holdings`)
+    expect(html).toContain('Carlsbad, CA')
+    expect(text).toContain('Carlsbad, CA')
+    expect(text).not.toContain('—')
+    expect(html).not.toContain('—')
+  })
+
+  it('the footer carries the Frequency mark with Community Collective and a link back to the Space page', () => {
+    const { html } = renderReplyEmail('Hello', null, BRAND)
+    expect(html).toContain(`alt="${SITE_NAME} ${SITE_TAGLINE}"`)
+    expect(html).toContain(`>Back to Riverside Makers on ${SITE_NAME}</a>`)
+    expect(html).toContain('href="https://frequencylocal.com/spaces/riverside-makers" style="color:')
+  })
+
+  it('without a logo or accent: the name alone in the heading ink, no avatar', () => {
     const { html } = renderReplyEmail('Hello', null, { ...BRAND, logoUrl: null, accent: null })
-    expect(html).not.toContain('<img')
-    expect(html).toContain(`color:${palette.text}">Riverside Makers</div>`)
+    expect(html).not.toContain('border-radius:50%')
+    expect(html).toContain(`color:${palette.emailHeading}">Riverside Makers</div>`)
   })
 
   it('footer is one small "Sent with Frequency" line plus the Space page, in html and text', () => {

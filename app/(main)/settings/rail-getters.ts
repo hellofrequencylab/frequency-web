@@ -18,6 +18,9 @@
 // and the Layout link (the handle).
 
 import { createClient } from '@/lib/supabase/server'
+import { renderPathEnabled } from '@/lib/platform-flags'
+import { ownerNodeLayout } from '@/lib/entity-blocks/node-seed'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { effectiveTierFor } from '@/lib/billing/crew-grants'
 import {
@@ -253,6 +256,8 @@ export interface MemberLayoutRailData {
    *  report, 2026-07-28). */
   content: Record<string, Record<string, unknown>>
   style: Record<string, BlockStyle>
+  /** The same page as a node document, present only while render_path_space_profile is on. */
+  nodeLayout?: NodeLayout
   /** Whether the member has ever saved a layout (else the resolved rows are the default seed → show starters). */
   customized: boolean
 }
@@ -273,6 +278,7 @@ export async function getMemberLayoutRailData(): Promise<MemberLayoutRailData | 
   if (!profile) return null
 
   const saved = readMemberGridLayout((profile as { meta?: unknown }).meta)
+  const nodePath = await renderPathEnabled('space_profile')
   return {
     handle: (profile as { handle?: string | null }).handle ?? null,
     rows: resolveRows(saved, 'member'),
@@ -280,6 +286,7 @@ export async function getMemberLayoutRailData(): Promise<MemberLayoutRailData | 
     content: saved?.content ?? {},
     style: saved?.style ?? {},
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
+    ...(nodePath ? { nodeLayout: ownerNodeLayout(saved, {}, 'member') } : {}),
   }
 }
 

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { NotebookPen, Camera, PenLine } from 'lucide-react'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime } from '@/lib/utils'
@@ -46,17 +47,25 @@ export async function JournalEntries() {
   const { data: profile } = await supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
   if (!profile) return null
 
+  // The page's search box (?q=, the Frequency Journal header) reaches a nested module through the
+  // x-search header the proxy stamps on every route. LIKE wildcards in the text are escaped.
+  const q = (new URLSearchParams((await headers()).get('x-search') ?? '').get('q') ?? '').trim().slice(0, 80)
+
   const admin = createAdminClient()
-  const { data } = await admin
+  let read = admin
     .from('posts')
     .select('id, body, media_urls, post_type, created_at')
     .eq('author_id', profile.id)
     .is('parent_id', null)
     .is('hidden_at', null)
-    .order('created_at', { ascending: false })
-    .limit(60)
+  if (q) read = read.ilike('body', `%${q.replace(/[\\%_]/g, '\\$&')}%`)
+  const { data } = await read.order('created_at', { ascending: false }).limit(60)
 
   const entries = (data ?? []) as Entry[]
+
+  if (entries.length === 0 && q) {
+    return <p className="text-body-sm text-muted">No entries match “{q}”.</p>
+  }
 
   if (entries.length === 0) {
     return (

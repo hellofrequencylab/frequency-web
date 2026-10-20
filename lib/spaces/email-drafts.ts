@@ -1,6 +1,8 @@
 'use server'
 
 
+import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { renderPathEnabled } from '@/lib/platform-flags'
 import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
 
 // PER-SPACE BLOCK-EMAIL DRAFTS (Email in the Business CRM, P1 · deliverable 2 — the Marketing editor's data
@@ -269,11 +271,16 @@ export async function loadSpaceEmailDraft(
 
   const subject = row.subject ?? ''
   const status = row.status ?? 'draft'
+  const layout = layoutFromBlockJson(row.block_json)
+  // Behind render_path_email the canvas edits a node document: a stored one as it is, a legacy one upgraded in
+  // memory (nothing is written until the first edit saves it).
+  const nodeLayout = (await renderPathEnabled('email')) ? (upgradeLayout(row.block_json) ?? upgradeLayout(layout)) : null
   return {
     id: row.id,
     subject,
     preheader: row.preheader ?? '',
-    layout: layoutFromBlockJson(row.block_json),
+    layout,
+    ...(nodeLayout ? { nodeLayout } : {}),
     context: {
       kind: 'broadcast',
       campaignName: subject.trim() || 'Untitled email',
@@ -297,7 +304,7 @@ export async function loadSpaceEmailDraft(
 export async function saveSpaceEmailDraft(
   spaceId: string,
   id: string,
-  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+  patch: { layout?: BuilderLayout | EntityLayout | NodeLayout; subject?: string; preheader?: string },
 ): Promise<{ error?: string }> {
   const gate = await requireSpaceEditor(spaceId)
   if (!gate.ok) return { error: gate.error }

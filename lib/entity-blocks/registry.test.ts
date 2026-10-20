@@ -97,10 +97,12 @@ describe('unified entity-block registry', () => {
     for (const id of ['circles', 'faq']) {
       expect(space).toContain(id)
     }
-    // Excluded from the SPACE palette (ADR-542): the legacy authored blocks (heading/text/links/image →
+    // The owner asked for a Links list a Space fills in itself (2026-10-20), so `links` is offered to a Space.
+    expect(space).toContain('links')
+    // Excluded from the SPACE palette (ADR-542): the legacy authored blocks (heading/text/image →
     // covered by Callout + the connected sections) and the never-wired data blocks. Every id below must
     // still have NO data source; if one gains a renderer with live rows, it belongs above, not here.
-    for (const id of ['highlights', 'stats', 'practices', 'updates', 'quote', 'divider', 'links', 'heading', 'text', 'image']) {
+    for (const id of ['highlights', 'stats', 'practices', 'updates', 'quote', 'divider', 'heading', 'text', 'image']) {
       expect(space).not.toContain(id)
     }
     // The member palette keeps topfriends + the authored links list + the content essentials; `business` is

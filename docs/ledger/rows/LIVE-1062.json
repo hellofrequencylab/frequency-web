@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1062",
+  "title": "Editor E0 task 14, member profile grid writer stores nodes behind render_path_space_profile",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "\u00a78 task 12b"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-20. Owner chose the Space switch for the member profile (decision card 2026-10-20 03:33Z), so no new flag. saveMemberGridLayout accepts a native node document only while render_path_space_profile is on (sanitizeNodeLayout kind member); switch off and legacy-over-nodes keep the LIVE-875 refusal. readMemberGridLayout reads a stored node document through readTypeKeyedGrid so type-keyed readers see a projection with the nodes beside it. No member has a stored grid today. Next: the member profile page renders the node grid, the builder and owner preview on the node store, then the importer and task 15 backfill.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=[];const a=fs.readFileSync('app/(main)/settings/profile/spotlight-actions.ts','utf8');if(!a.includes(\\\"renderPathEnabled('space_profile')\\\")||!a.includes('sanitizeNodeLayout'))bad.push('member writer has no node branch behind the switch');if(!fs.readFileSync('lib/entity-blocks/member-grid-meta.ts','utf8').includes('readTypeKeyedGrid'))bad.push('member grid read skips the node projection');if(bad.length){console.error('LIVE-1062: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the member grid writer loses its switch-gated node branch or the member read stops projecting nodes. Behavior is spotlight-actions.grid.test.ts and check-member-node-write-safety.mjs.",
+    "checked": "2026-10-20"
+  },
+  "closed": "2026-10-20",
+  "wave": "W4"
+}

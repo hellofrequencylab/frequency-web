@@ -36,22 +36,30 @@ export function FeedComposer({ scopeId, avatarUrl, name, practiceHref }: { scope
   }
   return (
     <div id="compose" className="fa-composer">
-      <FqAvatar url={avatarUrl} name={name} />
-      <button type="button" className="grow" onClick={() => setOpen(true)}>
-        Share a moment with your people
-      </button>
-      <button type="button" className="ap-ic" title="Photo" aria-label="Photo" onClick={() => setOpen(true)}>
-        <FqIcon name="page" />
-      </button>
-      <Link className="ap-ic" href="/events/new" title="Event" aria-label="Event">
-        <FqIcon name="event" />
-      </Link>
-      <Link className="ap-ic" href={practiceHref} title="Log practice" aria-label="Log practice">
-        <FqIcon name="checkin" />
-      </Link>
-      <Link className="ap-ic" href="/classifieds/new" title="Listing" aria-label="Listing">
-        <FqIcon name="ticket" />
-      </Link>
+      <div className="fa-composer-top">
+        <FqAvatar url={avatarUrl} name={name} />
+        <button type="button" className="grow" onClick={() => setOpen(true)}>
+          Share a moment with your people
+        </button>
+      </div>
+      <div className="fa-composer-acts">
+        <button type="button" onClick={() => setOpen(true)}>
+          <FqIcon name="page" />
+          Photo
+        </button>
+        <Link href="/events/new">
+          <FqIcon name="event" />
+          Event
+        </Link>
+        <Link href={practiceHref}>
+          <FqIcon name="checkin" />
+          Log practice
+        </Link>
+        <Link href="/classifieds/new">
+          <FqIcon name="ticket" />
+          Listing
+        </Link>
+      </div>
     </div>
   )
 }

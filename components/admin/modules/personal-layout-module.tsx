@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { ProfilePageBuilder } from '@/components/entity-blocks/profile-page-builder'
+import { MemberPageBuilderSwitch } from '@/components/entity-blocks/member-page-builder-switch'
 
 // Personal "You" module — the Layout slot (ADR-516 Phase C). The member's profile PAGE BUILDER, mounted
 // INLINE in the rail on their own /people/<handle> (the `account.layout` surface predicate already gates
@@ -20,5 +20,5 @@ export function PersonalLayoutModule() {
   const pathname = usePathname()
   const handle = handleFromPath(pathname)
   if (!handle) return null
-  return <ProfilePageBuilder pageHandle={handle} />
+  return <MemberPageBuilderSwitch pageHandle={handle} />
 }
