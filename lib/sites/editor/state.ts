@@ -1,4 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
+import { siteTheme, type SiteThemeId } from '@/lib/theme/site-style'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
@@ -140,6 +141,10 @@ export function readWebsiteEditor(preferences: unknown): WebsiteEditorState | nu
   return s as unknown as WebsiteEditorState
 }
 
+/** The editor's stored theme id for each site theme (ADR-1726); the same table as EDITOR_THEME_OF in
+ *  lib/sites/site-render-style.ts, restated here because that module pulls the render styles into every reader of this file. */
+const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network' }
+
 export function publishedWebsitePage(preferences: unknown, slug: string): WebsitePage | null {
   return publishedWebsiteSnapshot(preferences)?.pages.find((p) => p.slug === slug) ?? null
 }
@@ -150,14 +155,17 @@ export function publishedWebsitePage(preferences: unknown, slug: string): Websit
  *  somebody edits?"). Add a theme only once its render matches the look it replaces. */
 export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network'])
 
-/** The published website the PUBLIC site draws, or null to keep the house look: nothing published, or a
- *  published theme not yet in WEBSITE_THEMES_LIVE. The one gate every public reader goes through (the
+/** The published website the PUBLIC site draws, or null to keep the house look: nothing published, a
+ *  published theme not yet in WEBSITE_THEMES_LIVE, or a snapshot written in a theme other than the one the
+ *  site wears now (SCAN-831: the Theme tab saves the site style live, so a Bold site that switches to
+ *  Frequency must not serve its Menswork document through the Frequency render, and the share card follows
+ *  the theme worn, not the snapshot's). The one gate every public reader goes through (the
  *  site, its share image, the crawler). The public preferences stub carries only this snapshot plus
  *  revision (SCAN-827); the editor reads the full state through overlayWebsiteEditor + readWebsiteEditor. */
 export function publishedWebsiteSnapshot(preferences: unknown): WebsiteSnapshot | null {
   const editor = record(preferences) ? preferences.websiteEditor : null
   const published = record(editor) ? editor.published : null
-  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) ? published : null
+  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) && published.theme === WORN_EDITOR_THEME[siteTheme(preferences)] ? published : null
 }
 
 export function withoutWebsiteDrafts<T>(preferences: T): T {
