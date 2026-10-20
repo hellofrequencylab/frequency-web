@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
     // it would add ~1,000 warnings we can never act on, which is how a warning count stops
     // meaning anything. Freshness is enforced by scripts/copy-maplibre-worker.test.ts.
     "public/maplibre/**",
+    // Frequency Experience, the Expo app (docs/MOBILE-APP.md). Its own package, its own
+    // eslint-config-expo lint (`pnpm --dir mobile lint`), its own React Native rules.
+    "mobile/**",
   ]),
   // ADR-246: ban the untyped admin-client cast. Use the typed `createAdminClient()`
   // and cast the specific payload/value if a column/table needs it. Genuinely-untyped
@@ -55,20 +58,19 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // PROG-A1 (App Platform A1): a feature module is reached through its barrel only. The pages import
-  // `@/modules/<app>` (server) or `@/modules/<app>/client` (a client component), never the module's
-  // files or a file inside modules/. Modules so far: crm, booking, email-design, qr. The module's own
-  // files are exempt.
+  // PROG-A1 (App Platform A1): a feature module is reached through its barrel only. CRM first: the
+  // pages import `@/modules/crm` (server) or `@/modules/crm/client` (a client component), never
+  // `@/components/spaces/crm/*` or a file inside modules/. The module's own files are exempt.
   {
-    ignores: ["modules/**", "components/spaces/crm/**", "components/qr/**", "components/admin/email-studio/**", "components/spaces/booking-*"],
+    ignores: ["modules/**", "components/spaces/crm/**"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              group: ["@/components/spaces/crm/*", "@/components/spaces/booking-*", "@/components/qr/*", "@/components/admin/email-studio/*"],
-              message: "Import this feature through its module barrel: '@/modules/<crm|booking|qr|email-design>' (server) or '/client' (client component). PROG-A1.",
+              group: ["@/components/spaces/crm/*"],
+              message: "Import CRM through its module barrel: '@/modules/crm' (server) or '@/modules/crm/client' (client). PROG-A1.",
             },
             {
               group: ["@/modules/*/*", "!@/modules/*/client"],
