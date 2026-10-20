@@ -353,7 +353,7 @@ describe('check-creates · the live repo', () => {
     'app/(main)/practices/actions.ts::createPracticeAction',
     'app/(main)/practices/actions.ts::createPracticeDraftAction',
     'lib/spaces/provision.ts::createSpace',
-    'app/(main)/classifieds/actions.ts::createListingAction',
+    'app/(main)/(marketplace)/classifieds/actions.ts::createListingAction',
     'app/(main)/marketplace/commerce-actions.ts::createMakerProductAction',
     'app/(main)/spaces/[slug]/settings/shop/shop-actions.ts::createSpaceProductAction',
   ]

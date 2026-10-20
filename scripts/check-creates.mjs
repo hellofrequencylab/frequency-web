@@ -220,7 +220,7 @@ export const CREATE_ENTRIES = new Map([
   // Space
   ['lib/spaces/provision.ts::createSpace', { entity: 'space', writer: 'lib/spaces/provision.ts::createSpace' }],
   // Listing
-  ['app/(main)/classifieds/actions.ts::createListingAction', { entity: 'listing', writer: 'lib/marketplace.ts::createListing' }],
+  ['app/(main)/(marketplace)/classifieds/actions.ts::createListingAction', { entity: 'listing', writer: 'lib/marketplace.ts::createListing' }],
   ['app/(main)/marketplace/actions.ts::createHousingListingAction', { entity: 'listing', writer: 'lib/listings/index.ts::createListing' }],
   // Product + service
   ['app/(main)/marketplace/commerce-actions.ts::createMakerProductAction', { entity: 'product', writer: 'lib/commerce/products.ts::createProduct' }],
