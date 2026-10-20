@@ -1,0 +1,10 @@
+{
+  "id": "PROG-A3",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-20"
+  },
+  "append": {
+    "detail": "SHIPPED 2026-10-20: migration 20270346017000_module_enablement_in_rls.sql adds private.space_function_enabled(space_id, key) and an AS RESTRICTIVE select policy on circles, events, practices, journey_plans and programs (*_module_enabled), mirroring spaceFunctionEnabled (absent key is ON, only an explicit false is OFF; the Space's own writers and staff still read). Pinned by supabase/tests/module_enablement_rls.test.sql. The migration is UNAPPLIED until it is pasted into production; the probe reads the file, so it passes on merge."
+  }
+}
