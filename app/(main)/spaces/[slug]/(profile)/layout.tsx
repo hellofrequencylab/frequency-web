@@ -31,6 +31,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
 import { RegularsNote } from '@/components/spaces/regulars-note'
+import { BadgeNote } from '@/components/spaces/badge-note'
 import { isFollowing } from '@/lib/spaces/follows'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
@@ -816,6 +817,10 @@ export default async function SpaceProfileChromeLayout({
           <Suspense fallback={null}>
             <RegularsNote spaceId={space.id} />
           </Suspense>
+          {/* The badge line (LIVE-1180): ask this Space for a scannable badge. Empty unless scanners are on. */}
+          <Suspense fallback={null}>
+            <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} />
+          </Suspense>
           {children}
         </FqSpaceChrome>
       </>
@@ -831,6 +836,9 @@ export default async function SpaceProfileChromeLayout({
         {manage.canManage && !isNetwork && <SpacePrivateNotice spaceId={space.id} />}
         <Suspense fallback={null}>
           <RegularsNote spaceId={space.id} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} />
         </Suspense>
         {children}
       </DetailTemplate>

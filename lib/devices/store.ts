@@ -4,6 +4,7 @@
 //   • the DEVICE side is pinned by the device credential: a device acts only for its own space_id;
 //   • the OWNER side runs behind scannerOwnerGate (canEditProfile on the Space AND the per-Space
 //     check-in function gate, the one ensureCheckinNode applies before it mints the door node).
+//   • the USB CONSOLE (the CyberUnicorn in the admin menu) runs behind consoleStaffGate: platform staff.
 // Reads FAIL-SAFE (null / []); writes FAIL-CLOSED on a gate miss. No 'use server' here (it exports
 // types and the gate); the owner actions live in ./actions.ts.
 
@@ -12,7 +13,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { isJanitor } from '@/lib/core/roles'
+import { isJanitor, isStaff } from '@/lib/core/roles'
 import { envFlag } from '@/lib/env/string'
 import type { Space } from '@/lib/spaces/types'
 import { newCardToken, newDeviceSecret, parseDeviceHeader, secretMatches, sha256Hex } from './credentials'
@@ -32,6 +33,16 @@ export interface ScannerDevice {
   id: string
   spaceId: string
   label: string
+}
+
+/**
+ * The CyberUnicorn console's gate (LIVE-1180): platform staff only (web_role admin or janitor). The
+ * console lives in the admin menu, not on a Space's page, and staff write cards for any Space a
+ * member asked at. View-as aware through getCallerProfile, so a janitor previewing a member is refused.
+ */
+export async function consoleStaffGate(): Promise<{ callerId: string } | null> {
+  const caller = await getCallerProfile()
+  return caller && isStaff(caller.webRole) ? { callerId: caller.id } : null
 }
 
 // ── The device side ──────────────────────────────────────────────────────────────────────────────
@@ -114,16 +125,6 @@ export async function readMemberName(profileId: string): Promise<string> {
     return data?.display_name?.trim() || 'Member'
   } catch {
     return 'Member'
-  }
-}
-
-/** A member's handle, for prefilling the console with the signed-in owner. Null when unset. */
-export async function readMemberHandle(profileId: string): Promise<string | null> {
-  try {
-    const { data } = await createAdminClient().from('profiles').select('handle').eq('id', profileId).maybeSingle()
-    return data?.handle ?? null
-  } catch {
-    return null
   }
 }
 
@@ -313,9 +314,9 @@ export async function registerScannerDevice(
 }
 
 /**
- * Mint a card from the owner's console (the CyberUnicorn plugged into their computer over USB), for the
+ * Mint a card from the CyberUnicorn console (plugged into a staff member's computer over USB), for the
  * member with `handle`, valid at THIS Space only. Same token, hash and per-member cap as a scanner-issued
- * card; `issued_by` stays null because no registered scanner minted it. Gated like every owner write.
+ * card; `issued_by` stays null because no registered scanner minted it. Staff only (consoleStaffGate).
  * The browser writes `SITE_URL/c/<token>` to the card, then binds the chip UID (bindConsoleCard) or, if
  * the write failed, discards the row (discardConsoleCard), so a card that never left the reader is not
  * left live.
@@ -324,7 +325,7 @@ export async function issueCardFromConsole(
   spaceId: string,
   handle: string,
 ): Promise<{ ok: true; cardId: string; token: string; displayName: string } | { ok: false; reason: 'forbidden' | 'unknown_member' | 'too_many_cards' | 'failed' }> {
-  if (!(await scannerOwnerGate(spaceId, 'write'))) return { ok: false, reason: 'forbidden' }
+  if (!(await consoleStaffGate())) return { ok: false, reason: 'forbidden' }
   try {
     const db = createAdminClient()
     const { data: profile } = await db.from('profiles').select('id, display_name').eq('handle', handle).maybeSingle()
@@ -352,7 +353,7 @@ export async function issueCardFromConsole(
 /** Bind the chip the console just wrote to its card, so a copy on another chip is refused at the
  *  counter. Fills an empty uid_hash only, scoped by space_id. */
 export async function bindConsoleCard(spaceId: string, cardId: string, uidHash: string): Promise<boolean> {
-  if (!(await scannerOwnerGate(spaceId, 'write'))) return false
+  if (!(await consoleStaffGate())) return false
   try {
     const { error } = await createAdminClient()
       .from('member_cards')
@@ -369,7 +370,7 @@ export async function bindConsoleCard(spaceId: string, cardId: string, uidHash: 
 /** Remove a console-minted card whose write never landed. Only an unbound, never-used, console-minted
  *  row goes, so this can never delete a card that is out in the world. */
 export async function discardConsoleCard(spaceId: string, cardId: string): Promise<boolean> {
-  if (!(await scannerOwnerGate(spaceId, 'write'))) return false
+  if (!(await consoleStaffGate())) return false
   try {
     const { error } = await createAdminClient()
       .from('member_cards')

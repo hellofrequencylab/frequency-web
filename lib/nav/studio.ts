@@ -249,6 +249,9 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminNav: { section: 'qr' } },
   { id: 'qr-stats', href: '/admin/qr/stats', label: 'Scan stats', desc: 'QR scan analytics.', icon: 'QrCode', min: 'admin', staffDomain: 'qr',
     adminNav: { section: 'qr' } },
+  // The CyberUnicorn badge programmer (LIVE-1180): platform staff only (Admin and Janitor), the
+  // page's own requireAdmin('admin'). Owner call 2026-10-20: it lives here, not on a Space's page.
+  { id: 'cyberunicorn', href: '/admin/cyberunicorn', label: 'CyberUnicorn', desc: 'Program scannable member badges over USB, and see who asked for one.', icon: 'QrCode', min: 'admin' },
   // The Link Generator (BUILD-LIST P5) shipped without a row, so a working, gated tool was
   // unreachable from every derived menu and invisible to check:gate-parity — the same "a tool
   // its authorized users can never find" shape the automations/nurture rows above record.
@@ -549,7 +552,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   {
     href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing',
     groups: [
-      { heading: 'Acquisition', leaves: [{ leaf: 'entry-points' }, { leaf: 'qr' }, { leaf: 'qr-stats' }, { leaf: 'growth-links' }, { leaf: 'referrals' }, { leaf: 'keystone-density' }] },
+      { heading: 'Acquisition', leaves: [{ leaf: 'entry-points' }, { leaf: 'qr' }, { leaf: 'qr-stats' }, { leaf: 'cyberunicorn' }, { leaf: 'growth-links' }, { leaf: 'referrals' }, { leaf: 'keystone-density' }] },
       { heading: 'Onboarding', leaves: [{ leaf: 'onboarding-sequences' }, { leaf: 'walkthroughs' }, { leaf: 'onboarding-controls', label: 'Onboarding' }] },
       { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-control-panel' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' }] },
     ],

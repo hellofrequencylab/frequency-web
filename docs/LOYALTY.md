@@ -183,29 +183,45 @@ sign-in when signed out), or `/code-unavailable` for a revoked card. It checks n
 
 ### Write a card over USB (the CyberUnicorn console, `LIVE-1168`)
 
-With the CyberUnicorn plugged into the owner's computer, "Counter scanners" opens with the
-**CyberUnicorn console** (`components/spaces/loyalty/cyberunicorn-console.tsx`), the one block on the
-page in the CyberUnicorn 5000 design system (`lib/theme/cyberunicorn.ts`, scoped to that block). It
+The **CyberUnicorn console** (`components/spaces/loyalty/cyberunicorn-console.tsx`) lives in the admin
+menu at `/admin/cyberunicorn` (Growth, Acquisition), for platform staff only: web_role Admin or Janitor
+(`requireAdmin('admin')`, and `consoleStaffGate` on every write). It moved off the Space's Check in tab on
+the owner's call (2026-10-20, `LIVE-1180`): Spaces ask, staff write. It is the one surface in the
+CyberUnicorn 5000 design system (`lib/theme/cyberunicorn.ts`, scoped to that block). It
 talks to the board over Web Serial (Chrome or Edge on a computer) in the device's remote protocol v1
 (`lib/device/`, a copy of `mobile/src/device/`; the device half is `cyberpunkunicorn-os/apps/remote/PROTOCOL.md`).
-No scanner registration and no device secret are needed: the owner's own session mints the card.
+No scanner registration and no device secret are needed: the staff member's own session mints the card.
 
 1. Connect. The port opens at 115200 8N1 with DTR and RTS set low in one call (the CYD's auto-reset
    circuit resets the ESP32 when they differ), then `system.status` is re-sent for up to 40 s until the
    board answers. Measured 2026-10-20: on macOS the CH340 driver resets the board on open regardless, and
    it takes about 18 s to reach the main menu, so every connect is a reboot and the console keeps one
    connection open. `hat.probe` reports whether the PN532 is live (DIP 3).
-2. Program. `startConsoleCard(spaceId, handle)` mints a card for this Space (same token, hash and
+2. Pick who. A request from the queue (below) fills in the Space and the member; otherwise staff type
+   the Space's link name and the member's handle. Program and Check a card stay off until `hat.probe`
+   finds the PN532, and "Look for the reader" probes again without a reconnect.
+3. Program. `startConsoleCard(spaceId, handle)` mints a card for that Space (same token, hash and
    5-per-member cap as a scanner-issued one, `issued_by` null). The page sends
    `frequency.write_tag { url, label, timeout_ms: 30000 }`; the device emits `frequency.waiting_for_tag`,
    writes the NDEF URI to the NTAG and reads it back.
-3. Bind or discard. On success `finishConsoleCard` binds the chip UID at once. On a definite device
+4. Bind or discard. On success `finishConsoleCard` binds the chip UID at once and closes the member's
+   badge request. On a definite device
    failure (no card in time, not an NTAG, write failed) `cancelConsoleCard` deletes the mint, and it
    deletes only an unbound, never-used, console-minted row. When the outcome is unknown (cable pulled,
    no reply) the mint is kept: the card may be good, and its first counter scan binds it.
 
 "Check a card" runs `frequency.read_tag` and shows what a tag holds. The page never logs a card token
 (the device log in the panel masks `/c/<token>`), and the firmware's write log keeps host and path only.
+
+### Badge requests (`LIVE-1180`)
+
+A member asks a Space for a scannable badge from the Space's page: a line under the Regulars line
+(`components/spaces/badge-note.tsx`) reads **Get a scannable badge** (signed out: a sign-in link),
+**Badge requested** once they asked, or **Your badge works here** once they hold a live card there.
+The button files one `badge_requests` row (migration `20270346018000_badge_requests.sql`, service role
+only, one pending row per member per Space, so a second tap is a no-op). The console lists pending
+requests oldest first; **Use** fills in the Space and the member, **Clear** cancels the request, and a
+written card marks it done and points it at the card. Behind `SCANNER_DEVICES_ENABLED` like the rest.
 
 ### Try it locally
 
