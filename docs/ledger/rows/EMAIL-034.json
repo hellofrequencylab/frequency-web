@@ -1,7 +1,7 @@
 {
   "id": "EMAIL-034",
   "title": "The merge tag picker inserts at the cursor instead of copying to the clipboard",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -13,7 +13,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-editor.mjs insert",
-    "note": "Fails until the feature is in the source; the probe reads the files named in scripts/probes/email-editor.mjs."
+    "note": "PASS 2026-10-20: the merge tag picker inserts at the cursor in the focused field, with a clipboard fallback; vitest covers both."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-20"
 }

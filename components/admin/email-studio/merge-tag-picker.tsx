@@ -5,10 +5,10 @@ import { Braces, Check, Copy } from 'lucide-react'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 
 // MERGE-TAG PICKER. A small dropdown of the curated merge variables (lib/email-studio/types). Picking one
-// copies its `{{ token | "fallback" }}` text to the clipboard so the operator can paste it into a subject,
-// preheader, or any block's text field. Copy-to-clipboard keeps this decoupled from the block edit panel (no
-// cross-component cursor plumbing). The token carries its default fallback where one exists, so a nameless
-// recipient still reads naturally.
+// types its `{{ token | "fallback" }}` text into the field the operator was in, at the cursor (the menu keeps
+// focus where it was by cancelling mousedown, so the field's selection survives the click). When no field is
+// focused, it copies the tag to the clipboard instead. The token carries its default fallback where one exists,
+// so a nameless recipient still reads naturally.
 
 /** Build the insertable token text for a variable, e.g. `{{ contact.first_name | "there" }}`. */
 export function mergeTagText(token: string): string {
@@ -16,7 +16,23 @@ export function mergeTagText(token: string): string {
   return fallback ? `{{ ${token} | "${fallback}" }}` : `{{ ${token} }}`
 }
 
-export function MergeTagPicker() {
+/** Type `text` at the cursor of the focused input, textarea or rich slot. False when no editable holds focus. */
+export function insertAtCursor(text: string): boolean {
+  const el = document.activeElement as HTMLElement | null
+  if (!el) return false
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    const start = el.selectionStart ?? el.value.length
+    const end = el.selectionEnd ?? start
+    el.setRangeText(text, start, end, 'end')
+    // setRangeText bypasses React's value setter; the bubbling input event is what fires onChange.
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  }
+  if (el.isContentEditable) return document.execCommand('insertText', false, text)
+  return false
+}
+
+export function MergeTagPicker({ onInsert = insertAtCursor }: { onInsert?: (text: string) => boolean } = {}) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
@@ -32,6 +48,10 @@ export function MergeTagPicker() {
 
   async function pick(token: string) {
     const text = mergeTagText(token)
+    if (onInsert(text)) {
+      setOpen(false)
+      return
+    }
     try {
       await navigator.clipboard.writeText(text)
       setCopied(token)
@@ -48,6 +68,7 @@ export function MergeTagPicker() {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
       >
@@ -59,7 +80,7 @@ export function MergeTagPicker() {
           className="absolute right-0 z-30 mt-1 w-64 rounded-card border border-border bg-surface p-1 lift-3"
         >
           <p className="px-2.5 py-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">
-            Copy a tag, then paste it in
+            Click a tag to put it where your cursor is
           </p>
           {MERGE_TAG_VARIABLES.map((v) => {
             const isCopied = copied === v.token
@@ -68,6 +89,7 @@ export function MergeTagPicker() {
                 key={v.token}
                 type="button"
                 role="menuitem"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(v.token)}
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-surface-elevated"
               >
