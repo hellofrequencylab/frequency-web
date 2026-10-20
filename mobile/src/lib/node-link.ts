@@ -5,10 +5,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type NodeLink = { nodeId: string; secret: string | null }
 
-/** The production site. A check-in link from any other host (a local or preview deployment) is still
- *  a valid link; the tag writer just says so. */
-export const SITE_HOST = 'frequencylocal.com'
-
 type ParsedNodeLink = NodeLink & { host: string | null }
 
 /** Parse a check-in link from a tag, a deep link or a pasted URL. Accepts an http(s) link on a host in
