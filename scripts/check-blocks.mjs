@@ -16,6 +16,8 @@
 //       block is in the email palette (and null otherwise): the offer and the renderer are one set.
 //   B7  `reads: 'live'` implies no email render unless `resolveAt: 'send'`.
 //   B8  no type is adopted twice, and the adopted set is not empty (a gate that finds nothing must say so).
+//   B9  every read-time alias (lib/entity-blocks/aliases.ts, E2 step 1) targets an adopted block, is not itself
+//       adopted, does not point at itself and does not chain.
 //
 // CANNOT SEE: whether the component renders correctly (the visual suite's job), or that stored content in
 // production parses (check:node-document-safety's corpus). Exit 1 on any problem, 0 when all hold.
@@ -134,6 +136,21 @@ export function unadopted(defs, registry) {
   return registry.filter((b) => !adopted.has(b.id)).map((b) => b.id)
 }
 
+/** The alias map (lib/entity-blocks/aliases.ts) holds only safe renames: the target is an adopted block, the old id
+ *  is NOT an adopted block (an alias would hide a live one), nothing aliases itself, and no alias chains into another
+ *  (a chain is a cycle waiting to happen, and the reader resolves one hop). */
+export function aliasProblems(aliases, adoptedTypes) {
+  const adopted = new Set(adoptedTypes)
+  const out = []
+  for (const [from, to] of aliases) {
+    if (from === to) out.push(`alias ${from}: points at itself`)
+    if (adopted.has(from)) out.push(`alias ${from}: the old id is still an adopted block, so the alias would hide it`)
+    if (!adopted.has(to)) out.push(`alias ${from} -> ${to}: the target is not an adopted contract block`)
+    if (aliases.has(to)) out.push(`alias ${from} -> ${to}: chains into another alias; point it at the final id`)
+  }
+  return out
+}
+
 export function adoptionProblems(defs, ctx, sources = {}) {
   const out = []
   if (!defs.length) return ['no block is adopted: the gate would pass on nothing']
@@ -155,7 +172,11 @@ async function main() {
   const sources = Object.fromEntries(
     ADOPTED_BLOCKS.map((d) => [d.type, existsSync(`${CONTRACT_DIR}/${d.type}.ts`) ? readFileSync(`${CONTRACT_DIR}/${d.type}.ts`, 'utf8') : undefined]),
   )
-  const problems = adoptionProblems(ADOPTED_BLOCKS, { registry: ENTITY_BLOCKS, emailPalette: [...EMAIL_PALETTE_BLOCK_IDS] }, sources)
+  const { BLOCK_ID_ALIASES } = await import('../lib/entity-blocks/aliases.ts')
+  const problems = [
+    ...adoptionProblems(ADOPTED_BLOCKS, { registry: ENTITY_BLOCKS, emailPalette: [...EMAIL_PALETTE_BLOCK_IDS] }, sources),
+    ...aliasProblems(BLOCK_ID_ALIASES, ADOPTED_BLOCKS.map((d) => d.type)),
+  ]
   if (problems.length) {
     console.error(`check:blocks — ${problems.length} problem(s):\n` + problems.map((p) => `  ${p}`).join('\n'))
     process.exit(1)

@@ -1,4 +1,5 @@
 import { parseEntityLayout, type EntityLayout, type RowDef } from '@/lib/entity-blocks/layout'
+import { applyBlockAliases } from '@/lib/entity-blocks/aliases'
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 
@@ -36,7 +37,7 @@ export function nodeProjection(nodes: NodeLayout): EntityLayout {
 export function readTypeKeyedGrid(raw: unknown): EntityLayout | null {
   if (hasNativeNodeStorage(raw)) {
     const nodes = upgradeLayout(raw)
-    return nodes ? nodeProjection(nodes) : null
+    return nodes ? applyBlockAliases(nodeProjection(nodes)) : null
   }
   return parseEntityLayout(raw)
 }
