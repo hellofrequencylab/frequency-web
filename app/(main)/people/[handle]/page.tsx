@@ -13,6 +13,7 @@ import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
 import { isEndorsed, rankProgress, type RankDef, type SeasonRank } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
+import { TierChip } from '@/components/ui/tier-chip'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
@@ -551,7 +552,7 @@ export default async function ProfilePage({
     const fqBadges = (
       <>
         {cosmetics}
-        <FoundingBadge founding={profile.is_founding_member} className="tag" />
+        <FoundingBadge founding={profile.is_founding_member} />
         {isSupporter && <SupporterBadge />}
         {isDemo && <DemoBadge />}
       </>
@@ -613,7 +614,7 @@ export default async function ProfilePage({
       <div className="row wrap">
         {role !== 'member' && roleBadge}
         {rankEndorsed && <span className="tag glass">{rankDef.label}</span>}
-        {isCrew && <span className="fq-iri-text on-light mc-crew">Crew</span>}
+        {isCrew && <TierChip tier="crew" />}
         {/* The rest of the status cluster the DAWN band wears: the bought flair and title, Founder,
             Supporter, demo. */}
         {fqBadges}

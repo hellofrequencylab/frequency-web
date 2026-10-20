@@ -11,7 +11,7 @@
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
 import { RankBadge, type RankBadgeSize } from '@/components/ui/rank-badge'
-import { Gem } from 'lucide-react'
+import { TierChip } from '@/components/ui/tier-chip'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -111,12 +111,7 @@ export function FoundingBadge({
 }) {
   if (!founding) return null
   return (
-    // `dot={false}`: the Gem IS this chip's mark. A rank dot beside it would be a
-    // second glyph saying nothing the gold wash does not already say.
-    <RankBadge rank="gold" size={size} dot={false} className={className} title="Founding Member">
-      <Gem className="h-3 w-3" aria-hidden />
-      Founder
-    </RankBadge>
+    <TierChip tier="founder" size={size} className={className} />
   )
 }
 
@@ -144,15 +139,6 @@ export function FoundingBusinessBadge({
 }) {
   if (!founding) return null
   return (
-    <RankBadge
-      rank="gold"
-      size={size}
-      dot={false}
-      className={className}
-      title="Founding Business. One of the first businesses to join Frequency."
-    >
-      <Gem className="h-3 w-3" aria-hidden />
-      Founding Business
-    </RankBadge>
+    <TierChip tier="founding_business" size={size} className={className} />
   )
 }

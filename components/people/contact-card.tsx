@@ -3,12 +3,11 @@ import Image from 'next/image'
 import { MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { RoleBadge } from '@/lib/community-roles'
 import type { RoleChipKey } from '@/lib/community-roles'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { BAND_LABEL, type ProximityBand } from '@/lib/connections/location'
 import { PersonCard } from '@/components/cards/person-card'
-import { ROLE_LABEL } from '@/lib/community-roles'
+import { MemberTierMarks } from '@/components/people/member-tier-marks'
 import { SITE_DESIGN } from '@/lib/theme/design'
 
 // FREQUENCY (LIVE-1086): the members kit's `.card`, the same <PersonCard> Friends and the suggestions draw,
@@ -31,6 +30,8 @@ export function ContactCard({
   online = false,
   isDemo = false,
   band,
+  crew = false,
+  founding = false,
 }: {
   handle: string
   displayName: string
@@ -43,6 +44,10 @@ export function ContactCard({
   /** Coarse proximity band (privacy-safe) — renders a small chip, never a distance.
    *  Omit (or 'unknown') to hide the chip. */
   band?: ProximityBand
+  /** On the paid Crew membership (resolve with isEndorsed(membership_tier)). */
+  crew?: boolean
+  /** Holds Founding Member status (profiles.is_founding_member). */
+  founding?: boolean
 }) {
   const showBand = band != null && band !== 'unknown'
   if (FREQUENCY) {
@@ -56,7 +61,7 @@ export function ContactCard({
         context={`@${handle}`}
         meta={
           <>
-            <span className="tag">{ROLE_LABEL[role]}</span>
+            <MemberTierMarks role={role} crew={crew} founding={founding} />
             {showBand && <span className="tag">{BAND_LABEL[band]}</span>}
             {location && <span>{location}</span>}
           </>
@@ -109,7 +114,7 @@ export function ContactCard({
       )}
 
       <div className="mt-3 flex flex-col items-center gap-1.5">
-        <RoleBadge role={role} className="text-3xs leading-tight" />
+        <MemberTierMarks role={role} crew={crew} founding={founding} />
         {location && (
           <span className="inline-flex items-center gap-1 text-meta text-muted">
             <MapPin className="h-3 w-3 shrink-0 text-subtle" />

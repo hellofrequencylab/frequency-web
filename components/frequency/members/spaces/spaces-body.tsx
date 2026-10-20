@@ -11,6 +11,7 @@ import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { SystemNotice } from '@/components/frequency/members/shared/system-notice'
 import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
+import { BoostedBadge } from '@/components/crew/boosted-badge'
 
 // BUSINESS SPACES DIRECTORY, FREQUENCY BODY (LIVE-1018). The header is the shared index header the page
 // passes in (MarketHero; LIVE-1012 gives it the kit head with the search on its own row and no photo), so
@@ -62,7 +63,7 @@ function SpaceTile({ s, inFounding = false }: { s: NetworkedSpace; inFounding?: 
         {stats && <span className="t2 fqm-body-ink">{stats}</span>}
         {s.boosted && (
           <span className="row">
-            <span className="tag">Boosted</span>
+            <BoostedBadge boosted />
           </span>
         )}
       </span>

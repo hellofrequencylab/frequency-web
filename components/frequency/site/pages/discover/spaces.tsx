@@ -12,6 +12,7 @@
 // opens the member partner page (/partners/<slug>), where the offers are; a signed-out visitor is asked
 // to sign in there, which is where an offer is claimed anyway. The DAWN body does not draw this section.
 
+import { BoostedBadge } from '@/components/crew/boosted-badge'
 import Link from 'next/link'
 import { SPACE_SORTS, type NetworkedSpace, type SpaceSort } from '@/lib/spaces/discovery'
 import { SUBJECTS, findSubject } from '@/lib/taxonomy/subjects'
@@ -95,7 +96,7 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
           <span className="tg">
             {s.isFoundingBusiness && <FounderMark />}
             <i>{s.kindLabel}</i>
-            {s.boosted && <i>Boosted</i>}
+            <BoostedBadge boosted={s.boosted} />
           </span>
         </span>
         <h3>

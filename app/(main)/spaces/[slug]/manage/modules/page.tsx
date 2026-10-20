@@ -9,6 +9,7 @@ import { spaceModuleManifest, isModuleHideable, isModuleAdvanced } from '@/lib/a
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { moduleTierRead } from '@/lib/pricing/tier-marks'
 import { ModuleManager, type ModuleManagerRow } from './module-manager'
 
 // THE MODULE MANAGER (ADR-546, docs/MODULAR-MENU.md — P3). A centered, no-rail Focus sub-page where the
@@ -69,6 +70,7 @@ export default async function SpaceModulesPage({
       desc: m.desc,
       family: m.family,
       tier: m.tier,
+      plan: moduleTierRead(m.id, m.access),
       featureKey: m.featureKey,
       enabled: on,
       // UNIVERSAL FUNCTIONS (ADR-517 Phase F): every service toggles freely; no on/off is plan-locked (the
