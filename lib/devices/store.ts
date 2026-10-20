@@ -67,7 +67,7 @@ export async function touchDevice(deviceId: string): Promise<void> {
 }
 
 /** A card as the scan needs it. */
-export interface CardRow {
+interface CardRow {
   id: string
   profileId: string
   spaceId: string | null

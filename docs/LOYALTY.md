@@ -98,8 +98,9 @@ re-implemented. Behind `SCANNER_DEVICES_ENABLED` (envFlag); the gate is in `docs
 
 **Pieces.** Migration `20270346011500_scanner_devices.sql` (`scanner_devices`, `member_cards`,
 both service role only). `lib/devices/` (credentials, store, scan, the device wire). Routes
-`app/api/v1/devices/{scan,cards}` and `app/c/[token]`. Owner panel: Space settings, Check-in,
-"Counter scanners" (`scanners-section.tsx`, under Regulars).
+`app/api/v1/devices/{scan,cards}` and `app/c/[token]`. Owner panel: the Space's Manage console,
+Offerings & Money, **Check-in & scanners** (catalog row `space.scanners`, which opens the `?panel=checkin`
+workspace); "Counter scanners" sits under Regulars (`scanners-section.tsx`).
 
 **Trust.**
 
@@ -184,7 +185,8 @@ sign-in when signed out), or `/code-unavailable` for a revoked card. It checks n
 
 1. `SCANNER_DEVICES_ENABLED=1` (and `LOYALTY_ENABLED=1` to see stamps) in `.env.local`, apply the
    migration to the local or a branch database, `pnpm dev`.
-2. As the owner, open the Space's settings, Check-in. Opening it mints the door node. Under
+2. As the owner, open the Space's Manage console, Offerings & Money, Check-in & scanners (or
+   `/spaces/<slug>/full?panel=checkin`). Opening it mints the door node. Under
    "Counter scanners", add a scanner and copy its key (shown once).
 3. Issue a card and scan it:
 
