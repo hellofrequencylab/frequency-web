@@ -10,6 +10,7 @@ import {
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY, paidWalls } from '@/lib/pricing/pricing-page'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDER_BADGE_ENDS_LABEL } from '@/lib/pricing/beta'
 import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
 
 /** The seats every plan includes, read off the ONE meter map so the answer can never quote a number the
@@ -71,7 +72,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
           // is open (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), one price otherwise. The extra member Space
           // belongs to Collectives that already hold member Spaces (the 2026-10-16 split moved chapters to
           // Network), so it reads as the grandfathering fact it is.
-          a: `${PLAN_STORY.collective} It is ${collective.monthly}${collective.listAnchor ? ` as a Founding price under the ${collective.listAnchor} list, and the Founding price is yours for as long as you keep the plan` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
+          a: `${PLAN_STORY.collective} It is ${collective.monthly}${collective.listAnchor ? ` as a Founding price under the ${collective.listAnchor} list. The Founding offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}, and the Founding price is grandfathered for as long as you keep the plan, and a Collective that starts before ${FOUNDER_BADGE_ENDS_LABEL} also gets the founder badge` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
         },
       ]
     : []

@@ -25,6 +25,10 @@ import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blo
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { EmailPreview } from '@/components/admin/email-studio/preview'
+import { NodeLayoutProvider, useNodeLayout } from '@/components/entity-blocks/node-layout-store'
+import { NodeEmailCanvasEditor } from '@/components/admin/email-studio/email-canvas-editor'
+import { NodeSeeder } from '@/components/admin/email-studio/email-canvas-model'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { updateStepBlockJson } from './actions'
 
 /** Run BEFORE the browser paints AND before the builder's passive-effect seed, so the store carries the full
@@ -53,17 +57,66 @@ function LivePreview({ layout, subject }: { layout: EntityLayout; subject: strin
   return <EmailPreview layout={working} subject={subject} preheader="" />
 }
 
+/** The node twin of the live preview: reads the working node document off the node store. */
+function NodeLivePreview({ layout, subject }: { layout: NodeLayout; subject: string }) {
+  const store = useNodeLayout()
+  return <EmailPreview layout={store?.layout ?? layout} subject={subject} preheader="" />
+}
+
+/** The step designer on the node store (render_path_email): the same canvas editor an Email Studio campaign
+ *  uses, so a block type can repeat. Saves the node document through the step's own writer. */
+function NodeStepBlockEditor({ stepId, subject, nodeLayout }: { stepId: string; subject: string; nodeLayout: NodeLayout }) {
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const save = useCallback((payload: NodeLayout) => updateStepBlockJson(stepId, payload), [stepId])
+  return (
+    <NodeLayoutProvider save={save}>
+      <NodeSeeder layout={nodeLayout} />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Email design</p>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen((v) => !v)}
+            className="rounded-md border border-border px-2 py-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
+            aria-pressed={previewOpen}
+          >
+            {previewOpen ? 'Hide preview' : 'Preview'}
+          </button>
+        </div>
+        <div className={previewOpen ? 'grid gap-4 lg:grid-cols-2' : ''}>
+          <div className="min-w-0">
+            <NodeEmailCanvasEditor />
+          </div>
+          {previewOpen && (
+            <div className="min-w-0">
+              <NodeLivePreview layout={nodeLayout} subject={subject} />
+            </div>
+          )}
+        </div>
+      </div>
+    </NodeLayoutProvider>
+  )
+}
+
 export function StepBlockEditor({
   stepId,
   subject,
   initialLayout,
+  nodeLayout,
 }: {
+  /** The step's body as a node document, present only while render_path_email is on. */
+  nodeLayout?: NodeLayout
   stepId: string
   /** The step's subject, shown in the preview's inbox header (edited separately in the step form). */
   subject: string
   /** The step's persisted body layout (its block_json, or a basic email starter when never designed). */
   initialLayout: EntityLayout
 }) {
+  if (nodeLayout) return <NodeStepBlockEditor stepId={stepId} subject={subject} nodeLayout={nodeLayout} />
+  return <LegacyStepBlockEditor stepId={stepId} subject={subject} initialLayout={initialLayout} />
+}
+
+function LegacyStepBlockEditor({ stepId, subject, initialLayout }: { stepId: string; subject: string; initialLayout: EntityLayout }) {
   const [previewOpen, setPreviewOpen] = useState(false)
 
   // The arranger's injected persist: the store hands the freshest BuilderLayout here (debounced), and this

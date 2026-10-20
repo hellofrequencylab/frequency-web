@@ -1,6 +1,8 @@
 'use server'
 
-import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 
 // Admin actions for per-persona nurture sequences (ADR-131). Gated to a community
 // admin OR a Studio staff member — same axis as the /marketing layout + funnels.
@@ -17,7 +19,6 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { isPersonaId, getPersona } from '@/lib/onboarding/personas'
 import { validateStepInput } from '@/lib/nurture/schedule'
 import {
-  sanitizeEntityLayout,
   starterRows,
   type EntityLayout,
 } from '@/lib/entity-blocks/layout'
@@ -140,17 +141,16 @@ export async function updateStep(
  */
 export async function updateStepBlockJson(
   id: string,
-  layout: BuilderLayout | EntityLayout,
+  layout: BuilderLayout | EntityLayout | NodeLayout,
 ): Promise<{ error?: string }> {
   const who = await requireMarketer()
   if (typeof who === 'string') return { error: who }
 
-  if (legacySpaceLayoutWriteError(layout, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
   const { data: stored, error: readError } = await db().from('nurture_steps').select('block_json').eq('id', id).maybeSingle()
   if (readError || !stored) return { error: 'Could not read the saved email design.' }
-  if (legacySpaceLayoutWriteError(stored.block_json, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
-
-  const clean = sanitizeEntityLayout(layout as EntityLayout, 'email') ?? { rows: starterRows('email', 'basic') }
+  const write = await prepareEmailLayoutWrite(layout, stored.block_json, () => ({ rows: starterRows('email', 'basic') }))
+  if ('error' in write) return { error: NODE_LAYOUT_WRITE_ERROR }
+  const clean = write.layout
   const { error } = await db()
     .from('nurture_steps')
     .update({ block_json: clean as unknown as never })

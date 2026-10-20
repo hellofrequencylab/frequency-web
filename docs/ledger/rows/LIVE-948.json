@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-948",
+  "title": "A Space needs only a Business plan to run Regulars: the address and map pin are optional",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/loyalty/store.ts",
+    "ref": "Owner ask 2026-10-20 (House of Fates check-in by NFC tag: 'why do we need an address if it's an NFC bump?'). ADR-1787"
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. loyaltyEligibility no longer returns no_location; it answers only plan or null. The program form drops the address message, and the 'only count a check-in from inside the shop' option is disabled with a hint until the Space has a map pin; writeLoyaltyProgram stores geofence only when the Space has a pin. Existing programs and check-ins are unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.readFileSync(p,'utf8');const s=r('lib/loyalty/store.ts');const miss=[];if(/'no_location'/.test(s))miss.push('pin still required');if(!/geofence: input\\.geofence && spaceHasPin/.test(s))miss.push('geofence not gated on a pin');if(/no_location/.test(r('lib/loyalty/actions.ts')))miss.push('action still blocks');if(miss.length){console.error('LIVE-948: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-20"
+}

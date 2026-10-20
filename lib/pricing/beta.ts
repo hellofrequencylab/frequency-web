@@ -80,15 +80,45 @@ export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boo
 // share the function. Closing the intro is removing the item from the set, which is a code change with
 // an ADR, exactly like a changed amount in the catalog (ADR-916).
 
-/** The catalog items whose FOUNDING amount is charged today regardless of the beta window. */
+/** The instant the Collective Founding intro closes: midnight Pacific at the start of January 1, 2027
+ *  (owner ruling 2026-10-20: "make sure people realize the beta pricing offer on Collective ends Jan 1").
+ *  This is NOT the site-wide beta end (BETA_ENDS_LABEL, December 1, the `beta_grace` window): the intro is
+ *  its own offer and does not read `beta_grace`. Moving this one constant moves the checkout, every price
+ *  surface and every end-date caption, because all of them read it. */
+export const COLLECTIVE_FOUNDING_ENDS_AT = '2027-01-01T08:00:00.000Z'
+
+/** The end date as members read it. Derived from nothing else; keep it in step with
+ *  COLLECTIVE_FOUNDING_ENDS_AT (pinned by beta.test.ts). */
+export const COLLECTIVE_FOUNDING_ENDS_LABEL = 'January 1'
+
+/** The day the founder BADGE stops being granted: the `beta_grace` window end, which the badge grant reads
+ *  (lib/billing/beta-founding.ts). The Founding PRICE runs past it to COLLECTIVE_FOUNDING_ENDS_AT, but the
+ *  badge does not (owner 2026-10-20: "Badge till December 1 for founders"). Kept equal to BETA_ENDS_LABEL
+ *  (lib/core/beta-notices.ts, which imports this module, so it cannot be imported here); beta.test.ts pins
+ *  the two together. */
+export const FOUNDER_BADGE_ENDS_LABEL = 'December 1'
+
+/** Is the standing Founding intro still open at `now`? False on/after the end instant, and false when the
+ *  constant cannot be parsed (charge list, never under-charge). PURE. */
+export function collectiveFoundingOpen(now: Date = new Date()): boolean {
+  const ends = Date.parse(COLLECTIVE_FOUNDING_ENDS_AT)
+  return Number.isFinite(ends) && now.getTime() < ends
+}
+
+/** The catalog items whose FOUNDING amount is charged today regardless of the beta window, until
+ *  COLLECTIVE_FOUNDING_ENDS_AT. */
 export const FOUNDING_OPEN_ITEMS: ReadonlySet<CatalogItemKey> = new Set<CatalogItemKey>(['collective_base'])
 
 /** Is the founding amount of `item` the charged amount right now? True inside the beta window (every
  *  item), or when the item carries a standing Founding intro. PURE. A null item (a plan with no catalog
  *  item: free, network) follows the window alone. */
-export function foundingOpenFor(item: CatalogItemKey | null | undefined, betaActive: boolean): boolean {
+export function foundingOpenFor(
+  item: CatalogItemKey | null | undefined,
+  betaActive: boolean,
+  now: Date = new Date(),
+): boolean {
   if (betaActive) return true
-  return item != null && FOUNDING_OPEN_ITEMS.has(item)
+  return item != null && FOUNDING_OPEN_ITEMS.has(item) && collectiveFoundingOpen(now)
 }
 
 /** The catalog item a Space plan is priced from, or null for the plans with no item (free; Network is
@@ -104,14 +134,14 @@ const SPACE_PLAN_CATALOG_ITEM: Readonly<Record<SpacePlan, CatalogItemKey | null>
 }
 
 /** `foundingOpenFor` by Space plan. PURE. */
-export function foundingOpenForPlan(plan: SpacePlan, betaActive: boolean): boolean {
-  return foundingOpenFor(SPACE_PLAN_CATALOG_ITEM[plan], betaActive)
+export function foundingOpenForPlan(plan: SpacePlan, betaActive: boolean, now: Date = new Date()): boolean {
+  return foundingOpenFor(SPACE_PLAN_CATALOG_ITEM[plan], betaActive, now)
 }
 
-/** The one plain sentence beside a Founding price (no countdown, no urgency): the rate is locked for as
- *  long as the subscription is kept (readLockedPriceId re-bills it). Shared by /pricing, the in-app
- *  ladder and the FAQ so the promise is worded once. */
-export const FOUNDING_RATE_NOTE = 'Founding price. Yours for as long as you keep the plan.'
+/** The one plain sentence beside a Founding price: the offer ends on COLLECTIVE_FOUNDING_ENDS_LABEL, and
+ *  the rate is locked for as long as the subscription is kept (readLockedPriceId re-bills it). Shared by
+ *  /pricing, the in-app ladder (where Collective checkout starts) and the FAQ so it is worded once. */
+export const FOUNDING_RATE_NOTE = `Founding price, offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}. Grandfathered for as long as you keep the plan. Collectives that start before ${FOUNDER_BADGE_ENDS_LABEL} also get the founder badge.`
 
 // ── THE PRIVATE BETA PRICE GRANT (ADR-1061) — a per-Space grant, never a public offer ────────────
 // The owner, 2026-08-17, the same day they closed the window above: *"I still have a couple people

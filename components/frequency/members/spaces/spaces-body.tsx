@@ -35,7 +35,9 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
 }
 
-function SpaceTile({ s }: { s: NetworkedSpace }) {
+// `inFounding`: the tile sits under the Founding Businesses heading, which already says it, so the mark is not
+// repeated on every card (owner 2026-10-20: it read as loud).
+function SpaceTile({ s, inFounding = false }: { s: NetworkedSpace; inFounding?: boolean }) {
   const art = s.coverUrl || fqPlaceholderArt(s.slug)
   const stats = [
     s.memberCount ? plural(s.memberCount, 'member', 'members') : null,
@@ -48,7 +50,7 @@ function SpaceTile({ s }: { s: NetworkedSpace }) {
     <Link className="card fqm-card" href={`/spaces/${s.slug}`}>
       <span className="ph" style={{ backgroundImage: `url('${art}')` }}>
         <span className="tag glass fqm-corner">{s.kindLabel}</span>
-        {s.isFoundingBusiness && (
+        {s.isFoundingBusiness && !inFounding && (
           <span className="fqm-corner-b">
             <FounderMark />
           </span>
@@ -210,7 +212,7 @@ export function FqSpacesBody({
           </div>
           <div className="g3">
             {founding.map((s) => (
-              <SpaceTile key={s.id} s={s} />
+              <SpaceTile key={s.id} s={s} inFounding />
             ))}
           </div>
         </section>

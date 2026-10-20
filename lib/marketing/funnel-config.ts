@@ -34,6 +34,7 @@ import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels
 import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { formatBps } from '@/lib/pricing/display'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDER_BADGE_ENDS_LABEL } from '@/lib/pricing/beta'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -575,7 +576,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When separate groups partner, Collective links them while each keeps its own Space, members and payouts: ${P.collectiveFounding} a month as a Founding price, yours for as long as you keep the plan, under the ${P.collectiveList} list.`,
+        ` When separate groups partner, Collective links them while each keeps its own Space, members and payouts: ${P.collectiveFounding} a month as a Founding price (the offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}), grandfathered for as long as you keep the plan (with the founder badge if you start before ${FOUNDER_BADGE_ENDS_LABEL}), under the ${P.collectiveList} list.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },

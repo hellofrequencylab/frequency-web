@@ -12,6 +12,7 @@ import {
   listRegulars,
   listRewardsToHandOut,
   loyaltyEligibility,
+  spaceHasPin,
   loyaltyEnabled,
   loyaltyOwnerCounts,
 } from '@/lib/loyalty/store'
@@ -61,7 +62,7 @@ export async function RegularsSection({ space, staffViewing }: { space: Space; s
           <StatCard bordered label="Sent by neighbors" value={counts.sentByNeighbors} icon={Ticket} detail="also stamped at a hunt stop" />
         </div>
         <fieldset disabled={staffViewing} className="contents">
-          <LoyaltyProgramForm spaceId={space.id} initial={program} blocker={blocker} />
+          <LoyaltyProgramForm spaceId={space.id} initial={program} blocker={blocker} hasPin={spaceHasPin(space)} />
         </fieldset>
       </section>
 

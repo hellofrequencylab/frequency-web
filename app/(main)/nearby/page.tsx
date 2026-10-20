@@ -35,6 +35,7 @@ import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { pickCirclesForming } from '@/lib/nearby/circles-forming'
 import { DispatchMarquee } from '@/components/nearby/dispatch-marquee'
+import { AroundYouBoard, parseBoardTab } from '@/components/nearby/around-you-board'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
@@ -110,9 +111,9 @@ export function generateMetadata() {
 export default async function NearbyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ compose?: string; scope?: string }>
+  searchParams: Promise<{ compose?: string; scope?: string; tab?: string }>
 }) {
-  const { compose, scope: scopeParam } = await searchParams
+  const { compose, scope: scopeParam, tab: tabParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
@@ -487,6 +488,66 @@ export default async function NearbyPage({
   // Dispatches, as a kit panel (NearbyMapCard). Still STREAMED: the fallback is the same card frame
   // at the same height, so the pin read never holds the page and nothing below jumps when it lands.
   if (SITE_DESIGN === 'frequency') {
+    // LIVE-1073: the area under the map is one board in the members kit. The ticker keeps the latest
+    // Dispatches moving; the four tally tiles are the tabs, so the Dispatch stream, the gatherings,
+    // the circles and the new faces each get the panel to themselves instead of stacking.
+    // Named for what it replaces under this design: SCAN-899's probe reads the map's place above it.
+    const dispatchesAndRail = (
+      <AroundYouBoard
+        ticker={tickerItems.length > 0 ? <DispatchMarquee items={tickerItems} /> : undefined}
+        tab={parseBoardTab(tabParam, compose === 'true')}
+        counts={{
+          events: upcomingEventTotal || upcomingEvents.length,
+          circles: circlesCountRes.count ?? 0,
+          people: membersRes.count ?? 0,
+          dispatches: broadcastsThisWeek,
+        }}
+        notes={{
+          circles: newCirclesCount > 0 ? `${newCirclesCount} new` : undefined,
+          people: newMembersCount ? `${newMembersCount} joined this week` : undefined,
+        }}
+        events={upcomingEvents.map((e) => ({
+          id: e.id,
+          slug: e.slug,
+          title: e.title,
+          month: eventMonth(e.starts_at),
+          day: eventDay(e.starts_at),
+          when: eventDate(e.starts_at),
+          badge: dayBadge(e.starts_at, now),
+          where: e.location,
+        }))}
+        circles={newCircles.map((c) => ({
+          id: c.id,
+          slug: c.slug,
+          name: c.name,
+          memberLabel: `${c.member_count} ${c.member_count === 1 ? 'member' : 'members'}`,
+          city: c.city,
+        }))}
+        circlesTitle={formingPick.city ? `Circles forming in ${formingPick.city}` : 'Circles forming'}
+        people={newMembers.flatMap((m) =>
+          m.handle
+            ? [{ id: m.id, handle: m.handle, name: m.display_name ?? '', avatarUrl: m.avatar_url, joined: relativeTime(m.created_at) }]
+            : [],
+        )}
+        dispatches={dispatches.slice(0, 8).map((d) => {
+          const isAuthor = d.author_id === profile.id
+          const scope = d.audience_scope ? d.audience_scope.charAt(0).toUpperCase() + d.audience_scope.slice(1) : 'Community'
+          return {
+            id: d.id,
+            title: d.title,
+            excerpt: d.excerpt,
+            context: d.linked_task ? `${scope} · Challenge` : `${scope} Dispatch`,
+            authorName: d.author?.display_name ?? null,
+            time: relativeTime(d.published_at),
+            linked: !!d.linked_task,
+            isAuthor,
+            showActions: isAuthor || HOST_PLUS.includes(role),
+          }
+        })}
+        viewerRole={role}
+        dispatchActions={dispatchActions}
+      />
+    )
     return (
       <StreamTemplate eyebrow={HERO_EYEBROW} title={title} description={description} headingLead={glance}>
         {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when

@@ -17,7 +17,6 @@ export async function createHunt(spaceId: string, raw: unknown): Promise<ActionR
   if (hunt) return ok(hunt)
   const space = await getSpaceById(spaceId)
   const why = space ? await loyaltyEligibility(space) : null
-  if (why === 'no_location') return fail('Add the address and map pin in Profile before hosting a hunt.')
   if (why === 'plan') return fail('Hunts are a Business feature. Upgrade the Space to host one.')
   return fail('Could not create the hunt.')
 }

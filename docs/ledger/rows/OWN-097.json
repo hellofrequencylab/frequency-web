@@ -1,0 +1,19 @@
+{
+  "id": "OWN-097",
+  "title": "The owner lifts the bar on starting Editor, Sites, Etsy and App Platform from a scan or a docs pass",
+  "status": "done",
+  "priority": "P2",
+  "lane": "owner",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "AGENTS.md",
+    "ref": "Owner decision card 2026-10-20: Relax it."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20 (ADR-1814). The session index carried one line barring a scan or docs pass from starting Editor / Sites / Etsy / App Platform. The owner tapped Relax it. AGENTS.md now says product work still outranks craft on a collision, and a scan or docs pass may start those rows. ADR-1403's own ruling table never held the bar, so it is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('AGENTS.md','utf8');if(/do not start Editor \\\\/ Sites \\\\/ Etsy \\\\/ App Platform from a scan or a docs pass\\\\.\\\\s*$/m.test(s)||!s.includes('ADR-1814')){console.error('OWN-097: AGENTS.md still carries the bar or does not cite ADR-1814');process.exit(1)}\""
+  },
+  "closed": "2026-10-20"
+}
