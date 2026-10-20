@@ -11,6 +11,7 @@ import { renderQrSvg } from '@/lib/qr/render'
 import { CheckinCodeCard } from '@/components/spaces/checkin-code-card'
 import { CheckinRoster } from '@/components/spaces/checkin-roster'
 import { RegularsSection } from './regulars-section'
+import { ScannersSection } from './scanners-section'
 import { Users } from 'lucide-react'
 import type { Space } from '@/lib/spaces/types'
 
@@ -98,6 +99,11 @@ export async function CheckinSection({
       {/* REGULARS (LIVE-940): the stamp card that rides this door code. Streams after the roster. */}
       <Suspense fallback={<RosterSkeleton />}>
         <RegularsSection space={space} staffViewing={staffViewing} />
+      </Suspense>
+
+      {/* COUNTER SCANNERS (LIVE-1125): NFC card readers that check members in on this same door node. */}
+      <Suspense fallback={<RosterSkeleton />}>
+        <ScannersSection space={space} staffViewing={staffViewing} />
       </Suspense>
     </div>
   )
