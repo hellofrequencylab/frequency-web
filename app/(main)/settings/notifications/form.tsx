@@ -9,6 +9,11 @@ import type {
 import { isPreferenceWired, wiredCategories } from '@/lib/notifications/wired'
 import { saveNotificationPreferences } from './actions'
 import { isError } from '@/lib/action-result'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// Under Frequency both switches here are the kit's `.sw` (LIVE-1101), so members-ui.css no longer has to repaint a
+// hand-built `bg-primary` track. The buttons stay hand-built: the wired-pair pin reads this source.
+const FQ = SITE_DESIGN === 'frequency'
 
 // The full topic vocabulary, in display order. Which of these ROWS render, and which CELLS in a
 // row are switches, is decided by lib/notifications/wired.ts, not here — see the 🔴 note there.
@@ -169,7 +174,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                       aria-checked={checked}
                       aria-label={`${channel} ${key}`}
                       title={disabled ? 'Not yet available' : undefined}
-                      className={`
+                      className={FQ ? (checked ? 'sw on' : 'sw') : `
                         relative inline-flex items-center justify-center
                         w-10 h-6 rounded-pill transition-colors
                         ${disabled
@@ -179,12 +184,14 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                             : 'bg-border hover:bg-border-strong'}
                       `}
                     >
-                      <span
-                        className={`
-                          inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform
-                          ${checked ? 'translate-x-2' : '-translate-x-2'}
-                        `}
-                      />
+                      {!FQ && (
+                        <span
+                          className={`
+                            inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform
+                            ${checked ? 'translate-x-2' : '-translate-x-2'}
+                          `}
+                        />
+                      )}
                     </button>
                   </div>
                 )
@@ -213,18 +220,20 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           role="switch"
           aria-checked={settings.space_event_reminders === true}
           aria-label="Remind me about events from Spaces I follow"
-          className={`
+          className={FQ ? (settings.space_event_reminders === true ? 'sw on' : 'sw') : `
             relative inline-flex items-center justify-center shrink-0
             w-10 h-6 rounded-pill transition-colors
             ${settings.space_event_reminders === true ? 'bg-primary' : 'bg-border hover:bg-border-strong'}
           `}
         >
-          <span
-            className={`
-              inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform
-              ${settings.space_event_reminders === true ? 'translate-x-2' : '-translate-x-2'}
-            `}
-          />
+          {!FQ && (
+            <span
+              className={`
+                inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform
+                ${settings.space_event_reminders === true ? 'translate-x-2' : '-translate-x-2'}
+              `}
+            />
+          )}
         </button>
       </div>
 
