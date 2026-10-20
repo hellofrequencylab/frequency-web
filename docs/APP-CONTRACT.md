@@ -1,7 +1,7 @@
 # The app contract (`/api/v1`)
 
-The versioned JSON API a native client calls. It exists for the Expo / React Native iOS app
-(`DEF-MOBILE`, parked; the stack was ruled 2026-09-29), and the web may call it too. Decided in
+The versioned JSON API a native client calls. It exists for the Expo / React Native app
+(`DEF-MOBILE`; the stack was ruled 2026-09-29; the app is `mobile/`, Frequency Experience, [`MOBILE-APP.md`](MOBILE-APP.md)), and the web may call it too. Decided in
 [ADR-1643](DECISIONS.md) (`LIVE-715`). Which endpoints are built and which are still to come is
 tracked in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (the WM rows `LIVE-715` to `LIVE-726`),
 never in this file.
