@@ -32,7 +32,7 @@ export async function EventDoorSection({ eventId, title }: { eventId: string; ti
           <p className="max-w-2xl text-body-sm text-muted">
             Print this code or write the tag link to an NFC sticker at the door. A guest who taps it is marked going and, once the event has started, checked in for {zaps} Zaps. Nobody needs the app open first.
           </p>
-          <CheckinCodeCard svg={svg} link={code.url} />
+          <CheckinCodeCard svg={svg} link={code.url} nfcLink={code.nfcUrl} />
           <p className="flex flex-wrap items-center gap-2 text-meta text-muted">
             <Nfc className="h-4 w-4 shrink-0" aria-hidden />
             <span>

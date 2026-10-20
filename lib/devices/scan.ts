@@ -76,6 +76,7 @@ export async function scanCard(device: ScannerDevice, input: { cardToken: string
     actorProfileId: card.profileId,
     presentedSecret: signNodeCode(node.id),
     location: await readSpacePin(device.spaceId),
+    medium: 'device',
   })
   await touchCard(card.id)
 

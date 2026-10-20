@@ -12,7 +12,7 @@ beforeAll(() => {
   process.env.UNSUBSCRIBE_SECRET = 'test-node-code-secret-0000000000000000'
 })
 
-const { signNodeCode, signedNodeUrl, verifyNodeCode, nodeCodeVerdict, LEGACY_NODE_CODE_GRACE_ENDS } =
+const { signNodeCode, signedNodeUrl, signedPlacardUrl, verifyNodeCode, nodeCodeVerdict, LEGACY_NODE_CODE_GRACE_ENDS } =
   await import('./node-code')
 
 const NODE = '11111111-1111-4111-8111-111111111111'
@@ -40,6 +40,20 @@ describe('node code: round-trip', () => {
   it('puts the signed code on the /n/<id> URL', () => {
     const url = new URL(signedNodeUrl(NODE, ISSUED))
     expect(url.pathname).toBe(`/n/${NODE}`)
+    expect(verifyNodeCode(NODE, url.searchParams.get('s'), ISSUED)).toBe(true)
+  })
+})
+
+describe('node code: placard URL (NFC tag)', () => {
+  it('is the QR URL plus a trailing &m=nfc for the same issue time', () => {
+    expect(signedPlacardUrl(NODE, ISSUED)).toBe(`${signedNodeUrl(NODE, ISSUED)}&m=nfc`)
+  })
+
+  it('keeps the signed code intact, so `s` still verifies and `m` reads nfc', () => {
+    const url = new URL(signedPlacardUrl(NODE, ISSUED))
+    expect(url.pathname).toBe(`/n/${NODE}`)
+    expect(url.searchParams.get('m')).toBe('nfc')
+    expect(url.searchParams.get('s')).toBe(new URL(signedNodeUrl(NODE, ISSUED)).searchParams.get('s'))
     expect(verifyNodeCode(NODE, url.searchParams.get('s'), ISSUED)).toBe(true)
   })
 })

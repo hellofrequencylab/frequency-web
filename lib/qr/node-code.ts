@@ -22,7 +22,7 @@
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { signingSecret } from '@/lib/signing-secret'
-import { nodeUrl } from '@/lib/qr/links'
+import { nodeUrl, withMedium } from '@/lib/qr/links'
 
 /** The last moment a code printed before signing (no `?s=`, or the node's old random secret) still
  *  claims. After it, only a signed code checks a member in. Stated in ADR-1654. */
@@ -72,6 +72,14 @@ export function signNodeCode(nodeId: string, issuedAtMs: number = Date.now()): s
  *  renders, downloads or prints a node code builds it here, so no surface can print an unsigned one. */
 export function signedNodeUrl(nodeId: string, issuedAtMs: number = Date.now()): string {
   return nodeUrl(nodeId, signNodeCode(nodeId, issuedAtMs))
+}
+
+/** The URL an NFC placard (or any NFC tag for a node) holds: the same signed node URL its QR
+ *  encodes, with `&m=nfc` after the signed code so a tap and a scan of one Space's check-in are
+ *  counted apart. The verifier reads only `s`, so the marker never touches the signature. A QR and
+ *  an NFC tag for the same node are always this pair; build both here, never by hand. */
+export function signedPlacardUrl(nodeId: string, issuedAtMs: number = Date.now()): string {
+  return withMedium(signedNodeUrl(nodeId, issuedAtMs), 'nfc')
 }
 
 /** Verify a signed code against the node it was presented for. Fail closed: a bad shape, a tag

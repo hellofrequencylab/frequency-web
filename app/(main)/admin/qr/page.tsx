@@ -63,7 +63,7 @@ export default async function QrStudioPage() {
   ] = await Promise.all([
     db
       .from('nodes')
-      .select('id, type, label, zaps_value, capture_rule, active, city, valid_until, partner_id, style, max_claims, created_at')
+      .select('id, type, label, zaps_value, capture_rule, active, city, valid_until, partner_id, style, max_claims, created_at, kind, space_id')
       .order('created_at', { ascending: false }),
     db.rpc('node_capture_counts'),
     db
@@ -94,6 +94,17 @@ export default async function QrStudioPage() {
   const { data: geoRows } = await db.rpc('nodes_geo')
   const geoByNode = new Map((geoRows ?? []).map((g) => [g.id, g]))
 
+  // A Space's check-in node links to the placard programmer for that Space, so resolve the slugs
+  // (and names, for the card badge) in one read. Only kind 'checkin' counts: every node carries a
+  // space_id (a trigger defaults it to root), so space_id alone does not mark a door.
+  const checkinSpaceIds = [
+    ...new Set((nodes ?? []).filter((n) => n.kind === 'checkin' && n.space_id).map((n) => n.space_id as string)),
+  ]
+  const { data: checkinSpaces } = checkinSpaceIds.length
+    ? await db.from('spaces').select('id, slug, name').in('id', checkinSpaceIds)
+    : { data: [] as { id: string; slug: string; name: string }[] }
+  const spaceById = new Map((checkinSpaces ?? []).map((s) => [s.id, s]))
+
   const initialNodes: StudioNode[] = await Promise.all(
     (nodes ?? []).map(async (n) => {
       const url = signedNodeUrl(n.id)
@@ -116,6 +127,8 @@ export default async function QrStudioPage() {
         style,
         url,
         svg: renderStyledQrSvg(url, style, 168),
+        spaceSlug: n.kind === 'checkin' && n.space_id ? spaceById.get(n.space_id)?.slug ?? null : null,
+        spaceName: n.kind === 'checkin' && n.space_id ? spaceById.get(n.space_id)?.name ?? null : null,
       }
     }),
   )

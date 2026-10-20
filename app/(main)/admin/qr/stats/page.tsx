@@ -1,4 +1,4 @@
-import { ChartNoAxesColumn, MapPin, Users, Link2, Trophy, UserCircle, Megaphone, Nfc, Compass } from 'lucide-react'
+import { ChartNoAxesColumn, MapPin, Users, Link2, Trophy, UserCircle, Megaphone, Nfc, Compass, QrCode, ScanLine } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -7,10 +7,13 @@ import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { scanSummaryFromRpc, type QrStatsRpcPayload } from '@/lib/qr/analytics'
 import { summarizeAcquisition, type AcquisitionRow } from '@/lib/qr/acquisition'
+import { summarizeCheckins } from '@/lib/qr/checkin-stats'
+import { isoDaysAgo } from '@/lib/utils'
 import { Analytics, type AnalyticsData } from '../analytics'
 import { ScanLocator } from '../scan-locator'
 
 type AcqCodeRow = { slug: string; signups: number; scans: number; rate: number | null }
+type SpaceCheckinRow = { spaceId: string; name: string; slug: string | null; total: number; qr: number; nfc: number; device: number }
 
 export const dynamic = 'force-dynamic'
 
@@ -27,15 +30,43 @@ export default async function QrStatsPage() {
   await requireAdmin('admin', { staff: 'qr' })
   const db = createAdminClient()
 
-  const [{ data: statsPayload }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }, { data: acq }] =
-    await Promise.all([
-      db.rpc('qr_stats_summary', { p_days: 30 }),
-      db.from('qr_codes').select('id, slug, title, purpose, owner_profile_id'),
-      db.from('nodes').select('id', { count: 'exact', head: true }),
-      db.from('engagement_events').select('event_type').in('event_type', ['qr.referral_signup', 'qr.gift_zap']),
-      db.from('season_challenges').select('id, criteria'),
-      db.from('profiles').select('acquisition').not('acquisition', 'is', null),
-    ])
+  const checkinSince = isoDaysAgo(30)
+  const [
+    { data: statsPayload },
+    { data: codes },
+    { count: nodeCount },
+    { data: events },
+    { data: challenges },
+    { data: acq },
+    { data: captureRows },
+  ] = await Promise.all([
+    db.rpc('qr_stats_summary', { p_days: 30 }),
+    db.from('qr_codes').select('id, slug, title, purpose, owner_profile_id'),
+    db.from('nodes').select('id', { count: 'exact', head: true }),
+    db.from('engagement_events').select('event_type').in('event_type', ['qr.referral_signup', 'qr.gift_zap']),
+    db.from('season_challenges').select('id, criteria'),
+    db.from('profiles').select('acquisition').not('acquisition', 'is', null),
+    // Space check-ins (QR, NFC placard, counter scanner) in the last 30 days. The cap keeps a
+    // busy month from loading unbounded rows into the page; past it the totals undercount.
+    db
+      .from('engagement_events')
+      .select('source, context, created_at')
+      .eq('event_type', 'node_capture')
+      .gte('created_at', checkinSince)
+      .limit(20000),
+  ])
+
+  // Check-ins, split by how members arrived, plus the busiest Spaces by name.
+  const checkins = summarizeCheckins(captureRows ?? [])
+  const topSpaceIds = checkins.perSpace.slice(0, 10).map((s) => s.spaceId)
+  const { data: spaceRows } = topSpaceIds.length
+    ? await db.from('spaces').select('id, name, slug').in('id', topSpaceIds)
+    : { data: [] as { id: string; name: string; slug: string | null }[] }
+  const spaceById = new Map((spaceRows ?? []).map((s) => [s.id, s]))
+  const topSpaces: SpaceCheckinRow[] = checkins.perSpace.slice(0, 10).map((s) => {
+    const sp = spaceById.get(s.spaceId)
+    return { ...s, name: sp?.name ?? 'Unknown Space', slug: sp?.slug ?? null }
+  })
 
   const { summary, locations } = scanSummaryFromRpc(statsPayload as QrStatsRpcPayload | null)
 
@@ -99,6 +130,14 @@ export default async function QrStatsPage() {
     { key: 'rate', header: 'Rate', type: 'number', render: (c) => (c.rate == null ? '–' : `${c.rate}%`) },
   ]
 
+  const spaceCheckinColumns: ColumnDef<SpaceCheckinRow>[] = [
+    { key: 'name', header: 'Space', render: (s) => <span className="font-medium text-text">{s.name}</span> },
+    { key: 'total', header: 'Total', type: 'number', render: (s) => <span className="font-semibold">{s.total.toLocaleString()}</span> },
+    { key: 'nfc', header: 'NFC', type: 'number', render: (s) => s.nfc.toLocaleString() },
+    { key: 'qr', header: 'QR', type: 'number', render: (s) => s.qr.toLocaleString() },
+    { key: 'device', header: 'Scanner', type: 'number', render: (s) => s.device.toLocaleString() },
+  ]
+
   return (
     <AdminTemplate
       title="QR stats"
@@ -109,12 +148,40 @@ export default async function QrStatsPage() {
     >
       {/* Funnel headline */}
       <AdminSection>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <StatCard bordered icon={MapPin} label="Total scans" value={summary.total.toLocaleString()} />
+          <StatCard bordered icon={ScanLine} label="Check-ins" value={checkins.total.toLocaleString()} />
           <StatCard bordered icon={Users} label="Unique members" value={summary.unique.toLocaleString()} />
           <StatCard bordered icon={UserCircle} label="Referral signups" value={referralSignups.toLocaleString()} />
           <StatCard bordered icon={Trophy} label="Zaps gifted" value={gifts.toLocaleString()} />
         </div>
+      </AdminSection>
+
+      {/* Space check-ins, by how members arrived */}
+      <AdminSection
+        title="Check-ins"
+        description="Space check-ins in the last 30 days, by how members arrived. One placard and its matching QR count as one check-in point."
+      >
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard bordered icon={MapPin} label="Check-ins" value={checkins.total.toLocaleString()} />
+          <StatCard bordered icon={Nfc} label="NFC taps" value={checkins.byMedium.nfc.toLocaleString()} />
+          <StatCard bordered icon={QrCode} label="QR scans" value={checkins.byMedium.qr.toLocaleString()} />
+          <StatCard bordered icon={ScanLine} label="Counter scanner" value={checkins.byMedium.device.toLocaleString()} />
+        </div>
+        <DataTable
+          rows={topSpaces}
+          getRowId={(s) => s.spaceId}
+          columns={spaceCheckinColumns}
+          caption="Top Spaces by check-ins in the last 30 days."
+          empty={
+            <EmptyState
+              variant="first-use"
+              icon={MapPin}
+              title="No Space check-ins yet"
+              description="They show up here once members tap a placard, scan a check-in QR, or use a counter scanner."
+            />
+          }
+        />
       </AdminSection>
 
       {/* Locator map */}
