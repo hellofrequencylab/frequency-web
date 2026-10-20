@@ -33,6 +33,15 @@ const SECTION_ICON: Record<SpaceHubSection, FqIconName> = {
   settings: 'settings',
 }
 
+/** The phone bar's five slots (the fifth is More): the short labels, in the owner's order. The page title
+ *  keeps the full tab name. Marketing and Profile & Settings fall into the More sheet. */
+const PHONE_SLOT: Partial<Record<SpaceHubSection, { label: string; slot: number }>> = {
+  dashboard: { label: 'Home', slot: 0 },
+  resonance: { label: 'Community', slot: 1 },
+  programs: { label: 'Programs', slot: 2 },
+  offerings: { label: 'Money', slot: 3 },
+}
+
 /** The hub tabs as sidebar rows, each claiming its catalog rows' pages. PURE. */
 export function spaceNavItems(slug: string, editor: boolean): AdminNavItem[] {
   const base = `/spaces/${slug}`
@@ -41,6 +50,7 @@ export function spaceNavItems(slug: string, editor: boolean): AdminNavItem[] {
     label: section.label,
     href: section.key === 'dashboard' ? `${base}/manage` : `${base}/manage?section=${section.key}`,
     icon: SECTION_ICON[section.key],
+    phone: PHONE_SLOT[section.key],
     match: SPACE_MODULES.flatMap((module) => {
       if (sectionForModule(module) !== section.key || !module.deepLink) return []
       const path = module.deepLink(slug).split('#')[0]

@@ -1,7 +1,7 @@
 import { Suspense, type ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
-import { AdminCrumb, AdminNav, AdminNavList } from './admin-nav'
+import { AdminCrumb, AdminNav, AdminNavList, AdminPhoneBar, AdminPhoneStrip } from './admin-nav'
 import type { AdminNavItem } from './nav-model'
 import '@/app/themes/active/kit-members'
 import '@/app/themes/active/kit-admin'
@@ -154,6 +154,11 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
           </aside>
           <div>
             <header className="ad-top">
+              {/* Phone only (CSS): who this console is, one tap to its home. The wordmark and the switcher are in the sidebar on a wide screen and in the More sheet on a phone. */}
+              <Link href={homeHref} className="ad-top-id" aria-label={`${space.name}, console home`}>
+                <span className="av" style={bg(space.avatarUrl)} aria-hidden />
+                <span className="grow"><b>{space.name}</b><small>{space.role}</small></span>
+              </Link>
               <Suspense fallback={<span className="crumb">{crumbRoot}</span>}>
                 <AdminCrumb root={crumbRoot} items={items} />
               </Suspense>
@@ -169,9 +174,15 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
               </Link>
               <Link className="ap-me" href={me.href} title={me.name} aria-label={me.name} style={bg(me.avatarUrl)} />
             </header>
+            <Suspense fallback={null}>
+              <AdminPhoneStrip items={items} />
+            </Suspense>
             <main className="ad-main">{children}</main>
           </div>
         </div>
+        <Suspense fallback={null}>
+          <AdminPhoneBar items={items} label={navLabel} space={space} links={links} />
+        </Suspense>
       </div>
     </div>
   )

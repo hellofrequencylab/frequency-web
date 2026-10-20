@@ -148,3 +148,65 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
 @layer components {
 [data-design="frequency"] [data-kit="admin"] .ad-top{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
 }
+
+/* THE PHONE CONSOLE (owner, 2026-10-20: "the space console experience in Mobile is trash"). Under 960px the
+   264px sidebar stops folding into a wrapping row above the page (four stacked bands, labels overlapping, the
+   first number at the fold). It steps aside for what a phone has: ONE 60px top bar (who, search, alerts, you),
+   the member app's floating frosted bar at the bottom with the console's main rows (admin-nav.tsx
+   AdminPhoneBar), and a More sheet from that bar holding the switcher and every other row. The active
+   section's pages stay the sideways strip, now under the top bar. Wide screens are untouched: the phone
+   pieces are display:none there. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"] .ad-top-id,
+[data-design="frequency"] [data-kit="admin"] .ad-tabbar{display:none}
+@media (max-width:960px){
+  /* The lane tokens the chat launcher and toasts already ride (globals.css), measured from the bar's box. */
+  html[data-design="frequency"]:has([data-kit="admin"] .ad-tabbar){--tab-bar-h:calc(72px + env(safe-area-inset-bottom));--tab-bar-lift:16px;--tab-bar-clearance:calc(var(--tab-bar-h) + var(--lane-rise))}
+  [data-design="frequency"] [data-kit="admin"] .ad-side{display:none}
+  [data-design="frequency"] [data-kit="admin"] .ad-top{height:60px;padding:0 14px 0 12px;gap:6px}
+  [data-design="frequency"] [data-kit="admin"] .ad-top .crumb,
+  [data-design="frequency"] [data-kit="admin"] .ad-top .ad-links,
+  [data-design="frequency"] [data-kit="admin"] .ad-top .ad-more{display:none}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-id{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-id .av{width:38px;height:38px;border-radius:50%;flex:none;background-size:cover;background-position:center;background-color:var(--fq-track)}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-id .grow{display:flex;flex-direction:column;min-width:0}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-id b{font:600 15px/1.15 var(--fq-font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* token-ok: the member header's 15px UI step */
+  [data-design="frequency"] [data-kit="admin"] .ad-top-id small{font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+  [data-design="frequency"] [data-kit="admin"] .ad-strip{flex:none;padding:6px 12px 0}
+  [data-design="frequency"] [data-kit="admin"] .ad-main{padding:16px 16px calc(var(--tab-bar-clearance, 94px) + 16px)}
+  [data-design="frequency"] [data-kit="admin"] .ad-tabbar{
+    position:fixed;z-index:46;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:62px;
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;padding:0 4px;border-radius:var(--fq-radius-orb);
+    background:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 98%,transparent),color-mix(in oklab,var(--fq-surface-card) 95%,transparent));
+    backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+    box-shadow:0 14px 34px -20px color-mix(in oklab,var(--fq-ink) 45%,transparent),inset 0 0 0 1px var(--fq-border-hair)}
+  [data-design="frequency"] [data-kit="admin"] .ad-tabbar::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--fq-pa-soft);opacity:.6;pointer-events:none}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;color:var(--fq-text-muted);font:500 12px/1 var(--fq-font-sans);letter-spacing:-.01em} /* token-ok: the kit's 12px tab-label step */
+  [data-design="frequency"] [data-kit="admin"] .ad-tb-l{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb-ic{position:relative;width:48px;height:30px;border-radius:var(--fq-radius-orb);display:flex;align-items:center;justify-content:center}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb-ic svg{opacity:.75}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb-ic>i{position:absolute;top:2px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--fq-pa);box-shadow:0 0 0 2px var(--fq-surface-card)}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb.on{color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb.on .ad-tb-ic{background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px color-mix(in oklab,var(--fq-surface-raised) 50%,transparent)}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb.on .ad-tb-ic svg{opacity:1}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb.on .ad-tb-l{font-weight:600}
+  [data-design="frequency"] [data-kit="admin"] .ad-tb:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:-2px;border-radius:var(--fq-radius-orb)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-scrim{position:fixed;inset:0;z-index:47;border:0;padding:0;background:color-mix(in oklab,var(--fq-ink) 40%,transparent)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-sheet{position:fixed;left:0;right:0;bottom:calc(82px + env(safe-area-inset-bottom));z-index:48;max-height:min(70dvh,640px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;padding:10px 16px 16px;border-radius:24px 24px 0 0;background:var(--fq-surface-raised);box-shadow:0 -20px 50px -20px color-mix(in oklab,var(--fq-ink) 35%,transparent),inset 0 0 0 1px var(--fq-border-hair)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-grab{width:40px;height:4px;border-radius:4px;background:var(--fq-track);margin:0 auto 12px}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:16px;box-shadow:inset 0 0 0 1px var(--fq-border-hair);margin-bottom:6px}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-card .av{width:38px;height:38px;border-radius:50%;flex:none;background-size:cover;background-position:center;background-color:var(--fq-track)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-card .grow{display:flex;flex-direction:column;min-width:0}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-card small{font:400 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-h{font:600 var(--fq-text-label)/1 var(--fq-font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted);margin:14px 4px 4px}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-row{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 6px;border-radius:12px;font:500 var(--fq-text-body)/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-row>span{flex:1;min-width:0}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-row .av{width:28px;height:28px;border-radius:50%;flex:none;background-size:cover;background-color:var(--fq-track)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-row.on{background:var(--fq-pa-soft)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-row b{font:600 var(--fq-text-label)/1 var(--fq-font-sans);padding:4px 7px;border-radius:var(--fq-radius-orb);background:var(--fq-text-strong);color:var(--fq-surface-card)}
+  [data-design="frequency"] [data-kit="admin"] .ad-pm-row:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:-2px}
+  @media (max-width:360px){
+  [data-design="frequency"] [data-kit="admin"] .ad-tb{font-size:11px} /* token-ok: the 320px floor, where "Community" must fit a 60px slot */
+  [data-design="frequency"] [data-kit="admin"] .ad-tb-l{padding:0}}
+}
+}

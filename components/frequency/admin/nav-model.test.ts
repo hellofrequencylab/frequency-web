@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { activeNav, hrefScore, itemBadge, type AdminNavItem } from './nav-model'
+import { activeNav, hrefScore, itemBadge, phoneSlots, type AdminNavItem } from './nav-model'
 import { spaceNavItems } from './space-console'
 import { adminNavItems } from './admin-console'
 import type { ResolvedCategory, ResolvedItem } from '@/lib/menus/types'
@@ -70,5 +70,21 @@ describe('the operator console sidebar', () => {
     const items = adminNavItems(categories, { viewerRole: 'janitor' }, 0)
     expect(items.map((i) => i.label)).toEqual(['Overview', 'Community'])
     expect(itemBadge(items[1])).toBe(0)
+  })
+})
+
+describe('phoneSlots', () => {
+  const row = (key: string, extra: Partial<AdminNavItem> = {}): AdminNavItem => ({ key, label: key, href: `/${key}`, icon: 'home', ...extra })
+  it('fills the bar from the rows that carry a slot, in slot order, and puts the rest in More', () => {
+    const items = [row('a', { phone: { label: 'A', slot: 0 } }), row('b'), row('c', { phone: { label: 'C', slot: 2 } }), row('d', { phone: { label: 'D', slot: 1 } })]
+    const { tabs, more } = phoneSlots(items)
+    expect(tabs.map((t) => t.phoneLabel)).toEqual(['A', 'D', 'C'])
+    expect(more.map((m) => m.key)).toEqual(['b'])
+  })
+  it('falls back to the first four in-app rows, and never gives an external row a tab', () => {
+    const items = [row('a'), row('x', { external: true }), row('b'), row('c'), row('d'), row('e')]
+    const { tabs, more } = phoneSlots(items)
+    expect(tabs.map((t) => t.key)).toEqual(['a', 'b', 'c', 'd'])
+    expect(more.map((m) => m.key)).toEqual(['x', 'e'])
   })
 })

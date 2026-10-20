@@ -25,6 +25,21 @@ export interface AdminNavItem extends AdminNavLeaf {
   icon: FqIconName
   children?: AdminNavLeaf[]
   match?: string[]
+  /** A slot in the phone's bottom bar (under 960px): its short label and its place from the left. With no
+   *  row carrying one, the first four in-app rows fill the bar. Rows without a slot sit in the More sheet. */
+  phone?: { label: string; slot: number }
+}
+
+/** The rows that fill the phone bar, left to right, and the rows that fall into More. PURE. */
+export function phoneSlots(items: AdminNavItem[], max = 4): { tabs: (AdminNavItem & { phoneLabel: string })[]; more: AdminNavItem[] } {
+  const marked = items.filter((item) => item.phone && !item.external)
+  const picked = marked.length > 0
+    ? [...marked].sort((a, b) => a.phone!.slot - b.phone!.slot).slice(0, max)
+    : items.filter((item) => !item.external).slice(0, max)
+  return {
+    tabs: picked.map((item) => ({ ...item, phoneLabel: item.phone?.label ?? item.label })),
+    more: items.filter((item) => !picked.includes(item)),
+  }
 }
 
 /** How well one href describes the current location: -1 for no match, else longer paths and more
