@@ -66,7 +66,7 @@ export default async function ChannelsPage({
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
   }
 
-  // THE DESIGN SWITCH (ADR-1737): build-time. Frequency draws the forum board (LIVE-1028, ADR-1849); the
+  // THE DESIGN SWITCH (ADR-1737): build-time. Frequency draws the forum board (LIVE-1028, ADR-1847); the
   // DAWN tree below is untouched when it is off.
   if (SITE_DESIGN === 'frequency') {
     const sp = await searchParams

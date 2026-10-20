@@ -22,7 +22,7 @@ import {
 } from '@/lib/channels/forum-index'
 import { relativeTime } from '@/lib/utils'
 
-// THE CHANNELS INDEX, REBUILT AS A FORUM BOARD LIST (LIVE-1028, ADR-1849; design changes item 29).
+// THE CHANNELS INDEX, REBUILT AS A FORUM BOARD LIST (LIVE-1028, ADR-1847; design changes item 29).
 //
 // Before: a photo hero, a stats band and a long grid of identical cards. After: the kit's plain head (no
 // photo, the same as Events, Circles and Members), one toolbar (search, Pillar, show, sort), then the
