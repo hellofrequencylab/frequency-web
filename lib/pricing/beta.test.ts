@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
   BETA_PRICING_ENDS_AT,
+  COLLECTIVE_FOUNDING_ENDS_AT,
+  COLLECTIVE_FOUNDING_ENDS_LABEL,
+  collectiveFoundingOpen,
+  FOUNDING_RATE_NOTE,
   FOUNDING_OPEN_ITEMS,
   foundingOpenFor,
   foundingOpenForPlan,
@@ -70,6 +74,36 @@ describe('effectiveCatalogAmounts', () => {
   })
 })
 
+const INTRO_END_MS = Date.parse(COLLECTIVE_FOUNDING_ENDS_AT)
+const BEFORE_INTRO_END = new Date(INTRO_END_MS - 1000)
+const AT_INTRO_END = new Date(INTRO_END_MS)
+
+describe('the Collective Founding intro end date (LIVE-995)', () => {
+  it('is open one second before the end instant and closed at it', () => {
+    expect(collectiveFoundingOpen(BEFORE_INTRO_END)).toBe(true)
+    expect(collectiveFoundingOpen(AT_INTRO_END)).toBe(false)
+    expect(foundingOpenFor('collective_base', false, AT_INTRO_END)).toBe(false)
+    expect(foundingOpenForPlan('collective', false, AT_INTRO_END)).toBe(false)
+  })
+
+  it('does not close while the global beta window is open, and is not the site-wide beta end', () => {
+    expect(foundingOpenFor('collective_base', true, AT_INTRO_END)).toBe(true)
+    expect(COLLECTIVE_FOUNDING_ENDS_LABEL).toBe('January 1')
+    expect(new Date(COLLECTIVE_FOUNDING_ENDS_AT).getUTCMonth()).toBe(0)
+  })
+
+  it('the shared note names the end date', () => {
+    expect(FOUNDING_RATE_NOTE).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
+  })
+
+  it('the static help articles name the same end date', async () => {
+    const { readFileSync } = await import('node:fs')
+    for (const f of ['content/help/spaces/collective.md', 'content/help/spaces/plans-and-pricing.md']) {
+      expect(readFileSync(f, 'utf8')).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
+    }
+  })
+})
+
 describe('foundingOpenFor (ADR-1760: a per-item Founding intro that outlives the beta window)', () => {
   it('while the window is open every item is founding', () => {
     expect(foundingOpenFor('business_base', true)).toBe(true)
@@ -78,7 +112,7 @@ describe('foundingOpenFor (ADR-1760: a per-item Founding intro that outlives the
 
   it('after the cutover only FOUNDING_OPEN_ITEMS stay on the founding price', () => {
     expect([...FOUNDING_OPEN_ITEMS]).toEqual(['collective_base'])
-    expect(foundingOpenFor('collective_base', false)).toBe(true)
+    expect(foundingOpenFor('collective_base', false, BEFORE_INTRO_END)).toBe(true)
     expect(foundingOpenFor('business_base', false)).toBe(false)
     expect(foundingOpenFor('nonprofit_collective', false)).toBe(false)
     expect(foundingOpenFor(null, false)).toBe(false)
@@ -86,7 +120,7 @@ describe('foundingOpenFor (ADR-1760: a per-item Founding intro that outlives the
   })
 
   it('maps a Space plan to its catalog item: Collective open, Business and Network not', () => {
-    expect(foundingOpenForPlan('collective', false)).toBe(true)
+    expect(foundingOpenForPlan('collective', false, BEFORE_INTRO_END)).toBe(true)
     expect(foundingOpenForPlan('business', false)).toBe(false)
     expect(foundingOpenForPlan('network', false)).toBe(false)
     expect(foundingOpenForPlan('free', false)).toBe(false)

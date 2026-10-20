@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Megaphone, Zap } from 'lucide-react'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 export type MarqueeItem = {
   id: string
@@ -20,6 +21,38 @@ export type MarqueeItem = {
 // at a time, pinned under the header) is a different surface and is untouched.
 export function DispatchMarquee({ items }: { items: MarqueeItem[] }) {
   if (items.length === 0) return null
+
+  // Frequency wears the members kit's glass pill (`.ay-ticker`, members-community.css); the motion,
+  // the doubled list and the pause rules are the same ones below.
+  if (SITE_DESIGN === 'frequency') {
+    const kitRow = (hidden: boolean) => (
+      <ul className="ay-ticker-row" aria-hidden={hidden || undefined}>
+        {items.map((d) => (
+          <li key={d.id}>
+            <Link href={`/nearby/${d.id}`} tabIndex={hidden ? -1 : undefined} className="ay-ticker-item">
+              {d.linked ? <Zap aria-hidden /> : <Megaphone aria-hidden />}
+              <span>{d.title}</span>
+              <small>{d.authorName ? `${d.authorName} · ` : ''}{d.timeLabel}</small>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    )
+    return (
+      <section aria-label="Latest Dispatches" data-visual-mask="nearby-dispatch-ticker" className="ay-ticker">
+        <Link href="/nearby?tab=dispatches" aria-label="Dispatches" className="ay-ticker-label">
+          <span className="dot" aria-hidden />
+          <span>Dispatches</span>
+        </Link>
+        <div className="ay-ticker-track">
+          <div className="animate-marquee flex w-max">
+            {kitRow(false)}
+            {kitRow(true)}
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   const row = (hidden: boolean) => (
     <ul className="flex shrink-0 items-center gap-3 pr-3" aria-hidden={hidden || undefined}>

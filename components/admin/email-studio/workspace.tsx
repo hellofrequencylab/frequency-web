@@ -1,5 +1,6 @@
 'use client'
 
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import { Loader2, Mail, Plus, Trash2 } from 'lucide-react'
 import { EmailEditorPane } from './editor-pane'
@@ -33,7 +34,7 @@ export interface EmailWorkspaceActions {
   /** Persist layout / subject / preheader (injected into the editor pane's store + fields). */
   save: (
     id: string,
-    patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+    patch: { layout?: BuilderLayout | EntityLayout | NodeLayout; subject?: string; preheader?: string },
   ) => Promise<{ error?: string }>
   /** Test-send to the operator (injected into the compose toolbar). */
   sendTest: (id: string) => Promise<ActionResult<{ to: string }>>
