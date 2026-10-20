@@ -35,6 +35,33 @@ const MapCanvas = dynamic(() => import('@/components/maps/map-canvas').then((m) 
   loading: () => <div className="evm-ph" aria-hidden="true" />,
 })
 
+/** The tile's backdrop: a real, still basemap under the pins. Pinned to keyless MapLibre so a Google key
+ *  never bills a map load per page view; the SVG below it stays as the paint while tiles arrive. */
+function TileBasemap({ items }: { items: AyMapItem[] }) {
+  const pins: MapPin[] = useMemo(
+    () => items.map((i) => ({ id: i.id, lat: i.lat, lng: i.lng, kind: 'event' as const, label: i.title })),
+    [items],
+  )
+  const center: [number, number] = useMemo(
+    () => [items.reduce((a, i) => a + i.lng, 0) / items.length, items.reduce((a, i) => a + i.lat, 0) / items.length],
+    [items],
+  )
+  return (
+    <span className="evm-tile-live" aria-hidden="true">
+      <MapCanvas
+        engine="maplibre"
+        interactive={false}
+        center={center}
+        zoom={10}
+        pins={pins}
+        cluster={{}}
+        fit={{ padding: 24, maxZoom: 12 }}
+        className="h-full w-full"
+      />
+    </span>
+  )
+}
+
 type When = '' | 'today' | 'week' | 'weekend'
 type Sort = 'soon' | 'near' | 'going'
 
@@ -114,6 +141,7 @@ export function FqMapTile({ items, homeLabel, rail = false }: { items: AyMapItem
           </g>
         ))}
       </svg>
+      {items.length > 0 && <TileBasemap items={items} />}
       <span className="evm-tile-b">
         <span className="evm-tile-k">
           <FqIcon name="map" />
