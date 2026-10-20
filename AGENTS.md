@@ -86,4 +86,4 @@ When the code and a doc disagree, **the code wins**, and the doc is fixed in the
 
 **Admin menu.** Add a row in one of the four registered catalogs (`REGISTERED_CATALOGS` in `scripts/check-menu.mjs`). Never rewrite the rail to add an item. Frozen menu debt may shrink and never grow except the OWN-058 raise (11 → 13) that admitted Circle and Event Settings doors; the count lives in `scripts/check-menu.mjs` and MENU-CONTRACT.
 
-Product-first ([ADR-1403](docs/DECISIONS.md)): do not start Editor / Sites / Etsy / App Platform from a scan or a docs pass.
+Product-first ([ADR-1403](docs/DECISIONS.md)): product work outranks craft when they collide. The older bar on starting Editor / Sites / Etsy / App Platform from a scan or a docs pass is lifted by the owner (2026-10-20, [ADR-1814](docs/DECISIONS.md)): a scan or docs pass may now start those rows.
