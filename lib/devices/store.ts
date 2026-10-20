@@ -117,6 +117,16 @@ export async function readMemberName(profileId: string): Promise<string> {
   }
 }
 
+/** A member's handle, for prefilling the console with the signed-in owner. Null when unset. */
+export async function readMemberHandle(profileId: string): Promise<string | null> {
+  try {
+    const { data } = await createAdminClient().from('profiles').select('handle').eq('id', profileId).maybeSingle()
+    return data?.handle ?? null
+  } catch {
+    return null
+  }
+}
+
 /** The Space's own pin, which a counter scanner is standing on. Null when it has none. */
 export async function readSpacePin(spaceId: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -299,6 +309,79 @@ export async function registerScannerDevice(
     return { id: data.id, secret }
   } catch {
     return null
+  }
+}
+
+/**
+ * Mint a card from the owner's console (the CyberUnicorn plugged into their computer over USB), for the
+ * member with `handle`, valid at THIS Space only. Same token, hash and per-member cap as a scanner-issued
+ * card; `issued_by` stays null because no registered scanner minted it. Gated like every owner write.
+ * The browser writes `SITE_URL/c/<token>` to the card, then binds the chip UID (bindConsoleCard) or, if
+ * the write failed, discards the row (discardConsoleCard), so a card that never left the reader is not
+ * left live.
+ */
+export async function issueCardFromConsole(
+  spaceId: string,
+  handle: string,
+): Promise<{ ok: true; cardId: string; token: string; displayName: string } | { ok: false; reason: 'forbidden' | 'unknown_member' | 'too_many_cards' | 'failed' }> {
+  if (!(await scannerOwnerGate(spaceId, 'write'))) return { ok: false, reason: 'forbidden' }
+  try {
+    const db = createAdminClient()
+    const { data: profile } = await db.from('profiles').select('id, display_name').eq('handle', handle).maybeSingle()
+    if (!profile) return { ok: false, reason: 'unknown_member' }
+    const { count } = await db
+      .from('member_cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', profile.id)
+      .eq('space_id', spaceId)
+      .eq('active', true)
+    if ((count ?? 0) >= SCANNER_LIMITS.cardsPerMember) return { ok: false, reason: 'too_many_cards' }
+    const token = newCardToken()
+    const { data, error } = await db
+      .from('member_cards')
+      .insert({ profile_id: profile.id, space_id: spaceId, token_hash: sha256Hex(token), issued_by: null })
+      .select('id')
+      .maybeSingle()
+    if (error || !data) return { ok: false, reason: 'failed' }
+    return { ok: true, cardId: data.id, token, displayName: profile.display_name?.trim() || 'Member' }
+  } catch {
+    return { ok: false, reason: 'failed' }
+  }
+}
+
+/** Bind the chip the console just wrote to its card, so a copy on another chip is refused at the
+ *  counter. Fills an empty uid_hash only, scoped by space_id. */
+export async function bindConsoleCard(spaceId: string, cardId: string, uidHash: string): Promise<boolean> {
+  if (!(await scannerOwnerGate(spaceId, 'write'))) return false
+  try {
+    const { error } = await createAdminClient()
+      .from('member_cards')
+      .update({ uid_hash: uidHash })
+      .eq('id', cardId)
+      .eq('space_id', spaceId)
+      .is('uid_hash', null)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** Remove a console-minted card whose write never landed. Only an unbound, never-used, console-minted
+ *  row goes, so this can never delete a card that is out in the world. */
+export async function discardConsoleCard(spaceId: string, cardId: string): Promise<boolean> {
+  if (!(await scannerOwnerGate(spaceId, 'write'))) return false
+  try {
+    const { error } = await createAdminClient()
+      .from('member_cards')
+      .delete()
+      .eq('id', cardId)
+      .eq('space_id', spaceId)
+      .is('issued_by', null)
+      .is('uid_hash', null)
+      .is('last_used_at', null)
+    return !error
+  } catch {
+    return false
   }
 }
 
