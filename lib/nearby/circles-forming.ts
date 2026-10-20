@@ -12,13 +12,13 @@ export type FormingCircle = {
   created_at: string
 }
 
-export type CirclesForming = {
+type CirclesForming = {
   circles: FormingCircle[]
   /** The city the list is scoped to, or null when it is the community-wide newest. */
   city: string | null
 }
 
-export const CIRCLES_FORMING_COUNT = 5
+const CIRCLES_FORMING_COUNT = 5
 
 const same = (a: string | null | undefined, b: string): boolean =>
   !!a && a.trim().toLowerCase() === b
