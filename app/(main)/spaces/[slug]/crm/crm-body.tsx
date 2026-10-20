@@ -7,14 +7,18 @@ import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { ensureSpaceStages } from '@/lib/crm/pipeline'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
-import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
-import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
-import { CrmViewTabs, crmConversationsHref, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
-import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
-import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
+import {
+  SpacePipeline,
+  CrmFunnelPanel,
+  SpaceContacts,
+  CrmViewTabs,
+  crmConversationsHref,
+  type CrmView,
+  SpaceTasks,
+  ImportContactsForm,
+  SegmentFieldsManager,
+} from '@/modules/crm'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
-import { SegmentFieldsManager } from '@/components/spaces/crm/segment-fields-manager'
 import { listSegmentFieldTemplates } from '@/lib/crm/segment-fields'
 import { listSpaceCustomFields } from '@/lib/crm/import/store'
 import { SpaceCockpitBand } from './space-cockpit-band'
