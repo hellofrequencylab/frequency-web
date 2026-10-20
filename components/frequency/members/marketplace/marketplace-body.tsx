@@ -342,10 +342,7 @@ export function FqStoreBody({ products }: { products: MarketItem[] }) {
       </div>
       <FqHiddenAreaNote area="shop" />
       {items.length === 0 ? (
-        <div className="empty stack">
-          <span className="h3">The Store is being stocked</span>
-          <span className="t2">Merch, event passes and retreats are coming. Check back soon.</span>
-        </div>
+        <EmptyState title="The Store is being stocked" description="Merch, event passes and retreats are coming. Check back soon." />
       ) : (
         <FqItemGrid sections={[{ items }]} placeholder="Search the Store" />
       )}
@@ -475,16 +472,14 @@ export function FqHousingBody({
       )}
 
       {items.length === 0 ? (
-        <div className="empty stack">
-          <span className="h3">{savedOnly ? 'Nothing saved yet' : hasFacets ? 'Nothing matches those filters' : 'No housing listed near you yet'}</span>
-          <span className="t2">
-            {savedOnly
+        <EmptyState
+          title={savedOnly ? 'Nothing saved yet' : hasFacets ? 'Nothing matches those filters' : 'No housing listed near you yet'}
+          description={savedOnly
               ? 'Tap the heart on a home to keep it here.'
               : hasFacets
                 ? 'Try widening the price range or clearing an amenity.'
                 : 'List a room, a rental or a sublet. Roommate listings match to members you would get along with.'}
-          </span>
-        </div>
+        />
       ) : (
         <FqItemGrid sections={[{ items }]} placeholder="Search housing" nearMe={homes.some((h) => h.lat != null)} />
       )}
