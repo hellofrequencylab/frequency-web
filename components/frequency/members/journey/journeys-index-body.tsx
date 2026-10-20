@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import { phStyle } from '@/components/frequency/members/shared/avatar'
@@ -119,26 +120,26 @@ export function JourneysIndexBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">The Quest · Journeys</span>
-          <h1 className="h1">
-            <SerifTail text={title} />
-          </h1>
-          {description && <span className="meta">{description}</span>}
-        </div>
-        <div className="row wrap">
-          <NewJourneyButton canCreate={canBuild} className="btn pa" />
-          <Link className="btn" href="/journeys/mine">
-            Your journeys
-          </Link>
-          {cta && (
-            <a className="btn" href={cta.href}>
-              {cta.label}
-            </a>
-          )}
-        </div>
-      </div>
+      <MemberHead
+        kicker="The Quest · Journeys"
+        title={<SerifTail text={title} />}
+        meta={description}
+        actions={
+          <>
+            <div className="row wrap">
+              <NewJourneyButton canCreate={canBuild} className="btn pa" />
+              <Link className="btn" href="/journeys/mine">
+                Your journeys
+              </Link>
+              {cta && (
+                <a className="btn" href={cta.href}>
+                  {cta.label}
+                </a>
+              )}
+            </div>
+          </>
+        }
+      />
       {intro && <div className="body mc-bottom-24">{intro}</div>}
 
       {active.length > 0 && (

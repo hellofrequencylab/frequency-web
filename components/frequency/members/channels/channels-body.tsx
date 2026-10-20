@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import '@/app/themes/active/members-b'
@@ -168,28 +169,28 @@ export function FqChannelsBody({
 
   return (
     <MembersBody>
-      <div className="head">
-        <div>
-          <span className="k">Community</span>
-          <h1 className="h1">
-            <SerifTail text={content.title} />
-          </h1>
-          <span className="meta">Topics to tune into. Follow a Channel and its conversations reach your feed.</span>
-        </div>
-        <div className="row wrap">
-          {canCreate && (
-            <NewChannelCompose
-              pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
-              buttonClass="btn pa sm"
-            />
-          )}
-          {content.ctaLabel && content.ctaHref && (
-            <a className="btn sm" href={content.ctaHref}>
-              {content.ctaLabel}
-            </a>
-          )}
-        </div>
-      </div>
+      <MemberHead
+        kicker="Community"
+        title={<><SerifTail text={content.title} /></>}
+        meta="Topics to tune into. Follow a Channel and its conversations reach your feed."
+        actions={
+          <>
+            <div className="row wrap">
+              {canCreate && (
+                <NewChannelCompose
+                  pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
+                  buttonClass="btn pa sm"
+                />
+              )}
+              {content.ctaLabel && content.ctaHref && (
+                <a className="btn sm" href={content.ctaHref}>
+                  {content.ctaLabel}
+                </a>
+              )}
+            </div>
+          </>
+        }
+      />
       {content.body && <p className="body fqm-intro">{content.body}</p>}
 
       <div className="fqm-tools">

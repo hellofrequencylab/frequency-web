@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
@@ -119,21 +120,22 @@ export function FqClassifiedsBody({
 
   return (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community · Marketplace</span>
-          <h2 className="h1">
-            Swap it <span className="serif">locally.</span>
-          </h2>
-          <span className="meta">{meta}</span>
-        </div>
-        {signedIn && (
-          <Link className="btn pa sm" href="/classifieds/new">
-            <FqIcon name="tip" />
-            Post a listing
-          </Link>
-        )}
-      </div>
+      <MemberHead
+        kicker="Community · Marketplace"
+        title={<>Swap it <span className="serif">locally.</span></>}
+        meta={meta}
+        as="h2"
+        actions={
+          <>
+            {signedIn && (
+              <Link className="btn pa sm" href="/classifieds/new">
+                <FqIcon name="tip" />
+                Post a listing
+              </Link>
+            )}
+          </>
+        }
+      />
       <Intro {...intro} />
       <FqHiddenAreaNote area="market" />
 
@@ -241,28 +243,29 @@ export function FqMarketBody({
 
   return (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community · Market</span>
-          <h2 className="h1">
-            Buy from your <span className="serif">community.</span>
-          </h2>
-          <span className="meta">
+      <MemberHead
+        kicker="Community · Market"
+        title={<>Buy from your <span className="serif">community.</span></>}
+        meta={<>
             Buy direct, the seller gets paid, the fee stays low · {counts.total} {counts.total === 1 ? 'listing' : 'listings'}
-          </span>
-        </div>
-        {signedIn && (
-          <div className="row wrap">
-            <Link className="btn pa sm" href="/market/sell">
-              <FqIcon name="plus" />
-              List a product
-            </Link>
-            <Link className="btn sm" href="/market/manage">
-              My storefront
-            </Link>
-          </div>
-        )}
-      </div>
+          </>}
+        as="h2"
+        actions={
+          <>
+            {signedIn && (
+              <div className="row wrap">
+                <Link className="btn pa sm" href="/market/sell">
+                  <FqIcon name="plus" />
+                  List a product
+                </Link>
+                <Link className="btn sm" href="/market/manage">
+                  My storefront
+                </Link>
+              </div>
+            )}
+          </>
+        }
+      />
       <FqHiddenAreaNote area="makers" />
 
       <nav className="chips fqm-chips" aria-label="Group">
@@ -329,17 +332,9 @@ export function FqStoreBody({ products }: { products: MarketItem[] }) {
   })
   return (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community · Store</span>
-          <h2 className="h1">
-            Wear it, gift it, <span className="serif">show up.</span>
-          </h2>
-          <span className="meta">
+      <MemberHead kicker="Community · Store" title={<>Wear it, gift it, <span className="serif">show up.</span></>} meta={<>
             Frequency merch, event passes and retreats, straight from us to you · {products.length} in stock · flat shipping
-          </span>
-        </div>
-      </div>
+          </>} as="h2" />
       <FqHiddenAreaNote area="shop" />
       {items.length === 0 ? (
         <EmptyState title="The Store is being stocked" description="Merch, event passes and retreats are coming. Check back soon." />
@@ -402,24 +397,25 @@ export function FqHousingBody({
   const typeHref = (slug?: string) => (slug ? `/housing?type=${slug}` : '/housing')
   return (
     <>
-      <div className="head">
-        <div>
-          <span className="k">Community · Housing</span>
-          <h2 className="h1">
-            Find your place, and <span className="serif">your people.</span>
-          </h2>
-          <span className="meta">Rentals, sublets and roommates who fit · {homes.length} {homes.length === 1 ? 'listing' : 'listings'}</span>
-        </div>
-        <div className="row wrap">
-          <Link className="btn sm" href="/housing/roommates">
-            Find a roommate
-          </Link>
-          <Link className="btn pa sm" href="/housing/new">
-            <FqIcon name="plus" />
-            List housing
-          </Link>
-        </div>
-      </div>
+      <MemberHead
+        kicker="Community · Housing"
+        title={<>Find your place, and <span className="serif">your people.</span></>}
+        meta={<>Rentals, sublets and roommates who fit · {homes.length} {homes.length === 1 ? 'listing' : 'listings'}</>}
+        as="h2"
+        actions={
+          <>
+            <div className="row wrap">
+              <Link className="btn sm" href="/housing/roommates">
+                Find a roommate
+              </Link>
+              <Link className="btn pa sm" href="/housing/new">
+                <FqIcon name="plus" />
+                List housing
+              </Link>
+            </div>
+          </>
+        }
+      />
       <FqHiddenAreaNote area="housing" />
 
       <nav className="chips fqm-chips lg" aria-label="Property type">
