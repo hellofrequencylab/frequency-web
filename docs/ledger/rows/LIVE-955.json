@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-955",
+  "title": "Set the day, time and place for The Group's Masterminds, Wellness and Pickleball circles",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "wave": "W7",
+  "source": {
+    "file": "scripts/seed-the-group.mts",
+    "ref": "The Group handoff (2026-10-19): Paste README 'Not in this paste (section B)'."
+  },
+  "detail": "Section B of The Group handoff. The three circles exist under the Network Space (seed NETWORK_CIRCLES, paste C7) with the placeholder meetup \"...once June confirms the schedule.\" No schedule is invented. WAITS ON JUNE: the day, time and place for each circle. When she answers, set them in each Circle's settings (circle_profiles.meetup), or hand the answers to a thread to write a guarded paste.",
+  "notes": "Filed 2026-10-20 at Daniel's request (\"Put June's work in the backlog\"). Open and blocked on June An's answers, not on code. Not parked: parking needs a ruling ADR (HYG-161).",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-20",
+    "evidence": "OPEN. Closes when June has given the day, time and place for Masterminds, Wellness and Pickleball and each Circle's meetup text no longer reads \"once June confirms the schedule.\" in production."
+  }
+}

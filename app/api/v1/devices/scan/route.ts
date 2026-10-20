@@ -3,7 +3,7 @@ import { admitDevice, deviceFail, deviceJson } from '@/lib/devices/http'
 import { normalizeCardToken, normalizeUid } from '@/lib/devices/credentials'
 import { scanCard } from '@/lib/devices/scan'
 
-// POST /api/v1/devices/scan (LIVE-1113, docs/LOYALTY.md "Counter scanners"): a Space's counter scanner
+// POST /api/v1/devices/scan (LIVE-1125, docs/LOYALTY.md "Counter scanners"): a Space's counter scanner
 // read a member's NFC card. Auth is the DEVICE header (`X-Frequency-Device: <id>.<secret>`), never a
 // member session: the device pins the Space, the card pins the member, and lib/devices/scan.ts runs the
 // Space's own check-in through captureNode, the pipeline the member's phone runs at the door code.

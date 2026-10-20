@@ -715,7 +715,7 @@ Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production
 
 Then set `LOYALTY_ENABLED` to `1`, `true` or `on` and redeploy. To stop: unset it. Earned rewards stay readable on `/rewards` and in the owner roster; nothing is deleted.
 
-### Counter scanners (LIVE-1113)
+### Counter scanners (LIVE-1125)
 
 `SCANNER_DEVICES_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`). Off, `/api/v1/devices/scan` and `/api/v1/devices/cards` answer 404 (the scanner firmware reads that as "backend not set up"), `/c/<token>` sends the visitor straight to `/rewards`, and the Check-in panel says scanners are not open. Contract and trust model: `docs/LOYALTY.md` section 7.
 

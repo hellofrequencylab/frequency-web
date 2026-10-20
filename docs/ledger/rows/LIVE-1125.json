@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1125",
+  "title": "A Space's counter scanner checks a member in by tapping their NFC card, through the same capture the door code runs",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "§7 Counter scanners. Owner ask 2026-10-19: the CyberUnicorn 5000 (ESP32 + PN532) reads a member card at the counter; its firmware is built against this contract."
+  },
+  "detail": "FILED AND CLOSED 2026-10-19. PREMISE RE-TESTED: every /api/v1 endpoint credited only the signed-in caller; there was no device auth, no member-card table and no UID mapping anywhere in code, docs or backlog. Built: migration 20270346011500_scanner_devices.sql (scanner_devices, member_cards; service role only, internal in table-grants). lib/devices: credentials (device secret 32 bytes and card token 16 bytes, base64url, stored as sha256; chip UID stored as an HMAC under the node-code key, bound on first scan), store (device auth by id then constant-time hash compare; owner gate canEditProfile plus the per-Space check-in function, janitor read only), scan (card -> Space check-in node via readCheckinNode -> captureNode with a freshly signed node code and the Space's own pin, so ledger, stamps, Zaps, hunts and the CRM timeline run unchanged). POST /api/v1/devices/scan and /api/v1/devices/cards authenticate with X-Frequency-Device (never a bearer), answer flat { ok, reason? } JSON, 404 while SCANNER_DEVICES_ENABLED is off, and rate-limit by address then by device. GET /c/<token> sends the reader to their own /rewards (or sign-in). Owner panel: Check-in, Counter scanners (register with the key shown once, revoke scanners and cards). OPEN EVIDENCE 2026-10-19: the migration is unapplied and SCANNER_DEVICES_ENABLED is off everywhere; the gate is docs/RUNBOOKS.md Counter scanners.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const bad=[];const scan=r('lib/devices/scan.ts');if(!/readCheckinNode\\(/.test(scan)||!/captureNode\\(/.test(scan)||!/signNodeCode\\(/.test(scan))bad.push('the scan no longer runs the Space check-in through captureNode');const http=r('lib/devices/http.ts');if(!/DEVICE_HEADER/.test(http)||/authorization/i.test(http))bad.push('device auth is not the X-Frequency-Device header');const st=r('lib/devices/store.ts');if(!/secret_hash: sha256Hex\\(secret\\)/.test(st)||!/token_hash: sha256Hex\\(token\\)/.test(st))bad.push('a secret or token is stored in the clear');if(!/scannerOwnerGate\\(spaceId, 'write'\\)/.test(st))bad.push('owner writes are ungated');for(const p of ['app/api/v1/devices/scan/route.ts','app/api/v1/devices/cards/route.ts','app/c/[token]/route.ts','lib/devices/scan.test.ts','lib/devices/credentials.test.ts','app/api/v1/devices/scan/route.test.ts'])if(!fs.existsSync(p))bad.push('missing '+p);const g=r('scripts/table-grants.txt');if(!/^scanner_devices\\s+internal/m.test(g)||!/^member_cards\\s+internal/m.test(g))bad.push('the tables are not service-role only');if(bad.length){console.error('LIVE-1125: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the scan stops handing the Space check-in to captureNode, when device auth moves off the device header, when a secret or token is stored in the clear, when the owner writes lose their gate, when a route or its test is deleted, or when either table stops being service-role only. Behaviour is lib/devices/*.test.ts and the route tests in the test job.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W7"
+}

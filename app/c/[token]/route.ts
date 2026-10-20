@@ -5,7 +5,7 @@ import { cardTokenIsLive, scannerDevicesEnabled } from '@/lib/devices/store'
 
 export const dynamic = 'force-dynamic'
 
-// /c/<token> (LIVE-1113, docs/LOYALTY.md "Counter scanners"): what a member card opens on a phone. The
+// /c/<token> (LIVE-1125, docs/LOYALTY.md "Counter scanners"): what a member card opens on a phone. The
 // card's NDEF URI is this link, so tapping it sends the member to their own Regulars cards on /rewards,
 // through sign-in when they are signed out. It checks NOBODY in: a check-in needs the Space's scanner
 // (POST /api/v1/devices/scan) or the door code. A phone tap shows the reader's OWN cards, never the

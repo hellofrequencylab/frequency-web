@@ -1,5 +1,6 @@
 import 'server-only'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import type { EmailBrand } from '@/lib/comms/email-brand'
 import { palette } from '@/lib/theme/palette'
 import { emailType } from '@/lib/theme/email-type'
@@ -74,22 +75,41 @@ function brandHeaderHtml(brand: EmailBrand): string {
   </div>`
 }
 
-/** The Frequency wordmark, centred (the image already carries "Community Collective"; the alt text says
- *  it for clients that block images). Absolute URL, as mail needs. */
-function frequencyMarkHtml(): string {
+/** The Frequency wordmark as an <img> (the image already carries "Community Collective"; the alt text says
+ *  it for clients that block images). Absolute URL, as mail needs. `scale` sizes it off the design's width. */
+function wordmarkImg(scale: number): string {
   const { path, width, height } = emailType.wordmark
-  const w = Math.round(width * 0.7)
-  const h = Math.round(height * 0.7)
-  return `<div style="text-align:center"><img src="${APP}${path}" alt="${SITE_NAME} ${SITE_TAGLINE}" width="${w}" height="${h}" style="display:inline-block;width:${w}px;height:${h}px;border:0"></div>`
+  const w = Math.round(width * scale)
+  const h = Math.round(height * scale)
+  return `<img src="${APP}${path}" alt="${SITE_NAME} ${SITE_TAGLINE}" width="${w}" height="${h}" style="display:block;width:${w}px;height:${h}px;border:0">`
 }
 
-/** The Space-branded footer: a link back to the Space's page, the Frequency mark with Community
- *  Collective, then one small line. Frequency is the "sent with", not the masthead. */
-function brandFooterHtml(brand: EmailBrand): string {
+/** The header mark: the wordmark top left, above the card, linking to the home feed. */
+function headerMarkHtml(): string {
+  return `<div style="max-width:600px;margin:0 auto 16px"><a href="${APP}/feed" style="display:inline-block;text-decoration:none">${wordmarkImg(0.85)}</a></div>`
+}
+
+/** The footer every conversation email shares with the platform's other templates (the Studio shell's
+ *  legal footer): a link back to the Space when there is one, the small Frequency mark, Privacy, Terms and
+ *  Help, Manage emails, the "Sent with" line, then the copyright and CAN-SPAM postal line. A 1:1 reply
+ *  carries no one-click Unsubscribe (it is not bulk mail); Manage emails opens the preference page. */
+function footerHtml(brand?: EmailBrand | null): string {
+  const link = (href: string, label: string, strong = false): string =>
+    `<a href="${esc(href)}" style="color:${strong ? palette.emailHeading : palette.emailSubtle};${strong ? 'font-weight:600;' : ''}text-decoration:underline">${label}</a>`
+  const dot = ' &middot; '
+  const back = brand
+    ? `<div style="margin-bottom:16px">${link(brand.url, `Back to ${esc(brand.name)} on ${SITE_NAME}`, true)}</div>`
+    : ''
+  const sentWith = brand
+    ? `${link(APP, `Sent with ${SITE_NAME}`)}${dot}${link(brand.url, esc(brand.name))}`
+    : `${SITE_TAGLINE}. ${link(APP, 'frequencylocal.com')}`
   return `<div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
-    <div style="margin-bottom:16px"><a href="${esc(brand.url)}" style="color:${palette.emailHeading};font-weight:600;text-decoration:underline">Back to ${esc(brand.name)} on ${SITE_NAME}</a></div>
-    ${frequencyMarkHtml()}
-    <div style="margin-top:12px"><a href="${APP}" style="color:${palette.emailSubtle}">Sent with ${SITE_NAME}</a> · <a href="${esc(brand.url)}" style="color:${palette.emailSubtle}">${esc(brand.name)}</a></div>
+    ${back}
+    <a href="${APP}" style="display:inline-block;text-decoration:none">${wordmarkImg(0.55)}</a>
+    <div style="margin-top:12px">${link(`${APP}/privacy`, 'Privacy')}${dot}${link(`${APP}/terms`, 'Terms')}${dot}${link(`${APP}/help`, 'Help')}</div>
+    <div style="margin-top:8px">${link(`${APP}/manage-emails`, 'Manage emails')}</div>
+    <div style="margin-top:8px">${sentWith}</div>
+    <div style="margin-top:8px;font-size:12px">&copy; ${new Date().getFullYear()} ${esc(PLATFORM_POSTAL_LINE)}</div>
   </div>`
 }
 
@@ -99,30 +119,17 @@ const PAGE_STYLE = `margin:0;padding:32px 16px 40px;background-color:${palette.e
 const CARD_STYLE = `max-width:600px;margin:0 auto;padding:32px 32px 28px;background:${palette.surface};border:1px solid ${palette.emailBorder};border-radius:24px;${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}`
 const BODY_STYLE = `font-size:16px;line-height:1.55;color:${palette.emailBody}`
 
-/** Wrap inner message HTML in the Frequency email look: the wash page, the raised card with the Frequency
- *  wordmark (or, with a brand, the Space's name) above the message, and the small footer line below. */
+/** Wrap inner message HTML in the Frequency email look: the wash page, the Frequency wordmark top left
+ *  (linking to the home feed), the raised card (headed by the Space's name when there is a brand), and the
+ *  shared footer below. */
 export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null): string {
-  if (brand) {
-    return `<div style="${PAGE_STYLE}">
-  <div style="${CARD_STYLE}">
-    ${brandHeaderHtml(brand)}
-    <div style="${BODY_STYLE}">${innerHtml}</div>
-  </div>
-  ${brandFooterHtml(brand)}
-</div>`
-  }
   return `<div style="${PAGE_STYLE}">
+  ${headerMarkHtml()}
   <div style="${CARD_STYLE}">
-    <div style="padding:0 0 18px">
-      <div style="font-family:${emailType.display};font-weight:${emailType.displayWeight};font-size:17px;letter-spacing:${emailType.displayTracking};color:${palette.emailHeading}">${SITE_NAME}</div>
-      <div style="margin-top:3px;font-weight:700;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:${palette.emailSubtle}">${SITE_TAGLINE}</div>
-    </div>
+    ${brand ? brandHeaderHtml(brand) : ''}
     <div style="${BODY_STYLE}">${innerHtml}</div>
   </div>
-  <div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
-    ${frequencyMarkHtml()}
-    <div style="margin-top:12px">${SITE_TAGLINE}. <a href="${APP}" style="color:${palette.emailSubtle}">frequencylocal.com</a></div>
-  </div>
+  ${footerHtml(brand)}
 </div>`
 }
 
@@ -134,7 +141,8 @@ const TEXT_FOOTER = `\n\n${SITE_TAGLINE} · ${APP}`
 
 /** The plain-text footer: the platform line, or the brand's "Sent with Frequency" line. */
 function textFooter(brand?: EmailBrand | null): string {
-  return brand ? `\n\nSent with ${SITE_NAME} · ${APP}\n${brand.name} · ${brand.url}` : TEXT_FOOTER
+  const lead = brand ? `\n\nSent with ${SITE_NAME} · ${APP}\n${brand.name} · ${brand.url}` : TEXT_FOOTER
+  return `${lead}\nPrivacy: ${APP}/privacy · Terms: ${APP}/terms · Help: ${APP}/help\nManage emails: ${APP}/manage-emails\n${PLATFORM_POSTAL_LINE}`
 }
 
 /** Render a single reply body (+ optional signature) as a full branded email. */

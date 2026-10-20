@@ -88,7 +88,7 @@ One tap system, all in the web app, before the iOS app:
 Every phase reads `envFlag('LOYALTY_ENABLED')` until the launch switch is thrown; the gate lives in
 `docs/RUNBOOKS.md`.
 
-## 7. Counter scanners (`LIVE-1113`)
+## 7. Counter scanners (`LIVE-1125`)
 
 The door code turned around: instead of the member's phone reading the Space's code, the Space's own
 card reader (the CyberUnicorn 5000, an ESP32 with a PN532) reads the **member's** card at the

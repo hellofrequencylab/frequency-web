@@ -5,7 +5,7 @@ import { ScannerPanel } from '@/components/spaces/loyalty/scanner-panel'
 import { listMemberCards, listScannerDevices, scannerDevicesEnabled } from '@/lib/devices/store'
 import type { Space } from '@/lib/spaces/types'
 
-// COUNTER SCANNERS, the owner side (LIVE-1113, docs/LOYALTY.md "Counter scanners"). Lives in the Check-in
+// COUNTER SCANNERS, the owner side (LIVE-1125, docs/LOYALTY.md "Counter scanners"). Lives in the Check-in
 // panel next to Regulars because a scanner checks members in on THIS Space's door node: a card tap at
 // the counter is the same check-in as a phone scan at the door. No new module, panel or menu row
 // (MENU-CONTRACT). While SCANNER_DEVICES_ENABLED is off the section says so and shows nothing to edit.

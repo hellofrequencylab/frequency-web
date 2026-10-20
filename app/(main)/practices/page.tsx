@@ -12,6 +12,10 @@ import { Input } from '@/components/ui/field'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
+import { MemberHead } from '@/components/frequency/members/shared/member-head'
+import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
 // activity · Pillar balance · your practices), the ranked best-of catalog of practices AND journeys
@@ -115,6 +119,68 @@ export default async function PracticesPage({
   // ('/images/site/meditation-circle.jpg') is the '/practices' row of INDEX_HERO_DEFAULTS. The
   // page-content hero is passed explicitly because this page has already resolved it for its copy.
   const hero = await resolveIndexHero('/practices', { contentImage: contentHero })
+
+  // FREQUENCY (LIVE-935): the shared member header, the kit's search pill and Sort chips, then the
+  // same module-driven page. Every control the DAWN toolbar has stays: search, the four sorts, the
+  // admin hidden toggle, New practice, Review queue and the operator CTA.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <MembersBody>
+        <MemberHead
+          kicker="The Quest · Practices"
+          title={<SerifTail text={title} />}
+          meta={description}
+          actions={
+            signedIn || (ctaLabel && ctaHref) ? (
+              <div className="row wrap">
+                {signedIn && <NewPracticeButton canCreate={canCreatePractice} className="btn pa" />}
+                {canReview && (
+                  <Link href="/library/review" className="btn">
+                    Review queue
+                  </Link>
+                )}
+                {ctaLabel && ctaHref && (
+                  <a href={ctaHref} className="btn">
+                    {ctaLabel}
+                  </a>
+                )}
+              </div>
+            ) : undefined
+          }
+        />
+        {body && <div className="body mc-bottom-24">{body}</div>}
+        <div className="fqm-tools">
+          <FqFindField
+            action="/practices"
+            value={qParam}
+            placeholder="Search practices"
+            keep={{ pillar: sp.pillar, sub: sp.sub, tag: sp.tag, sort: sort !== 'trending' ? sort : undefined, hidden: showHidden ? '1' : undefined }}
+          />
+          <nav className="chips" aria-label="Sort practices">
+            {SORTS.map((x) => (
+              <Link
+                key={x.key}
+                href={href({ sort: x.key === 'trending' ? undefined : x.key })}
+                scroll={false}
+                className={sort === x.key ? 'chip on' : 'chip'}
+                aria-current={sort === x.key ? 'true' : undefined}
+              >
+                {x.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link href={href({ hidden: showHidden ? undefined : '1' })} className={showHidden ? 'chip on' : 'chip'} title="Admin: include hidden practices">
+                {showHidden ? 'Hidden shown' : 'Show hidden'}
+              </Link>
+            )}
+          </nav>
+        </div>
+        <div className="space-y-8">
+          <PageModules route="/practices" />
+        </div>
+      </MembersBody>
+    )
+  }
 
   return (
     <IndexTemplate

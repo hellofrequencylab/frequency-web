@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Download, Link2, QrCode } from 'lucide-react'
+import { CheckinNfcWriter } from './checkin-nfc-writer'
 
 // THE CHECK-IN QR CARD (ENTITY-SPACES-BUILD §C, Phase 2). A client card that DISPLAYS a check-in
 // node's QR (pre-rendered server-side via the existing lib/qr helpers, passed in as `svg`) and offers
@@ -67,6 +68,7 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
               <Download className="h-3.5 w-3.5" aria-hidden /> SVG
             </a>
           </div>
+          <CheckinNfcWriter link={link} />
         </div>
       </div>
     </div>
