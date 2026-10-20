@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import '@/app/themes/active/members-b'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { SPACE_KINDS, isSpaceKind, spaceKindLabel } from '@/lib/spaces/categories'
@@ -242,24 +243,30 @@ export function FqSpacesBody({
             )}
           </>
         ) : (
-          <>
-            <SystemNotice
-              icon={params.following === '1' ? 'space' : 'search'}
+          <div className="stack">
+            <EmptyState
+              variant={filtering ? 'no-results' : 'first-use'}
               title={
                 params.following === '1'
                   ? 'You are not following any Spaces yet.'
                   : filtering
                     ? 'No Spaces match.'
-                    : 'Every Space is in the rows above.'
+                    : featured.length + founding.length > 0
+                      ? 'Every Space is in the rows above.'
+                      : 'No Spaces here yet.'
               }
-              body={
-                params.following === '1'
-                  ? 'Follow a Space from its page and its Circles and Events show up here.'
-                  : filtering
-                    ? 'Try a wider search, or start from a kind of Space below.'
-                    : 'More will appear here as Spaces open their doors.'
+              description={
+                filtering
+                  ? 'Try a wider search, or start from a kind of Space below.'
+                  : 'A Space is the home a studio, a shop or a nonprofit keeps here. If you run something in town, this is where it goes.'
               }
-              actions={filtering ? [{ href: BASE, label: 'See every Space', primary: true }] : undefined}
+              action={
+                filtering ? (
+                  <Link className="btn sm" href={BASE}>
+                    See every Space
+                  </Link>
+                ) : undefined
+              }
             />
             {filtering && (
               <nav className="chips" aria-label="Try a kind of Space">
@@ -270,7 +277,7 @@ export function FqSpacesBody({
                 ))}
               </nav>
             )}
-          </>
+          </div>
         )}
       </section>
 
