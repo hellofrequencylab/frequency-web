@@ -20,7 +20,7 @@ describe('/join/[slug] on the Frequency design (SCAN-852)', () => {
       <FrequencyCircleInvite
         circle={{ name: 'Dawn Run', about: 'Mornings', type: 'public', memberCount: 1, hubName: 'North County' }}
         spotsLeft={3}
-        action={<a href="/sign-in">Sign in to join</a>}
+        action={<button type="button">Sign in to join</button>}
       />,
     )
     expect(html).toContain('public circle · North County')
