@@ -379,6 +379,58 @@ export type Database = {
           },
         ]
       }
+      device_relay_settings: {
+        Row: {
+          created_at: string
+          device_id: string
+          owner_profile_id: string | null
+          relay_allowed_cmds: string[]
+          relay_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          owner_profile_id?: string | null
+          relay_allowed_cmds?: string[]
+          relay_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          owner_profile_id?: string | null
+          relay_allowed_cmds?: string[]
+          relay_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_relay_settings_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "scanner_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_relay_settings_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_relay_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scanner_devices: {
         Row: {
           active: boolean
@@ -19803,6 +19855,16 @@ export type Database = {
       recompute_community_level: {
         Args: { p_profile: string }
         Returns: undefined
+      }
+      relay_manageable_devices: {
+        Args: { p_profile_id: string }
+        Returns: {
+          device_id: string
+          space_id: string
+          label: string
+          relay_enabled: boolean
+          last_seen_at: string | null
+        }[]
       }
       record_qr_scan: {
         Args: {

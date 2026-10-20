@@ -194,3 +194,51 @@ sign-in when signed out), or `/code-unavailable` for a revoked card. It checks n
 curl -s -X POST localhost:3000/api/v1/devices/cards -H 'content-type: application/json' -H "X-Frequency-Device: $KEY" -d '{"member_handle":"maya"}'
 curl -s -X POST localhost:3000/api/v1/devices/scan -H 'content-type: application/json' -H "X-Frequency-Device: $KEY" -d '{"card_token":"<token>","uid":"04A21F9C"}'
 ```
+
+## 8. Internet relay (`LIVE-1155`, [ADR-1870](DECISIONS.md))
+
+The owner's phone controls a registered device (the CyberUnicorn 5000) from any network. Both are
+**clients** of Supabase Realtime and meet on one private Broadcast channel, `device:<scanner id>`, so
+neither opens a port. The device side and the payloads are the CyberUnicorn remote protocol v1,
+section 6 (`cyberpunkunicorn-os/apps/remote/PROTOCOL.md`): the phone broadcasts `rpc` with
+`{line:"rpc {...}"}`, the device answers `reply` / `evt` with the `@rpc` / `@evt` line, and
+`track()`s presence. Behind `DEVICE_RELAY_ENABLED` (envFlag, needs `SCANNER_DEVICES_ENABLED`); the
+gate is in `docs/RUNBOOKS.md` "Internet relay".
+
+**Pieces.** Migration `20270346015500_device_relay.sql`. `lib/devices/relay.ts` (the token, pure) and
+`lib/devices/relay-store.ts` (IO). Routes `POST /api/v1/devices/realtime-token` (device wire),
+`GET /api/v1/me/devices` and `PATCH /api/v1/me/devices/{id}` (app contract, bearer or cookie).
+
+**Who manages a device.** One SQL rule, `public.relay_manageable_devices(profile)`: the device is
+active and the profile is its personal owner (`device_relay_settings.owner_profile_id`), the owner of
+its Space, or an active admin of its Space. The phone's list and the channel policy both call it.
+
+**The device token.** `POST /api/v1/devices/realtime-token` with `X-Frequency-Device` and no body.
+Reply `{ok:true, token, expires_at, channel, realtime_url, apikey, allowed_cmds}`. The token is an
+HS256 JWT signed with `SUPABASE_JWT_SECRET`, 15 minutes, claims `role: "anon"`, `sub` and
+`device_id` = the device id, `frequency_kind: "device"`. Refusals: 404 `not_enabled`, 401
+`device_unauthorized`, 429 `rate_limited` (10 a minute per device), 503 `not_configured` (no secret),
+200 `ok:false` `relay_disabled` (the manager switched it off, or never on). The device re-mints about
+two minutes before `expires_at` or on a 401, and sends the new token as an `access_token` push.
+
+Two differences from the protocol draft, both on purpose: `sub` is the bare device id (a uuid; a
+`device:` prefix would make `auth.uid()` raise in any other policy Realtime evaluates), and the role
+is `anon`, not `authenticated` (in PostgREST the token reaches only what a signed-out visitor can).
+
+**Realtime authorization.** Four policies on `realtime.messages`, Broadcast and Presence only:
+
+| Who | Role | May receive and send on |
+|---|---|---|
+| A device token | `anon` + `frequency_kind = device` | `device:<its device_id>`, while active with the relay on |
+| A member session | `authenticated` | `device:<id>` for a device they manage whose relay is on |
+
+Realtime checks policies at join and on token refresh, not on every message. The command allow-list
+(`allowed_cmds`, never `cli.run`) is therefore enforced **on the device**, which receives it in the
+token reply; the owner narrows it with `PATCH /api/v1/me/devices/{id}`.
+
+**Switches.** `relay_enabled` defaults off per device. The owner turns it on with
+`PATCH /api/v1/me/devices/{id}` `{"relayEnabled": true}`. `{"owner": "me"}` makes the caller the
+device's personal owner, so they keep control even without a Space role.
+
+Not built: the audit table of relayed commands (protocol section 6, item 5, optional), and an owner
+panel for the switch on the web (the phone's PATCH is the only control today).
