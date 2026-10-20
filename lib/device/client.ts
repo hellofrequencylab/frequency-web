@@ -27,9 +27,12 @@ export class RpcClient {
   private closed = false
   readonly events = new Emitter<DeviceEvent>()
   readonly log = new Emitter<LogLine>()
+  /** Bruce screen packets, while `setScreenStream(true)` is on (screen-mirror.ts draws them). */
+  readonly screen = new Emitter<Uint8Array>()
 
   constructor(readonly transport: Transport) {
     this.unsubscribe.push(transport.onText((t) => this.onText(t)))
+    if (transport.onScreen) this.unsubscribe.push(transport.onScreen((p) => this.screen.emit(p)))
     this.unsubscribe.push(
       transport.onClose((reason) => {
         this.closed = true
@@ -43,6 +46,34 @@ export class RpcClient {
    *  per-command default (a tag write told to wait 30 s for a card needs longer than 12 s). */
   call<T = Record<string, unknown>>(cmd: Command, args?: Record<string, unknown>, opts?: { timeoutMs?: number }): Promise<T> {
     const run = () => this.send<T>(cmd, args, opts?.timeoutMs)
+    const next = this.queue.then(run, run)
+    this.queue = next.catch(() => undefined)
+    return next
+  }
+
+  /** Whether this transport can carry the screen mirror (USB only). */
+  get canMirror(): boolean {
+    return typeof this.transport.onScreen === 'function' && typeof this.transport.setScreenStream === 'function'
+  }
+
+  /** Split screen packets out of the serial stream (pair with `raw('display start')`). No-op if unsupported. */
+  setScreenStream(on: boolean) {
+    this.transport.setScreenStream?.(on)
+  }
+
+  /** Write a plain Bruce CLI line (`display start`, `nav sel`). It waits its turn in the same queue as
+   *  call(), so it never lands in the middle of a pending request, and expects no reply. */
+  raw(line: string): Promise<void> {
+    const run = async () => {
+      if (this.closed) throw new DeviceError('disconnected')
+      const text = line.trim()
+      this.log.emit({ at: Date.now(), dir: 'out', text: redactLine(text) })
+      try {
+        await this.transport.write(text + '\n')
+      } catch (e) {
+        throw new DeviceError('disconnected', e instanceof Error ? e.message : undefined)
+      }
+    }
     const next = this.queue.then(run, run)
     this.queue = next.catch(() => undefined)
     return next
@@ -103,6 +134,7 @@ export class RpcClient {
     this.failPending(new DeviceError('disconnected'))
     for (const u of this.unsubscribe) u()
     this.events.clear()
+    this.screen.clear()
     await this.transport.close()
     this.log.clear()
   }

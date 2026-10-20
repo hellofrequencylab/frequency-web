@@ -8,6 +8,7 @@
 // Client-only: nothing here runs on the server. TypeScript's DOM lib has no Web Serial types yet, so the
 // handful this file touches are declared below.
 
+import { ScreenDemux } from './screen-mirror'
 import { Emitter, type Transport } from './transport'
 
 export const BAUD_RATE = 115200
@@ -82,6 +83,9 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
 
   const text = new Emitter<string>()
   const closed = new Emitter<string>()
+  const screen = new Emitter<Uint8Array>()
+  // Set while Bruce's `display start` stream is on: packets are split out before text decoding.
+  let demux = null as ScreenDemux | null
   const decoder = new TextDecoder()
   const encoder = new TextEncoder()
   let open = true
@@ -108,7 +112,13 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
           const { value, done } = await reader.read()
           if (done) break
           if (value) {
-            const t = decoder.decode(value, { stream: true })
+            let bytes = value
+            if (demux) {
+              const out = demux.push(value)
+              for (const p of out.packets) screen.emit(p)
+              bytes = out.text
+            }
+            const t = decoder.decode(bytes, { stream: true })
             if (t) text.emit(t)
           }
         }
@@ -136,6 +146,20 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
     },
     onText: (l) => text.on(l),
     onClose: (l) => closed.on(l),
+    onScreen: (l) => screen.on(l),
+    setScreenStream(on: boolean) {
+      if (on) {
+        demux ??= new ScreenDemux()
+        return
+      }
+      if (!demux) return
+      const rest = demux.flush()
+      demux = null
+      if (rest.length) {
+        const t = decoder.decode(rest, { stream: true })
+        if (t) text.emit(t)
+      }
+    },
     async close() {
       const wasOpen = open
       open = false
@@ -146,6 +170,7 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
         /* already closed */
       }
       await loop // the reader's lock must be released before the port can close
+      screen.clear()
       if (wasOpen) await port.close().catch(() => undefined)
     },
   }

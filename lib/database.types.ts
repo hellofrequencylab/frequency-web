@@ -16808,6 +16808,64 @@ export type Database = {
           },
         ]
       }
+      space_tags: {
+        Row: {
+          chip_type: string | null
+          created_at: string
+          id: string
+          label: string
+          node_id: string | null
+          removed_at: string | null
+          space_id: string
+          uid: string | null
+          written_by: string | null
+        }
+        Insert: {
+          chip_type?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          node_id?: string | null
+          removed_at?: string | null
+          space_id: string
+          uid?: string | null
+          written_by?: string | null
+        }
+        Update: {
+          chip_type?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          node_id?: string | null
+          removed_at?: string | null
+          space_id?: string
+          uid?: string | null
+          written_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_tags_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_tags_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_tags_written_by_fkey"
+            columns: ["written_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaces: {
         Row: {
           about: string | null

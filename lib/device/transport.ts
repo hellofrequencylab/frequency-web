@@ -16,6 +16,11 @@ export interface Transport {
   onText(listener: (text: string) => void): () => void
   /** Told when the link drops on its own (cable out, out of range). */
   onClose(listener: (reason: string) => void): () => void
+  /** Receive Bruce screen packets (`display start`, screen-mirror.ts) once the stream is on. Returns an
+   *  unsubscribe. Only transports that carry raw bytes (USB) have it. */
+  onScreen?(listener: (packet: Uint8Array) => void): () => void
+  /** Split screen packets out of the byte stream (on) or treat every byte as text (off, the default). */
+  setScreenStream?(on: boolean): void
   close(): Promise<void>
 }
 
