@@ -25,7 +25,7 @@
 -- space_id (unpartitioned legacy rows) stays visible, like can_view_space_content.
 --
 -- WHO STILL SEES A DISABLED MODULE'S ROWS. The Space's own writers (owner, active editor,
--- moderator, admin: public.can_write_space_content) and platform staff, so an operator can still
+-- moderator, admin: private.can_write_space_content) and platform staff, so an operator can still
 -- open the module to export or turn it back on. Everyone else, including members and anon, gets
 -- nothing, which is the point.
 --
@@ -64,24 +64,24 @@ grant execute on function private.space_function_enabled(uuid, text) to anon, au
 drop policy if exists circles_module_enabled on public.circles;
 create policy circles_module_enabled on public.circles
   as restrictive for select
-  using (private.space_function_enabled(space_id, 'circles') or public.can_write_space_content(space_id));
+  using (private.space_function_enabled(space_id, 'circles') or private.can_write_space_content(space_id));
 
 drop policy if exists events_module_enabled on public.events;
 create policy events_module_enabled on public.events
   as restrictive for select
-  using (private.space_function_enabled(space_id, 'events') or public.can_write_space_content(space_id));
+  using (private.space_function_enabled(space_id, 'events') or private.can_write_space_content(space_id));
 
 drop policy if exists practices_module_enabled on public.practices;
 create policy practices_module_enabled on public.practices
   as restrictive for select
-  using (private.space_function_enabled(space_id, 'practices') or public.can_write_space_content(space_id));
+  using (private.space_function_enabled(space_id, 'practices') or private.can_write_space_content(space_id));
 
 drop policy if exists journey_plans_module_enabled on public.journey_plans;
 create policy journey_plans_module_enabled on public.journey_plans
   as restrictive for select
-  using (private.space_function_enabled(space_id, 'journeys') or public.can_write_space_content(space_id));
+  using (private.space_function_enabled(space_id, 'journeys') or private.can_write_space_content(space_id));
 
 drop policy if exists programs_module_enabled on public.programs;
 create policy programs_module_enabled on public.programs
   as restrictive for select
-  using (private.space_function_enabled(space_id, 'program') or public.can_write_space_content(space_id));
+  using (private.space_function_enabled(space_id, 'program') or private.can_write_space_content(space_id));
