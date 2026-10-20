@@ -27,7 +27,8 @@ export default defineConfig({
     // gate in lib/page-editor/block-render.test.tsx) can use JSX directly.
     include: ['**/*.test.ts', '**/*.test.tsx'],
     // `**/node_modules/**` (not just top-level) and `.claude/**` keep nested
-    // installs and agent worktrees (.claude/worktrees/*) out of the run.
-    exclude: ['**/node_modules/**', '.next/**', '.claude/**'],
+    // installs and agent worktrees (.claude/worktrees/*) out of the run. `mobile/**` is the Expo
+    // app, which runs its own tests (`pnpm --dir mobile test`, docs/MOBILE-APP.md).
+    exclude: ['**/node_modules/**', '.next/**', '.claude/**', 'mobile/**'],
   },
 })

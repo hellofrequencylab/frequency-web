@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1121",
+  "title": "Frequency Experience: the Android app in mobile/ controls the CyberUnicorn 5000 over USB or Bluetooth, with no account and no network, on the Frequency design",
+  "status": "open",
+  "priority": "P2",
+  "lane": "program",
+  "size": "L",
+  "source": {
+    "file": "docs/MOBILE-APP.md",
+    "ref": "Owner requests 2026-10-19, relayed by the coordinating session: build DEF-MOBILE now on Android as Frequency Experience; then 'Right now, I just want a phone app to control it'; design: the Frequency system (ADR-1865)."
+  },
+  "detail": "FILED 2026-10-19 (ADR-1865). BUILT on branch live/frequency-experience: mobile/ (Expo SDK 58, Expo Router), device control only by the owner's scope ruling. Connect over USB (local Kotlin module over usb-serial-for-android, CH340 115200 8N1, DTR and RTS never asserted) or Bluetooth LE (Bruce serial service, MTU 517); protocol v1 with a tested parser and a one-at-a-time RPC client; the dashboard (status, hat probe), Light Show, LED, sound, sensors, the screen D-pad, a cli.run console and the Frequency tag writer (pasted server-signed /n/ link, frequency.write_tag {url} only, read back and compared). Internet relay and the member experience are placeholders. The UI is a kit in mobile/src/ui mirroring the web's design-system components on the live Frequency theme. THE CONSEQUENCE STILL OPEN: nothing has run against the real board. It closes when the APK on the owner's phone runs system.status, Light Show and a tag write over USB and over Bluetooth.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "2026-10-19: mobile typecheck, lint and node tests pass; Android bundle, prebuild and expo-doctor pass. Not yet connected to the CyberUnicorn.",
+    "checked": "2026-10-19"
+  },
+  "wave": "WM"
+}
