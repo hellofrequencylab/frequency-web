@@ -12,7 +12,7 @@ import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
 import type { AccessLevel } from '@/lib/core/access-matrix'
 
-export function footerLinkReachable(
+function footerLinkReachable(
   node: NavNode,
   role: CommunityRole | null,
   staffRole: StaffRole | null,

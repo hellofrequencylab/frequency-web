@@ -5,7 +5,7 @@
 //
 // Pure data, no imports of app code, so the registry (reachable from the app shell) stays light.
 
-export interface LegalLink {
+interface LegalLink {
   id: string
   label: string
   href: string
