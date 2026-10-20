@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1008",
+  "title": "Editor E0 task 12b, row ops slice: a node document gets add, remove, move, columns, ratio, title, header and margin row operations",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§1.5 step 5; §8 task 12"
+  },
+  "detail": "Decomposed from PROG-E0 on 2026-10-19. lib/entity-blocks/node-row-ops.ts performs the row-level mutations rows-ops.ts performs on a BuilderLayout, on a NodeLayout: addNodeRow, removeNodeRow (nodes go to the stored bench with their bags), moveNodeRow, setNodeRowColumns (narrowing folds onto the last kept column), setNodeRowRatio, setNodeRowTitle, setNodeRowHeaderOn, setNodeRowMargin. Pure, immutable, total, each result re-normalized. Dormant: no component calls it yet. The node page builder is the consumer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/entity-blocks/node-row-ops.ts','utf8');const bad=[];for(const f of ['addNodeRow','removeNodeRow','moveNodeRow','setNodeRowColumns','setNodeRowRatio','setNodeRowTitle','setNodeRowHeaderOn','setNodeRowMargin'])if(!s.includes('export function '+f))bad.push('missing '+f);if(!s.includes('normalizeNodeLayout'))bad.push('results are not re-normalized');if(bad.length){console.error('LIVE-1008: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a row op is dropped or results stop going through normalizeNodeLayout. Behavior is node-row-ops.test.ts.",
+    "checked": "2026-10-19"
+  },
+  "closed": "2026-10-19",
+  "wave": "W4"
+}
