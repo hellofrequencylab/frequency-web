@@ -231,6 +231,7 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(labels).toEqual([
       '$1,490', // Collective list, the struck yearly anchor over the open Founding intro (ADR-1760)
       '$149', // Collective list, the struck monthly anchor
+      '$3,260', // Network list, the struck yearly anchor over the open Founding year
       '$39', // Non Profit, flat, never had a beta rate
       '$39/mo',
       '$390',
@@ -244,10 +245,11 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
       '$990',
       '$990/yr',
       'Free',
-      'from $5,990/yr', // Network (SCAN-961), quoted: the "from" year, two months free, and its month
-      'from $599/mo',
+      'from $2,934/yr', // Network Founding first year: nine months for the year (ADR-1815)
+      'from $3,260/yr', // Network (repriced 2026-10-20): the "from" year, two months free, and its month
+      'from $326/mo',
     ])
-    expect(cents).toEqual([0, 3900, 4900, 9900, 14900, 39000, 49000, 59900, 99000])
+    expect(cents).toEqual([0, 3900, 4900, 9900, 14900, 32600, 39000, 49000, 99000])
     // The founding amounts a GRANTED Space might be charged, absent from both sets when flat.
     for (const amount of ['$29/mo', '$290/yr', '$79/mo', '$790/yr', '$29', '$79']) {
       expect(labels, `${amount} is quoted on a public surface`).not.toContain(amount)
@@ -267,10 +269,10 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(labels).toContain('$49/mo')
     expect(labels).toContain('$490/yr')
     expect(cents).toContain(4900)
-    // The only beta caption is the Founding Collective rate (owner 2026-10-06), never a Business or
-    // Non Profit one.
+    // The only captions are the Founding Collective rate (owner 2026-10-06) and the Network Founding
+    // offer (owner 2026-10-20), never a Business or Non Profit one.
     const captioned = spaceOfferings({ values: PRICING_DEFAULTS, catalog, betaActive: true }).filter((o) => o.betaNote)
-    expect(captioned.map((o) => o.id)).toEqual(['collective'])
+    expect(captioned.map((o) => o.id)).toEqual(['collective', 'network'])
   })
 
   it('the surface is byte-identical across a granted and an ungranted world', () => {

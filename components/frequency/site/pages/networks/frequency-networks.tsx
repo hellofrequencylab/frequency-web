@@ -5,8 +5,10 @@
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
-import { NETWORK_PLAN, networkCheckoutOpen } from '@/lib/pricing/plans'
+import { NETWORK_PLAN, networkCheckoutOpen, networkFoundingYearCents, networkPackageYearCents } from '@/lib/pricing/plans'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL, networkFoundingOpen } from '@/lib/pricing/beta'
 import { formatBps, formatCents } from '@/lib/pricing/display'
+import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
 import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { CONTACT_EMAIL } from '@/lib/site'
@@ -19,11 +21,14 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
 /** The conversation link while Network is quote only. */
 export const NETWORK_CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Frequency Network')}`
 
+/** The Independent Network conversation: a sales call, never checkout. */
+export const INDEPENDENT_CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Frequency Independent Network')}&body=${encodeURIComponent('How many chapters do you run?\nHow many members do you have today?\nDo you need your own domain or app?\nDo you need us to move members and data from another platform?')}`
+
 /** What a Network includes, in the order a chapter organization asks about it. Copy only; the counts
  *  read NETWORK_PLAN. */
 export function networkIncludes(): { title: string; body: string }[] {
   return [
-    { title: 'A chapter tree', body: `Your organization's Space at the top and up to ${NETWORK_PLAN.includedChapters} chapters beneath it, each with its own page, Circles, events and Business tools.` },
+    { title: 'A chapter tree', body: `Your organization's Space at the top and up to ${NETWORK_PLAN.maxChapters} chapters beneath it (${NETWORK_PLAN.includedChapters} to start), each with its own page, Circles, events and Business tools.` },
     { title: 'Chapter leaders', body: 'Each chapter has its own leaders. They run their chapter day to day and only see their own chapter.' },
     { title: 'Central admins', body: `Up to ${NETWORK_PLAN.centralAdmins} people on your central team see the whole network and set the standards.` },
     { title: 'One membership', body: 'A member who joins the network is a member in every chapter. They pay once and belong everywhere.' },
@@ -37,6 +42,9 @@ export function FrequencyNetworks() {
   const quote = !networkCheckoutOpen()
   const cta = quote ? { href: NETWORK_CONTACT_HREF, label: `${NETWORK_PLAN.quoteLabel} →` } : { href: '/spaces', label: 'Start a Network →' }
   const fee = formatBps(NETWORK_TAKE_RATE_DEFAULT.network)
+  const trialDays = PRICING_DEFAULTS.trial.days
+  const foundingOpen = networkFoundingOpen()
+  const foundingFirstYear = networkFoundingYearCents(NETWORK_PLAN.includedChapters) ?? 0
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
@@ -118,16 +126,38 @@ export function FrequencyNetworks() {
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>Price</b>One price for the whole network
+              <b>Price</b>Two ways to run a Network
             </div>
             <h2 className="h-l">{`From ${formatCents(NETWORK_PLAN.monthlyCents)} a month.`}</h2>
             <p className="pb-note">
-              {`${NETWORK_PLAN.includedChapters} chapters are included. Each extra chapter is ${formatCents(NETWORK_PLAN.extraChapterCents)} a month, up to ${NETWORK_PLAN.maxChapters} chapters, and past that we write you a quote. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitMonthlyCents)}. On a customer Frequency introduces the fee is ${fee}, charged once. Your own people are 0%, ${PLAN_STORY.plusProcessing}.`}
+              {`${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, with ${NETWORK_PLAN.includedChapters} chapters to start, up to ${NETWORK_PLAN.maxChapters}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free. ${trialDays}-day free trial.`}
             </p>
-            <p className="pb-note">
-              Want the whole network under your own brand and domain, separate from Frequency? Ask us about an Independent
-              Network.
-            </p>
+          </div>
+          <div className="tg-row two">
+            <div className="tg-card">
+              <h3>Partner Network</h3>
+              <p>
+                {`You keep your chapters in the Frequency community. Your network and every chapter wear the Frequency Partner badge, your events show on the Frequency calendar, and tickets and memberships run through Frequency checkout. You are listed where people look for things to do, and on a customer Frequency introduced to you we take ${fee} once, at their first purchase. Your own people are always free of it, ${PLAN_STORY.plusProcessing}.`}
+              </p>
+              <p>{`Yearly package: ${NETWORK_PLAN.packageChapters} chapters for the price of ${NETWORK_PLAN.packagePaidChapters}, ${formatCents(networkPackageYearCents())} a year. It includes a live onboarding session, priority support and a yearly network health review.`}</p>
+              {foundingOpen && (
+                <p>{`Founding offer: choose the year and get it for nine months. ${formatCents(foundingFirstYear)} for the first year of a ${NETWORK_PLAN.includedChapters}-chapter Network. Ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}.`}</p>
+              )}
+            </div>
+            <div className="tg-card">
+              <h3>Independent Network</h3>
+              <p>
+                Your own community, fully separate from Frequency. Your brand, your domain, your members and your
+                data, with no Partner badge, no Frequency listing and no network fee. We start with a call, then set
+                up and onboard your whole network with you.
+              </p>
+              <p>{`Yearly agreement from ${formatCents(NETWORK_PLAN.independentYearFromCents)}, plus a ${formatCents(NETWORK_PLAN.independentSetupCents)} one-time setup and onboarding fee. We scope your chapters, migration and support on the call.`}</p>
+              <p>
+                <a className="btn btn-ghost fq-iri-rim" href={INDEPENDENT_CONTACT_HREF}>
+                  Talk to us about Independent
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </section>

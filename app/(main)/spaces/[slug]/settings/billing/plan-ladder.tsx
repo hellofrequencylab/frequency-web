@@ -1,7 +1,7 @@
-import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
+import { NETWORK_PLAN, SPACE_PLAN_LABEL, networkFoundingYearCents, networkPackageYearCents, type SpacePlan } from '@/lib/pricing/plans'
 import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
-import { FOUNDING_RATE_NOTE } from '@/lib/pricing/beta'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDING_RATE_NOTE, networkFoundingOpen } from '@/lib/pricing/beta'
 import { yearlyFromMonthly, type BillingInterval } from '@/lib/billing/pricing-keys'
 import { PlanLadderRungs, type LadderRung, type RungIcon } from './plan-ladder-rungs'
 
@@ -46,7 +46,7 @@ const RUNGS: Rung[] = [
   {
     plan: 'network',
     icon: 'network',
-    blurb: 'One organization with chapters: ten chapters included, one membership that works in every chapter, central admins and a roll-up report.',
+    blurb: 'One organization with chapters: three chapters to start, one membership that works in every chapter, central admins and a roll-up report.',
   },
   {
     plan: 'nonprofit',
@@ -113,6 +113,13 @@ function priceLabel(plan: SpacePlan, interval: BillingInterval = 'month'): strin
  *  not actually discounted can never advertise a discount, and every discounted plan says so rather than
  *  only the one somebody remembered to hand-write a note for. */
 function foundingNote(plan: SpacePlan, interval: BillingInterval = 'month'): string | null {
+  // Network's Founding offer is a coupon on the first yearly invoice (nine months of the monthly total),
+  // not a lower list price, so it cannot come from the list-versus-now comparison below.
+  if (plan === 'network') {
+    if (interval !== 'year' || !networkFoundingOpen()) return null
+    const first = networkFoundingYearCents(NETWORK_PLAN.includedChapters)
+    return first === null ? null : `Founding: ${formatCents(first)} for the first year (nine months), then ${formatCents(yearlyFromMonthly(NETWORK_PLAN.monthlyCents))}/yr. Offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}.`
+  }
   const list = SPACE_PLAN_PRICE_CENTS[plan]?.listCents ?? 0
   const now = spacePlanPriceCents(plan)
   if (list <= now) return null
@@ -147,6 +154,10 @@ export function ladderRungs(
       },
       chip: canChoose ? null : STATE_CHIP[state],
       choose: canChoose ? choosable : null,
+      package:
+        canChoose && rung.plan === 'network'
+          ? { price: `${formatCents(networkPackageYearCents())}/yr`, blurb: `${NETWORK_PLAN.packageChapters} chapters, pay for ${NETWORK_PLAN.packagePaidChapters}. Yearly, with an onboarding session and priority support.` }
+          : null,
     }
   })
 }

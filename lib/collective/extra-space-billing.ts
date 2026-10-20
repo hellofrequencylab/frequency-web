@@ -8,14 +8,15 @@ import { isChapterParentPlan, isNetworkPlan } from './member-spaces'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
 import { billingLive } from '@/lib/pricing/settings'
 import { resolveStripePriceId } from '@/lib/billing/pricing-prices'
-import { catalogPriceKey, type BillingInterval } from '@/lib/billing/pricing-keys'
+import { catalogPriceKey, type BillingInterval, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import { reconciledItemsFromSubscription } from '@/lib/billing/space-subscription-items'
 import { reconcileSpacePlanSubscription } from '@/lib/billing/space-subscriptions'
+import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 /** The per-unit item a parent Space buys past what its plan includes: a Collective's extra member
- *  Spaces (collective_space, five included) or a Network's extra chapters (network_chapter, ten
- *  included, SCAN-1008). `maxQuantity` is null when the plan has no self-serve ceiling; a Network
+ *  Spaces (collective_space, five included) or a Network's extra chapters (network_chapter, three
+ *  included, SCAN-1008, repriced 2026-10-20). `maxQuantity` is null when the plan has no self-serve ceiling; a Network
  *  stops at NETWORK_PLAN.maxChapters and past that is a quote. */
 type ExtraItemKey = 'collective_space' | 'network_chapter'
 export interface ExtraSpaceQuote {
@@ -49,6 +50,19 @@ async function ownedSubscription(spaceId: string): Promise<{ sub: Stripe.Subscri
   return { sub, ownerId: caller.id, plan: row.plan }
 }
 
+/** Does the subscription carry the Network package coupon? Read defensively (a payload may hold the coupon
+ *  as an id or an expanded object, and the singular `discount` or the `discounts` list). PURE. */
+function carriesPackageCoupon(sub: unknown): boolean {
+  const ids: string[] = [NETWORK_PLAN.couponPackage, NETWORK_PLAN.couponNonprofitPackage]
+  const raw = sub as { discount?: unknown; discounts?: unknown }
+  const entries = [...(Array.isArray(raw.discounts) ? raw.discounts : []), raw.discount]
+  return entries.some(e => {
+    const coupon = (e as { coupon?: unknown } | null)?.coupon
+    const id = typeof coupon === 'string' ? coupon : (coupon as { id?: unknown } | null)?.id
+    return typeof id === 'string' && ids.includes(id)
+  })
+}
+
 async function quoteFor(sub: Stripe.Subscription, spaceId: string, plan: string): Promise<ExtraSpaceQuote | null> {
   if (!stripe) return null
   const { itemKey, included, maxQuantity } = extraItemFor(plan)
@@ -57,16 +71,23 @@ async function quoteFor(sub: Stripe.Subscription, spaceId: string, plan: string)
   const extras = items.filter(i => i.itemKey === itemKey)
   if (extras.length > 1 || (extras[0] && extras[0].interval !== base.interval)) return null
   const current = extras[0]
-  const priceId = current?.lockedPriceId ?? await resolveStripePriceId(catalogPriceKey(itemKey, base.interval, false))
+  // A verified non profit Network buys its chapters at the non profit price (its own catalog item and
+  // Stripe price); the reconciled item key stays `network_chapter` for both.
+  const priceItem: CatalogItemKey = itemKey === 'network_chapter'
+    && (await getSpaceVerification(spaceId).catch(() => null))?.status === 'verified' ? 'nonprofit_network_chapter' : itemKey
+  const priceId = current?.lockedPriceId ?? await resolveStripePriceId(catalogPriceKey(priceItem, base.interval, false))
   if (!priceId) return null
   const price = await stripe.prices.retrieve(priceId, {}, { timeout: 20000, maxNetworkRetries: 0 })
   if (!current && price.active !== true) return null
   const key = price.metadata.frequency_pricing_key
   if (price.currency !== 'usd' || price.unit_amount === null || price.unit_amount < 0
-    || price.recurring?.interval !== base.interval || ![catalogPriceKey(itemKey, base.interval, false), catalogPriceKey(itemKey, base.interval, true)].includes(key)) return null
+    || price.recurring?.interval !== base.interval || ![catalogPriceKey(priceItem, base.interval, false), catalogPriceKey(priceItem, base.interval, true), catalogPriceKey(itemKey, base.interval, false), catalogPriceKey(itemKey, base.interval, true)].includes(key)) return null
   const count = await createAdminClient().from('spaces').select('id', { count: 'exact', head: true }).eq('parent_id', spaceId)
   if (count.error || count.count === null) return null
-  return { quantity: current?.quantity ?? 0, minQuantity: Math.max(0, count.count - included), maxQuantity, included, itemKey, priceId,
+  // The package is ten chapters, pay for eight: its coupon is a fixed two chapters off, so a package
+  // holder keeps the package's seven paid chapters (the discount cannot outlive them).
+  const packageFloor = itemKey === 'network_chapter' && carriesPackageCoupon(sub) ? NETWORK_PLAN.packageChapters - included : 0
+  return { quantity: current?.quantity ?? 0, minQuantity: Math.max(packageFloor, count.count - included, 0), maxQuantity, included, itemKey, priceId,
     unitCents: price.unit_amount, interval: base.interval }
 }
 
