@@ -16,11 +16,12 @@ export async function reportConsoleLog(rawReason: unknown, rawLines: unknown): P
   const gate = await consoleStaffGate()
   if (!gate) return fail('Only Frequency staff can send a device log.')
   if (!Array.isArray(rawLines)) return fail('No log to send.')
-  const reason = (typeof rawReason === 'string' ? rawReason : '').slice(0, 200)
+  const reason = (typeof rawReason === 'string' ? rawReason : '').slice(0, 200).replace(/[\u0000-\u001f\u007f]/g, ' ')
   const lines = rawLines
     .filter((l): l is string => typeof l === 'string')
     .slice(-LINES_MAX)
-    .map((l) => l.slice(0, LINE_MAX).replace(/\/c\/[A-Za-z0-9_-]{16,}/g, '/c/...').replace(/\?s=v1\.[A-Za-z0-9._-]+/g, '?s=...'))
+    // Control characters (newlines included) become spaces, so one device line can never forge another log line.
+    .map((l) => l.slice(0, LINE_MAX).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\/c\/[A-Za-z0-9_-]{16,}/g, '/c/...').replace(/\?s=v1\.[A-Za-z0-9._-]+/g, '?s=...'))
   // One runtime-log line per device line, so a long log is never cut off when it is read back.
   const run = Date.now().toString(36)
   console.info(`[cu5k-log] ${run} start ${JSON.stringify({ by: gate.callerId, reason, count: lines.length })}`)
