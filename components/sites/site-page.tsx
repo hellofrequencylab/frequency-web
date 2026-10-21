@@ -340,7 +340,7 @@ export async function SitePage({
   const networkTools = netSite ? (
     <>
       <NetworkSearch items={searchItems} />
-      <NetworkAccount endpoint={`${origin}/api/sites/${space.slug}/account`} origin={origin} slug={space.slug} cartHref={`${home0}#merch`} />
+      <NetworkAccount origin={origin} slug={space.slug} cartHref={`${home0}#merch`} />
     </>
   ) : null
 

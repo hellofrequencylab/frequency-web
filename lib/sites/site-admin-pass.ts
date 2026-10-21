@@ -50,7 +50,7 @@ interface PassPayload {
   n: string
 }
 
-function secret(): string {
+export function sitePassSecret(): string {
   return (
     process.env.SITE_ADMIN_PASS_SECRET?.trim() ||
     process.env.OAUTH_STATE_SECRET?.trim() ||
@@ -67,7 +67,7 @@ function mac(key: string, body: string): string {
 
 /** Mint a pass, or null when there is no secret or an input is malformed. */
 export function signSiteAdminPass(pass: SiteAdminPass, now: number = Date.now()): string | null {
-  const key = secret()
+  const key = sitePassSecret()
   const host = pass.host.toLowerCase()
   if (!key || !UUID.test(pass.spaceId) || !UUID.test(pass.profileId) || !HOST.test(host)) return null
   const payload: PassPayload = {
@@ -85,7 +85,7 @@ export function signSiteAdminPass(pass: SiteAdminPass, now: number = Date.now())
 /** Read a pass: what it grants, or null when it is missing, malformed, tampered with, from the future or
  *  expired. Constant-time compare; fails closed. The caller still checks the host and Space match. */
 export function readSiteAdminPass(token: string | null | undefined, now: number = Date.now()): SiteAdminPass | null {
-  const key = secret()
+  const key = sitePassSecret()
   if (!key || !token || typeof token !== 'string' || token.length > 2048) return null
   const dot = token.indexOf('.')
   if (dot <= 0 || dot === token.length - 1) return null
