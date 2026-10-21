@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react'
 import { useRouter } from 'next/navigation'
 import localFont from 'next/font/local'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, CornerUpLeft, Download, EyeOff, IdCard, Nfc, RefreshCw, ScanLine, Wifi, type LucideIcon } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Copy, CornerUpLeft, Download, EyeOff, IdCard, Nfc, RefreshCw, ScanLine, Wifi, type LucideIcon } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
@@ -1747,11 +1747,7 @@ export function CyberUnicornConsole({
               <span>{log.length > 0 ? 'Device log' : ''}</span>
               <span className="text-[var(--cu-dim)]">{connected ? 'All systems fabulous.' : 'USB 115200  DTR/RTS low'}</span>
             </summary>
-            {log.length > 0 && (
-              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all bg-[var(--cu-floor)] p-2 font-[family-name:var(--cu-font-body)]">
-                {log.join('\n').replace(/\/c\/[A-Za-z0-9_-]{16,}/g, '/c/...').replace(/\?s=v1\.[A-Za-z0-9._-]+/g, '?s=...')}
-              </pre>
-            )}
+            {log.length > 0 && <DeviceLog text={redactLog(log)} />}
           </details>
         </div>
       </RainbowFrame>
@@ -1839,6 +1835,53 @@ function ScreenKey({ label, Icon, onClick, disabled, primary, hidden }: { label:
     >
       <Icon className="h-5 w-5" aria-hidden />
     </button>
+  )
+}
+
+/** The log as shown and copied: signed check-in links are cut so a pasted log never carries one. */
+function redactLog(log: string[]): string {
+  return log.join('\n').replace(/\/c\/[A-Za-z0-9_-]{16,}/g, '/c/...').replace(/\?s=v1\.[A-Za-z0-9._-]+/g, '?s=...')
+}
+
+/** Device log with a Copy button, so it can be pasted into a support thread in one tap. */
+function DeviceLog({ text }: { text: string }) {
+  const [copied, setCopied] = useState<'idle' | 'done' | 'failed'>('idle')
+  const copy = async () => {
+    let ok = false
+    try {
+      await navigator.clipboard.writeText(text)
+      ok = true
+    } catch {
+      // Clipboard API refused (no focus or permission): fall back to a hidden textarea.
+      const area = document.createElement('textarea')
+      area.value = text
+      area.setAttribute('readonly', '')
+      area.style.position = 'fixed'
+      area.style.opacity = '0'
+      document.body.appendChild(area)
+      area.select()
+      try {
+        ok = document.execCommand('copy')
+      } catch {
+        ok = false
+      }
+      area.remove()
+    }
+    setCopied(ok ? 'done' : 'failed')
+    window.setTimeout(() => setCopied('idle'), 2000)
+  }
+  return (
+    <div className="mt-2">
+      <div className="flex justify-end">
+        <CuButton tone="secondary" onClick={() => void copy()}>
+          <span className="inline-flex items-center gap-2">
+            <Copy className="h-4 w-4" aria-hidden />
+            {copied === 'done' ? 'Copied' : copied === 'failed' ? 'Copy blocked' : 'Copy log'}
+          </span>
+        </CuButton>
+      </div>
+      <pre className="mt-2 max-h-48 select-text overflow-auto whitespace-pre-wrap break-all bg-[var(--cu-floor)] p-2 font-[family-name:var(--cu-font-body)]">{text}</pre>
+    </div>
   )
 }
 
