@@ -10,7 +10,7 @@ const c = r('components/spaces/loyalty/cyberunicorn-console.tsx')
 if (!/function DeviceLog\(/.test(c)) bad.push('the Device log lost its component')
 if (!/navigator\.clipboard\.writeText\(text\)/.test(c)) bad.push('the Copy button no longer uses the clipboard')
 if (!/document\.execCommand\('copy'\)/.test(c)) bad.push('the Copy button lost its fallback')
-if (!/<DeviceLog text=\{redactLog\(log\)\} \/>/.test(c)) bad.push('the copied log is no longer the redacted one')
+if (!/<DeviceLog text=\{redactLog\(log\)\}/.test(c)) bad.push('the copied log is no longer the redacted one')
 if (!/'\/c\/\.\.\.'/.test(c)) bad.push('the log no longer cuts signed check-in links')
 if (bad.length) { console.error('LIVE-1223 probe failed:\n- ' + bad.join('\n- ')); process.exit(1) }
 console.log('LIVE-1223: the Device log copies its redacted text in one tap')
