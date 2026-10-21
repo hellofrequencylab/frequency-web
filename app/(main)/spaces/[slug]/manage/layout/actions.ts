@@ -59,6 +59,7 @@ import {
   type HeroButtonOrientation,
 } from '@/lib/spaces/hero-config'
 import { nextSiteHeroPreferences } from '@/lib/spaces/website'
+import { asFooterBadgeMode, badgeRemovalHeld, nextFooterBadgePreferences } from '@/lib/sites/site-badge'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
 // manages their Space's public pages (cover size, brand accent, and the nav's pages) from
@@ -390,6 +391,29 @@ export async function setSiteHero(
     return fail('Could not save your headline. Try again.')
   }
 
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set how the website footer credits Frequency (preferences.siteBadge, LIVE-1117): the Partner badge, a quiet
+ * text line, or nothing. "Nothing" is the paid choice (Independent, or the badge removal add-on a Network
+ * buys per client site), so it is refused here without it; the page also falls back to the badge on read, so a
+ * lapse needs no cleanup. Only the siteBadge key is touched. Owner/admin/editor-gated.
+ */
+export async function setSiteBadge(slug: string, mode: string): Promise<ActionResult> {
+  const chosen = asFooterBadgeMode(mode)
+  if (!chosen) return fail('Pick the badge, a text line, or none.')
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (chosen === 'none' && !badgeRemovalHeld(auth.plan, auth.entitlements)) {
+    return fail('Removing the Frequency credit is a paid option. Ask your Network, or move to Independent.')
+  }
+  if (!(await writePreferences(auth.spaceId, nextFooterBadgePreferences(auth.preferences, chosen)))) {
+    return fail('Could not save your footer. Try again.')
+  }
   revalidatePath(`/spaces/${slug}`, 'layout')
   refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
