@@ -8,7 +8,7 @@ const PILL = 'rounded-pill bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold te
 
 /** "The Group Encinitas" under a "The Group" network reads "Encinitas": the repeated prefix is what
  * made every chapter title cut to the same words. The full name stays in the card's link label. */
-export function chapterShortName(name: string, parentName: string): string {
+function chapterShortName(name: string, parentName: string): string {
   const prefix = parentName.trim()
   if (prefix && name.toLowerCase().startsWith(prefix.toLowerCase())) {
     const rest = name.slice(prefix.length).replace(/^[\s:·\-–—]+/, '').trim()

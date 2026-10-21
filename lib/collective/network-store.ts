@@ -64,7 +64,7 @@ export async function loadCollectiveNetworkWindow(parent: NetworkParent, ownName
   return items.map((item, i) => ({ ...item, sourceLabel: [...ordered[i].names].join(' · ') }))
 }
 
-export interface ChapterCardExtras { coverUrl: string | null; tagline: string | null; city: string | null }
+interface ChapterCardExtras { coverUrl: string | null; tagline: string | null; city: string | null }
 /** Display-only extras for cards of Spaces `listPublicCollectiveMembers` already cleared. Callers pass
  * only those ids; the public projection (and its pinned keys) stays as it was. */
 export async function loadChapterCardExtras(ids: readonly string[]): Promise<Map<string, ChapterCardExtras>> {
