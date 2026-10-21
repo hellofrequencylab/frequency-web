@@ -151,6 +151,7 @@ export function CreateSpaceWizard({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-72 opacity-80 blur-2xl"
+        // token-ok: a mask only reads the alpha channel, so any opaque colour works; it paints nothing.
         style={{ background: 'var(--fq-pa-soft)', maskImage: 'radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%)' }}
       />
       <span aria-hidden className="orb pointer-events-none absolute right-6 top-14 sm:right-2" />
