@@ -1856,7 +1856,7 @@ function MirrorCanvas({ client, onKey }: { client: RpcClient; onKey: (key: NavKe
     if (!canvas) return
     const screen = new ScreenMirror(canvas)
     screen.clear()
-    return client.screen.on((p) => screen.draw(p))
+    return client.watchScreen((p) => screen.draw(p))
   }, [client])
   return (
     <canvas

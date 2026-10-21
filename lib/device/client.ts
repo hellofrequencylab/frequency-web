@@ -18,6 +18,9 @@ export type LogLine = { at: number; dir: 'in' | 'out' | 'note'; text: string }
 
 type Pending = { id: number; resolve: (data: unknown) => void; reject: (e: DeviceError) => void; timer: ReturnType<typeof setTimeout> }
 
+/** At most this many screen packets are kept for a late canvas (a full menu is a few thousand). */
+const SCREEN_BACKLOG_MAX = 8000
+
 export class RpcClient {
   private nextId = 1
   private queue: Promise<unknown> = Promise.resolve()
@@ -29,10 +32,23 @@ export class RpcClient {
   readonly log = new Emitter<LogLine>()
   /** Bruce screen packets, while `setScreenStream(true)` is on (screen-mirror.ts draws them). */
   readonly screen = new Emitter<Uint8Array>()
+  // The draw calls since the board last cleared its screen. `display start` redraws the whole menu at
+  // once, usually before the page has mounted its mirror canvas, and a still menu sends nothing more, so
+  // a canvas that only heard new packets stayed black (owner, 2026-10-20). watchScreen replays these first.
+  private screenBacklog: Uint8Array[] = []
 
   constructor(readonly transport: Transport) {
     this.unsubscribe.push(transport.onText((t) => this.onText(t)))
-    if (transport.onScreen) this.unsubscribe.push(transport.onScreen((p) => this.screen.emit(p)))
+    if (transport.onScreen)
+      this.unsubscribe.push(
+        transport.onScreen((p) => {
+          // fn 0 is fillScreen: everything before it is painted over.
+          if (p[2] === 0) this.screenBacklog = []
+          this.screenBacklog.push(p)
+          if (this.screenBacklog.length > SCREEN_BACKLOG_MAX) this.screenBacklog.splice(0, this.screenBacklog.length - SCREEN_BACKLOG_MAX)
+          this.screen.emit(p)
+        }),
+      )
     this.unsubscribe.push(
       transport.onClose((reason) => {
         this.closed = true
@@ -58,7 +74,15 @@ export class RpcClient {
 
   /** Split screen packets out of the serial stream (pair with `raw('display start')`). No-op if unsupported. */
   setScreenStream(on: boolean) {
+    if (!on) this.screenBacklog = []
     this.transport.setScreenStream?.(on)
+  }
+
+  /** Follow the screen stream, starting with the draw calls since the last clear, so a canvas mounted after
+   *  `display start` still gets the whole frame. Returns the unsubscribe. */
+  watchScreen(listener: (packet: Uint8Array) => void): () => void {
+    for (const p of this.screenBacklog) listener(p)
+    return this.screen.on(listener)
   }
 
   /** Write a plain Bruce CLI line (`display start`, `nav sel`). It waits its turn in the same queue as
@@ -135,6 +159,7 @@ export class RpcClient {
     for (const u of this.unsubscribe) u()
     this.events.clear()
     this.screen.clear()
+    this.screenBacklog = []
     await this.transport.close()
     this.log.clear()
   }
