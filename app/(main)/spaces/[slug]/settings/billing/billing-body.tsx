@@ -86,9 +86,9 @@ export async function BillingBody({ slug }: { slug: string }) {
   // The plan lives on spaces.plan (untyped, ADR-246) — read it fail-safe.
   const { data: planRow } = (await createAdminClient()
     .from('spaces')
-    .select('plan')
+    .select('plan, stripe_subscription_id')
     .eq('id', space.id)
-    .maybeSingle()) as { data: { plan?: string | null } | null }
+    .maybeSingle()) as { data: { plan?: string | null; stripe_subscription_id?: string | null } | null }
   const currentPlan = asSpacePlan(planRow?.plan)
   const effectivePlan = asSpacePlan(space.plan)
   const hasInheritedBusiness = currentPlan === 'free' && effectivePlan === 'business'
@@ -138,6 +138,8 @@ export async function BillingBody({ slug }: { slug: string }) {
   const memberSpaces = !staffViewing && viewerProfileId ? await loadMemberSpaceManagement(space.id, viewerProfileId) : null
   const extraSpaceQuote = memberSpaces?.active ? await loadExtraSpaceQuote(space.id) : null
   const isPaid = currentPlan !== 'free'
+  // A paid plan set by hand (a comped Space) has no subscription behind it: its own rung may start one.
+  const unbilledPlan = isPaid && !planRow?.stripe_subscription_id && !manualAgreement && !staffViewing && !hasInheritedBusiness ? currentPlan : null
 
 
   // The old "you'd have saved $X on Business" nudge is RETIRED (ADR-811): it applied the take-rate delta
@@ -205,6 +207,7 @@ export async function BillingBody({ slug }: { slug: string }) {
           currentPlan={currentPlan}
           slug={space.slug}
           isFree={!isPaid && !staffViewing}
+          unbilledPlan={unbilledPlan}
           sellable={{ business: businessSellable, collective: collectiveSellable, network: networkSellable }}
         />}
 

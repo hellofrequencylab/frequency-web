@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1224",
+  "title": "A Space on a hand-set paid plan can start its own subscription (LIVE-1224)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/billing/plan-ladder.tsx",
+    "ref": "Owner 2026-10-21: subscribe The Group to Network so it can bill client websites (ADR-1816)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. A Space whose paid plan was set by hand (spaces.plan paid, no stripe_subscription_id, no manual agreement) used to show its own rung as 'current' with no way to buy, so it could never get the subscription that client-site billing (and the plan webhooks) attach to. The billing page now gives that one rung a Choose button; a Space with a subscription, a manual agreement or a staff viewer is unchanged, and no other rung is offered. The Group (plan network, owned by @frequency, no subscription) is the first case.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const l=fs.readFileSync('app/(main)/spaces/[slug]/settings/billing/plan-ladder.tsx','utf8');const b=fs.readFileSync('app/(main)/spaces/[slug]/settings/billing/billing-body.tsx','utf8');const bad=[];if(!l.includes('unbilledPlan === rung.plan'))bad.push('ladder no longer lets an unbilled plan start billing');if(!b.includes('stripe_subscription_id')||!b.includes('unbilledPlan'))bad.push('billing page does not detect an unbilled plan');if(bad.length){console.error('LIVE-1224: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a hand-set paid plan can no longer start its own subscription."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

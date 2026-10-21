@@ -136,12 +136,15 @@ export function ladderRungs(
   sellable: Partial<Record<SpacePlan, boolean>>,
   isFree: boolean,
   hasSlug: boolean,
+  unbilledPlan: SpacePlan | null = null,
 ): LadderRung[] {
   return rungs.map((rung) => {
     const state = rungState(rung.plan, currentPlan, sellable)
     const choosable =
       rung.plan === 'business' || rung.plan === 'collective' || rung.plan === 'network' ? rung.plan : null
-    const canChoose = isFree && hasSlug && !!choosable && !!sellable[choosable]
+    // A paid plan that was set by hand holds no subscription, so its own rung may start one (the only
+    // paid case where a Choose is safe: there is no subscription to bill twice).
+    const canChoose = hasSlug && !!choosable && !!sellable[choosable] && (isFree || unbilledPlan === rung.plan)
     return {
       plan: rung.plan,
       icon: rung.icon,
@@ -173,11 +176,14 @@ export function PlanLadder({
   slug,
   sellable = {},
   isFree = false,
+  unbilledPlan = null,
 }: {
   currentPlan: SpacePlan
   slug?: string
   sellable?: Partial<Record<SpacePlan, boolean>>
   isFree?: boolean
+  /** The Space's paid plan when it was set by hand and no subscription backs it: that rung offers Choose. */
+  unbilledPlan?: SpacePlan | null
 }) {
   // The Founding note shows exactly while a rung is charged under its list (foundingNote reads the same
   // predicate the checkout bills on, lib/pricing/beta.ts foundingOpenFor), so it clears the instant the
@@ -202,7 +208,7 @@ export function PlanLadder({
           (SCAN-980). Non Profit routes through verification, not a direct buy; Independent is sold by
           hand and is never offered here (LIVE-227). Only a FREE Space: a paid Space already holds a
           subscription, and a second checkout would bill it twice. */}
-      <PlanLadderRungs slug={slug} rungs={ladderRungs(rungs, currentPlan, sellable, isFree, !!slug)} />
+      <PlanLadderRungs slug={slug} rungs={ladderRungs(rungs, currentPlan, sellable, isFree, !!slug, unbilledPlan)} />
     </section>
   )
 }
