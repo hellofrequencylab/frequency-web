@@ -408,3 +408,13 @@
 [data-design="frequency"] [data-kit="members"] .fqm-filter-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px;align-items:end}
 [data-design="frequency"] [data-kit="members"] .fqm-item-art{background-image:var(--fq-pa);background-color:transparent;display:grid;place-items:center;opacity:.9}
 [data-design="frequency"] [data-kit="members"] .fqm-item-initial{font-size:64px;line-height:1;color:inherit;opacity:.55}
+
+/* Marketplace listing detail. Public listing routes render inside the site kit, whose .sec (section
+   padding), .side (promo tile) and .panel would also match: put the members kit's meaning back. */
+[data-design="frequency"] [data-kit="members"] .fqm-lst .ap-cols.sec{padding:0;margin-top:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-lst .ap-cols>.side{overflow:visible;border-radius:0;padding:0;min-height:0;box-shadow:none;background:none;justify-content:flex-start;gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-lst .panel{background-image:none}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-fit{background-size:contain;background-repeat:no-repeat;background-color:var(--fq-bg-surface,#fff)}
+[data-design="frequency"] [data-kit="members"] .fqm-lst .row.wrap{max-width:none;margin:0;padding:0;flex-wrap:wrap;justify-content:flex-start}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-in .btn{align-self:flex-start}
+[data-design="frequency"] [data-kit="members"] .fqm-buy{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px}
