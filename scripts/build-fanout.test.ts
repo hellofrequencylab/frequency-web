@@ -234,11 +234,10 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     const mod = FILES.find((f) => f.path === LOCAL_IMAGE_MODULE)
     expect(mod).toBeDefined()
     expect(mod!.src).toContain('export async function coverPlaceholderDataUrl')
-    expect(mod!.src).toContain('export async function siteMarkDataUrl')
     // The readers must actually be reads, and literal ones. A module that stopped calling readFile
-    // would pass every assertion below while shipping cards with no background. Seven: the six
-    // cover placeholders plus the Frequency mark.
-    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(7)
+    // would pass every assertion below while shipping cards with no background. The six
+    // cover placeholders (the Frequency mark is read in lib/og/stage-card.tsx).
+    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(6)
   })
 
   it('nothing anywhere builds a process.cwd() path out of a variable', () => {
@@ -286,7 +285,6 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     // so the shared layout module took their place here.
     const CARDS = [
       'app/(public)/spaces/[slug]/opengraph-image.tsx',
-      'lib/og/stage-card.tsx',
       'lib/og/claim-card.tsx',
     ]
     for (const path of CARDS) {
@@ -295,6 +293,13 @@ describe('every path read out of public/ is a literal, so the tracer never globs
       expect(card!.src, path).toMatch(/from ['"]@\/lib\/og\/local-image['"]/)
       expect(card!.src, path).not.toMatch(/from ['"]node:fs/)
     }
+    // The shared layout reads the mark through its own one-file module, so it does not drag the six
+    // cover photos into every card function (the 15th public/ file on the help cards).
+    const stage = FILES.find((f) => f.path === 'lib/og/stage-card.tsx')
+    expect(stage).toBeDefined()
+    expect(stage!.src).toMatch(/from ['"]@\/lib\/og\/site-mark['"]/)
+    expect(stage!.src).not.toMatch(/from ['"]@\/lib\/og\/local-image['"]/)
+    expect(stage!.src).not.toMatch(/from ['"]node:fs/)
     // The event route delegates its layout to that module and must keep its own hands off
     // public/: re-inlining a read "just for the mark" is how the glob comes back. (The help cards
     // legitimately read hero.jpg by a LITERAL path in the route file, which is why this arm names

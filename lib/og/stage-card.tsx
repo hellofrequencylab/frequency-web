@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- Satori/ImageResponse renders raw elements; next/image cannot run inside an OG ImageResponse */
 import { fetchRemoteImage } from '@/lib/og/remote-image'
-import { siteMarkDataUrl } from '@/lib/og/local-image'
+import { siteMarkDataUrl } from '@/lib/og/site-mark'
 import { loadStageFonts, STAGE_DISPLAY, STAGE_SANS, STAGE_SERIF } from '@/lib/og/load-stage-fonts'
 import { cardResponse } from '@/lib/og/deliver'
 import { STAGE } from '@/lib/og/stage-tokens'
