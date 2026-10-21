@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1193",
+  "title": "The CyberUnicorn portal leads with the Unicorn's live screen; console job groups sit in the sidebar",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-20 in the project thread, on the portal after LIVE-1187: 'This layout is trash. The sub categories of the menu should be under the category on the left. Sub menu items on top... I want the unicorn graphic taking up the majority... Don't have double loading bars', then 'once it's linked up, the unicorn screen area should be a mirrored feed with clickable controls on screen' and 'The Frequency logo on the Space console page should go to the feed'. Same evening an install ended with 'Another program has the port' on Connect."
+  },
+  "detail": "FILED AND CLOSED 2026-10-20. PREMISE RE-TESTED: the operator top menu drew two rows (groups, then pages) over a see-through band, so the page head showed through as ghost text; the portal's screen was a 22rem box beside a mostly empty panel; while updating, the boot scene's joke loader and the update bar both ran; the live mirror only ran on a separate 'Live screen' feature with its buttons under it; the sidebar wordmark went to the console home; esptool-js's disconnect waits 400 ms for its reader and then fails, leaving the port open on the page, so Connect after an update said another program had it. Built: the active section's job groups sit under it in the sidebar (admin-nav.tsx, .ad-sub-groups, a guide line and the gradient mark on the open group) and the top menu is one row of page pills (the groups row shows on a phone only); the band is 97% opaque. Portal: the features are tabs in the status strip; the screen is sized from the window height (as big as the fold allows) with the job beside it; once linked over USB the screen is the live mirror by default, with Back, the pad, refresh and off on the screen itself; the boot scene takes real progress (cu-boot-scene.ts progress) so waking and updating show one bar, on the Unicorn; the page head is screen-reader only (AdminTemplate headless). The wordmark in AdminShell goes to /feed. lib/device/web-serial.ts releasePort closes a port this page left open; openWebSerial and flashApp call it before opening and flashApp after writing.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-portal-centerpiece.mjs",
+    "note": "Fails when the sidebar stops drawing job groups, the groups row shows on a wide screen, the top menu goes see-through, the wordmark stops going to the Feed, the screen loses its on-screen buttons or its default mirror or its real progress, a second bar returns beside it, the page head takes room again, or the port is no longer released around an update and before a connect."
+  },
+  "closed": "2026-10-20",
+  "wave": "W7"
+}

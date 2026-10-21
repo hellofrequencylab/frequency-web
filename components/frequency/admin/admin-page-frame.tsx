@@ -32,10 +32,12 @@ export interface AdminPageFrameProps {
   level?: 'h1' | 'h2'
   /** 'focus' keeps a single-task page (a settings form) to a readable column; 'full' uses the console width. */
   measure?: 'full' | 'focus'
+  /** Keep the head for screen readers only (a full-bleed tool whose own frame names it). */
+  headless?: boolean
   children: ReactNode
 }
 
-export function AdminPageFrame({ kicker, title, meta, actions, back, banner, stats, level = 'h1', measure = 'full', children }: AdminPageFrameProps) {
+export function AdminPageFrame({ kicker, title, meta, actions, back, banner, stats, level = 'h1', measure = 'full', headless = false, children }: AdminPageFrameProps) {
   const Heading = level
   return (
     <div className="adp adp-frame" data-kit="members" data-measure={measure}>
@@ -46,7 +48,7 @@ export function AdminPageFrame({ kicker, title, meta, actions, back, banner, sta
         </Link>
       )}
       {banner}
-      <div className="head">
+      <div className={headless ? 'head sr-only' : 'head'}>
         <div>
           {kicker ? <span className="k">{kicker}</span> : null}
           <Heading className="h1">{title}</Heading>

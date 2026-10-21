@@ -15,7 +15,7 @@
 // itself, at 115200 to sync with the ROM bootloader, then moves to 230400 to write. The CH340 on this
 // board is reliable only up to 230400.
 
-import type { SerialPortLike } from './web-serial'
+import { releasePort, type SerialPortLike } from './web-serial'
 
 const APP_OFFSET = 0x10000
 const ROM_BAUD = 115200
@@ -117,7 +117,9 @@ export async function flashApp(port: SerialPortLike, bytes: Uint8Array, opts: Fl
   if (!/^[0-9a-f]{64}$/.test(want) || (await sha256Hex(bytes)) !== want) {
     throw new Error('The downloaded firmware does not match its release checksum. Nothing was written.')
   }
-  // An open port belongs to someone else on this page (the console's transport). Do not touch it.
+  // A port this page left open (an earlier install that did not let go) is closed first. One still open
+  // after that is in live use on this page (the console's transport). Do not touch it.
+  await releasePort(port)
   if (port.readable || port.writable) {
     throw new Error('The USB port is still in use by the console. Disconnect it there first, then run the update.')
   }
@@ -159,7 +161,11 @@ export async function flashApp(port: SerialPortLike, bytes: Uint8Array, opts: Fl
       throw plainError(e)
     }
   } finally {
-    // Release the port whatever happened, so the console can reconnect to the rebooted board.
-    await transport.disconnect().catch(() => port.close().catch(() => {}))
+    // Release the port whatever happened, so the console can reconnect to the rebooted board. esptool's own
+    // disconnect waits only 400 ms for its reader to let go and then fails, leaving the port open on this
+    // page; releasePort waits longer and closes it (owner, 2026-10-20: Connect after an update said the port
+    // was busy).
+    await transport.disconnect().catch(() => undefined)
+    await releasePort(port)
   }
 }

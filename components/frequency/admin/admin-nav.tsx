@@ -31,6 +31,9 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
       {items.map((item) => {
         const on = item.key === activeKey
         const badge = on && item.children?.length ? item.badge ?? 0 : itemBadge(item)
+        // With the top menu on, the active section's job groups sit under it here and their pages go across the
+        // top (owner, 2026-10-20: "the sub categories of the menu should be under the category on the left").
+        const groups = on && topMenu ? menuGroups(item).filter((g) => g.label) : []
         return (
           <div key={item.key} className="ad-nav-group">
             {item.external ? (
@@ -41,6 +44,20 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
                 {item.label}
                 {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
               </Link>
+            )}
+            {groups.length > 0 && (
+              <div className="ad-sub ad-sub-groups">
+                {groups.map((g) => {
+                  const here = g.leaves.some((l) => l.key === activeLeafKey)
+                  const waiting = g.leaves.reduce((n, l) => n + (l.badge ?? 0), 0)
+                  return (
+                    <Link key={g.label} href={g.leaves[0].href} className={here ? 'on' : undefined} aria-current={here && g.leaves.length === 1 ? 'page' : undefined}>
+                      {g.label}
+                      {waiting > 0 ? <b aria-label={`${waiting} waiting`}>{waiting}</b> : <small aria-label={`${g.leaves.length} pages`}>{g.leaves.length}</small>}
+                    </Link>
+                  )
+                })}
+              </div>
             )}
             {on && !topMenu && !!item.children?.length && (
               <div className="ad-sub">
@@ -93,9 +110,11 @@ export function AdminPhoneStrip({ items }: { items: AdminNavItem[] }) {
 }
 
 /** THE TOP MENU: the active section's pages across the top of every page, at every width (owner, 2026-10-20).
- *  A section with job groups draws two quiet rows: the groups (with the section's own home first), then the
- *  pages of the group you are in. A section without groups draws one row. Each row scrolls sideways with no
- *  bar, so a phone gets the same menu. Overview has no pages and draws nothing. */
+ *  On a wide screen the section's job groups sit under it in the sidebar (AdminNavList), so the top carries
+ *  ONE row: the pages of the group you are in, or on the section's home every page under quiet group
+ *  captions. On a phone the sidebar steps aside, so a groups row (the section's home first) shows above it
+ *  there (CSS, .ad-tm-groups). A section without groups draws its home and pages in one row. Each row
+ *  scrolls sideways with no bar. Overview has no pages and draws nothing. */
 export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
   const { item, leaf } = useActive(items)
   if (!item || item.external || !item.children?.length) return null
@@ -114,24 +133,37 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
       {!!l.badge && <b aria-label={`${l.badge} waiting`}>{l.badge}</b>}
     </Link>
   )
+  if (!grouped) {
+    return (
+      <div className="ad-topmenu">
+        <nav className="ad-tm-row ad-tm-pages" aria-label={`${item.label} pages`}>
+          {home}
+          {groups[0].leaves.map(page)}
+        </nav>
+      </div>
+    )
+  }
   return (
     <div className="ad-topmenu">
-      <nav className="ad-tm-row" aria-label={`${item.label} ${grouped ? 'sections' : 'pages'}`}>
+      <nav className="ad-tm-row ad-tm-groups" aria-label={`${item.label} sections`}>
         {home}
-        {grouped
-          ? groups.map((g) => {
-              const badge = g.leaves.reduce((n, l) => n + (l.badge ?? 0), 0)
-              const on = g === current
-              return (
-                <Link key={g.label} href={g.leaves[0].href} className={on ? 'on' : undefined} aria-current={on && g.leaves.length === 1 ? 'page' : undefined}>
-                  {g.label}
-                  {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
-                </Link>
-              )
-            })
-          : groups[0].leaves.map(page)}
+        {groups.map((g) => {
+          const badge = g.leaves.reduce((n, l) => n + (l.badge ?? 0), 0)
+          const on = g === current
+          return (
+            <Link key={g.label} href={g.leaves[0].href} className={on ? 'on' : undefined} aria-current={on && g.leaves.length === 1 ? 'page' : undefined}>
+              {g.label}
+              {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
+            </Link>
+          )
+        })}
       </nav>
-      {grouped && !current && (
+      {current ? (
+        <nav className="ad-tm-row ad-tm-pages" aria-label={`${current.label || item.label} pages`}>
+          {current.label && <span className="ad-tm-h">{current.label}</span>}
+          {current.leaves.map(page)}
+        </nav>
+      ) : (
         <nav className="ad-tm-row ad-tm-pages" aria-label={`All ${item.label} pages`}>
           {groups.map((g) => (
             <Fragment key={g.label}>
@@ -139,11 +171,6 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
               {g.leaves.map(page)}
             </Fragment>
           ))}
-        </nav>
-      )}
-      {grouped && current && current.leaves.length > 1 && (
-        <nav className="ad-tm-row ad-tm-pages" aria-label={`${current.label} pages`}>
-          {current.leaves.map(page)}
         </nav>
       )}
     </div>

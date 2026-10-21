@@ -59,9 +59,24 @@ export async function pickPort(): Promise<SerialPortLike> {
   return api.requestPort({ filters: [{ usbVendorId: CH340_VENDOR_ID }] })
 }
 
+/** Close `port` if THIS page still holds it open (the updater's esptool connection, an earlier console
+ *  transport that did not close). A reader that is still draining gets up to `ms` to let go; a port another
+ *  tab or program holds is not open on this page's object and is left alone. Never throws. */
+export async function releasePort(port: SerialPortLike, ms = 3000): Promise<void> {
+  if (!port.readable && !port.writable) return
+  const until = Date.now() + ms
+  // An unlocked stream can be cancelled from here; a locked one belongs to a reader that is winding down.
+  if (port.readable && !port.readable.locked) await port.readable.cancel().catch(() => undefined)
+  while ((port.readable?.locked || port.writable?.locked) && Date.now() < until) await new Promise((r) => setTimeout(r, 100))
+  await port.close().catch(() => undefined)
+}
+
 /** Open `port` as a protocol transport. */
 export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
   const api = serialApi()
+  // Left open on this page by the updater (esptool) or a transport that did not close: let it go first,
+  // or the open below fails as if another program had it (owner, 2026-10-20, right after an update).
+  await releasePort(port)
   try {
     await port.open({
       baudRate: BAUD_RATE,

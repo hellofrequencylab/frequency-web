@@ -40,6 +40,7 @@ export function AdminTemplate({
   adminBar = true,
   width = 'default',
   contentSpacing = 'default',
+  headless = false,
   children,
 }: {
   title: string
@@ -65,6 +66,9 @@ export function AdminTemplate({
   /** Vertical rhythm between body <AdminSection> blocks. 'default' is the roomy admin cadence;
    *  'tight' pulls the sections closer for a denser workspace. */
   contentSpacing?: 'default' | 'tight'
+  /** A full-bleed tool whose own frame carries its name (the CyberUnicorn portal): under the Frequency
+   *  design the page head is kept for screen readers but takes no room, so the tool starts at the top. */
+  headless?: boolean
   children: React.ReactNode
 }) {
   // Under the Frequency design (SITE_DESIGN, build-time) every admin page sits in the design's admin shell,
@@ -73,7 +77,7 @@ export function AdminTemplate({
   // shell's breadcrumb replaces the automatic one). DAWN renders below exactly as before.
   if (SITE_DESIGN === 'frequency') {
     return (
-      <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={hideBackLink ? undefined : back}>
+      <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={hideBackLink ? undefined : back} headless={headless}>
         {children}
       </AdminPageFrame>
     )
