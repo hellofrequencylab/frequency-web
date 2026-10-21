@@ -5,6 +5,8 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { setupFinishFor } from '@/lib/spaces/create-wizard'
+import { spaceSetupFinishHref } from '@/lib/spaces/setup'
 import { SpaceSetupSpark, type SpaceSetupInitial } from './space-setup-spark'
 
 // SPACE SETUP (ADR-1733). The seeding walk a new Business or Nonprofit Space's owner lands on
@@ -64,5 +66,5 @@ export default async function SpaceSetupPage({ params }: { params: Promise<{ slu
     offerings: profile.offerings ?? [],
   }
 
-  return <SpaceSetupSpark slug={space.slug} spaceId={space.id} spaceName={space.brandName ?? space.name} initial={initial} />
+  return <SpaceSetupSpark finishHref={setupFinishFor(space.slug, (space.preferences as { planIntent?: string } | null)?.planIntent, spaceSetupFinishHref(space.slug))} slug={space.slug} spaceId={space.id} spaceName={space.brandName ?? space.name} initial={initial} />
 }

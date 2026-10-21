@@ -66,6 +66,7 @@ import { resolveSiteHeaderBrand } from '@/lib/sites/site-brand'
 import { SiteMemberBadge } from '@/components/sites/site-member-badge'
 import { isLocalSiteProjection, projectLocalSiteSpace } from '@/lib/sites/local-site-projection'
 import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
+import { badgeRemovalHeld, effectiveFooterBadge, readFooterBadge } from '@/lib/sites/site-badge'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
 // free subdomain (`<slug>.frequencylocal.com`, LIVE-782), on its own domain once connected, and at
@@ -371,6 +372,7 @@ export async function SitePage({
         tools={netSite ? networkTools : null}
         footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
         checkIn={checkIn}
+        credit={effectiveFooterBadge(readFooterBadge(space.preferences), badgeRemovalHeld(space.plan, space.entitlements))}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >

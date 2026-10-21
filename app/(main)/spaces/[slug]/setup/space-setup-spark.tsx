@@ -70,11 +70,14 @@ export interface SpaceSetupInitial {
 type OfferingRow = { key: number; data: SpaceOffering; price: string }
 
 export function SpaceSetupSpark({
+  finishHref: finishHrefProp,
   slug,
   spaceId,
   spaceName,
   initial,
 }: {
+  /** Where the last step lands. Defaults to the Circles manager; a paid-plan hint sends it to billing. */
+  finishHref?: string
   slug: string
   spaceId: string
   spaceName: string
@@ -116,7 +119,7 @@ export function SpaceSetupSpark({
 
   const step: SpaceSetupStep = STEPS[index] ?? STEPS[0]!
   const total = STEPS.length
-  const finishHref = spaceSetupFinishHref(slug)
+  const finishHref = finishHrefProp ?? spaceSetupFinishHref(slug)
 
   /** Run a step's save, then move on. A failed save stays on the step and says why. */
   const saveThen = (save: () => Promise<ActionResult[]>) => {

@@ -67,7 +67,7 @@ const COMBINING_MARKS = /\p{M}/gu
  * business and a hand-created Space got DIFFERENT slugs from the same name, and neither was right.
  * Decompose, drop the marks, then hyphenate; the per-caller length caps + the trailing-hyphen
  * re-strip after a cut stay at the callers (lib/importer/map.ts slugifyName, lib/spaces/profile-pages.ts
- * slugifyLabel, lib/practices.ts, app/(main)/spaces/new/create-space-form.tsx), which all delegate here.
+ * slugifyLabel, lib/practices.ts, app/(main)/spaces/new/create-space-wizard.tsx), which all delegate here.
  *
  * ASCII input is byte-for-byte what it always was (lib/slug-parity.test.ts pins that against the
  * previous body), so no stored slug derived from an ASCII name moves. Only names carrying accents

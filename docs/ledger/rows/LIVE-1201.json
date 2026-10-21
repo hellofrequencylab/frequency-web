@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1201",
+  "title": "Creating a Space is a step-by-step wizard that reads the plan from /pricing (LIVE-1201)",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/spaces/new/create-space-wizard.tsx",
+    "ref": "Owner 2026-10-21: use the standardized seeders' strategy to create a Space Creation Wizard. Analysis at /mnt/project-files/seeders/seeders-analysis-2026-10-21.md."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: /spaces/new was one plain form that read only ?mode= and had no plan question. It is now four Spark-kit steps (Plan, What you run, Name it, Ready) whose middle steps are read off SPACE_MANIFEST by lib/spaces/create-wizard.ts. It reads ?plan= (free, business, collective, nonprofit, network; unknown means free) from the /pricing hand-off. The plan is a hint: the Space is born free, and a paid hint is kept on the Space as preferences.planIntent and ends the setup walk on its billing page. Every existing path still works: ?mode= funnels, createSpace's gates, governed create, the setup walk. Starter content is the preset, tool defaults, CRM stages and kind from LIVE-1200 plus the existing setup walk; no invented sample content.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const w=fs.readFileSync('app/(main)/spaces/new/create-space-wizard.tsx','utf8');const pg=fs.readFileSync('app/(main)/spaces/new/page.tsx','utf8');const bad=[];if(!w.includes('SparkShell'))bad.push('wizard is not on the Spark kit');if(!pg.includes('parsePlanHint(params.plan)'))bad.push('page does not read ?plan=');if(!w.includes('createWizardSteps(SPACE_MANIFEST)'))bad.push('steps are not read off the manifest');if(bad.length){console.error('LIVE-1201: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the wizard leaves the Spark kit, stops reading ?plan=, or stops deriving its steps from the manifest."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
