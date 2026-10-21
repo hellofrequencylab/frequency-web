@@ -107,7 +107,7 @@ export function AyTicker({ tabs, defaultTab }: { tabs: AyTab[]; defaultTab: AyTa
   const [on, setOn] = useState<AyTabKey>(defaultTab)
   const tab = tabs.find((t) => t.key === on) ?? tabs[0]
   return (
-    <div className="ay-ticker panel">
+    <div className="ay-board">
       <div className="ay-tabs" role="tablist" aria-label="Around you">
         {tabs.map((t) => (
           <button
