@@ -17,7 +17,7 @@ import { Emitter, type Transport } from './transport'
 
 export const BAUD_RATE = 115200
 export const CH340_VENDOR_ID = 0x1a86
-export const FLIPPER_VENDOR_ID = 0x0483
+const FLIPPER_VENDOR_ID = 0x0483
 
 /** Which device a USB port belongs to, from its vendor id. */
 export type UsbDevice = 'unicorn' | 'flipper'
