@@ -1,31 +1,35 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check } from 'lucide-react'
 import { SparkShell } from '@/components/studio/spark'
 import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Radio } from '@/components/ui/radio'
 import { isError } from '@/lib/action-result'
 import { isSafeSlug } from '@/lib/theme/validate'
-import { cn, slugify as slugifyShared } from '@/lib/utils'
+import { slugify as slugifyShared } from '@/lib/utils'
 import { createSpace } from '@/lib/spaces/provision'
 import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
 import {
-  WIZARD_PLANS,
+  WIZARD_INTENTS,
   WIZARD_PLAN_COPY,
   choiceTypeForPlan,
   createWizardSteps,
+  suggestModeForIntents,
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
 import { Field, TextField, VisibilityField } from '@/components/spaces/space-form'
 
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
-// (docs/STUDIO.md): Plan, What you run, Name it, Ready. The steps are read off the Space manifest by
+// (docs/STUDIO.md): What you want to do, Tool setup, Name it, Ready. The steps are read off the Space manifest by
 // lib/spaces/create-wizard.ts, and the last step hands off to the setup walk (/spaces/<slug>/setup),
 // which seeds the story, look, contact details and offerings. The server re-validates everything;
 // this mirrors the checks for fast, inline feedback only.
 //
-// The plan is a HINT from /pricing (`?plan=`): a Space is always born free, and a paid hint only
-// decides that the setup walk ends on the Space's billing page (kept as preferences.planIntent).
+// The first step is a MULTI-SELECT of what the owner wants to do, never a niche: it suggests the tool
+// setup and is recorded first-party only (createSpace). The plan is a HINT from /pricing (`?plan=`): a
+// Space is always born free, and a paid hint only decides that the setup walk ends on the Space's billing
+// page (kept as preferences.planIntent).
 
 /** One "what do you run?" choice (mirrors lib/spaces/modes.ts ModeChoice). */
 export interface SpaceModeChoice {
@@ -42,25 +46,10 @@ function slugify(name: string): string {
   return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
 }
 
-function Option({ active, onClick, title, hint }: { active: boolean; onClick: () => void; title: string; hint: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'flex items-start justify-between gap-3 rounded-control border px-3 py-3 text-left transition-colors',
-        active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
-      )}
-    >
-      <span>
-        <span className="block text-body-sm font-semibold text-text">{title}</span>
-        <span className="mt-0.5 block text-meta text-muted">{hint}</span>
-      </span>
-      {active && <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />}
-    </button>
-  )
-}
+/** One selectable card. The design system's Checkbox (several picks) or Radio (one pick) draws the control,
+ *  and the card border follows the native checked state, so there is no JS mirror to drift. */
+const cardClass =
+  'w-full rounded-control border border-border bg-surface px-3 py-3 transition-colors hover:border-border-strong has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring'
 
 export function CreateSpaceWizard({
   choices,
@@ -81,8 +70,13 @@ export function CreateSpaceWizard({
   // A nonprofit plan points at the nonprofit Mode unless a funnel already chose one.
   const planType = choiceTypeForPlan(initialPlan)
   const planChoice = planType ? choices.find((c) => c.type === planType)?.id : undefined
-  const [plan, setPlan] = useState<WizardPlan>(initialPlan)
-  const [choiceId, setChoiceId] = useState(initialChoiceId ?? planChoice ?? choices[0]?.id ?? '')
+  const plan = initialPlan
+  const [intents, setIntents] = useState<string[]>([])
+  // No niche is assumed: the default is the general service setup unless a funnel or the nonprofit plan chose.
+  const [choiceId, setChoiceId] = useState(
+    initialChoiceId ?? planChoice ?? choices.find((c) => c.id === 'business:service')?.id ?? choices[0]?.id ?? '',
+  )
+  const [choiceTouched, setChoiceTouched] = useState(false)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
@@ -93,7 +87,10 @@ export function CreateSpaceWizard({
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
-  const choice = choices.find((c) => c.id === choiceId) ?? choices[0]
+  const suggested = suggestModeForIntents(intents, choices.map((c) => c.id))
+  // Until the owner picks a setup by hand, the setup follows the picks.
+  const activeChoiceId = !choiceTouched && !initialChoiceId && suggested ? suggested : choiceId
+  const choice = choices.find((c) => c.id === activeChoiceId) ?? choices[0]
   const step = STEPS[index]
   const slugValid = slug === '' || isSafeSlug(slug)
   const identityOk = name.trim().length > 0 && isSafeSlug(slug)
@@ -115,6 +112,7 @@ export function CreateSpaceWizard({
         visibility,
         heardAbout: heardAbout || null,
         plan,
+        intents,
       })
       // createSpace redirects on success, so we only reach here on a returned error.
       if (result && isError(result)) setError(result.error)
@@ -132,7 +130,7 @@ export function CreateSpaceWizard({
       description={step.desc}
       step={index + 1}
       totalSteps={STEPS.length}
-      stepLabel={step.key === 'plan' ? 'Plan' : step.key === 'model' ? 'Model' : step.key === 'identity' ? 'Name' : 'Start'}
+      stepLabel={step.key === 'intents' ? 'Goals' : step.key === 'model' ? 'Setup' : step.key === 'identity' ? 'Name' : 'Start'}
       onBack={index > 0 ? () => setIndex(index - 1) : undefined}
       onNext={last ? submit : () => setIndex(index + 1)}
       nextLabel={last ? 'Create my Space' : 'Continue'}
@@ -141,18 +139,36 @@ export function CreateSpaceWizard({
       error={error}
       draftScopeKey={null}
     >
-      {step.key === 'plan' && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {WIZARD_PLANS.map((p) => (
-            <Option key={p} active={plan === p} onClick={() => setPlan(p)} title={WIZARD_PLAN_COPY[p].label} hint={WIZARD_PLAN_COPY[p].hint} />
+      {step.key === 'intents' && (
+        <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="What you want to do here">
+          {WIZARD_INTENTS.map((i) => (
+            <Checkbox
+              key={i.id}
+              label={i.label}
+              hint={i.hint}
+              checked={intents.includes(i.id)}
+              onChange={(e) => setIntents(e.target.checked ? [...intents, i.id] : intents.filter((x) => x !== i.id))}
+              wrapperClassName={cardClass}
+            />
           ))}
         </div>
       )}
 
       {step.key === 'model' && (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Tool setup">
           {choices.map((c) => (
-            <Option key={c.id} active={choiceId === c.id} onClick={() => setChoiceId(c.id)} title={c.label} hint={c.hint} />
+            <Radio
+              key={c.id}
+              name="space-mode"
+              label={c.label}
+              hint={c.hint}
+              checked={activeChoiceId === c.id}
+              onChange={() => {
+                setChoiceTouched(true)
+                setChoiceId(c.id)
+              }}
+              wrapperClassName={cardClass}
+            />
           ))}
         </div>
       )}
@@ -194,9 +210,10 @@ export function CreateSpaceWizard({
             {[
               ['Space', name.trim() || 'Not named yet'],
               ['Handle', `/spaces/${slug}`],
-              ['What you run', choice ? `${choice.label}: ${choice.hint}` : ''],
+              ['You want to', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
+              ['Tool setup', choice ? `${choice.label}: ${choice.hint}` : ''],
               ['Starting tools', (choice && presetLabels[choice.id]) || 'Every tool on'],
-              ['Plan', plan === 'free' ? 'Free' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
+              ['Plan', plan === 'free' ? 'Free, upgrade any time' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
               ['Who can find it', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 px-4 py-2.5">

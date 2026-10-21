@@ -44,7 +44,8 @@ import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-l
 import { resolveSetupPreset, setupPresetForMode } from '@/lib/pricing/bundles'
 import { setSpaceBundle } from '@/lib/pricing/space-bundle'
 import { postCreateLanding } from '@/lib/spaces/setup'
-import { parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
+import { parseIntents, parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
  *  `modeVariant` (the Focus, Space Modes M3) is optional: null resolves to the type's default Focus. */
@@ -68,6 +69,9 @@ export interface CreateSpaceInput {
   /** The plan the wizard was opened for (`?plan=` from /pricing). A HINT: the Space is always born
    *  free; a paid hint only sends the owner to billing when the setup walk ends. */
   plan?: string | null
+  /** What the owner said they want to do here (WIZARD_INTENTS ids, a multi-select, never a niche). Kept on
+   *  the Space and in the audit draft, and recorded FIRST-PARTY ONLY: never sent to an ad pixel. */
+  intents?: string[]
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
@@ -212,8 +216,10 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // The plan the wizard was opened for (a HINT, never a grant): kept on the Space so the setup walk
   // can end on its billing page. Free is the default and stores nothing.
   const planIntent = planWantsBilling(input.plan) ? parsePlanHint(input.plan) : null
+  const intents = parseIntents(input.intents)
   const seedPreferences: Record<string, unknown> = {
     ...(planIntent ? { planIntent } : {}),
+    ...(intents.length ? { startingIntents: intents } : {}),
     ...(seededKind ? withProfileData(null, { kind: seededKind }) : {}),
     ...(heardAbout ? { heardAbout } : {}),
   }
@@ -252,6 +258,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
       modeVariant: modeVariant ?? '',
       preset: setupPreset?.id ?? '',
       heardAbout,
+      intents: intents.join(','),
     },
     rationale: 'Space builder: the member named the Space and tapped Create.',
     commit: async () => {
@@ -287,6 +294,19 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   })
   if ('error' in governed) return fail(governed.error)
   const spaceId = governed.data
+
+  // THE PICKS, FIRST-PARTY ONLY. One ledger row per Space, straight to the engagement ledger and NOT through
+  // track(), which mirrors to GA4: what a member wants to do is theirs, and no pixel gets it. Best-effort
+  // (analytics must never break a create); the stored `startingIntents` above is the durable copy.
+  if (intents.length) {
+    void recordEngagementEvent({
+      idempotencyKey: `space_create_intents:${spaceId}`,
+      source: 'web',
+      eventType: 'space_create_intents',
+      actorProfileId: profileId,
+      context: { spaceId, type, intents, plan: input.plan ?? 'free' },
+    }).catch(() => {})
+  }
 
   // Seat the owner as a Space admin (an explicit membership row, alongside owner_profile_id).
   await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })
