@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { activeNav, hrefScore, itemBadge, menuGroups, phoneSlots, slideTypes, type AdminNavItem } from './nav-model'
+import { activeNav, foldAfterScroll, hrefScore, itemBadge, menuGroups, phoneSlots, slideTypes, type AdminNavItem } from './nav-model'
 import { spaceNavItems } from './space-console'
 import { adminNavItems } from './admin-console'
 import type { ResolvedCategory, ResolvedItem } from '@/lib/menus/types'
@@ -130,5 +130,20 @@ describe('slideTypes (the console slide)', () => {
     expect(slideTypes(order, 'b', 'b')).toBeUndefined()
     expect(slideTypes(order, null, 'b')).toBeUndefined()
     expect(slideTypes(order, 'b', 'zzz')).toBeUndefined()
+  })
+})
+
+describe('foldAfterScroll', () => {
+  it('stays open near the top of the page whatever the direction', () => {
+    expect(foldAfterScroll(true, 20, 400)).toBe(false)
+    expect(foldAfterScroll(false, 60, 10)).toBe(false)
+  })
+  it('folds when scrolling down past the top and opens on any scroll up', () => {
+    expect(foldAfterScroll(false, 300, 200)).toBe(true)
+    expect(foldAfterScroll(true, 280, 300)).toBe(false)
+  })
+  it('keeps its state through small movements', () => {
+    expect(foldAfterScroll(true, 303, 300)).toBe(true)
+    expect(foldAfterScroll(false, 297, 300)).toBe(false)
   })
 })

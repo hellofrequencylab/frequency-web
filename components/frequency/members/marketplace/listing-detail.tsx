@@ -38,6 +38,8 @@ export function FqListingDetail({
   claimToken,
   soloGalleryRow = true,
   asideExtras,
+  heroBuy,
+  heroMeta,
 }: {
   view: ListingDetailView
   comments: ListingComment[]
@@ -51,6 +53,10 @@ export function FqListingDetail({
   claimToken?: string | null
   soloGalleryRow?: boolean
   asideExtras?: React.ReactNode
+  /** The buy control, drawn in the hero beside the price (a plain product only). */
+  heroBuy?: React.ReactNode
+  /** Trust line under the seller: the verified badge, a service's duration and cancellation terms. */
+  heroMeta?: React.ReactNode
 }) {
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
@@ -63,20 +69,20 @@ export function FqListingDetail({
   const place = [view.locationLabel, relativeTime(view.createdAt)].filter(Boolean).join(' · ')
 
   return (
-    <MembersBody>
+    <MembersBody className="fqm-lst">
       {jsonLd.length > 0 && <JsonLd data={jsonLd} />}
       <Link className="meta fqm-back" href={view.back.href}>
         ← {view.back.label}
       </Link>
 
       <section className="card fqm-ev">
-        <div className="ph fqm-ev-ph" style={view.primaryImage ? { backgroundImage: `url('${view.primaryImage}')` } : undefined}>
+        <div className={view.vertical === 'market' ? 'ph fqm-ev-ph fqm-ev-fit' : 'ph fqm-ev-ph'} style={view.primaryImage ? { backgroundImage: `url('${view.primaryImage}')` } : undefined}>
           {view.categoryLabel && <span className="tag glass">{view.categoryLabel}</span>}
         </div>
         <div className="fqm-ev-in">
           <span className="k">{view.vertical === 'classifieds' ? 'Classifieds' : view.vertical === 'housing' ? 'Housing' : 'Market'}</span>
           <h1 className="h1">{view.title}</h1>
-          {(view.priceLabel || view.terms) && (
+          {!heroBuy && (view.priceLabel || view.terms) && (
             <span className="h3">{[view.priceLabel, view.terms].filter(Boolean).join(' · ')}</span>
           )}
           {place && <span className="body">{place}</span>}
@@ -90,7 +96,14 @@ export function FqListingDetail({
               </span>
             </Link>
           )}
+          {heroMeta}
           <div className="fqm-ev-act">
+            {heroBuy && (
+              <div className="fqm-buy">
+                <span className="h2">{[view.priceLabel, view.terms].filter(Boolean).join(' · ')}</span>
+                {heroBuy}
+              </div>
+            )}
             {claimToken ? (
               <ListingClaimBox
                 token={claimToken}

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { SparkShell } from '@/components/studio/spark'
 import { Select } from '@/components/ui/select'
@@ -307,6 +308,14 @@ export function CreateSpaceWizard({
         </div>
       )}
       </SparkShell>
+      {index === 0 && (
+        <p className="why mx-auto max-w-lg px-4 pb-8 text-center">
+          Rather not fill it in by hand?{' '}
+          <Link href="/spaces/launch" className="underline">
+            Let Vera draft your page
+          </Link>
+        </p>
+      )}
     </div>
   )
 }

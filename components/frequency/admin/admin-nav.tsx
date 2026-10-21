@@ -1,10 +1,10 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { FqIcon } from '@/components/frequency/icon'
-import { activeNav, itemBadge, menuGroups, phoneSlots, slideTypes, type AdminNavItem, type AdminNavLeaf } from './nav-model'
+import { activeNav, foldAfterScroll, itemBadge, menuGroups, phoneSlots, slideTypes, type AdminNavItem, type AdminNavLeaf } from './nav-model'
 
 // The sidebar navigation and the top bar's breadcrumb (shell.js): client components only because the active
 // row follows the URL across soft navigations, which a layout cannot see. Both read the same resolver, so
@@ -123,8 +123,35 @@ export function AdminPhoneStrip({ items }: { items: AdminNavItem[] }) {
  *  captions. On a phone the sidebar steps aside, so a groups row (the section's home first) shows above it
  *  there (CSS, .ad-tm-groups). A section without groups draws its home and pages in one row. Each row
  *  scrolls sideways with no bar. Overview has no pages and draws nothing. */
+/** The top menu tucks up while you scroll down a page and returns on any scroll up, at the top of the page, or
+ *  when the pointer moves into the top strip. CSS only folds it on a wide screen and never while focus is
+ *  inside it, so a keyboard user and a phone keep the menu (and the active page) in view. */
+function useFold() {
+  const [folded, setFolded] = useState(false)
+  const last = useRef(0)
+  useEffect(() => {
+    last.current = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      setFolded((was) => foldAfterScroll(was, y, last.current))
+      last.current = y
+    }
+    const onMove = (e: MouseEvent) => {
+      if (e.clientY < 150) setFolded(false)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('mousemove', onMove)
+    }
+  }, [])
+  return folded
+}
+
 export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
   const { item, leaf } = useActive(items)
+  const folded = useFold()
   if (!item || item.external || !item.children?.length) return null
   const groups = menuGroups(item)
   const onHome = !leaf || leaf.href === item.href
@@ -146,7 +173,7 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
   )
   if (!grouped) {
     return (
-      <div className="ad-topmenu" style={{ viewTransitionName: 'ad-topmenu' }}>
+      <div className="ad-topmenu" data-fold={folded ? '1' : undefined} style={{ viewTransitionName: 'ad-topmenu' }}>
         <nav className="ad-tm-row ad-tm-pages" aria-label={`${item.label} pages`}>
           {home}
           {groups[0].leaves.map(page)}
@@ -155,7 +182,7 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
     )
   }
   return (
-    <div className="ad-topmenu" style={{ viewTransitionName: 'ad-topmenu' }}>
+    <div className="ad-topmenu" data-fold={folded ? '1' : undefined} style={{ viewTransitionName: 'ad-topmenu' }}>
       <nav className="ad-tm-row ad-tm-groups" aria-label={`${item.label} sections`}>
         {home}
         {groups.map((g) => {

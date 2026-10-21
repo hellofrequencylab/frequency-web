@@ -70,6 +70,8 @@ export function ListingDetailTemplate({
   claimToken,
   soloGalleryRow = true,
   asideExtras,
+  heroBuy,
+  heroMeta,
 }: {
   view: ListingDetailView
   comments: ListingComment[]
@@ -114,6 +116,10 @@ export function ListingDetailTemplate({
    * sticky buy box belongs there, not a hole.
    */
   asideExtras?: React.ReactNode
+  /** Frequency design only: the buy control drawn in the hero beside the price. */
+  heroBuy?: React.ReactNode
+  /** Frequency design only: the trust line under the seller (verified badge, service terms). */
+  heroMeta?: React.ReactNode
 }) {
   // THE DESIGN SWITCH (ADR-1737): under Frequency every listing (Classifieds, the Market, Housing)
   // is the member kit's listing page, on the same view and islands. Build-time, so DAWN is untouched.
@@ -131,6 +137,8 @@ export function ListingDetailTemplate({
         claimToken={claimToken}
         soloGalleryRow={soloGalleryRow}
         asideExtras={asideExtras}
+        heroBuy={heroBuy}
+        heroMeta={heroMeta}
       >
         {children}
       </FqListingDetail>

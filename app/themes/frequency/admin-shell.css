@@ -263,3 +263,12 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
 ::view-transition-old(*),::view-transition-new(*),::view-transition-group(*){animation-duration:0s !important;animation-delay:0s !important}
 }
 }
+
+/* The top menu folds up while you scroll down and returns on scroll up (AdminTopMenu, owner 2026-10-21: "fold
+   up when still"). Wide screens only: on a phone the strip is the only place the active page shows. Never
+   while focus is inside it. The durations are zero under reduced motion (--fq-dur-base). */
+@media (min-width:961px){
+@layer components{
+[data-design="frequency"] [data-kit="admin"] .ad-topmenu{transition:transform var(--fq-dur-base) ease,opacity var(--fq-dur-base) ease,visibility 0s linear 0s}
+[data-design="frequency"] [data-kit="admin"] .ad-topmenu[data-fold="1"]:not(:focus-within){transform:translateY(-100%);opacity:0;visibility:hidden;pointer-events:none;transition:transform var(--fq-dur-base) ease,opacity var(--fq-dur-base) ease,visibility 0s linear var(--fq-dur-base)}
+}}

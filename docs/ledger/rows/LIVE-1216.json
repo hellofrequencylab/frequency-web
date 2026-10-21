@@ -1,19 +1,19 @@
 {
   "id": "LIVE-1216",
-  "title": "The CyberUnicorn console's Device log copies in one tap",
+  "title": "A Network can stop paying for a client website (LIVE-1216)",
   "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
   "source": {
-    "file": "docs/LOYALTY.md",
-    "ref": "Owner 2026-10-21 in the project thread: 'I cannot copy the log for some reason. Give me a copy button'."
+    "file": "lib/collective/client-sites-actions.ts",
+    "ref": "Owner 2026-10-21 (\"Network can resell\", \"do it\"): the last control of the Network website reseller program, ADR-1816."
   },
-  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: the Device log at /admin/cyberunicorn was a bare <pre> inside a <details>, and the owner could not select it to paste into a support thread. It now has a Copy log button that copies the same redacted text it shows (signed /c/ links and ?s= signatures cut), via the Clipboard API with a hidden-textarea fallback, and says Copied or Copy blocked.",
+  "detail": "FILED AND CLOSED 2026-10-21. Remove from my bill on the Client websites page (after a confirmation) calls removeClientSite: it DETACHES the site, never deletes the Space. reseller_network_id is cleared, the plan goes back to free, and the entitlements go back to the free defaults of its type (Business depth, the custom domain and badge removal are taken away), then syncClientSiteBilling lowers the Network's bill in the same call. If the bill cannot change, the site is put back exactly as it was, so the Network is never left paying for a site it let go of. A domain saved on the site stops serving until the site is on a plan with custom domains; the domain is not removed from Vercel here.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/cu5k-log-copy.mjs",
-    "note": "Fails when the Copy button, its fallback, or the redaction of the copied text goes away."
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/collective/client-sites-actions.ts','utf8');const e=fs.readFileSync('app/(main)/spaces/[slug]/settings/websites/editor.tsx','utf8');const bad=[];const i=a.indexOf('export async function removeClientSite');const body=i<0?'':a.slice(i);if(i<0||!body.includes('syncClientSiteBilling'))bad.push('removing a site does not lower the bill');if(body.includes('.delete()'))bad.push('removing a site deletes rows');if(!e.includes('window.confirm')||!e.includes('removeClientSite'))bad.push('no confirmed remove control');if(bad.length){console.error('LIVE-1216: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when removing a site stops lowering the bill, deletes rows, or loses its confirmation."
   },
   "closed": "2026-10-21",
   "wave": "W7"

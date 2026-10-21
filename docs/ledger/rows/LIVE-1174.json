@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1174",
+  "title": "Editor panels read as Frequency type, and Vera can be put away",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "chrome"
+  },
+  "detail": "Owner screenshot 2026-10-20: the editor inspector looked blocky with off fonts. Cause: the site theme aliases (data-website-theme) re-skinned the chrome, and Tailwind utilities in the shared field form beat the layered editor-shell rules. DONE 2026-10-21: unlayered Frequency-scoped rules pin the chrome to --fq tokens, give field labels, counters and hints their own hierarchy, lighten inputs and tidy layer rows. Vera has a Hide control in her bar; an orb stays bottom right, the choice is remembered on this device, Command K or the orb brings her back, Command backslash toggles. Renders in /mnt/project-files/editor/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('app/themes/frequency/editor-shell.css','utf8');const s=fs.readFileSync('components/sites/editor/shell.tsx','utf8');if(!/THE INSPECTOR AND LAYERS, REFINED/.test(c)||!/\\.vera-orb/.test(c)||!/Hide Vera/.test(s))process.exit(1)\"",
+    "note": "Passes while the refined inspector rules and the Hide Vera control exist.",
+    "checked": "2026-10-21"
+  },
+  "wave": "W4"
+}

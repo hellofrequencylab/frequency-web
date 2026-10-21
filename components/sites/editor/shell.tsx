@@ -35,6 +35,22 @@ import './editor.css'
 import '@/app/themes/active/kit-editor'
 import '@/app/themes/active/editor-shell'
 
+/** Where this device remembers that Vera's bar is put away. A store, not state, so the server render (always
+ *  shown) and the first client render agree and the saved choice lands right after. If storage is blocked
+ *  (a private window) the choice lasts for the page's life. */
+const VERA_HIDDEN_KEY = 'fq.editor.vera-hidden'
+let veraHiddenFallback = false
+const veraListeners = new Set<() => void>()
+function readVeraHidden(): boolean {
+  try { return window.localStorage.getItem(VERA_HIDDEN_KEY) === '1' } catch { return veraHiddenFallback }
+}
+function writeVeraHidden(hidden: boolean) {
+  veraHiddenFallback = hidden
+  try { window.localStorage.setItem(VERA_HIDDEN_KEY, hidden ? '1' : '0') } catch {}
+  veraListeners.forEach((l) => l())
+}
+function subscribeVeraHidden(listener: () => void) { veraListeners.add(listener); return () => { veraListeners.delete(listener) } }
+
 type Panel = 'inspect' | 'comments' | 'seo' | 'header' | 'footer' | 'page'
 /** The Frequency inspector's tabs (the design's Content / Design / Advanced / Notes). Notes is the comments
  *  panel; the other three show the matching part of the same WebsiteInspector. */
@@ -215,6 +231,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { if (!FQ_EDITOR) return; const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer) }, [])
   const veraInput = useRef<HTMLInputElement>(null)
+  // Vera's bar can be put away (it covers the canvas): a small orb stays in its place, the choice is
+  // remembered on this device, and ⌘K or the orb brings it back. View state only, no effect on the draft.
+  const veraHidden = useSyncExternalStore(subscribeVeraHidden, readVeraHidden, () => false)
+  const focusVeraNext = useRef(false)
+  function putVeraAway(hidden: boolean, focus = false) {
+    focusVeraNext.current = focus && !hidden
+    writeVeraHidden(hidden)
+    if (FQ_EDITOR) say(hidden ? 'Vera is hidden. Press Command K to bring it back.' : 'Vera is back')
+  }
+  useEffect(() => { if (!veraHidden && focusVeraNext.current) { focusVeraNext.current = false; veraInput.current?.focus() } }, [veraHidden])
   const pickRef = useRef<HTMLDivElement>(null)
   const uid = useId()
   function say(message: string) {
@@ -384,7 +410,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return }
     // The design's shortcuts: ⌘P previews, ⌘K asks Vera (both designs; Frequency also announces the preview).
     if (mod && e.key.toLowerCase() === 'p') { e.preventDefault(); togglePreview(); return }
-    if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); if (FQ_EDITOR) { if (preview) setPreview(false); veraInput.current?.focus() } else document.querySelector<HTMLInputElement>('.we-vera-bar input')?.focus(); return }
+    if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); if (FQ_EDITOR) { if (preview) setPreview(false); if (veraHidden) putVeraAway(false, true); else veraInput.current?.focus() } else document.querySelector<HTMLInputElement>('.we-vera-bar input')?.focus(); return }
+    if (FQ_EDITOR && mod && e.key === '\\') { e.preventDefault(); putVeraAway(!veraHidden, true); return }
     if (e.key === 'Escape') { setModal(null); if (preview) togglePreview(false); setPickOpen(false); setPageMenu(false); return }
     if (!target?.closest || target.closest('input,textarea,select,[contenteditable=true]')) return
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); travel(e.shiftKey) }
@@ -647,13 +674,15 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
           <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
-          {!preview && <div className="vera">
+          {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
+          {!preview && !veraHidden && <div className="vera">
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is preparing a proposal…' : <><b>Vera</b>{proposal ? <> · {blockName(proposal.blockId, draft.pages.find((p) => p.slug === proposal.pageSlug)?.doc)}</> : null}{veraStatus && !proposal && <p>{veraStatus}</p>}</>}{proposal && <><p>{proposal.after}</p><div className="acts"><button type="button" className="btn sm pa" onClick={applyProposal}>Apply</button><button type="button" className="btn sm txt" onClick={() => { setProposal(null); setVeraStatus('') }}>Not now</button></div></>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
               <span className="orb" aria-hidden />
               <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder="Ask Vera to change this page…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
               <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
+              <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
             </form>
             <div className="chips">{suggestions.map((chip) => <button type="button" key={chip.label} disabled={asking || !selected} onClick={() => void askVera(chip.prompt, chip.fields)}>{chip.label}</button>)}</div>
           </div>}
