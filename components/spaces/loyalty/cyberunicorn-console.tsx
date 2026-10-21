@@ -628,6 +628,8 @@ export function CyberUnicornConsole({
         s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: 3000 }).catch(() => null)
       }
       setBootStarted(null)
+      // Let go of on purpose (the updater took the port, or Disconnect was pressed): not the board's silence.
+      if (clientRef.current !== next) return
       if (!s) {
         await disconnect()
         setProblem(
