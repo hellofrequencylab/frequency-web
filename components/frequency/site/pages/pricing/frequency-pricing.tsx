@@ -15,7 +15,8 @@
 // People-side copy ("Everything for people is free.") and the same `.pop > .pc` card.
 //
 // WHERE THE REAL LADDER BEATS THE REFERENCE. The design draws three Space plans (Free, Business,
-// Non-profit) and three people cards (Joining, Hosting, Buying). The product sells four Space plans
+// Non-profit) and three people cards (Joining, Hosting, Buying); the page keeps two cards and turns Buying into a
+// note. The product sells four Space plans
 // (Free, Business, Collective, Non Profit) and two personal tiers (Member, Crew), so the cards follow
 // the offerings and the plan-count heading is counted, not typed. Every "0%" carries "plus card
 // processing" in its own sentence (LIVE-913).
@@ -48,8 +49,8 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
 
-/** What one plan card shows. The Space offerings, the personal offerings and the reference's Buying
- *  card all render through it, so both plan rows are the one component. */
+/** What one plan card shows. The Space offerings and the personal offerings render through it, so both
+ *  plan rows are the one component. */
 interface PlanCardView {
   name: string
   who: string
@@ -81,13 +82,10 @@ function offeringView(o: Offering, hue: string): PlanCardView {
   }
 }
 
-/** The reference's third people card: what buying costs a member. Copy only, no figure. */
-const BUYING: Omit<PlanCardView, 'hue'> = {
-  name: 'Buying',
-  who: 'Tickets, memberships and tips.',
-  price: 'Set by the Space',
-  points: ['Payment goes straight to the host', 'Hosts can refund a ticket'],
-}
+/** What buying costs a member, as a note under the two people cards (the reference drew it as a third
+ *  card). Copy only, no figure. */
+const BUYING_NOTE =
+  'Buying: tickets, memberships and tips are priced by the Space and paid straight to the host. Hosts can refund a ticket.'
 
 /** A card's price row. With `show`, it is one of the card's two periods and the kit CSS shows it only
  *  while the switch is on that period; without it the figure stands for both. */
@@ -234,6 +232,28 @@ export function FrequencyPricing({
       </section>
 
       <PlanPeriodScope>
+        <section className="sec pb-sec" id="people" data-screen-label="02b For people">
+          <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+          <div className="wrap">
+            <div className="sh">
+              <div className="label">
+                <b>For people</b>Joining and hosting
+              </div>
+              <h2 className="h-l">Join free. Do more with Crew.</h2>
+              <p className="pb-note">{PLAN_STORY.crew}</p>
+            </div>
+            <PlanPeriodSwitch note={yearlyNote} />
+            <div className="pb-row">
+              <div className={`pb-plans n${members.length}`}>
+                {members.map((o, i) => (
+                  <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
+                ))}
+              </div>
+            </div>
+            <p className="pb-note">{BUYING_NOTE}</p>
+          </div>
+        </section>
+
         <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
           <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
           <div className="wrap">
@@ -289,27 +309,6 @@ export function FrequencyPricing({
           </div>
         </section>
 
-        <section className="sec pb-sec" id="people" data-screen-label="02b For people">
-          <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
-          <div className="wrap">
-            <div className="sh">
-              <div className="label">
-                <b>For people</b>Joining and hosting
-              </div>
-              <h2 className="h-l">Join free. Host more with Crew.</h2>
-              <p className="pb-note">{PLAN_STORY.crew}</p>
-            </div>
-            <PlanPeriodSwitch note={yearlyNote} />
-            <div className="pb-row">
-              <div className={`pb-plans n${members.length + 1}`}>
-                {members.map((o, i) => (
-                  <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
-                ))}
-                <PlanCard view={{ ...BUYING, hue: 'var(--fq-x-magenta-neon)' }} />
-              </div>
-            </div>
-          </div>
-        </section>
       </PlanPeriodScope>
 
       <PricingAddOns addOns={addOns} spaces={spaces} />
