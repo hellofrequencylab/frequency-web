@@ -149,7 +149,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
             <div className="pm-float" style={vars({ '--pm-d': '9s', '--pm-o': '-1s' })}>
               <div className="pm-hit pm-hit-net" tabIndex={0} role="group" aria-label={`${network.label}: what it adds`} aria-describedby="pm-t-network">
                 <span className="ig-orbit pm-mini" style={vars({ '--fq-s': '152px' })} aria-hidden="true">
-                  <span className="o" style={vars({ '--fq-i': '0%', '--fq-t': '46s' })}>
+                  <span className="o" style={vars({ '--fq-i': '0px', '--fq-t': '46s' })}>
                     <i style={vars({ '--fq-a': '10deg', '--fq-d': '12px', '--fq-c': 'var(--fq-x-magenta-neon)' })} />
                     <i style={vars({ '--fq-a': '150deg', '--fq-d': '9px', '--fq-c': 'var(--fq-x-sun-neon)' })} />
                     <i style={vars({ '--fq-a': '270deg', '--fq-d': '10px', '--fq-c': 'var(--fq-x-aqua-neon)' })} />
@@ -303,6 +303,9 @@ export function salesRows(spaces: readonly Offering[]): SalesRow[] {
   })
 }
 
+/** The ring's claim: the figure and the words that keep it honest travel together (LIVE-913). */
+const KEEP = { value: '100%', label: `you keep, ${PLAN_STORY.plusProcessing}` }
+
 /** 03 · What you pay on sales. A ring that reads "100% you keep" beside a meter per plan; the bars fill as
  *  they scroll into view (where the browser can drive an animation from scroll) and are simply there
  *  where it cannot. */
@@ -311,11 +314,11 @@ export function SalesMotion({ rows }: { rows: readonly SalesRow[] }) {
   return (
     <div className="pm-sales">
       <div className="pm-ringbox">
-        <div className="pm-keep" role="img" aria-label="100% you keep on your own people">
+        <div className="pm-keep" role="img" aria-label={`100% you keep on your own people, ${PLAN_STORY.plusProcessing}`}>
           <span className="pm-keep-ring" />
           <span className="pm-keep-n">
-            <b className="fq-iri-text">100%</b>
-            <em>you keep</em>
+            <b className="fq-iri-text">{KEEP.value}</b>
+            <em>{KEEP.label}</em>
           </span>
         </div>
         <p className="pm-pill">{`${formatBps(0)} on your own people, every plan, ${PLAN_STORY.plusProcessing}`}</p>
