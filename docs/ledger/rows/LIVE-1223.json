@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1223",
+  "title": "The CyberUnicorn console's Device log copies in one tap",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: 'I cannot copy the log for some reason. Give me a copy button'."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: the Device log at /admin/cyberunicorn was a bare <pre> inside a <details>, and the owner could not select it to paste into a support thread. It now has a Copy log button that copies the same redacted text it shows (signed /c/ links and ?s= signatures cut), via the Clipboard API with a hidden-textarea fallback, and says Copied or Copy blocked.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-log-copy.mjs",
+    "note": "Fails when the Copy button, its fallback, or the redaction of the copied text goes away."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
