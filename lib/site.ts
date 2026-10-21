@@ -241,6 +241,11 @@ export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
  *  sign-up and lands on the same form (app/join/(induction)/page.tsx honours `next`). Plan buttons used to
  *  point at the /spaces explainer, one more page between a visitor and the thing they asked for. */
 export const OPERATOR_START_HREF = `${OPERATOR_CTA_HREF}?next=/spaces/new`;
+/** The same door with the plan the visitor clicked riding along as `?plan=<id>` on Create a Space (ids: free,
+ *  business, collective, nonprofit, network). Create a Space may read it; nothing may depend on it. */
+export function operatorStartHref(plan: string): string {
+  return `${OPERATOR_CTA_HREF}?next=${encodeURIComponent(`/spaces/new?plan=${plan}`)}`
+}
 
 /** THE NARROW-HEADER FORM, and the reason it exists (ADR-1197).
  *

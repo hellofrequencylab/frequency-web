@@ -41,7 +41,7 @@
 // feelings, and no claim the config does not back. Labels come from the naming canon (docs/NAMING.md):
 // Member, Crew, Space, Business, Collective, Non Profit.
 
-import { BETA_CTA_HREF, BETA_CTA_LABEL, OPERATOR_START_HREF } from '@/lib/site'
+import { BETA_CTA_HREF, BETA_CTA_LABEL, operatorStartHref } from '@/lib/site'
 import {
   networkTakeRateBpsForPlan,
   networkTakeRateFromStored,
@@ -329,7 +329,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
     networkRateBps: sells('free') ? rateBps('free') : 0,
     sells: sells('free'),
     featured: false,
-    cta: { label: 'Start a free Space', href: OPERATOR_START_HREF },
+    cta: { label: 'Start a free Space', href: operatorStartHref('free') },
   }
 
   return [
@@ -352,7 +352,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         featured: plan === 'business',
         cta: {
           label: plan === 'nonprofit' ? 'Get verified' : plan === 'collective' ? 'Start a Collective' : 'Start with Business',
-          href: OPERATOR_START_HREF,
+          href: operatorStartHref(plan),
         },
       }
     }),
@@ -389,7 +389,7 @@ function networkOffering(takeRate: string, networkRateBps: number, trial: string
     sells: true,
     featured: false,
     cta: networkCheckoutOpen()
-      ? { label: 'Start a Network', href: OPERATOR_START_HREF }
+      ? { label: 'Start a Network', href: operatorStartHref('network') }
       : { label: NETWORK_PLAN.quoteLabel, href: '/networks' },
   }
 }
