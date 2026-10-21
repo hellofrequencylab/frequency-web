@@ -395,7 +395,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-feature-nav a:hover{transform:translateY(-2px)}
 [data-design="frequency"] [data-kit="members"] .fqm-feature-nav a.on{background:var(--fq-pa);border-color:transparent;font-weight:600}
 [data-design="frequency"] [data-kit="members"] .fqm-feature-nav a.on .t2{color:inherit}
-[data-design="frequency"] [data-kit="members"] .fqm-area-tip{margin:4px 0 20px;align-items:center;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-tip-inline{margin:4px 0 20px;align-items:center;gap:12px}
 [data-design="frequency"] [data-kit="members"] .fqm-slide{animation:fqm-slide-in 320ms var(--fq-ease-out) both}
 @keyframes fqm-slide-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-slide{animation:none}}
