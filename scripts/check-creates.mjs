@@ -170,6 +170,8 @@ export const ENTITY_WRITES = new Map([
   ['app/(main)/admin/actions.ts::createCircle', { role: 'operator', entity: 'circle', why: 'The operator console Circle create, behind the admin gate.' }],
   ['app/(main)/admin/events/actions.ts::createEvent', { role: 'operator', entity: 'event', why: 'The operator console Event create, behind the admin gate and the admin client.' }],
 
+  ['lib/collective/client-sites-actions.ts::createClientSite', { role: 'operator', entity: 'space / business', why: 'A Network owner adds a billed client website (LIVE-1119): owner-gated, born archived and activated only once the Network bill accepts it.' }],
+
   // ── Copies. The source row is the consent; there is no draft to review. ─────────────────────
   ['lib/circles/remix.ts::remixTemplate', { role: 'copy', entity: 'circle', why: 'Remixes an existing template Circle into a private draft the member owns.' }],
   ['lib/circles/sister.ts::seedSisterCircle', { role: 'copy', entity: 'circle', why: 'Copies a full live Circle into a private sister draft the starter hosts (LIVE-665); publishing goes through publishCircle and its hosting allowance.' }],
