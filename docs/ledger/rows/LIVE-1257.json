@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1257",
+  "title": "The CyberUnicorn device log reaches support whole",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: 'Get this all done. I'm going to bed', after the first auto-sent logs (LIVE-1224) arrived cut off."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: LIVE-1224 wrote the whole device log as one runtime-log line, and the log reader cuts a long line off, so the end of the log (the write result and its poll counts) never showed. The console also kept only 40 lines, which the connect phase fills. Now the console keeps 150, the report takes 150, and each device line is its own `[cu5k-log] <run> <nn>` line after a `start` line carrying the reason.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-log-whole.mjs",
+    "note": "Fails when the 150-line window shrinks on either side or the report goes back to one long line."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

@@ -540,7 +540,7 @@ export function CyberUnicornConsole({
   }, [phase, placard])
 
   function logLine(l: LogLine) {
-    setLog((prev) => [...prev.slice(-39), `${l.dir === 'out' ? '>' : l.dir === 'in' ? '<' : '#'} ${l.text}`])
+    setLog((prev) => [...prev.slice(-149), `${l.dir === 'out' ? '>' : l.dir === 'in' ? '<' : '#'} ${l.text}`])
   }
 
   async function connect() {
