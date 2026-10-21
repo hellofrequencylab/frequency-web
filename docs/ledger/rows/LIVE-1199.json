@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1199",
+  "title": "Console menu rows stay inside their console, and the page slides between them",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/MENU-CONTRACT.md",
+    "ref": "§The consolidated IA (ADR-1745). Owner 2026-10-21 in the project thread: sub items link out to other things; the pages in a sub menu area should be managed and slide back and forth with no page reload."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED by auditing every operator leaf (ADMIN_NAV_SPECS) and every Space module deep link against the route tree. Operator: 72 leaves, 69 live under /admin; Entry points (/entry-points), Funnels (/pages/sequences) and Pages (/pages) did not, so each opened outside the console with its sidebar gone. The production admin_header menu has no database override, so the code catalog is what members see. Space: Practices, Journeys, Loom Studio, Email design (/marketing) and the guided Setup page sat outside the console; Reviews is a public profile tab and stays. Fixed with console layouts, not URL moves: /pages wraps in the operator console (staff floor), /entry-points wraps only for a viewer who can open the operator console (it stays open to every member), and the five Space routes get the same layout the CRM already has. Slide: ConsoleSlide (components/frequency/admin/console-slide.tsx) keys React's ViewTransition on the pathname inside the shell, menu links carry nav-forward or nav-back from their place in the menu (slideTypes), the sidebar, top bar and top menu hold still under their own names, reduced motion turns it off, and a browser without the API just swaps. Links outside the menus do not animate.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/console-menu-stays-in-area.mjs",
+    "note": "Fails when any of the seven routes loses its console layout, when the slide component, its mount in the shell, the menu links' direction or its style goes, or when reduced motion stops disabling it."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

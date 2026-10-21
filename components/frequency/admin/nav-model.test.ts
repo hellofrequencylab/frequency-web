@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { activeNav, hrefScore, itemBadge, menuGroups, phoneSlots, type AdminNavItem } from './nav-model'
+import { activeNav, hrefScore, itemBadge, menuGroups, phoneSlots, slideTypes, type AdminNavItem } from './nav-model'
 import { spaceNavItems } from './space-console'
 import { adminNavItems } from './admin-console'
 import type { ResolvedCategory, ResolvedItem } from '@/lib/menus/types'
@@ -117,5 +117,18 @@ describe('menuGroups (the operator top menu)', () => {
     const flat: AdminNavItem = { key: 'p', label: 'P', href: '/p', icon: 'home', children: [leaf('a'), leaf('b')] }
     expect(menuGroups(flat)).toEqual([{ label: '', leaves: [leaf('a'), leaf('b')] }])
     expect(menuGroups({ key: 'o', label: 'O', href: '/o', icon: 'home' })).toEqual([])
+  })
+})
+
+describe('slideTypes (the console slide)', () => {
+  const order = ['home', 'a', 'b', 'c']
+  it('slides forward to a later entry and back to an earlier one', () => {
+    expect(slideTypes(order, 'a', 'c')).toEqual(['nav-forward'])
+    expect(slideTypes(order, 'c', 'home')).toEqual(['nav-back'])
+  })
+  it('does not animate a link to the entry you are on, or one it cannot place', () => {
+    expect(slideTypes(order, 'b', 'b')).toBeUndefined()
+    expect(slideTypes(order, null, 'b')).toBeUndefined()
+    expect(slideTypes(order, 'b', 'zzz')).toBeUndefined()
   })
 })

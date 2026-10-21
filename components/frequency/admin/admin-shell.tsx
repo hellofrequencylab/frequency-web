@@ -1,6 +1,7 @@
 import { Suspense, type ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
+import { ConsoleSlide } from './console-slide'
 import { AdminCrumb, AdminNav, AdminNavList, AdminPhoneBar, AdminPhoneStrip, AdminTopMenu } from './admin-nav'
 import type { AdminNavItem } from './nav-model'
 import '@/app/themes/active/kit-members'
@@ -140,7 +141,7 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
       <div data-kit="admin">
         <div className="fq-wash" aria-hidden />
         <div className="ad">
-          <aside className="ad-side">
+          <aside className="ad-side" style={{ viewTransitionName: 'ad-side' }}>
             {/* The Frequency wordmark goes back to the Feed, out of the console (owner, 2026-10-20); the console's
                 own home is its first row. The link wraps the wordmark because the wordmark is a CSS mask, which
                 would clip a focus ring. */}
@@ -158,7 +159,7 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
             </nav>
           </aside>
           <div>
-            <header className="ad-top">
+            <header className="ad-top" style={{ viewTransitionName: 'ad-top' }}>
               {/* Phone only (CSS): who this console is, one tap to its home. The wordmark and the switcher are in the sidebar on a wide screen and in the More sheet on a phone. */}
               <Link href={homeHref} className="ad-top-id" aria-label={`${space.name}, console home`}>
                 <span className="av" style={bg(space.avatarUrl)} aria-hidden />
@@ -182,7 +183,7 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
             <Suspense fallback={null}>
               {topMenu ? <AdminTopMenu items={items} /> : <AdminPhoneStrip items={items} />}
             </Suspense>
-            <main className="ad-main">{children}</main>
+            <main className="ad-main"><ConsoleSlide>{children}</ConsoleSlide></main>
           </div>
         </div>
         <Suspense fallback={null}>

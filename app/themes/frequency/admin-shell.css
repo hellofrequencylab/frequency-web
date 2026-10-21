@@ -244,3 +244,22 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
   [data-design="frequency"] [data-kit="admin"] .ad-tb-l{padding:0}}
 }
 }
+
+/* The console's slide (components/frequency/admin/console-slide.tsx): the page body moves the way the menu
+   reads, the chrome stays put. The three named bars are held still and above the sliding body; the body slides
+   60px with a quick fade. Reduced motion removes every animation, so the page just swaps. */
+@layer components {
+::view-transition{pointer-events:none}
+::view-transition-group(ad-side),::view-transition-group(ad-top),::view-transition-group(ad-topmenu){animation:none;z-index:100}
+::view-transition-old(ad-side),::view-transition-old(ad-top),::view-transition-old(ad-topmenu){display:none}
+::view-transition-new(ad-side),::view-transition-new(ad-top),::view-transition-new(ad-topmenu){animation:none}
+::view-transition-old(.fq-slide-forward-out){--fq-slide:-60px;animation:150ms ease-in both fq-slide-fade reverse,320ms ease-in-out both fq-slide-x reverse}
+::view-transition-new(.fq-slide-forward-in){--fq-slide:60px;animation:200ms ease-out 120ms both fq-slide-fade,320ms ease-in-out both fq-slide-x}
+::view-transition-old(.fq-slide-back-out){--fq-slide:60px;animation:150ms ease-in both fq-slide-fade reverse,320ms ease-in-out both fq-slide-x reverse}
+::view-transition-new(.fq-slide-back-in){--fq-slide:-60px;animation:200ms ease-out 120ms both fq-slide-fade,320ms ease-in-out both fq-slide-x}
+@keyframes fq-slide-fade{from{opacity:0}to{opacity:1}}
+@keyframes fq-slide-x{from{translate:var(--fq-slide)}to{translate:0}}
+@media (prefers-reduced-motion:reduce){
+::view-transition-old(*),::view-transition-new(*),::view-transition-group(*){animation-duration:0s !important;animation-delay:0s !important}
+}
+}

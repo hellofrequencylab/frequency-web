@@ -110,3 +110,14 @@ export function menuGroups(item: AdminNavItem): AdminMenuGroup[] {
   }
   return out
 }
+
+/** The transition type a menu link carries so the page slides the way the menu reads: to a later entry slides
+ *  forward (the old page leaves left), to an earlier one slides back. No type when either end is unknown or
+ *  they are the same entry, so a link that does not move you across the menu does not animate. PURE. */
+export function slideTypes(order: readonly string[], from: string | null | undefined, to: string): string[] | undefined {
+  if (!from || from === to) return undefined
+  const a = order.indexOf(from)
+  const b = order.indexOf(to)
+  if (a < 0 || b < 0) return undefined
+  return [b > a ? 'nav-forward' : 'nav-back']
+}
