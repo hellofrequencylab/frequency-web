@@ -143,6 +143,8 @@
 [data-design="frequency"] [data-kit="members"] .ev-cal-chip.going{background:var(--fq-pa);color:var(--fq-ink)}
 [data-design="frequency"] [data-kit="members"] .ev-cal-chip.going b{color:var(--fq-ink)}
 [data-design="frequency"] [data-kit="members"] .ev-cal-chip:hover{color:var(--fq-text-strong);filter:brightness(.97)}
+/* The Network page's shared calendar: the time leads each chip as a bolder line over the title. */
+[data-design="frequency"] [data-kit="members"] [data-network-cal] [data-calendar-chip]>span.tabular-nums{display:block;font-weight:600;letter-spacing:.01em}
 /* ── The wait (events-loading.tsx): the page's own frame, bars where the words go ───────────── */
 [data-design="frequency"] [data-kit="members"] .ev-skel-bar{display:block;height:14px;border-radius:7px;background:var(--fqm-ink-8)}
 [data-design="frequency"] [data-kit="members"] .ev-hero:not(.is-plain) .ev-skel-bar{background:color-mix(in oklab,var(--fq-linen) 22%,transparent)}
