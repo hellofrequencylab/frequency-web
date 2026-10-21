@@ -18,6 +18,8 @@ export type AppsList = { apps?: { name: string; hidden?: boolean }[] }
 
 export type HatProbe = {
   pn532?: boolean
+  /** Firmware 0.1.2+: the reader is holding the bus, so the probe stopped early. Only a power cycle clears it. */
+  i2c_stuck?: boolean
   cc1101?: boolean
   nrf24?: boolean
   ir_likely?: boolean
