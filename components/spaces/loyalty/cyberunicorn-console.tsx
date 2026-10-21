@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react'
 import { useRouter } from 'next/navigation'
 import { Press_Start_2P, VT323 } from 'next/font/google'
-import { ChevronDown, ChevronUp, CircleDot, CornerUpLeft, Download, IdCard, MonitorPlay, Nfc, ScanLine, Wifi, type LucideIcon } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, CornerUpLeft, Download, EyeOff, IdCard, Nfc, RefreshCw, ScanLine, Wifi, type LucideIcon } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
@@ -95,6 +95,12 @@ const VERIFY_POLL_MS = 3000
 const VERIFY_MAX_MS = 5 * 60 * 1000
 /** What goes on the chip next to the link, so a tag read shows where it belongs. */
 const PLACARD_LABEL_MAX = 30
+
+/** The time, for the connect loop. Read only inside event handlers; the React compiler's purity rule cannot
+ *  tell that the async connect handler never runs during render, so the clock is read through here. */
+function wallClock(): number {
+  return Date.now()
+}
 
 // ── The 25 fps tick (FRAME_MS = 40), one rAF for the whole panel, frozen under reduced motion. ─────
 
@@ -309,12 +315,11 @@ function outcomeUnknown(e: unknown): boolean {
 type Target = { spaceId: string; spaceName: string }
 type Scanner = { spaceId: string; spaceName: string; label: string; active: boolean }
 type CheckIn = { at: number; name: string; ok: boolean; detail: string }
-type Mode = 'placards' | 'badges' | 'scanner' | 'screen' | 'remote' | 'update'
+type Mode = 'placards' | 'badges' | 'scanner' | 'remote' | 'update'
 const MODE_TITLE: Record<Mode, string> = {
   placards: 'CHECK-IN PLACARDS',
   badges: 'MEMBER BADGES',
   scanner: 'COUNTER SCANNER',
-  screen: 'LIVE SCREEN',
   remote: 'WI-FI REMOTE',
   update: 'UPDATE FIRMWARE',
 }
@@ -395,6 +400,10 @@ export function CyberUnicornConsole({
     void readSpaceTags(initialSpace.spaceId).then((out) => setTags(isError(out) ? [] : out.data))
   }, [initialSpace])
   const [mirror, setMirror] = useState(false)
+  // Once linked over the cable the screen is the live mirror by default (owner, 2026-10-20). Turning it off
+  // from the screen sticks until it is turned back on.
+  const [wantMirror, setWantMirror] = useState(true)
+  const mirrorStarting = useRef(false)
   const [link, setLink] = useState<Link>('usb')
   const [relayDevices, setRelayDevices] = useState<ConsoleRelayDevice[] | null>(null)
   const [relayNote, setRelayNote] = useState<string | null>(null)
@@ -571,9 +580,9 @@ export function CyberUnicornConsole({
       // sets DTR and RTS), and it reads nothing until its setup ends, about 18 s later. Ask every few
       // seconds until a status comes back. Pings sent during boot are answered late and ignored by id.
       let s: SystemStatus | null = null
-      const until = Date.now() + BOOT_WAIT_MS
-      setBootStarted(Date.now())
-      while (!s && Date.now() < until && clientRef.current === next) {
+      const until = wallClock() + BOOT_WAIT_MS
+      setBootStarted(wallClock())
+      while (!s && wallClock() < until && clientRef.current === next) {
         s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: 3000 }).catch(() => null)
       }
       setBootStarted(null)
@@ -1109,17 +1118,25 @@ export function CyberUnicornConsole({
   const showModes = phase === 'idle' || phase === 'ready'
 
 
-  // Picking "Live screen" turns the mirror on; leaving it turns it off, so writes get the cable to themselves.
   function selectMode(next: Mode) {
     if (next === mode) return
     setMode(next)
     if (next === 'remote' && !client) void loadRelayDevices()
     if (next === 'update' && firmware === null) void loadFirmware()
-    if (next === 'screen' && ready && !mirror) void startMirror()
-    if (next !== 'screen' && mirror) void stopMirror()
   }
 
   const padOn = connected && mirror && (ready || phase === 'verify' || phase === 'done')
+
+  // Linked over USB and idle: start the live screen. It keeps streaming through a write, so the board's own
+  // "tap the sticker" screen shows here too; the client splits the screen packets from the replies.
+  useEffect(() => {
+    if (!wantMirror || mirror || !ready || link !== 'usb' || !canMirror || mirrorStarting.current) return
+    mirrorStarting.current = true
+    void startMirror().finally(() => {
+      mirrorStarting.current = false
+    })
+    // startMirror reads the client from its ref, so it is not a dependency.
+  }, [wantMirror, mirror, ready, link, canMirror])
 
   const release = firmware?.release ?? null
   const installed = link === 'usb' ? status?.version : undefined
@@ -1134,7 +1151,9 @@ export function CyberUnicornConsole({
           ? `Downloading CU5K ${flash.version}...`
           : `Writing CU5K ${flash.version} to the CyberUnicorn. Keep the cable in and this tab open. It takes about a minute.`}
       </p>
-      <RainbowBar value={flash.stage === 'download' ? 0.02 : flash.progress} label="Update progress" />
+      <p className="text-[var(--cu-secondary)]" aria-live="polite">
+        {flash.stage === 'download' ? 'Downloading' : `${Math.round(flash.progress * 100)}% written`}. The Unicorn&apos;s screen shows the progress.
+      </p>
     </Screen>
   ) : flash?.stage === 'done' ? (
     <Screen icon="frequency" title="UPDATE DONE" big>
@@ -1165,7 +1184,7 @@ export function CyberUnicornConsole({
     </Screen>
   ) : firmware === null ? (
     <Screen icon="frequency" title="CHECKING FOR UPDATES">
-      <WaitingBar />
+      <p className="text-[var(--cu-muted)]">Looking for the newest CyberUnicorn OS...</p>
     </Screen>
   ) : firmware.error ? (
     <Screen icon="rfid" title="COULD NOT CHECK">
@@ -1209,7 +1228,7 @@ export function CyberUnicornConsole({
       <p>Drive a CyberUnicorn that is on Wi-Fi anywhere, without the cable. Its own Internet remote setting has to be on too.</p>
       {relayNote && <p className="text-[var(--cu-attention)]">{relayNote}</p>}
       {relayDevices === null ? (
-        <WaitingBar />
+        <p className="text-[var(--cu-muted)]">Looking for CyberUnicorns...</p>
       ) : relayDevices.length === 0 ? (
         !relayNote && <p className="text-[var(--cu-muted)]">No CyberUnicorns are set up yet. Set one up as a counter scanner over USB first.</p>
       ) : (
@@ -1287,7 +1306,28 @@ export function CyberUnicornConsole({
     </div>
   )
 
-  const showDisplay = !connected || mode === 'screen'
+  // The board's screen shows the one progress bar while it wakes or updates (owner, 2026-10-20: "don't have
+  // double loading bars"); the boot scene reads it every frame.
+  const progressNow =
+    flashing && flash
+      ? flash.stage === 'download'
+        ? { value: 0.02, text: `Downloading CU5K ${flash.version}...` }
+        : { value: flash.progress, text: `Writing CU5K ${flash.version}...` }
+      : phase === 'connecting'
+        ? { value: bootStarted === null ? 0.05 : Math.min(1, (now - bootStarted) / 20000), text: 'Waking the Unicorn...' }
+        : null
+  const screenProgress = useRef<{ value: number; text: string } | null>(null)
+  useEffect(() => {
+    screenProgress.current = progressNow
+  })
+  const live = connected && link === 'usb' && mirror && client !== null
+  const features: { mode: Mode; Icon: LucideIcon; label: string; count?: number }[] = [
+    { mode: 'placards', Icon: Nfc, label: 'Placards' },
+    { mode: 'badges', Icon: IdCard, label: 'Badges', count: requests.length },
+    { mode: 'scanner', Icon: ScanLine, label: 'Scanner' },
+    { mode: 'remote', Icon: Wifi, label: 'Wi-Fi remote' },
+    { mode: 'update', Icon: Download, label: 'Update' },
+  ]
   return (
     <section
       aria-labelledby="cu5k-title"
@@ -1295,515 +1335,506 @@ export function CyberUnicornConsole({
       className={`${display.variable} ${body.variable} min-w-0 font-[family-name:var(--cu-font-body)] text-[length:var(--cu-type-body)] leading-tight text-[var(--cu-text)] [--cu-radius:5px]`}
     >
       <RainbowFrame>
-          {/* Status bar: drawMainBorderWithTitle()'s top strip. */}
-          <div className="flex items-center justify-between gap-3 border-b border-[var(--cu-panel)] px-4 py-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] leading-none">
-            <span className="flex min-w-0 items-center gap-3">
-              <RainbowText text={version} />
-              <span id="cu5k-title" className="truncate text-[var(--cu-muted)]">
-                {MODE_TITLE[mode]}
-              </span>
-            </span>
-            <span className="flex shrink-0 gap-3">
-              <span className="text-[var(--cu-secondary)]">{link === 'wifi' ? 'WI-FI' : 'USB'}</span>
-              {mirror && <span className="text-[var(--cu-primary)]">LIVE</span>}
-              <span className={connected ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-dim)]'}>{connected ? 'LINKED' : 'NO LINK'}</span>
-            </span>
-          </div>
+        {/* The top strip: drawMainBorderWithTitle()'s status line, with the Unicorn's features as its tabs. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--cu-panel)] px-4 py-2">
+          <span className="flex shrink-0 items-center gap-3 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] leading-none">
+            <RainbowText text={version} />
+            <h2 id="cu5k-title" className="sr-only">
+              CyberUnicorn, {MODE_TITLE[mode].toLowerCase()}
+            </h2>
+          </span>
+          <nav aria-label="CyberUnicorn features" className="order-last -mx-4 -mb-2 flex min-w-0 basis-full gap-1 overflow-x-auto border-t border-[var(--cu-panel)] px-2 [scrollbar-width:none] md:order-none md:-my-2 md:mx-0 md:flex-1 md:basis-auto md:border-t-0 md:px-0">
+            {features.map((f) => (
+              <FeatureTab key={f.mode} Icon={f.Icon} label={f.label} count={f.count} on={mode === f.mode} onClick={() => selectMode(f.mode)} />
+            ))}
+          </nav>
+          <span className="ml-auto flex shrink-0 gap-3 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] leading-none">
+            <span className="text-[var(--cu-secondary)]">{link === 'wifi' ? 'WI-FI' : 'USB'}</span>
+            {live && <span className="text-[var(--cu-primary)]">LIVE</span>}
+            <span className={connected ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-dim)]'}>{connected ? 'LINKED' : phase === 'connecting' ? 'WAKING' : 'NO LINK'}</span>
+          </span>
+        </div>
 
-          <div className="grid xl:grid-cols-[minmax(0,1fr)_15rem]">
-            {/* ── The screen and the job in hand. ── */}
-            <div className={`grid min-w-0 content-start gap-5 p-4 ${showDisplay ? 'lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]' : ''}`}>
-              {/* The display: the board's boot scene until it is linked, its live screen on "Live screen". */}
-              {showDisplay && (
-                <div className="space-y-4">
-              <div className="aspect-[4/3] w-full overflow-hidden border border-[var(--cu-panel)] bg-[var(--cu-screen)]">
-                {mode === 'screen' && mirror && client ? (
+        {/* THE UNICORN FIRST (owner, 2026-10-20): its screen takes most of the frame, as big as the window's
+            height allows, and the job in hand sits beside it. The screen column is sized from the height so
+            the whole portal stays above the fold; the job column scrolls inside itself when it runs long. */}
+        <div
+          className="grid gap-5 p-4 [--cu-screen-h:clamp(15rem,calc(100dvh-21.5rem),46rem)] lg:grid-cols-[minmax(0,min(calc(var(--cu-screen-h)*4/3),64%))_minmax(0,1fr)]"
+        >
+          <div className="min-w-0 space-y-3">
+            <div className="group relative aspect-[4/3] w-full overflow-hidden border border-[var(--cu-panel)] bg-[var(--cu-screen)]">
+              {live && client ? (
+                <>
                   <MirrorCanvas client={client} onKey={(k) => void press(k)} />
-                ) : !connected ? (
-                  <BootCanvas fontFamily={display.style.fontFamily} finale={phase === 'connecting'} />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-                    <Unicorn cell={4} />
-                    <p className="text-[var(--cu-muted)]">
-                      {link === 'wifi'
-                        ? 'The live screen works over the USB cable only.'
-                        : !canMirror
-                          ? 'The live screen needs a newer console. Reload the page.'
-                          : ready
-                            ? 'The live screen is off. Turn it on from the buttons beside this screen.'
-                            : 'The live screen comes back when the Unicorn is free.'}
-                    </p>
-                  </div>
-                )}
-              </div>
-                  {mode === 'screen' && (
-                    <RailBlock title="Buttons">
-                      <div className="flex items-start gap-4">
-                        <div className="grid w-36 shrink-0 grid-cols-3 gap-1.5" role="group" aria-label="CyberUnicorn buttons">
-                          <span />
-                          <IconButtonKey label="Previous" Icon={ChevronUp} onClick={() => void press('prev')} disabled={!padOn} />
-                          <span />
-                          <IconButtonKey label="Back" Icon={CornerUpLeft} onClick={() => void press('esc')} disabled={!padOn} />
-                          <IconButtonKey label="Select" Icon={CircleDot} onClick={() => void press('sel')} disabled={!padOn} primary />
-                          <span />
-                          <span />
-                          <IconButtonKey label="Next" Icon={ChevronDown} onClick={() => void press('next')} disabled={!padOn} />
-                          <span />
-                        </div>
-                        <div className="flex min-w-0 flex-1 flex-col gap-2">
-                          {mirror ? (
-                            <>
-                              <CuButton wide tone="secondary" onClick={() => void refreshMirror()}>
-                                Refresh
-                              </CuButton>
-                              <CuButton wide tone="quiet" onClick={() => void stopMirror()}>
-                                Turn off
-                              </CuButton>
-                            </>
-                          ) : (
-                            <CuButton wide tone="secondary" onClick={() => void startMirror()} disabled={!ready || !canMirror}>
-                              Turn on
-                            </CuButton>
-                          )}
-                        </div>
-                      </div>
-                    </RailBlock>
-                  )}
-                  {mode === 'screen' && mirror && (
-                    <p className="text-[length:var(--cu-type-console)] text-[var(--cu-dim)]">Click the screen and use the arrow keys, Enter and Escape. Animated screens like the boot scene, Light Show and Spectrum do not show here.</p>
+                  <ScreenControls
+                    padOn={padOn}
+                    onPress={(k) => void press(k)}
+                    onRefresh={() => void refreshMirror()}
+                    onOff={() => {
+                      setWantMirror(false)
+                      void stopMirror()
+                    }}
+                  />
+                </>
+              ) : !connected ? (
+                <BootCanvas fontFamily={display.style.fontFamily} finale={phase === 'connecting'} progress={screenProgress} />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center">
+                  <Unicorn cell={6} />
+                  <p className="max-w-sm text-[var(--cu-muted)]">
+                    {link === 'wifi'
+                      ? 'Linked over Wi-Fi. Its live screen shows here when it is on the USB cable.'
+                      : !canMirror
+                        ? 'The live screen needs a newer console. Reload the page.'
+                        : !wantMirror
+                          ? 'The live screen is off.'
+                          : 'Starting the live screen...'}
+                  </p>
+                  {link === 'usb' && canMirror && !wantMirror && (
+                    <CuButton tone="secondary" onClick={() => setWantMirror(true)} disabled={!ready}>
+                      Show the screen
+                    </CuButton>
                   )}
                 </div>
               )}
-
-              <div className="min-w-0 space-y-5">
-            <div role="status" aria-live="polite" className="space-y-4">
-              {mode === 'update' ? (
-                firmwareScreen
-              ) : mode === 'remote' && phase === 'idle' ? (
-                remoteList
-              ) : !supported && link === 'usb' ? (
-                <Screen icon="rfid" title="USE CHROME OR EDGE">
-                  <p>This browser cannot open a USB port. Open this page in Chrome or Edge on a computer.</p>
-                </Screen>
-              ) : phase === 'idle' ? (
-                <Screen icon="rfid" title="PLUG IN THE UNICORN">
-                  <p>Plug the CyberUnicorn into this computer with a USB cable, then connect. Pick the USB serial port when your browser asks. You can choose the Space first.</p>
-                </Screen>
-              ) : phase === 'connecting' ? (
-                <Screen icon="frequency" title="WAKING THE UNICORN">
-                  <p>Connecting restarts the CyberUnicorn. It takes about 20 seconds to come back. Leave it plugged in.</p>
-                  <RainbowBar value={bootStarted === null ? 0.05 : Math.min(1, (now - bootStarted) / 20000)} label="Waking the CyberUnicorn" />
-                </Screen>
-              ) : phase === 'working' ? (
-                <Screen icon="frequency" title="WORKING ON IT">
-                  <p>Talking to the CyberUnicorn. Joining Wi-Fi can take up to 30 seconds.</p>
-                </Screen>
-              ) : phase === 'tap' || phase === 'checking' || phase === 'scanning' || phase === 'minting' ? (
-                <Screen icon="frequency" title={phase === 'minting' ? 'GETTING THE LINK' : mode === 'placards' && phase === 'tap' ? 'TAP THE STICKER' : 'TAP THE CARD'} big>
-                  <p>
-                    {phase === 'minting'
-                      ? mode === 'placards'
-                        ? `Getting ${target?.spaceName ?? 'the Space'}'s check-in link...`
-                        : 'Making a card link for this member...'
-                      : phase === 'tap'
-                        ? mode === 'placards'
-                          ? `Hold the NTAG sticker flat on the CyberUnicorn reader and keep it still until it beeps. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
-                          : `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until it beeps.`
-                        : phase === 'scanning'
-                          ? 'Hold a member card on the reader to check them in.'
-                          : 'Hold any card or tag on the reader to see what it holds.'}
-                  </p>
-                  {phase !== 'minting' && <RainbowBar value={remaining} label="Time left to tap" />}
-                </Screen>
-              ) : phase === 'verify' && placard ? (
-                <Screen icon="frequency" title="NOW TAP IT WITH A PHONE" big>
-                  <p>
-                    The placard is written. Tap it with a phone that is signed in to Frequency. The check-in for {placard.spaceName} opens, and it shows up here the moment it lands.
-                  </p>
-                  <WaitingBar />
-                  <dl className="space-y-1">
-                    <Row label="Placard" value={placard.label} tone="secondary" />
-                    <Row label="Chip" value={placard.chip} />
-                  </dl>
-                  <p className="text-[var(--cu-dim)]">A phone that already checked in here today will not count again until tomorrow.</p>
-                  <div className="flex flex-wrap gap-3">
-                    <CuButton tone="secondary" onClick={skipVerify}>
-                      Skip the phone test
-                    </CuButton>
-                  </div>
-                </Screen>
-              ) : phase === 'done' && done ? (
-                <Screen icon="frequency" title={done.title} big>
-                  <dl className="space-y-1">
-                    {done.lines.map((l) => (
-                      <Row key={l.label} label={l.label} value={l.value} tone={l.tone} />
-                    ))}
-                  </dl>
-                  {done.note && <p className="text-[var(--cu-muted)]">{done.note}</p>}
-                  <div className="flex flex-wrap gap-3">
-                    <CuButton
-                      onClick={() => {
-                        setDone(null)
-                        setPlacard(null)
-                        setPhase('ready')
-                      }}
-                    >
-                      {mode === 'placards' ? 'Write another' : mode === 'badges' ? 'Program another' : 'Done'}
-                    </CuButton>
-                  </div>
-                </Screen>
-              ) : null}
-
-              {notice && !problem && <p className="border border-[var(--cu-ok)] px-3 py-2 text-[var(--cu-ok)]">{notice}</p>}
-
-              {problem && (
-                <p role="alert" className="border border-[var(--cu-attention)] px-3 py-2 text-[var(--cu-attention)]">
-                  {problem}
-                </p>
-              )}
             </div>
-
-            {showModes && CABLE_MODES.includes(mode) && connected && link === 'wifi' && (
-              <Screen icon="rfid" title="USE THE CABLE FOR THIS">
-                <p>Writing placards and badges and setting up a scanner only work over USB. Disconnect, plug the CyberUnicorn into this computer, and connect over USB.</p>
-              </Screen>
+            {live && (
+              <p className="text-[length:var(--cu-type-console)] leading-snug text-[var(--cu-dim)]">
+                Use the buttons on the screen, or click it and use the arrow keys, Enter and Escape. Animated screens (the boot scene, Light Show, Spectrum) do not show here. Press Back to get to a menu.
+              </p>
             )}
 
-            {mode === 'remote' && ready && link === 'wifi' && remotePanel}
-
-            {mode === 'remote' && connected && link === 'usb' && (
-              <Screen icon="rfid" title="LINKED OVER USB">
-                <p>This Unicorn is on the cable, so everything works from the other features. To drive a Unicorn somewhere else over Wi-Fi, disconnect first.</p>
-              </Screen>
-            )}
-
-            {showModes && CABLE_MODES.includes(mode) && !(connected && link === 'wifi') && (
-              <div className="space-y-5">
-                {/* Which Space: every job below works for the one chosen here. */}
-                {target ? (
-                  <div className="flex flex-wrap items-center gap-3 border border-[var(--cu-secondary)] px-3 py-2">
-                    <span className={LABEL_CLASS}>Space</span>
-                    <span className="min-w-0 flex-1 truncate text-[var(--cu-secondary)]">{target.spaceName}</span>
-                    <CuButton tone="quiet" onClick={() => chooseSpace(null)}>
-                      Change
+            {/* The Unicorn itself, under its screen: what it is, how it is linked, and the way in or out. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {connected ? (
+                <>
+                  <dl className="flex min-w-0 flex-1 flex-wrap gap-x-4 gap-y-1 text-[length:var(--cu-type-console)]">
+                    <Fact label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
+                    {link === 'usb' && <Fact label="Reader" value={readerOk ? 'Ready' : 'Not found, turn DIP 3 on'} tone={readerOk ? 'ok' : 'attention'} />}
+                    <Fact label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Off'} />
+                  </dl>
+                  {ready && link === 'usb' && !readerOk && (
+                    <CuButton tone="secondary" onClick={() => void recheckReader()}>
+                      Find reader
                     </CuButton>
-                  </div>
-                ) : (
-                  <form
-                    className="flex flex-col gap-3 sm:flex-row sm:items-end"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      if (spaceSlug.trim()) void findSpace()
-                    }}
-                  >
-                    <label className="flex-1 space-y-1">
-                      <span className={LABEL_CLASS}>Which Space?</span>
-                      <Input
-                        value={spaceSlug}
-                        onChange={(e) => setSpaceSlug(e.target.value)}
-                        placeholder="Start typing a Space, like the-group"
-                        list="cu5k-spaces"
-                        autoComplete="off"
-                        spellCheck={false}
-                        maxLength={120}
-                        className={FIELD_CLASS}
-                      />
-                    </label>
-                    <datalist id="cu5k-spaces">
-                      {spaces.map((sp) => (
-                        <option key={sp.slug} value={sp.slug} label={sp.name} />
-                      ))}
-                    </datalist>
-                    <CuButton type="submit" tone="secondary" disabled={!spaceSlug.trim()}>
-                      Choose
-                    </CuButton>
-                  </form>
-                )}
-
-                {mode === 'placards' && (
-                  <div className="space-y-4">
-                    <p className="text-[var(--cu-muted)]">
-                      A placard is an NFC sticker with the Space&apos;s check-in link on it. Members tap it with their phone to check in and earn their Regulars stamp. NTAG213, 215 or 216 stickers work.
-                    </p>
-                    <form
-                      className="flex flex-col gap-3 sm:flex-row sm:items-end"
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        if (ready && readerOk && target) void writePlacard()
-                      }}
-                    >
-                      <label className="flex-1 space-y-1">
-                        <span className={LABEL_CLASS}>Where will it go?</span>
-                        <Input
-                          value={placardLabel}
-                          onChange={(e) => setPlacardLabel(e.target.value)}
-                          placeholder="Front door, counter, patio"
-                          autoComplete="off"
-                          maxLength={PLACARD_LABEL_MAX}
-                          className={FIELD_CLASS}
-                        />
-                      </label>
-                      <CuButton type="submit" disabled={!ready || !readerOk || !target}>
-                        Write placard
-                      </CuButton>
-                    </form>
-                    {!target && <p className="text-[var(--cu-dim)]">Choose a Space above first.</p>}
-                    {target && !connected && <p className="text-[var(--cu-dim)]">Connect the Unicorn to write.</p>}
-                    {target && <PlacardList tags={tags} spaceName={target.spaceName} onRemove={(id) => void removeTag(id)} />}
-                  </div>
-                )}
-
-                {mode === 'badges' && (
-                  <div className="space-y-4">
-                    <form
-                      className="flex flex-col gap-3 sm:flex-row sm:items-end"
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        if (handle.trim() && readerOk && target && ready) void program()
-                      }}
-                    >
-                      <label className="flex-1 space-y-1">
-                        <span className={LABEL_CLASS}>Who is this card for?</span>
-                        <Input
-                          value={handle}
-                          onChange={(e) => setHandle(e.target.value)}
-                          placeholder="Their handle, like @maya"
-                          autoComplete="off"
-                          spellCheck={false}
-                          maxLength={41}
-                          className={FIELD_CLASS}
-                        />
-                      </label>
-                      <CuButton type="submit" disabled={!handle.trim() || !readerOk || !target || !ready}>
-                        Program card
-                      </CuButton>
-                    </form>
-                    <section aria-labelledby="cu5k-queue" className="space-y-2">
-                      <h4 id="cu5k-queue" className={LABEL_CLASS}>
-                        Asked for a badge ({requests.length})
-                      </h4>
-                      {requests.length === 0 ? (
-                        <p className="text-[var(--cu-dim)]">Nobody is waiting. Members ask from a Space&apos;s page.</p>
-                      ) : (
-                        <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
-                          {requests.map((r) => (
-                            <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
-                              <span className="min-w-0 flex-1">
-                                <span className="text-[var(--cu-text)]">{r.memberName}</span>
-                                {r.memberHandle && <span className="text-[var(--cu-secondary)]"> @{r.memberHandle}</span>}
-                                <span className="block text-[var(--cu-muted)]">
-                                  {r.spaceName} · {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                </span>
-                              </span>
-                              <CuButton tone="secondary" onClick={() => pick(r)}>
-                                Use
-                              </CuButton>
-                              <CuButton tone="quiet" onClick={() => void dismiss(r.id)}>
-                                Clear
-                              </CuButton>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  </div>
-                )}
-
-                {mode === 'scanner' && (
-                  <div className="space-y-4">
-                    {ready ? (
-                      <ScannerSetup
-                        canSetUp={caps?.includes('frequency.provision') ?? false}
-                        canWifi={caps?.includes('wifi.join') ?? false}
-                        config={config}
-                        scanner={scanner}
-                        target={target}
-                        wifi={status?.wifi}
-                        readerOk={readerOk}
-                        networks={networks}
-                        ssid={ssid}
-                        password={wifiPassword}
-                        onSsid={setSsid}
-                        onPassword={setWifiPassword}
-                        onSetUp={setUpScanner}
-                        onForget={forgetScanner}
-                        onFindNetworks={findNetworks}
-                        onJoin={joinWifi}
-                        onTest={() => void testCheckIn()}
-                      />
-                    ) : (
-                      <p className="text-[var(--cu-dim)]">Connect the Unicorn to make it a Space&apos;s counter scanner. Members then tap their badge on the Unicorn itself to check in.</p>
-                    )}
-                    {connected && checkIns.length > 0 && (
-                      <section aria-labelledby="cu5k-checkins" className="space-y-2">
-                        <h4 id="cu5k-checkins" className={LABEL_CLASS}>
-                          Check-ins
-                        </h4>
-                        <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
-                          {checkIns.map((ci) => (
-                            <li key={ci.at} className="flex flex-wrap items-baseline gap-x-3 px-3 py-2">
-                              <span className={ci.ok ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-attention)]'}>{ci.name}</span>
-                              <span className="text-[var(--cu-muted)]">{ci.detail}</span>
-                              <span className="ml-auto text-[var(--cu-dim)]">{new Date(ci.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-              </div>
-            </div>
-
-            {/* ── Beside the screen: the Unicorn, its features and its tools, in the same skin. ── */}
-            <aside aria-label="CyberUnicorn controls" className="space-y-5 border-t border-[var(--cu-panel)] p-4 xl:border-l xl:border-t-0">
-              <RailBlock title="Unicorn" tag={connected ? 'LINKED' : phase === 'connecting' ? 'WAKING' : 'NO LINK'} tagOn={connected}>
-                {connected ? (
-                  <>
-                    <dl className="space-y-0.5 text-[length:var(--cu-type-console)]">
-                      <RailRow label="Device" value={[status?.os ?? 'CyberUnicorn', status?.version].filter(Boolean).join(' ')} />
-                      <RailRow label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
-                      {link === 'usb' && <RailRow label="Reader" value={readerOk ? (hat?.summary ?? 'PN532 ready') : 'Not found. Turn DIP 3 on.'} />}
-                      <RailRow label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Not connected'} />
-                    </dl>
-                    <div className="flex flex-col gap-2">
-                      {ready && link === 'usb' && !readerOk && (
-                        <CuButton wide tone="secondary" onClick={() => void recheckReader()}>
-                          Look for the reader
-                        </CuButton>
-                      )}
-                      <CuButton wide tone="quiet" onClick={() => void disconnect()}>
-                        Disconnect
-                      </CuButton>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <CuButton wide onClick={() => void connect()} disabled={!supported || flashing || phase === 'connecting'}>
-                      {phase === 'connecting' ? 'Waking...' : 'Connect USB'}
-                    </CuButton>
-                    <CuButton wide tone="secondary" onClick={() => selectMode('remote')} disabled={flashing || phase === 'connecting'}>
-                      Connect Wi-Fi
-                    </CuButton>
-                  </div>
-                )}
-              </RailBlock>
-
-              <RailBlock title="Features">
-                <nav aria-label="CyberUnicorn features" className="-mx-1 space-y-0.5">
-                  <RailItem Icon={Nfc} label="Check-in placards" hint="Write a Space's NFC placard" on={mode === 'placards'} onClick={() => selectMode('placards')} />
-                  <RailItem Icon={IdCard} label="Member badges" hint="Program a member's card" count={requests.length} on={mode === 'badges'} onClick={() => selectMode('badges')} />
-                  <RailItem Icon={ScanLine} label="Counter scanner" hint="Members tap the Unicorn" on={mode === 'scanner'} onClick={() => selectMode('scanner')} />
-                  <RailItem Icon={MonitorPlay} label="Live screen" hint="See and drive the Unicorn" on={mode === 'screen'} onClick={() => selectMode('screen')} />
-                  <RailItem Icon={Wifi} label="Wi-Fi remote" hint="Drive a Unicorn from anywhere" on={mode === 'remote'} onClick={() => selectMode('remote')} />
-                  <RailItem Icon={Download} label="Update firmware" hint="Install the newest OS" on={mode === 'update'} onClick={() => selectMode('update')} />
-                </nav>
-              </RailBlock>
-
-              <RailBlock title="Tools">
-                <div className="flex flex-col gap-2">
-                  <CuButton wide tone="secondary" onClick={() => void checkCard()} disabled={!ready || !readerOk}>
+                  )}
+                  <CuButton tone="secondary" onClick={() => void checkCard()} disabled={!ready || !readerOk}>
                     Read a tag
                   </CuButton>
-                  {target && CABLE_MODES.includes(mode) && (
-                    <CuButton wide tone="quiet" onClick={() => chooseSpace(null)}>
-                      Another Space
-                    </CuButton>
-                  )}
-                </div>
-              </RailBlock>
-            </aside>
+                  <CuButton tone="quiet" onClick={() => void disconnect()}>
+                    Disconnect
+                  </CuButton>
+                </>
+              ) : (
+                <>
+                  <CuButton onClick={() => void connect()} disabled={!supported || flashing || phase === 'connecting'}>
+                    {phase === 'connecting' ? 'Waking...' : 'Connect USB'}
+                  </CuButton>
+                  <CuButton tone="secondary" onClick={() => selectMode('remote')} disabled={flashing || phase === 'connecting'}>
+                    Connect Wi-Fi
+                  </CuButton>
+                  {flashing && <span className="min-w-0 flex-1 text-[length:var(--cu-type-console)] text-[var(--cu-secondary)]">Updating. Keep the cable in.</span>}
+                </>
+              )}
+            </div>
           </div>
 
-          {log.length > 0 && (
-            <details className="border-t border-[var(--cu-panel)] px-4 py-3 text-[length:var(--cu-type-console)] text-[var(--cu-muted)] sm:px-6">
-              <summary className="cursor-pointer font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase">Device log</summary>
+          {/* The job in hand: the feature's own screen and its fields. */}
+          <div className="min-w-0 space-y-5 lg:max-h-[calc(var(--cu-screen-h)+4rem)] lg:overflow-y-auto lg:pr-1">
+      <div role="status" aria-live="polite" className="space-y-4">
+        {mode === 'update' ? (
+          firmwareScreen
+        ) : mode === 'remote' && phase === 'idle' ? (
+          remoteList
+        ) : !supported && link === 'usb' ? (
+          <Screen icon="rfid" title="USE CHROME OR EDGE">
+            <p>This browser cannot open a USB port. Open this page in Chrome or Edge on a computer.</p>
+          </Screen>
+        ) : phase === 'idle' ? (
+          <Screen icon="rfid" title="PLUG IN THE UNICORN">
+            <p>Plug the CyberUnicorn into this computer with a USB cable, then connect. Pick the USB serial port when your browser asks. You can choose the Space first.</p>
+          </Screen>
+        ) : phase === 'connecting' ? (
+          <Screen icon="frequency" title="WAKING THE UNICORN">
+            <p>Connecting restarts the CyberUnicorn. It takes about 20 seconds to come back. Leave it plugged in. Its screen shows how far along it is.</p>
+          </Screen>
+        ) : phase === 'working' ? (
+          <Screen icon="frequency" title="WORKING ON IT">
+            <p>Talking to the CyberUnicorn. Joining Wi-Fi can take up to 30 seconds.</p>
+          </Screen>
+        ) : phase === 'tap' || phase === 'checking' || phase === 'scanning' || phase === 'minting' ? (
+          <Screen icon="frequency" title={phase === 'minting' ? 'GETTING THE LINK' : mode === 'placards' && phase === 'tap' ? 'TAP THE STICKER' : 'TAP THE CARD'} big>
+            <p>
+              {phase === 'minting'
+                ? mode === 'placards'
+                  ? `Getting ${target?.spaceName ?? 'the Space'}'s check-in link...`
+                  : 'Making a card link for this member...'
+                : phase === 'tap'
+                  ? mode === 'placards'
+                    ? `Hold the NTAG sticker flat on the CyberUnicorn reader and keep it still until it beeps. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
+                    : `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until it beeps.`
+                  : phase === 'scanning'
+                    ? 'Hold a member card on the reader to check them in.'
+                    : 'Hold any card or tag on the reader to see what it holds.'}
+            </p>
+            {phase !== 'minting' && <RainbowBar value={remaining} label="Time left to tap" />}
+          </Screen>
+        ) : phase === 'verify' && placard ? (
+          <Screen icon="frequency" title="NOW TAP IT WITH A PHONE" big>
+            <p>
+              The placard is written. Tap it with a phone that is signed in to Frequency. The check-in for {placard.spaceName} opens, and it shows up here the moment it lands.
+            </p>
+            <WaitingBar />
+            <dl className="space-y-1">
+              <Row label="Placard" value={placard.label} tone="secondary" />
+              <Row label="Chip" value={placard.chip} />
+            </dl>
+            <p className="text-[var(--cu-dim)]">A phone that already checked in here today will not count again until tomorrow.</p>
+            <div className="flex flex-wrap gap-3">
+              <CuButton tone="secondary" onClick={skipVerify}>
+                Skip the phone test
+              </CuButton>
+            </div>
+          </Screen>
+        ) : phase === 'done' && done ? (
+          <Screen icon="frequency" title={done.title} big>
+            <dl className="space-y-1">
+              {done.lines.map((l) => (
+                <Row key={l.label} label={l.label} value={l.value} tone={l.tone} />
+              ))}
+            </dl>
+            {done.note && <p className="text-[var(--cu-muted)]">{done.note}</p>}
+            <div className="flex flex-wrap gap-3">
+              <CuButton
+                onClick={() => {
+                  setDone(null)
+                  setPlacard(null)
+                  setPhase('ready')
+                }}
+              >
+                {mode === 'placards' ? 'Write another' : mode === 'badges' ? 'Program another' : 'Done'}
+              </CuButton>
+            </div>
+          </Screen>
+        ) : null}
+
+        {notice && !problem && <p className="border border-[var(--cu-ok)] px-3 py-2 text-[var(--cu-ok)]">{notice}</p>}
+
+        {problem && (
+          <p role="alert" className="border border-[var(--cu-attention)] px-3 py-2 text-[var(--cu-attention)]">
+            {problem}
+          </p>
+        )}
+      </div>
+
+      {showModes && CABLE_MODES.includes(mode) && connected && link === 'wifi' && (
+        <Screen icon="rfid" title="USE THE CABLE FOR THIS">
+          <p>Writing placards and badges and setting up a scanner only work over USB. Disconnect, plug the CyberUnicorn into this computer, and connect over USB.</p>
+        </Screen>
+      )}
+
+      {mode === 'remote' && ready && link === 'wifi' && remotePanel}
+
+      {mode === 'remote' && connected && link === 'usb' && (
+        <Screen icon="rfid" title="LINKED OVER USB">
+          <p>This Unicorn is on the cable, so everything works from the other features. To drive a Unicorn somewhere else over Wi-Fi, disconnect first.</p>
+        </Screen>
+      )}
+
+      {showModes && CABLE_MODES.includes(mode) && !(connected && link === 'wifi') && (
+        <div className="space-y-5">
+          {/* Which Space: every job below works for the one chosen here. */}
+          {target ? (
+            <div className="flex flex-wrap items-center gap-3 border border-[var(--cu-secondary)] px-3 py-2">
+              <span className={LABEL_CLASS}>Space</span>
+              <span className="min-w-0 flex-1 truncate text-[var(--cu-secondary)]">{target.spaceName}</span>
+              <CuButton tone="quiet" onClick={() => chooseSpace(null)}>
+                Change
+              </CuButton>
+            </div>
+          ) : (
+            <form
+              className="flex flex-col gap-3 sm:flex-row sm:items-end"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (spaceSlug.trim()) void findSpace()
+              }}
+            >
+              <label className="flex-1 space-y-1">
+                <span className={LABEL_CLASS}>Which Space?</span>
+                <Input
+                  value={spaceSlug}
+                  onChange={(e) => setSpaceSlug(e.target.value)}
+                  placeholder="Start typing a Space, like the-group"
+                  list="cu5k-spaces"
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={120}
+                  className={FIELD_CLASS}
+                />
+              </label>
+              <datalist id="cu5k-spaces">
+                {spaces.map((sp) => (
+                  <option key={sp.slug} value={sp.slug} label={sp.name} />
+                ))}
+              </datalist>
+              <CuButton type="submit" tone="secondary" disabled={!spaceSlug.trim()}>
+                Choose
+              </CuButton>
+            </form>
+          )}
+
+          {mode === 'placards' && (
+            <div className="space-y-4">
+              <p className="text-[var(--cu-muted)]">
+                A placard is an NFC sticker with the Space&apos;s check-in link on it. Members tap it with their phone to check in and earn their Regulars stamp. NTAG213, 215 or 216 stickers work.
+              </p>
+              <form
+                className="flex flex-col gap-3 sm:flex-row sm:items-end"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (ready && readerOk && target) void writePlacard()
+                }}
+              >
+                <label className="flex-1 space-y-1">
+                  <span className={LABEL_CLASS}>Where will it go?</span>
+                  <Input
+                    value={placardLabel}
+                    onChange={(e) => setPlacardLabel(e.target.value)}
+                    placeholder="Front door, counter, patio"
+                    autoComplete="off"
+                    maxLength={PLACARD_LABEL_MAX}
+                    className={FIELD_CLASS}
+                  />
+                </label>
+                <CuButton type="submit" disabled={!ready || !readerOk || !target}>
+                  Write placard
+                </CuButton>
+              </form>
+              {!target && <p className="text-[var(--cu-dim)]">Choose a Space above first.</p>}
+              {target && !connected && <p className="text-[var(--cu-dim)]">Connect the Unicorn to write.</p>}
+              {target && <PlacardList tags={tags} spaceName={target.spaceName} onRemove={(id) => void removeTag(id)} />}
+            </div>
+          )}
+
+          {mode === 'badges' && (
+            <div className="space-y-4">
+              <form
+                className="flex flex-col gap-3 sm:flex-row sm:items-end"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (handle.trim() && readerOk && target && ready) void program()
+                }}
+              >
+                <label className="flex-1 space-y-1">
+                  <span className={LABEL_CLASS}>Who is this card for?</span>
+                  <Input
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    placeholder="Their handle, like @maya"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={41}
+                    className={FIELD_CLASS}
+                  />
+                </label>
+                <CuButton type="submit" disabled={!handle.trim() || !readerOk || !target || !ready}>
+                  Program card
+                </CuButton>
+              </form>
+              <section aria-labelledby="cu5k-queue" className="space-y-2">
+                <h4 id="cu5k-queue" className={LABEL_CLASS}>
+                  Asked for a badge ({requests.length})
+                </h4>
+                {requests.length === 0 ? (
+                  <p className="text-[var(--cu-dim)]">Nobody is waiting. Members ask from a Space&apos;s page.</p>
+                ) : (
+                  <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+                    {requests.map((r) => (
+                      <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="text-[var(--cu-text)]">{r.memberName}</span>
+                          {r.memberHandle && <span className="text-[var(--cu-secondary)]"> @{r.memberHandle}</span>}
+                          <span className="block text-[var(--cu-muted)]">
+                            {r.spaceName} · {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        </span>
+                        <CuButton tone="secondary" onClick={() => pick(r)}>
+                          Use
+                        </CuButton>
+                        <CuButton tone="quiet" onClick={() => void dismiss(r.id)}>
+                          Clear
+                        </CuButton>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </div>
+          )}
+
+          {mode === 'scanner' && (
+            <div className="space-y-4">
+              {ready ? (
+                <ScannerSetup
+                  canSetUp={caps?.includes('frequency.provision') ?? false}
+                  canWifi={caps?.includes('wifi.join') ?? false}
+                  config={config}
+                  scanner={scanner}
+                  target={target}
+                  wifi={status?.wifi}
+                  readerOk={readerOk}
+                  networks={networks}
+                  ssid={ssid}
+                  password={wifiPassword}
+                  onSsid={setSsid}
+                  onPassword={setWifiPassword}
+                  onSetUp={setUpScanner}
+                  onForget={forgetScanner}
+                  onFindNetworks={findNetworks}
+                  onJoin={joinWifi}
+                  onTest={() => void testCheckIn()}
+                />
+              ) : (
+                <p className="text-[var(--cu-dim)]">Connect the Unicorn to make it a Space&apos;s counter scanner. Members then tap their badge on the Unicorn itself to check in.</p>
+              )}
+              {connected && checkIns.length > 0 && (
+                <section aria-labelledby="cu5k-checkins" className="space-y-2">
+                  <h4 id="cu5k-checkins" className={LABEL_CLASS}>
+                    Check-ins
+                  </h4>
+                  <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+                    {checkIns.map((ci) => (
+                      <li key={ci.at} className="flex flex-wrap items-baseline gap-x-3 px-3 py-2">
+                        <span className={ci.ok ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-attention)]'}>{ci.name}</span>
+                        <span className="text-[var(--cu-muted)]">{ci.detail}</span>
+                        <span className="ml-auto text-[var(--cu-dim)]">{new Date(ci.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+            {target && CABLE_MODES.includes(mode) && (
+              <CuButton tone="quiet" onClick={() => chooseSpace(null)}>
+                Another Space
+              </CuButton>
+            )}
+          </div>
+        </div>
+
+        {/* The footer: the device log folds open here; the key-hint line sits on the right, grey, like the board. */}
+        <div className="border-t border-[var(--cu-panel)] px-4 py-2 text-[length:var(--cu-type-console)] text-[var(--cu-muted)]">
+          <details className="group/log">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none [&::-webkit-details-marker]:hidden">
+              <span>{log.length > 0 ? 'Device log' : ''}</span>
+              <span className="text-[var(--cu-dim)]">{connected ? 'All systems fabulous.' : 'USB 115200  DTR/RTS low'}</span>
+            </summary>
+            {log.length > 0 && (
               <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all bg-[var(--cu-floor)] p-2 font-[family-name:var(--cu-font-body)]">
                 {log.join('\n').replace(/\/c\/[A-Za-z0-9_-]{16,}/g, '/c/...').replace(/\?s=v1\.[A-Za-z0-9._-]+/g, '?s=...')}
               </pre>
-            </details>
-          )}
-
-          {/* Key-hint footer, grey size 1, like the device. */}
-          <p className="border-t border-[var(--cu-panel)] px-3 py-2 text-center font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none text-[var(--cu-dim)]">
-            {connected ? 'All systems fabulous.' : 'USB 115200  DTR/RTS low'}
-          </p>
-        </RainbowFrame>
+            )}
+          </details>
+        </div>
+      </RainbowFrame>
     </section>
   )
 }
 
-/** A titled group of controls: a pixel-face label, an optional state tag on the right. */
-function RailBlock({ title, tag, tagOn, children }: { title: string; tag?: string; tagOn?: boolean; children: ReactNode }) {
-  return (
-    <section className="space-y-2.5">
-      <h3 className="flex items-center justify-between gap-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none text-[var(--cu-muted)]">
-        <span>{title}</span>
-        {tag && <span className={tagOn ? 'text-[var(--cu-ok)]' : 'text-[var(--cu-dim)]'}>{tag}</span>}
-      </h3>
-      {children}
-    </section>
-  )
-}
-
-/** One feature in the controls column: icon and name, the hint on hover, a magenta edge when selected. */
-function RailItem({ Icon, label, hint, count, on, onClick }: { Icon: LucideIcon; label: string; hint: string; count?: number; on: boolean; onClick: () => void }) {
+/** One feature tab in the top strip: icon and name in the pixel face, a magenta underline when selected. */
+function FeatureTab({ Icon, label, count, on, onClick }: { Icon: LucideIcon; label: string; count?: number; on: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       aria-current={on ? 'page' : undefined}
-      title={hint}
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 border-l-2 px-2 py-1.5 text-left outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--cu-secondary)] ${
+      className={`flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--cu-secondary)] ${
         on ? 'border-[var(--cu-primary)] bg-[var(--cu-panel)] text-[var(--cu-text)]' : 'border-transparent text-[var(--cu-muted)] hover:bg-[var(--cu-floor)] hover:text-[var(--cu-text)]'
       }`}
     >
       <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-[var(--cu-primary)]' : 'text-[var(--cu-secondary)]'}`} aria-hidden />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {label}
       {count ? <span className="tabular-nums text-[var(--cu-warn)]">{count}</span> : null}
     </button>
   )
 }
 
-function RailRow({ label, value }: { label: string; value: string }) {
+/** A fact about the linked Unicorn, under its screen. */
+function Fact({ label, value, tone = 'text' }: { label: string; value: string; tone?: 'text' | 'ok' | 'attention' }) {
+  const color = { text: 'text-[var(--cu-text)]', ok: 'text-[var(--cu-ok)]', attention: 'text-[var(--cu-attention)]' }[tone]
   return (
     <div className="flex gap-2">
-      <dt className="w-14 shrink-0 text-[var(--cu-muted)]">{label}</dt>
-      <dd className="min-w-0 break-words">{value}</dd>
+      <dt className="text-[var(--cu-muted)]">{label}</dt>
+      <dd className={color}>{value}</dd>
     </div>
   )
 }
 
-/** One of the board's four buttons: cyan outline, magenta for Select, like the device's own keys. */
-function IconButtonKey({ label, Icon, onClick, disabled, primary }: { label: string; Icon: LucideIcon; onClick: () => void; disabled?: boolean; primary?: boolean }) {
+/** The board's four buttons ON its live screen (owner, 2026-10-20: "a mirrored feed with clickable controls
+ *  on screen"): Back top left, the pad bottom right, refresh and off top right. Quiet until the pointer is
+ *  over the screen or a button has focus, so the feed stays readable. */
+function ScreenControls({ padOn, onPress, onRefresh, onOff }: { padOn: boolean; onPress: (key: NavKey) => void; onRefresh: () => void; onOff: () => void }) {
+  const fade = 'opacity-70 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100'
+  return (
+    <>
+      <div className={`absolute left-3 top-3 ${fade}`}>
+        <ScreenKey label="Back" Icon={CornerUpLeft} onClick={() => onPress('esc')} disabled={!padOn} />
+      </div>
+      <div className={`absolute right-3 top-3 flex gap-2 ${fade}`}>
+        <ScreenKey label="Refresh the screen" Icon={RefreshCw} onClick={onRefresh} />
+        <ScreenKey label="Turn the live screen off" Icon={EyeOff} onClick={onOff} />
+      </div>
+      <div className={`absolute bottom-3 right-3 grid grid-cols-3 gap-1.5 ${fade}`} role="group" aria-label="CyberUnicorn buttons">
+        <span />
+        <ScreenKey label="Previous" Icon={ChevronUp} onClick={() => onPress('prev')} disabled={!padOn} />
+        <span />
+        <ScreenKey label="Previous" Icon={ChevronLeft} onClick={() => onPress('prev')} disabled={!padOn} hidden />
+        <ScreenKey label="Select" Icon={CircleDot} onClick={() => onPress('sel')} disabled={!padOn} primary />
+        <ScreenKey label="Next" Icon={ChevronRight} onClick={() => onPress('next')} disabled={!padOn} hidden />
+        <span />
+        <ScreenKey label="Next" Icon={ChevronDown} onClick={() => onPress('next')} disabled={!padOn} />
+        <span />
+      </div>
+    </>
+  )
+}
+
+/** One button on the live screen: a dark glass key with a cyan edge, magenta for Select. `hidden` keeps a
+ *  second way to the same key out of the tab order and the accessibility tree (left and right mirror up
+ *  and down, the way the board's own menus scroll). */
+function ScreenKey({ label, Icon, onClick, disabled, primary, hidden }: { label: string; Icon: LucideIcon; onClick: () => void; disabled?: boolean; primary?: boolean; hidden?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={label}
+      aria-label={hidden ? undefined : label}
+      aria-hidden={hidden || undefined}
+      tabIndex={hidden ? -1 : undefined}
       title={label}
-      className={`flex h-9 w-full items-center justify-center outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cu-secondary)] disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`flex h-11 w-11 items-center justify-center outline-none backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cu-secondary)] disabled:cursor-not-allowed disabled:opacity-40 ${
         primary
           ? 'bg-[var(--cu-primary)] text-[var(--cu-screen)] hover:bg-[var(--cu-attention)]'
-          : 'border border-[var(--cu-secondary)] text-[var(--cu-secondary)] hover:bg-[var(--cu-secondary)] hover:text-[var(--cu-screen)]'
+          : 'border border-[var(--cu-secondary)] bg-[color-mix(in_oklab,var(--cu-screen)_70%,transparent)] text-[var(--cu-secondary)] hover:bg-[var(--cu-secondary)] hover:text-[var(--cu-screen)]'
       }`}
     >
-      <Icon className="h-4 w-4" aria-hidden />
+      <Icon className="h-5 w-5" aria-hidden />
     </button>
   )
 }
 
 /** The board's own boot scene, played in the browser while it boots (and as the idle attract loop). */
-function BootCanvas({ fontFamily, finale }: { fontFamily: string; finale: boolean }) {
+function BootCanvas({ fontFamily, finale, progress }: { fontFamily: string; finale: boolean; progress: RefObject<{ value: number; text: string } | null> }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
-    return startBootScene(canvas, { fontFamily, finale, loop: true })
-  }, [fontFamily, finale])
+    return startBootScene(canvas, { fontFamily, finale, loop: true, progress: () => progress.current })
+  }, [fontFamily, finale, progress])
   return (
     <canvas
       ref={ref}

@@ -40,7 +40,7 @@ export interface AdminShellLink {
 }
 
 export interface AdminShellProps {
-  /** Where the logo goes (the console's home). */
+  /** The console's home (the phone top bar's who-is-this link). The sidebar wordmark goes to the Feed. */
   homeHref: string
   /** The breadcrumb's first word (the Space, or Frequency for the operator console). */
   crumbRoot: string
@@ -141,8 +141,10 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
         <div className="fq-wash" aria-hidden />
         <div className="ad">
           <aside className="ad-side">
-            {/* The link wraps the wordmark because the wordmark is a CSS mask, which would clip a focus ring. */}
-            <Link href={homeHref} className="ad-logo" aria-label="Frequency admin, console home">
+            {/* The Frequency wordmark goes back to the Feed, out of the console (owner, 2026-10-20); the console's
+                own home is its first row. The link wraps the wordmark because the wordmark is a CSS mask, which
+                would clip a focus ring. */}
+            <Link href="/feed" className="ad-logo" aria-label="Frequency, back to the Feed">
               <span className="fq-logo-flow" aria-hidden />
             </Link>
             <SpaceCard space={space} />

@@ -17,6 +17,9 @@ type BootSceneOptions = {
   /** CSS font-family for the pixel face (the resolved next/font family of Press Start 2P). */
   fontFamily?: string
   onDone?: () => void
+  /** Real progress for the loader bar (an update, the board waking): read every frame. When it returns a
+   *  value, the bar shows it and its line in place of the joke loader, so the page needs no second bar. */
+  progress?: () => { value: number; text: string } | null
 }
 
 const W = 320
@@ -96,6 +99,7 @@ export function startBootScene(canvas: HTMLCanvasElement, opts: BootSceneOptions
   let done = false
   let stopped = false
   let doneTimer: ReturnType<typeof setTimeout> | undefined
+  let poll: ReturnType<typeof setInterval> | undefined
 
   const titleCv = document.createElement('canvas')
   titleCv.width = W
@@ -247,6 +251,20 @@ export function startBootScene(canvas: HTMLCanvasElement, opts: BootSceneOptions
     const barH = 10
     ctx.fillStyle = BLACK
     ctx.fillRect(0, y, W, H - y)
+    const real = opts.progress?.()
+    if (real) {
+      const v = Math.max(0, Math.min(1, real.value))
+      const dn = ((barW - 2) * v) | 0
+      ctx.strokeStyle = c565(0, 255, 255)
+      ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1)
+      for (let x = 0; x < dn; x++) {
+        ctx.fillStyle = hue(x * 2 - t * 10)
+        ctx.fillRect(barX + 1 + x, barY + 1, 1, barH - 2)
+      }
+      drawText(ctx, real.text, barX, barY + barH + 6, 1, WHITE)
+      drawText(ctx, `${Math.round(v * 100)}%`, barX + barW, barY + barH + 6, 1, c565(255, 0, 200), true)
+      return
+    }
     if (!finale) {
       const k0 = elapsed / duration
       const pct0 =
@@ -486,6 +504,8 @@ export function startBootScene(canvas: HTMLCanvasElement, opts: BootSceneOptions
         // One still, mid-gallop, with the loader at 64%. No animation.
         t = 30
         render(finale ? 0.4 * duration : 0.45 * duration, true)
+        // A still scene still has to show real progress moving.
+        if (opts.progress) poll = setInterval(() => !stopped && loading(0.45 * duration, t), 500)
         if (!loop && onDone) doneTimer = setTimeout(() => !stopped && onDone(), duration)
         return
       }
@@ -497,5 +517,6 @@ export function startBootScene(canvas: HTMLCanvasElement, opts: BootSceneOptions
     stopped = true
     cancelAnimationFrame(raf)
     if (doneTimer) clearTimeout(doneTimer)
+    if (poll) clearInterval(poll)
   }
 }
