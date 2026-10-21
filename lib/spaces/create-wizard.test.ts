@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { operatorStartHref } from '@/lib/site'
 import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
-import { createWizardSteps, parsePlanHint, planWantsBilling, setupFinishFor, WIZARD_PLANS } from './create-wizard'
+import { createWizardSteps, parseIntents, parsePlanHint, planWantsBilling, setupFinishFor, suggestModeForIntents, WIZARD_PLANS } from './create-wizard'
 
 describe('parsePlanHint', () => {
   it('reads every plan /pricing sells', () => {
@@ -25,11 +25,11 @@ describe('plan landing', () => {
 
 describe('createWizardSteps', () => {
   it('reads model and identity off the manifest, between plan and start', () => {
-    expect(createWizardSteps(SPACE_MANIFEST).map((s) => s.key)).toEqual(['plan', 'model', 'identity', 'start'])
+    expect(createWizardSteps(SPACE_MANIFEST).map((s) => s.key)).toEqual(['intents', 'model', 'identity', 'start'])
   })
   it('drops a step the manifest no longer declares', () => {
     const m = { ...SPACE_MANIFEST, sections: SPACE_MANIFEST.sections.filter((s) => s.key !== 'identity') }
-    expect(createWizardSteps(m).map((s) => s.key)).toEqual(['plan', 'model', 'start'])
+    expect(createWizardSteps(m).map((s) => s.key)).toEqual(['intents', 'model', 'start'])
   })
 })
 
@@ -39,5 +39,19 @@ describe('the /pricing hand-off', () => {
       const next = new URL(operatorStartHref(p), 'https://x.test').searchParams.get('next') ?? ''
       expect(parsePlanHint(new URL(next, 'https://x.test').searchParams.get('plan'))).toBe(p)
     }
+  })
+})
+
+describe('the picks', () => {
+  it('keeps only known picks, deduped, in catalog order', () => {
+    expect(parseIntents(['events', 'nope', 'bookings', 'events', 7])).toEqual(['bookings', 'events'])
+    expect(parseIntents(undefined)).toEqual([])
+  })
+  it('suggests a setup from the first pick that has one, and donations wins', () => {
+    const avail = ['business:appointments', 'business:ticketed', 'nonprofit:donations']
+    expect(suggestModeForIntents(['events', 'bookings'], avail)).toBe('business:appointments')
+    expect(suggestModeForIntents(['events', 'donations'], avail)).toBe('nonprofit:donations')
+    expect(suggestModeForIntents(['community', 'email'], avail)).toBeNull()
+    expect(suggestModeForIntents([], avail)).toBeNull()
   })
 })

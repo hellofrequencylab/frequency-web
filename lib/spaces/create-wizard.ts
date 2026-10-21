@@ -2,10 +2,14 @@
 // THE SPACE CREATION WIZARD'S RULES (the seeders analysis, 2026-10-21). PURE and client-safe.
 //
 // Same shape as lib/spaces/setup.ts: the steps are read off the Space manifest's own sections, and
-// the one step the manifest cannot declare (which plan you came for, a billing intent rather than a
-// Space field) is added beside it, never in place of it.
+// the steps the manifest cannot declare (what the owner wants to do here, a tracking signal rather than a
+// Space field, and the closing summary) are added beside it, never in place of it.
 //
-//   Plan  ->  What you run (manifest `model`)  ->  Name and handle (manifest `identity`)  ->  Start
+//   What you want to do  ->  Tool setup (manifest `model`)  ->  Name and handle (`identity`)  ->  Start
+//
+// THE PICKS are a multi-select over what the Space can do, never a niche: nobody is asked to be one
+// kind of business up front. They suggest a starting setup and are recorded FIRST-PARTY ONLY (the
+// engagement ledger, never an ad pixel; persona and topic data stay out of every pixel).
 //
 // The PLAN is a HINT, never a grant. A Space is always born on the free plan (createSpace); a paid
 // plan only changes where the owner lands once the setup walk is done: the Space's billing page,
@@ -53,7 +57,7 @@ export function setupFinishFor(slug: string, plan: string | null | undefined, fi
   return planWantsBilling(plan) ? `/spaces/${slug}/settings/billing?plan=${parsePlanHint(plan ?? undefined)}` : finish
 }
 
-type CreateWizardStepKey = 'plan' | 'model' | 'identity' | 'start'
+type CreateWizardStepKey = 'intents' | 'model' | 'identity' | 'start'
 
 interface CreateWizardStep {
   key: CreateWizardStepKey
@@ -62,8 +66,8 @@ interface CreateWizardStep {
 }
 
 const STEP_COPY: Record<CreateWizardStepKey, { title: string; desc: string }> = {
-  plan: { title: 'Pick your plan', desc: 'You can change it later. Every Space starts free and you only pay when you choose to.' },
-  model: { title: 'What do you run?', desc: 'This sets up your tools and a starter pipeline for how you work. You can switch it later.' },
+  intents: { title: 'What do you want to do here?', desc: 'Pick everything that fits, or skip it. You are not choosing a niche, and you can add more any time.' },
+  model: { title: 'How should we set up your tools?', desc: 'We start you with the tools that fit your picks. Not sure? Leave it on the general choice. You can switch it later.' },
   identity: { title: 'Name it', desc: 'The name people will see across the network, and the handle it lives at.' },
   start: { title: 'Ready to start', desc: 'Here is what we will set up. Then we walk you through your story, look, and offerings.' },
 }
@@ -72,9 +76,44 @@ const STEP_COPY: Record<CreateWizardStepKey, { title: string; desc: string }> = 
  *  them; `plan` and `start` are the wizard's own and always present. PURE. */
 export function createWizardSteps(manifest: EntityManifest): CreateWizardStep[] {
   const declared = new Set(manifest.sections.map((s) => s.key))
-  const keys: CreateWizardStepKey[] = ['plan']
+  const keys: CreateWizardStepKey[] = ['intents']
   if (declared.has('model')) keys.push('model')
   if (declared.has('identity')) keys.push('identity')
   keys.push('start')
   return keys.map((key) => ({ key, ...STEP_COPY[key] }))
+}
+
+/** What an owner can say they want to do here. One entry per thing the product offers; the `mode` is the
+ *  starting setup that fits it (a `${type}:${variant}` ModeChoice id), or null when it needs none. */
+export const WIZARD_INTENTS = [
+  { id: 'bookings', label: 'Take bookings', hint: '1:1 sessions and appointments', mode: 'business:appointments' },
+  { id: 'classes', label: 'Run classes or memberships', hint: 'A studio, gym, or recurring group', mode: 'business:membership' },
+  { id: 'programs', label: 'Teach programs or courses', hint: 'Courses and journeys you run', mode: 'business:cohort' },
+  { id: 'events', label: 'Host events', hint: 'Workshops, gatherings, ticketed nights', mode: 'business:ticketed' },
+  { id: 'products', label: 'Sell products', hint: 'A catalog and a storefront', mode: 'business:product' },
+  { id: 'community', label: 'Build a community', hint: 'Circles for your people', mode: null },
+  { id: 'email', label: 'Stay in touch by email', hint: 'Newsletters and follow ups', mode: null },
+  { id: 'donations', label: 'Raise donations', hint: 'A nonprofit with programs', mode: 'nonprofit:donations' },
+] as const
+
+type WizardIntentId = (typeof WIZARD_INTENTS)[number]['id']
+
+
+/** Keep only known picks, deduped, in catalog order. Total: anything else is dropped. PURE. */
+export function parseIntents(raw: unknown): WizardIntentId[] {
+  const asked = new Set(Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : [])
+  return WIZARD_INTENTS.filter((i) => asked.has(i.id)).map((i) => i.id)
+}
+
+/** The starting setup a set of picks points at: the first pick in catalog order that has one, but a
+ *  donations pick wins (it is the only nonprofit setup). Null means "no opinion", so the caller keeps
+ *  its general default. PURE. */
+export function suggestModeForIntents(picks: readonly string[], available: readonly string[]): string | null {
+  const chosen = parseIntents(picks)
+  const order: WizardIntentId[] = chosen.includes('donations') ? ['donations'] : chosen
+  for (const id of order) {
+    const mode = WIZARD_INTENTS.find((i) => i.id === id)?.mode
+    if (mode && available.includes(mode)) return mode
+  }
+  return null
 }
