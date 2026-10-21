@@ -79,6 +79,8 @@ const spaceGrotesk = localFont({ src: "./fonts/space-grotesk/space-grotesk.woff2
 // Fraunces additionally loads its `opsz` + `SOFT` optical axes: the editorial theme's light display
 // treatment (font-variation-settings in globals.css) needs them, and next/font ships only `wght` by default.
 // Variable fonts where possible; PT Serif + Atkinson need explicit weights.
+// Fraunces({ axes: ["opsz", "SOFT"] }) as downloaded: the committed file carries both axes plus wght
+// (checked with fontTools: opsz 9-144, wght 100-900, SOFT 0-100), which editorial's light treatment needs.
 const fraunces = localFont({ src: "./fonts/fraunces/fraunces.woff2", variable: "--font-fraunces", weight: "100 900", display: "swap", preload: false, adjustFontFallback: "Times New Roman" });
 const ptSerif = localFont({ src: [{ path: "./fonts/pt-serif/pt-serif-400.woff2", weight: "400" }, { path: "./fonts/pt-serif/pt-serif-700.woff2", weight: "700" }], variable: "--font-pt-serif", display: "swap", preload: false, adjustFontFallback: "Times New Roman" });
 const fredoka = localFont({ src: "./fonts/fredoka/fredoka.woff2", variable: "--font-fredoka", weight: "300 700", display: "swap", preload: false });
