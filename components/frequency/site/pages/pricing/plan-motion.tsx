@@ -8,7 +8,7 @@
 // Network base and chapter figures off NETWORK_PLAN, the fee percentages off each offering's rate. The
 // colours are the kit's tokens (see `.pm` in the sheet); there is no hex in this file.
 import Link from 'next/link'
-import { formatBps, formatCents } from '@/lib/pricing/display'
+import { formatCents } from '@/lib/pricing/display'
 import { INDEPENDENT_CONTACT_HREF } from '@/lib/pricing/network-contact'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
@@ -283,57 +283,6 @@ export function OwnersMotion({ includedChapters, maxChapters }: { includedChapte
           <span>{`Add up to ${maxChapters}`}</span>
         </p>
       </div>
-    </div>
-  )
-}
-
-/** One meter row: a plan and the fee it pays on a customer Frequency introduces. */
-export interface SalesRow {
-  id: string
-  label: string
-  bps: number
-}
-
-/** The meters: every plan that sells, in ladder order, with Non Profit last (it pays nothing). Read off the
- *  offerings' own rate, so a changed rate moves the bar. */
-export function salesRows(spaces: readonly Offering[]): SalesRow[] {
-  return ['business', 'collective', 'network', 'nonprofit'].flatMap((id) => {
-    const o = spaces.find((s) => s.id === id)
-    return o && o.sells ? [{ id, label: o.label, bps: o.networkRateBps }] : []
-  })
-}
-
-/** The ring's claim: the figure and the words that keep it honest travel together (LIVE-913). */
-const KEEP = { value: '100%', label: `you keep, ${PLAN_STORY.plusProcessing}` }
-
-/** 03 · What you pay on sales. A ring that reads "100% you keep" beside a meter per plan; the bars fill as
- *  they scroll into view (where the browser can drive an animation from scroll) and are simply there
- *  where it cannot. */
-export function SalesMotion({ rows }: { rows: readonly SalesRow[] }) {
-  const max = Math.max(...rows.map((r) => r.bps), 1)
-  return (
-    <div className="pm-sales">
-      <div className="pm-ringbox">
-        <div className="pm-keep" role="img" aria-label={`100% you keep on your own people, ${PLAN_STORY.plusProcessing}`}>
-          <span className="pm-keep-ring" />
-          <span className="pm-keep-n">
-            <b className="fq-iri-text">{KEEP.value}</b>
-            <em>{KEEP.label}</em>
-          </span>
-        </div>
-        <p className="pm-pill">{`${formatBps(0)} on your own people, every plan, ${PLAN_STORY.plusProcessing}`}</p>
-      </div>
-      <ul className="pm-meters" aria-label="The fee on a customer Frequency introduces, by plan">
-        {rows.map((r) => (
-          <li key={r.id} className={r.bps === 0 ? 'is-zero' : undefined}>
-            <span className="pm-m-l">{r.label}</span>
-            <span className="pm-m-bar" aria-hidden="true">
-              <i style={vars({ '--pm-w': `${Math.max(4, (r.bps / max) * 100)}%` })} />
-            </span>
-            <span className="pm-m-v">{formatBps(r.bps)}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }

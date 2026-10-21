@@ -3,7 +3,7 @@ import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { listModeChoices } from '@/lib/spaces/modes'
 import { setupPresetForMode } from '@/lib/pricing/bundles'
-import { parsePlanHint } from '@/lib/spaces/create-wizard'
+import { parsePlanHint, parseWizardHints } from '@/lib/spaces/create-wizard'
 import type { SpaceType } from '@/lib/spaces/types'
 import { getVeraConfig } from '@/lib/ai/vera/config'
 import { CreateSpaceWizard } from './create-space-wizard'
@@ -28,7 +28,7 @@ export const metadata = {
 export default async function NewSpacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string | string[]; plan?: string | string[] }>
+  searchParams: Promise<{ mode?: string | string[]; plan?: string | string[]; name?: string | string[]; intents?: string | string[] }>
 }) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
   const profileId = await getMyProfileId()
@@ -54,6 +54,8 @@ export default async function NewSpacePage({
   // missing means free, and a Space is always born free; the plan only picks where the owner lands
   // after setup (the Space's billing page). Parsed leniently so a stale link still lands somewhere usable.
   const initialPlan = parsePlanHint(params.plan)
+  // The pricing calculator also hands over the Space's name and what it will do (hints, never required).
+  const hints = parseWizardHints(params)
   // What each choice will be set up with, so the last step can say so before anything is created.
   const presetLabels: Record<string, string | null> = {}
   for (const c of choices) presetLabels[c.id] = setupPresetForMode(c.type as SpaceType, c.variant)?.label ?? null
@@ -72,6 +74,8 @@ export default async function NewSpacePage({
         choices={choices}
         initialChoiceId={initialChoiceId}
         initialPlan={initialPlan}
+        initialName={hints.name}
+        initialIntents={hints.intents}
         presetLabels={presetLabels}
         heardAboutOptions={heardAboutOptions}
       />

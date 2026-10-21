@@ -76,6 +76,8 @@ export function CreateSpaceWizard({
   choices,
   initialChoiceId,
   initialPlan = 'free',
+  initialName = '',
+  initialIntents = [],
   presetLabels = {},
   heardAboutOptions = [],
 }: {
@@ -85,6 +87,10 @@ export function CreateSpaceWizard({
   initialChoiceId?: string
   /** The plan hint from /pricing, already parsed by the page. */
   initialPlan?: WizardPlan
+  /** The Space name the pricing calculator collected, already trimmed by the page. */
+  initialName?: string
+  /** The goals the pricing calculator collected, already validated by the page. */
+  initialIntents?: readonly string[]
   /** choice id -> the starting setup it opens with, for the last step's summary. */
   presetLabels?: Record<string, string | null>
 }) {
@@ -92,14 +98,14 @@ export function CreateSpaceWizard({
   const planType = choiceTypeForPlan(initialPlan)
   const planChoice = planType ? choices.find((c) => c.type === planType)?.id : undefined
   const plan = initialPlan
-  const [intents, setIntents] = useState<string[]>([])
+  const [intents, setIntents] = useState<string[]>([...initialIntents])
   // No niche is assumed: the default is the general service setup unless a funnel or the nonprofit plan chose.
   const [choiceId, setChoiceId] = useState(
     initialChoiceId ?? planChoice ?? choices.find((c) => c.id === 'business:service')?.id ?? choices[0]?.id ?? '',
   )
   const [choiceTouched, setChoiceTouched] = useState(false)
-  const [name, setName] = useState('')
-  const [slug, setSlug] = useState('')
+  const [name, setName] = useState(initialName)
+  const [slug, setSlug] = useState(initialName ? slugify(initialName) : '')
   const [slugTouched, setSlugTouched] = useState(false)
   const [visibility, setVisibility] = useState<'network' | 'private'>('network')
   const [heardAbout, setHeardAbout] = useState('')

@@ -24,11 +24,15 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
+import type { AddOnGroups } from '@/lib/pricing/pricing-addons'
 import { COLLECTIVE_PARTNER_CAP, type FeatureGrid, type Offering } from '@/lib/pricing/pricing-grid'
 import { OPERATOR_START_HREF } from '@/lib/site'
 import { splitPrice } from './split-price'
 import { PlanPeriodScope, PlanPeriodSwitch } from './plan-period'
-import { MotionLinks, OwnersMotion, PlanLadderMotion, SalesMotion, salesRows } from './plan-motion'
+import type { CalcModel } from './calculator-model'
+import { MotionLinks, OwnersMotion, PlanLadderMotion } from './plan-motion'
+import { PricingAddOns } from './pricing-addons'
+import { PricingCalculator } from './pricing-calculator'
 
 export { splitPrice }
 
@@ -179,6 +183,8 @@ export function FrequencyPricing({
   grid,
   faq,
   yearlyNote,
+  calculator,
+  addOns,
 }: {
   members: Offering[]
   spaces: Offering[]
@@ -187,6 +193,10 @@ export function FrequencyPricing({
   /** The yearly line under the Monthly / Yearly switch (annualDiscountNote), so the page never states
    *  a discount the charge does not apply. */
   yearlyNote: string
+  /** The scroll-through's seven steps (calculator-model.ts), read off the same offerings as the cards. */
+  calculator: CalcModel
+  /** Every add-on and included extra with its price (lib/pricing/pricing-addons.ts). */
+  addOns: AddOnGroups
 }) {
   const planCount = COUNT_WORD[spaces.length] ?? String(spaces.length)
   // The matrix columns are the Space offerings: each header carries its price, and the featured plan's
@@ -216,9 +226,14 @@ export function FrequencyPricing({
             <Link className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
               Open your Space
             </Link>
+            <a className="btn btn-ghost fq-iri-rim" href="#path">
+              Walk the path
+            </a>
           </div>
         </div>
       </section>
+
+      <PricingCalculator model={calculator} />
 
       <PlanPeriodScope>
         <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
@@ -226,9 +241,9 @@ export function FrequencyPricing({
           <div className="wrap">
             <div className="sh">
               <div className="label">
-                <b>Plans</b>One price per plan
+                <b>Side by side</b>One price per plan
               </div>
-              <h2 className="h-l">{`${planCount} plans. Start free.`}</h2>
+              <h2 className="h-l">{`${planCount} Space plans, side by side.`}</h2>
               <p className="pb-note">{PLAN_STORY.paid}</p>
             </div>
             <PlanPeriodSwitch note={yearlyNote} />
@@ -270,15 +285,6 @@ export function FrequencyPricing({
               </div>
               <OwnersMotion includedChapters={NETWORK_PLAN.includedChapters} maxChapters={NETWORK_PLAN.maxChapters} />
             </div>
-            <div className="pm-split" id="sales">
-              <div className="sh">
-                <div className="label">
-                  <b>What you pay on sales</b>Only on introductions
-                </div>
-                <h3 className="pm-h3">{`The fee is only on a customer Frequency introduces, charged once. Your own people are 0% on every plan, ${PLAN_STORY.plusProcessing}.`}</h3>
-              </div>
-              <SalesMotion rows={salesRows(spaces)} />
-            </div>
             <MotionLinks />
           </div>
         </section>
@@ -290,7 +296,7 @@ export function FrequencyPricing({
               <div className="label">
                 <b>For people</b>Joining and hosting
               </div>
-              <h2 className="h-l">Everything for people is free.</h2>
+              <h2 className="h-l">Join free. Host more with Crew.</h2>
               <p className="pb-note">{PLAN_STORY.crew}</p>
             </div>
             <PlanPeriodSwitch note={yearlyNote} />
@@ -305,6 +311,8 @@ export function FrequencyPricing({
           </div>
         </section>
       </PlanPeriodScope>
+
+      <PricingAddOns addOns={addOns} spaces={spaces} />
 
       <section className="sec pb-sec" id="features" data-screen-label="03 Features by plan">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />

@@ -27,7 +27,9 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { calculatorModel } from '@/components/frequency/site/pages/pricing/calculator-model'
 import { FrequencyPricing } from '@/components/frequency/site/pages/pricing/frequency-pricing'
+import { pricingAddOns } from '@/lib/pricing/pricing-addons'
 import { pricingFaq } from './pricing-faq'
 import {
   PricingDoors,
@@ -217,6 +219,8 @@ export default async function PricingPage() {
           grid={spaceFeatureGrid(input)}
           faq={faq}
           yearlyNote={annualDiscountNote(input.values)}
+          calculator={calculatorModel(members, spaces, input.catalog, annualDiscountNote(input.values))}
+          addOns={pricingAddOns(input)}
         />
       </>
     )

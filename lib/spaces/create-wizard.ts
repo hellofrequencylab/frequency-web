@@ -105,6 +105,19 @@ export function parseIntents(raw: unknown): WizardIntentId[] {
   return WIZARD_INTENTS.filter((i) => asked.has(i.id)).map((i) => i.id)
 }
 
+/** The starting values the pricing calculator hands over as `?name=` and `?intents=a,b`. Both are hints:
+ *  a name is trimmed and capped at the Space name length, picks keep only known goals. Total. PURE. */
+export function parseWizardHints(params: {
+  name?: string | string[] | null
+  intents?: string | string[] | null
+}): { name: string; intents: WizardIntentId[] } {
+  const first = (v: string | string[] | null | undefined) => (Array.isArray(v) ? v[0] : v) ?? ''
+  return {
+    name: first(params.name).trim().slice(0, 80),
+    intents: parseIntents(first(params.intents).split(',')),
+  }
+}
+
 /** The starting setup a set of picks points at: the first pick in catalog order that has one, but a
  *  donations pick wins (it is the only nonprofit setup). Null means "no opinion", so the caller keeps
  *  its general default. PURE. */
