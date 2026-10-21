@@ -56,6 +56,23 @@ describe('the Frequency pricing body', () => {
   })
 })
 
+describe('the motion graphics', () => {
+  it('reads every figure off the catalog and links the right doors', () => {
+    const html = render()
+    expect(count(html, 'class="pm-fig"')).toBe(1)
+    expect(html).toContain('$149 + $59 a chapter, 3 included')
+    expect(html).toContain('$30,000 a year plus a $5,000 setup')
+    expect(html).toContain('href="/join?next=%2Fspaces%2Fnew%3Fplan%3Dbusiness"')
+    expect(html).not.toMatch(/class="btn[^"]*" href="\/spaces"/)
+    expect(html).toContain('mailto:')
+  })
+  it('stops every animation for reduced motion, and keeps violet out', () => {
+    const css = readFileSync('app/themes/frequency/site-pages-b.css', 'utf8')
+    expect(css).toMatch(/prefers-reduced-motion:reduce\)\{[^]*\.pm-float/)
+    expect(css.slice(css.indexOf('THE PRICING MOTION GRAPHICS'))).not.toMatch(/5B3FD0|C4B8FF/i)
+  })
+})
+
 describe('splitPrice', () => {
   it('splits the figure from its period, and keeps a lead word', () => {
     expect(splitPrice('$49/mo')).toEqual({ lead: undefined, amount: '$49', per: '/mo' })

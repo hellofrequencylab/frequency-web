@@ -237,6 +237,15 @@ export const HOST_CTA_LABEL = "Host a Circle";
 // tells a reader the page was written for them. Routing the two verbs to two destinations sounds
 // tidier and produces self-links on exactly the pages that carry the operator verb.
 export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
+/** A plan button's door: signup first, then straight into Create a Space. A signed-in member skips the
+ *  sign-up and lands on the same form (app/join/(induction)/page.tsx honours `next`). Plan buttons used to
+ *  point at the /spaces explainer, one more page between a visitor and the thing they asked for. */
+export const OPERATOR_START_HREF = `${OPERATOR_CTA_HREF}?next=/spaces/new`;
+/** The same door with the plan the visitor clicked riding along as `?plan=<id>` on Create a Space (ids: free,
+ *  business, collective, nonprofit, network). Create a Space may read it; nothing may depend on it. */
+export function operatorStartHref(plan: string): string {
+  return `${OPERATOR_CTA_HREF}?next=${encodeURIComponent(`/spaces/new?plan=${plan}`)}`
+}
 
 /** THE NARROW-HEADER FORM, and the reason it exists (ADR-1197).
  *

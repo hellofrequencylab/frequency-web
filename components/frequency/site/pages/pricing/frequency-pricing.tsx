@@ -23,9 +23,14 @@ import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
-import type { FeatureGrid, Offering } from '@/lib/pricing/pricing-grid'
+import { NETWORK_PLAN } from '@/lib/pricing/plans'
+import { COLLECTIVE_PARTNER_CAP, type FeatureGrid, type Offering } from '@/lib/pricing/pricing-grid'
+import { OPERATOR_START_HREF } from '@/lib/site'
+import { splitPrice } from './split-price'
 import { PlanPeriodScope, PlanPeriodSwitch } from './plan-period'
-import { CollectiveOrNetwork, FeeBars, TierLadder, feeBars, ladderSteps } from './tier-graphics'
+import { MotionLinks, OwnersMotion, PlanLadderMotion, SalesMotion, salesRows } from './plan-motion'
+
+export { splitPrice }
 
 type Faq = { q: string; a: string }[]
 
@@ -37,15 +42,6 @@ const COUNT_WORD = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
 /** A CSS custom property on a style prop. React types only know the standard properties. */
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
-}
-
-/** A card's price, split for the type: an optional lead word ("from"), the figure, and its period
- *  ("/mo") set smaller beside it. Parsed off the display label the model already formats, never
- *  re-priced; a label with no figure ("Free", "Set by the Space") is shown whole. */
-export function splitPrice(label: string): { lead?: string; amount: string; per?: string } {
-  const m = label.match(/^(?:(\D+?)\s+)?(\S*\d[^\s/]*)(\/[a-z]+)?$/i)
-  if (!m) return { amount: label }
-  return { lead: m[1] || undefined, amount: m[2]!, per: m[3] || undefined }
 }
 
 /** What one plan card shows. The Space offerings, the personal offerings and the reference's Buying
@@ -217,7 +213,7 @@ export function FrequencyPricing({
           </h1>
           <p>{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: a small share. Non Profits: nothing.`}</p>
           <div className="ctas">
-            <Link className="btn fq-iri-btn" href="/spaces">
+            <Link className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
               Open your Space
             </Link>
           </div>
@@ -262,26 +258,28 @@ export function FrequencyPricing({
                 leader runs their own.
               </p>
             </div>
-            <div className="tg-row">
-              <div className="tg-card">
-                <TierLadder steps={ladderSteps(spaces)} />
+            <PlanLadderMotion spaces={spaces} partnerCap={COLLECTIVE_PARTNER_CAP} />
+            <div className="pm-split">
+              <div className="sh">
+                <div className="label">
+                  <b>Collective or Network?</b>Ask who owns the Spaces
+                </div>
+                <p className="pb-note">
+                  Different owners working together is a Collective. One owner with chapters is a Network.
+                </p>
               </div>
+              <OwnersMotion includedChapters={NETWORK_PLAN.includedChapters} maxChapters={NETWORK_PLAN.maxChapters} />
             </div>
-            <div className="tg-row two">
-              <div className="tg-card">
-                <h3>Collective or Network?</h3>
-                <p>Ask who owns the Spaces. Different owners working together is a Collective. One owner with chapters is a Network.</p>
-                <CollectiveOrNetwork />
+            <div className="pm-split" id="sales">
+              <div className="sh">
+                <div className="label">
+                  <b>What you pay on sales</b>Only on introductions
+                </div>
+                <h3 className="pm-h3">{`The fee is only on a customer Frequency introduces, charged once. Your own people are 0% on every plan, ${PLAN_STORY.plusProcessing}.`}</h3>
               </div>
-              <div className="tg-card">
-                <h3>What you pay on sales</h3>
-                <p>{`The fee is only on a customer Frequency introduces, charged once. Your own people are 0% on every plan, ${PLAN_STORY.plusProcessing}.`}</p>
-                <FeeBars bars={feeBars(spaces)} />
-              </div>
+              <SalesMotion rows={salesRows(spaces)} />
             </div>
-            <p className="pb-note">
-              <Link href="/networks">See how a Network works</Link>
-            </p>
+            <MotionLinks />
           </div>
         </section>
 
@@ -384,7 +382,7 @@ export function FrequencyPricing({
       <KeepGoing
         title="Open your Space."
         body={`Free until you charge. Your regulars stay at 0% ${PLAN_STORY.plusProcessing}.`}
-        primary={{ href: '/spaces', label: 'Open your Space →' }}
+        primary={{ href: OPERATOR_START_HREF, label: 'Open your Space →' }}
         secondary={{ href: '#features', label: 'Compare features' }}
       />
     </>

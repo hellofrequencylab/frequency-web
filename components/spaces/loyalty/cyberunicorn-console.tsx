@@ -1752,10 +1752,11 @@ function FeatureTab({ Icon, label, count, on, onClick }: { Icon: LucideIcon; lab
       type="button"
       aria-current={on ? 'page' : undefined}
       onClick={onClick}
-      className={`flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--cu-secondary)] ${
-        on ? 'border-[var(--cu-primary)] bg-[var(--cu-panel)] text-[var(--cu-text)]' : 'border-transparent text-[var(--cu-muted)] hover:bg-[var(--cu-floor)] hover:text-[var(--cu-text)]'
+      className={`relative flex min-h-11 shrink-0 items-center gap-2 px-3 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--cu-secondary)] ${
+        on ? 'bg-[var(--cu-panel)] text-[var(--cu-text)]' : 'text-[var(--cu-muted)] hover:bg-[var(--cu-floor)] hover:text-[var(--cu-text)]'
       }`}
     >
+      {on ? <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--cu-primary)]" /> : null}
       <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-[var(--cu-primary)]' : 'text-[var(--cu-secondary)]'}`} aria-hidden />
       {label}
       {count ? <span className="tabular-nums text-[var(--cu-warn)]">{count}</span> : null}

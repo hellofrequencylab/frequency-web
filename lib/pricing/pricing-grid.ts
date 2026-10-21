@@ -41,7 +41,7 @@
 // feelings, and no claim the config does not back. Labels come from the naming canon (docs/NAMING.md):
 // Member, Crew, Space, Business, Collective, Non Profit.
 
-import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { BETA_CTA_HREF, BETA_CTA_LABEL, operatorStartHref } from '@/lib/site'
 import {
   networkTakeRateBpsForPlan,
   networkTakeRateFromStored,
@@ -161,7 +161,7 @@ export interface Offering {
 /** The partner Spaces a Collective hub links (the 2026-10-16 split; the cap is enforced in
  *  lib/collective/partners.ts COLLECTIVE_PARTNER_CAP, which is server code this pure module does not
  *  import). A quantity, not a price, and the one place the public copy reads it. */
-const COLLECTIVE_PARTNER_CAP = 10
+export const COLLECTIVE_PARTNER_CAP = 10
 
 /** The plain who-it-is-for + tagline copy per offering. Copy only, never a number: every figure on an
  *  offering is read from the config below. */
@@ -329,7 +329,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
     networkRateBps: sells('free') ? rateBps('free') : 0,
     sells: sells('free'),
     featured: false,
-    cta: { label: 'Start a free Space', href: '/spaces' },
+    cta: { label: 'Start a free Space', href: operatorStartHref('free') },
   }
 
   return [
@@ -352,7 +352,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         featured: plan === 'business',
         cta: {
           label: plan === 'nonprofit' ? 'Get verified' : plan === 'collective' ? 'Start a Collective' : 'Start with Business',
-          href: '/spaces',
+          href: operatorStartHref(plan),
         },
       }
     }),
@@ -389,7 +389,7 @@ function networkOffering(takeRate: string, networkRateBps: number, trial: string
     sells: true,
     featured: false,
     cta: networkCheckoutOpen()
-      ? { label: 'Start a Network', href: '/spaces' }
+      ? { label: 'Start a Network', href: operatorStartHref('network') }
       : { label: NETWORK_PLAN.quoteLabel, href: '/networks' },
   }
 }
