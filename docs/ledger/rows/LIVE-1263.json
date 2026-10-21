@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1263",
+  "title": "A failed CyberUnicorn tap says what the board said",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: 'still broke as hell. Check the logs' (console read 'stopped answering' after a placard write)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: the board replied to frequency.write_tag with error 'timeout', message 'No card (43 polls: 0 no card, 43 no ack, ...)', but DeviceError replaced the message with the generic code text, so tagProblem() fell through to 'The CyberUnicorn stopped answering. Check the cable', which sent the owner after the cable. DeviceError now keeps the board's words as `detail`; tagProblem() and outcomeUnknown() read it. A timeout where every poll was 'no ack' (the reader chip took no command) and the firmware's new 'reader_stuck' code read as the card reader not answering, with the unplug step.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-tap-truth.mjs",
+    "note": "Fails when the console goes back to the generic text for a board-sent error."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

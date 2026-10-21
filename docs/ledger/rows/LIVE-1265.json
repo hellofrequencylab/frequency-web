@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1265",
+  "title": "An abandoned CyberUnicorn connect does not report the board as silent",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: the Update tab said UPDATE DONE with 'printing but not answering commands' still under it."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: installFirmware() disconnects the console before esptool opens the port. A connect still in its boot wait then saw clientRef change, left its loop with no status, and set 'The CyberUnicorn is printing but not answering commands' while the update ran, so the owner read a finished update as a failure. connect() now returns quietly once the page has let go of that client.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-connect-abandon.mjs",
+    "note": "Fails when an abandoned connect can report the board as not answering again."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

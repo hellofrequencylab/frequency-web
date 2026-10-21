@@ -96,8 +96,11 @@ const BOOT_QUIET_MS = 5000
  *  never does. This many short asks tell the two apart. */
 const FLIPPER_TRIES = 3
 const FLIPPER_TRY_MS = 1500
-/** The board's boot scene starts about this long after the port opens; the page's copy waits to match. */
-const BOOT_SYNC_DELAY_MS = 1000
+/** The page's boot scene starts with the board's: on the line the board prints just before its scene
+ *  (main.cpp RAM_LOG("before-wifi-init"), then boot_screen_anim()). A fixed 1 s wait ran half a second
+ *  early (owner, 2026-10-21). Firmware that does not print it gets this long after the port opens. */
+const BOOT_SCENE_LINE = /stage=before-wifi-init/
+const BOOT_SYNC_FALLBACK_MS = 2500
 /** The board uses the cable for a scan only if this page sent a line in the last 30 s. */
 const KEEPALIVE_MS = 10000
 /** How often the "tap it with your phone" step asks whether the check-in landed, and for how long. */
@@ -287,16 +290,25 @@ interface Done {
   note?: string
 }
 
+const READER_SILENT =
+  'The CyberUnicorn is fine, but its card reader is not answering it. Unplug the board for 10 seconds with only DIP 3 ON, then try again.'
+
 /** One plain instruction for each way a tag command can fail (firmware cardStatusText + error codes). */
 function tagProblem(e: unknown): string {
   if (!(e instanceof DeviceError)) return 'Something went wrong. Try again.'
-  const raw = e.message
+  // The board's own words: e.message is the generic text for the code, which hid a tap timeout behind
+  // "stopped answering".
+  const raw = e.detail
   switch (e.code) {
     case 'no_reader':
       return 'Turn DIP 3 ON so the card reader wakes up, then try again.'
+    case 'reader_stuck':
+      return READER_SILENT
     case 'busy':
       return 'The reader is busy. Go back to the main menu on the CyberUnicorn and try again.'
     case 'timeout':
+      // 0.1.3 counts how each poll ended: every one with "no ack" means the reader chip never took a command.
+      if (/[1-9]\d* no ack/.test(raw) && /\b0 no card\b/.test(raw) && /\b0 seen\b/.test(raw)) return READER_SILENT
       return /no card/i.test(raw)
         ? 'No card in 30 seconds. Hold it flat on the reader and try again.'
         : 'The CyberUnicorn stopped answering. Check the cable and connect again.'
@@ -319,7 +331,7 @@ function tagProblem(e: unknown): string {
 
 /** Errors where the card may or may not have been written: keep the mint rather than kill a real card. */
 function outcomeUnknown(e: unknown): boolean {
-  return e instanceof DeviceError && (e.code === 'disconnected' || (e.code === 'timeout' && !/no card/i.test(e.message)))
+  return e instanceof DeviceError && (e.code === 'disconnected' || (e.code === 'timeout' && !/no card/i.test(e.detail)))
 }
 
 type Target = { spaceId: string; spaceName: string }
@@ -399,6 +411,8 @@ export function CyberUnicornConsole({
     return () => window.clearTimeout(t)
   }, [problem])
   const [bootStarted, setBootStarted] = useState<number | null>(null)
+  /** When the board's own boot scene began (BOOT_SCENE_LINE seen), so the page's copy starts with it. */
+  const [boardSceneAt, setBoardSceneAt] = useState<number | null>(null)
   const [cardFor, setCardFor] = useState<string | null>(null)
   const [target, setTarget] = useState<Target | null>(initialSpace)
   const [spaceSlug, setSpaceSlug] = useState('')
@@ -589,8 +603,10 @@ export function CyberUnicornConsole({
       let heard = 0
       let heardAt = 0
       setLog([])
+      setBoardSceneAt(null)
       next.log.on((l) => {
         if (l.dir === 'in') {
+          if (BOOT_SCENE_LINE.test(l.text)) setBoardSceneAt(wallClock())
           heard++
           heardAt = wallClock()
         }
@@ -638,6 +654,8 @@ export function CyberUnicornConsole({
         s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: flipper ? FLIPPER_TRY_MS : 3000 }).catch(() => null)
       }
       setBootStarted(null)
+      // Let go of on purpose (the updater took the port, or Disconnect was pressed): not the board's silence.
+      if (clientRef.current !== next) return false
       if (!s) {
         await disconnect()
         if (quiet) return false
@@ -1441,7 +1459,12 @@ export function CyberUnicornConsole({
                   />
                 </>
               ) : !connected ? (
-                <BootCanvas fontFamily={display.style.fontFamily} finale={phase === 'connecting'} progress={screenProgress} />
+                <BootCanvas
+                  fontFamily={display.style.fontFamily}
+                  finale={phase === 'connecting'}
+                  boardSceneAt={boardSceneAt}
+                  progress={screenProgress}
+                />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center">
                   <Unicorn cell={6} />
@@ -1945,15 +1968,29 @@ function DeviceLog({ text, onCopy }: { text: string; onCopy: () => void }) {
 }
 
 /** The board's own boot scene, played in the browser while it boots (and as the idle attract loop). */
-function BootCanvas({ fontFamily, finale, progress }: { fontFamily: string; finale: boolean; progress: RefObject<{ value: number; text: string } | null> }) {
+function BootCanvas({
+  fontFamily,
+  finale,
+  boardSceneAt,
+  progress,
+}: {
+  fontFamily: string
+  finale: boolean
+  boardSceneAt: number | null
+  progress: RefObject<{ value: number; text: string } | null>
+}) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const beginRef = useRef<(() => void) | null>(null)
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
-    // While connecting, opening the port has just reset the board, and its own boot scene lights up about a
-    // second later: hold ours back by that much so the two play together (Daniel, 2026-10-21).
+    // While connecting, opening the port has just reset the board: ours waits for the board's own scene to
+    // light up (boardSceneAt below) so the two play together (Daniel, 2026-10-21).
     let stop: (() => void) | undefined
+    let begun = false
     const begin = () => {
+      if (begun) return
+      begun = true
       stop = startBootScene(canvas, { fontFamily, finale, loop: true, progress: () => progress.current })
     }
     if (!finale) {
@@ -1961,12 +1998,17 @@ function BootCanvas({ fontFamily, finale, progress }: { fontFamily: string; fina
       return () => stop?.()
     }
     canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
-    const t = window.setTimeout(begin, BOOT_SYNC_DELAY_MS)
+    beginRef.current = begin
+    const t = window.setTimeout(begin, BOOT_SYNC_FALLBACK_MS)
     return () => {
       window.clearTimeout(t)
+      beginRef.current = null
       stop?.()
     }
   }, [fontFamily, finale, progress])
+  useEffect(() => {
+    if (finale && boardSceneAt !== null) beginRef.current?.()
+  }, [finale, boardSceneAt])
   return (
     <canvas
       ref={ref}

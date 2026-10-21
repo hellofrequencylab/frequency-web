@@ -233,8 +233,6 @@ export function FrequencyPricing({
         </div>
       </section>
 
-      <PricingCalculator model={calculator} />
-
       <PlanPeriodScope>
         <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
           <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
@@ -257,6 +255,8 @@ export function FrequencyPricing({
             <p className="pb-note">{PLAN_STORY.selling}</p>
           </div>
         </section>
+
+        <PricingCalculator model={calculator} />
 
         <section className="sec pb-sec" id="collective-or-network" data-screen-label="02a Collective or Network">
           <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />

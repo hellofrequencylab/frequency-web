@@ -8,9 +8,13 @@ import { Emitter, type Transport } from './transport'
 
 export class DeviceError extends Error {
   readonly code: DeviceErrorCode
+  /** The board's own words for a failed command (`@rpc ... "message"`), kept apart from the person-facing
+   *  text: a tap that times out on the board ("No card (43 polls: ...)") is not the cable going quiet. */
+  readonly detail: string
   constructor(code: DeviceErrorCode, message?: string) {
     super(describeDeviceError(code, message))
     this.code = code
+    this.detail = message ?? ''
   }
 }
 

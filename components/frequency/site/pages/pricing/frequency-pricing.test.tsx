@@ -85,6 +85,15 @@ describe('the scroll-through calculator', () => {
     for (const tier of ['Visitor', 'Member', 'Crew', 'Free Space', 'Business', 'Collective', 'Network', 'Your turn'])
       expect(html).toContain(`>${tier}</p>`)
   })
+  it('sits under the plan cards and steps with Back and Next', () => {
+    expect(html.indexOf('id="spaces"')).toBeLessThan(html.indexOf('id="path"'))
+    expect(html.indexOf('id="path"')).toBeLessThan(html.indexOf('id="collective-or-network"'))
+    expect(html).toContain('aria-label="Previous step"')
+    expect(html).toContain('aria-label="Next step"')
+    expect(html).toContain('href="#path-end"')
+    for (const act of ['Welcome', 'Become a Member', 'Join the Crew', 'Start a Free Space', 'Launch your Business', 'Create with the Collective', 'Expand your Network'])
+      expect(html).toContain(`>${act}</p>`)
+  })
   it('prices every step off the catalog, never the design file', () => {
     expect(html).toContain('<b>$49</b>')
     expect(html).toContain('<b>$99</b>')

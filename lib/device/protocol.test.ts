@@ -77,7 +77,7 @@ describe('RpcClient', () => {
     const failed = client.call('frequency.write_tag', {})
     await Promise.resolve()
     text.emit('@rpc {"id":1,"ok":false,"error":"write_failed","message":"Write failed - hold still"}\n')
-    await expect(failed).rejects.toMatchObject({ code: 'write_failed' })
+    await expect(failed).rejects.toMatchObject({ code: 'write_failed', detail: 'Write failed - hold still' })
     await expect(client.call('system.status', {}, { timeoutMs: 5 })).rejects.toMatchObject({ code: 'timeout' })
   })
 })
