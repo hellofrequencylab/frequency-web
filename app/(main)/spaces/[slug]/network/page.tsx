@@ -58,10 +58,11 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
     : caller?.id === parent.ownerProfileId
       ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined
   return (
-    <IndexTemplate {...hero} title={`${name} network`} description={noun.description} action={management} adminBar={false}>
+    <IndexTemplate {...hero} eyebrow="Network" title={`${name} network`} description={`${noun.description} ${members.length} ${noun.plural.toLowerCase()}, ${upcoming.length ? `${upcoming.length} events up next.` : 'no events up next.'}`} action={management} adminBar={false}>
       <div className="space-y-10">
         <section aria-labelledby="network-members">
           <SectionHeader id="network-members" title={noun.plural} count={members.length} />
+          <p className="-mt-2 mb-4 text-body-sm text-muted">Open one to see its page, its people and its events.</p>
           {members.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{members.map(member => {
             const mine = liveEvents.filter(event => sourcesOf(event).includes(member.name))
             const extra = extras.get(member.id)
@@ -70,14 +71,16 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
           })}</div> : <EmptyState title="The network is taking shape" description={noun.empty} />}
         </section>
         <section aria-labelledby="network-upcoming">
-          <SectionHeader id="network-upcoming" title="Up next" />
+          <SectionHeader id="network-upcoming" title="Up next" action={<Link href="#network-calendar" className={buttonClasses('secondary', 'sm')}>Full calendar</Link>} />
+          <p className="-mt-2 mb-4 text-body-sm text-muted">The next events across every {isNetworkPlan(parent.plan) ? 'chapter' : 'member Space'}.</p>
           {upcoming.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{upcoming.map(event => (
             <NetworkEventCard key={event.slug} event={event} hostChapters={sourcesOf(event).filter(source => source !== name)} going={!!event.eventId && going.has(event.eventId)} />
           ))}</div> : <p className="text-body-sm text-muted">No upcoming events this month. Browse the shared calendar for another date.</p>}
         </section>
         <section aria-labelledby="network-calendar">
           <SectionHeader id="network-calendar" title="Shared calendar" />
-          <EventCalendar events={events} initialYear={year} initialMonth1={month1} audience="member" loadMonth={loadCollectiveNetworkMonth.bind(null, slug)} />
+          <p className="-mt-2 mb-4 text-body-sm text-muted">Everything on one month grid. Tap a day to open its events.</p>
+          <div data-network-cal><EventCalendar events={events} initialYear={year} initialMonth1={month1} audience="member" loadMonth={loadCollectiveNetworkMonth.bind(null, slug)} /></div>
         </section>
       </div>
     </IndexTemplate>
