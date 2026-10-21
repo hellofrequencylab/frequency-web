@@ -1,20 +1,15 @@
 {
   "id": "LIVE-1267",
-  "title": "The CyberUnicorn Update tab offers a new firmware release as soon as it is published",
-  "status": "done",
-  "priority": "P1",
+  "title": "Site-wide sweep for the $299 Network and three-Space Collective numbers",
   "lane": "live",
+  "priority": "P2",
   "size": "S",
-  "source": {
-    "file": "docs/LOYALTY.md",
-    "ref": "Owner 2026-10-21 in the project thread: the Update tab offered CU5K 0.1.4 ten minutes after 0.1.5 was published."
-  },
-  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: lib/devices/firmware.ts listReleases() fetched the GitHub release list with next.revalidate 300, a stale-while-revalidate cache, so the first visits after a release still got the old list and the owner was told 0.1.4 was newest. The list is now fetched with cache no-store (one small staff-only call when the Update tab opens). Manifests stay cached: a published release's manifest does not change.",
+  "wave": "W7",
+  "status": "done",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/cu5k-firmware-fresh.mjs",
-    "note": "Fails when the release list fetch is cached again."
+    "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('lib/page-editor/templates/pricing.ts','utf8');const h=fs.readFileSync('content/help/spaces/network.md','utf8');const m=[];if(t.includes('Talk to us to set it up'))m.push('pricing template still says Talk to us');if(!/starts with three chapters/i.test(h))m.push('network help does not say three chapters');if(m.length){console.error('LIVE-1267: '+m.join('; '));process.exit(1)}\""
   },
-  "closed": "2026-10-21",
-  "wave": "W7"
+  "detail": "Deep scan after LIVE-1266 (ADR-1817) of code, copy, help, ADRs and live Stripe. Stripe: the four old base prices (price_1USlPE.., price_1USlPQ.., price_1USlPY.., price_1USlPt..) archived 2026-10-21 after #3798 merged; coupons and chapter prices already match the new base. Repo: the page-editor pricing template no longer says Network is set up by talking to us (it is self-serve with a trial), the Network help article says a Network starts with three chapters, the Chapters module note says they come with the plan, the library quota comment says three member Spaces, ADR-1815 points at ADR-1817. /pricing visual baselines recaptured because the template words moved.",
+  "closed": "2026-10-21"
 }

@@ -49,7 +49,7 @@ export const LOOM_STORAGE_CAP_BYTES: Record<SpacePlan, number> = {
   business: 10 * GB,
   nonprofit: 10 * GB,
   independent: 10 * GB,
-  // Collective rungs (ADR-1709): five member Spaces share one account, so the account holds more.
+  // Collective rungs (ADR-1709): three member Spaces share one account, so the account holds more.
   collective: 50 * GB,
   nonprofit_collective: 50 * GB,
   // Network (SCAN-956): one owner, up to 25 chapters on one account.
