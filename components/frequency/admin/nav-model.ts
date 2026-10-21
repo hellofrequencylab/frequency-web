@@ -121,3 +121,14 @@ export function slideTypes(order: readonly string[], from: string | null | undef
   if (a < 0 || b < 0) return undefined
   return [b > a ? 'nav-forward' : 'nav-back']
 }
+
+/** Whether the top menu should be folded away after a scroll from `prevY` to `y`: it tucks up once you are
+ *  past the top of the page and scrolling down, and comes back on any scroll up or at the top. Small
+ *  movements (under `slack` px) keep the state, so a trackpad's jitter does not flicker it. PURE. */
+export function foldAfterScroll(folded: boolean, y: number, prevY: number, slack = 6, top = 80): boolean {
+  if (y < top) return false
+  const delta = y - prevY
+  if (delta > slack) return true
+  if (delta < -slack) return false
+  return folded
+}
