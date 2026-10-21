@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1264",
+  "title": "The console's boot animation starts with the CyberUnicorn's",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: 'The web animation is about 1/2 a second ahead of the CYD screen. Try and sync those.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: while connecting, BootCanvas started the page's copy of the boot scene a fixed 1 s after the port opened (BOOT_SYNC_DELAY_MS), and the board's own scene lit up about half a second later. The board prints '[RAMLOG] ... stage=before-wifi-init' right before boot_screen_anim(), so the console now starts its scene on that line (BOOT_SCENE_LINE), with a 2.5 s fallback for firmware that does not print it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-boot-sync.mjs",
+    "note": "Fails when the page's boot scene goes back to a fixed delay."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
