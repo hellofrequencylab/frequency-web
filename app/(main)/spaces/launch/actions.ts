@@ -19,7 +19,7 @@ import { after } from 'next/server'
 import { redirect } from 'next/navigation'
 import { aiEnabled } from '@/lib/ai/client'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-limits'
@@ -47,10 +47,10 @@ export interface LaunchStatus {
   }
 }
 
-/** The active Spaces a member owns (plan only), for the creation cap. Fail-safe to [] like createSpace's. */
+/** The active Spaces a member owns (plan only), for the creation cap. Read under the member's own session: the Spaces policy always lets an owner see their own. Fail-safe to [] like createSpace's. */
 async function ownedSpacePlans(profileId: string): Promise<{ plan: string | null }[]> {
   try {
-    const db = createAdminClient() as unknown as {
+    const db = (await createClient()) as unknown as {
       from: (t: string) => {
         select: (c: string) => {
           eq: (c: string, v: string) => { eq: (c: string, v: string) => Promise<{ data: { plan: string | null }[] | null }> }
