@@ -13,7 +13,7 @@ import {
   type EffectiveTier,
   type EntitlementTier,
 } from '@/lib/core/entitlement'
-import { type SpacePlan, asSpacePlan, NETWORK_PLAN } from '@/lib/pricing/plans'
+import { type SpacePlan, asSpacePlan, NETWORK_PLAN, NETWORK_SITE_PLAN } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
@@ -464,6 +464,10 @@ export const CATALOG_ITEM_KEYS = [
   'network_chapter',
   'nonprofit_network',
   'nonprofit_network_chapter',
+  'network_site',
+  'network_site_mid',
+  'network_site_high',
+  'network_site_unbranded',
   'independent_base',
   'addon_ai',
   'addon_custom_domain',
@@ -638,6 +642,32 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     label: 'Non Profit Network chapter',
     perSeat: true,
     ...amountsFromMonthly(NETWORK_PLAN.nonprofitExtraChapterCents, NETWORK_PLAN.nonprofitExtraChapterCents),
+  },
+  network_site: {
+    // A client website a Network resells (ADR-1816), sites 1 to 10. A quantity item on the Network's subscription;
+    // the site count is split across the three ladder rungs by lib/collective/client-site-billing.ts.
+    key: 'network_site',
+    label: 'Network client site (1 to 10)',
+    perSeat: true,
+    ...amountsFromMonthly(NETWORK_SITE_PLAN.tiers[0].cents, NETWORK_SITE_PLAN.tiers[0].cents),
+  },
+  network_site_mid: {
+    key: 'network_site_mid',
+    label: 'Network client site (11 to 25)',
+    perSeat: true,
+    ...amountsFromMonthly(NETWORK_SITE_PLAN.tiers[1].cents, NETWORK_SITE_PLAN.tiers[1].cents),
+  },
+  network_site_high: {
+    key: 'network_site_high',
+    label: 'Network client site (26 and up)',
+    perSeat: true,
+    ...amountsFromMonthly(NETWORK_SITE_PLAN.tiers[2].cents, NETWORK_SITE_PLAN.tiers[2].cents),
+  },
+  network_site_unbranded: {
+    key: 'network_site_unbranded',
+    label: 'Network client site badge removal',
+    perSeat: true,
+    ...amountsFromMonthly(NETWORK_SITE_PLAN.badgeRemovalCents, NETWORK_SITE_PLAN.badgeRemovalCents),
   },
   addon_ai: {
     key: 'addon_ai',

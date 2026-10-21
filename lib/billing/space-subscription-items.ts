@@ -39,6 +39,10 @@ export const ITEM_KEYS = [
   'nonprofit_collective', // NON PROFIT COLLECTIVE base (ADR-1709)
   'network', // NETWORK base (SCAN-980): network_base and nonprofit_network both -> 'network'
   'network_chapter', // a chapter past the three a Network includes (SCAN-980), quantity = extra chapters; network_chapter and nonprofit_network_chapter both -> 'network_chapter'
+  'network_site', // a client website a Network resells (ADR-1816): one DB key per ladder rung and one for badge removal, quantity = sites
+  'network_site_mid',
+  'network_site_high',
+  'network_site_unbranded',
   'independent', // INDEPENDENT base (ADR-811): the standalone white-label tier (independent_base -> 'independent')
   'ai',
   'custom_domain', // the custom domain add-on (LIVE-821): addon_custom_domain -> 'custom_domain'
@@ -71,6 +75,7 @@ export function itemKeyForCatalogKey(catalogKey: string | null | undefined): Ite
   if (key === 'network_base' || key === 'nonprofit_network') return 'network'
   if (key === 'network_chapter' || key === 'nonprofit_network_chapter') return 'network_chapter'
   if (key === 'independent_base') return 'independent'
+  if (key === 'network_site' || key === 'network_site_mid' || key === 'network_site_high' || key === 'network_site_unbranded') return key
   if (key) {
     const addon = addonKeyForCatalogItem(key)
     if (addon) return addon

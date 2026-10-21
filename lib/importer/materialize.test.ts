@@ -151,6 +151,10 @@ vi.mock('@/lib/spaces/store', () => ({
   },
 }))
 
+// Whether the real owner has claimed the Space; a claimed Space must never be re-seeded.
+const Claim = vi.hoisted(() => ({ claimed: new Set<string>() }))
+vi.mock('@/lib/spaces/claim', () => ({ isSpaceClaimed: async (id: string) => Claim.claimed.has(id) }))
+
 // The shared birth steps read the operator's tool defaults and write bundles/stages; the seeder's
 // own test stubs them (they are covered by lib/spaces/provision-core.test.ts).
 vi.mock('@/lib/spaces/provision-core', () => ({
@@ -286,6 +290,13 @@ describe('materializeBusiness — idempotent re-run (update)', () => {
     expect(availAfterCreate).toBe(2)
     expect(faqsAfterCreate).toBe(2)
     expect(eventsAfterCreate).toBe(1)
+
+    // A claimed Space is refused before any write (counts below are unchanged by the refusal).
+    Claim.claimed.add(spaceId)
+    const refused = await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId }, { verificationPolicy: 'allow' })
+    expect(refused.ok).toBe(false)
+    expect(H.tables.space_faqs.filter((r) => r.space_id === spaceId).length).toBe(faqsAfterCreate)
+    Claim.claimed.delete(spaceId)
 
     // Re-run against the SAME space (update target).
     const rerun = await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId }, { verificationPolicy: 'allow' })

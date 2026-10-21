@@ -83,6 +83,18 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
 // price and every surface offers checkout (networkCheckoutOpen, SCAN-980). Set it back to null to return
 // to "Talk to us". Independent Network is quote only and is not in the catalog at all.
 
+/** What a Network pays Frequency for each client website it resells (owner 2026-10-21, ADR-1816). A volume
+ *  ladder on live sites, the custom domain included: $39 for sites 1 to 10, $29 for 11 to 25, $19 from 26.
+ *  Badge removal is +$15 a site. The Network bills its own people outside Frequency. PURE data. */
+export const NETWORK_SITE_PLAN = {
+  tiers: [
+    { upTo: 10, cents: 3_900 },
+    { upTo: 25, cents: 2_900 },
+    { upTo: Infinity, cents: 1_900 },
+  ],
+  badgeRemovalCents: 1_500,
+} as const
+
 /** The Network plan's catalog values. PURE data, the one place they are written down. */
 export const NETWORK_PLAN = {
   /** The Partner Network is priced as a base plus a price per chapter (owner 2026-10-20): $149 a month plus

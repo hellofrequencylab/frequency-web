@@ -162,6 +162,22 @@ const FROZEN_SYNCED_KEYS = [
   'network_chapter_month_list',
   'network_chapter_year',
   'network_chapter_year_list',
+  'network_site_high_month',
+  'network_site_high_month_list',
+  'network_site_high_year',
+  'network_site_high_year_list',
+  'network_site_mid_month',
+  'network_site_mid_month_list',
+  'network_site_mid_year',
+  'network_site_mid_year_list',
+  'network_site_month',
+  'network_site_month_list',
+  'network_site_unbranded_month',
+  'network_site_unbranded_month_list',
+  'network_site_unbranded_year',
+  'network_site_unbranded_year_list',
+  'network_site_year',
+  'network_site_year_list',
   'nonprofit_collective_month',
   'nonprofit_collective_month_list',
   'nonprofit_collective_year',
@@ -304,10 +320,10 @@ describe('a re-sync is idempotent', () => {
     expect(store.prices.map((p) => p.id)).toEqual(pricesAfterFirst)
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 12 live items (the operator seat left the catalog, ADR-1810): 12 standard products plus
-    // Collective's founding product ($99 Founding Collective, owner 2026-10-06), 48 price keys.
-    expect(store.products).toHaveLength(13)
-    expect(store.prices).toHaveLength(48)
+    // 16 live items (the operator seat left the catalog, ADR-1810; four client-site items joined, ADR-1816): 16
+    // standard products plus Collective's founding product ($99 Founding Collective, owner 2026-10-06), 64 price keys.
+    expect(store.products).toHaveLength(17)
+    expect(store.prices).toHaveLength(64)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {

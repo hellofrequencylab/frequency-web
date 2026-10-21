@@ -10,7 +10,7 @@ import { asSpacePlan } from '@/lib/pricing/plans'
 export type FooterBadgeMode = 'badge' | 'line' | 'none'
 
 /** The entitlement a paid badge removal sets on a Space (written by billing, never by the owner's own form). */
-const BADGE_REMOVAL_ENTITLEMENT = 'badge_removal'
+export const BADGE_REMOVAL_ENTITLEMENT = 'badge_removal'
 
 const MODES: readonly FooterBadgeMode[] = ['badge', 'line', 'none']
 
