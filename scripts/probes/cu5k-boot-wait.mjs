@@ -9,7 +9,7 @@ const bad = []
 const c = r('components/spaces/loyalty/cyberunicorn-console.tsx')
 if (!/const BOOT_WAIT_MAX_MS = \d+/.test(c)) bad.push('the boot wait lost its cap')
 if (!/t - heardAt < BOOT_QUIET_MS/.test(c)) bad.push('the boot wait no longer extends while the board prints')
-if (!/setTimeout\(begin, BOOT_SYNC_DELAY_MS\)/.test(c)) bad.push('the boot animation no longer waits for the board')
+if (!/setTimeout\(begin, BOOT_SYNC_(DELAY|FALLBACK)_MS\)/.test(c)) bad.push('the boot animation no longer waits for the board')
 if (!/until the light flashes/.test(c)) bad.push('the tap copy still promises a beep the board cannot make')
 if (!/i2c_stuck\?: boolean/.test(r('lib/device/types.ts'))) bad.push('HatProbe lost i2c_stuck')
 if (bad.length) { console.error('LIVE-1202 probe failed:\n- ' + bad.join('\n- ')); process.exit(1) }
