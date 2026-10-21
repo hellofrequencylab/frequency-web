@@ -14,6 +14,7 @@ import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
 import { sky } from '@/lib/theme/astrology-wheel'
 import type { SiteFooter } from '@/lib/sites/site-footer'
+import type { FooterBadgeMode } from '@/lib/sites/site-badge'
 import { SITE_LOOK_CSS } from './site-look-css'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
@@ -96,6 +97,7 @@ export function SiteChrome({
   member = null,
   footer = null,
   checkIn = null,
+  credit = 'badge',
   children,
 }: {
   brandName: string
@@ -137,6 +139,9 @@ export function SiteChrome({
   /** The "Check in with Frequency" door beside the Partner badge, when the Space runs Regulars (LIVE-944): a
    *  labeled Frequency CTA, the one kind of link back into the app a website carries. Null otherwise. */
   checkIn?: { href: string; line: string } | null
+  /** How the footer credits Frequency (LIVE-1117): the Partner badge (default), a quiet text line, or nothing.
+   *  Already gated: the page passes 'none' only for a Space that holds badge removal (lib/sites/site-badge.ts). */
+  credit?: FooterBadgeMode
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
@@ -244,7 +249,8 @@ export function SiteChrome({
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
-        <PartnerBadge />
+        {credit === 'badge' && <PartnerBadge />}
+        {credit === 'line' && <PartnerLine />}
       </footer>
       </div>
     </div>
@@ -253,6 +259,15 @@ export function SiteChrome({
 
 /** Where the badge goes: the Frequency Spaces marketing page, on the app origin. */
 const PARTNER_HREF = () => `${appOrigin()}/spaces`
+
+/** The quiet credit for a Space that chose a text line over the badge: plain words, still a labeled Frequency link. */
+function PartnerLine() {
+  return (
+    <a href={PARTNER_HREF()} className="hs-footer-line" data-partner-line="">
+      Built on Frequency
+    </a>
+  )
+}
 
 /** The "Frequency Partner" badge closing every website footer. The colors, faces and shape come from the
  *  site's theme CSS (`.hs-partner` in house-css.ts and each skin); the mark is drawn in currentColor. */

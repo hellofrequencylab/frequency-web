@@ -12,6 +12,8 @@ import { domainPurchaseOpen } from '@/lib/sites/domain-purchase'
 import { SiteDomainPanel } from './site-domain-panel'
 import { WebsitePublishControls } from './website-publish-controls'
 import { WebsiteHeadlineForm } from './website-headline-form'
+import { WebsiteCreditForm } from './website-credit-form'
+import { badgeRemovalHeld, readFooterBadge } from '@/lib/sites/site-badge'
 
 // THE WEBSITE FEATURE on a Space's Profile & Settings tab (owner ask 2026-10-06: "a prominent feature in
 // profile and settings with a little CTA to upgrade"). One card: what the website is, its live state,
@@ -24,7 +26,7 @@ import { WebsiteHeadlineForm } from './website-headline-form'
 export async function SpaceWebsiteFeature({
   space,
 }: {
-  space: { slug: string; plan?: string | null; domain: string | null; preferences?: unknown }
+  space: { slug: string; plan?: string | null; domain: string | null; preferences?: unknown; entitlements?: unknown }
 }) {
   const published = readWebsitePublished(space.preferences)
   const siteHero = readSiteHero(space.preferences)
@@ -70,6 +72,12 @@ export async function SpaceWebsiteFeature({
           What your website leads with. Your Space page keeps its own header from your Hero settings.
         </p>
         <WebsiteHeadlineForm slug={space.slug} initial={siteHero} />
+      </div>
+
+      <div className="mt-6 border-t border-border pt-5">
+        <h3 className="text-body font-semibold text-text">Footer credit</h3>
+        <p className="mt-1 mb-3 text-body-sm text-muted">How the bottom of your website mentions Frequency.</p>
+        <WebsiteCreditForm slug={space.slug} initial={readFooterBadge(space.preferences)} removalHeld={badgeRemovalHeld(space.plan, space.entitlements)} />
       </div>
 
       <div className="mt-6 border-t border-border pt-5">
