@@ -51,7 +51,7 @@ function AreaTip({ door }: { door: FqAreaDoor }) {
     }
   }
   return (
-    <aside className="panel row fqm-tip" aria-label={`About ${door.label}`}>
+    <aside className="panel row fqm-area-tip" aria-label={`About ${door.label}`}>
       <span className="t2 grow">
         <strong className="t1">{door.label}.</strong> {door.tip}
       </span>
