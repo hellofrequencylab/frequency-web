@@ -6,15 +6,26 @@ import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/field'
 import { Badge } from '@/components/ui/badge'
 import { isError, type ActionResult } from '@/lib/action-result'
-import { createClientSite, toggleClientSiteBadge } from '@/lib/collective/client-sites-actions'
+import { createClientSite, getClientSiteHandoffLink, toggleClientSiteBadge } from '@/lib/collective/client-sites-actions'
 import type { ClientSiteRow } from '@/lib/collective/client-sites'
 
-export function ClientSitesEditor({ networkId, sites, monthlyLabel, badgeLabel }: { networkId: string; sites: ClientSiteRow[]; monthlyLabel: string; badgeLabel: string }) {
+const DOMAIN_LABEL = { none: 'Free address', live: 'Own domain live', pending: 'Own domain pending' } as const
+
+export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLabel, badgeLabel, billLines }: { networkId: string; networkOwnerId: string; sites: ClientSiteRow[]; monthlyLabel: string; badgeLabel: string; billLines: { label: string; detail: string; total: string }[] }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
   const [message, setMessage] = useState('')
+  const [links, setLinks] = useState<Record<string, string>>({})
   const [pending, start] = useTransition()
+  const handoff = (siteId: string) => start(async () => {
+    try {
+      const result = await getClientSiteHandoffLink(networkId, siteId)
+      if (isError(result)) { setMessage(result.error); return }
+      setLinks((prev) => ({ ...prev, [siteId]: new URL(result.data.path, window.location.origin).toString() }))
+      setMessage('Link ready. Send it to the site owner.')
+    } catch { setMessage('That did not work. Try again.') }
+  })
   const run = (action: () => Promise<ActionResult<unknown>>, done: string, reset = false) => start(async () => {
     try {
       const result = await action()
@@ -38,15 +49,39 @@ export function ClientSitesEditor({ networkId, sites, monthlyLabel, badgeLabel }
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone={site.published ? 'success' : 'neutral'}>{site.published ? 'Published' : 'Not published'}</Badge>
+                <Badge tone={site.domainState === 'live' ? 'success' : 'neutral'}>{DOMAIN_LABEL[site.domainState]}</Badge>
+                <Badge tone={site.ownerProfileId === networkOwnerId ? 'neutral' : 'success'}>{site.ownerProfileId === networkOwnerId ? 'You own it' : 'Handed off'}</Badge>
                 <Button type="button" variant="secondary" size="sm" disabled={pending} aria-pressed={site.badgeFree}
                   onClick={() => run(() => toggleClientSiteBadge(networkId, site.id, !site.badgeFree), site.badgeFree ? 'Frequency badge is back on that site.' : 'Badge removed from that site.')}>
                   {site.badgeFree ? 'Badge removed' : `Remove badge, +${badgeLabel}`}
                 </Button>
+                {site.ownerProfileId === networkOwnerId ? <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => handoff(site.id)}>Hand off to owner</Button> : null}
               </div>
+              {links[site.id] ? (
+                <div className="w-full space-y-1">
+                  <p className="text-body-sm text-muted">Send this link to the site owner. When they open it and sign in, the site is theirs. It stays on your bill.</p>
+                  <Input readOnly value={links[site.id]} aria-label={`Hand-off link for ${site.name}`} onFocus={(e) => e.currentTarget.select()} />
+                </div>
+              ) : null}
             </li>
           ))}</ul>
         ) : <p className="text-body-sm text-muted">No client websites yet. Add the first one below.</p>}
       </section>
+      {billLines.length ? (
+        <section aria-labelledby="client-sites-bill" className="space-y-3">
+          <h2 id="client-sites-bill" className="text-body-lg font-bold text-text">What you pay Frequency</h2>
+          <ul className="divide-y divide-border rounded-card border border-border bg-surface">
+            {billLines.map((line) => (
+              <li key={line.label} className="flex items-baseline justify-between gap-3 px-4 py-2 text-body-sm">
+                <span className="text-text">{line.label}<span className="text-muted">, {line.detail}</span></span>
+                <span className="font-semibold text-text">{line.total}</span>
+              </li>
+            ))}
+            <li className="flex items-baseline justify-between gap-3 px-4 py-2 text-body-sm font-bold text-text"><span>Total a month</span><span>{monthlyLabel}</span></li>
+          </ul>
+          <p className="text-body-sm text-muted">Domains are included. You bill your own people outside Frequency.</p>
+        </section>
+      ) : null}
       <section aria-labelledby="client-sites-new" className="space-y-3">
         <h2 id="client-sites-new" className="text-body-lg font-bold text-text">Add a client website</h2>
         <p className="text-body-sm text-muted">It starts as a Business Space you own, billed to your Network. Hand it to its owner when it is ready.</p>
