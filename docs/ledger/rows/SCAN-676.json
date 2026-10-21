@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-676",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/layout.tsx\",\"utf8\");const bad=[\"--font-playfair\",\"--font-caveat\",\"--font-grotesk\"].filter((f)=>{const i=s.indexOf(\"variable: \"+String.fromCharCode(34)+f);return i<0||!s.slice(i,i+220).includes(\"preload: false\")});if(bad.length){console.error(\"SCAN-676: \"+bad.join(\", \")+\" preload on every route: a <link rel=preload> per Spotlight face in the head of pages that never use them, ahead of the LCP.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it. Re-pointed 2026-10-21 from the Google call names to each face's CSS variable when the faces moved to next/font/local (LIVE-1209): the consequence it measures, preload: false on all three, is unchanged."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-21 the three faces are now self-hosted with next/font/local (LIVE-1209); the probe follows each face's --font-* variable instead of the removed Google call name and still requires preload: false."
+  }
+}

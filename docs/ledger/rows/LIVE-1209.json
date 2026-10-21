@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1209",
+  "title": "Builds no longer download fonts from Google",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/DEPLOY-SAFETY.md",
+    "ref": "\u00a79 A build that dies in [next]/internal/font/google/* gets REDEPLOYED before it gets debugged. Coordinator 2026-10-21: Vercel builds for #3748, #3763, #3765 and #3769 failed on Google Fonts downloads."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: five modules called next/font/google (app/layout.tsx, lib/theme/design-fonts/frequency.ts, components/sites/network-fonts.ts, components/sites/wildheart-fonts.ts, components/spaces/loyalty/cyberunicorn-console.tsx), so every build fetched CSS and woff2 files from fonts.googleapis.com and fonts.gstatic.com and a 404 or timeout there killed the deploy. All 23 families (about 1.2 MB, latin subset only, the same subset next/font/google used) are committed under app/fonts/<family>/ and loaded with next/font/local with the same CSS variables, display and preload settings. Variable faces ship their full weight range in one file, so a requested weight draws the same outlines. next/font/local computes the fallback font adjustment against Arial or Times New Roman instead of the face's own metrics, so a fallback frame may differ by a pixel or two before the face loads. SCAN-676's probe followed the Google call names, so it now follows each face's variable (fragment on that row).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/fonts-self-hosted.mjs",
+    "note": "Fails when any module imports next/font/google again or any next/font/local source points at a file that is not committed."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
