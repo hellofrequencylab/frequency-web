@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { loadNunito } from '@/lib/og/load-nunito'
 
 // ── The Stage share-card faces: Unbounded, Hanken Grotesk, Instrument Serif italic ───────────
 //
@@ -23,6 +22,10 @@ import { loadNunito } from '@/lib/og/load-nunito'
 const readUnboundedBold = () => readFile(join(process.cwd(), 'public/fonts/stage', 'Unbounded-Bold.ttf'))
 const readHankenMedium = () => readFile(join(process.cwd(), 'public/fonts/stage', 'HankenGrotesk-Medium.ttf'))
 const readHankenBold = () => readFile(join(process.cwd(), 'public/fonts/stage', 'HankenGrotesk-Bold.ttf'))
+// The glyph fallback is read here, by its own literal path, rather than through load-nunito.ts: that module
+// also names Nunito Black and LiberationSans, and importing it would carry both into every card function for
+// faces this layout never draws (check:build-fanout counts public/ files per function).
+const readNunitoFallback = () => readFile(join(process.cwd(), 'public/fonts', 'Nunito-Bold.ttf'))
 const readInstrumentItalic = () => readFile(join(process.cwd(), 'public/fonts/stage', 'InstrumentSerif-Italic.ttf'))
 
 /** Detach the exact bytes: `readFile` returns a view into a shared pool slab. */
@@ -49,7 +52,7 @@ export async function loadStageFonts(): Promise<StageFont[]> {
     readHankenMedium(),
     readHankenBold(),
     readInstrumentItalic(),
-    loadNunito(700),
+    readNunitoFallback(),
   ])
     .then(([unbounded, medium, bold, italic, nunito]) => {
       cached = [
@@ -57,7 +60,7 @@ export async function loadStageFonts(): Promise<StageFont[]> {
         { name: 'Hanken Grotesk', data: detach(medium), weight: 500, style: 'normal' },
         { name: 'Hanken Grotesk', data: detach(bold), weight: 700, style: 'normal' },
         { name: 'Instrument Serif', data: detach(italic), weight: 400, style: 'italic' },
-        { name: 'Nunito', data: nunito, weight: 700, style: 'normal' },
+        { name: 'Nunito', data: detach(nunito), weight: 700, style: 'normal' },
       ]
       return cached
     })

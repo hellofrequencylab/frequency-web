@@ -35,6 +35,9 @@ describe('the loader', () => {
   it('builds every path from a literal, never a parameter (the ~300MB nft glob)', () => {
     const args = [...code.matchAll(/public\/fonts\/stage['"],\s*([^)]+)\)/g)].map((m) => m[1].trim())
     expect(args.length).toBe(4)
+    // And the Nunito glyph fallback is its own literal read, not an import of load-nunito.ts.
+    expect(code).not.toContain('load-nunito')
+    expect(code).toMatch(/public\/fonts['"],\s*['"]Nunito-Bold\.ttf['"]/)
     for (const arg of args) expect(arg).toMatch(/^['"][A-Za-z-]+\.ttf['"]$/)
   })
 
