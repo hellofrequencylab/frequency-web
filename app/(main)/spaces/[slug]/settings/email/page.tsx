@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { EmailBody } from './email-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // OWNER EMAIL SURFACE (ENTITY-SPACES-BUILD §C Phase 3, "campaign authoring"). A centered, no-rail Focus
 // surface (registered 'none' for /spaces/<slug>/settings/email in page-chrome.ts, alongside the other
@@ -58,7 +59,7 @@ export default async function SpaceEmailPage({
 
   if (featureLocked) {
     return (
-      <ConsoleFocusTemplate eyebrow={brandName} title="Email" description="Campaigns for this space.">
+      <ConsoleFocusTemplate back={consoleBack(slug, 'marketing')} eyebrow={brandName} title="Email" description="Campaigns for this space.">
         <EmailBody slug={slug} />
       </ConsoleFocusTemplate>
     )
@@ -66,6 +67,7 @@ export default async function SpaceEmailPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'marketing')}
       eyebrow={brandName}
       title="Email"
       description="Write a campaign, pick who gets it from your own contacts, and send or schedule it."

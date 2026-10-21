@@ -4,6 +4,7 @@
 // staffer gets a read-only preview); the thread reader is tenancy-checked so a manager can only open their
 // own space's threads. Reuses <ConversationWorkspace> with the space-bound reply/triage actions injected.
 
+import { consoleBack } from '@/lib/spaces/console-back'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { Inbox, MailQuestion, Users } from 'lucide-react'
@@ -79,7 +80,7 @@ export default async function SpaceConversationsPage({
       width="wide"
       adminBar={false}
       description="Every ticketed conversation with your members and leads. Reply as your space, assign it to a teammate, and their reply comes back to the same thread."
-      back={{ href: `/spaces/${space.slug}/manage?section=resonance`, label: 'Back to Resonance' }}
+      back={consoleBack(space.slug, 'resonance')}
       actions={
         canManage ? (
           <SpaceConversationCompose startAction={startSpaceConversationAction.bind(null, space.slug)} senderName={space.brandName ?? space.name} />

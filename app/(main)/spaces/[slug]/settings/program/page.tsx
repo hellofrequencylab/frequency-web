@@ -16,6 +16,7 @@
 // page-level read is never a permit. A `?plan=` this Space does not run is reported, never
 // dropped, the same way /journeys/new reports one.
 
+import { consoleBack } from '@/lib/spaces/console-back'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Network, UsersRound } from 'lucide-react'
@@ -80,7 +81,7 @@ export default async function SpaceProgramPage({
         eyebrow={brandName}
         title="Program"
         description="Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere."
-        back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
+        back={consoleBack(slug, 'programs')}
       >
         <p className="rounded-card border border-border bg-surface p-6 text-body-sm text-muted">
           Program is turned off for this space, or your role does not include it. An admin can turn it on
@@ -124,7 +125,7 @@ export default async function SpaceProgramPage({
           ? 'Your Program, its Channel, and the Chapters running your model.'
           : 'Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere.'
       }
-      back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
+      back={consoleBack(slug, 'programs')}
     >
       <div className="space-y-6">
         {programTease && (

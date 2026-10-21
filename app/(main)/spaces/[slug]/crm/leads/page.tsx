@@ -12,6 +12,7 @@ import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { listSpaceLeads, spaceLeadStats } from '@/lib/crm/lead-capture'
 import { LeadsView } from '@/components/crm/leads/leads-view'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE CRM — LEAD CAPTURE / ENTRY POINTS (CRM-MASTER-BUILD-PLAN §Phase 3, deliverable 7). The Space's
 // captured leads, each with the immutable door they came through + whether they have joined Frequency,
@@ -80,7 +81,7 @@ export default async function SpaceLeadsPage({ params }: { params: Promise<{ slu
       eyebrow={brandName}
       title="Lead capture"
       description="Everyone you have captured, and the door each came through. The door is set once and never changes, so you always know where a relationship started."
-      back={{ href: boardHref, label: 'CRM' }}
+      back={consoleBack(space.slug, 'resonance')}
       stats={
         <Suspense fallback={<StatsSkeleton />}>
           <LeadStats spaceId={space.id} />

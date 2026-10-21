@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { QrBody } from './qr-body'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // OWNER QR STUDIO per space (ENTITY-SPACES-BUILD §C, Phase 2). A centered, no-rail Focus surface
 // (registered 'none' for /spaces/<slug>/settings/qr in page-chrome.ts, alongside the other settings
@@ -56,7 +57,7 @@ export default async function SpaceQrPage({
 
   if (featureLocked) {
     return (
-      <ConsoleFocusTemplate eyebrow={brandName} title="QR codes" description="The codes for this space.">
+      <ConsoleFocusTemplate back={consoleBack(slug, 'marketing')} eyebrow={brandName} title="QR codes" description="The codes for this space.">
         <QrBody slug={slug} />
       </ConsoleFocusTemplate>
     )
@@ -64,6 +65,7 @@ export default async function SpaceQrPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'marketing')}
       eyebrow={brandName}
       title="QR codes"
       description="Make a code that points anywhere, and change where it goes any time without a reprint. Add a splash landing when you want a scan to see a page first."

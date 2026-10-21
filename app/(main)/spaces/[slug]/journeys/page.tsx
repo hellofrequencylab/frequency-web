@@ -3,7 +3,7 @@ import { Map, FileText, Globe, Library } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceManageHref } from '@/lib/spaces/types'
+import { consoleBackFor } from '@/lib/spaces/console-back'
 import { listJourneyPlansForSpace, type JourneyPlan } from '@/lib/journey-plans'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
@@ -79,7 +79,7 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
   return (
     <IndexTemplate
       {...hero}
-      back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
+      back={consoleBackFor(space, 'programs')}
       eyebrow={space.brandName ?? space.name}
       title="Journeys"
       description="Build multi week programs for your members. Drafts stay private until you publish them."

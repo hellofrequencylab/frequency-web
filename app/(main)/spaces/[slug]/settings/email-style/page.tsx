@@ -8,6 +8,7 @@ import { spaceEmailColors, spaceEmailColorDefaults } from '@/lib/spaces/email-co
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { EmailStyleEditor } from '@/components/spaces/email/email-style-editor'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE EMAIL STYLE (Email in the Business CRM, P1 · deliverable 3). The settings-rail surface that tunes the
 // brand-derived email palette a Space's emails default to. A centered Focus surface reached from the space
@@ -47,7 +48,7 @@ export default async function SpaceEmailStylePage({
 
   if (featureLocked) {
     return (
-      <ConsoleFocusTemplate eyebrow={brandName} title="Email style" description="Brand colors for your emails.">
+      <ConsoleFocusTemplate back={consoleBack(slug, 'marketing')} eyebrow={brandName} title="Email style" description="Brand colors for your emails.">
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
@@ -67,6 +68,7 @@ export default async function SpaceEmailStylePage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'marketing')}
       eyebrow={brandName}
       title="Email style"
       description="Set the colors your emails use by default. They start from your space brand."

@@ -9,6 +9,7 @@ import { resolveCollaboratorHostWall } from '@/lib/spaces/collaborator-host-gate
 import { CollaboratorsBody } from './collaborators-body'
 import { SharedCollaboratorCalendar } from './shared-collaborator-calendar'
 import { VenueHoldsSection } from './venue-holds-section'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // COLLABORATORS — the owner back-end surface for hosting other businesses inside this space (ADR-799
 // B1-UI). A centered, no-rail Focus surface (the /spaces/<slug>/settings* rail pattern registers 'none'
@@ -45,6 +46,7 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'settings')}
       eyebrow={brandName}
       title="Collaborators"
       description="The businesses that operate inside your space, and requests to collaborate. Invite another business space; they approve, and you both show as collaborators."

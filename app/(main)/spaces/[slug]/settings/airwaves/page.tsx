@@ -17,6 +17,7 @@ import { listAttachedRecordings } from '@/lib/airwaves/attach-actions'
 import { RecordingEngagement } from '@/components/airwaves/recording-engagement'
 import { SITE_URL } from '@/lib/site'
 import { AirwavesConsole } from './airwaves-console'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 export const metadata = { title: 'Airwaves' }
 
@@ -54,7 +55,7 @@ export default async function AirwavesConsolePage({
         eyebrow={brandName}
         title="Airwaves"
         description="Turn on Airwaves for this space to host recordings and attach them anywhere."
-        back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
+        back={consoleBack(slug, 'programs')}
       >
         <p className="rounded-card border border-border bg-surface p-6 text-body-sm text-muted">
           Airwaves is turned off for this space. Turn it on in the module settings to start adding recordings.

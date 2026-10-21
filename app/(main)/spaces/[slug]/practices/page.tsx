@@ -4,7 +4,7 @@ import { Sparkles, FileText, Radio, Globe } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceManageHref } from '@/lib/spaces/types'
+import { consoleBackFor } from '@/lib/spaces/console-back'
 import { listPracticesForSpace } from '@/lib/practices'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
@@ -51,7 +51,7 @@ export default async function SpacePracticesManagerPage({ params }: { params: Pr
   return (
     <IndexTemplate
       {...hero}
-      back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
+      back={consoleBackFor(space, 'programs')}
       eyebrow={brandName}
       title="Practices"
       description="Build the practices your members do, each with its own timer. Drafts stay private until you make them live in your space."

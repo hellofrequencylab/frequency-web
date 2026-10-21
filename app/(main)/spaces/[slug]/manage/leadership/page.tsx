@@ -11,6 +11,7 @@ import { ConsoleDashboardTemplate } from '@/components/templates/console-templat
 import { buttonClasses } from '@/components/ui/button'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { OverviewEditor } from './overview-editor'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE LEADERSHIP PAGE (LIVE-862, reworked LIVE-864), in the Space console. The Executive Overview and the
 // Yearly Calendar are admin pages ON THE WEBSITE (owner ruling 2026-10-07: "Those are Admin display pages
@@ -54,7 +55,7 @@ export default async function SpaceLeadershipPage({
       eyebrow="Manage space"
       title="Leadership"
       description={`The executive overview and the yearly calendar for ${brandName} are admin pages on your website. Only your space's managers can open them.`}
-      back={{ href: `/spaces/${space.slug}/manage`, label: 'Manage space' }}
+      back={consoleBack(space.slug, 'programs')}
     >
       {staffViewing && !canManage && <StaffPreviewBanner spaceName={brandName} />}
       <div className="space-y-6">

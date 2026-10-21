@@ -29,6 +29,7 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { DEFAULT_WWW_CNAME } from '@/lib/sites/vercel-domains'
 import { readSpotlightClicks } from '@/lib/spaces/spotlight-clicks'
 import { blockDataList } from '@/lib/entity-blocks/block-data-sources'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE SPACE SPOTLIGHT EDITOR PAGE (LIVE-851), in the Space console. Gated like every console page: the
 // Space must be visible and the caller a manager (a staff previewer sees it read-only, and every write
@@ -143,6 +144,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const brandName = space.brandName?.trim() || space.name
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'dashboard')}
       eyebrow="Manage space"
       title="Spotlight"
       description="One link for your bio or business card. Pick what it shows; bookings, sales and messages still land in your console."

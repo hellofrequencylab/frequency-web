@@ -20,6 +20,7 @@ import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { SpaceCanvasEditorSection } from '@/components/entity-blocks/space-canvas/space-canvas-editor-section'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
 // compact panel that manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -86,6 +87,7 @@ export default async function SpacePageSettingsPage({
   const readOnly = staffViewing && !canManage
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(slug, 'settings')}
       eyebrow="Manage space"
       title="Page"
       description="Manage your profile pages and reorder or hide blocks. Cover style and accent live in Branding; your name, story, and contact live in Business info."

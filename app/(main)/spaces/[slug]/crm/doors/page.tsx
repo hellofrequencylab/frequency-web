@@ -9,6 +9,7 @@ import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlem
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { DoorLinks } from './door-links'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // SPACE CRM — CAPTURE LINKS (CRM-MASTER-BUILD-PLAN §Phase 3). The operator entry point for front doors
 // 2 to 5: mint a shareable link for a warm intro, an event check-in, a lead magnet, or a card swap.
@@ -31,7 +32,6 @@ export default async function SpaceDoorsPage({ params }: { params: Promise<{ slu
   const canEdit = caps.canEditProfile
   const hasCrm = spaceHasEntitlement(space, 'crm')
 
-  const boardHref = `/spaces/${space.slug}/crm`
 
   if (!canUseCrm || !canEdit) {
     return (
@@ -68,7 +68,7 @@ export default async function SpaceDoorsPage({ params }: { params: Promise<{ slu
       eyebrow={brandName}
       title="Capture links"
       description="One link per door. Share it in an email, a DM, a flyer, or a link in your bio, and whoever opens it lands in your CRM with the door they came through kept forever."
-      back={{ href: boardHref, label: 'CRM' }}
+      back={consoleBack(space.slug, 'resonance')}
       width="default"
     >
       <DoorLinks slug={space.slug} />
