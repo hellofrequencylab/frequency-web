@@ -212,6 +212,17 @@ const OG_CARD_FONTS = [
   './public/fonts/stage/InstrumentSerif-Italic.ttf',
 ]
 
+// What the root-card generator actually draws with: the four Stage faces and the Nunito Bold glyph fallback
+// lib/og/load-stage-fonts.ts opens. It gets its own, shorter list because check:build-fanout caps the public/
+// files any one function carries at 14, and Nunito Black and Liberation (above) are not read on this route.
+const ROOT_CARD_FONTS = [
+  './public/fonts/Nunito-Bold.ttf',
+  './public/fonts/stage/Unbounded-Bold.ttf',
+  './public/fonts/stage/HankenGrotesk-Medium.ttf',
+  './public/fonts/stage/HankenGrotesk-Bold.ttf',
+  './public/fonts/stage/InstrumentSerif-Italic.ttf',
+]
+
 const nextConfig: NextConfig = {
   // TYPECHECKING IS CI'S JOB, NOT THE BUILD'S (2026-07-28). `next build` ran a FULL
   // TypeScript pass on top of the compile, and as the repo grew that second pass began
@@ -285,7 +296,7 @@ const nextConfig: NextConfig = {
     '/opengraph-image': OG_CARD_FONTS,
     '/twitter-image': OG_CARD_FONTS,
     // The root card's generator (ADR-1002) is a plain route handler, so neither key above reaches it.
-    '/dev/og-root-card': OG_CARD_FONTS,
+    '/dev/og-root-card': ROOT_CARD_FONTS,
     // The resvg WASM rasterizer (lib/qr/raster.ts) reads index_bg.wasm from node_modules at
     // RUNTIME via fs (the package is in serverExternalPackages, so it is never bundled). Next's
     // tracer follows the JS entry but NOT that derived `readFile` path, so without an explicit
