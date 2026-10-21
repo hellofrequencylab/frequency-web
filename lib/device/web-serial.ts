@@ -17,7 +17,7 @@ export const CH340_VENDOR_ID = 0x1a86
 export interface SerialPortLike {
   readable: ReadableStream<Uint8Array> | null
   writable: WritableStream<Uint8Array> | null
-  open(options: { baudRate: number; dataBits?: number; stopBits?: number; parity?: string; flowControl?: string }): Promise<void>
+  open(options: { baudRate: number; dataBits?: number; stopBits?: number; parity?: string; flowControl?: string; bufferSize?: number }): Promise<void>
   close(): Promise<void>
   setSignals(signals: { dataTerminalReady?: boolean; requestToSend?: boolean; break?: boolean }): Promise<void>
   getInfo(): { usbVendorId?: number; usbProductId?: number }
@@ -84,6 +84,10 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
       stopBits: 1,
       parity: 'none',
       flowControl: 'none',
+      // Chrome's default is 255 bytes. The screen stream fills that faster than a busy page reads it,
+      // the overflow is dropped, and the lost bytes scramble the mirror and the RPC replies (owner,
+      // 2026-10-21: "stopped answering" on a placard write). 1 MB is minutes of stream.
+      bufferSize: 1 << 20,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : ''
@@ -137,8 +141,12 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
             if (t) text.emit(t)
           }
         }
-      } catch {
-        // A transient read error: loop and take a fresh reader.
+      } catch (e) {
+        // A transient read error (a buffer overrun drops bytes): note it, start the screen demux and the
+        // text decoder clean so neither carries half a packet into the new reader, and take a fresh one.
+        if (demux) demux = new ScreenDemux()
+        decoder.decode()
+        text.emit(`\n# USB read error (${e instanceof Error ? e.name : 'unknown'}), resyncing\n`)
       } finally {
         reader.releaseLock()
         reader = null
