@@ -1,15 +1,15 @@
 // LIVE-1211: no build depends on a Google Fonts download. Every face is a committed file read by
 // next/font/local, so a Google or gstatic outage cannot fail a deploy (DEPLOY-SAFETY rule 9).
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import assert from 'node:assert/strict'
 
 function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name)
-    if (name === 'node_modules' || name === '.next') continue
-    if (statSync(p).isDirectory()) walk(p, out)
-    else if (/\.(ts|tsx)$/.test(name)) out.push(p)
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name)
+    if (e.name === 'node_modules' || e.name === '.next') continue
+    if (e.isDirectory()) walk(p, out)
+    else if (/\.(ts|tsx)$/.test(e.name)) out.push(p)
   }
   return out
 }
