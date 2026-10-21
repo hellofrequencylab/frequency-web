@@ -102,13 +102,22 @@ function clean(v: string | undefined): string {
   return (v ?? '').replace(/\r/g, '').trim().slice(0, CLIP)
 }
 
+function parseUrl(v: string): URL | null {
+  try {
+    return new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`)
+  } catch {
+    return null
+  }
+}
+
 /** A website or an @handle from the one "links" line. PURE. */
 function parseLinks(raw: string | undefined): { websiteUrl?: string; instagram?: string } {
   const v = clean(raw)
   if (!v) return {}
   if (v.startsWith('@')) return { instagram: v.slice(1).replace(/[^\w.]/g, '') }
-  if (/instagram\.com\//i.test(v)) {
-    const handle = v.split(/instagram\.com\//i)[1]?.split(/[/?#]/)[0] ?? ''
+  const asUrl = parseUrl(v)
+  if (asUrl && /^(www\.)?instagram\.com$/i.test(asUrl.hostname)) {
+    const handle = asUrl.pathname.split('/').filter(Boolean)[0] ?? ''
     return handle ? { instagram: handle.replace(/[^\w.]/g, '') } : {}
   }
   if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(v) || /^https?:\/\//i.test(v)) {

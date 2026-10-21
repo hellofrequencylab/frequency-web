@@ -25,6 +25,9 @@ describe('the links answer', () => {
     expect(links('@river.yoga')).toEqual({ instagram: 'river.yoga' })
     expect(links('https://instagram.com/river.yoga/')).toEqual({ instagram: 'river.yoga' })
   })
+  it('only treats the real instagram host as a handle', () => {
+    expect(links('https://evil.example/instagram.com/river.yoga')).toEqual({ websiteUrl: 'https://evil.example/instagram.com/river.yoga' })
+  })
   it('ignores blanks and things that are not a link', () => {
     expect(links('')).toEqual({})
     expect(links(undefined)).toEqual({})
