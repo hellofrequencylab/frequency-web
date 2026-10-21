@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1196",
+  "title": "Admin and quest charts draw in the accent color again, not in ink",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/admin/spark-charts.tsx",
+    "ref": "Owner 2026-10-21: most graphs lost their color."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: under the Frequency design --color-primary resolves to --fq-action-primary, which is ink (--fq-text-strong), so every chart that painted with fill-primary or stroke-primary rendered grey and black. Member growth, events a week, practice library, verified practices and Vera questions all read as grey. The charts now paint with --color-primary-strong, which resolves to the accent (--fq-accent). Covers spark-charts (TrendArea, WeekBars, RingGauge), the journey progress ring and the quest season map arc. Buttons and stars keep ink on purpose.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/admin/spark-charts.tsx','utf8');if(/(fill|stroke)-primary(?![-\\w])/.test(s)){console.error('LIVE-1196: a chart paints with ink (primary) instead of the accent');process.exit(1)}\"",
+    "note": "Fails when a spark chart goes back to fill-primary or stroke-primary, which is ink under the Frequency design."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

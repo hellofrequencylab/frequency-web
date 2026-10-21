@@ -18,9 +18,9 @@ export function TrendArea({ points, height = 54 }: { points: number[]; height?: 
   const area = `${line} L${W},${height} L0,${height} Z`
   return (
     <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden>
-      <path d={area} className="fill-primary/10" />
-      <path d={line} className="fill-none stroke-primary" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={W} cy={y(points[points.length - 1])} r="2" className="fill-primary" />
+      <path d={area} className="fill-primary-strong/15" />
+      <path d={line} className="fill-none stroke-primary-strong" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={W} cy={y(points[points.length - 1])} r="2" className="fill-primary-strong" />
     </svg>
   )
 }
@@ -43,7 +43,7 @@ export function WeekBars({ values, height = 54 }: { values: number[]; height?: n
             width={bw}
             height={h}
             rx="1"
-            className={i === values.length - 1 ? 'fill-primary' : 'fill-primary/45'}
+            className={i === values.length - 1 ? 'fill-primary-strong' : 'fill-primary-strong/45'}
           />
         )
       })}
@@ -64,7 +64,7 @@ export function RingGauge({ pct, label, sub }: { pct: number; label: string; sub
           cx="40"
           cy="40"
           r={r}
-          className="fill-none stroke-primary"
+          className="fill-none stroke-primary-strong"
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={`${(clamped * c).toFixed(1)} ${c.toFixed(1)}`}
