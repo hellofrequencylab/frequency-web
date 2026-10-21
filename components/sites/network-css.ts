@@ -195,6 +195,7 @@ ${M} .mw-weeks li,${M} .mw-journey .mw-weeks li{border-radius:22px;background:va
 ${M} [data-mw-own]{display:block}
 ${M} [data-mw-own]>div{padding:0;margin:0}
 ${N} .nw-block{position:relative;padding:var(--nw-sec-y) 0;overflow-x:clip}
+${N} .nw-block:not(.nw-band)+.nw-block:not(.nw-band){padding-top:calc(var(--nw-sec-y) * .45)}
 ${N} .nw-wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 var(--nw-gutter);box-sizing:border-box}
 ${N} .nw-band-sand{background:var(--nw-sand)}
 ${N} .nw-band-ink{background:var(--nw-ink);color:var(--nw-on-ink)}
@@ -396,17 +397,23 @@ ${N} .nw-steps h3{margin:0 0 8px;${DISPLAY};font-size:21px;line-height:1.15;lett
 ${N} .nw-steps p{margin:0;font-size:16px;line-height:1.55;color:var(--nw-muted)}
 ${N} .nw-step-btn{margin-top:18px;min-height:44px;padding:0 18px;font-size:15px}
 
-${N} .nw-chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0;padding:0;list-style:none}
-${N} .nw-chip>a,${N} .nw-chip>div{display:flex;flex-direction:column;gap:4px;height:100%;min-height:168px;padding:18px 18px 16px;border-radius:24px;box-sizing:border-box;background:var(--nw-c-chalk-07);box-shadow:inset 0 0 0 1px var(--nw-c-chalk-12);color:var(--nw-on-ink);text-decoration:none;transition:transform ${EASE},background ${EASE}}
+${N} .nw-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+${N} .nw-chip>a,${N} .nw-chip>div{display:flex;flex-direction:column;gap:4px;height:100%;min-height:272px;padding:22px 22px 20px;border-radius:28px;box-sizing:border-box;background:var(--nw-c-chalk-07);box-shadow:inset 0 0 0 1px var(--nw-c-chalk-12);color:var(--nw-on-ink);text-decoration:none;transition:transform ${EASE},background ${EASE}}
 ${N} .nw-chip>a:hover{transform:translateY(-2px);background:var(--nw-c-chalk-12)}
-${N} .nw-chip-i{width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;border-radius:14px;background:color-mix(in srgb,var(--c) 60%,transparent);color:var(--nw-on-ink)}
-${N} .nw-chip b{font-weight:500;font-size:18px;color:var(--nw-on-ink)}
+${N} .nw-chip-i{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:16px;background:color-mix(in srgb,var(--c) 70%,transparent);color:var(--nw-on-ink)}
+${N} .nw-chip-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+${N} .nw-chip-top em{padding:4px 10px;border-radius:999px;background:var(--nw-c-chalk-12);font-style:normal;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--nw-on-ink-muted)}
+${N} .nw-chip-facts{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+${N} .nw-chip-facts small{display:flex;align-items:flex-start;gap:8px;margin:0;padding:0;font-size:14px;line-height:1.35;color:var(--nw-on-ink)}
+${N} .nw-chip-facts svg{flex:none;width:15px;height:15px;margin-top:2px;color:var(--nw-on-ink-muted)}
+${N} .nw-chip-go{margin-top:auto;padding-top:16px;font-size:15px;font-weight:600;color:var(--nw-on-ink)}
+${N} .nw-chip b{font-weight:600;font-size:24px;line-height:1.15;color:var(--nw-on-ink)}
 ${N} .nw-chip span:not(.nw-chip-i){font-size:14px;line-height:1.35;color:var(--nw-on-ink-muted)}
 ${N} .nw-chip small{margin-top:auto;padding-top:8px;font-size:13px;font-weight:500;color:var(--nw-on-ink-muted)}
 ${N} .nw-chip[data-on]>a,${N} .nw-chip[data-on]>div{background:var(--nw-pop);box-shadow:none}
 ${N} .nw-chip[data-on] .nw-chip-i{background:var(--nw-c-chalk-22)}
 ${N} .nw-chip[data-on] b,${N} .nw-chip[data-on] span:not(.nw-chip-i),${N} .nw-chip[data-on] small{color:var(--nw-on-ink)}
-@media (max-width:1100px){${N} .nw-chips{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (max-width:600px){${N} .nw-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1100px){${N} .nw-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:560px){${N} .nw-chips{grid-template-columns:minmax(0,1fr)}}
 ${N} .nw-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px;margin:40px 0 0;padding:0;list-style:none}
 ${N} .nw-card-photo{overflow:hidden;border-radius:30px;display:flex;flex-direction:column}
 ${N} .nw-card-photo>a{display:flex;flex-direction:column;height:100%;color:inherit;text-decoration:none}
@@ -615,6 +622,8 @@ ${N} .nw-search-btn svg{flex:none;width:17px;height:17px}
 ${N} .nw-search-label{flex:1;text-align:left}
 ${N} .nw-search-btn kbd{padding:3px 9px;border-radius:999px;background:var(--nw-surface);box-shadow:inset 0 0 0 1px var(--nw-line);font:inherit;font-size:12px;font-weight:600;color:var(--nw-muted)}
 ${N} .nw-acct{position:relative;display:flex;align-items:center;gap:10px}
+${N} .nw-acct-auth{display:flex;align-items:center;gap:6px;margin-left:6px}
+${N} .nw-acct-auth i{font-style:normal;color:var(--nw-line-strong)}
 ${N} .nw-acct-link{padding:0 10px;font-size:16px;font-weight:500;color:var(--nw-ink);text-decoration:none;white-space:nowrap}
 ${N} .nw-acct-link:hover{color:var(--color-primary-strong)}
 ${N} .nw-acct-signup{min-height:44px;padding:0 20px;font-size:15px}
@@ -641,8 +650,8 @@ ${N} .nw-search-list a[data-active]{background:var(--nw-fill)}
 ${N} .nw-search-list b{font-size:16px;font-weight:600}
 ${N} .nw-search-list small{font-size:14px;color:var(--nw-muted);white-space:nowrap}
 ${N} .nw-search-empty{margin:0;padding:22px;color:var(--nw-muted)}
-@media (max-width:1240px){${N} .nw-search-label,${N} .nw-search-btn kbd{display:none}${N} .nw-search-btn{justify-content:center;min-width:44px;width:44px;padding:0}${N} .nw-acct-link{display:none}}
-@media (max-width:760px){${N} .nw-acct-signup{display:none}${N} .hs-header-actions{gap:8px}}
+@media (max-width:1240px){${N} .nw-search-label,${N} .nw-search-btn kbd{display:none}${N} .nw-search-btn{justify-content:center;min-width:44px;width:44px;padding:0}${N} .nw-acct-link,${N} .nw-acct-auth i{display:none}}
+@media (max-width:760px){${N} .nw-acct-auth{display:none}${N} .hs-header-actions{gap:8px}}
 @media (max-width:480px){${N} .nw-icon-btn,${N} .nw-search-btn{width:38px;min-width:38px;height:38px}${N} .nw-icon-btn svg{width:18px;height:18px}${N} .hs-header-actions{gap:6px}${N} .hs-brand{font-size:20px;gap:8px}${N} .hs-logo-avatar,${N} .hs-logo{width:40px;height:40px}${N} .hs-header .hs-pill{padding:0 14px;column-gap:10px}}
 `
 

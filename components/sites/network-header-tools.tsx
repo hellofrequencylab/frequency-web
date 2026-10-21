@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Search, ShoppingBag, User } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 
-// THE NETWORK WEBSITE'S HEADER TOOLS: a small search and the account cluster (Log in, Sign up, Cart, Profile).
+// THE NETWORK WEBSITE'S HEADER TOOLS: a small search and the account cluster (Cart, Profile, then Log in | Sign up).
 // The page is cached and anonymous, so the cluster draws the signed-out state and asks Frequency afterwards, with
 // the reader's own session (app/api/sites/[slug]/account), who is reading. Log in, Sign up and the profile menu's
 // doors go to Frequency and are labelled as such; the search never leaves the site.
@@ -134,12 +134,6 @@ export function NetworkAccount({ origin, slug, cartHref }: { origin: string; slu
   const signUp = `${origin}/join`
   return (
     <div className="nw-acct" ref={box}>
-      {!account && (
-        <>
-          <a className="nw-acct-link" href={logIn} onClick={comeBack}>Log in</a>
-          <a className="nw-acct-signup hs-btn hs-btn-primary" href={signUp}>Sign up</a>
-        </>
-      )}
       <a className="nw-icon-btn" href={cartHref} aria-label="Cart and shop"><ShoppingBag aria-hidden strokeWidth={1.8} /></a>
       <button type="button" className="nw-icon-btn nw-acct-profile" aria-haspopup="menu" aria-expanded={open} aria-label={account ? `${account.name}, account menu` : 'Account menu'} onClick={() => setOpen((o) => !o)}>
         {account?.avatarUrl ? (
@@ -147,12 +141,22 @@ export function NetworkAccount({ origin, slug, cartHref }: { origin: string; slu
           <img src={account.avatarUrl} alt="" />
         ) : <User aria-hidden strokeWidth={1.8} />}
       </button>
+      {!account && (
+        <span className="nw-acct-auth">
+          <a className="nw-acct-link" href={logIn} onClick={comeBack}>Log in</a>
+          <i aria-hidden>|</i>
+          <a className="nw-acct-signup hs-btn hs-btn-primary" href={signUp}>Sign up</a>
+        </span>
+      )}
       {open && (
         <div className="nw-acct-menu" role="menu">
           {account ? (
             <>
               <p className="nw-acct-who"><b>{account.name}</b>{account.handle && <small>@{account.handle}</small>}</p>
               <a role="menuitem" href={account.handle ? `${origin}/people/${account.handle}` : `${origin}/feed`}>Your profile</a>
+              <a role="menuitem" href={`${origin}/spaces`}>Your memberships</a>
+              <a role="menuitem" href={`${origin}/events`}>Your events and RSVPs</a>
+              <a role="menuitem" href={`${origin}/messages`}>Messages</a>
               <a role="menuitem" href={`${origin}/orders`}>Orders</a>
               <a role="menuitem" href={`${origin}/settings`}>Settings</a>
               <form method="post" action="/_s/exit"><button type="submit" role="menuitem">Sign out</button></form>
