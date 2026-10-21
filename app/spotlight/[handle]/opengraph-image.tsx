@@ -1,8 +1,7 @@
 import { getPublishedSpotlight } from '@/lib/spotlight/data'
 import { SITE_NAME } from '@/lib/site'
-import { cardResponse } from '@/lib/og/deliver'
+import { stageCardResponse } from '@/lib/og/stage-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
-import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A spotlight on ${SITE_NAME}`
@@ -22,46 +21,13 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
   const name = data?.profile.display_name || (data ? `@${data.profile.handle}` : 'Spotlight')
   const isFallback = !data
 
-  return cardResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: 72,
-          backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
-          {SITE_NAME.toUpperCase()}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: palette.ogAccent, marginBottom: 28 }} />
-          <div
-            style={{
-              display: 'flex',
-              fontSize: name.length > 60 ? 52 : 68,
-              fontWeight: 800,
-              lineHeight: 1.12,
-              letterSpacing: '-0.02em',
-              maxWidth: 1000,
-            }}
-          >
-            {name.length > 110 ? `${name.slice(0, 107)}…` : name}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
-          {isFallback ? `Spotlights on ${SITE_NAME}` : `A spotlight on ${SITE_NAME}`}
-        </div>
-      </div>
-    ),
-    size,
-  )
+  return stageCardResponse({
+    kicker: 'Spotlight',
+    title: name,
+    line: data?.profile.bio ?? (isFallback ? `Spotlights on ${SITE_NAME}` : `A spotlight on ${SITE_NAME}`),
+    // The member's own avatar rides the chip, never the full-bleed slot: a small profile photo
+    // stretched across 1200x630 reads as a smear.
+    logoUrl: data?.profile.avatar_url ?? null,
+    initials: data ? name.replace(/^@/, '').slice(0, 2).toUpperCase() : null,
+  })
 }

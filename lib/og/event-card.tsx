@@ -1,10 +1,4 @@
-/* eslint-disable @next/next/no-img-element -- Satori/ImageResponse renders raw elements; next/image cannot run inside an OG ImageResponse */
-import { fetchRemoteImage } from '@/lib/og/remote-image'
-import { siteMarkDataUrl } from '@/lib/og/local-image'
-import { loadNunito } from '@/lib/og/load-nunito'
-import { cardResponse } from '@/lib/og/deliver'
-import { SITE_NAME } from '@/lib/site'
-import { palette } from '@/lib/theme/palette'
+import { stageCardResponse } from '@/lib/og/stage-card'
 
 // ── THE ONE EVENT SHARE CARD, drawn once and rendered by both event surfaces ──────────────────
 //
@@ -29,15 +23,9 @@ import { palette } from '@/lib/theme/palette'
 // Everything below is presentation. If a rule ever needs to live in one place for both callers, it
 // belongs in the module that owns the rule, not in this one.
 //
-// Satori has NO access to the CSS token system, so the accent comes from the design-keyed palette
-// (lib/theme/palette.ts ogAccent, the events indigo), on a near-black ground with white display type.
-
-const EVENT_CARD_SIZE = { width: 1200, height: 630 } as const
-
-const INDIGO = palette.ogAccent
-
-/** The one focal point a card falls back to when the operator set none. */
-const DEFAULT_COVER_FOCUS = '50% 50%'
+// The layout is the shared Stage card (lib/og/stage-card.tsx): this module maps an event's strings
+// onto it and nothing else. With a cover the card leads with the event's own image; without one (or
+// when the fetch fails) it is the branded Stage fallback, so a crawl never slows or breaks on a bad image.
 
 type EventCardInput = {
   /** The event's title, or the identity-free fallback string the caller chose. */
@@ -50,217 +38,29 @@ type EventCardInput = {
   hostLine: string | null
   /** The small chip's label ("Cancelled" / "Online" / "In person + online"), or null. */
   chip: string | null
-  /** Cancelled reads in a muted warning tone; every other chip rides the indigo brand surface. */
+  /** Cancelled reads in a muted warning tone; every other chip rides the pastel surface. */
   isCancelled: boolean
-  /** A remote, fetchable cover URL. Null renders the brand text card. */
+  /** A remote, fetchable cover URL. Null renders the branded card. */
   coverUrl?: string | null
   /** `events.theme.coverFocus` ("x% y%"), so every shared crop matches the page hero. */
   coverFocus?: string | null
 }
 
-function chipElement(input: EventCardInput) {
-  if (!input.chip) return null
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignSelf: 'flex-start',
-        marginBottom: 18,
-        padding: '8px 18px',
-        borderRadius: 9999,
-        fontSize: 24,
-        fontWeight: 700,
-        letterSpacing: '0.04em',
-        color: input.isCancelled ? '#fca5a5' : palette.ogAccentSoft,
-        backgroundColor: input.isCancelled ? 'rgba(248,113,113,0.16)' : `${palette.ogAccent}38`,
-      }}
-    >
-      {input.chip}
-    </div>
-  )
-}
-
-/** The brand-styled TEXT card: no artwork, or the artwork failed to fetch. Built-in font only, so
- *  it can never slow or fail a crawl. */
-function textCard(input: EventCardInput) {
-  const title = input.title
-  const where = input.where && input.where.length > 60 ? `${input.where.slice(0, 57)}…` : input.where
-  return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: 72,
-        backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
-        color: '#ffffff',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
-        {SITE_NAME.toUpperCase()}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {chipElement(input)}
-        <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: INDIGO, marginBottom: 28 }} />
-        <div
-          style={{
-            display: 'flex',
-            fontSize: title.length > 60 ? 52 : 68,
-            fontWeight: 800,
-            lineHeight: 1.12,
-            letterSpacing: '-0.02em',
-            maxWidth: 1040,
-          }}
-        >
-          {title.length > 110 ? `${title.slice(0, 107)}…` : title}
-        </div>
-        <div style={{ display: 'flex', gap: 24, fontSize: 30, marginTop: 22, color: 'rgba(255,255,255,0.9)', flexWrap: 'wrap', maxWidth: 1040 }}>
-          {input.when && <span>{input.when}</span>}
-          {where && <span>· {where}</span>}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
-        {input.hostLine ?? 'A community gathering'}
-      </div>
-    </div>
-  )
-}
-
 /**
  * Render an event's share card and deliver it through `cardResponse` (JPEG + the CDN headers).
- *
- * When a cover is supplied and fetchable, the card LEADS with it: the image across the full
- * 1200x630 canvas, the identity lockup over a legibility scrim, the Frequency mark top right — the
- * same visual language as the Space card. Any miss (no cover, a non-image, an oversized or slow
- * fetch) falls back to the brand text card, so a crawl can never slow or crash on a broken image.
  *
  * ⚠️ NEVER THROWS ON A MISSING IMAGE, and that is load-bearing for both callers: one of them is
  * prerendered-adjacent and the other is fetched by every crawler that meets the page.
  */
 export async function eventCardResponse(input: EventCardInput): Promise<Response> {
-  // Fetched + inlined because Satori needs bytes, not a remote src. Null on ANY problem.
-  const cover = input.coverUrl ? await fetchRemoteImage(input.coverUrl) : null
-
-  if (!cover) return cardResponse(textCard(input), { ...EVENT_CARD_SIZE })
-
-  const displayTitle = input.title.length > 90 ? `${input.title.slice(0, 87)}…` : input.title
-  const displayWhere = input.where && input.where.length > 56 ? `${input.where.slice(0, 53)}…` : input.where
-  const metaLine = [input.when, displayWhere].filter(Boolean).join('  ·  ')
-
-  // FULL Nunito faces read from public/fonts, memoised per process (lib/og/load-nunito.ts). Not
-  // subsets: subsetting to the card's own glyphs rendered a name containing anything outside that
-  // subset as tofu. And loadNunito CAN reject if public/fonts is missing from the bundle, which
-  // returns a 500 and gets the previewer a text card. That is deliberate and recoverable, unlike
-  // handing Satori an empty `fonts` array, which crashes it inside fontFamily.split().
-  const [black, bold, mark] = await Promise.all([loadNunito(900), loadNunito(700), siteMarkDataUrl()])
-  const fonts = [
-    { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },
-    { name: 'Nunito', data: bold, weight: 700 as const, style: 'normal' as const },
-  ]
-
-  return cardResponse(
-    (
-      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', fontFamily: 'Nunito' }}>
-        {/* Poster/cover background — the event's own image. */}
-        <img
-          src={cover}
-          alt=""
-          width={EVENT_CARD_SIZE.width}
-          height={EVENT_CARD_SIZE.height}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            // The SAME focal point the event page hero and the claim card apply
-            // (events.theme.coverFocus), so every shared crop of this poster matches the page.
-            objectPosition: input.coverFocus || DEFAULT_COVER_FOCUS,
-          }}
-        />
-        {/* Ink legibility scrim: bottom-heavy fade so the identity clears any photo while the top
-            stays crisp (the same treatment as the Space card). */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage:
-              'linear-gradient(180deg, rgba(13,13,18,0.16) 0%, rgba(13,13,18,0.34) 44%, rgba(13,13,18,0.80) 76%, rgba(13,13,18,0.94) 100%)',
-          }}
-        />
-        {/* The Frequency mark, top-right — quiet network attribution. */}
-        <img
-          src={mark}
-          alt=""
-          width={72}
-          height={72}
-          style={{ position: 'absolute', top: 48, right: 56, width: 72, height: 72, opacity: 0.95 }}
-        />
-        {/* Identity lockup anchored bottom-left over the scrim: chip · accent bar · title · when/where · host. */}
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            width: '100%',
-            height: '100%',
-            padding: 64,
-          }}
-        >
-          {chipElement(input)}
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: INDIGO, marginBottom: 20 }} />
-          <div
-            style={{
-              display: 'flex',
-              fontSize: displayTitle.length > 42 ? 56 : 72,
-              fontWeight: 900,
-              lineHeight: 1.05,
-              letterSpacing: '-0.02em',
-              color: '#FFFFFF',
-              textShadow: '0 2px 24px rgba(0,0,0,0.55)',
-              maxWidth: 1000,
-            }}
-          >
-            {displayTitle}
-          </div>
-          {metaLine && (
-            <div
-              style={{
-                display: 'flex',
-                fontSize: 30,
-                fontWeight: 700,
-                marginTop: 16,
-                color: 'rgba(243,243,255,0.94)',
-                textShadow: '0 1px 12px rgba(0,0,0,0.6)',
-                maxWidth: 1000,
-              }}
-            >
-              {metaLine}
-            </div>
-          )}
-          {input.hostLine && (
-            <div
-              style={{
-                display: 'flex',
-                fontSize: 26,
-                fontWeight: 700,
-                marginTop: 12,
-                color: 'rgba(243,243,255,0.78)',
-                textShadow: '0 1px 12px rgba(0,0,0,0.6)',
-              }}
-            >
-              {input.hostLine}
-            </div>
-          )}
-        </div>
-      </div>
-    ),
-    { ...EVENT_CARD_SIZE, fonts },
-  )
+  return stageCardResponse({
+    kicker: 'Event',
+    title: input.title,
+    meta: [input.when, input.where].filter(Boolean).join(' · ') || null,
+    line: input.hostLine ?? 'A community gathering',
+    chip: input.chip,
+    chipIsWarning: input.isCancelled,
+    coverUrl: input.coverUrl,
+    coverFocus: input.coverFocus,
+  })
 }

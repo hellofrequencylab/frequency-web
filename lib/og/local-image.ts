@@ -78,8 +78,6 @@ const readCommunityDinner = () =>
   readFile(join(process.cwd(), 'public/images/site', 'community-dinner.jpg'))
 const readMeditationCircleOutdoor = () =>
   readFile(join(process.cwd(), 'public/images/site', 'meditation-circle-outdoor.jpg'))
-const readSiteMark = () =>
-  readFile(join(process.cwd(), 'public/images', 'Frequency-Logo-Round-Icon-white.png'))
 
 /** Every path `coverPlaceholderFor` can return, and nothing else. A missing key is a type error;
  *  so is a key that is not a placeholder. */
@@ -104,10 +102,4 @@ const COVER_READERS: Record<CoverPlaceholderPath, () => Promise<Buffer>> = {
  */
 export async function coverPlaceholderDataUrl(path: CoverPlaceholderPath): Promise<string> {
   return jpegDataUrl(await COVER_READERS[path]())
-}
-
-/** The Frequency mark drawn top-right on every entity card, inlined for Satori. */
-export async function siteMarkDataUrl(): Promise<string> {
-  const data = await readSiteMark()
-  return `data:image/png;base64,${data.toString('base64')}`
 }

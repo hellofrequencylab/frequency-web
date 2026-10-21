@@ -132,9 +132,9 @@
     },
     "app/dev/og-root-card/route.tsx": {
       "verdict": "public",
-      "reason": "Dev-only generator for the committed root share card (ADR-1002). Renders a pure function of build-time constants (SITE_NAME, SITE_TAGLINE, hero.jpg, logo) - no DB, no session, no caller input; identical bytes on every request. Since LIVE-064 it also notFound()s in production, matching its two /dev siblings, so the public surface exists only outside prod.",
-      "checked": "2026-08-20",
-      "digest": "29364c2a39b768b4"
+      "reason": "Dev-only generator for the committed root share card (ADR-1002). Renders a pure function of build-time constants (SITE_NAME, SITE_TAGLINE, hero.jpg, logo) - no DB, no session, no caller input; identical bytes on every request. Since LIVE-064 it also notFound()s in production, matching its two /dev siblings, so the public surface exists only outside prod. Re-read 2026-10-21 (LIVE-1269) and the verdict is unchanged: the body now calls stageCardResponse with SITE_NAME, SITE_TAGLINE and hero.jpg instead of building its own element; still no DB, no session, no caller input, and still notFound() in production.",
+      "checked": "2026-10-21",
+      "digest": "d27f4a3dcadec543"
     },
     "app/calendar/private/[token]/route.ts": {
       "verdict": "token-credential",

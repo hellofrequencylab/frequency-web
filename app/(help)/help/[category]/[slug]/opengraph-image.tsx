@@ -2,10 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { getArticle } from '@/lib/help/content'
 import { SITE_NAME } from '@/lib/site'
-import { loadNunito } from '@/lib/og/load-nunito'
-import { cardResponse } from '@/lib/og/deliver'
+import { stageCardResponse } from '@/lib/og/stage-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
-import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A help article on ${SITE_NAME}`
@@ -50,8 +48,6 @@ export const contentType = OG_CONTENT_TYPE
 // Satori has no access to the CSS token system, so the two colours come from the design-keyed palette
 // (lib/theme/palette.ts ogAccent / ogAccentSoft), the same pair the group card draws.
 
-const INDIGO = palette.ogAccent
-
 /** The same photograph the group card draws, so a help link previews as the help centre whichever
  *  card answers it. Literal path: @vercel/nft cannot resolve one assembled from a variable, and a
  *  parameterised read globs the whole directory into every function that reaches this module
@@ -61,171 +57,20 @@ async function heroDataUrl(): Promise<string> {
   return `data:image/jpeg;base64,${bytes.toString('base64')}`
 }
 
-/** Display size steps with the title so a 58-character headline (the longest in the corpus today)
- *  still sets on two lines inside the 1056px text column. */
-function titleSize(title: string): number {
-  if (title.length <= 34) return 76
-  if (title.length <= 58) return 62
-  if (title.length <= 90) return 50
-  return 42
-}
-
 export default async function Image({
   params,
 }: {
   params: Promise<{ category: string; slug: string }>
 }) {
   const { category, slug } = await params
-  // `.catch(() => null)` for the same reason the city card guards its read: the PAGE must keep
-  // 404ing on an unknown slug, but a share card must never be the thing that ends a production
-  // export (LIVE-084). A read failure here falls back to the help-centre wordmark, which is exactly
-  // what this URL served before this file existed.
   const found = await getArticle(category, slug).catch(() => null)
 
-  const heading = found?.article.title ?? `${SITE_NAME} Help Center`
-  const eyebrow = found?.category.title ?? 'Help Center'
-
-  const [heroSrc, black, bold] = await Promise.all([
-    heroDataUrl(),
-    loadNunito(900),
-    loadNunito(700),
-  ])
-
-  const fonts = [
-    black && { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },
-    bold && { name: 'Nunito', data: bold, weight: 700 as const, style: 'normal' as const },
-  ].filter(Boolean) as {
-    name: string
-    data: ArrayBuffer
-    weight: 900 | 700
-    style: 'normal'
-  }[]
-
-  const fontFamily = fonts.length ? 'Nunito' : undefined
-
-  return cardResponse(
-    (
-      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative' }}>
-        {/* Hero photo */}
-        <img
-          src={heroSrc}
-          alt=""
-          width={size.width}
-          height={size.height}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-        {/* Legibility scrim. A touch heavier than the group card's through the middle, where the
-            title sets, and the same at top and bottom so the two cards read as one family.
-            🔴 EXPLICIT top/left/width/height, NOT `inset: 0`, and NOT without `display`. Satori
-            implements neither the `inset` shorthand nor CSS's initial `display: block`, so a scrim
-            sized only by `inset` collapses to 0x0 and renders NOTHING — silently, because the card
-            still returns 200 with a perfectly good photograph under unreadable white text. That is
-            the shape the group card shipped in; see the same fix in app/(help)/opengraph-image.tsx. */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            backgroundImage:
-              'linear-gradient(180deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.52) 36%, rgba(0,0,0,0.84) 72%, rgba(0,0,0,0.97) 100%)',
-          }}
-        />
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            width: '100%',
-            height: '100%',
-            padding: 72,
-          }}
-        >
-          {/* Wordmark, small: on an article the TITLE is the subject, not the brand. */}
-          <div
-            style={{
-              display: 'flex',
-              fontFamily,
-              fontWeight: 700,
-              fontSize: 28,
-              letterSpacing: '0.32em',
-              color: 'rgba(255,255,255,0.88)',
-              textShadow: '0 1px 12px rgba(0,0,0,0.6)',
-            }}
-          >
-            {SITE_NAME.toUpperCase()}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Category pill — the one line that tells 57 otherwise-similar cards apart at a glance */}
-            <div
-              style={{
-                display: 'flex',
-                alignSelf: 'flex-start',
-                marginBottom: 22,
-                padding: '8px 18px',
-                borderRadius: 9999,
-                fontFamily,
-                fontSize: 24,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: palette.ogAccentSoft,
-                backgroundColor: `${palette.ogAccent}38`,
-              }}
-            >
-              {eyebrow.length > 40 ? `${eyebrow.slice(0, 37)}…` : eyebrow}
-            </div>
-            <div
-              style={{
-                width: 84,
-                height: 8,
-                borderRadius: 9999,
-                backgroundColor: INDIGO,
-                marginBottom: 26,
-              }}
-            />
-            <div
-              style={{
-                display: 'flex',
-                fontFamily,
-                fontWeight: 900,
-                fontSize: titleSize(heading),
-                lineHeight: 1.1,
-                letterSpacing: '-0.02em',
-                maxWidth: 1056,
-                color: '#ffffff',
-                textShadow: '0 2px 24px rgba(0,0,0,0.55)',
-              }}
-            >
-              {heading.length > 120 ? `${heading.slice(0, 117)}…` : heading}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              fontFamily,
-              fontWeight: 700,
-              fontSize: 26,
-              letterSpacing: '0.28em',
-              color: 'rgba(255,255,255,0.75)',
-              textShadow: '0 1px 12px rgba(0,0,0,0.6)',
-            }}
-          >
-            HELP CENTER
-          </div>
-        </div>
-      </div>
-    ),
-    { ...size, fonts },
-  )
+  // The article's own title and one-line description; the shared Stage card clamps both and its
+  // scrim keeps them legible over the bright hero photograph (opengraph-image.test.tsx measures it).
+  return stageCardResponse({
+    kicker: found?.category.title ?? 'Help Center',
+    title: found?.article.title ?? `${SITE_NAME} Help Center`,
+    line: found?.article.description ?? null,
+    coverPlaceholder: await heroDataUrl(),
+  })
 }

@@ -115,7 +115,7 @@ describe('the faces reach the serverless runtime', () => {
   const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
   // The route keys that carry the faces as belt-and-braces. Substring matches (picomatch runs these
   // in `contains` mode), so they cover the hash-suffixed metadata routes too.
-  const CARD_KEYS = ["'/opengraph-image'", "'/twitter-image'", "'/dev/og-root-card'"]
+  const CARD_KEYS = ["'/opengraph-image'", "'/twitter-image'"]
 
   it('every face load-nunito can open is named for the card routes', () => {
     // Belt-and-braces, not the delivery mechanism: the literal-path assertion above is what actually
@@ -130,6 +130,8 @@ describe('the faces reach the serverless runtime', () => {
     expect(faces.length).toBeGreaterThanOrEqual(3) // Nunito Bold + Black, and the Liberation fallback
     for (const face of new Set(faces)) expect(cfg).toContain(`'./public/fonts/${face}'`)
     for (const key of CARD_KEYS) expect(block).toContain(`${key}: OG_CARD_FONTS`)
+    // The root-card generator draws only the Stage faces + Nunito Bold, so it carries a shorter list (LIVE-1269).
+    expect(block).toContain("'/dev/og-root-card': ROOT_CARD_FONTS")
   })
 
   it('and they are OFF the catch-all key, which is what cost 284MB', () => {

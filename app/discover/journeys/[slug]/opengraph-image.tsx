@@ -1,8 +1,7 @@
 import { getPublicJourney } from '@/lib/journey-plans'
 import { SITE_NAME } from '@/lib/site'
-import { cardResponse } from '@/lib/og/deliver'
+import { stageCardResponse } from '@/lib/og/stage-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
-import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A guided Journey on ${SITE_NAME}`
@@ -23,62 +22,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const title = plan?.title ?? 'Journeys'
   const isFallback = !plan
 
-  return cardResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: 72,
-          backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
-          {SITE_NAME.toUpperCase()}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignSelf: 'flex-start',
-              marginBottom: 20,
-              padding: '8px 18px',
-              borderRadius: 9999,
-              fontSize: 24,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              color: palette.ogAccentSoft,
-              backgroundColor: `${palette.ogAccent}38`,
-            }}
-          >
-            Journey
-          </div>
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: palette.ogAccent, marginBottom: 28 }} />
-          <div
-            style={{
-              display: 'flex',
-              fontSize: title.length > 60 ? 52 : 68,
-              fontWeight: 800,
-              lineHeight: 1.12,
-              letterSpacing: '-0.02em',
-              maxWidth: 1000,
-            }}
-          >
-            {title.length > 110 ? `${title.slice(0, 107)}…` : title}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
-          {isFallback ? `Journeys on ${SITE_NAME}` : `A guided Journey on ${SITE_NAME}`}
-        </div>
-      </div>
-    ),
-    size,
-  )
+  return stageCardResponse({
+    kicker: 'Journey',
+    title,
+    line: plan?.summary ?? (isFallback ? `Journeys on ${SITE_NAME}` : `A guided Journey on ${SITE_NAME}`),
+    coverUrl: plan?.cover_image ?? null,
+    coverFocus: plan?.cover_focus ?? null,
+  })
 }
