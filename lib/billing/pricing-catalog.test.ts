@@ -34,7 +34,7 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly twelve live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821; three Network items, SCAN-980; no operator seat, ADR-1810)', () => {
+  it('holds exactly sixteen live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821; three Network items, SCAN-980; four Network client-site items, ADR-1816; no operator seat, ADR-1810)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
       'collective_base',
@@ -44,12 +44,16 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
       'network_chapter',
       'nonprofit_network',
       'nonprofit_network_chapter',
+      'network_site',
+      'network_site_mid',
+      'network_site_high',
+      'network_site_unbranded',
       'independent_base',
       'addon_ai',
       'addon_custom_domain',
       'nonprofit_seat',
     ])
-    expect(catalogItems()).toHaveLength(12)
+    expect(catalogItems()).toHaveLength(16)
   })
 
   it('the custom domain add-on is $19/mo flat, yearly two months free, not per seat (LIVE-821)', () => {
@@ -101,8 +105,8 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
       expect(RETIRED_CATALOG_KEYS).toContain(key)
     }
     // The only quantity items left are the extra member Space and the extra Network chapter, both
-    // bought after checkout; every plan and add-on stays perSeat:false.
-    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'network_chapter', 'nonprofit_network_chapter'])
+    // bought after checkout (and the four Network client-site rungs, ADR-1816); every plan and add-on stays perSeat:false.
+    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'network_chapter', 'nonprofit_network_chapter', 'network_site', 'network_site_mid', 'network_site_high', 'network_site_unbranded'])
   })
 
   it('every item has a founding <= list amount on both intervals', () => {
@@ -144,9 +148,9 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 12 items x 2 intervals x 2 variants = 48 keys', () => {
+  it('allCatalogPriceKeys = 16 items x 2 intervals x 2 variants = 64 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(48)
+    expect(keys).toHaveLength(64)
     expect(keys).toContain('addon_custom_domain_month')
     expect(keys).toContain('addon_custom_domain_year_list')
     expect(keys).toContain('business_base_month')

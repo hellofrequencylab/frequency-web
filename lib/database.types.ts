@@ -16910,6 +16910,7 @@ export type Database = {
           postal_code: string | null
           preferences: Json
           region: string | null
+          reseller_network_id: string | null
           seat_quantity: number
           skin: string
           slug: string
@@ -16966,6 +16967,7 @@ export type Database = {
           postal_code?: string | null
           preferences?: Json
           region?: string | null
+          reseller_network_id?: string | null
           seat_quantity?: number
           skin?: string
           slug: string
@@ -17022,6 +17024,7 @@ export type Database = {
           postal_code?: string | null
           preferences?: Json
           region?: string | null
+          reseller_network_id?: string | null
           seat_quantity?: number
           skin?: string
           slug?: string
@@ -17081,6 +17084,13 @@ export type Database = {
           {
             foreignKeyName: "spaces_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_reseller_network_id_fkey"
+            columns: ["reseller_network_id"]
             isOneToOne: false
             referencedRelation: "spaces"
             referencedColumns: ["id"]

@@ -32,7 +32,7 @@ function extraItemFor(plan: string): { itemKey: ExtraItemKey; included: number; 
 }
 interface OwnedCollective { owner_profile_id: string; stripe_subscription_id: string | null; plan: string; status: string; type: string; feature_roles?: unknown; entitlements?: unknown }
 
-async function ownedSubscription(spaceId: string): Promise<{ sub: Stripe.Subscription; ownerId: string; plan: string } | null> {
+export async function ownedSubscription(spaceId: string): Promise<{ sub: Stripe.Subscription; ownerId: string; plan: string } | null> {
   const caller = await getCallerProfile()
   if (!caller || !stripe || !(await billingLive())) return null
   const result = await createAdminClient().from('spaces')
