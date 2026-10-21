@@ -11,6 +11,7 @@ import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { moduleTierRead } from '@/lib/pricing/tier-marks'
 import { ModuleManager, type ModuleManagerRow } from './module-manager'
+import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE MODULE MANAGER (ADR-546, docs/MODULAR-MENU.md — P3). A centered, no-rail Focus sub-page where the
 // owner turns each SERVICE feature on or off, reorders the modules in their menu, and hides the ones they
@@ -91,6 +92,7 @@ export default async function SpaceModulesPage({
 
   return (
     <ConsoleFocusTemplate
+      back={consoleBack(space.slug, 'settings')}
       eyebrow={brandName}
       title="Menu and features"
       description="Turn the tools this space uses on or off, set who on your team can use each one, reorder your menu, and hide what you do not need."

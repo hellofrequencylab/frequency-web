@@ -8,7 +8,7 @@ const r = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const bad = []
 const base = 'app/(main)/spaces/[slug]/'
 const pages = [
-  'loom', 'journeys', 'practices', 'manage/circles', 'manage/leadership', 'manage/layout', 'manage/mode', 'manage/spotlight',
+  'loom', 'journeys', 'practices', 'manage/circles', 'manage/leadership', 'manage/layout', 'manage/mode', 'manage/modules', 'manage/spotlight',
   'settings/airwaves', 'settings/program', 'settings/calendar', 'settings/automation', 'settings/members', 'settings/collaborators',
   'settings/billing', 'settings/offerings', 'settings/payments', 'settings/shop', 'settings/email', 'settings/email-style',
   'settings/qr', 'settings/reach', 'settings/cross-listing', 'marketing', 'crm', 'crm/conversations', 'crm/leads', 'crm/doors', 'crm/shared',
