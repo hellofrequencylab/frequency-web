@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-997",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=f=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const a=r('components/frequency/members/events/around-you.tsx'),c=r('app/themes/frequency/members-events.css');const bad=[];if(!a.includes('className=\\\"ay-top\\\"')||a.includes('ay-side')||a.includes('HubLinks'))bad.push('Around you still has a right column');if(!c.includes('.ay-top{display:grid')||c.includes('.ay-side'))bad.push('the CSS still draws a side column');if(!c.includes('.ay-list{display:grid'))bad.push('the ticker is not a horizontal strip');if(bad.length){console.error('SCAN-997: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "2026-10-21 owner request (Around you looked broken): the tab board is a card grid on desktop and a swipe strip on a phone, so the probe pins the grid instead of the 240px strip (LIVE-1219)."
+  }
+}

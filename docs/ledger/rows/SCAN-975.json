@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-975",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=f=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const d='components/frequency/members/events/';const b=r(d+'events-body.tsx'),a=r(d+'around-you.tsx'),i=r(d+'around-you-items.ts'),l=r(d+'events-map-lightbox.tsx'),c=r('app/themes/frequency/members-events.css');const bad=[];if(!b.includes('<FqAroundYou ')||b.includes('FqEventsForYou')||b.includes('evx-yours')||b.includes('FqEventsMapPane'))bad.push('Around you does not replace For you, Your week and the split map');if(!i.includes('export function planAroundYou')||!a.includes('<AyTicker')||!a.includes('<FqMapTile'))bad.push('the feature has no plan, ticker or map door');if(!l.includes('showModal()')||!l.includes(\\\"searchParams.set('map', '1')\\\")||!l.includes('onPinClick'))bad.push('the map is not a URL-owned lightbox');if(!c.includes('.ev-libbar{position:static')||!c.includes('.ev-list4{grid-template-columns:repeat(4,minmax(0,1fr))}'))bad.push('the library is not four wide under a sticky sort bar');if(!b.includes('libLimit(params.show)'))bad.push('the library is not truncated');if(bad.length){console.error('SCAN-975: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "2026-10-21 owner request (events filters covered half the page): only the one-row toolbar sticks now; the library bar scrolls away, so the probe pins that instead of a sticky sort bar (LIVE-1219)."
+  }
+}
