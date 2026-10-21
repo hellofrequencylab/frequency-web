@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, Instrument_Serif, Outfit } from 'next/font/google'
+import localFont from 'next/font/local'
 
 // THE NETWORK FACES, loaded ONLY on a Network website (components/sites/site-page.tsx), never from the root
 // layout: a face registered in app/layout.tsx rides every route (DEPLOY-SAFETY, SCAN-676), and these three
@@ -13,9 +13,17 @@ import { Bricolage_Grotesque, Instrument_Serif, Outfit } from 'next/font/google'
 // ⛔ Not imported by components/sites/site-chrome.tsx, which the suite renders: next/font needs Next's
 // compiler, so the class is applied one level up, on the site page.
 
-const bricolage = Bricolage_Grotesque({ variable: '--font-nw-bricolage', subsets: ['latin'], weight: 'variable', axes: ['opsz'], display: 'swap', preload: false })
-const outfit = Outfit({ variable: '--font-nw-outfit', subsets: ['latin'], weight: 'variable', display: 'swap', preload: false })
-const instrument = Instrument_Serif({ variable: '--font-nw-instrument', subsets: ['latin'], weight: '400', style: ['normal', 'italic'], display: 'swap', preload: false })
+const bricolage = localFont({ src: '../../app/fonts/bricolage-grotesque/bricolage-grotesque.woff2', variable: '--font-nw-bricolage', weight: '200 800', display: 'swap', preload: false })
+const outfit = localFont({ src: '../../app/fonts/outfit/outfit.woff2', variable: '--font-nw-outfit', weight: '100 900', display: 'swap', preload: false })
+const instrument = localFont({
+  src: [
+    { path: '../../app/fonts/instrument-serif/instrument-serif.woff2', weight: '400', style: 'normal' },
+    { path: '../../app/fonts/instrument-serif/instrument-serif-italic.woff2', weight: '400', style: 'italic' },
+  ],
+  variable: '--font-nw-instrument',
+  display: 'swap',
+  preload: false,
+})
 
 /** The class that sets the three `--font-nw-*` variables; put it on the Network site root. */
 export const NETWORK_FONT_CLASS = [bricolage, outfit, instrument].map((f) => f.variable).join(' ')

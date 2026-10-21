@@ -1,21 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import {
-  Nunito,
-  Geist_Mono,
-  Anton,
-  Playfair_Display,
-  Caveat,
-  Space_Grotesk,
-  Fraunces,
-  PT_Serif,
-  Fredoka,
-  Lexend,
-  Atkinson_Hyperlegible,
-  Sofia_Sans_Extra_Condensed,
-  Barlow,
-  IBM_Plex_Mono,
-} from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 // The ACTIVE design's sheets (ADR-1737). Each is a stub in app/themes/active/ that
 // scripts/write-design-assets.mjs points at the build's design (scripts/lib/design-styles.mjs): under
@@ -49,17 +34,18 @@ import { Analytics } from "@/components/analytics/vercel-analytics";
 // Space page, so a preload on every route was three wasted font fetches ahead of the LCP on a phone.
 // next/font options must be literals, so this cannot follow FONTS_DESIGN; the @font-face still loads
 // each face wherever its text renders (space-page.css, DAWN Space websites).
-const nunito = Nunito({
+const nunito = localFont({
+  src: "./fonts/nunito/nunito.woff2",
   variable: "--font-nunito",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: "200 1000",
   display: "swap",
   preload: false,
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "./fonts/geist-mono/geist-mono.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "100 900",
   display: "swap",
   preload: false,
 });
@@ -67,9 +53,9 @@ const geistMono = Geist_Mono({
 // Anton: heavy condensed display face for the public marketing headlines
 // (editorial, fills the width). Used via the `.font-display` utility; the
 // in-app product keeps Nunito. Single weight (400) — it's already very heavy.
-const anton = Anton({
+const anton = localFont({
+  src: "./fonts/anton/anton.woff2",
   variable: "--font-anton",
-  subsets: ["latin"],
   weight: "400",
   display: "swap",
   preload: false,
@@ -81,9 +67,9 @@ const anton = Anton({
 // `preload: false` on all three (SCAN-676): they are Spotlight faces, and without it next/font put a
 // <link rel="preload"> for each in the <head> of EVERY route, three font fetches ahead of the LCP on
 // pages that never draw a glyph in them. The CSS @font-face still loads each one where it is used.
-const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap", preload: false });
-const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
-const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], display: "swap", preload: false });
+const playfair = localFont({ src: "./fonts/playfair-display/playfair-display.woff2", variable: "--font-playfair", weight: "400 900", display: "swap", preload: false, adjustFontFallback: "Times New Roman" });
+const caveat = localFont({ src: "./fonts/caveat/caveat.woff2", variable: "--font-caveat", weight: "400 700", display: "swap", preload: false });
+const spaceGrotesk = localFont({ src: "./fonts/space-grotesk/space-grotesk.woff2", variable: "--font-grotesk", weight: "300 700", display: "swap", preload: false });
 
 // Space-page THEME fonts (ADR-578, lib/theme/space-themes.ts). Each Space profile theme pairs a display +
 // body face; these load the ones not already on <html>. next/font self-hosts them, and `preload: false`
@@ -93,16 +79,18 @@ const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["lati
 // Fraunces additionally loads its `opsz` + `SOFT` optical axes: the editorial theme's light display
 // treatment (font-variation-settings in globals.css) needs them, and next/font ships only `wght` by default.
 // Variable fonts where possible; PT Serif + Atkinson need explicit weights.
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap", axes: ["opsz", "SOFT"], preload: false });
-const ptSerif = PT_Serif({ variable: "--font-pt-serif", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
-const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap", preload: false });
-const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap", preload: false });
-const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
+// Fraunces({ axes: ["opsz", "SOFT"] }) as downloaded: the committed file carries both axes plus wght
+// (checked with fontTools: opsz 9-144, wght 100-900, SOFT 0-100), which editorial's light treatment needs.
+const fraunces = localFont({ src: "./fonts/fraunces/fraunces.woff2", variable: "--font-fraunces", weight: "100 900", display: "swap", preload: false, adjustFontFallback: "Times New Roman" });
+const ptSerif = localFont({ src: [{ path: "./fonts/pt-serif/pt-serif-400.woff2", weight: "400" }, { path: "./fonts/pt-serif/pt-serif-700.woff2", weight: "700" }], variable: "--font-pt-serif", display: "swap", preload: false, adjustFontFallback: "Times New Roman" });
+const fredoka = localFont({ src: "./fonts/fredoka/fredoka.woff2", variable: "--font-fredoka", weight: "300 700", display: "swap", preload: false });
+const lexend = localFont({ src: "./fonts/lexend/lexend.woff2", variable: "--font-lexend", weight: "100 900", display: "swap", preload: false });
+const atkinson = localFont({ src: [{ path: "./fonts/atkinson-hyperlegible/atkinson-hyperlegible-400.woff2", weight: "400" }, { path: "./fonts/atkinson-hyperlegible/atkinson-hyperlegible-700.woff2", weight: "700" }], variable: "--font-atkinson", display: "swap", preload: false });
 // Menswork theme faces (lib/theme/menswork.ts): a condensed caps display, a plain body and a mono for
 // labels and numbers. Theme-only, so `preload: false` like the five above.
-const sofiaCondensed = Sofia_Sans_Extra_Condensed({ variable: "--font-sofia-xc", subsets: ["latin"], display: "swap", preload: false });
-const barlow = Barlow({ variable: "--font-barlow", subsets: ["latin"], weight: ["400", "500", "600"], display: "swap", preload: false });
-const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"], display: "swap", preload: false });
+const sofiaCondensed = localFont({ src: "./fonts/sofia-sans-extra-condensed/sofia-sans-extra-condensed.woff2", variable: "--font-sofia-xc", weight: "1 1000", display: "swap", preload: false });
+const barlow = localFont({ src: [{ path: "./fonts/barlow/barlow-400.woff2", weight: "400" }, { path: "./fonts/barlow/barlow-500.woff2", weight: "500" }, { path: "./fonts/barlow/barlow-600.woff2", weight: "600" }], variable: "--font-barlow", display: "swap", preload: false });
+const plexMono = localFont({ src: [{ path: "./fonts/ibm-plex-mono/ibm-plex-mono-400.woff2", weight: "400" }, { path: "./fonts/ibm-plex-mono/ibm-plex-mono-500.woff2", weight: "500" }], variable: "--font-plex-mono", display: "swap", preload: false });
 
 // A `next dev` / `next build` that skipped the pre-script would wear one design's tokens with another's
 // faces. Say so loudly at render time rather than ship it quietly.

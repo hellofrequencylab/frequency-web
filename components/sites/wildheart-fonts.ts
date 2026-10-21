@@ -1,5 +1,4 @@
 import localFont from 'next/font/local'
-import { EB_Garamond, Hanken_Grotesk, Noto_Sans_Symbols } from 'next/font/google'
 
 // THE WILDHEART FACES, loaded ONLY on a Wildheart website (components/sites/site-page.tsx), never from the
 // root layout: a face registered in app/layout.tsx rides every route (DEPLOY-SAFETY, SCAN-676), and these
@@ -24,9 +23,17 @@ const fell = localFont({
   preload: false,
 })
 
-const garamond = EB_Garamond({ variable: '--font-wh-garamond', subsets: ['latin'], weight: ['400', '500'], style: ['normal', 'italic'], display: 'swap', preload: false })
-const hanken = Hanken_Grotesk({ variable: '--font-wh-hanken', subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap', preload: false })
-const symbols = Noto_Sans_Symbols({ variable: '--font-wh-symbols', subsets: ['latin'], weight: ['300', '400'], display: 'swap', preload: false })
+const garamond = localFont({
+  src: [
+    { path: '../../app/fonts/eb-garamond/eb-garamond.woff2', weight: '400 800', style: 'normal' },
+    { path: '../../app/fonts/eb-garamond/eb-garamond-italic.woff2', weight: '400 800', style: 'italic' },
+  ],
+  variable: '--font-wh-garamond',
+  display: 'swap',
+  preload: false,
+})
+const hanken = localFont({ src: '../../app/fonts/hanken-grotesk/hanken-grotesk.woff2', variable: '--font-wh-hanken', weight: '100 900', display: 'swap', preload: false })
+const symbols = localFont({ src: '../../app/fonts/noto-sans-symbols/noto-sans-symbols.woff2', variable: '--font-wh-symbols', weight: '100 900', display: 'swap', preload: false })
 
 /** The class that sets the four `--font-wh-*` variables; put it on the Wildheart site root. */
 export const WILDHEART_FONT_CLASS = [fell, garamond, hanken, symbols].map((f) => f.variable).join(' ')

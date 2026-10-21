@@ -5,30 +5,34 @@
 // The export's type (design_handoff/frequency/tokens/typography.css): Unbounded for display (400-800),
 // Instrument Serif italic for the "temple voice", Hanken Grotesk for UI and body (400-700). The alias layer
 // (app/themes/frequency.css) points --fq-font-display / -serif / -sans at these variables.
-import { Hanken_Grotesk, Instrument_Serif, Unbounded } from 'next/font/google'
+import localFont from 'next/font/local'
 import type { DesignId } from '../design'
 
+// SELF-HOSTED (no build-time fetch from Google Fonts): the latin woff2 files of Google's Unbounded,
+// Instrument_Serif and Hanken_Grotesk are committed under app/fonts/ and loaded with next/font/local, so a
+// Google outage cannot fail a deploy (DEPLOY-SAFETY rule 9).
 export const FONTS_DESIGN: DesignId = 'frequency'
 
-const unbounded = Unbounded({
+const unbounded = localFont({
+  src: '../../../app/fonts/unbounded/unbounded.woff2',
   variable: '--font-unbounded',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
+  weight: '200 900',
   display: 'swap',
 })
-const instrumentSerif = Instrument_Serif({
+const instrumentSerif = localFont({
+  src: [
+    { path: '../../../app/fonts/instrument-serif/instrument-serif.woff2', weight: '400', style: 'normal' },
+    { path: '../../../app/fonts/instrument-serif/instrument-serif-italic.woff2', weight: '400', style: 'italic' },
+  ],
   variable: '--font-instrument-serif',
-  subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
   display: 'swap',
   // Only the italic accents draw it; keep it off every route's preload list (SCAN-676).
   preload: false,
 })
-const hanken = Hanken_Grotesk({
+const hanken = localFont({
+  src: '../../../app/fonts/hanken-grotesk/hanken-grotesk.woff2',
   variable: '--font-hanken',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: '100 900',
   display: 'swap',
 })
 
