@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1208",
+  "title": "A staff re-seed never overwrites a Space its owner has claimed (LIVE-1208)",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/importer/materialize.ts",
+    "ref": "Seeders analysis 2026-10-21, risk 1."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: on an update target materializeBusiness deleted and re-inserted availability and FAQs and rewrote profileData, and edit-wins covered only name, tagline, brand name and accent, with no check of claimed_at. It now asks isSpaceClaimed (lib/spaces/claim.ts, fail-closed) before any write and returns a plain refusal for a claimed Space.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('lib/importer/materialize.ts','utf8');const c=fs.readFileSync('lib/spaces/claim.ts','utf8');const bad=[];if(!/isSpaceClaimed\\(existing\\.id\\)/.test(m))bad.push('re-apply does not check the claim');if(!/export async function isSpaceClaimed/.test(c))bad.push('isSpaceClaimed is gone');if(bad.length){console.error('LIVE-1208: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a re-apply can run against a claimed Space."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
