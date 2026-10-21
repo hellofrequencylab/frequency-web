@@ -1,19 +1,19 @@
 {
   "id": "LIVE-1209",
-  "title": "Builds no longer download fonts from Google",
+  "title": "Only a platform admin can adopt a Space into the Business Seeder (LIVE-1209)",
   "status": "done",
   "priority": "P1",
   "lane": "live",
-  "size": "M",
+  "size": "S",
   "source": {
-    "file": "docs/DEPLOY-SAFETY.md",
-    "ref": "\u00a79 A build that dies in [next]/internal/font/google/* gets REDEPLOYED before it gets debugged. Coordinator 2026-10-21: Vercel builds for #3748, #3763, #3765 and #3769 failed on Google Fonts downloads."
+    "file": "app/(main)/admin/business-seeder/actions.ts",
+    "ref": "Seeders analysis 2026-10-21, risk 2."
   },
-  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: five modules called next/font/google (app/layout.tsx, lib/theme/design-fonts/frequency.ts, components/sites/network-fonts.ts, components/sites/wildheart-fonts.ts, components/spaces/loyalty/cyberunicorn-console.tsx), so every build fetched CSS and woff2 files from fonts.googleapis.com and fonts.gstatic.com and a 404 or timeout there killed the deploy. All 23 families (about 1.2 MB, latin subset only, the same subset next/font/google used) are committed under app/fonts/<family>/ and loaded with next/font/local with the same CSS variables, display and preload settings. Variable faces ship their full weight range in one file, so a requested weight draws the same outlines. next/font/local computes the fallback font adjustment against Arial or Times New Roman instead of the face's own metrics, so a fallback frame may differ by a pixel or two before the face loads. SCAN-676's probe followed the Google call names, so it now follows each face's variable (fragment on that row).",
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: adoptSpaceMasterProfile gated only on structure:write, so any such staff member could adopt any Space by id and then re-seed it, around the admin-only intent of searchActiveSpaces (admin or janitor). It now takes the same web_role gate and returns a plain refusal otherwise.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/fonts-self-hosted.mjs",
-    "note": "Fails when any module imports next/font/google again or any next/font/local source points at a file that is not committed."
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/admin/business-seeder/actions.ts','utf8');const i=s.indexOf('export async function adoptSpaceMasterProfile');const body=s.slice(i,i+1400);if(!/webRole !== 'admin' && caller\\?\\.webRole !== 'janitor'/.test(body)){console.error('LIVE-1209: adoptSpaceMasterProfile has no admin or janitor gate');process.exit(1)}\"",
+    "note": "Fails when adopt loses its platform-admin gate."
   },
   "closed": "2026-10-21",
   "wave": "W7"

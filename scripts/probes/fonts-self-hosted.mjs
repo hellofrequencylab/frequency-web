@@ -1,4 +1,4 @@
-// LIVE-1209: no build depends on a Google Fonts download. Every face is a committed file read by
+// LIVE-1211: no build depends on a Google Fonts download. Every face is a committed file read by
 // next/font/local, so a Google or gstatic outage cannot fail a deploy (DEPLOY-SAFETY rule 9).
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
