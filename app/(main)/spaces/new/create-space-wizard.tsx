@@ -57,6 +57,20 @@ const INTENT_ICON: Record<string, FqIconName> = {
   donations: 'giveback',
 }
 
+/** The kit's heading lockup: Unbounded, with the last word in Instrument Serif italic. */
+function lockup(title: string) {
+  const i = title.lastIndexOf(' ')
+  if (i < 0) return title
+  const last = title.slice(i + 1).replace(/[?.!]+$/, '')
+  const tail = title.slice(i + 1 + last.length)
+  return (
+    <>
+      {title.slice(0, i)} <span className="serif">{last}</span>
+      {tail}
+    </>
+  )
+}
+
 export function CreateSpaceWizard({
   choices,
   initialChoiceId,
@@ -132,10 +146,18 @@ export function CreateSpaceWizard({
   const nextDisabled = (step.key === 'model' && !choice) || (step.key === 'identity' && !identityOk)
 
   return (
-    <SparkShell
+    <div className="relative">
+      {/* Kit design elements: a soft pastel wash behind the card and the glowing orb. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-72 opacity-80 blur-2xl"
+        style={{ background: 'var(--fq-pa-soft)', maskImage: 'radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%)' }}
+      />
+      <span aria-hidden className="orb pointer-events-none absolute right-6 top-14 sm:right-2" />
+      <SparkShell
       eyebrow="New Space"
       headingLevel={2}
-      title={step.title}
+      title={lockup(step.title)}
       description={step.desc}
       step={index + 1}
       totalSteps={STEPS.length}
@@ -191,7 +213,7 @@ export function CreateSpaceWizard({
               )
             })}
           </div>
-          {choice && <p className="text-body-sm text-muted">{choice.hint}</p>}
+          {choice && <p className="why">{choice.hint}</p>}
         </div>
       )}
 
@@ -228,19 +250,19 @@ export function CreateSpaceWizard({
 
       {step.key === 'start' && (
         <div className="space-y-5">
-          <dl className="divide-y divide-border rounded-card border border-border bg-surface text-body-sm">
+          <dl className="card divide-y divide-border">
             {[
               ['Space', name.trim() || 'Not named yet'],
               ['Handle', `/spaces/${slug}`],
-              ['You want to', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
+              ['Goals', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
               ['Tool setup', choice ? `${choice.label}: ${choice.hint}` : ''],
               ['Starting tools', (choice && presetLabels[choice.id]) || 'Every tool on'],
               ['Plan', plan === 'free' ? 'Free, upgrade any time' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
-              ['Who can find it', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
+              ['Visibility', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
-                <dt className="text-muted">{k}</dt>
-                <dd className="text-right font-medium text-text">{v}</dd>
+                <dt className="k self-center">{k}</dt>
+                <dd className="meta text-right font-medium text-text">{v}</dd>
               </div>
             ))}
           </dl>
@@ -258,6 +280,7 @@ export function CreateSpaceWizard({
           )}
         </div>
       )}
-    </SparkShell>
+      </SparkShell>
+    </div>
   )
 }

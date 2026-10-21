@@ -57,7 +57,7 @@ export function setupFinishFor(slug: string, plan: string | null | undefined, fi
   return planWantsBilling(plan) ? `/spaces/${slug}/settings/billing?plan=${parsePlanHint(plan ?? undefined)}` : finish
 }
 
-type CreateWizardStepKey = 'plan' | 'model' | 'identity' | 'start'
+type CreateWizardStepKey = 'intents' | 'model' | 'identity' | 'start'
 
 interface CreateWizardStep {
   key: CreateWizardStepKey
