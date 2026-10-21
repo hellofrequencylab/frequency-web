@@ -41,7 +41,7 @@ import { useReportWizardDraft } from '../wizard-guard'
 export interface SparkShellProps {
   /** The thing being made, shown as the eyebrow ("New Event"). */
   eyebrow: string
-  title: string
+  title: ReactNode
   /**
    * The heading level for `title`. Defaults to 1 for a standalone Spark that owns its page. Pass 2
    * when the Spark is mounted INSIDE a template that already rendered an h1 (an AdminTemplate page,

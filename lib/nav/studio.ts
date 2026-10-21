@@ -240,7 +240,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   // ═══════════════ GROWTH ═══════════════
   // §5b: Entry points · QR · Referrals · Applications · Onboarding · Campaigns · Funnels ·
   // Automations · CRM (Roster · Intelligence · Pipeline · Segments)
-  { id: 'entry-points', href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', icon: 'QrCode', min: 'host', staffDomain: 'marketing',
+  { id: 'entry-points', href: '/admin/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', icon: 'QrCode', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'Entry points', worldOrder: 0 },
   // CONFLICT (QR Studio): ADMIN_NAV gated 'admin'+qr; ADMIN_GROUPS gated 'host'+qr.
   // STRICTER = 'admin' (fewer viewers). Resolved to 'admin' + staffDomain 'qr'.

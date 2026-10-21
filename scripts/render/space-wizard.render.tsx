@@ -1,7 +1,6 @@
 // FIXTURE RENDER: the Space Creation Wizard at one step, written to $RENDER_OUT/space-wizard-<step>.html.
-// RENDER_STEP is 0..3. See contacts.render.tsx for the run steps. The wizard's first eight useState
-// calls are its own (plan, choice, name, slug, slugTouched, visibility, heardAbout, step), so the mock
-// seeds those and leaves every other hook alone.
+// RENDER_STEP is 0..3. See contacts.render.tsx for the run steps. The wizard's first nine useState
+// calls are its own (see the order below), so the mock seeds those and leaves every other hook alone.
 import { createElement } from 'react'
 import { prerenderToNodeStream } from 'react-dom/static'
 import { writeFileSync } from 'node:fs'
@@ -11,15 +10,17 @@ const H = vi.hoisted(() => ({ step: Number(process.env.RENDER_STEP ?? 0), plan: 
 const { step, plan } = H
 vi.mock('react', async (orig) => {
   const real = (await orig()) as typeof import('react')
-  const seed = [H.plan, undefined, 'River Yoga', 'river-yoga']
-  return {
+    return {
     ...real,
     default: real,
     useState: (init: unknown) => {
       H.calls += 1
       const calls = H.calls
-      if (calls === 8) return [H.step, () => {}]
-      if (calls <= 4 && step >= 2 && seed[calls - 1] !== undefined && calls >= 3) return [seed[calls - 1], () => {}]
+      // order: intents, choiceId, choiceTouched, name, slug, slugTouched, visibility, heardAbout, step
+      if (calls === 9) return [H.step, () => {}]
+      if (calls === 1) return [['bookings', 'events'], () => {}]
+      if (calls === 4 && H.step >= 2) return ['River Yoga', () => {}]
+      if (calls === 5 && H.step >= 2) return ['river-yoga', () => {}]
       return real.useState(init as never)
     },
   }

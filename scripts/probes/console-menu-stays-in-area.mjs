@@ -9,7 +9,13 @@ const bad = []
 
 const wrapsAdmin = (p) => /FrequencyAdminConsole/.test(r(p))
 if (!wrapsAdmin('app/(main)/pages/layout.tsx')) bad.push('/pages (Pages, Funnels) is outside the operator console')
-if (!wrapsAdmin('app/(main)/entry-points/layout.tsx')) bad.push('/entry-points is outside the operator console')
+if (!/requireAdmin\('host', \{ staff: 'marketing' \}\)/.test(r('app/(main)/admin/entry-points/page.tsx'))) bad.push('Entry points has no door inside /admin')
+if (!/href: '\/admin\/entry-points'/.test(r('lib/nav/studio.ts'))) bad.push('the Entry points menu row still points at the member route')
+// The member shell steps aside on a console route (client side, so a layout alone cannot do it): every route a
+// console menu row opens must be in the rule, or the console renders nested inside the member shell.
+const rule = r('lib/nav/console-route.ts')
+if (!/pages\(\\\/\|\$\)/.test(rule)) bad.push('/pages is not a console route, so the console nests inside the member shell')
+for (const d of ['practices', 'journeys', 'loom', 'marketing', 'setup']) if (!new RegExp('[(|]' + d + '[|)]').test(rule)) bad.push(`/spaces/<slug>/${d} is not a console route`)
 for (const d of ['practices', 'journeys', 'loom', 'marketing', 'setup']) {
   if (!/FrequencySpaceConsole/.test(r(`app/(main)/spaces/[slug]/${d}/layout.tsx`))) bad.push(`/spaces/<slug>/${d} is outside the Space console`)
 }

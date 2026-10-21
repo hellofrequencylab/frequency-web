@@ -1,31 +1,34 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check } from 'lucide-react'
 import { SparkShell } from '@/components/studio/spark'
 import { Select } from '@/components/ui/select'
+import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { isError } from '@/lib/action-result'
 import { isSafeSlug } from '@/lib/theme/validate'
-import { cn, slugify as slugifyShared } from '@/lib/utils'
+import { slugify as slugifyShared } from '@/lib/utils'
 import { createSpace } from '@/lib/spaces/provision'
 import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
 import {
-  WIZARD_PLANS,
+  WIZARD_INTENTS,
   WIZARD_PLAN_COPY,
   choiceTypeForPlan,
   createWizardSteps,
+  suggestModeForIntents,
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
-import { Field, TextField, VisibilityField } from '@/components/spaces/space-form'
+import { Field, TextField } from '@/components/spaces/space-form'
 
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
-// (docs/STUDIO.md): Plan, What you run, Name it, Ready. The steps are read off the Space manifest by
+// (docs/STUDIO.md): What you want to do, Tool setup, Name it, Ready. The steps are read off the Space manifest by
 // lib/spaces/create-wizard.ts, and the last step hands off to the setup walk (/spaces/<slug>/setup),
 // which seeds the story, look, contact details and offerings. The server re-validates everything;
 // this mirrors the checks for fast, inline feedback only.
 //
-// The plan is a HINT from /pricing (`?plan=`): a Space is always born free, and a paid hint only
-// decides that the setup walk ends on the Space's billing page (kept as preferences.planIntent).
+// The first step is a MULTI-SELECT of what the owner wants to do, never a niche: it suggests the tool
+// setup and is recorded first-party only (createSpace). The plan is a HINT from /pricing (`?plan=`): a
+// Space is always born free, and a paid hint only decides that the setup walk ends on the Space's billing
+// page (kept as preferences.planIntent).
 
 /** One "what do you run?" choice (mirrors lib/spaces/modes.ts ModeChoice). */
 export interface SpaceModeChoice {
@@ -42,23 +45,29 @@ function slugify(name: string): string {
   return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
 }
 
-function Option({ active, onClick, title, hint }: { active: boolean; onClick: () => void; title: string; hint: string }) {
+/** The icon each pick wears, from the design system's sprite. */
+const INTENT_ICON: Record<string, FqIconName> = {
+  bookings: 'clock',
+  classes: 'membership',
+  programs: 'program',
+  events: 'event',
+  products: 'tag',
+  community: 'circle',
+  email: 'message',
+  donations: 'giveback',
+}
+
+/** The kit's heading lockup: Unbounded, with the last word in Instrument Serif italic. */
+function lockup(title: string) {
+  const i = title.lastIndexOf(' ')
+  if (i < 0) return title
+  const last = title.slice(i + 1).replace(/[?.!]+$/, '')
+  const tail = title.slice(i + 1 + last.length)
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'flex items-start justify-between gap-3 rounded-control border px-3 py-3 text-left transition-colors',
-        active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
-      )}
-    >
-      <span>
-        <span className="block text-body-sm font-semibold text-text">{title}</span>
-        <span className="mt-0.5 block text-meta text-muted">{hint}</span>
-      </span>
-      {active && <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />}
-    </button>
+    <>
+      {title.slice(0, i)} <span className="serif">{last}</span>
+      {tail}
+    </>
   )
 }
 
@@ -81,8 +90,13 @@ export function CreateSpaceWizard({
   // A nonprofit plan points at the nonprofit Mode unless a funnel already chose one.
   const planType = choiceTypeForPlan(initialPlan)
   const planChoice = planType ? choices.find((c) => c.type === planType)?.id : undefined
-  const [plan, setPlan] = useState<WizardPlan>(initialPlan)
-  const [choiceId, setChoiceId] = useState(initialChoiceId ?? planChoice ?? choices[0]?.id ?? '')
+  const plan = initialPlan
+  const [intents, setIntents] = useState<string[]>([])
+  // No niche is assumed: the default is the general service setup unless a funnel or the nonprofit plan chose.
+  const [choiceId, setChoiceId] = useState(
+    initialChoiceId ?? planChoice ?? choices.find((c) => c.id === 'business:service')?.id ?? choices[0]?.id ?? '',
+  )
+  const [choiceTouched, setChoiceTouched] = useState(false)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
@@ -93,7 +107,13 @@ export function CreateSpaceWizard({
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
-  const choice = choices.find((c) => c.id === choiceId) ?? choices[0]
+  const suggested = suggestModeForIntents(intents, choices.map((c) => c.id))
+  // Until the owner picks a setup by hand, the setup follows the picks.
+  const activeChoiceId = !choiceTouched && !initialChoiceId && suggested ? suggested : choiceId
+  // Two setups can share a name (Coach); only those wear their hint so every chip reads differently.
+  const labelCounts: Record<string, number> = {}
+  for (const c of choices) labelCounts[c.label] = (labelCounts[c.label] ?? 0) + 1
+  const choice = choices.find((c) => c.id === activeChoiceId) ?? choices[0]
   const step = STEPS[index]
   const slugValid = slug === '' || isSafeSlug(slug)
   const identityOk = name.trim().length > 0 && isSafeSlug(slug)
@@ -115,6 +135,7 @@ export function CreateSpaceWizard({
         visibility,
         heardAbout: heardAbout || null,
         plan,
+        intents,
       })
       // createSpace redirects on success, so we only reach here on a returned error.
       if (result && isError(result)) setError(result.error)
@@ -125,14 +146,23 @@ export function CreateSpaceWizard({
   const nextDisabled = (step.key === 'model' && !choice) || (step.key === 'identity' && !identityOk)
 
   return (
-    <SparkShell
+    <div className="relative">
+      {/* Kit design elements: a soft pastel wash behind the card and the glowing orb. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-72 opacity-80 blur-2xl"
+        // token-ok: a mask only reads the alpha channel, so any opaque colour works; it paints nothing.
+        style={{ background: 'var(--fq-pa-soft)', maskImage: 'radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%)' }}
+      />
+      <span aria-hidden className="orb pointer-events-none absolute right-6 top-14 sm:right-2" />
+      <SparkShell
       eyebrow="New Space"
       headingLevel={2}
-      title={step.title}
+      title={lockup(step.title)}
       description={step.desc}
       step={index + 1}
       totalSteps={STEPS.length}
-      stepLabel={step.key === 'plan' ? 'Plan' : step.key === 'model' ? 'Model' : step.key === 'identity' ? 'Name' : 'Start'}
+      stepLabel={step.key === 'intents' ? 'Goals' : step.key === 'model' ? 'Setup' : step.key === 'identity' ? 'Name' : 'Start'}
       onBack={index > 0 ? () => setIndex(index - 1) : undefined}
       onNext={last ? submit : () => setIndex(index + 1)}
       nextLabel={last ? 'Create my Space' : 'Continue'}
@@ -141,19 +171,50 @@ export function CreateSpaceWizard({
       error={error}
       draftScopeKey={null}
     >
-      {step.key === 'plan' && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {WIZARD_PLANS.map((p) => (
-            <Option key={p} active={plan === p} onClick={() => setPlan(p)} title={WIZARD_PLAN_COPY[p].label} hint={WIZARD_PLAN_COPY[p].hint} />
-          ))}
+      {/* The kit's `.chip` / `.chip.on` pills (members kit): small, a selected one is solid ink. */}
+      {step.key === 'intents' && (
+        <div className="chips flex flex-wrap gap-2" role="group" aria-label="What you want to do here">
+          {WIZARD_INTENTS.map((i) => {
+            const on = intents.includes(i.id)
+            return (
+              <button
+                key={i.id}
+                type="button"
+                className={on ? 'chip on' : 'chip'}
+                aria-pressed={on}
+                title={i.hint}
+                onClick={() => setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])}
+              >
+                <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={16} />
+                {i.label}
+              </button>
+            )
+          })}
         </div>
       )}
 
       {step.key === 'model' && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {choices.map((c) => (
-            <Option key={c.id} active={choiceId === c.id} onClick={() => setChoiceId(c.id)} title={c.label} hint={c.hint} />
-          ))}
+        <div className="space-y-3">
+          <div className="chips flex flex-wrap gap-2" role="group" aria-label="Tool setup">
+            {choices.map((c) => {
+              const on = activeChoiceId === c.id
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={on ? 'chip on' : 'chip'}
+                  aria-pressed={on}
+                  onClick={() => {
+                    setChoiceTouched(true)
+                    setChoiceId(c.id)
+                  }}
+                >
+                  {labelCounts[c.label] > 1 ? `${c.label}: ${c.hint}` : c.label}
+                </button>
+              )
+            })}
+          </div>
+          {choice && <p className="why">{choice.hint}</p>}
         </div>
       )}
 
@@ -184,24 +245,50 @@ export function CreateSpaceWizard({
             />
             {!slugValid && <p className="mt-1 text-meta font-medium text-danger">Use lowercase letters, numbers, and hyphens only.</p>}
           </div>
-          <VisibilityField value={visibility} onChange={setVisibility} />
+          <Field id="visibility" label="Who can find it">
+            <div className="chips flex flex-wrap gap-2" role="group" aria-label="Who can find it">
+              {(
+                [
+                  ['network', 'Listed in the directory', 'globe'],
+                  ['private', 'Private', 'shield'],
+                ] as const
+              ).map(([id, label, icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={visibility === id ? 'chip on' : 'chip'}
+                  aria-pressed={visibility === id}
+                  onClick={() => setVisibility(id)}
+                >
+                  <FqIcon name={icon} size={16} />
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="why mt-2">
+              {visibility === 'network'
+                ? 'Anyone can find it in the Spaces directory.'
+                : 'Hidden from the directory. Only you and your members can open it.'}
+            </p>
+          </Field>
         </div>
       )}
 
       {step.key === 'start' && (
         <div className="space-y-5">
-          <dl className="divide-y divide-border rounded-card border border-border bg-surface text-body-sm">
+          <dl className="card divide-y divide-border">
             {[
               ['Space', name.trim() || 'Not named yet'],
               ['Handle', `/spaces/${slug}`],
-              ['What you run', choice ? `${choice.label}: ${choice.hint}` : ''],
+              ['Goals', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
+              ['Tool setup', choice ? `${choice.label}: ${choice.hint}` : ''],
               ['Starting tools', (choice && presetLabels[choice.id]) || 'Every tool on'],
-              ['Plan', plan === 'free' ? 'Free' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
-              ['Who can find it', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
+              ['Plan', plan === 'free' ? 'Free, upgrade any time' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
+              ['Visibility', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
-                <dt className="text-muted">{k}</dt>
-                <dd className="text-right font-medium text-text">{v}</dd>
+                <dt className="k self-center">{k}</dt>
+                <dd className="meta text-right font-medium text-text">{v}</dd>
               </div>
             ))}
           </dl>
@@ -219,6 +306,7 @@ export function CreateSpaceWizard({
           )}
         </div>
       )}
-    </SparkShell>
+      </SparkShell>
+    </div>
   )
 }
