@@ -9,12 +9,10 @@ import { spaceBirthConfig, finishSpaceBirth } from '@/lib/spaces/provision-core'
 import { DEFAULT_SPACE_SKIN, isProvisionableType } from '@/lib/spaces/profile-config'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
-import { ownedSubscription } from './extra-space-billing'
-import { isNetworkPlan } from './member-spaces'
 import { clientSiteEntitlements } from './client-sites'
 import { mintSpaceClaimToken } from '@/lib/spaces/claim'
 import { BADGE_REMOVAL_ENTITLEMENT } from '@/lib/sites/site-badge'
-import { syncClientSiteBilling, setClientSiteBadgeRemoval } from './client-site-billing'
+import { canManageClientSites, syncClientSiteBilling, setClientSiteBadgeRemoval } from './client-site-billing'
 
 // CREATE A CLIENT WEBSITE (ADR-1816). The Network's owner stands up a Business-level Space for one of their
 // people. It is born the way a member-created Space is (the shared birth steps), owned by the Network's
@@ -31,8 +29,7 @@ export async function createClientSite(networkId: string, input: { name: string;
   if (!isProvisionableType(type)) return fail('Pick a Space type from the list.')
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to add a client site.')
-  const owned = await ownedSubscription(networkId)
-  if (!owned || !isNetworkPlan(owned.plan) || owned.ownerId !== profileId) return fail('Only the owner of a subscribed Network can add client sites.')
+  if (!(await canManageClientSites(networkId))) return fail('Only the owner of a subscribed Network can add client sites.')
 
   const db = createAdminClient()
   const taken = await db.from('spaces').select('id').eq('slug', slug).maybeSingle()
@@ -85,8 +82,7 @@ export async function toggleClientSiteBadge(networkId: string, siteId: string, o
 export async function getClientSiteHandoffLink(networkId: string, siteId: string): Promise<ActionResult<{ path: string }>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to hand off a site.')
-  const owned = await ownedSubscription(networkId)
-  if (!owned || !isNetworkPlan(owned.plan) || owned.ownerId !== profileId) return fail('Only the owner of a subscribed Network can hand off a site.')
+  if (!(await canManageClientSites(networkId))) return fail('Only the owner of a subscribed Network can hand off a site.')
   const site = await createAdminClient().from('spaces').select('id, owner_profile_id')
     .eq('id', siteId).eq('reseller_network_id' as never, networkId).eq('status', 'active').maybeSingle()
   if (site.error || !site.data) return fail('We could not find that client site.')
@@ -104,8 +100,7 @@ export async function getClientSiteHandoffLink(networkId: string, siteId: string
 export async function removeClientSite(networkId: string, siteId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to remove a client site.')
-  const owned = await ownedSubscription(networkId)
-  if (!owned || !isNetworkPlan(owned.plan) || owned.ownerId !== profileId) return fail('Only the owner of a subscribed Network can remove a client site.')
+  if (!(await canManageClientSites(networkId))) return fail('Only the owner of a subscribed Network can remove a client site.')
   const db = createAdminClient()
   const found = await db.from('spaces').select('id, type, plan, entitlements, slug')
     .eq('id', siteId).eq('reseller_network_id' as never, networkId).eq('status', 'active').maybeSingle()

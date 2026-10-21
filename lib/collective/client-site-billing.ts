@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { stripe } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
+import { activeAgreementForSpace } from '@/lib/billing/manual-agreements'
 import { resolveStripePriceId } from '@/lib/billing/pricing-prices'
 import { catalogPriceKey, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import { reconciledItemsFromSubscription } from '@/lib/billing/space-subscription-items'
@@ -55,12 +57,33 @@ async function liveClientSites(networkId: string): Promise<{ sites: number; unbr
   return { sites: rows.length, unbranded: rows.filter((r) => spaceHasEntitlement({ entitlements: r.entitlements }, BADGE_REMOVAL_ENTITLEMENT)).length }
 }
 
+/** A Network Frequency set up by hand: a Network plan with no subscription behind it (the admin Plan panel is the
+ *  only way to get one, since a cancelled subscription drops the plan to free) and no recorded cash deal. The
+ *  caller must be its owner. Its client sites carry no charge, because there is no bill to put them on. */
+async function isCompedNetwork(networkId: string): Promise<boolean> {
+  const caller = await getMyProfileId()
+  if (!caller) return false
+  const result = await createAdminClient().from('spaces').select('owner_profile_id, plan, status, stripe_subscription_id').eq('id', networkId).maybeSingle()
+  const row = result.data as unknown as { owner_profile_id: string | null; plan: string; status: string; stripe_subscription_id: string | null } | null
+  if (result.error || !row || row.owner_profile_id !== caller || !isNetworkPlan(row.plan) || row.status !== 'active' || row.stripe_subscription_id) return false
+  return !(await activeAgreementForSpace(networkId))
+}
+
+/** May the signed-in person add, hand off, un-badge or remove this Network's client sites? The owner of a
+ *  subscribed Network (they are billed), or the owner of a hand-set Network (nothing is billed). */
+export async function canManageClientSites(networkId: string): Promise<{ billed: boolean } | null> {
+  const owned = await ownedSubscription(networkId)
+  if (owned && isNetworkPlan(owned.plan)) return { billed: true }
+  return (await isCompedNetwork(networkId)) ? { billed: false } : null
+}
+
 /** Make the Network's subscription carry exactly the client-site lines its live sites call for, prorated.
  *  Owner-gated on the Network (the same gate as extra chapters). A line whose Stripe price has not been created
  *  yet refuses the change, so a site is never added for free by accident. */
 export async function syncClientSiteBilling(networkId: string): Promise<ActionResult> {
   try {
     const owned = await ownedSubscription(networkId)
+    if (!owned && (await isCompedNetwork(networkId))) return ok()
     if (!owned || !stripe || !isNetworkPlan(owned.plan)) return fail('You must own an active, subscribed Network to bill client sites.')
     const live = await liveClientSites(networkId)
     if (!live) return fail('Could not count your client sites. Try again.')
@@ -100,8 +123,7 @@ export async function syncClientSiteBilling(networkId: string): Promise<ActionRe
  *  Network never gets the removal unpaid. Owner-gated on the Network, and the site must be one it resells. */
 export async function setClientSiteBadgeRemoval(networkId: string, siteId: string, on: boolean): Promise<ActionResult> {
   try {
-    const owned = await ownedSubscription(networkId)
-    if (!owned || !isNetworkPlan(owned.plan)) return fail('You must own an active, subscribed Network to change a client site.')
+    if (!(await canManageClientSites(networkId))) return fail('You must own an active, subscribed Network to change a client site.')
     const db = createAdminClient()
     const found = await db.from('spaces').select('id, entitlements').eq('id', siteId).eq('reseller_network_id' as never, networkId).maybeSingle()
     const site = found.data as unknown as { id: string; entitlements: unknown } | null
