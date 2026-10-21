@@ -410,21 +410,31 @@ describe('the Space Spark carries the preset field', () => {
 })
 
 describe('provisioning applies the preset through the one writer', () => {
-  // A SOURCE-SHAPE guard: the behaviour lives in a `use server` module this suite must not import,
-  // and the thing worth pinning is which seam it goes through. `setSpaceBundle` reads the two jsonb
-  // columns and hands them to the pure resolver above; a second writer here would be a second answer
-  // to "what is on".
-  const provision = fs.readFileSync(path.join(process.cwd(), 'lib/spaces/provision.ts'), 'utf8')
+  // A SOURCE-SHAPE guard: the behaviour lives in modules this suite must not import (the `use server`
+  // action and the shared birth steps it calls), and the thing worth pinning is which seam it goes
+  // through. `setSpaceBundle` reads the two jsonb columns and hands them to the pure resolver above; a
+  // second writer here would be a second answer to "what is on". The apply lives in the shared birth
+  // (lib/spaces/provision-core.ts, LIVE-1210), which createSpace and the Business Seeder both call, so
+  // the pins read that file and a separate pin asserts the action goes through it.
+  const provision = fs.readFileSync(path.join(process.cwd(), 'lib/spaces/provision-core.ts'), 'utf8')
+  const action = fs.readFileSync(path.join(process.cwd(), 'lib/spaces/provision.ts'), 'utf8')
+
+  it('createSpace takes its birth from the shared steps, not its own copy', () => {
+    expect(action).toMatch(/spaceBirthConfig\(type, \{ modeVariant: input\.modeVariant, preset: input\.preset \}\)/)
+    expect(action).toMatch(/finishSpaceBirth\(spaceId, type, birth\)/)
+    expect(action).not.toMatch(/setSpaceBundle/)
+  })
 
   it('resolves a preset and applies it with setSpaceBundle', () => {
     expect(provision).toMatch(/resolveSetupPreset/)
     expect(provision).toMatch(/setupPresetForMode/)
-    expect(provision).toMatch(/setSpaceBundle\(spaceId, setupPreset\.id\)/)
+    expect(provision).toMatch(/setSpaceBundle\(spaceId, config\.presetId\)/)
   })
 
   it('takes the preset as an input, so an explicit Spark choice beats the derived one', () => {
     expect(provision).toMatch(/preset\?: string \| null/)
-    expect(provision).toMatch(/resolveSetupPreset\(input\.preset\) \?\?/)
+    expect(action).toMatch(/preset\?: string \| null/)
+    expect(provision).toMatch(/resolveSetupPreset\(opts\.preset\) \?\?/)
   })
 
   it('notices when the apply fails instead of swallowing it (AGENTS deploy-safety rule)', () => {
@@ -435,5 +445,6 @@ describe('provisioning applies the preset through the one writer', () => {
     // Shaping and charging are two decisions on two surfaces (ADR-874). The writer cannot touch
     // money; this asserts the CALLER did not reach around it.
     expect(provision).not.toMatch(/setSpacePlan|setSpaceAddons/)
+    expect(action).not.toMatch(/setSpacePlan|setSpaceAddons/)
   })
 })
