@@ -21,9 +21,9 @@ import { SITE_URL } from '@/lib/site'
 // Frequency mark right. Bottom block: iridescent rule, title (Unbounded, at most three lines,
 // ellipsised), one serif-italic line, then the facts row with the host line left and the domain right.
 //
-// WITH AN IMAGE the entity's own picture runs full-bleed under a Stage scrim: violet-tinted at the top
+// WITH AN IMAGE the entity's own picture runs full-bleed under a Stage scrim: cool-tinted at the top
 // so the pill reads, near-solid Stage canvas at the bottom so the title clears any photograph. WITHOUT
-// ONE the card is the branded fallback: the Stage canvas with the aura (violet, magenta, aqua) and a
+// ONE the card is the branded fallback: the Stage canvas with the aura (sky, magenta, aqua) and a
 // pastel orb, so a card with nothing to show still looks like Frequency rather than a blank rectangle.
 //
 // ⚠️ SATORI RULES THIS FILE OBEYS: every div that holds more than one child is `display: flex`, every
@@ -94,7 +94,7 @@ function Fallback() {
         height: '100%',
         display: 'flex',
         backgroundColor: STAGE.canvas,
-        backgroundImage: `radial-gradient(circle at 82% 8%, rgba(139,92,255,0.55) 0%, rgba(139,92,255,0) 46%), radial-gradient(circle at 96% 62%, rgba(255,43,214,0.30) 0%, rgba(255,43,214,0) 42%), radial-gradient(circle at 58% 108%, rgba(61,242,255,0.26) 0%, rgba(61,242,255,0) 48%)`,
+        backgroundImage: `radial-gradient(circle at 82% 8%, rgba(163,212,255,0.40) 0%, rgba(139,92,255,0) 46%), radial-gradient(circle at 96% 62%, rgba(255,43,214,0.30) 0%, rgba(255,43,214,0) 42%), radial-gradient(circle at 58% 108%, rgba(61,242,255,0.26) 0%, rgba(61,242,255,0) 48%)`,
       }}
     >
       {/* The pastel orb: the design system's --pa-orb, large and quiet behind the title. */}
@@ -109,7 +109,7 @@ function Fallback() {
           display: 'flex',
           opacity: 0.9,
           backgroundImage: 'radial-gradient(circle at 35% 30%, #FFFFFF 0%, #E6CDF4 26%, #B3C6FF 58%, #8FE9FF 100%)',
-          boxShadow: '0 0 120px rgba(166,139,255,0.55)',
+          boxShadow: '0 0 120px rgba(163,212,255,0.45)',
         }}
       />
     </div>
@@ -121,7 +121,7 @@ function stageCardElement(input: StageCardInput, mark: string) {
   const line = input.line ? clampText(input.line, 110) : null
   const meta = input.meta ? clampText(input.meta, 70) : null
   const hasChip = !!(input.logo || input.initials)
-  const initialsColor = input.accent && /^#[0-9a-fA-F]{6}$/.test(input.accent) ? input.accent : STAGE.violet
+  const initialsColor = input.accent && /^#[0-9a-fA-F]{6}$/.test(input.accent) ? input.accent : STAGE.raised
 
   return (
     <div
@@ -165,7 +165,7 @@ function stageCardElement(input: StageCardInput, mark: string) {
             height: '100%',
             display: 'flex',
             backgroundImage:
-              'linear-gradient(180deg, rgba(10,6,18,0.58) 0%, rgba(10,6,18,0.44) 24%, rgba(10,6,18,0.78) 56%, rgba(10,6,18,0.94) 82%, rgba(10,6,18,0.98) 100%)',
+              'linear-gradient(180deg, rgba(7,11,20,0.58) 0%, rgba(7,11,20,0.44) 24%, rgba(7,11,20,0.78) 56%, rgba(7,11,20,0.94) 82%, rgba(7,11,20,0.98) 100%)',
           }}
         />
       )}
@@ -194,7 +194,7 @@ function stageCardElement(input: StageCardInput, mark: string) {
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               color: STAGE.text,
-              backgroundColor: 'rgba(30,18,50,0.72)',
+              backgroundColor: 'rgba(18,28,46,0.72)',
               border: `1px solid ${STAGE.border}`,
             }}
           >
