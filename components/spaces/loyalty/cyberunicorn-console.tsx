@@ -283,16 +283,25 @@ interface Done {
   note?: string
 }
 
+const READER_SILENT =
+  'The CyberUnicorn is fine, but its card reader is not answering it. Unplug the board for 10 seconds with only DIP 3 ON, then try again.'
+
 /** One plain instruction for each way a tag command can fail (firmware cardStatusText + error codes). */
 function tagProblem(e: unknown): string {
   if (!(e instanceof DeviceError)) return 'Something went wrong. Try again.'
-  const raw = e.message
+  // The board's own words: e.message is the generic text for the code, which hid a tap timeout behind
+  // "stopped answering".
+  const raw = e.detail
   switch (e.code) {
     case 'no_reader':
       return 'Turn DIP 3 ON so the card reader wakes up, then try again.'
+    case 'reader_stuck':
+      return READER_SILENT
     case 'busy':
       return 'The reader is busy. Go back to the main menu on the CyberUnicorn and try again.'
     case 'timeout':
+      // 0.1.3 counts how each poll ended: every one with "no ack" means the reader chip never took a command.
+      if (/[1-9]\d* no ack/.test(raw) && /\b0 no card\b/.test(raw) && /\b0 seen\b/.test(raw)) return READER_SILENT
       return /no card/i.test(raw)
         ? 'No card in 30 seconds. Hold it flat on the reader and try again.'
         : 'The CyberUnicorn stopped answering. Check the cable and connect again.'
@@ -315,7 +324,7 @@ function tagProblem(e: unknown): string {
 
 /** Errors where the card may or may not have been written: keep the mint rather than kill a real card. */
 function outcomeUnknown(e: unknown): boolean {
-  return e instanceof DeviceError && (e.code === 'disconnected' || (e.code === 'timeout' && !/no card/i.test(e.message)))
+  return e instanceof DeviceError && (e.code === 'disconnected' || (e.code === 'timeout' && !/no card/i.test(e.detail)))
 }
 
 type Target = { spaceId: string; spaceName: string }
