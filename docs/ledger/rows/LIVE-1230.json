@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1230",
+  "title": "Network page cards have headers, pills and readable titles",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/PAGE-FRAMEWORK.md",
+    "ref": "Owner 2026-10-21 in the project thread: 'Evolve all these cards and the page design. Give them headers, header pill tags and info. Make sure we can read the title'."
+  },
+  "detail": "The Network home (/spaces/the-group/network) drew chapter cards as a logo and a one-line title cut to 'The Group Enc...'. Chapter cards now lead with a cover (gradient fallback), city and event-count pills, the name without the repeated network prefix and wrapping to two lines, a tagline, and the next event. Up next cards get a cover, a date block, host chapter pills, a Going pill, going count and place.\n\nCards shipped",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/network-cards.mjs",
+    "note": "Fails when the page stops using the chapter and event cards, or EntityCard cannot wrap a title."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
