@@ -36,7 +36,7 @@ describe('the Frequency pricing body', () => {
     const html = render()
     expect(count(html, 'Every feature, every plan.</h2>')).toBe(1)
     expect(count(html, 'Before you ask.</h2>')).toBe(1)
-    expect(count(html, 'Join free. Host more with Crew.</h2>')).toBe(1)
+    expect(count(html, 'Join free. Do more with Crew.</h2>')).toBe(1)
     expect(count(html, '<table')).toBe(1)
   })
 
@@ -50,7 +50,7 @@ describe('the Frequency pricing body', () => {
   it('crowns one plan, and every Space plan and personal tier gets a card', () => {
     const html = render()
     expect(count(html, 'class="pb-flag"')).toBe(1)
-    expect(count(html, 'pop pb-plan')).toBe(spaceOfferings(input).length + memberOfferings(input).length + 1)
+    expect(count(html, 'pop pb-plan')).toBe(spaceOfferings(input).length + memberOfferings(input).length)
     // The featured column of the matrix is the featured card.
     expect(count(html, 'c is-feat"')).toBe(1)
   })

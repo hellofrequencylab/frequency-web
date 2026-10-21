@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1268",
+  "title": "Pricing page leads with Free and Crew, two cards wide, and Buying is a note",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/frequency/site/pages/pricing/frequency-pricing.tsx','utf8');const m=[];const p=s.indexOf('id=\\\"people\\\"'),q=s.indexOf('id=\\\"spaces\\\"');if(p<0||q<0||p>q)m.push('people section is not before the Space plans');if(/hue: 'var\\(--fq-x-magenta-neon\\)' }\\} \\/>/.test(s))m.push('Buying is a card again');if(!s.includes('Do more with Crew'))m.push('heading lost');if(m.length){console.error('LIVE-1268: '+m.join('; '));process.exit(1)}\""
+  },
+  "detail": "Owner 2026-10-21: put the Join free, Do more with Crew section before the Space plans, two cards wide (Member free, Crew), Crew described as for people who support the cause of community and host their own Circles and Spaces, and Buying as a note under the cards. OPEN QUESTION raised with the owner: opening a free Space does not require Crew in the product today (lib/pricing/member-leadership.ts, the pricing grid says Crew is not required), so the page does not say the free Space is part of Crew."
+}

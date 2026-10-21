@@ -176,7 +176,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
     // front of a number. An answer engine lifting this line otherwise reports the floor as the price.
     tagline: 'Back the community, host a little more.',
     forWho:
-      'Members who want to support Frequency and host more on their own: more Circles, Events and Journeys, and a monthly Boost. You contribute what you want, and every amount buys the same Crew.',
+      'Designed for people who want to support the cause of community and host their own Circles and Spaces: more Circles, Events and Journeys, and a monthly Boost. You contribute what you want, and every amount buys the same Crew.',
   },
   free: {
     tagline: 'Host free. The whole thing.',
