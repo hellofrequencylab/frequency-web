@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1240",
+  "title": "The CyberUnicorn console sends its device log to support when something goes wrong",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: 'I cannot use control C and the copy button didnt' work', then chose 'Yes, send it automatically' on 'Should the console send its device log to me when errors happen?'."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: the device log lived only in the browser tab, so diagnosing a failed placard write needed the owner to copy text out of the console mid-demo. Now every problem the console shows (and every Copy log press) calls reportConsoleLog (lib/devices/log-actions.ts): consoleStaffGate, at most 60 lines of 400 chars, signed /c/ links and ?s= signatures cut server side, written to the runtime log as one `[cu5k-log]` line. Nothing is stored in the database.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-log-report.mjs",
+    "note": "Fails when the action loses its staff gate or its redaction, stops writing [cu5k-log], or the console stops calling it on a problem or a Copy log press."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

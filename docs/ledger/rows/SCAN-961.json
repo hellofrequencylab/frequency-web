@@ -7,6 +7,6 @@
     }
   },
   "append": {
-    "detail": "2026-10-21 owner request (LIVE-1197): the pricing page's static tier graphics (TierLadder, FeeBars, and the pricing use of CollectiveOrNetwork) were replaced by the motion figures PlanLadderMotion and OwnersMotion from the pricing infographics handoff, and (LIVE-1224) the sales-fee figure gave way to the scroll-through PricingCalculator. The probe now pins the motion figures instead of the retired static ones; every other check (Network on the public ladder, the Network card, the Networks page, the help article) is unchanged. CollectiveOrNetwork still draws on /networks."
+    "detail": "2026-10-21 owner request (LIVE-1197): the pricing page's static tier graphics (TierLadder, FeeBars, and the pricing use of CollectiveOrNetwork) were replaced by the motion figures PlanLadderMotion and OwnersMotion from the pricing infographics handoff, and (LIVE-1240) the sales-fee figure gave way to the scroll-through PricingCalculator. The probe now pins the motion figures instead of the retired static ones; every other check (Network on the public ladder, the Network card, the Networks page, the help article) is unchanged. CollectiveOrNetwork still draws on /networks."
   }
 }

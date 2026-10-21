@@ -20,6 +20,7 @@ import type { BadgeRequestRow } from '@/lib/devices/badges'
 import { checkPlacardTap, dropSpaceTag, finishSpaceTag, readSpaceTags, startSpaceTag } from '@/lib/devices/tag-actions'
 import type { SpaceTagRow } from '@/lib/devices/space-tags'
 import { listRelayDevicesForConsole, setConsoleRelay } from '@/lib/devices/relay-actions'
+import { reportConsoleLog } from '@/lib/devices/log-actions'
 import type { ConsoleRelayDevice } from '@/lib/devices/relay-store'
 import type { FirmwareRelease } from '@/lib/devices/firmware'
 import { RpcClient, DeviceError } from '@/lib/device/client'
@@ -382,6 +383,17 @@ export function CyberUnicornConsole({
   const [tapStarted, setTapStarted] = useState<number | null>(null)
   const [now, setNow] = useState(0)
   const [log, setLog] = useState<string[]>([])
+  const logRef = useRef<string[]>([])
+  useEffect(() => {
+    logRef.current = log
+  }, [log])
+  // Every problem the console shows sends the device log to support (staff only, nothing stored), so
+  // nobody copies it out by hand. Wait a moment so the lines that led to it are in.
+  useEffect(() => {
+    if (!problem) return
+    const t = window.setTimeout(() => void reportConsoleLog(problem, logRef.current).catch(() => undefined), 1500)
+    return () => window.clearTimeout(t)
+  }, [problem])
   const [bootStarted, setBootStarted] = useState<number | null>(null)
   const [cardFor, setCardFor] = useState<string | null>(null)
   const [target, setTarget] = useState<Target | null>(initialSpace)
@@ -1747,7 +1759,7 @@ export function CyberUnicornConsole({
               <span>{log.length > 0 ? 'Device log' : ''}</span>
               <span className="text-[var(--cu-dim)]">{connected ? 'All systems fabulous.' : 'USB 115200  DTR/RTS low'}</span>
             </summary>
-            {log.length > 0 && <DeviceLog text={redactLog(log)} />}
+            {log.length > 0 && <DeviceLog text={redactLog(log)} onCopy={() => void reportConsoleLog('Copy log pressed', log).catch(() => undefined)} />}
           </details>
         </div>
       </RainbowFrame>
@@ -1844,9 +1856,10 @@ function redactLog(log: string[]): string {
 }
 
 /** Device log with a Copy button, so it can be pasted into a support thread in one tap. */
-function DeviceLog({ text }: { text: string }) {
+function DeviceLog({ text, onCopy }: { text: string; onCopy: () => void }) {
   const [copied, setCopied] = useState<'idle' | 'done' | 'failed'>('idle')
   const copy = async () => {
+    onCopy()
     let ok = false
     try {
       await navigator.clipboard.writeText(text)
@@ -1876,7 +1889,7 @@ function DeviceLog({ text }: { text: string }) {
         <CuButton tone="secondary" onClick={() => void copy()}>
           <span className="inline-flex items-center gap-2">
             <Copy className="h-4 w-4" aria-hidden />
-            {copied === 'done' ? 'Copied' : copied === 'failed' ? 'Copy blocked' : 'Copy log'}
+            {copied === 'done' ? 'Copied and sent' : copied === 'failed' ? 'Sent to support' : 'Copy log'}
           </span>
         </CuButton>
       </div>
