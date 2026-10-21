@@ -9,11 +9,11 @@
     "file": "lib/importer/materialize.ts",
     "ref": "Owner 2026-10-21: the seeders were standardized, the business one never was. Analysis at /mnt/project-files/seeders/seeders-analysis-2026-10-21.md."
   },
-  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: materialize.ts provisionSpace re-implemented the Space insert and skipped what createSpace does, so a seeded Space got no per-type tool defaults, no setup preset, no starter CRM stages, no Focus or directory kind, and a hard-coded skin. Both roads now call lib/spaces/provision-core.ts (spaceBirthConfig before the insert, finishSpaceBirth after the owner seat). Still open from the analysis, as separate rows when worked: the seeder's re-apply overwrites a claimed Space's edits, adoptSpaceMasterProfile has no admin check, the review board still hand-rolls its edit plumbing, and the seeder bypasses the governed create.",
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE RE-TESTED: materialize.ts provisionSpace re-implemented the Space insert and skipped what createSpace does, so a seeded Space got no per-type tool defaults, no setup preset, no starter CRM stages, no Focus or directory kind, and a hard-coded skin. The seeder now calls lib/spaces/provision-core.ts (spaceBirthConfig before the insert, finishSpaceBirth after the owner seat), which runs the same writers createSpace does. createSpace itself still carries its own copy because lib/pricing/bundles.test.ts pins the preset wiring to the source text of provision.ts; folding createSpace onto the core needs that pin moved, which needs the owner's words. Still open from the analysis, as separate rows when worked: the seeder's re-apply overwrites a claimed Space's edits, adoptSpaceMasterProfile has no admin check, the review board still hand-rolls its edit plumbing, and the seeder bypasses the governed create.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('lib/importer/materialize.ts','utf8');const p=fs.readFileSync('lib/spaces/provision.ts','utf8');const bad=[];for(const [n,s] of [['materialize',m],['provision',p]]){if(!s.includes('provision-core'))bad.push(n+' does not use the shared birth steps')}if(/skin: 'dawn'/.test(m))bad.push('seeder hard-codes the skin');if(bad.length){console.error('LIVE-1200: '+bad.join('; '));process.exit(1)}\"",
-    "note": "Fails when the seeder or createSpace stops sharing the birth steps."
+    "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('lib/importer/materialize.ts','utf8');const bad=[];if(!m.includes('provision-core'))bad.push('seeder does not use the shared birth steps');if(/skin: 'dawn'/.test(m))bad.push('seeder hard-codes the skin');if(bad.length){console.error('LIVE-1200: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the seeder stops sharing the birth steps."
   },
   "closed": "2026-10-21",
   "wave": "W7"
