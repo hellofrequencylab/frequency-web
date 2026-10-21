@@ -414,7 +414,7 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
       const ht = v.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
       setVisS(Math.max(120, Math.floor(Math.min(wd, ht))))
     }
-    const ro = new ResizeObserver(measure)
+    const ro = new ResizeObserver(() => measure())
     if (visRef.current) ro.observe(visRef.current)
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)

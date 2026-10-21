@@ -64,7 +64,7 @@ describe('the motion graphics', () => {
   it('reads every figure off the catalog and links the right doors', () => {
     const html = render()
     expect(count(html, 'class="pm-fig"')).toBe(1)
-    expect(html).toContain('$149 + $59 a chapter, 3 included')
+    expect(html).toContain('$149 + $59 a chapter, 3 to start, from $326')
     expect(html).toContain('$30,000 a year plus a $5,000 setup')
     expect(html).toContain('href="/join?next=%2Fspaces%2Fnew%3Fplan%3Dbusiness"')
     expect(html).not.toMatch(/class="btn[^"]*" href="\/spaces"/)

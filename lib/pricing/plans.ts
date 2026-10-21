@@ -104,7 +104,7 @@ export const NETWORK_PLAN = {
   chapterCents: 5_900,
   /** Chapters included in the starting price: baseCents + 3 x chapterCents. */
   includedChapters: 3,
-  /** From $326/mo for the included chapters. */
+  /** From $326/mo: the base plus the three chapters a Network starts with (ADR-1815). "Included" never means free. */
   monthlyCents: 14_900 + 3 * 5_900,
   /** Verified non profit rate: $119 plus $47 a chapter, about 20% under the Partner rate. */
   nonprofitBaseCents: 11_900,
