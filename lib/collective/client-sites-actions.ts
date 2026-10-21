@@ -12,6 +12,7 @@ import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { ownedSubscription } from './extra-space-billing'
 import { isNetworkPlan } from './member-spaces'
 import { clientSiteEntitlements } from './client-sites'
+import { mintSpaceClaimToken } from '@/lib/spaces/claim'
 import { syncClientSiteBilling, setClientSiteBadgeRemoval } from './client-site-billing'
 
 // CREATE A CLIENT WEBSITE (ADR-1816). The Network's owner stands up a Business-level Space for one of their
@@ -75,4 +76,21 @@ export async function toggleClientSiteBadge(networkId: string, siteId: string, o
   const parent = await createAdminClient().from('spaces').select('slug').eq('id', networkId).maybeSingle()
   if (parent.data?.slug) revalidatePath(`/spaces/${parent.data.slug}/settings/websites`)
   return ok()
+}
+
+/** The link a Network owner sends the person who will own a client site. Opening it signs them in and makes them
+ *  the site's owner (the same claim road a seeded Space uses); the site stays on the Network's bill and keeps
+ *  its link to the Network. Owner-gated, and only for a live site of this Network the owner still holds. */
+export async function getClientSiteHandoffLink(networkId: string, siteId: string): Promise<ActionResult<{ path: string }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to hand off a site.')
+  const owned = await ownedSubscription(networkId)
+  if (!owned || !isNetworkPlan(owned.plan) || owned.ownerId !== profileId) return fail('Only the owner of a subscribed Network can hand off a site.')
+  const site = await createAdminClient().from('spaces').select('id, owner_profile_id')
+    .eq('id', siteId).eq('reseller_network_id' as never, networkId).eq('status', 'active').maybeSingle()
+  if (site.error || !site.data) return fail('We could not find that client site.')
+  if (site.data.owner_profile_id !== profileId) return fail('That site already belongs to its owner.')
+  const token = await mintSpaceClaimToken(siteId)
+  if (!token) return fail('Could not make the link. Try again.')
+  return ok({ path: `/spaces/claim/${token}` })
 }

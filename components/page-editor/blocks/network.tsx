@@ -502,7 +502,13 @@ export function NetworkChaptersBlock({ p, metadata, now = new Date(), pad, vis }
       upcoming: ahead.map((e) => ({ id: e.id, title: e.title, when: `${relDay(dayOf(e.startsAt), today)} · ${timeRange(e)}`, href: eventHref(e, metadata) })), upcomingLabel: 'Coming up',
       primary: to ? { label: onFrequency ? str(p.visitLabel) || 'Visit on Frequency' : 'See the page', href: to } : null, note: onFrequency ? PREVIEW_NOTE : '',
     })
-    return { ...c, key: `ch${i}`, index: i, to }
+    const next = ahead[0]
+    const dup = chips.filter((o) => o.name === c.name).length > 1
+    return {
+      ...c, key: `ch${i}`, index: i, to, name: dup && c.on ? `${c.name} HQ` : c.name,
+      next: next ? `${relDay(dayOf(next.startsAt), today)} · ${timeRange(next)}` : c.when,
+      venue: next?.location ?? '', home: dup && c.on,
+    }
   })
   cards.forEach((c, i) => {
     const to = hrefOf(c.href, metadata)
@@ -522,10 +528,19 @@ export function NetworkChaptersBlock({ p, metadata, now = new Date(), pad, vis }
           {chipItems.map((c) => (
             <li key={c.key} className="nw-chip" data-on={c.on || undefined} style={{ ['--c' as string]: tone(c.index) }}>
               <div>
-                <span className="nw-chip-i"><Icon name={c.icon || 'pin'} /></span>
+                <span className="nw-chip-top">
+                  <span className="nw-chip-i"><Icon name={c.icon || 'pin'} /></span>
+                  <em>{c.home ? 'Home chapter' : 'Chapter'}</em>
+                </span>
                 <b>{c.name}</b>
-                {c.line && <span>{c.line}</span>}
-                {c.when && <small>{c.when}</small>}
+                {c.line && <span className="nw-chip-line">{c.line}</span>}
+                {(c.next || c.venue) && (
+                  <span className="nw-chip-facts">
+                    {c.next && <small><Icon name="clock" />{c.next}</small>}
+                    {c.venue && <small><Icon name="pin" />{c.venue}</small>}
+                  </span>
+                )}
+                <span className="nw-chip-go" aria-hidden>See chapter →</span>
               </div>
               <PreviewHit id={c.key} label={`Details: ${c.name}`} href={c.to} />
             </li>

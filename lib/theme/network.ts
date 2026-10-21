@@ -157,7 +157,7 @@ function schemeVars(s: NetworkScheme, id: NetworkSchemeId): string {
 /** The theme's own vocabulary that no scheme and no host theme changes: tags, rhythm, waves, grain, depth,
  *  literal tints, corners, motion and tracking. Shared by the site token block and the island block below. */
 const NETWORK_SHARED_VARS = `${NETWORK_TAGS.map((c, i) => `--nw-tag-${i + 1}:${c}`).join(';')};
---nw-sec-y:clamp(96px,11vw,168px);--nw-gutter:clamp(20px,4vw,48px);--nw-wave-fill:${WAVE_FILL};
+--nw-sec-y:clamp(72px,8vw,120px);--nw-gutter:clamp(20px,4vw,48px);--nw-wave-fill:${WAVE_FILL};
 --nw-grain:${GRAIN};--nw-mottle:${MOTTLE};--nw-wave:${NETWORK_WAVE};--nw-grain-opacity:.22;--nw-mottle-opacity:.07;
 --nw-lift-sm:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(48,40,30,.05),0 10px 26px -18px rgba(48,40,30,.2);
 --nw-lift-md:inset 0 1px 0 rgba(255,255,255,.7),0 2px 6px rgba(48,40,30,.05),0 24px 48px -26px rgba(48,40,30,.26);
