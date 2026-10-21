@@ -46,7 +46,12 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
   const noun = isNetworkPlan(parent.plan) ? { plural: 'Chapters', description: 'Chapters and their events, together.', empty: 'Chapters appear here when they are ready to welcome visitors.' }
     : { plural: 'Member Spaces', description: 'Member Spaces and their events, together.', empty: 'Member Spaces appear here when they are ready to welcome visitors.' }
   const management = chapters
-    ? <Link href={`/spaces/${slug}/settings/chapters`} className={buttonClasses('secondary', 'sm')}>Manage chapters</Link>
+    ? (
+      <>
+        <Link href={`/spaces/${slug}/settings/chapters`} className={buttonClasses('secondary', 'sm')}>Manage chapters</Link>
+        {caller?.id === parent.ownerProfileId && <Link href={`/spaces/${slug}/settings/websites`} className={buttonClasses('secondary', 'sm')}>Client websites</Link>}
+      </>
+    )
     : caller?.id === parent.ownerProfileId
       ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined
   return (

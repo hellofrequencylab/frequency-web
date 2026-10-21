@@ -831,6 +831,8 @@ lib/circles/templates-data.ts
 lib/circles/transfer.ts
 lib/collective/cross-listing-store.ts
 lib/collective/client-site-billing.ts
+lib/collective/client-sites-actions.ts
+lib/collective/client-sites-store.ts
 lib/collective/extra-space-billing.ts
 lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
