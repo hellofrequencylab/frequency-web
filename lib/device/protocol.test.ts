@@ -95,3 +95,23 @@ describe('redactLine', () => {
     expect(redactLine('write https://frequencylocal.com/c/abcdefghijklmnopqrstuv ok')).toBe('write https://frequencylocal.com/c/... ok')
   })
 })
+
+describe('RpcClient screen backlog', () => {
+  it('a canvas that subscribes after display start still gets the frame since the last clear', () => {
+    const { t } = fakeTransport()
+    const screen = new Emitter<Uint8Array>()
+    const client = new RpcClient({ ...t, onScreen: (l) => screen.on(l), setScreenStream() {} })
+    client.setScreenStream(true)
+    screen.emit(Uint8Array.of(0xaa, 5, 2, 0, 1)) // painted over by the clear below
+    screen.emit(Uint8Array.of(0xaa, 5, 0, 0, 0)) // fillScreen
+    screen.emit(Uint8Array.of(0xaa, 5, 2, 0, 2))
+    const seen: number[] = []
+    client.watchScreen((p) => seen.push(p[2]))
+    screen.emit(Uint8Array.of(0xaa, 5, 14, 0, 3))
+    expect(seen).toEqual([0, 2, 14])
+    client.setScreenStream(false)
+    const later: number[] = []
+    client.watchScreen((p) => later.push(p[2]))
+    expect(later).toEqual([])
+  })
+})
