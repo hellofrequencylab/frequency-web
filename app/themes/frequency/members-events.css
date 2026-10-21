@@ -286,7 +286,7 @@
 [data-design="frequency"] [data-kit="members"] .evf-btn-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 }
 @media (min-width:768px){
-[data-design="frequency"] [data-kit="members"] .evf-btn,[data-design="frequency"] [data-kit="members"] .evf-quick{display:none}
+[data-design="frequency"] [data-kit="members"] .evf-quick{display:none}
 [data-design="frequency"] [data-kit="members"] .ev-facets{margin-bottom:24px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -304,7 +304,7 @@
      member's week in one line, the .ay-pulse strip, then ONE BLOCK of full-width rows (SCAN-997: no long
      right column to push the library down). .ay-top is the .ay-spot spotlight (a wide cover beside the
      details) beside the .evm-tile map door at the same height; .ay-trio, three compact cards; the
-     .ay-ticker, four tabs over one horizontal strip of short live rows. On a phone every row stacks and
+     .ay-board, four tabs over one horizontal strip of short live rows. On a phone every row stacks and
      the trio and the ticker become swipe rows.
    · the map lightbox (.evm-dlg) and its .evm-tile door live in events-map.css (SCAN-998), so the right rail
      can open the same lightbox without loading this sheet.
@@ -356,7 +356,7 @@
 [data-design="frequency"] [data-kit="members"] .ay-sig{flex:none;height:24px;display:inline-flex;align-items:center;padding:0 9px;border-radius:var(--fq-radius-orb);font:600 13px/1 var(--fq-font-sans);background:var(--fq-pa-soft);color:var(--fq-text-strong);white-space:nowrap}
 [data-design="frequency"] [data-kit="members"] .ay-sig.live{background:color-mix(in oklab,var(--fq-live) 18%,transparent);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .ay-sig.warm{background:var(--fq-accent-soft);color:var(--fq-accent)}
-[data-design="frequency"] [data-kit="members"] .ay-ticker{display:flex;flex-direction:column;gap:12px;min-width:0;padding:14px 16px 16px}
+[data-design="frequency"] [data-kit="members"] .ay-board{display:flex;flex-direction:column;gap:12px;min-width:0;padding:14px 16px 16px}
 [data-design="frequency"] [data-kit="members"] .ay-tabs{align-self:flex-start;max-width:100%;display:flex;gap:4px;padding:3px;border-radius:var(--fq-radius-orb);background:var(--fqm-ink-4);overflow-x:auto;scrollbar-width:none}
 [data-design="frequency"] [data-kit="members"] .ay-tabs::-webkit-scrollbar{display:none}
 [data-design="frequency"] [data-kit="members"] .ay-tabs button{flex:none;height:36px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border:none;border-radius:var(--fq-radius-orb);background:none;font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer}
@@ -364,8 +364,8 @@
 [data-design="frequency"] [data-kit="members"] .ay-tabs button.on{background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 1px 2px var(--fqm-ink-6),inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .ay-tabs button:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:1px}
 [data-design="frequency"] [data-kit="members"] .ay-tabs .ev-n-tag{font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-faint)}
-[data-design="frequency"] [data-kit="members"] .ay-list{display:flex;gap:10px;margin:0;padding:0 0 2px;list-style:none;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:thin;overscroll-behavior-x:contain}
-[data-design="frequency"] [data-kit="members"] .ay-list li{flex:0 0 240px;min-width:0;scroll-snap-align:start}
+[data-design="frequency"] [data-kit="members"] .ay-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+[data-design="frequency"] [data-kit="members"] .ay-list li{min-width:0}
 [data-design="frequency"] [data-kit="members"] .ay-list a{height:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px 14px;border-radius:16px;background:var(--fqm-ink-4);transition:background var(--fq-dur-base) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="members"] .ay-list a:hover{background:var(--fqm-ink-8)}
 [data-design="frequency"] [data-kit="members"] .ay-list a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:1px}
@@ -381,7 +381,7 @@
 [data-design="frequency"] [data-kit="members"] .evx-seg button{height:var(--fq-hit-min);display:flex;align-items:center;gap:6px;padding:0 14px;border:none;border-radius:var(--fq-radius-orb);background:none;font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);cursor:pointer}
 [data-design="frequency"] [data-kit="members"] .evx-seg button .fq-icon{width:15px;height:15px}
 [data-design="frequency"] [data-kit="members"] .evx-seg button:hover{color:var(--fq-text-strong)}
-[data-design="frequency"] [data-kit="members"] .ev-libbar{position:sticky;top:calc(var(--fq-hdr) + 64px);z-index:15;background:var(--fq-bg-canvas)}
+[data-design="frequency"] [data-kit="members"] .ev-libbar{position:static;background:var(--fq-bg-canvas)}
 [data-design="frequency"] [data-kit="members"] .ev-libbar .ev-facets{margin-bottom:0;padding:10px 0 12px}
 [data-design="frequency"] [data-kit="members"] .ev-libbar .ev-bar{margin-bottom:0}
 [data-design="frequency"] [data-kit="members"] .ev-lib{padding-top:20px}
@@ -409,7 +409,7 @@
 [data-design="frequency"] [data-kit="members"] .ay-spot-acts .btn{flex:1 1 0;justify-content:center}
 [data-design="frequency"] [data-kit="members"] .ay-top>.evm-tile{min-height:140px}
 [data-design="frequency"] [data-kit="members"] .ay-top>.evm-tile .evm-tile-b{max-width:none;margin:0 136px 0 0;padding:10px 12px}
-[data-design="frequency"] [data-kit="members"] .ay-ticker{padding:12px}
+[data-design="frequency"] [data-kit="members"] .ay-board{padding:12px}
 [data-design="frequency"] [data-kit="members"] .ay-list{margin:0 -12px;padding:0 12px 2px;scroll-padding-inline:12px;scrollbar-width:none}
 [data-design="frequency"] [data-kit="members"] .ay-list::-webkit-scrollbar{display:none}
 [data-design="frequency"] [data-kit="members"] .ay-list li{flex-basis:72%}
@@ -465,5 +465,19 @@
 [data-design="frequency"] [data-kit="members"] .ay-card,[data-design="frequency"] [data-kit="members"] .ay-list a{transition:none}
 [data-design="frequency"] [data-kit="members"] .ay-card:hover,[data-design="frequency"] [data-kit="members"] .ay-card:focus-visible{transform:none}
 }
-[data-design="frequency"] [data-kit="site"] [data-kit="members"].fqm-public-view .ev-libbar{top:calc(var(--fq-site-nav-h,0px) + 64px)}
+}
+
+/* Events toolbar and Around you (thread: sticky filters). Only the one compact toolbar sticks; the category tabs and
+   facet bar scroll away with the page. Filters opens at every width (a centered panel from 768px). Around you is a
+   plain section: .ay-board used to be .ay-ticker, which members-community.css also styles as the Dispatches pill. */
+@media (min-width:768px){
+[data-design="frequency"] [data-kit="members"] .evf-sheet{inset:0;margin:auto;width:min(560px,92vw);height:fit-content;border-radius:24px}
+[data-design="frequency"] [data-kit="members"] .evf-sheet[open]{animation:none}
+[data-design="frequency"] [data-kit="members"] .evf-head::before{content:none}
+}
+[data-design="frequency"] [data-kit="members"] .ay-board{padding:0;background:none;box-shadow:none;border-radius:0}
+@media (max-width:767px){
+[data-design="frequency"] [data-kit="members"] .ay-list{display:flex;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin:0 -12px;padding:0 12px 2px}
+[data-design="frequency"] [data-kit="members"] .ay-list li{flex:0 0 72%;scroll-snap-align:start}
+[data-design="frequency"] [data-kit="members"] .ay-board{padding:0}
 }
