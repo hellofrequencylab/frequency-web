@@ -20,7 +20,7 @@ const BOARD = 'cyd-2432s028r'
 const APP_OFFSET = 0x10000
 /** The board's whole flash. No app partition can be larger. */
 const FLASH_BYTES = 4 * 1024 * 1024
-/** How long a release listing and a manifest are cached, in seconds. */
+/** How long a release's manifest (fixed once published) is cached, in seconds. */
 const REVALIDATE_S = 300
 
 /** The newest published firmware, as the staff console reads it. */
@@ -149,7 +149,9 @@ export class FirmwareError extends Error {
 async function listReleases(): Promise<unknown> {
   const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=20`, {
     headers: githubHeaders('application/vnd.github+json'),
-    next: { revalidate: REVALIDATE_S },
+    // Never cached: a cached list kept offering the last release for minutes after a new one was
+    // published (owner, 2026-10-21). One small call, staff-only, only when the Update tab opens.
+    cache: 'no-store',
   })
   if (!res.ok) throw new FirmwareError(`GitHub answered ${res.status} for the release list. Try again in a few minutes.`)
   return res.json()

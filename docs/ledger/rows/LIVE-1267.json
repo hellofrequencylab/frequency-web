@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1267",
+  "title": "The CyberUnicorn Update tab offers a new firmware release as soon as it is published",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/LOYALTY.md",
+    "ref": "Owner 2026-10-21 in the project thread: the Update tab offered CU5K 0.1.4 ten minutes after 0.1.5 was published."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. PREMISE: lib/devices/firmware.ts listReleases() fetched the GitHub release list with next.revalidate 300, a stale-while-revalidate cache, so the first visits after a release still got the old list and the owner was told 0.1.4 was newest. The list is now fetched with cache no-store (one small staff-only call when the Update tab opens). Manifests stay cached: a published release's manifest does not change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/cu5k-firmware-fresh.mjs",
+    "note": "Fails when the release list fetch is cached again."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}
