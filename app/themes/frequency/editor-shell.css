@@ -190,3 +190,45 @@
 [data-design="frequency"] [data-kit="editor"] .vera .chips button{height:44px}
 }
 }
+
+/* THE INSPECTOR AND LAYERS, REFINED (Daniel 2026-10-21: "blocky, the fonts are all off").
+   UNLAYERED ON PURPOSE. The shared field form (components/page-editor/mobile/field-form.tsx) is Tailwind
+   utilities, and utilities sit above `@layer components`, so every rule above lost to `text-body-sm`,
+   `px-4 py-4` and `min-h-[44px]`. Two causes, both fixed here and only here:
+   1. The editor root carries `data-website-theme`, which re-points --color-*, --font-body and the
+      website's --type-scale at the SITE, so the chrome wore the site's border colour, body face and
+      type scale. The chrome is the editor's: pin those aliases back to the Frequency scale on `.pe`.
+      The canvas is its own document and keeps the site.
+   2. The field form's label holds the name, the character count and the hint in one block, so the
+      count ran into the name. It is a two-column grid here: name left, count right, hint beneath.
+   Compact desktop density (lib/entity-blocks/density.ts): 13px labels and hints, 14px values, 36px
+   controls, 12px row padding. Touch keeps the 44px targets the block above restores. */
+[data-design="frequency"] [data-kit="editor"] .pe{
+  --color-text:var(--fq-text-strong);--color-text-muted:var(--fq-text-muted);--color-text-subtle:var(--fq-text-faint);
+  --color-border:var(--fq-border-hair);--color-border-strong:var(--fq-border-strong);
+  --color-surface:var(--fq-surface-card);--color-surface-elevated:var(--fq-surface-raised);
+  --color-primary:var(--fq-ink);--color-primary-hover:var(--fq-ink);--color-primary-strong:var(--fq-ink);--color-text-on-primary:var(--fq-surface-raised);
+  --font-body:var(--fq-font-sans);--font-display:var(--fq-font-display);--type-scale:1;
+  font-family:var(--fq-font-sans);
+}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field]>div{padding:var(--fq-space-4) 0;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field]:last-child>div{border-bottom:0}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] label{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;column-gap:var(--fq-space-3);margin:0 0 var(--fq-space-3);font:500 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] label>em{font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);font-style:normal;font-variant-numeric:tabular-nums;color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] label>span{grid-column:1/-1;display:block;margin:var(--fq-space-2) 0 0;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] :is(input:not([type=checkbox],[type=radio],[type=range],[type=color]),textarea,select){height:auto;min-height:36px;padding:var(--fq-space-3) 10px;border:0;border-radius:var(--fq-radius-s);background:var(--fq-surface-raised);box-shadow:inset 0 0 0 1px var(--fq-border-hair);font:400 var(--fq-text-body-s)/1.45 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] :is(input,textarea,select):hover{box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] :is(input,textarea,select):focus{background:var(--fq-surface-raised);box-shadow:0 0 0 2px var(--fq-focus-ring)}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] textarea{min-height:76px;resize:vertical}
+[data-design="frequency"] [data-kit="editor"] .fields [data-field] :is(button,li button){font:500 var(--fq-text-meta)/1.3 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="editor"] .rail .row{align-items:center;gap:var(--fq-space-3);padding:6px var(--fq-space-3);border-radius:var(--fq-radius-s)}
+[data-design="frequency"] [data-kit="editor"] .rail .row .t{display:block;min-width:0;flex:1;overflow:hidden;font:500 var(--fq-text-body-s)/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="editor"] .rail .row .t small{display:block;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="editor"] .rail .row .ic{width:28px;height:28px;flex:none;border-radius:var(--fq-radius-s)}
+[data-design="frequency"] [data-kit="editor"] .rail .row .meta{flex:none;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);font-variant-numeric:tabular-nums;color:var(--fq-text-faint)}
+
+/* Vera put away: the bar leaves the canvas and a small orb stays where it was (shell.tsx, putVeraAway). */
+[data-design="frequency"] [data-kit="editor"] .vera .bar .vera-hide{flex:none;width:28px;height:28px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .vera-orb{position:absolute;right:12px;bottom:12px;z-index:20;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);box-shadow:0 12px 28px -14px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="editor"] .vera-orb:hover{transform:translateY(-2px)}
+[data-design="frequency"] [data-kit="editor"] .vera-orb .orb{width:24px;height:24px;border-radius:50%;background:var(--fq-pa-orb)}

@@ -302,3 +302,27 @@ it('maps the Theme and Site tabs onto the real site settings', () => {
   expect(node.querySelector('.rail .tg')?.textContent).toContain('Custom domainNot set up')
   expect(node.querySelector('.rail [aria-label="Website address"]')?.getAttribute('value')).toBe('hearts.example')
 })
+
+it('puts Vera away, remembers it on this device, and brings it back with ⌘K or the orb', () => {
+  window.localStorage.removeItem('fq.editor.vera-hidden')
+  const { node, click } = mount()
+  expect(node.querySelector('.stage .vera')).toBeTruthy()
+  click('Hide Vera')
+  expect(node.querySelector('.stage .vera')).toBeNull()
+  expect(node.querySelector('.stage .vera-orb')).toBeTruthy()
+  expect(window.localStorage.getItem('fq.editor.vera-hidden')).toBe('1')
+  act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true })) })
+  expect(node.querySelector('.stage .vera')).toBeTruthy()
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Ask Vera')
+  expect(window.localStorage.getItem('fq.editor.vera-hidden')).toBe('0')
+  click('Hide Vera'); click('Show Vera')
+  expect(node.querySelector('.stage .vera')).toBeTruthy()
+})
+
+it('starts with Vera away when this device put it away last time', () => {
+  window.localStorage.setItem('fq.editor.vera-hidden', '1')
+  const { node } = mount()
+  expect(node.querySelector('.stage .vera')).toBeNull()
+  expect(node.querySelector('.stage .vera-orb')).toBeTruthy()
+  window.localStorage.removeItem('fq.editor.vera-hidden')
+})
