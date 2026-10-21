@@ -21,7 +21,7 @@ import { resolveSetupPreset, setupPresetForMode } from '@/lib/pricing/bundles'
 import { setSpaceBundle } from '@/lib/pricing/space-bundle'
 import { ensureSpaceStages } from '@/lib/crm/pipeline'
 
-export interface SpaceBirthConfig {
+interface SpaceBirthConfig {
   /** The Focus to store, or null for the type's default Focus. */
   modeVariant: string | null
   entitlements: Record<string, boolean>
