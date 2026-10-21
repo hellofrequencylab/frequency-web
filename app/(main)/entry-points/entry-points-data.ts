@@ -1,6 +1,4 @@
 import 'server-only'
-import { redirect } from 'next/navigation'
-import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMarketingTargets } from '@/lib/qr/marketing'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -12,13 +10,10 @@ import type { EntryCard } from './entry-points-client'
 
 // The reads behind the Entry points page, shared by the member route (/entry-points) and the operator
 // console's door to it (/admin/entry-points), so the two pages only differ in the shell around them.
-export async function loadEntryPoints(next: string) {
-  const me = await getCallerProfile()
-  if (!me) redirect(`/sign-in?next=${next}`)
-
+export async function loadEntryPoints(profileId: string) {
   const [entries, targets, templates] = await Promise.all([
-    listMyEntryPoints(me.id),
-    listMarketingTargets(me.id),
+    listMyEntryPoints(profileId),
+    listMarketingTargets(profileId),
     crewEntryTemplates(),
   ])
 
@@ -27,7 +22,7 @@ export async function loadEntryPoints(next: string) {
   const { count: signups } = await admin
     .from('profiles')
     .select('id', { count: 'exact', head: true })
-    .eq('referred_by_profile_id', me.id)
+    .eq('referred_by_profile_id', profileId)
 
   // Pre-render each QR (server) so the list paints instantly.
   const cards: EntryCard[] = entries.map((e) => ({

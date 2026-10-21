@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { getCallerProfile } from '@/lib/auth'
 import { Megaphone, QrCode, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { DashboardTemplate } from '@/components/templates/dashboard-template'
@@ -13,7 +15,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminEntryPoints() {
   await requireAdmin('host', { staff: 'marketing' })
-  const { cards, templates, destinationGroups, totalScans, signups } = await loadEntryPoints('/admin/entry-points')
+  const me = await getCallerProfile()
+  if (!me) redirect('/sign-in?next=/admin/entry-points')
+  const { cards, templates, destinationGroups, totalScans, signups } = await loadEntryPoints(me.id)
   return (
     <DashboardTemplate
       eyebrow="Entry points"

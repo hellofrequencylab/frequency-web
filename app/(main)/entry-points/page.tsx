@@ -8,6 +8,8 @@
 // people in is the act the whole growth model runs on, so it is never behind the paid
 // tier. Sign-in is the only gate; the server action agrees (./actions.ts).
 
+import { redirect } from 'next/navigation'
+import { getCallerProfile } from '@/lib/auth'
 import { Megaphone, QrCode, Users } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates/dashboard-template'
 import { StatCard } from '@/components/ui/stat-card'
@@ -17,7 +19,9 @@ import { EntryPointsManager } from './entry-points-client'
 export const dynamic = 'force-dynamic'
 
 export default async function EntryPointsPage() {
-  const { cards, templates, destinationGroups, totalScans, signups } = await loadEntryPoints('/entry-points')
+  const me = await getCallerProfile()
+  if (!me) redirect('/sign-in?next=/entry-points')
+  const { cards, templates, destinationGroups, totalScans, signups } = await loadEntryPoints(me.id)
   return (
     <DashboardTemplate
       eyebrow="Entry points"
