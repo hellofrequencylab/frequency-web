@@ -179,6 +179,8 @@ export function isHostedPath(pathname: string): boolean {
  *  answers through this function's own rewrite of a site host, so the cached site pages need no Host
  *  header check of their own (PROG-E10 phase 5, LIVE-784). */
 const SITE_ADMIN_SEGMENT = 'admin'
+const SITE_VISITOR_SEGMENT = '_s'
+const SITE_VISITOR_PATHS: ReadonlySet<string> = new Set(['enter', 'me', 'exit'])
 const SITE_ADMIN_PATHS: ReadonlySet<string> = new Set(['overview', 'calendar', 'editor', 'enter', 'session'])
 
 export function routeSiteHost(
@@ -209,6 +211,13 @@ export function routeSiteHost(
 
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}` }
+  // The visitor's sign-in on the website (LIVE-1207): `/_s/enter`, `/_s/me`, `/_s/exit`. The underscore keeps
+  // it from ever being a page slug an owner can name (a page slug starts with a letter or digit).
+  if (segments[0] === SITE_VISITOR_SEGMENT && segments.length === 2) {
+    return SITE_VISITOR_PATHS.has(segments[1])
+      ? { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}/visitor/${segments[1]}` }
+      : { kind: 'not-found' }
+  }
   // The website's admin pages (LIVE-864): /admin is the Executive Overview, /admin/<view> one of them, and
   // /admin/enter the handoff that lets a Space manager in (lib/sites/site-admin-pass.ts).
   if (segments[0] === SITE_ADMIN_SEGMENT && segments.length <= 2) {

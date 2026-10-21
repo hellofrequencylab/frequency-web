@@ -99,19 +99,22 @@ export function NetworkSearch({ items }: { items: SearchItem[] }) {
 
 interface Account { name: string; handle: string | null; avatarUrl: string | null }
 
-export function NetworkAccount({ endpoint, origin, slug, cartHref }: { endpoint: string; origin: string; slug: string; cartHref: string }) {
+/** The profile menu. Who is signed in comes from the site itself (/_s/me, the signed display cookie the login
+ *  handoff sets, lib/sites/site-visitor.ts): the cached page never reads a cookie, so the browser asks. Log in
+ *  goes through Frequency and returns here; every other link in the menu opens on Frequency. */
+export function NetworkAccount({ origin, slug, cartHref }: { origin: string; slug: string; cartHref: string }) {
   const [account, setAccount] = useState<Account | null>(null)
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(endpoint, { credentials: 'include', signal: controller.signal, headers: { Accept: 'application/json' } })
+    fetch('/_s/me', { credentials: 'same-origin', signal: controller.signal, headers: { Accept: 'application/json' } })
       .then((r) => (r.ok ? r.json() : null))
       .then((body: { account?: Account | null } | null) => { if (body?.account?.name) setAccount(body.account) })
       .catch(() => {})
     return () => controller.abort()
-  }, [endpoint])
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -122,13 +125,18 @@ export function NetworkAccount({ endpoint, origin, slug, cartHref }: { endpoint:
     return () => { window.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey) }
   }, [open])
 
-  const logIn = `${origin}/sign-in?next=${encodeURIComponent(`/spaces/${slug}`)}`
+  const logIn = `${origin}/auth/site-login?slug=${encodeURIComponent(slug)}&next=%2F`
+  // Come back to the page the person was on: the address is only known in the browser, so it is read on press.
+  const comeBack = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const here = /^\/(?:[a-z0-9][a-z0-9-]*)?$/.test(window.location.pathname) ? window.location.pathname : '/'
+    e.currentTarget.href = `${origin}/auth/site-login?slug=${encodeURIComponent(slug)}&next=${encodeURIComponent(here)}`
+  }
   const signUp = `${origin}/join`
   return (
     <div className="nw-acct" ref={box}>
       {!account && (
         <>
-          <a className="nw-acct-link" href={logIn}>Log in</a>
+          <a className="nw-acct-link" href={logIn} onClick={comeBack}>Log in</a>
           <a className="nw-acct-signup hs-btn hs-btn-primary" href={signUp}>Sign up</a>
         </>
       )}
@@ -147,12 +155,12 @@ export function NetworkAccount({ endpoint, origin, slug, cartHref }: { endpoint:
               <a role="menuitem" href={account.handle ? `${origin}/people/${account.handle}` : `${origin}/feed`}>Your profile</a>
               <a role="menuitem" href={`${origin}/orders`}>Orders</a>
               <a role="menuitem" href={`${origin}/settings`}>Settings</a>
-              <form method="post" action={`${origin}/auth/signout`}><button type="submit" role="menuitem">Sign out</button></form>
+              <form method="post" action="/_s/exit"><button type="submit" role="menuitem">Sign out</button></form>
               <small className="nw-acct-note">These open on Frequency.</small>
             </>
           ) : (
             <>
-              <a role="menuitem" href={logIn}>Log in</a>
+              <a role="menuitem" href={logIn} onClick={comeBack}>Log in</a>
               <a role="menuitem" href={signUp}>Sign up</a>
               <small className="nw-acct-note">Your account lives on Frequency.</small>
             </>
