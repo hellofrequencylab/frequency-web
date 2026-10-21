@@ -88,7 +88,7 @@ export function createWizardSteps(manifest: EntityManifest): CreateWizardStep[] 
 export const WIZARD_INTENTS = [
   { id: 'bookings', label: 'Take bookings', hint: '1:1 sessions and appointments', mode: 'business:appointments' },
   { id: 'classes', label: 'Run classes or memberships', hint: 'A studio, gym, or recurring group', mode: 'business:membership' },
-  { id: 'programs', label: 'Teach programs or courses', hint: 'Cohorts, courses, and journeys', mode: 'business:cohort' },
+  { id: 'programs', label: 'Teach programs or courses', hint: 'Courses and journeys you run', mode: 'business:cohort' },
   { id: 'events', label: 'Host events', hint: 'Workshops, gatherings, ticketed nights', mode: 'business:ticketed' },
   { id: 'products', label: 'Sell products', hint: 'A catalog and a storefront', mode: 'business:product' },
   { id: 'community', label: 'Build a community', hint: 'Circles for your people', mode: null },

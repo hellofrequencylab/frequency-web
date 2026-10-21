@@ -17,7 +17,7 @@ import {
   suggestModeForIntents,
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
-import { Field, TextField, VisibilityField } from '@/components/spaces/space-form'
+import { Field, TextField } from '@/components/spaces/space-form'
 
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
 // (docs/STUDIO.md): What you want to do, Tool setup, Name it, Ready. The steps are read off the Space manifest by
@@ -245,7 +245,32 @@ export function CreateSpaceWizard({
             />
             {!slugValid && <p className="mt-1 text-meta font-medium text-danger">Use lowercase letters, numbers, and hyphens only.</p>}
           </div>
-          <VisibilityField value={visibility} onChange={setVisibility} />
+          <Field id="visibility" label="Who can find it">
+            <div className="chips flex flex-wrap gap-2" role="group" aria-label="Who can find it">
+              {(
+                [
+                  ['network', 'Listed in the directory', 'globe'],
+                  ['private', 'Private', 'shield'],
+                ] as const
+              ).map(([id, label, icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={visibility === id ? 'chip on' : 'chip'}
+                  aria-pressed={visibility === id}
+                  onClick={() => setVisibility(id)}
+                >
+                  <FqIcon name={icon} size={16} />
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="why mt-2">
+              {visibility === 'network'
+                ? 'Anyone can find it in the Spaces directory.'
+                : 'Hidden from the directory. Only you and your members can open it.'}
+            </p>
+          </Field>
         </div>
       )}
 
