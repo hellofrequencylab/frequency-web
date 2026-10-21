@@ -1,6 +1,6 @@
 {
-  "id": "LIVE-1210",
-  "title": "A Network can hand a client website to its owner and see what it pays (LIVE-1210)",
+  "id": "LIVE-1212",
+  "title": "A Network can hand a client website to its owner and see what it pays (LIVE-1212)",
   "status": "done",
   "priority": "P2",
   "lane": "live",
@@ -12,7 +12,7 @@
   "detail": "FILED AND CLOSED 2026-10-21. On the Client websites page each site shows whether it runs on its free address, has its own domain live, or has a domain saved that does not reach it yet, and whether the Network owner still owns it or it was handed off. Hand off to owner makes a one-time link (the same claim road a seeded Space uses); the member opens it, signs in and becomes the owner, and the site keeps its link to the Network, so it stays on the Network's bill and keeps its badge setting. A client site has no subscription of its own, so no plan reconciler touches its entitlements after the hand-off. The page also lists the Network's monthly bill line by line (sites 1 to 10, 11 to 25, 26 and up, badge removal). NOT BUILT: removing a client site (which would lower the bill) has no control yet.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/collective/client-sites-actions.ts','utf8');const e=fs.readFileSync('app/(main)/spaces/[slug]/settings/websites/editor.tsx','utf8');const bad=[];if(!a.includes('getClientSiteHandoffLink')||!a.includes('mintSpaceClaimToken'))bad.push('no hand-off link');if(!e.includes('Hand off to owner'))bad.push('no hand-off control');if(!e.includes('What you pay Frequency'))bad.push('no bill summary');if(bad.length){console.error('LIVE-1210: '+bad.join('; '));process.exit(1)}\"",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/collective/client-sites-actions.ts','utf8');const e=fs.readFileSync('app/(main)/spaces/[slug]/settings/websites/editor.tsx','utf8');const bad=[];if(!a.includes('getClientSiteHandoffLink')||!a.includes('mintSpaceClaimToken'))bad.push('no hand-off link');if(!e.includes('Hand off to owner'))bad.push('no hand-off control');if(!e.includes('What you pay Frequency'))bad.push('no bill summary');if(bad.length){console.error('LIVE-1212: '+bad.join('; '));process.exit(1)}\"",
     "note": "Fails when the hand-off or the bill summary leaves the Client websites page."
   },
   "closed": "2026-10-21",
