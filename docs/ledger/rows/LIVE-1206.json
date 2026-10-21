@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1206",
+  "title": "The Group site: event and circle previews with RSVP, a contact page, account header, photo focus",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "closed": "2026-10-21",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const ok=[[fs.existsSync('components/sites/network-preview.tsx'),'preview dialog'],[fs.existsSync('components/sites/network-header-tools.tsx'),'header search and account'],[fs.existsSync('lib/sites/network-photo-focus.ts'),'photo focus'],[/NetworkContact/.test(fs.readFileSync('components/page-editor/blocks/network.tsx','utf8')),'contact block in the editor'],[/siteServesContactPage/.test(fs.readFileSync('lib/sites/house-theme.ts','utf8')),'contact page served for Network sites']].filter(([o])=>!o).map(([,m])=>m);if(ok.length){console.error('LIVE-1206: missing '+ok.join(', '));process.exit(1)}\""
+  },
+  "detail": "Owner ask 2026-10-21 (The Group website polish). Every event, circle and chapter opens a preview card with an RSVP or join door that finishes on Frequency; photo crops use a per-photo focus point plus an editor focus field; every Network block is a registered editor block (new Contact block with the form); a Contact page is served on every Network site and mailto links route to it; header is full width and opaque with a search palette (Cmd+K), Log in, Sign up, cart and profile menu. Caveats: no on-site cart exists (the cart icon goes to the shop section); signed-in state shows only on the Frequency subdomain."
+}

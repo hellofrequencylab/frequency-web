@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { filterNetworkEvents, networkDate, networkDayLabel, networkEventAvailability, networkMonthDays, networkMonthOffset } from '@/lib/sites/network-events'
 import { NetworkCountdown } from './network-countdown'
+import { usePreview } from './network-preview'
 
 export interface NetworkEventEntry {
   id: string
@@ -21,7 +22,7 @@ export interface NetworkEventEntry {
 }
 
 /** The server keeps event cards and visibility decisions; this island filters only those public rows. */
-export function NetworkEventsExplorer({ items, chapters, today, initialNow, max, allLabel, empty, moreHref, moreLabel }: {
+export function NetworkEventsExplorer({ items, chapters, today, initialNow, max, allLabel, empty, moreHref, moreLabel, upNextLabel = "I'm coming" }: {
   items: NetworkEventEntry[]
   chapters: { label: string; tone: string }[]
   today: string
@@ -31,7 +32,9 @@ export function NetworkEventsExplorer({ items, chapters, today, initialNow, max,
   empty: string
   moreHref: string | null
   moreLabel: string
+  upNextLabel?: string
 }) {
+  const openPreview = usePreview()
   const [chapter, setChapter] = useState<string | null>(null)
   const [day, setDay] = useState<string | null>(null)
   const [month, setMonth] = useState(today.slice(0, 7))
@@ -72,7 +75,7 @@ export function NetworkEventsExplorer({ items, chapters, today, initialNow, max,
     <aside className="nw-events-side">
       {next && <div className="nw-upnext"><span className="nw-upnext-k">{ongoing ? 'Happening now' : 'Up next'}</span><b>{next.title}</b><small>{[networkDayLabel(next.day, today), next.time.split('–')[0], next.chapter].filter(Boolean).join(' · ')}</small>
         {!ongoing && next.countdown && <NetworkCountdown startsAt={next.startsAt} timeZone={next.timeZone} initial={next.countdown} label={`Time until ${next.title}`} />}
-        {next.href && <a className="hs-btn hs-btn-primary" href={next.href}>I&apos;m coming</a>}
+        {next.href && <a className="hs-btn hs-btn-primary" href={next.href} onClick={(e) => { e.preventDefault(); openPreview(next.id) }}>{upNextLabel}</a>}
       </div>}
       <div className="nw-month">
         <div className="nw-month-controls"><button type="button" aria-label="Previous month" onClick={() => setMonth(networkMonthOffset(month, -1))}><ChevronLeft aria-hidden /></button><b className="nw-month-name">{monthLabel}</b><button type="button" aria-label="Next month" onClick={() => setMonth(networkMonthOffset(month, 1))}><ChevronRight aria-hidden /></button></div>
@@ -81,7 +84,7 @@ export function NetworkEventsExplorer({ items, chapters, today, initialNow, max,
           {networkMonthDays(month).map((date) => <button key={date} type="button" className="nw-month-day" aria-label={`${date}${dates.has(date) ? ', events scheduled' : ', no events scheduled'}`} aria-pressed={day === date} disabled={date < today}
             data-out={date.slice(0, 7) !== month || undefined} data-today={date === today || undefined} data-has={dates.has(date) || undefined} onClick={() => setDay(day === date ? null : date)}>{+date.slice(8, 10)}</button>)}
         </div>
-        {dayEvents.length > 0 && <div className="nw-month-list"><h4>{networkDayLabel(selectedDay, today)}</h4>{dayEvents.map((item) => <a key={item.id} href={item.href ?? undefined} style={{ ['--c' as string]: chapters.find((c) => c.label === item.chapter)?.tone ?? 'var(--color-primary)' }}><span><b>{item.title}</b><small>{[item.time.split('–')[0], item.chapter].filter(Boolean).join(' · ')}</small></span></a>)}</div>}
+        {dayEvents.length > 0 && <div className="nw-month-list"><h4>{networkDayLabel(selectedDay, today)}</h4>{dayEvents.map((item) => <a key={item.id} href={item.href ?? undefined} onClick={(e) => { e.preventDefault(); openPreview(item.id) }} style={{ ['--c' as string]: chapters.find((c) => c.label === item.chapter)?.tone ?? 'var(--color-primary)' }}><span><b>{item.title}</b><small>{[item.time.split('–')[0], item.chapter].filter(Boolean).join(' · ')}</small></span></a>)}</div>}
       </div>
     </aside>
   </div>

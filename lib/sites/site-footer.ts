@@ -69,6 +69,8 @@ export function readSiteFooter(prefs: unknown): SiteFooter | null {
 export function siteFooterFor(footer: SiteFooter | null, links: SiteLinkMap, origin: string): SiteFooter | null {
   if (!footer) return null
   const resolve = (href: string): string => {
+    // Every way of writing to the Space opens its own Contact page, where the form is.
+    if (/^mailto:/i.test(href) && links.contactHref) return links.contactHref
     const m = /^\/spaces\/([^/?#]+)(?:\/([^/?#]+))?\/?(?:[?#].*)?$/.exec(href)
     if (!m || m[1] !== links.slug) return href
     const seg = m[2]
