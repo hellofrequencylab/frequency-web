@@ -72,7 +72,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
   const network = by.get('network')
   const nonprofit = by.get('nonprofit')
   if (!free || !business || !collective || !network) return null
-  const baseChapter = `${formatCents(NETWORK_PLAN.baseCents)} + ${formatCents(NETWORK_PLAN.chapterCents)} a chapter, ${NETWORK_PLAN.includedChapters} to start, from ${formatCents(NETWORK_PLAN.monthlyCents)}`
+  const baseChapter = `${formatCents(NETWORK_PLAN.baseCents)} + ${formatCents(NETWORK_PLAN.chapterCents)} a chapter, ${NETWORK_PLAN.includedChapters} at the least, from ${formatCents(NETWORK_PLAN.monthlyCents)}`
   return (
     <figure className="pm-fig" aria-labelledby="pm-ladder-h">
       <figcaption className="pm-head">

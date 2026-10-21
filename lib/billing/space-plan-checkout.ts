@@ -124,7 +124,7 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
  *  `interval`. Seats are included per tier (ADR-1810); nothing here is bought per seat. */
 interface SpaceLoadout {
   /** The base tier the loadout is for. 'business' = where selling starts; 'collective' = groups of
-   *  groups (five member Spaces and Vera AI included); 'nonprofit_collective' = Collective, verified;
+   *  groups (three member Spaces and Vera AI included); 'nonprofit_collective' = Collective, verified;
    *  'independent' = the standalone white-label base (off-network); 'nonprofit' = the flat per-mission
    *  item. The add-ons (Vera AI, custom domain) layer on Business and Non Profit. 'free' is not a checkout. */
   plan: string

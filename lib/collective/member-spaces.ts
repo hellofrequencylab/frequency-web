@@ -1,6 +1,6 @@
 import { asSpacePlan, NETWORK_PLAN, type SpacePlan } from '@/lib/pricing/plans'
 
-export const INCLUDED_MEMBER_SPACES = 5
+export const INCLUDED_MEMBER_SPACES = 3
 export function isCollectivePlan(plan: string | null | undefined): boolean {
   return plan === 'collective' || plan === 'nonprofit_collective'
 }
@@ -16,8 +16,8 @@ export function isChapterParentPlan(plan: string | null | undefined): boolean {
   return isNetworkPlan(plan) || isCollectivePlan(plan)
 }
 
-/** Only live purchased quantity expands what a plan includes: collective_space past a Collective's five,
- *  network_chapter past a Network's ten (SCAN-1008). A Network never exceeds NETWORK_PLAN.maxChapters
+/** Only live purchased quantity expands what a plan includes: collective_space past a Collective's three,
+ *  network_chapter past a Network's three (SCAN-1008). A Network never exceeds NETWORK_PLAN.maxChapters
  *  through self-serve; past that is a quote. */
 export function memberSpaceCapacity(items: readonly { item_key: string; status: string; quantity: number }[], plan?: string | null): number {
   const network = isNetworkPlan(plan)

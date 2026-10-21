@@ -383,7 +383,7 @@ function networkOffering(takeRate: string, networkRateBps: number, trial: string
     listAnchor: null,
     betaNote: networkFoundingNote(),
     trial,
-    billing: `${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, with ${NETWORK_PLAN.includedChapters} chapters to start, up to ${NETWORK_PLAN.maxChapters}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free, or take the yearly package: ${NETWORK_PLAN.packageChapters} chapters for the price of ${NETWORK_PLAN.packagePaidChapters}, ${formatCents(networkPackageYearCents())} a year, with an onboarding session and priority support.`,
+    billing: `${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, ${NETWORK_PLAN.includedChapters} chapters at the least and up to ${NETWORK_PLAN.maxChapters}, so a Network starts at ${formatCents(NETWORK_PLAN.monthlyCents)}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free, or take the yearly package: ${NETWORK_PLAN.packageChapters} chapters for the price of ${NETWORK_PLAN.packagePaidChapters}, ${formatCents(networkPackageYearCents())} a year, with an onboarding session and priority support.`,
     takeRate,
     networkRateBps,
     sells: true,

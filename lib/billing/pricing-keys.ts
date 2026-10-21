@@ -555,7 +555,7 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
 // Monthly amounts: Business $49 (selling starts here), Collective $149 list with a $99 Founding intro
 // (owner 2026-10-19, a standing per-item offer: lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), an extra
 // member Space $29 for Collectives that already run member Spaces, Non Profit $39 FLAT, Non Profit
-// Collective $119, Network $149 plus $59 a chapter, three to start (lib/pricing/plans.ts NETWORK_PLAN, ADR-1815), Independent $249 hand-sold,
+// Collective $119, Network $299 plus $59 a chapter, three at the least (lib/pricing/plans.ts NETWORK_PLAN, ADR-1817), Independent $249 hand-sold,
 // Vera AI +$20 (included in Collective and Network); operator seats are not sold (ADR-1810). Yearly derives as two months
 // free. Every item but Collective carries founding == list (no beta rate): the $19/$49 beta anchors
 // closed on 2026-08-17 (ADR-1060, ADR-1067), and a founding amount here mints a second, immutable
@@ -597,7 +597,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     ...amountsFromMonthly(14900, 9900), // $149/mo list, $99 Founding intro (owner 2026-10-06, confirmed 2026-10-19)
   },
   collective_space: {
-    // An extra member Space under a Collective beyond the five included (ADR-1709). Per Space, so a
+    // An extra member Space under a Collective beyond the three included (ADR-1709, ADR-1817). Per Space, so a
     // quantity item: checkout sets how many extra Spaces the Collective carries.
     key: 'collective_space',
     label: 'Collective member Space',
@@ -613,7 +613,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
   },
   network_base: {
     // NETWORK (SCAN-980, repriced 2026-10-20): one owner running many chapters, the rung above Collective.
-    // The Partner Network is priced as $149 plus $59 a chapter (NETWORK_PLAN); the starting price covers the
+    // The Partner Network is priced as $299 plus $59 a chapter (NETWORK_PLAN, ADR-1817); the starting price covers the
     // first three chapters, more ride `network_chapter`. Vera AI is included, the network fee is the 2% rung.
     // The Founding offer (a year for nine months, first year) is a one-time coupon on the first yearly
     // invoice, so founding == list here and no second price is minted.

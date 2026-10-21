@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs'
 import { memberSpaceCapacity, memberSpacePlan } from '../lib/collective/member-spaces.ts'
 
 const relation = { childOwnerId: 'owner', parentOwnerId: 'owner', childStatus: 'active', childType: 'business', parentType: 'business', parentParentId: null }
-assert.equal(memberSpaceCapacity([]), 5)
+assert.equal(memberSpaceCapacity([]), 3)
 assert.equal(memberSpaceCapacity([
   { item_key: 'collective_space', status: 'active', quantity: 3 },
   { item_key: 'collective_space', status: 'canceled', quantity: 9 },
   { item_key: 'operator_seat', status: 'active', quantity: 30 },
-]), 8)
+]), 6)
 assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'active' }, relation), 'business')
 assert.equal(memberSpacePlan('free', { plan: 'nonprofit_collective', status: 'active' }, relation), 'business')
 assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'suspended' }), 'free')

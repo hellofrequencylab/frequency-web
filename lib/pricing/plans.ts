@@ -97,19 +97,20 @@ export const NETWORK_SITE_PLAN = {
 
 /** The Network plan's catalog values. PURE data, the one place they are written down. */
 export const NETWORK_PLAN = {
-  /** The Partner Network is priced as a base plus a price per chapter (owner 2026-10-20): $149 a month plus
-   *  $59 for each chapter. The base price a Space starts on includes the first three chapters. */
-  baseCents: 14_900,
+  /** The Partner Network is priced as a base plus a price per chapter (owner 2026-10-21): $299 a month plus
+   *  $59 for each chapter, three chapters at the least, so a Network starts at $476. The Stripe base price
+   *  bundles the first three chapters (base + 3 chapters); more ride the chapter price. */
+  baseCents: 29_900,
   /** Each chapter (owner 2026-10-20), counted from the first. */
   chapterCents: 5_900,
-  /** Chapters included in the starting price: baseCents + 3 x chapterCents. */
+  /** The three chapters every Network starts with, billed in the starting price: baseCents + 3 x chapterCents. */
   includedChapters: 3,
-  /** From $326/mo: the base plus the three chapters a Network starts with (ADR-1815). "Included" never means free. */
-  monthlyCents: 14_900 + 3 * 5_900,
-  /** Verified non profit rate: $119 plus $47 a chapter, about 20% under the Partner rate. */
-  nonprofitBaseCents: 11_900,
+  /** From $476/mo: the base plus the three chapters a Network starts with (ADR-1817). "Included" never means free. */
+  monthlyCents: 29_900 + 3 * 5_900,
+  /** Verified non profit rate: $239 plus $47 a chapter, about 20% under the Partner rate. */
+  nonprofitBaseCents: 23_900,
   nonprofitChapterCents: 4_700,
-  nonprofitMonthlyCents: 11_900 + 3 * 4_700,
+  nonprofitMonthlyCents: 23_900 + 3 * 4_700,
   /** Each chapter past the included three. */
   extraChapterCents: 5_900,
   /** Each chapter past the included three, for a verified non profit. */
@@ -123,7 +124,7 @@ export const NETWORK_PLAN = {
   /** Resonance matches a month, Vera AI's metered depth: five times Collective's 10,000. */
   veraMonthlyMatches: 50_000,
   /** The live Stripe price for the monthly base (network_base_month). Null means quote only. */
-  stripePriceId: 'price_1USlPEPhyalyRPP1XtS07x5C' as string | null,
+  stripePriceId: 'price_1UT3VIPhyalyRPP1avzW5ll0' as string | null,
   /** What a surface says instead of a price button while there is no Stripe price. */
   quoteLabel: 'Talk to us',
   /** The Founding offer (owner 2026-10-20): a year of Network costs nine months instead of ten, first year

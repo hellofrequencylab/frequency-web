@@ -3,10 +3,10 @@
   "patch": {
     "verify": {
       "kind": "cmd",
-      "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('lib/pricing/plans.ts','utf8');const k=fs.readFileSync('lib/billing/pricing-keys.ts','utf8');const bad=[];if(!/'network',\\s*\\] as const/.test(p))bad.push('network is not a plan id');if(!p.includes('baseCents: 14_900')||!p.includes('nonprofitBaseCents: 11_900'))bad.push('Network is not 149 base, 119 non profit');if(!p.includes('includedChapters: 3')||!p.includes('extraChapterCents: 5_900')||!p.includes('maxChapters: 25'))bad.push('no chapter allowance');if(!/quoteLabel: 'Talk to us'/.test(p))bad.push('Network has no quote fallback');if(!/network: 200,/.test(k))bad.push('no 2 percent Network fee');if(bad.length){console.error('SCAN-956: '+bad.join('; '));process.exit(1)}\""
+      "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('lib/pricing/plans.ts','utf8');const k=fs.readFileSync('lib/billing/pricing-keys.ts','utf8');const bad=[];if(!/'network',\\s*\\] as const/.test(p))bad.push('network is not a plan id');if(!p.includes('baseCents: 29_900')||!p.includes('nonprofitBaseCents: 23_900'))bad.push('Network is not 299 base, 239 non profit');if(!p.includes('includedChapters: 3')||!p.includes('extraChapterCents: 5_900')||!p.includes('maxChapters: 25'))bad.push('no chapter allowance');if(!/quoteLabel: 'Talk to us'/.test(p))bad.push('Network has no quote fallback');if(!/network: 200,/.test(k))bad.push('no 2 percent Network fee');if(bad.length){console.error('SCAN-956: '+bad.join('; '));process.exit(1)}\""
     }
   },
   "append": {
-    "detail": "2026-10-20 owner ruling (ADR-1815, LIVE-1183): Network is $149 plus $59 a chapter with three chapters included, nonprofit $119 plus $47. The premise this probe pinned ($599 for ten chapters) was replaced by that ruling; the probe now pins the new figures and still checks the quote fallback and the 2 percent fee."
+    "detail": "2026-10-20 owner ruling (ADR-1815, LIVE-1183): Network is $149 plus $59 a chapter with three chapters included, nonprofit $119 plus $47. The premise this probe pinned ($599 for ten chapters) was replaced by that ruling; the probe now pins the new figures and still checks the quote fallback and the 2 percent fee. Repriced again 2026-10-21 (ADR-1817, LIVE-1266): base $299, nonprofit $239."
   }
 }
