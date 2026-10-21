@@ -13,7 +13,7 @@ import { getSiteSpace } from '@/lib/sites/site-cache'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { siteSubdomainHost } from '@/lib/sites/host'
 import { siteMemberOrigin } from '@/lib/sites/site-member'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +30,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // THE GATE: the reader's own session, or nothing. Only the caller's own public profile fields are read.
   const profileId = await getMyProfileId()
   if (!profileId) return NextResponse.json({ account: null }, { headers })
-  const { data } = await createAdminClient().from('profiles').select('display_name, handle, avatar_url').eq('id', profileId).maybeSingle()
+  const supabase = await createClient() // the reader's own session, so RLS decides what this reads
+  const { data } = await supabase.from('profiles').select('display_name, handle, avatar_url').eq('id', profileId).maybeSingle()
   const row = data as { display_name?: string | null; handle?: string | null; avatar_url?: string | null } | null
   if (!row) return NextResponse.json({ account: null }, { headers })
   return NextResponse.json({ account: { name: row.display_name?.trim() || row.handle || 'You', handle: row.handle ?? null, avatarUrl: row.avatar_url ?? null } }, { headers })
