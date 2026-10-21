@@ -62,20 +62,16 @@ export function ProductReviews({
     <div className="mt-6 space-y-5">
       <h2 className="text-body-lg font-bold text-text">Reviews</h2>
 
-      {/* Summary */}
-      <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 lift-1">
-        <div className="text-center">
-          <div className="text-stat-sm font-bold tabular-nums text-text">
-            {reviews.average != null ? reviews.average.toFixed(1) : '--'}
+      {/* Summary: only once there is something to summarise; the empty state is the single note below. */}
+      {reviews.count > 0 && (
+        <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 lift-1">
+          <div className="text-center">
+            <div className="text-stat-sm font-bold tabular-nums text-text">{(reviews.average ?? 0).toFixed(1)}</div>
+            <Stars value={reviews.average ?? 0} />
           </div>
-          <Stars value={reviews.average ?? 0} />
+          <div className="text-body-sm text-muted">{`${reviews.count} review${reviews.count === 1 ? '' : 's'}`}</div>
         </div>
-        <div className="text-body-sm text-muted">
-          {reviews.count > 0
-            ? `${reviews.count} review${reviews.count === 1 ? '' : 's'}`
-            : `Be the first to review ${productTitle}.`}
-        </div>
-      </div>
+      )}
 
       {/* Write / update a review */}
       {allowReview ? (
@@ -115,8 +111,8 @@ export function ProductReviews({
           ))}
         </ul>
       ) : (
-        <p className="rounded-card border border-dashed border-border p-8 text-center text-body-sm text-muted">
-          No reviews yet.
+        <p className="rounded-card border border-dashed border-border p-6 text-center text-body-sm text-muted">
+          {`No reviews yet. Be the first to review ${productTitle}.`}
         </p>
       )}
     </div>

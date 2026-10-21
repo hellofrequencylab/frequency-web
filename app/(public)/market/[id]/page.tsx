@@ -234,6 +234,24 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
     })),
   })
 
+  // Under Frequency a plain product's Buy control sits in the hero beside the price; variants,
+  // bookings, sold-out and connect-only states keep the purchase panel below.
+  const buyInHero = FREQUENCY && !isService && !soldOut && !connectOnly && !hasVariants && !journeyPlan
+
+  const trust =
+    sellerVerified || (isService && (svc.durationMin || svc.cancellationWindowHours)) ? (
+      <div className={FREQUENCY ? 'row wrap t2' : 'mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle'}>
+        {sellerVerified && <VerifiedBadge verified withLabel />}
+        {isService && (svc.durationMin || svc.cancellationWindowHours) && (
+          <span>
+            {svc.durationMin ? `${svc.durationMin} minutes` : null}
+            {svc.durationMin && svc.cancellationWindowHours ? ' · ' : null}
+            {svc.cancellationWindowHours ? `Free cancellation up to ${svc.cancellationWindowHours}h before` : null}
+          </span>
+        )}
+      </div>
+    ) : null
+
   return (
     <ViewerProvider>
     <ListingDetailTemplate
@@ -271,6 +289,8 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
           />
         ) : undefined
       }
+      heroBuy={buyInHero ? <BuyButton productId={product.id} priceLabel={priceLabel} /> : undefined}
+      heroMeta={FREQUENCY ? trust : undefined}
       comments={comments}
       canComment={false}
       canModerate={false}
@@ -291,6 +311,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       }
       footer={
         <>
+          {!buyInHero && (
           <div className={FREQUENCY ? 'panel stack' : 'mt-3 rounded-3xl border border-border bg-surface p-5 lift-1'}>
             {isService ? (
                 <div className="space-y-4">
@@ -343,6 +364,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               )
             )}
           </div>
+          )}
 
           {/* ── THE SALES PAGE, for a Journey product (ADR-1398) ──────────────────────────────
               Derived live from the Journey this product sells: the story, what you'll learn, the
@@ -389,18 +411,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
         </>
       }
     >
-      {(sellerVerified || (isService && (svc.durationMin || svc.cancellationWindowHours))) && (
-        <div className={FREQUENCY ? 'row wrap t2' : 'mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle'}>
-          {sellerVerified && <VerifiedBadge verified withLabel />}
-          {isService && (svc.durationMin || svc.cancellationWindowHours) && (
-            <span>
-              {svc.durationMin ? `${svc.durationMin} minutes` : null}
-              {svc.durationMin && svc.cancellationWindowHours ? ' · ' : null}
-              {svc.cancellationWindowHours ? `Free cancellation up to ${svc.cancellationWindowHours}h before` : null}
-            </span>
-          )}
-        </div>
-      )}
+      {FREQUENCY ? null : trust}
     </ListingDetailTemplate>
     </ViewerProvider>
   )
