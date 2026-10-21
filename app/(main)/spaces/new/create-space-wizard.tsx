@@ -3,8 +3,7 @@
 import { useState, useTransition } from 'react'
 import { SparkShell } from '@/components/studio/spark'
 import { Select } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Radio } from '@/components/ui/radio'
+import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { isError } from '@/lib/action-result'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { slugify as slugifyShared } from '@/lib/utils'
@@ -46,10 +45,17 @@ function slugify(name: string): string {
   return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
 }
 
-/** One selectable card. The design system's Checkbox (several picks) or Radio (one pick) draws the control,
- *  and the card border follows the native checked state, so there is no JS mirror to drift. */
-const cardClass =
-  'w-full rounded-control border border-border bg-surface px-3 py-3 transition-colors hover:border-border-strong has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring'
+/** The icon each pick wears, from the design system's sprite. */
+const INTENT_ICON: Record<string, FqIconName> = {
+  bookings: 'clock',
+  classes: 'membership',
+  programs: 'program',
+  events: 'event',
+  products: 'tag',
+  community: 'circle',
+  email: 'message',
+  donations: 'giveback',
+}
 
 export function CreateSpaceWizard({
   choices,
@@ -90,6 +96,9 @@ export function CreateSpaceWizard({
   const suggested = suggestModeForIntents(intents, choices.map((c) => c.id))
   // Until the owner picks a setup by hand, the setup follows the picks.
   const activeChoiceId = !choiceTouched && !initialChoiceId && suggested ? suggested : choiceId
+  // Two setups can share a name (Coach); only those wear their hint so every chip reads differently.
+  const labelCounts: Record<string, number> = {}
+  for (const c of choices) labelCounts[c.label] = (labelCounts[c.label] ?? 0) + 1
   const choice = choices.find((c) => c.id === activeChoiceId) ?? choices[0]
   const step = STEPS[index]
   const slugValid = slug === '' || isSafeSlug(slug)
@@ -139,37 +148,50 @@ export function CreateSpaceWizard({
       error={error}
       draftScopeKey={null}
     >
+      {/* The kit's `.chip` / `.chip.on` pills (members kit): small, a selected one is solid ink. */}
       {step.key === 'intents' && (
-        <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="What you want to do here">
-          {WIZARD_INTENTS.map((i) => (
-            <Checkbox
-              key={i.id}
-              label={i.label}
-              hint={i.hint}
-              checked={intents.includes(i.id)}
-              onChange={(e) => setIntents(e.target.checked ? [...intents, i.id] : intents.filter((x) => x !== i.id))}
-              wrapperClassName={cardClass}
-            />
-          ))}
+        <div className="chips flex flex-wrap gap-2" role="group" aria-label="What you want to do here">
+          {WIZARD_INTENTS.map((i) => {
+            const on = intents.includes(i.id)
+            return (
+              <button
+                key={i.id}
+                type="button"
+                className={on ? 'chip on' : 'chip'}
+                aria-pressed={on}
+                title={i.hint}
+                onClick={() => setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])}
+              >
+                <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={16} />
+                {i.label}
+              </button>
+            )
+          })}
         </div>
       )}
 
       {step.key === 'model' && (
-        <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Tool setup">
-          {choices.map((c) => (
-            <Radio
-              key={c.id}
-              name="space-mode"
-              label={c.label}
-              hint={c.hint}
-              checked={activeChoiceId === c.id}
-              onChange={() => {
-                setChoiceTouched(true)
-                setChoiceId(c.id)
-              }}
-              wrapperClassName={cardClass}
-            />
-          ))}
+        <div className="space-y-3">
+          <div className="chips flex flex-wrap gap-2" role="group" aria-label="Tool setup">
+            {choices.map((c) => {
+              const on = activeChoiceId === c.id
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={on ? 'chip on' : 'chip'}
+                  aria-pressed={on}
+                  onClick={() => {
+                    setChoiceTouched(true)
+                    setChoiceId(c.id)
+                  }}
+                >
+                  {labelCounts[c.label] > 1 ? `${c.label}: ${c.hint}` : c.label}
+                </button>
+              )
+            })}
+          </div>
+          {choice && <p className="text-body-sm text-muted">{choice.hint}</p>}
         </div>
       )}
 
