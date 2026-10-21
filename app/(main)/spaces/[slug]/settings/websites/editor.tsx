@@ -11,7 +11,7 @@ import type { ClientSiteRow } from '@/lib/collective/client-sites'
 
 const DOMAIN_LABEL = { none: 'Free address', live: 'Own domain live', pending: 'Own domain pending' } as const
 
-export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLabel, badgeLabel, billLines }: { networkId: string; networkOwnerId: string; sites: ClientSiteRow[]; monthlyLabel: string; badgeLabel: string; billLines: { label: string; detail: string; total: string }[] }) {
+export function ClientSitesEditor({ networkId, networkOwnerId, billed, sites, monthlyLabel, badgeLabel, billLines }: { networkId: string; networkOwnerId: string; billed: boolean; sites: ClientSiteRow[]; monthlyLabel: string; badgeLabel: string; billLines: { label: string; detail: string; total: string }[] }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
@@ -38,7 +38,7 @@ export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLab
       <section aria-labelledby="client-sites-list" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="client-sites-list" className="text-body-lg font-bold text-text">Your client websites</h2>
-          <p className="text-body-sm text-muted">{sites.length} live, {monthlyLabel} a month</p>
+          <p className="text-body-sm text-muted">{billed ? `${sites.length} live, ${monthlyLabel} a month` : `${sites.length} live, no charge`}</p>
         </div>
         {sites.length ? (
           <ul className="space-y-3">{sites.map((site) => (
@@ -57,7 +57,7 @@ export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLab
                 </Button>
                 {site.ownerProfileId === networkOwnerId ? <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => handoff(site.id)}>Hand off to owner</Button> : null}
                 <Button type="button" variant="ghost" size="sm" disabled={pending}
-                  onClick={() => { if (window.confirm(`Stop paying for ${site.name}? The site stays, but it leaves your bill and goes back to a free Space, so its own domain and Business tools switch off.`)) run(() => removeClientSite(networkId, site.id), `${site.name} is off your bill.`) }}>Remove from my bill</Button>
+                  onClick={() => { if (window.confirm(`${billed ? `Stop paying for ${site.name}? The site stays, but it leaves your bill and goes back to a free Space` : `Remove ${site.name} from your client sites? The site stays, but it goes back to a free Space`}, so its own domain and Business tools switch off.`)) run(() => removeClientSite(networkId, site.id), `${site.name} is off your bill.`) }}>{billed ? 'Remove from my bill' : 'Remove from client sites'}</Button>
               </div>
               {links[site.id] ? (
                 <div className="w-full space-y-1">
@@ -69,7 +69,7 @@ export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLab
           ))}</ul>
         ) : <p className="text-body-sm text-muted">No client websites yet. Add the first one below.</p>}
       </section>
-      {billLines.length ? (
+      {billed && billLines.length ? (
         <section aria-labelledby="client-sites-bill" className="space-y-3">
           <h2 id="client-sites-bill" className="text-body-lg font-bold text-text">What you pay Frequency</h2>
           <ul className="divide-y divide-border rounded-card border border-border bg-surface">
@@ -86,7 +86,7 @@ export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLab
       ) : null}
       <section aria-labelledby="client-sites-new" className="space-y-3">
         <h2 id="client-sites-new" className="text-body-lg font-bold text-text">Add a client website</h2>
-        <p className="text-body-sm text-muted">It starts as a Business Space you own, billed to your Network. Hand it to its owner when it is ready.</p>
+        <p className="text-body-sm text-muted">It starts as a Business Space you own, {billed ? 'billed to your Network' : 'at no charge'}. Hand it to its owner when it is ready.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Business name"><Input value={name} maxLength={200} onChange={(e) => setName(e.target.value)} /></Field>
           <Field label="Handle" hint="Lowercase letters, numbers and hyphens. Sets its free address."><Input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase())} /></Field>
