@@ -44,6 +44,7 @@ import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-l
 import { resolveSetupPreset, setupPresetForMode } from '@/lib/pricing/bundles'
 import { setSpaceBundle } from '@/lib/pricing/space-bundle'
 import { postCreateLanding } from '@/lib/spaces/setup'
+import { parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
  *  `modeVariant` (the Focus, Space Modes M3) is optional: null resolves to the type's default Focus. */
@@ -64,6 +65,9 @@ export interface CreateSpaceInput {
   /** "How did you hear about us?" (LIVE-808). Optional; stored on the Space's preferences as
    *  `heardAbout` and in the audit draft. First-party only, never sent to a pixel. */
   heardAbout?: string | null
+  /** The plan the wizard was opened for (`?plan=` from /pricing). A HINT: the Space is always born
+   *  free; a paid hint only sends the owner to billing when the setup walk ends. */
+  plan?: string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
@@ -205,7 +209,11 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
 
   // The source answer (LIVE-808), clipped like the signup one (meta.beta.heard_about). Blank = skipped.
   const heardAbout = (input.heardAbout ?? '').trim().slice(0, 120)
+  // The plan the wizard was opened for (a HINT, never a grant): kept on the Space so the setup walk
+  // can end on its billing page. Free is the default and stores nothing.
+  const planIntent = planWantsBilling(input.plan) ? parsePlanHint(input.plan) : null
   const seedPreferences: Record<string, unknown> = {
+    ...(planIntent ? { planIntent } : {}),
     ...(seededKind ? withProfileData(null, { kind: seededKind }) : {}),
     ...(heardAbout ? { heardAbout } : {}),
   }

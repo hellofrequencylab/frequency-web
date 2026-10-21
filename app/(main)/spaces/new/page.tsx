@@ -2,8 +2,11 @@ import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { listModeChoices } from '@/lib/spaces/modes'
+import { setupPresetForMode } from '@/lib/pricing/bundles'
+import { parsePlanHint } from '@/lib/spaces/create-wizard'
+import type { SpaceType } from '@/lib/spaces/types'
 import { getVeraConfig } from '@/lib/ai/vera/config'
-import { CreateSpaceForm } from './create-space-form'
+import { CreateSpaceWizard } from './create-space-wizard'
 
 // CREATE A SPACE — the Focus compose surface (ENTITY-SPACES-BUILD Wave B, Epic 1.6; Space Modes M3,
 // ADR-461/464). A centered, no-rail form. An authenticated member answers "what do you run?" (which maps
@@ -25,7 +28,7 @@ export const metadata = {
 export default async function NewSpacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string | string[] }>
+  searchParams: Promise<{ mode?: string | string[]; plan?: string | string[] }>
 }) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
   const profileId = await getMyProfileId()
@@ -43,9 +46,17 @@ export default async function NewSpacePage({
   // The id format is `${type}:${variant}`, identical to ModeChoice.id, so the match is a lookup. An
   // unknown or absent value falls back to the first choice exactly as before: this narrows nothing and
   // cannot 404, because a stale funnel link must still land somewhere usable.
-  const raw = (await searchParams).mode
+  const params = await searchParams
+  const raw = params.mode
   const requested = Array.isArray(raw) ? raw[0] : raw
   const initialChoiceId = choices.find((c) => c.id === requested)?.id
+  // THE PRICING HAND-OFF. /pricing sends `?plan=<id>` (operatorStartHref). It is a HINT: unknown or
+  // missing means free, and a Space is always born free; the plan only picks where the owner lands
+  // after setup (the Space's billing page). Parsed leniently so a stale link still lands somewhere usable.
+  const initialPlan = parsePlanHint(params.plan)
+  // What each choice will be set up with, so the last step can say so before anything is created.
+  const presetLabels: Record<string, string | null> = {}
+  for (const c of choices) presetLabels[c.id] = setupPresetForMode(c.type as SpaceType, c.variant)?.label ?? null
   // The same operator-edited "How did you hear about us?" list signup asks (LIVE-808). Fail-safe to
   // the code defaults inside getVeraConfig.
   const heardAboutOptions = (await getVeraConfig()).induction.heardAbout
@@ -57,7 +68,13 @@ export default async function NewSpacePage({
       description="Set up a home for your practice, business, or organization. You can change everything later."
       back={{ href: '/spaces/directory', label: 'Spaces' }}
     >
-      <CreateSpaceForm choices={choices} initialChoiceId={initialChoiceId} heardAboutOptions={heardAboutOptions} />
+      <CreateSpaceWizard
+        choices={choices}
+        initialChoiceId={initialChoiceId}
+        initialPlan={initialPlan}
+        presetLabels={presetLabels}
+        heardAboutOptions={heardAboutOptions}
+      />
     </FocusTemplate>
   )
 }
