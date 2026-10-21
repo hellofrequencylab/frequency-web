@@ -6,7 +6,7 @@ import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { publishedWebsiteSnapshot } from '@/lib/sites/editor/state'
-import { HOUSE_NAV, planHouseSections, siteHasContactPage } from '@/lib/sites/house-theme'
+import { HOUSE_NAV, planHouseSections, siteServesContactPage } from '@/lib/sites/house-theme'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { refreshSite } from '@/lib/sites/site-cache'
@@ -85,7 +85,7 @@ async function websiteCatalog(space: Space): Promise<MenuCatalogEntry[]> {
     { key: 'home', label: pages[0]?.label ?? 'Home', href: '' },
     ...[...anchors].map(([anchor, label]) => ({ key: `anchor:${anchor}`, label, href: '' })),
     ...pages.filter((p) => p.slug !== HOME_SLUG).map((p) => ({ key: `page:${p.slug}`, label: p.label, href: '' })),
-    ...(siteHasContactPage(prefs) ? [{ key: 'feature:contact', label: 'Contact', href: '' }] : []),
+    ...(siteServesContactPage(prefs) ? [{ key: 'feature:contact', label: 'Contact', href: '' }] : []),
     ...(booking.takesBookings ? [{ key: 'feature:book', label: 'Book', href: '' }] : []),
   ]
 }

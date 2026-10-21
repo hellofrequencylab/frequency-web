@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { HOUSE_NAV, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
+import { HOUSE_NAV, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteServesContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { SiteBooking } from '@/components/sites/site-booking'
@@ -60,6 +60,7 @@ import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { WebsiteDocument } from '@/components/sites/website-document'
+import { NetworkAccount, NetworkSearch, type SearchItem } from '@/components/sites/network-header-tools'
 import { siteEntitySchema } from '@/lib/jsonld'
 import { resolveSiteHeaderBrand } from '@/lib/sites/site-brand'
 import { SiteMemberBadge } from '@/components/sites/site-member-badge'
@@ -115,7 +116,7 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   const websitePage = publishedWebsitePage(space.preferences, pageSlug)
   const page = websitePage ??
     readProfilePages(space.preferences).find((p) => p.slug === pageSlug) ??
-    (pageSlug === SITE_CONTACT_SLUG && siteHasContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null) ??
+    (pageSlug === SITE_CONTACT_SLUG && siteServesContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null) ??
     (pageSlug === SITE_BOOK_SLUG && (await readSiteBooking(space.id)).takesBookings ? { slug: SITE_BOOK_SLUG, label: 'Book' } : null)
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
   const title = websitePage?.seo.title.trim() || (page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`)
@@ -260,7 +261,9 @@ export async function SitePage({
         renderRow: (row) => <SpaceProfileModules space={toProfileContext(space)} grid={row} />,
       })
     : null
-  const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), links: siteLinks, cta }) : null
+  // A Network website's Contact page is its Contact form block, lifted from its Home page (networkContactDoc).
+  const netContactDoc = contactPage && netSite ? networkContactDoc(website?.pages.find((pg) => pg.slug === HOME_SLUG)?.doc ?? readPageDoc(space.preferences, HOME_SLUG), readProfileData(space.preferences)) : null
+  const contactModel = netSite ? null : contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), links: siteLinks, cta }) : null
   // A Menswork site's menu is its pages, the same on every page (the design system's site nav); the house
   // look's Home section anchors stay on Home.
   // A Business Space's SAVED menu (shared with its Space page) wins; otherwise the site's own menu.
@@ -322,6 +325,25 @@ export async function SitePage({
     images: [space.coverImageUrl, space.brandLogoUrl],
   })
 
+  // The Network website's header tools: a search over the site's own pages, chapters, circles and events, and
+  // the account cluster (Log in, Sign up, Cart, Profile). The search never leaves the site.
+  const home0 = homeHref === '/' ? '' : homeHref
+  const searchItems: SearchItem[] = netSite
+    ? [
+        ...pages.filter((pg) => pg.slug !== HOME_SLUG).map((pg) => ({ label: pg.label, kicker: 'Page', href: siteHref(siteBase, pg.slug) })),
+        ...(hasContact ? [{ label: 'Contact', kicker: 'Page', href: siteHref(siteBase, SITE_CONTACT_SLUG) }] : []),
+        ...(websiteContent?.chapters ?? []).map((c) => ({ label: c.name, kicker: 'Chapter', href: `${home0}#chapters` })),
+        ...(mwLive?.circles ?? []).map((c) => ({ label: c.name, kicker: 'Circle', href: `${home0}#circles` })),
+        ...(mwLive?.events ?? []).slice(0, 30).map((e) => ({ label: e.title, kicker: `Event · ${e.startsAt.slice(0, 10)}`, href: `${home0}#events` })),
+      ]
+    : []
+  const networkTools = netSite ? (
+    <>
+      <NetworkSearch items={searchItems} />
+      <NetworkAccount endpoint={`${origin}/api/sites/${space.slug}/account`} origin={origin} slug={space.slug} cartHref={`${home0}#merch`} />
+    </>
+  ) : null
+
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
     // owner's accent and faces rather than the default Frequency look.
@@ -347,6 +369,7 @@ export async function SitePage({
         showBrandFooter={fullFooter}
         look={lookOverrides}
         member={memberBadge}
+        tools={netSite ? networkTools : null}
         footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
         checkIn={checkIn}
         credit={effectiveFooterBadge(readFooterBadge(space.preferences), badgeRemovalHeld(space.plan, space.entitlements))}
@@ -373,6 +396,8 @@ export async function SitePage({
               <SitePublicCalendar space={space} brandName={brandName} />
             </div>
           </div>
+        ) : netContactDoc && mwLive ? (
+          <WebsiteDocument doc={netContactDoc} theme={editorTheme} config={config} metadata={{ space: websiteContent ?? undefined, contactPage: true }} live={mwLive} links={siteLinks} origin={origin} title="Contact" />
         ) : contactModel ? (
           <>
             {/* The form hero carries the page's h1 when the Contact form block has a heading. */}
@@ -433,6 +458,24 @@ export async function SitePage({
   return { ...footer, columns: footer.columns.map((c) => ({ ...c, links: c.links.map((l) => ({ ...l, href: resolve(l.href) })) })) }
 }
 
+/** The Contact page of a Network website, from the Contact form block on its Home page (a Contact block, else the
+ *  Coffee card's contact half), so editing that block edits this page. A Home with neither falls back to the
+ *  Space's own email and phone. */
+function networkContactDoc(home: { content?: { type?: string; props?: Record<string, unknown> }[] } | null, profile: { email?: string | null; phone?: string | null }) {
+  const blocks = home?.content ?? []
+  const own = blocks.find((b) => b.type === 'NetworkContact')
+  const coffee = blocks.find((b) => b.type === 'NetworkCoffee')
+  const c = coffee?.props ?? {}
+  const keep = ['email', 'phone', 'links', 'image', 'alt', 'focus', 'formShowPhone', 'formMessageLabel', 'formSubmitLabel', 'formSuccess', 'formOptIn']
+  const props = own?.props ?? {
+    ...Object.fromEntries(keep.filter((k) => c[k] !== undefined).map((k) => [k, c[k]])),
+    eyebrow: 'Contact', title: typeof c.reachTitle === 'string' && c.reachTitle.trim() ? c.reachTitle : 'Get in *touch.*',
+    lead: typeof c.reachBody === 'string' && c.reachBody.trim() ? c.reachBody : "Drop us a message and we'll reach out in a jiffy.",
+    ...(coffee ? {} : { email: profile.email ?? '', phone: profile.phone ?? '' }),
+  }
+  return { root: { props: {} }, content: [{ type: 'NetworkContact', props: { ...props, id: 'contact-page' } }] }
+}
+
 /** A site page's meta description: the website intro (the line the hero leads with), else the Space
  *  tagline. The Contact and Book pages say what they are for, so they never repeat Home's. */
 function siteDescription(space: Space, brandName: string, pageSlug: string): string | undefined {
@@ -451,7 +494,7 @@ function siteDescription(space: Space, brandName: string, pageSlug: string): str
  *  and its /admin pages, so the admin pages wear the same header and menu. */
 export async function siteChromeBasics(space: Space, siteBase: string) {
   const origin = appOrigin()
-  const hasContact = siteHasContactPage(space.preferences)
+  const hasContact = siteServesContactPage(space.preferences)
   // LIVE-835: the Book page reads the Space's services and windows; a Space that takes no bookings 404s.
   // Every page reads it: Book links on Home and in the header open /book only when it is served.
   const booking = await readSiteBooking(space.id)

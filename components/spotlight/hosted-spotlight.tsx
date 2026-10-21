@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import type { Space } from '@/lib/spaces/types'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { appOrigin, normalizeHost, siteSlugFromSubdomain, spotlightHostDomain } from '@/lib/sites/host'
-import { SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
+import { SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteServesContactPage } from '@/lib/sites/house-theme'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { readSpaceSpotlight } from '@/lib/spaces/spotlight'
@@ -72,7 +72,7 @@ export async function HostedSpotlightPage({ host, space: resolved }: { host: str
   setSpotlightSiteLinks({
     appOrigin: origin,
     book: takesBookings ? `${siteOrigin}/${SITE_BOOK_SLUG}` : null,
-    contact: site && siteHasContactPage(space.preferences) ? `${siteOrigin}/${SITE_CONTACT_SLUG}` : null,
+    contact: site && siteServesContactPage(space.preferences) ? `${siteOrigin}/${SITE_CONTACT_SLUG}` : null,
   })
   setActiveSpace(space)
   return <SpaceSpotlight space={space} tagline={await readTagline(space.id)} appOrigin={origin} />

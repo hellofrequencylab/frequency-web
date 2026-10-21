@@ -95,6 +95,7 @@ export function SiteChrome({
   admin = null,
   look = {},
   member = null,
+  tools = null,
   footer = null,
   checkIn = null,
   credit = 'badge',
@@ -133,6 +134,8 @@ export function SiteChrome({
   look?: Partial<Pick<SiteLook, 'corners' | 'spacing' | 'header'>>
   /** The reader's own membership in this Space, an island beside the header button (LIVE-699). */
   member?: ReactNode
+  /** Tools ahead of the header button (the Network site's search and account cluster). */
+  tools?: ReactNode
   /** The Space's own footer columns, line, note and copyright suffix (lib/sites/site-footer.ts), or null
    *  for the skin's default footer. */
   footer?: SiteFooter | null
@@ -163,6 +166,7 @@ export function SiteChrome({
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
+      tools={tools}
       brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : null}
     />
   )
