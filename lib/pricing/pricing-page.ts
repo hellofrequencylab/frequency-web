@@ -20,6 +20,7 @@
 // thing is, never narrates the reader's feelings, makes no health claim, and uses NO em dashes. The
 // money is the offer; the numbers carry the weight.
 
+import { OPERATOR_START_HREF } from '@/lib/site'
 import {
   catalogConfigByKey,
   defaultCatalogConfig,
@@ -253,11 +254,11 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
 
 /** The CTA per tier. Copy + route only. */
 const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
-  free: { label: 'Start free', href: '/spaces' },
-  business: { label: 'Start with Business', href: '/spaces' },
-  collective: { label: 'Start a Collective', href: '/spaces' },
-  nonprofit: { label: 'Get verified', href: '/spaces' },
-  network: networkCheckoutOpen() ? { label: 'Start a Network', href: '/spaces' } : { label: 'Talk to us', href: '/networks' },
+  free: { label: 'Start free', href: OPERATOR_START_HREF },
+  business: { label: 'Start with Business', href: OPERATOR_START_HREF },
+  collective: { label: 'Start a Collective', href: OPERATOR_START_HREF },
+  nonprofit: { label: 'Get verified', href: OPERATOR_START_HREF },
+  network: networkCheckoutOpen() ? { label: 'Start a Network', href: OPERATOR_START_HREF } : { label: 'Talk to us', href: '/networks' },
 }
 
 /** Build the public Space tier columns: Free Space FIRST (the first level of Space, where the core

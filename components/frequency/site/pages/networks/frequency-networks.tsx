@@ -11,18 +11,13 @@ import { formatBps, formatCents } from '@/lib/pricing/display'
 import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
 import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
-import { CONTACT_EMAIL } from '@/lib/site'
+import { INDEPENDENT_CONTACT_HREF, NETWORK_CONTACT_HREF } from '@/lib/pricing/network-contact'
+import { OPERATOR_START_HREF } from '@/lib/site'
 import { CollectiveOrNetwork, WhoSeesWhat } from '../pricing/tier-graphics'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
-
-/** The conversation link while Network is quote only. */
-export const NETWORK_CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Frequency Network')}`
-
-/** The Independent Network conversation: a sales call, never checkout. */
-export const INDEPENDENT_CONTACT_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Frequency Independent Network')}&body=${encodeURIComponent('How many chapters do you run?\nHow many members do you have today?\nDo you need your own domain or app?\nDo you need us to move members and data from another platform?')}`
 
 /** What a Network includes, in the order a chapter organization asks about it. Copy only; the counts
  *  read NETWORK_PLAN. */
@@ -40,7 +35,7 @@ export function networkIncludes(): { title: string; body: string }[] {
 
 export function FrequencyNetworks() {
   const quote = !networkCheckoutOpen()
-  const cta = quote ? { href: NETWORK_CONTACT_HREF, label: `${NETWORK_PLAN.quoteLabel} →` } : { href: '/spaces', label: 'Start a Network →' }
+  const cta = quote ? { href: NETWORK_CONTACT_HREF, label: `${NETWORK_PLAN.quoteLabel} →` } : { href: OPERATOR_START_HREF, label: 'Start a Network →' }
   const fee = formatBps(NETWORK_TAKE_RATE_DEFAULT.network)
   const trialDays = PRICING_DEFAULTS.trial.days
   const foundingOpen = networkFoundingOpen()
