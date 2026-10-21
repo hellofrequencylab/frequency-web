@@ -524,8 +524,8 @@ app/(main)/crew/leaderboard/actions.ts
 app/(main)/crew/leaderboard/page.tsx
 app/(main)/crew/store/actions.ts
 app/(main)/edit/actions.ts
+app/(main)/entry-points/entry-points-data.ts
 app/(main)/entry-points/actions.ts
-app/(main)/entry-points/page.tsx
 app/(main)/events/[slug]/event-member-page.tsx
 app/(main)/events/[slug]/manage/actions.ts
 app/(main)/events/[slug]/manage/attendance-actions.ts
