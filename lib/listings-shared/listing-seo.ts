@@ -11,7 +11,7 @@
 //   - Voice canon: no em or en dashes in any surfaced string.
 
 import type { Metadata } from 'next'
-import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE, ROOT_OG_IMAGES } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE } from '@/lib/site'
 import { breadcrumbSchema, aggregateRatingNode, productReviewNodes } from '@/lib/jsonld'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
@@ -68,7 +68,6 @@ export function listingMetadata(view: ListingDetailView): Metadata {
   const path = listingCanonicalPath(view)
   const description = metaDescription(view)
   const ogTitle = `${view.title} · ${SITE_NAME}`
-  const image = view.primaryImage ?? undefined
 
   // Sold / closed / draft: reachable by direct link but out of the index (thin, stale, or gated).
   const noindex = view.status != null
@@ -84,9 +83,8 @@ export function listingMetadata(view: ListingDetailView): Metadata {
       description,
       type: 'website',
       url: path,
-      // No listing photo: the ROOT card. The listing routes have no segment card, so a block
-      // without `images` ships no og:image at all (SCAN-798). twitter.images inherits this.
-      images: image ? [{ url: image }] : ROOT_OG_IMAGES,
+      // No `images`: each listing route owns an opengraph-image (lib/og/listing-card.tsx) that draws the
+      // listing's photo in the Stage layout. Declaring the key here would suppress that card (LIVE-141).
     },
     twitter: {
       card: 'summary_large_image',

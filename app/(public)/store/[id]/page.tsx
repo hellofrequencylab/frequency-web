@@ -55,7 +55,6 @@ export async function generateMetadata({
       description,
       type: 'website',
       url: `/store/${id}`,
-      ...(product.images.length > 0 ? { images: [product.images[0]] } : {}),
     },
     twitter: {
       card: 'summary_large_image',
