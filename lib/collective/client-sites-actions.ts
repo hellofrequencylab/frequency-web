@@ -13,6 +13,7 @@ import { ownedSubscription } from './extra-space-billing'
 import { isNetworkPlan } from './member-spaces'
 import { clientSiteEntitlements } from './client-sites'
 import { mintSpaceClaimToken } from '@/lib/spaces/claim'
+import { BADGE_REMOVAL_ENTITLEMENT } from '@/lib/sites/site-badge'
 import { syncClientSiteBilling, setClientSiteBadgeRemoval } from './client-site-billing'
 
 // CREATE A CLIENT WEBSITE (ADR-1816). The Network's owner stands up a Business-level Space for one of their
@@ -93,4 +94,36 @@ export async function getClientSiteHandoffLink(networkId: string, siteId: string
   const token = await mintSpaceClaimToken(siteId)
   if (!token) return fail('Could not make the link. Try again.')
   return ok({ path: `/spaces/claim/${token}` })
+}
+
+/** Stop paying for a client site. DETACHES it, never deletes it: the Space, its pages and its members stay, it
+ *  leaves the Network's bill, and it goes back to a free Space of its type (the Business depth, the custom
+ *  domain and badge removal this program granted are taken away; a domain saved on it stops serving until it is
+ *  on a plan with custom domains again). If the bill cannot change, the site is put back exactly as it was, so
+ *  the Network is never left paying for a site it has let go of. Owner-gated on the Network. */
+export async function removeClientSite(networkId: string, siteId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to remove a client site.')
+  const owned = await ownedSubscription(networkId)
+  if (!owned || !isNetworkPlan(owned.plan) || owned.ownerId !== profileId) return fail('Only the owner of a subscribed Network can remove a client site.')
+  const db = createAdminClient()
+  const found = await db.from('spaces').select('id, type, plan, entitlements, slug')
+    .eq('id', siteId).eq('reseller_network_id' as never, networkId).eq('status', 'active').maybeSingle()
+  const site = found.data as unknown as { id: string; type: string; plan: string; entitlements: unknown; slug: string } | null
+  if (found.error || !site) return fail('We could not find that client site.')
+
+  const birth = await spaceBirthConfig(site.type)
+  const free: Record<string, boolean> = { ...birth.entitlements }
+  delete free[BADGE_REMOVAL_ENTITLEMENT]
+  const detach = await db.from('spaces').update({ reseller_network_id: null, plan: 'free', entitlements: free } as never).eq('id', siteId)
+  if (detach.error) return fail('Could not remove that site. Try again.')
+
+  const billed = await syncClientSiteBilling(networkId)
+  if (isError(billed)) {
+    await db.from('spaces').update({ reseller_network_id: networkId, plan: site.plan, entitlements: site.entitlements } as never).eq('id', siteId)
+    return billed
+  }
+  const parent = await db.from('spaces').select('slug').eq('id', networkId).maybeSingle()
+  if (parent.data?.slug) revalidatePath(`/spaces/${parent.data.slug}/settings/websites`)
+  return ok()
 }

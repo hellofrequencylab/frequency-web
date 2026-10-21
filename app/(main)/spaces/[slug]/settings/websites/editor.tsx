@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/field'
 import { Badge } from '@/components/ui/badge'
 import { isError, type ActionResult } from '@/lib/action-result'
-import { createClientSite, getClientSiteHandoffLink, toggleClientSiteBadge } from '@/lib/collective/client-sites-actions'
+import { createClientSite, getClientSiteHandoffLink, removeClientSite, toggleClientSiteBadge } from '@/lib/collective/client-sites-actions'
 import type { ClientSiteRow } from '@/lib/collective/client-sites'
 
 const DOMAIN_LABEL = { none: 'Free address', live: 'Own domain live', pending: 'Own domain pending' } as const
@@ -56,6 +56,8 @@ export function ClientSitesEditor({ networkId, networkOwnerId, sites, monthlyLab
                   {site.badgeFree ? 'Badge removed' : `Remove badge, +${badgeLabel}`}
                 </Button>
                 {site.ownerProfileId === networkOwnerId ? <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => handoff(site.id)}>Hand off to owner</Button> : null}
+                <Button type="button" variant="ghost" size="sm" disabled={pending}
+                  onClick={() => { if (window.confirm(`Stop paying for ${site.name}? The site stays, but it leaves your bill and goes back to a free Space, so its own domain and Business tools switch off.`)) run(() => removeClientSite(networkId, site.id), `${site.name} is off your bill.`) }}>Remove from my bill</Button>
               </div>
               {links[site.id] ? (
                 <div className="w-full space-y-1">
