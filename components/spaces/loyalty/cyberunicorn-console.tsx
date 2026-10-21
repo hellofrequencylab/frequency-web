@@ -88,6 +88,11 @@ const TAP_REPLY_MS = TAP_MS + 15000
 /** Opening the port reboots the CYD on macOS (the CH340 driver pulses EN), and a boot to the main menu
  *  takes about 18 s, so the page keeps asking for up to this long. Measured on hardware 2026-10-20. */
 const BOOT_WAIT_MS = 40000
+/** A board still printing at that point is mid-boot, not deaf: keep asking while lines arrive, up to this. */
+const BOOT_WAIT_MAX_MS = 90000
+const BOOT_QUIET_MS = 5000
+/** The board's boot scene starts about this long after the port opens; the page's copy waits to match. */
+const BOOT_SYNC_DELAY_MS = 1000
 /** The board uses the cable for a scan only if this page sent a line in the last 30 s. */
 const KEEPALIVE_MS = 10000
 /** How often the "tap it with your phone" step asks whether the check-in landed, and for how long. */
@@ -547,9 +552,13 @@ export function CyberUnicornConsole({
       setClient(next)
       // Whether the board printed anything at all tells a dead or busy port from firmware that has no remote app.
       let heard = 0
+      let heardAt = 0
       setLog([])
       next.log.on((l) => {
-        if (l.dir === 'in') heard++
+        if (l.dir === 'in') {
+          heard++
+          heardAt = wallClock()
+        }
         logLine(l)
       })
       next.events.on((e) => {
@@ -580,9 +589,14 @@ export function CyberUnicornConsole({
       // sets DTR and RTS), and it reads nothing until its setup ends, about 18 s later. Ask every few
       // seconds until a status comes back. Pings sent during boot are answered late and ignored by id.
       let s: SystemStatus | null = null
-      const until = wallClock() + BOOT_WAIT_MS
-      setBootStarted(wallClock())
-      while (!s && wallClock() < until && clientRef.current === next) {
+      const started = wallClock()
+      const waiting = () => {
+        const t = wallClock()
+        if (t < started + BOOT_WAIT_MS) return true
+        return t < started + BOOT_WAIT_MAX_MS && t - heardAt < BOOT_QUIET_MS
+      }
+      setBootStarted(started)
+      while (!s && waiting() && clientRef.current === next) {
         s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: 3000 }).catch(() => null)
       }
       setBootStarted(null)
@@ -1410,7 +1424,7 @@ export function CyberUnicornConsole({
                 <>
                   <dl className="flex min-w-0 flex-1 flex-wrap gap-x-4 gap-y-1 text-[length:var(--cu-type-console)]">
                     <Fact label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
-                    {link === 'usb' && <Fact label="Reader" value={readerOk ? 'Ready' : 'Not found, turn DIP 3 on'} tone={readerOk ? 'ok' : 'attention'} />}
+                    {link === 'usb' && <Fact label="Reader" value={readerOk ? 'Ready' : hat?.i2c_stuck ? 'Stuck, unplug for 10 s' : 'Not found, turn DIP 3 on'} tone={readerOk ? 'ok' : 'attention'} />}
                     <Fact label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Off'} />
                   </dl>
                   {ready && link === 'usb' && !readerOk && (
@@ -1471,8 +1485,8 @@ export function CyberUnicornConsole({
                   : 'Making a card link for this member...'
                 : phase === 'tap'
                   ? mode === 'placards'
-                    ? `Hold the NTAG sticker flat on the CyberUnicorn reader and keep it still until it beeps. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
-                    : `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until it beeps.`
+                    ? `Hold the NTAG sticker flat on the CyberUnicorn reader and keep it still until the light flashes. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
+                    : `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until the light flashes.`
                   : phase === 'scanning'
                     ? 'Hold a member card on the reader to check them in.'
                     : 'Hold any card or tag on the reader to see what it holds.'}
@@ -1834,7 +1848,22 @@ function BootCanvas({ fontFamily, finale, progress }: { fontFamily: string; fina
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
-    return startBootScene(canvas, { fontFamily, finale, loop: true, progress: () => progress.current })
+    // While connecting, opening the port has just reset the board, and its own boot scene lights up about a
+    // second later: hold ours back by that much so the two play together (Daniel, 2026-10-21).
+    let stop: (() => void) | undefined
+    const begin = () => {
+      stop = startBootScene(canvas, { fontFamily, finale, loop: true, progress: () => progress.current })
+    }
+    if (!finale) {
+      begin()
+      return () => stop?.()
+    }
+    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
+    const t = window.setTimeout(begin, BOOT_SYNC_DELAY_MS)
+    return () => {
+      window.clearTimeout(t)
+      stop?.()
+    }
   }, [fontFamily, finale, progress])
   return (
     <canvas
