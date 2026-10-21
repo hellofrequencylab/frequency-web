@@ -155,7 +155,7 @@ describe("The Group's site, rendered from the seed through the real chrome and s
 
   it("draws Home in the handoff's order with the brief's words and the Space's own dates", () => {
     const home = words(renderPage('home'))
-    const order = ['The non', 'Nearly 100', 'Start your Friday', 'Bring your idea', 'Find a group.', 'Your first Friday', 'Pockets of community', 'Find the people', 'Meet June An, founder', 'June, Carol', 'Your journey', 'Your story deserves a studio', 'The podcast.', 'Connect with us', 'Made with local', "The Group's golden rule."]
+    const order = ['The non', 'Nearly 100', 'Start your Friday', 'Bring your idea', 'Find a group.', 'Your first Friday', 'across San Diego', 'Find the people', 'Meet June An, founder', 'June, Dr. Lisel', 'Your journey', 'Your story deserves a studio', 'The podcast.', 'Connect with us', 'Made with local', "The Group's golden rule."]
     let at = 0
     for (const s of order) {
       const i = home.indexOf(s, at)

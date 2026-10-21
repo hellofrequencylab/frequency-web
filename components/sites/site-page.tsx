@@ -360,7 +360,7 @@ export async function SitePage({
         brandName={websiteChrome.name}
         homeHref={homeHref}
         links={links}
-        cta={chromeCta}
+        cta={netSite ? null : chromeCta}
         themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
         logoUrl={skin ? (website ? websiteBrand.logo : space.brandLogoUrl) : headerLogo.logoUrl}

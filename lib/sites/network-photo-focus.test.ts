@@ -7,7 +7,7 @@ describe('photoFocus', () => {
   })
   it('knows where the faces sit in a shipped photo', () => {
     expect(photoFocus('/brand/the-group/photos/june-hug.jpg')).toBe('55% 22%')
-    expect(photoFocus('https://cdn.example/x/founder-june-an.jpg?v=2')).toBe('55% 28%')
+    expect(photoFocus('https://cdn.example/x/founder-june-an.jpg?v=2')).toBe('55% 6%')
   })
   it('ignores a malformed owner point and an unknown photo', () => {
     expect(photoFocus('/a/unknown.jpg', 'url(x)')).toBeUndefined()
