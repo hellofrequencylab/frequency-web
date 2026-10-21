@@ -40,6 +40,8 @@ import { withImageOrder } from './media-order'
 import { composeMarketingLayout } from './compose'
 import { buildSourceExcerpt } from './excerpt'
 import { addSpaceMember } from '@/lib/spaces/membership'
+import { spaceBirthConfig, finishSpaceBirth } from '@/lib/spaces/provision-core'
+import { DEFAULT_SPACE_SKIN } from '@/lib/spaces/profile-config'
 import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
@@ -301,7 +303,10 @@ async function provisionSpace(
   const slug = await freeSlug(plan.identity.slug)
   if (!slug) return null
 
-  const preferences: Record<string, unknown> = {}
+  // The same birth steps createSpace runs (per-type tool defaults, directory kind, setup preset,
+  // starter pipeline), so a seeded Space stands up the way a member-created one does.
+  const birth = await spaceBirthConfig(plan.identity.type)
+  const preferences: Record<string, unknown> = { ...birth.preferences }
   if (isDemo) preferences.isDemo = true
   // websitePublished is intentionally UNSET (draft): the Site at /sites/[slug] stays unpublished
   // until an operator flips it live (§9b). A demo Space is visibility 'private' too.
@@ -312,12 +317,13 @@ async function provisionSpace(
     type: plan.identity.type,
     status: 'active',
     entity_id: entityId,
-    skin: 'dawn',
+    skin: DEFAULT_SPACE_SKIN,
     network_connected: true,
     visibility: isDemo ? 'private' : 'network',
     plan: 'free',
-    entitlements: {},
-    feature_roles: {},
+    entitlements: birth.entitlements,
+    feature_roles: birth.featureRoles,
+    mode_variant: birth.modeVariant,
     owner_profile_id: ownerProfileId,
     brand_name: plan.identity.brandName,
     tagline: plan.identity.tagline,
@@ -333,6 +339,7 @@ async function provisionSpace(
     if (error || !data?.id) return null
     // Seat the owner (service-role store, bound to space_id).
     await addSpaceMember({ spaceId: data.id, profileId: ownerProfileId, role: 'admin', status: 'active' })
+    await finishSpaceBirth(data.id, plan.identity.type, birth)
     // Persist the identity's derived slug back into the plan so the caller reports the real slug.
     plan.identity.slug = slug
     return data.id

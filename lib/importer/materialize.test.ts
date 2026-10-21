@@ -151,6 +151,13 @@ vi.mock('@/lib/spaces/store', () => ({
   },
 }))
 
+// The shared birth steps read the operator's tool defaults and write bundles/stages; the seeder's
+// own test stubs them (they are covered by lib/spaces/provision-core.test.ts).
+vi.mock('@/lib/spaces/provision-core', () => ({
+  spaceBirthConfig: async () => ({ modeVariant: null, entitlements: {}, featureRoles: {}, presetId: null, preferences: {} }),
+  finishSpaceBirth: async () => {},
+}))
+
 // addSpaceMember writes a space_members row (bound to space_id), like the real store.
 vi.mock('@/lib/spaces/membership', () => ({
   addSpaceMember: async (input: { spaceId: string; profileId: string; role?: string; status?: string }) => {
