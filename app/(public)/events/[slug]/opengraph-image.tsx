@@ -5,10 +5,9 @@ import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { eventCardResponse } from '@/lib/og/event-card'
-import { cardResponse } from '@/lib/og/deliver'
+import { stageCardResponse } from '@/lib/og/stage-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 import { SITE_NAME } from '@/lib/site'
-import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `An event on ${SITE_NAME}`
@@ -40,10 +39,7 @@ export const contentType = OG_CONTENT_TYPE
 // lib/events/hero-url.ts, `scripts/check-event-hero-parity.test.ts` fails a PR that drops a column
 // from this select, and ADR-1179 is the record.
 //
-// Satori has NO access to the CSS token system, so the few colors it needs are literals mirroring the
-// existing event cards (the shared module + the claim card): the amber accent #E2912F,
-// near-black ground, white display type.
-const INDIGO = palette.ogAccent
+// The look is the shared Stage card (lib/og/stage-card.tsx); this route owns only the data and the gate.
 
 // The card a NON-PUBLIC event gets: brand ground, the events accent bar, and the words "An event on
 // Frequency" — no title, no date, no venue, no host. Identity-free by construction, so a shared link
@@ -53,37 +49,11 @@ const INDIGO = palette.ogAccent
 // ⚠️ NOT the shared module's text card: this one must publish NO event strings at all, so it is
 // written out here rather than assembled from fields a future edit could start filling in.
 function neutralCard() {
-  return cardResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: 72,
-          backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
-          {SITE_NAME.toUpperCase()}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: INDIGO, marginBottom: 28 }} />
-          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', maxWidth: 1040 }}>
-            An event on {SITE_NAME}
-          </div>
-        </div>
-        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
-          A community gathering
-        </div>
-      </div>
-    ),
-    size,
-  )
+  return stageCardResponse({
+    kicker: SITE_NAME,
+    title: `An event on ${SITE_NAME}`,
+    line: 'A community gathering',
+  })
 }
 
 type Row = {

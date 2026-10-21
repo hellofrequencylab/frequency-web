@@ -137,14 +137,15 @@ describe('Space share card mirrors the on-page shape (LIVE-196, ADR-1192)', () =
   // `borderRadius: 28`, which matches no theme and no token, under a header claiming the card
   // "MIRRORS THE ON-PAGE HERO". The chip on the page is `BrandAnchor`, which rides `--radius-cover`.
   const globalsCss = readFileSync(join(REPO_ROOT, 'app/globals.css'), 'utf8')
-  const og = readFileSync(join(PUBLIC_SPACE_ROOT, 'opengraph-image.tsx'), 'utf8')
+  // The chip is drawn by the shared Stage card now (the Space route only supplies its strings).
+  const og = readFileSync(join(REPO_ROOT, 'lib/og/stage-card.tsx'), 'utf8')
 
   it('sets the OG logo chip radius from the --radius-cover baseline', () => {
     const token = globalsCss.match(/^\s*--radius-cover:\s*(\d+)px;/m)
     expect(token, 'app/globals.css declares a --radius-cover baseline').not.toBeNull()
 
     const mirrored = og.match(/^const COVER_RADIUS = (\d+)\b/m)
-    expect(mirrored, 'opengraph-image.tsx names its mirrored cover radius').not.toBeNull()
+    expect(mirrored, 'stage-card.tsx names its mirrored cover radius').not.toBeNull()
 
     expect(Number(mirrored![1])).toBe(Number(token![1]))
     expect(og).toMatch(/borderRadius: COVER_RADIUS,/)

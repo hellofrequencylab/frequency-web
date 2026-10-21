@@ -169,7 +169,8 @@ describe('the Space share card over hostile preference shapes', () => {
     const { res, element, options } = await render({ preferences })
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('image/jpeg')
-    expect(options.fonts).toHaveLength(2)
+    // The Stage faces: Unbounded, Hanken Grotesk 500 + 700, Instrument Serif italic, and the Nunito glyph fallback.
+    expect(options.fonts).toHaveLength(5)
     for (const src of imgSrcs(element)) expect(src).toMatch(SIZEABLE)
   }, 120_000)
 
@@ -177,7 +178,8 @@ describe('the Space share card over hostile preference shapes', () => {
     getSpaceVisibility.mockResolvedValue('private')
     const { res, element } = await render({ preferences: 'irrelevant' })
     expect(res.status).toBe(200)
-    expect(imgSrcs(element)).toHaveLength(0)
+    // Only the local Frequency mark: no cover and no logo, so nothing of the Space is fetched.
+    expect(imgSrcs(element)).toHaveLength(1)
     getSpaceVisibility.mockResolvedValue('network')
     getSpaceBySlug.mockResolvedValue(null)
     const missing = await Image({ params: Promise.resolve({ slug: 'nobody' }) })

@@ -1,8 +1,7 @@
 import { getPublicCircle } from '@/lib/discover'
 import { SITE_NAME } from '@/lib/site'
-import { cardResponse } from '@/lib/og/deliver'
+import { stageCardResponse } from '@/lib/og/stage-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
-import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A circle on ${SITE_NAME}`
@@ -18,7 +17,7 @@ export const contentType = OG_CONTENT_TYPE
 // ⚠️ RESOLVES slug-OR-id, and it HAS to (LIVE-182). This route receives the same segment the page
 // does, and that segment is now the slug. A by-id-only read would hand a slug to an RPC typed
 // `_id uuid`, fail, and fall through to the generic card — every share of a public Circle losing
-// its name, silently, because the fallback is indistinguishable from "circle not found". Visual language mirrors the practices /
+// its name, silently, because the fallback is indistinguishable from "circle not found". The look is the shared Stage card; it was once drawn to mirror the practices /
 // events cards: near-black gradient ground, indigo brand bar, white display type.
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -28,64 +27,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const where = circle?.city ?? null
   const isFallback = !circle
 
-  return cardResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: 72,
-          backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
-          {SITE_NAME.toUpperCase()}
-        </div>
+  const members = circle && circle.member_count > 0 ? `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}` : null
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {where && (
-            <div
-              style={{
-                display: 'flex',
-                alignSelf: 'flex-start',
-                marginBottom: 20,
-                padding: '8px 18px',
-                borderRadius: 9999,
-                fontSize: 24,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: palette.ogAccentSoft,
-                backgroundColor: `${palette.ogAccent}38`,
-              }}
-            >
-              {where}
-            </div>
-          )}
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: palette.ogAccent, marginBottom: 28 }} />
-          <div
-            style={{
-              display: 'flex',
-              fontSize: title.length > 60 ? 52 : 68,
-              fontWeight: 800,
-              lineHeight: 1.12,
-              letterSpacing: '-0.02em',
-              maxWidth: 1000,
-            }}
-          >
-            {title.length > 110 ? `${title.slice(0, 107)}…` : title}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
-          {isFallback ? `Circles on ${SITE_NAME}` : `A circle on ${SITE_NAME}`}
-        </div>
-      </div>
-    ),
-    size,
-  )
+  return stageCardResponse({
+    kicker: 'Circle',
+    title,
+    line: circle?.about ?? (isFallback ? `Circles on ${SITE_NAME}` : `A circle on ${SITE_NAME}`),
+    meta: [where, members].filter(Boolean).join(' · ') || null,
+  })
 }

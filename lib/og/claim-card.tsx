@@ -1,15 +1,8 @@
-/* eslint-disable @next/next/no-img-element -- Satori/ImageResponse renders raw elements; next/image cannot run inside an OG ImageResponse */
-import { ImageResponse } from "next/og";
-import { fetchRemoteImage } from "@/lib/og/remote-image";
-import {
-  coverPlaceholderDataUrl,
-  siteMarkDataUrl,
-} from "@/lib/og/local-image";
+import { coverPlaceholderDataUrl } from "@/lib/og/local-image";
 import type { CoverPlaceholderPath } from "@/lib/spaces/cover-placeholder";
-import { loadNunito } from "@/lib/og/load-nunito";
+import { stageCardResponse } from "@/lib/og/stage-card";
 import { SITE_NAME } from "@/lib/site";
-import { deliverCard } from "@/lib/og/deliver";
-import { palette } from "@/lib/theme/palette";
+
 
 // SHARED CLAIM-LINK OG CARD (SEO/AIO). The share card a scraper renders for a seeded entity's claim
 // link (/spaces/claim/<token>, /events/claim/<token>, /listings/claim/<token>) — NOT the generic site
@@ -18,21 +11,12 @@ import { palette } from "@/lib/theme/palette";
 // left (Coach / Practitioner / Business / Non Profit / Event), and the Frequency watermark top right.
 //
 // One place builds the card so every claim route reads the same visual language as the rest of the
-// site's OG cards (app/opengraph-image.tsx, the spaces + events cards). Satori has no access to the
-// CSS token system, so its colours come from the design-keyed palette (lib/theme/palette.ts: onInk,
-// primary). Voice canon: plain imperative, no em or en dashes.
+// site's OG cards (the spaces + events cards). Voice canon: plain imperative, no em or en dashes.
+//
+// The look is the shared Stage card (lib/og/stage-card.tsx). This module only turns a claim link's
+// facts into its strings: the designator pill, the entity's name, and the pitch line in serif italic.
 
 export const CLAIM_OG_SIZE = { width: 1200, height: 630 } as const;
-
-const ON_INK = palette.onInk;
-const PRIMARY = palette.primary;
-
-// Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
-// not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is
-// unresolvable to @vercel/nft, which then globs the whole of public/ into all three claim segments
-// and everything under them. Measured at 12.25 MB per function before that module existed. This
-// module was the last of four holding the glob open, so it had to move with the other three or the
-// directory would have shipped regardless. See that module's header.
 
 interface ClaimCardInput {
   /** The entity's own name (the business / event / listing title). */
@@ -50,8 +34,10 @@ interface ClaimCardInput {
   placeholderRelPath: CoverPlaceholderPath;
   /** A remote logo/avatar to fetch + inline into the chip, if any. */
   logoUrl?: string | null;
-  /** The brand accent as a literal hex (Satori cannot resolve token names). */
-  accent: string;
+  /** The operator's own accent as a literal hex (Satori cannot resolve token names); tints the initials chip. */
+  accent?: string | null;
+  /** `events.theme.coverFocus` ("x% y%"), so the shared crop matches the page hero. */
+  coverFocus?: string | null;
 }
 
 /**
@@ -67,19 +53,6 @@ export async function claimCardResponse(
   input: ClaimCardInput,
 ): Promise<Response> {
   const name = input.name.trim() || "Your business";
-  const displayName = name.length > 44 ? `${name.slice(0, 41)}...` : name;
-  const accent = /^#[0-9a-fA-F]{6}$/.test(input.accent)
-    ? input.accent
-    : PRIMARY;
-  const pitch = `Claim your ${input.noun} on ${SITE_NAME}`;
-
-  const [remoteCover, logo, mark] = await Promise.all([
-    input.coverUrl ? fetchRemoteImage(input.coverUrl) : Promise.resolve(null),
-    input.logoUrl ? fetchRemoteImage(input.logoUrl) : Promise.resolve(null),
-    siteMarkDataUrl(),
-  ]);
-  const cover =
-    remoteCover ?? (await coverPlaceholderDataUrl(input.placeholderRelPath));
   const initials = name
     .split(/\s+/)
     .map((w) => w[0])
@@ -88,202 +61,15 @@ export async function claimCardResponse(
     .join("")
     .toUpperCase();
 
-  const [black, bold] = await Promise.all([loadNunito(900), loadNunito(700)]);
-  const fonts = [
-    {
-      name: "Nunito",
-      data: black,
-      weight: 900 as const,
-      style: "normal" as const,
-    },
-    {
-      name: "Nunito",
-      data: bold,
-      weight: 700 as const,
-      style: "normal" as const,
-    },
-  ];
-
-  return deliverCard(
-    new ImageResponse(
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          position: "relative",
-          fontFamily: "Nunito",
-        }}
-      >
-        {/* The entity's own cover as the background (the recognizable identity). */}
-        <img
-          src={cover}
-          alt=""
-          width={CLAIM_OG_SIZE.width}
-          height={CLAIM_OG_SIZE.height}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
-        {/* Legibility scrim: a touch at the top so the pill + watermark read, heavy at the bottom for
-            the lockup. */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(180deg, rgba(20,18,16,0.55) 0%, rgba(20,18,16,0.20) 30%, rgba(20,18,16,0.50) 66%, rgba(20,18,16,0.90) 100%)",
-          }}
-        />
-
-        {/* Top-left: the entity DESIGNATOR pill. */}
-        <div
-          style={{
-            position: "absolute",
-            top: 48,
-            left: 56,
-            display: "flex",
-            padding: "10px 22px",
-            borderRadius: 9999,
-            fontSize: 26,
-            fontWeight: 700,
-            letterSpacing: "0.04em",
-            color: ON_INK,
-            backgroundColor: "rgba(255,255,255,0.18)",
-            border: "1px solid rgba(255,255,255,0.40)",
-          }}
-        >
-          {input.pill}
-        </div>
-
-        {/* Top-right: the Frequency watermark. */}
-        <img
-          src={mark}
-          alt=""
-          width={76}
-          height={76}
-          style={{
-            position: "absolute",
-            top: 44,
-            right: 56,
-            width: 76,
-            height: 76,
-            opacity: 0.96,
-          }}
-        />
-
-        {/* Bottom-left lockup: logo chip + accent bar + entity name + the pitch line. */}
-        <div
-          style={{
-            position: "relative",
-            display: "flex",
-            alignItems: "flex-end",
-            width: "100%",
-            height: "100%",
-            padding: 64,
-            gap: 32,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              width: 140,
-              height: 140,
-              borderRadius: 26,
-              backgroundColor: "#FFFFFF",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-              flexShrink: 0,
-            }}
-          >
-            {logo ? (
-              <img
-                src={logo}
-                alt=""
-                width={140}
-                height={140}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  fontWeight: 700,
-                  fontSize: 58,
-                  color: accent,
-                }}
-              >
-                {initials}
-              </div>
-            )}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              flexGrow: 1,
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 84,
-                height: 8,
-                borderRadius: 9999,
-                backgroundColor: accent,
-                marginBottom: 18,
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                fontSize: displayName.length > 24 ? 58 : 72,
-                fontWeight: 900,
-                lineHeight: 1.04,
-                letterSpacing: "-0.02em",
-                color: "#FFFFFF",
-                textShadow: "0 2px 24px rgba(0,0,0,0.55)",
-                maxWidth: 900,
-              }}
-            >
-              {displayName}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 34,
-                fontWeight: 700,
-                lineHeight: 1.25,
-                marginTop: 14,
-                color: ON_INK,
-                textShadow: "0 1px 12px rgba(0,0,0,0.6)",
-                maxWidth: 900,
-              }}
-            >
-              {pitch}
-            </div>
-          </div>
-        </div>
-
-        {/* A thin brand keyline along the bottom edge in the accent, tying the card to the network. */}
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 10,
-            backgroundColor: accent,
-          }}
-        />
-      </div>,
-      { ...CLAIM_OG_SIZE, fonts },
-    ),
-  );
+  return stageCardResponse({
+    kicker: input.pill,
+    title: name,
+    line: `Claim your ${input.noun} on ${SITE_NAME}`,
+    coverUrl: input.coverUrl,
+    coverFocus: input.coverFocus,
+    coverPlaceholder: await coverPlaceholderDataUrl(input.placeholderRelPath),
+    logoUrl: input.logoUrl,
+    initials,
+    accent: input.accent,
+  });
 }

@@ -45,3 +45,15 @@ theme's display and body faces, both licensed under the **SIL Open Font License,
 - License: https://scripts.sil.org/OFL
 
 `lib/og/load-menswork-fonts.ts` opens them for the Menswork website share card (LIVE-870) only.
+
+---
+
+# Stage share-card faces (`public/fonts/stage/`)
+
+`Unbounded-Bold.ttf`, `HankenGrotesk-Medium.ttf`, `HankenGrotesk-Bold.ttf` and
+`InstrumentSerif-Italic.ttf` are from the **Unbounded**, **Hanken Grotesk** and **Instrument Serif**
+families, licensed under the **SIL Open Font License, Version 1.1** (https://scripts.sil.org/OFL).
+
+They are the Latin subsets the app already ships under `app/fonts/*.woff2`, converted to plain
+TrueType (Satori cannot parse WOFF2) and cut to one weight each (Satori draws a variable font at its
+default instance only). `lib/og/load-stage-fonts.ts` opens them for every share card.

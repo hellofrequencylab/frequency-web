@@ -4,13 +4,8 @@ import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { claimCardResponse, CLAIM_OG_SIZE } from '@/lib/og/claim-card'
-import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
-import { fetchRemoteImage } from '@/lib/og/remote-image'
-import { siteMarkDataUrl } from '@/lib/og/local-image'
-import { loadNunito } from '@/lib/og/load-nunito'
 import { SITE_NAME } from '@/lib/site'
-import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `Claim your event on ${SITE_NAME}`
@@ -25,7 +20,7 @@ export const contentType = OG_CONTENT_TYPE
 // event page hero shows — plus the event title, an "Event" pill, the pitch line, and the Frequency
 // watermark. Only a PUBLISHED, still-UNCLAIMED, un-removed event behind the token resolves; anything
 // else (or a coverless event) falls back to the neutral shared claim card, so a guessed / used token
-// reveals nothing. Events indigo accent (palette.ogAccent) mirrors the per-event OG card.
+// reveals nothing.
 //
 // COVER PARITY — this must resolve the exact hero the event page renders (app/(main)/events/[slug]/page.tsx):
 // uploaded PUBLIC cover → full scanned poster → the scanner's cropped cover. That precedence used to
@@ -38,8 +33,6 @@ export const contentType = OG_CONTENT_TYPE
 // valid at request time. Any miss (no cover, or a slow/broken/oversized fetch) yields the branded
 // placeholder card.
 
-const ON_INK = palette.onInk
-const INDIGO = palette.ogAccent
 
 type EventClaimRow = {
   id: string
@@ -83,174 +76,20 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       pill: 'Event',
       noun: 'event',
       placeholderRelPath: '/images/site/community-dinner.jpg',
-      accent: INDIGO,
     })
   }
 
   // Resolve the SAME hero the event page uses, through the one precedence (lib/events/hero-url.ts).
   const heroUrl = await resolveEventHeroUrl(ev)
 
-  // Inline the chosen image for Satori. Any miss (no cover, slow / broken / oversized fetch) falls
-  // through to the branded placeholder card below.
-  const cover = heroUrl ? await fetchRemoteImage(heroUrl) : null
-  if (!cover) {
-    return claimCardResponse({
-      name: ev.title ?? 'Your event',
-      pill: 'Event',
-      noun: 'event',
-      placeholderRelPath: coverPlaceholderFor(ev.id),
-      accent: INDIGO,
-    })
-  }
-
-  // The SAME focal point the event page applies to its hero <Image> (events.theme.coverFocus),
-  // as a CSS object-position — so the shared card crops identically to the page.
-  const coverFocus = readEventCoverFocus(ev.theme)
-
-  const name = (ev.title ?? '').trim() || 'Your event'
-  const displayName = name.length > 44 ? `${name.slice(0, 41)}...` : name
-  const pitch = `Claim your event on ${SITE_NAME}`
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-
-  const [black, bold, mark] = await Promise.all([
-    loadNunito(900),
-    loadNunito(700),
-    siteMarkDataUrl(),
-  ])
-  const fonts = [
-    { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },
-    { name: 'Nunito', data: bold, weight: 700 as const, style: 'normal' as const },
-  ]
-
-  return cardResponse(
-    (
-      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', fontFamily: 'Nunito' }}>
-        {/* The event's own header/cover, cropped to the SAME focal point as the page hero. */}
-        <img
-          src={cover}
-          alt=""
-          width={CLAIM_OG_SIZE.width}
-          height={CLAIM_OG_SIZE.height}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: coverFocus,
-          }}
-        />
-        {/* Legibility scrim: a touch at the top so the pill + watermark read, heavy at the bottom for
-            the lockup. */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage:
-              'linear-gradient(180deg, rgba(20,18,16,0.55) 0%, rgba(20,18,16,0.20) 30%, rgba(20,18,16,0.50) 66%, rgba(20,18,16,0.90) 100%)',
-          }}
-        />
-
-        {/* Top-left: the entity DESIGNATOR pill. */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 48,
-            left: 56,
-            display: 'flex',
-            padding: '10px 22px',
-            borderRadius: 9999,
-            fontSize: 26,
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            color: ON_INK,
-            backgroundColor: 'rgba(255,255,255,0.18)',
-            border: '1px solid rgba(255,255,255,0.40)',
-          }}
-        >
-          Event
-        </div>
-
-        {/* Top-right: the Frequency watermark. */}
-        <img
-          src={mark}
-          alt=""
-          width={76}
-          height={76}
-          style={{ position: 'absolute', top: 44, right: 56, width: 76, height: 76, opacity: 0.96 }}
-        />
-
-        {/* Bottom-left lockup: logo chip + accent bar + event name + the pitch line. */}
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'flex-end',
-            width: '100%',
-            height: '100%',
-            padding: 64,
-            gap: 32,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              width: 140,
-              height: 140,
-              borderRadius: 26,
-              backgroundColor: '#FFFFFF',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              flexShrink: 0,
-            }}
-          >
-            <div style={{ display: 'flex', fontWeight: 700, fontSize: 58, color: INDIGO }}>{initials}</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0 }}>
-            <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: INDIGO, marginBottom: 18 }} />
-            <div
-              style={{
-                display: 'flex',
-                fontSize: displayName.length > 24 ? 58 : 72,
-                fontWeight: 900,
-                lineHeight: 1.04,
-                letterSpacing: '-0.02em',
-                color: '#FFFFFF',
-                textShadow: '0 2px 24px rgba(0,0,0,0.55)',
-                maxWidth: 900,
-              }}
-            >
-              {displayName}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                fontSize: 34,
-                fontWeight: 700,
-                lineHeight: 1.25,
-                marginTop: 14,
-                color: ON_INK,
-                textShadow: '0 1px 12px rgba(0,0,0,0.6)',
-                maxWidth: 900,
-              }}
-            >
-              {pitch}
-            </div>
-          </div>
-        </div>
-
-        {/* A thin brand keyline along the bottom edge in the accent, tying the card to the network. */}
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 10, backgroundColor: INDIGO }} />
-      </div>
-    ),
-    { ...CLAIM_OG_SIZE, fonts },
-  )
+  // The shared claim card fetches + inlines the hero. Any miss (no cover, slow / broken / oversized
+  // fetch) falls through to the branded placeholder photo inside it, so a crawl never breaks.
+  return claimCardResponse({
+    name: (ev.title ?? '').trim() || 'Your event',
+    pill: 'Event',
+    noun: 'event',
+    coverUrl: heroUrl,
+    coverFocus: readEventCoverFocus(ev.theme),
+    placeholderRelPath: coverPlaceholderFor(ev.id),
+  })
 }

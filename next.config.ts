@@ -199,10 +199,17 @@ const notCameraRoute = `/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join
 //
 // ⚠️ NAMED, not `./public/fonts/*.ttf`. That glob also used to sweep LiberationSans-Regular
 // (410,820 bytes) into every lambda. LIVE-216 deleted that face with the flyer builder.
+//
+// Plus the four Stage faces lib/og/load-stage-fonts.ts opens (Unbounded, Hanken Grotesk, Instrument
+// Serif), which every card draws with since the Stage redesign. Named, never `./public/fonts/stage/*`.
 const OG_CARD_FONTS = [
   './public/fonts/Nunito-Bold.ttf',
   './public/fonts/Nunito-Black.ttf',
   './public/fonts/LiberationSans-Bold.ttf',
+  './public/fonts/stage/Unbounded-Bold.ttf',
+  './public/fonts/stage/HankenGrotesk-Medium.ttf',
+  './public/fonts/stage/HankenGrotesk-Bold.ttf',
+  './public/fonts/stage/InstrumentSerif-Italic.ttf',
 ]
 
 const nextConfig: NextConfig = {

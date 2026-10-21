@@ -280,10 +280,13 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     // public twin at /discover/events/<slug> rendered too until SCAN-672 retired it. The file that
     // draws a public asset is the file that must reach it through local-image, so the shared module
     // took its place here and the route stays under the fs half below. The net did not get narrower.
+    //
+    // The Stage redesign moved every card's layout, and with it the mark read, into
+    // lib/og/stage-card.tsx. The event card and the event claim route now only map strings onto it,
+    // so the shared layout module took their place here.
     const CARDS = [
       'app/(public)/spaces/[slug]/opengraph-image.tsx',
-      'lib/og/event-card.tsx',
-      'app/events/claim/[token]/opengraph-image.tsx',
+      'lib/og/stage-card.tsx',
       'lib/og/claim-card.tsx',
     ]
     for (const path of CARDS) {

@@ -1,10 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SITE_NAME } from "@/lib/site";
-import { loadNunito } from "@/lib/og/load-nunito";
-import { cardResponse } from '@/lib/og/deliver'
+import { stageCardResponse } from '@/lib/og/stage-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
-import { palette } from '@/lib/theme/palette';
 
 export const runtime = "nodejs";
 export const alt = `${SITE_NAME} Help Center`;
@@ -15,127 +13,16 @@ export const size = { width: 1200, height: 630 };
 export const contentType = OG_CONTENT_TYPE;
 
 export default async function Image() {
-  const wordmark = SITE_NAME.toUpperCase();
-  const label = "HELP CENTER";
+  // Literal path: @vercel/nft cannot resolve one assembled from a variable (see lib/og/load-nunito.ts).
+  const heroData = await readFile(join(process.cwd(), "public/images/hero.jpg"));
 
-  const heroData = await readFile(
-    join(process.cwd(), "public/images/hero.jpg"),
-  );
-  const heroSrc = `data:image/jpeg;base64,${heroData.toString("base64")}`;
-
-  const [black, bold] = await Promise.all([
-    loadNunito(900),
-    loadNunito(700),
-  ]);
-
-  const fonts = [
-    black && { name: "Nunito", data: black, weight: 900 as const, style: "normal" as const },
-    bold && { name: "Nunito", data: bold, weight: 700 as const, style: "normal" as const },
-  ].filter(Boolean) as {
-    name: string;
-    data: ArrayBuffer;
-    weight: 900 | 700;
-    style: "normal";
-  }[];
-
-  const fontFamily = fonts.length ? "Nunito" : undefined;
-
-  return cardResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          position: "relative",
-        }}
-      >
-        {/* Hero photo */}
-        <img
-          src={heroSrc}
-          alt=""
-          width={size.width}
-          height={size.height}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
-        {/* Gradient overlay — slightly heavier to keep the label legible.
-            🔴 THIS DREW NOTHING UNTIL 2026-09-07 (LIVE-183). It was sized with `inset: 0` and
-            carried no `display`, and Satori implements neither the shorthand nor CSS's initial
-            `display: block` — so the scrim collapsed to 0x0 and the wordmark sat as white type
-            directly on a bright, low-contrast beach photograph. Nothing failed: the route returned
-            200 with a valid JPEG every time, which is why it survived. Explicit box, explicit
-            display. */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            backgroundImage:
-              "linear-gradient(180deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.50) 38%, rgba(0,0,0,0.82) 72%, rgba(0,0,0,0.97) 100%)",
-          }}
-        />
-        {/* Text stack */}
-        <div
-          style={{
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-            width: "100%",
-            height: "100%",
-            padding: 72,
-          }}
-        >
-          {/* Accent pill */}
-          <div
-            style={{
-              width: 84,
-              height: 8,
-              borderRadius: 9999,
-              backgroundColor: palette.ogAccent,
-              marginBottom: 28,
-            }}
-          />
-          {/* Wordmark */}
-          <div
-            style={{
-              fontFamily,
-              fontWeight: 900,
-              fontSize: 112,
-              lineHeight: 1,
-              letterSpacing: "-0.03em",
-              color: "#ffffff",
-              textShadow: "0 2px 24px rgba(0,0,0,0.55)",
-            }}
-          >
-            {wordmark}
-          </div>
-          {/* "Help Center" label */}
-          <div
-            style={{
-              fontFamily,
-              fontWeight: 700,
-              fontSize: 34,
-              letterSpacing: "0.32em",
-              marginTop: 18,
-              color: "rgba(255,255,255,0.92)",
-              textShadow: "0 1px 12px rgba(0,0,0,0.6)",
-            }}
-          >
-            {label}
-          </div>
-        </div>
-      </div>
-    ),
-    { ...size, fonts },
-  );
+  // The Stage scrim (lib/og/stage-card.tsx) is what keeps the title legible over this bright beach
+  // photograph. app/(help)/opengraph-image.test.tsx measures the pixels, because the previous scrim
+  // drew nothing for months and nothing else could have noticed.
+  return stageCardResponse({
+    kicker: "Help Center",
+    title: `${SITE_NAME} Help Center`,
+    line: "Answers for members, hosts and Space owners.",
+    coverPlaceholder: `data:image/jpeg;base64,${heroData.toString("base64")}`,
+  });
 }
