@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { FqIcon } from '@/components/frequency/icon'
-import { activeNav, itemBadge, menuGroups, phoneSlots, type AdminNavItem, type AdminNavLeaf } from './nav-model'
+import { activeNav, itemBadge, menuGroups, phoneSlots, slideTypes, type AdminNavItem, type AdminNavLeaf } from './nav-model'
 
 // The sidebar navigation and the top bar's breadcrumb (shell.js): client components only because the active
 // row follows the URL across soft navigations, which a layout cannot see. Both read the same resolver, so
@@ -30,12 +30,15 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
     <nav className="ad-nav" aria-label={label}>
       {items.map((item, index) => {
         const on = item.key === activeKey
+        const slide = slideTypes(items.map((i) => i.key), activeKey, item.key)
         // A heading wherever the job group changes (the Space console's layers); a console without groups draws none.
         const heading = item.group && item.group !== items[index - 1]?.group ? item.group : null
         const badge = on && item.children?.length ? item.badge ?? 0 : itemBadge(item)
         // With the top menu on, the active section's job groups sit under it here and their pages go across the
         // top (owner, 2026-10-20: "the sub categories of the menu should be under the category on the left").
-        const groups = on && topMenu ? menuGroups(item).filter((g) => g.label) : []
+        const allGroups = on && topMenu ? menuGroups(item) : []
+        const groups = allGroups.filter((g) => g.label)
+        const order = ['home', ...allGroups.flatMap((g) => g.leaves.map((l) => l.key))]
         return (
           <Fragment key={item.key}>
           {heading && <span className="ad-nav-h">{heading}</span>}
@@ -43,7 +46,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
             {item.external ? (
               <a href={item.href}><FqIcon name={item.icon} />{item.label}</a>
             ) : (
-              <Link href={item.href} className={on ? 'on' : undefined} aria-current={on && !activeLeafKey ? 'page' : undefined}>
+              <Link href={item.href} transitionTypes={slide} className={on ? 'on' : undefined} aria-current={on && !activeLeafKey ? 'page' : undefined}>
                 <FqIcon name={item.icon} />
                 {item.label}
                 {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
@@ -55,7 +58,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
                   const here = g.leaves.some((l) => l.key === activeLeafKey)
                   const waiting = g.leaves.reduce((n, l) => n + (l.badge ?? 0), 0)
                   return (
-                    <Link key={g.label} href={g.leaves[0].href} className={here ? 'on' : undefined} aria-current={here && g.leaves.length === 1 ? 'page' : undefined}>
+                    <Link key={g.label} href={g.leaves[0].href} transitionTypes={slideTypes(order, activeLeafKey ?? 'home', g.leaves[0].key)} className={here ? 'on' : undefined} aria-current={here && g.leaves.length === 1 ? 'page' : undefined}>
                       {g.label}
                       {waiting > 0 ? <b aria-label={`${waiting} waiting`}>{waiting}</b> : <small aria-label={`${g.leaves.length} pages`}>{g.leaves.length}</small>}
                     </Link>
@@ -127,20 +130,23 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
   const onHome = !leaf || leaf.href === item.href
   const current = onHome ? null : groups.find((g) => g.leaves.some((l) => l.key === leaf.key)) ?? null
   const grouped = groups.some((g) => g.label)
+  // The menu's reading order, home first: a link to a later entry slides forward, an earlier one back.
+  const order = ['home', ...groups.flatMap((g) => g.leaves.map((l) => l.key))]
+  const here = onHome ? 'home' : leaf.key
   const home = (
-    <Link href={item.href} className={onHome ? 'on' : undefined} aria-current={onHome ? 'page' : undefined}>
+    <Link href={item.href} transitionTypes={slideTypes(order, here, 'home')} className={onHome ? 'on' : undefined} aria-current={onHome ? 'page' : undefined}>
       {item.label} home
     </Link>
   )
   const page = (l: AdminNavLeaf) => (
-    <Link key={l.key} href={l.href} className={!onHome && l.key === leaf?.key ? 'on' : undefined} aria-current={!onHome && l.key === leaf?.key ? 'page' : undefined}>
+    <Link key={l.key} href={l.href} transitionTypes={slideTypes(order, here, l.key)} className={!onHome && l.key === leaf?.key ? 'on' : undefined} aria-current={!onHome && l.key === leaf?.key ? 'page' : undefined}>
       {l.label}
       {!!l.badge && <b aria-label={`${l.badge} waiting`}>{l.badge}</b>}
     </Link>
   )
   if (!grouped) {
     return (
-      <div className="ad-topmenu">
+      <div className="ad-topmenu" style={{ viewTransitionName: 'ad-topmenu' }}>
         <nav className="ad-tm-row ad-tm-pages" aria-label={`${item.label} pages`}>
           {home}
           {groups[0].leaves.map(page)}
@@ -149,14 +155,14 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
     )
   }
   return (
-    <div className="ad-topmenu">
+    <div className="ad-topmenu" style={{ viewTransitionName: 'ad-topmenu' }}>
       <nav className="ad-tm-row ad-tm-groups" aria-label={`${item.label} sections`}>
         {home}
         {groups.map((g) => {
           const badge = g.leaves.reduce((n, l) => n + (l.badge ?? 0), 0)
           const on = g === current
           return (
-            <Link key={g.label} href={g.leaves[0].href} className={on ? 'on' : undefined} aria-current={on && g.leaves.length === 1 ? 'page' : undefined}>
+            <Link key={g.label} href={g.leaves[0].href} transitionTypes={slideTypes(order, here, g.leaves[0].key)} className={on ? 'on' : undefined} aria-current={on && g.leaves.length === 1 ? 'page' : undefined}>
               {g.label}
               {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
             </Link>
