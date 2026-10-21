@@ -96,6 +96,12 @@ const VERIFY_MAX_MS = 5 * 60 * 1000
 /** What goes on the chip next to the link, so a tag read shows where it belongs. */
 const PLACARD_LABEL_MAX = 30
 
+/** The time, for the connect loop. Read only inside event handlers; the React compiler's purity rule cannot
+ *  tell that the async connect handler never runs during render, so the clock is read through here. */
+function wallClock(): number {
+  return Date.now()
+}
+
 // ── The 25 fps tick (FRAME_MS = 40), one rAF for the whole panel, frozen under reduced motion. ─────
 
 let tickNow = 0
@@ -574,9 +580,9 @@ export function CyberUnicornConsole({
       // sets DTR and RTS), and it reads nothing until its setup ends, about 18 s later. Ask every few
       // seconds until a status comes back. Pings sent during boot are answered late and ignored by id.
       let s: SystemStatus | null = null
-      const until = Date.now() + BOOT_WAIT_MS
-      setBootStarted(Date.now())
-      while (!s && Date.now() < until && clientRef.current === next) {
+      const until = wallClock() + BOOT_WAIT_MS
+      setBootStarted(wallClock())
+      while (!s && wallClock() < until && clientRef.current === next) {
         s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: 3000 }).catch(() => null)
       }
       setBootStarted(null)
