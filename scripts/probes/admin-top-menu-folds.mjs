@@ -1,4 +1,4 @@
-// LIVE-1213: the operator console's top menu folds up while scrolling down and returns on scroll up.
+// LIVE-1222: the operator console's top menu folds up while scrolling down and returns on scroll up.
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 
