@@ -332,7 +332,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Premium-badged link on every Space and the page itself answers by plan: a Network's owner and central
   // admins run it, a Collective owner is sent to its member Spaces, and every other owner reads what the
   // Network plan adds. A non-manager still gets a 404 there, as before.
-  { id: 'space.chapters', label: 'Chapters', desc: 'Your chapters and their leaders, the central admins who help run them, and chapter events waiting for a yes.', Icon: Network, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/chapters`, order: 91, tier: 'extra', priority: 31, access: 'premium', freeNote: `Included with ${SPACE_PLAN_LABEL.network}, ${NETWORK_PLAN.includedChapters} chapters`, parent: 'space.basics' },
+  { id: 'space.chapters', label: 'Chapters', desc: 'Your chapters and their leaders, the central admins who help run them, and chapter events waiting for a yes.', Icon: Network, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/chapters`, order: 91, tier: 'extra', priority: 31, access: 'premium', freeNote: `Comes with ${SPACE_PLAN_LABEL.network}, ${NETWORK_PLAN.includedChapters} chapters to start`, parent: 'space.basics' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
   // The "Menu and features" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer

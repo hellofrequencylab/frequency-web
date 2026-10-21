@@ -29,8 +29,8 @@ Everything Collective does except Partners, plus the chapter tools below. A Netw
 Spaces under it are chapters you own rather than partners; a chapter lists its Circles and Journeys with
 the parent and with other chapters the same way a Collective's member Spaces do.
 
-- **Chapters.** Three chapters are included to start, each with the Business tools. Each chapter after
-  that is a flat monthly price, up to 25. See the [pricing page](/pricing).
+- **Chapters.** A Network starts with three chapters, each with the Business tools. Each chapter after
+  that is the same flat monthly price, up to 25. See the [pricing page](/pricing).
 - **One membership.** A member who joins the network is a member in every chapter.
 - **One network calendar and home**, with every chapter's events in one place.
 - **A roll-up report** of members, Events and revenue across every chapter.
