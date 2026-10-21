@@ -5,6 +5,10 @@
 // anyway, so every connect is a reboot (about 18 s to the main menu). The console keeps one connection
 // open and re-sends `system.status` until it answers.
 //
+// A Flipper Zero running the Frequency app (hellofrequencylab/projects flipper/apps/frequency) speaks the
+// same protocol on its SECOND USB serial port (STMicro VID 0x0483). Its first port is the Flipper CLI and
+// never answers, so the console tries each allowed Flipper port. Opening a Flipper port resets nothing.
+//
 // Client-only: nothing here runs on the server. TypeScript's DOM lib has no Web Serial types yet, so the
 // handful this file touches are declared below.
 
@@ -13,6 +17,13 @@ import { Emitter, type Transport } from './transport'
 
 export const BAUD_RATE = 115200
 export const CH340_VENDOR_ID = 0x1a86
+const FLIPPER_VENDOR_ID = 0x0483
+
+/** Which device a USB port belongs to, from its vendor id. */
+export type UsbDevice = 'unicorn' | 'flipper'
+export function usbDeviceOf(port: SerialPortLike): UsbDevice {
+  return port.getInfo().usbVendorId === FLIPPER_VENDOR_ID ? 'flipper' : 'unicorn'
+}
 
 export interface SerialPortLike {
   readable: ReadableStream<Uint8Array> | null
@@ -50,6 +61,27 @@ export async function rememberedPort(): Promise<SerialPortLike | null> {
   } catch {
     return null
   }
+}
+
+/** Ports the console may use without a picker: CyberUnicorns first, then Flipper ports. */
+export async function rememberedConsolePorts(): Promise<SerialPortLike[]> {
+  const api = serialApi()
+  if (!api) return []
+  try {
+    const ports = await api.getPorts()
+    const vid = (p: SerialPortLike) => p.getInfo().usbVendorId
+    return [...ports.filter((p) => vid(p) === CH340_VENDOR_ID), ...ports.filter((p) => vid(p) === FLIPPER_VENDOR_ID)]
+  } catch {
+    return []
+  }
+}
+
+/** The console's picker: a CyberUnicorn or a Flipper Zero. Must run from a click. The updater keeps
+ *  pickPort, which lists CH340 adapters only, so a Flipper is never offered for a CyberUnicorn OS flash. */
+export async function pickConsolePort(): Promise<SerialPortLike> {
+  const api = serialApi()
+  if (!api) throw new Error('Use Chrome or Edge on a computer to connect over USB.')
+  return api.requestPort({ filters: [{ usbVendorId: CH340_VENDOR_ID }, { usbVendorId: FLIPPER_VENDOR_ID }] })
 }
 
 /** Ask the person to pick the CyberUnicorn. The picker lists CH340 adapters only. Must run from a click. */
@@ -94,7 +126,9 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
     throw new Error(
       /already open|in use|failed to open/i.test(msg)
         ? 'Another program has the port. Close the Arduino serial monitor or ./remote.sh and try again.'
-        : 'Could not open the USB port. Unplug the CyberUnicorn, plug it back in and try again.',
+        : usbDeviceOf(port) === 'flipper'
+          ? 'Could not open the Flipper port. Close qFlipper and any serial monitor, then try again.'
+          : 'Could not open the USB port. Unplug the CyberUnicorn, plug it back in and try again.',
     )
   }
   // Both low in ONE call, so the auto-reset circuit never sees them differ (that is what resets the board).
@@ -157,7 +191,7 @@ export async function openWebSerial(port: SerialPortLike): Promise<Transport> {
 
   return {
     kind: 'usb',
-    label: 'CyberUnicorn (USB)',
+    label: usbDeviceOf(port) === 'flipper' ? 'Flipper Zero (USB)' : 'CyberUnicorn (USB)',
     async write(line: string) {
       if (!open || !port.writable) throw new Error('The USB port is closed.')
       const writer = port.writable.getWriter()

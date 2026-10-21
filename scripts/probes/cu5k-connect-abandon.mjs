@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from 'node:fs'
 
 const r = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const c = r('components/spaces/loyalty/cyberunicorn-console.tsx')
-if (!/setBootStarted\(null\)\s*\n(?:\s*\/\/[^\n]*\n)*\s*if \(clientRef\.current !== next\) return\s*\n\s*if \(!s\)/.test(c)) {
+if (!/setBootStarted\(null\)\s*\n(?:\s*\/\/[^\n]*\n)*\s*if \(clientRef\.current !== next\) return(?: false)?\s*\n\s*if \(!s\)/.test(c)) {
   console.error('LIVE-1265 probe failed:\n- an abandoned connect can still report the board as not answering')
   process.exit(1)
 }

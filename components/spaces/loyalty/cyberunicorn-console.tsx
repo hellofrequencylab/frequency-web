@@ -24,7 +24,7 @@ import { reportConsoleLog } from '@/lib/devices/log-actions'
 import type { ConsoleRelayDevice } from '@/lib/devices/relay-store'
 import type { FirmwareRelease } from '@/lib/devices/firmware'
 import { RpcClient, DeviceError } from '@/lib/device/client'
-import { openWebSerial, pickPort, rememberedPort, webSerialAvailable } from '@/lib/device/web-serial'
+import { openWebSerial, pickConsolePort, pickPort, rememberedConsolePorts, rememberedPort, usbDeviceOf, webSerialAvailable, type SerialPortLike, type UsbDevice } from '@/lib/device/web-serial'
 import { forwardScan, scanReasonText, type RelayAnswer } from '@/lib/device/cable-scan'
 import { ScreenMirror, SCREEN_H, SCREEN_W } from '@/lib/device/screen-mirror'
 import { openRelayTransport } from '@/lib/device/relay-transport'
@@ -92,6 +92,10 @@ const BOOT_WAIT_MS = 40000
 /** A board still printing at that point is mid-boot, not deaf: keep asking while lines arrive, up to this. */
 const BOOT_WAIT_MAX_MS = 90000
 const BOOT_QUIET_MS = 5000
+/** A Flipper running the Frequency app answers at once (opening its port resets nothing); its CLI port
+ *  never does. This many short asks tell the two apart. */
+const FLIPPER_TRIES = 3
+const FLIPPER_TRY_MS = 1500
 /** The page's boot scene starts with the board's: on the line the board prints just before its scene
  *  (main.cpp RAM_LOG("before-wifi-init"), then boot_screen_anim()). A fixed 1 s wait ran half a second
  *  early (owner, 2026-10-21). Firmware that does not print it gets this long after the port opens. */
@@ -436,6 +440,9 @@ export function CyberUnicornConsole({
   const [wantMirror, setWantMirror] = useState(true)
   const mirrorStarting = useRef(false)
   const [link, setLink] = useState<Link>('usb')
+  // Which board is on the cable: the CyberUnicorn, or a Flipper Zero running the Frequency app (tags only,
+  // no screen feed, no Wi-Fi, scanner or OS update). Known from the port's vendor id before it is opened.
+  const [device, setDevice] = useState<UsbDevice>('unicorn')
   const [relayDevices, setRelayDevices] = useState<ConsoleRelayDevice[] | null>(null)
   const [relayNote, setRelayNote] = useState<string | null>(null)
   const [show, setShow] = useState<LightShowState | null>(null)
@@ -561,15 +568,31 @@ export function CyberUnicornConsole({
     if (flashing) return
     setProblem(null)
     setDone(null)
-    let port
+    let ports: SerialPortLike[]
     try {
-      port = (await rememberedPort()) ?? (await pickPort())
+      const remembered = await rememberedConsolePorts()
+      // A remembered CyberUnicorn wins. A Flipper shows two ports (the CLI and the app's), and the page
+      // cannot tell which is which, so every remembered Flipper port is tried in turn.
+      ports = remembered.length === 0 ? [await pickConsolePort()] : usbDeviceOf(remembered[0]!) === 'unicorn' ? [remembered[0]!] : remembered
     } catch (e) {
       // Closing the picker without choosing is not an error.
       if (e instanceof Error && e.name === 'NotFoundError') return
       setProblem(e instanceof Error ? e.message : 'Could not open the port picker.')
       return
     }
+    for (const port of ports) {
+      const quiet = usbDeviceOf(port) === 'flipper' && port !== ports[ports.length - 1]
+      if (await attach(port, quiet)) return
+    }
+  }
+
+  /** Open one port and wait for the board to answer. `quiet` drops the problem message, for a Flipper port
+   *  that may be its CLI while another port is still to try. True when the board answered. */
+  async function attach(port: SerialPortLike, quiet: boolean): Promise<boolean> {
+    const kind = usbDeviceOf(port)
+    const flipper = kind === 'flipper'
+    setDevice(kind)
+    if (flipper && (mode === 'scanner' || mode === 'update')) setMode('placards')
     setPhase('connecting')
     try {
       const transport = await openWebSerial(port)
@@ -610,34 +633,40 @@ export function CyberUnicornConsole({
         setHat(null)
         setTapStarted(null)
         setMirror(false)
-        setProblem(`${reason} Plug the CyberUnicorn back in and connect.`)
+        setProblem(flipper ? `${reason} Open Apps, NFC, Frequency on the Flipper and connect again.` : `${reason} Plug the CyberUnicorn back in and connect.`)
       })
 
       // Opening the port reboots the board (measured: the CH340 driver on macOS pulses EN however the page
       // sets DTR and RTS), and it reads nothing until its setup ends, about 18 s later. Ask every few
       // seconds until a status comes back. Pings sent during boot are answered late and ignored by id.
+      // A Flipper does not reboot: a few short asks, then it is the wrong port or the app is closed.
       let s: SystemStatus | null = null
       const started = wallClock()
+      let tries = 0
       const waiting = () => {
+        if (flipper) return tries++ < FLIPPER_TRIES
         const t = wallClock()
         if (t < started + BOOT_WAIT_MS) return true
         return t < started + BOOT_WAIT_MAX_MS && t - heardAt < BOOT_QUIET_MS
       }
-      setBootStarted(started)
+      if (!flipper) setBootStarted(started)
       while (!s && waiting() && clientRef.current === next) {
-        s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: 3000 }).catch(() => null)
+        s = await next.call<SystemStatus>('system.status', {}, { timeoutMs: flipper ? FLIPPER_TRY_MS : 3000 }).catch(() => null)
       }
       setBootStarted(null)
       // Let go of on purpose (the updater took the port, or Disconnect was pressed): not the board's silence.
-      if (clientRef.current !== next) return
+      if (clientRef.current !== next) return false
       if (!s) {
         await disconnect()
+        if (quiet) return false
         setProblem(
-          heard === 0
-            ? 'Nothing came from the CyberUnicorn at all. Check it is switched on and that you picked its USB serial port. If you just flashed it, unplug it for 5 seconds, plug it back in, wait for its main menu, then connect again.'
-            : 'The CyberUnicorn is printing but not answering commands. Wait for its main menu and connect again. If it still does not answer, it needs the CyberUnicorn OS build with the remote app. Device log below shows what it printed.',
+          flipper
+            ? 'The Flipper did not answer. Open Apps, NFC, Frequency on the Flipper first. It adds a second Flipper port: pick that one (on a Mac its name ends in 3).'
+            : heard === 0
+              ? 'Nothing came from the CyberUnicorn at all. Check it is switched on and that you picked its USB serial port. If you just flashed it, unplug it for 5 seconds, plug it back in, wait for its main menu, then connect again.'
+              : 'The CyberUnicorn is printing but not answering commands. Wait for its main menu and connect again. If it still does not answer, it needs the CyberUnicorn OS build with the remote app. Device log below shows what it printed.',
         )
-        return
+        return false
       }
       setStatus(s)
       const c = await next.call<SystemCaps>('system.caps').catch(() => null)
@@ -647,9 +676,11 @@ export function CyberUnicornConsole({
       setHat(await next.call<HatProbe>('hat.probe').catch(() => null))
       if (commands.includes('frequency.config')) await refreshConfig(next)
       setPhase('ready')
+      return true
     } catch (e) {
       await disconnect()
-      setProblem(e instanceof Error ? e.message : 'Could not connect.')
+      if (!quiet) setProblem(e instanceof Error ? e.message : 'Could not connect.')
+      return false
     }
   }
 
@@ -1156,9 +1187,14 @@ export function CyberUnicornConsole({
   const ready = phase === 'ready'
   // Over Wi-Fi the board cannot be asked to probe its hat, so a read is just tried.
   const readerOk = link === 'wifi' ? connected : hat?.pn532 === true
-  const version = status?.version ? `CU5K ${status.version}` : 'CU5K'
+  const flipper = link === 'usb' && device === 'flipper'
+  const version = flipper ? (status?.version ? `FLIPPER ${status.version}` : 'FLIPPER') : status?.version ? `CU5K ${status.version}` : 'CU5K'
+  /** Where the person holds a tag, for the tap screens. */
+  const readerSpot = flipper ? 'on the back of the Flipper' : 'on the CyberUnicorn reader'
+  const readerDone = flipper ? 'until the Flipper says it is written' : 'until the light flashes'
   const remaining = tapStarted === null ? 0 : Math.max(0, 1 - (now - tapStarted) / TAP_MS)
-  const canMirror = client?.canMirror === true
+  // The Flipper has no screen feed: its own screen says what it is doing.
+  const canMirror = client?.canMirror === true && !flipper
   const showModes = phase === 'idle' || phase === 'ready'
 
 
@@ -1365,13 +1401,15 @@ export function CyberUnicornConsole({
     screenProgress.current = progressNow
   })
   const live = connected && link === 'usb' && mirror && client !== null
-  const features: { mode: Mode; Icon: LucideIcon; label: string; count?: number }[] = [
+  const allFeatures: { mode: Mode; Icon: LucideIcon; label: string; count?: number }[] = [
     { mode: 'placards', Icon: Nfc, label: 'Placards' },
     { mode: 'badges', Icon: IdCard, label: 'Badges', count: requests.length },
     { mode: 'scanner', Icon: ScanLine, label: 'Scanner' },
     { mode: 'remote', Icon: Wifi, label: 'Wi-Fi remote' },
     { mode: 'update', Icon: Download, label: 'Update' },
   ]
+  // A linked Flipper writes and reads tags only: no counter scanner and no CyberUnicorn OS update.
+  const features = flipper && connected ? allFeatures.filter((f) => f.mode !== 'scanner' && f.mode !== 'update') : allFeatures
   return (
     <section
       aria-labelledby="cu5k-title"
@@ -1433,7 +1471,9 @@ export function CyberUnicornConsole({
                   <p className="max-w-sm text-[var(--cu-muted)]">
                     {link === 'wifi'
                       ? 'Linked over Wi-Fi. Its live screen shows here when it is on the USB cable.'
-                      : !canMirror
+                      : flipper
+                        ? 'Flipper Zero linked. It has no screen feed here: its own screen shows each step.'
+                        : !canMirror
                         ? 'The live screen needs a newer console. Reload the page.'
                         : !wantMirror
                           ? 'The live screen is off.'
@@ -1459,8 +1499,9 @@ export function CyberUnicornConsole({
                 <>
                   <dl className="flex min-w-0 flex-1 flex-wrap gap-x-4 gap-y-1 text-[length:var(--cu-type-console)]">
                     <Fact label="Link" value={link === 'wifi' ? 'Wi-Fi remote' : 'USB cable'} />
-                    {link === 'usb' && <Fact label="Reader" value={readerOk ? 'Ready' : hat?.i2c_stuck ? 'Stuck, unplug for 10 s' : 'Not found, turn DIP 3 on'} tone={readerOk ? 'ok' : 'attention'} />}
-                    <Fact label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Off'} />
+                    {flipper && <Fact label="Device" value="Flipper Zero" />}
+                    {link === 'usb' && <Fact label="Reader" value={flipper ? 'Flipper NFC' : readerOk ? 'Ready' : hat?.i2c_stuck ? 'Stuck, unplug for 10 s' : 'Not found, turn DIP 3 on'} tone={readerOk ? 'ok' : 'attention'} />}
+                    {!flipper && <Fact label="Wi-Fi" value={status?.wifi?.connected ? (status.wifi.ssid ?? 'Connected') : 'Off'} />}
                   </dl>
                   {ready && link === 'usb' && !readerOk && (
                     <CuButton tone="secondary" onClick={() => void recheckReader()}>
@@ -1502,10 +1543,15 @@ export function CyberUnicornConsole({
         ) : phase === 'idle' ? (
           <Screen icon="rfid" title="PLUG IN THE UNICORN">
             <p>Plug the CyberUnicorn into this computer with a USB cable, then connect. Pick the USB serial port when your browser asks. You can choose the Space first.</p>
+            <p className="text-[var(--cu-muted)]">Using a Flipper Zero instead? Open Apps, NFC, Frequency on it first, then connect and pick its second port (on a Mac the name ends in 3).</p>
           </Screen>
         ) : phase === 'connecting' ? (
-          <Screen icon="frequency" title="WAKING THE UNICORN">
-            <p>Connecting restarts the CyberUnicorn. It takes about 20 seconds to come back. Leave it plugged in. Its screen shows how far along it is.</p>
+          <Screen icon="frequency" title={flipper ? 'FINDING THE FLIPPER' : 'WAKING THE UNICORN'}>
+            <p>
+              {flipper
+                ? 'Talking to the Frequency app on the Flipper. Keep the app open.'
+                : 'Connecting restarts the CyberUnicorn. It takes about 20 seconds to come back. Leave it plugged in. Its screen shows how far along it is.'}
+            </p>
           </Screen>
         ) : phase === 'working' ? (
           <Screen icon="frequency" title="WORKING ON IT">
@@ -1520,8 +1566,8 @@ export function CyberUnicornConsole({
                   : 'Making a card link for this member...'
                 : phase === 'tap'
                   ? mode === 'placards'
-                    ? `Hold the NTAG sticker flat on the CyberUnicorn reader and keep it still until the light flashes. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
-                    : `This card is for ${cardFor ?? 'this member'}. Hold it flat on the CyberUnicorn reader and keep it still until the light flashes.`
+                    ? `Hold the NTAG sticker flat ${readerSpot} and keep it still ${readerDone}. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
+                    : `This card is for ${cardFor ?? 'this member'}. Hold it flat ${readerSpot} and keep it still ${readerDone}.`
                   : phase === 'scanning'
                     ? 'Hold a member card on the reader to check them in.'
                     : 'Hold any card or tag on the reader to see what it holds.'}
