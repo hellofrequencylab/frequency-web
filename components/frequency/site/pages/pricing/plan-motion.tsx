@@ -72,7 +72,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
   const network = by.get('network')
   const nonprofit = by.get('nonprofit')
   if (!free || !business || !collective || !network) return null
-  const baseChapter = `${formatCents(NETWORK_PLAN.baseCents)} + ${formatCents(NETWORK_PLAN.chapterCents)} a chapter, ${NETWORK_PLAN.includedChapters} included`
+  const baseChapter = `${formatCents(NETWORK_PLAN.baseCents)} + ${formatCents(NETWORK_PLAN.chapterCents)} a chapter, ${NETWORK_PLAN.includedChapters} to start, from ${formatCents(NETWORK_PLAN.monthlyCents)}`
   return (
     <figure className="pm-fig" aria-labelledby="pm-ladder-h">
       <figcaption className="pm-head">
@@ -161,7 +161,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
                   <span className="core pm-core" />
                 </span>
                 <Tip id="pm-t-network" title="Run every chapter as one organization.">
-                  {`${NETWORK_PLAN.includedChapters} chapters included, then ${formatCents(NETWORK_PLAN.chapterCents)} a month for each one, up to ${NETWORK_PLAN.maxChapters}.${nonprofit ? ` Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter.` : ''}`}
+                  {`Starts with ${NETWORK_PLAN.includedChapters} chapters at ${formatCents(NETWORK_PLAN.chapterCents)} a month each, up to ${NETWORK_PLAN.maxChapters}.${nonprofit ? ` Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter.` : ''}`}
                 </Tip>
               </div>
             </div>
@@ -252,7 +252,7 @@ export function OwnersMotion({ includedChapters, maxChapters }: { includedChapte
         <div
           className="pm-own-art pm-net"
           role="img"
-          aria-label={`One organization with its chapters in orbit. ${includedChapters} chapters are included and you can add up to ${maxChapters}.`}
+          aria-label={`One organization with its chapters in orbit. ${includedChapters} chapters to start and you can add up to ${maxChapters}.`}
         >
           {orbits.map((o) => (
             <span key={o.k} className="pm-orbit" style={vars({ '--pm-k': o.k, '--pm-t': `${o.t}s` })}>
@@ -273,13 +273,13 @@ export function OwnersMotion({ includedChapters, maxChapters }: { includedChapte
             <b>1</b>
             <em>organization</em>
             <Tip id="pm-o-org" title="One organization">
-              {`${includedChapters} chapters and ${NETWORK_PLAN.centralAdmins} central admins included, one network calendar and home, and a roll-up report.`}
+              {`${includedChapters} chapters to start, ${NETWORK_PLAN.centralAdmins} central admins included, one network calendar and home, and a roll-up report.`}
             </Tip>
           </div>
         </div>
         <p className="pm-own-p">One membership works in every chapter, central admins see the whole network, and each chapter leader runs their own.</p>
         <p className="pm-legend">
-          <span className="is-lit">{`${includedChapters} chapters included`}</span>
+          <span className="is-lit">{`${includedChapters} chapters to start`}</span>
           <span>{`Add up to ${maxChapters}`}</span>
         </p>
       </div>
