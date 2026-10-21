@@ -126,9 +126,9 @@
     },
     "app/auth/signout/route.ts": {
       "verdict": "self-scoped",
-      "reason": "Signs out whatever session the request carries and clears the impersonation cookie. There is no other principal it could act on, and it is POST-only so a prefetched GET cannot trigger it. RE-READ 2026-10-05 (SCAN-746): the route now reads the httpOnly act-as stash BEFORE signing out and, when one is present, signs the borrowed member session out with scope local, restores the janitor's own stashed session from that cookie and signs it out locally too; a plain sign-out keeps the global scope it always had. No new read of caller input and no new principal: the only tokens it touches are the ones the request itself carries (the active session cookie and the stash the same browser set), and the redirect target is unchanged. Verdict unchanged.",
-      "checked": "2026-10-05",
-      "digest": "31a2f0dbd387c674"
+      "reason": "Signs out whatever session the request carries and clears the impersonation cookie. There is no other principal it could act on, and it is POST-only so a prefetched GET cannot trigger it. RE-READ 2026-10-05 (SCAN-746): the route now reads the httpOnly act-as stash BEFORE signing out and, when one is present, signs the borrowed member session out with scope local, restores the janitor's own stashed session from that cookie and signs it out locally too; a plain sign-out keeps the global scope it always had. No new read of caller input and no new principal: the only tokens it touches are the ones the request itself carries (the active session cookie and the stash the same browser set), and the redirect target is unchanged. Verdict unchanged. RE-READ 2026-10-21 (LIVE-1207): the body moved unchanged into lib/auth/sign-out.ts (signOutCurrentSession), shared with /auth/site-exit; the route still signs out only the session the request carries, POST only, same redirect. Verdict unchanged.",
+      "checked": "2026-10-21",
+      "digest": "466676e0bd83f8ff"
     },
     "app/dev/og-root-card/route.tsx": {
       "verdict": "public",
@@ -297,6 +297,30 @@
       "reason": "CyberUnicorn app.bin download for the staff console's browser flasher. Same gate as ../route.ts: consoleStaffGate (lib/devices/store.ts: getCallerProfile, then isStaff) called unconditionally after the address limit and the SCANNER_DEVICES_ENABLED 404, 403 on a miss before any read. The tag query must match ^cu5k-v<semver>$ and be a published, non-draft, non-prerelease release; lib/devices/firmware.ts downloads that release's public app.bin from GitHub and checks its size and sha256 against the release manifest before returning it. No database and no admin client; the bytes are already public on GitHub, the gate only stops the route being an open proxy.",
       "checked": "2026-10-20",
       "digest": "5f73f7d53635aff3"
+    },
+    "app/auth/site-exit/route.ts": {
+      "verdict": "token-credential",
+      "reason": "A Space website's sign out, Frequency side (LIVE-1207). The signed exit token IS the credential: readVisitorExit verifies an HMAC token minted only by the site's own /_s/exit for the one host named, valid 60 seconds, before anything is signed out. A missing, tampered, expired or foreign token signs nothing out and lands on Frequency's home. The only thing it acts on is the session the request itself carries, and the redirect host is the one the token verified for.",
+      "checked": "2026-10-21",
+      "digest": "a0b627e08b80a98b"
+    },
+    "app/hosted/[host]/visitor/enter/route.ts": {
+      "verdict": "token-credential",
+      "reason": "A Space website's log in, site side (LIVE-1207). The handoff token IS the credential: readVisitorHandoff verifies an HMAC token Frequency minted for this exact host (60 seconds, display name, handle and photo only) and the Space must resolve for the host. It then sets a signed host-only display cookie that carries no Frequency session and no privilege. A bad token sets nothing. The landing path is Home or one single-segment page.",
+      "checked": "2026-10-21",
+      "digest": "09a3a2b8c5f77e1a"
+    },
+    "app/hosted/[host]/visitor/exit/route.ts": {
+      "verdict": "self-scoped",
+      "reason": "A Space website's sign out, site side (LIVE-1207). POST only. It clears this site's own display cookie and, when the request carried a valid one, mints a 60-second exit token for this host. A cross-site POST carries no SameSite=Lax cookie, so it clears and mints nothing. There is no other principal it could act on.",
+      "checked": "2026-10-21",
+      "digest": "f9fe9cdb24af182e"
+    },
+    "app/hosted/[host]/visitor/me/route.ts": {
+      "verdict": "self-scoped",
+      "reason": "Who is reading this Space website (LIVE-1207). Reads only the display cookie the request itself carries and answers its own name, handle and photo, or null. Same-origin, no CORS grant, private and never cached; it reads nothing about anyone else.",
+      "checked": "2026-10-21",
+      "digest": "904cb13384178d8d"
     }
   }
 }
