@@ -1,6 +1,6 @@
 {
   "id": "LIVE-1208",
-  "title": "A staff re-seed never overwrites a Space its owner has claimed (LIVE-1208)",
+  "title": "A staff re-seed never overwrites a Space its owner has claimed",
   "status": "done",
   "priority": "P1",
   "lane": "live",
