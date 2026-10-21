@@ -770,6 +770,13 @@ export type AdoptSpaceResult = { ok: true; intakeId: string; created: boolean } 
  */
 export async function adoptSpaceMasterProfile(spaceId: string): Promise<AdoptSpaceResult> {
   await requireStaffCap('structure', 'write')
+  // Adopting makes ANY Space re-seedable by the caller, which is the same platform-admin power as
+  // searchActiveSpaces' "Re-seed any Space", so it takes the same gate (admin / janitor), not just
+  // structure:write. Without it any structure:write staff could adopt a Space by id.
+  const caller = await getCallerProfile().catch(() => null)
+  if (caller?.webRole !== 'admin' && caller?.webRole !== 'janitor') {
+    return { ok: false, error: 'Only a platform admin can adopt a Space.' }
+  }
   const operatorId = await getMyProfileId()
   if (!operatorId) return { ok: false, error: 'No operator profile.' }
   return adoptSpaceAsMasterProfile(spaceId, operatorId)
