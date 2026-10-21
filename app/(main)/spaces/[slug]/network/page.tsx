@@ -6,14 +6,13 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { EntityCard } from '@/components/cards/entity-card'
-import { BrandAnchor } from '@/components/spaces/brand-anchor'
+import { ChapterCard, NetworkEventCard } from '@/components/network/network-cards'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { EventCalendar } from '@/components/events/event-calendar'
 import { collectiveNetworkOpen, liveNetworkUpcoming } from '@/lib/collective/network'
-import { listPublicCollectiveMembers, loadCollectiveNetworkWindow } from '@/lib/collective/network-store'
+import { listPublicCollectiveMembers, loadCollectiveNetworkWindow, loadChapterCardExtras, viewerGoingEventIds } from '@/lib/collective/network-store'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { dayInZone } from '@/lib/time/zone'
 import { isNetworkPlan } from '@/lib/collective/member-spaces'
@@ -37,7 +36,11 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
     listPublicCollectiveMembers(parent), loadCollectiveNetworkWindow(parent, name, window.fromDay, window.toDay),
     resolveIndexHero(`/spaces/${parent.slug}/network`),
   ])
-  const upcoming = liveNetworkUpcoming(events, dayInZone(now, parent.timeZone))
+  const today = dayInZone(now, parent.timeZone)
+  const upcoming = liveNetworkUpcoming(events, today)
+  const [extras, going] = await Promise.all([loadChapterCardExtras(members.map(m => m.id)), viewerGoingEventIds(caller?.id ?? null, upcoming.map(e => e.eventId))])
+  const liveEvents = liveNetworkUpcoming(events, today, Infinity)
+  const sourcesOf = (event: { sourceLabel?: string | null }) => (event.sourceLabel ?? '').split(' · ').filter(Boolean)
   // Owner management and the public projection are separate doors: never add private members to this page.
   // A Network's owner and central admins run its Chapters area (SCAN-983); a Collective keeps its billing door.
   const chapters = isNetworkPlan(parent.plan) && caller?.id ? await networkToolsAccess(parent.id, caller.id) : null
@@ -59,15 +62,17 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
       <div className="space-y-10">
         <section aria-labelledby="network-members">
           <SectionHeader id="network-members" title={noun.plural} count={members.length} />
-          {members.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{members.map(member => (
-            <EntityCard key={member.id} href={`/spaces/${member.slug}`} title={member.name}
-              anchor={<BrandAnchor name={member.name} logoUrl={member.logoUrl} size="card" />} />
-          ))}</div> : <EmptyState title="The network is taking shape" description={noun.empty} />}
+          {members.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{members.map(member => {
+            const mine = liveEvents.filter(event => sourcesOf(event).includes(member.name))
+            const extra = extras.get(member.id)
+            return <ChapterCard key={member.id} href={`/spaces/${member.slug}`} name={member.name} parentName={name} logoUrl={member.logoUrl}
+              coverUrl={extra?.coverUrl ?? null} city={extra?.city ?? null} tagline={extra?.tagline ?? null} nextEvent={mine[0] ?? null} eventCount={mine.length} />
+          })}</div> : <EmptyState title="The network is taking shape" description={noun.empty} />}
         </section>
         <section aria-labelledby="network-upcoming">
           <SectionHeader id="network-upcoming" title="Up next" />
-          {upcoming.length ? <div className="grid gap-4 sm:grid-cols-2">{upcoming.map(event => (
-            <EntityCard key={event.slug} href={`/events/${event.slug}`} title={event.title} context={event.whenLabel} description={event.sourceLabel} />
+          {upcoming.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{upcoming.map(event => (
+            <NetworkEventCard key={event.slug} event={event} hostChapters={sourcesOf(event).filter(source => source !== name)} going={!!event.eventId && going.has(event.eventId)} />
           ))}</div> : <p className="text-body-sm text-muted">No upcoming events this month. Browse the shared calendar for another date.</p>}
         </section>
         <section aria-labelledby="network-calendar">

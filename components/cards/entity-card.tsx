@@ -45,6 +45,7 @@ export function EntityCard({
   footer,
   coverAspect = 'video',
   dimmed = false,
+  wrapTitle = false,
 }: {
   href: string
   /** Avatar / icon chip — the visual anchor (inline, beside the title). */
@@ -86,6 +87,9 @@ export function EntityCard({
   coverAspect?: 'video' | 'short'
   /** Recede the card (muted + desaturated) — used for Beta demo content. */
   dimmed?: boolean
+  /** Let the title wrap to two lines instead of cutting it with an ellipsis. For cards whose names
+   *  share a long prefix ("The Group Encinitas"), where a one-line cut hides the part that differs. */
+  wrapTitle?: boolean
 }) {
   const coverAspectClass = coverAspect === 'short' ? 'aspect-[16/7]' : 'aspect-[16/9]'
   if (FREQUENCY) {
@@ -103,7 +107,7 @@ export function EntityCard({
               {anchor && <div className="shrink-0">{anchor}</div>}
               <div className="grow" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div className="row" style={{ gap: 8 }}>
-                  <h3 className="h3 truncate">{title}</h3>
+                  <h3 className={wrapTitle ? 'h3 mu-wrap2' : 'h3 truncate'}>{title}</h3>
                   {badge}
                 </div>
                 {context && <p className="t2 truncate">{context}</p>}
@@ -152,7 +156,7 @@ export function EntityCard({
             {anchor && <div className="shrink-0">{anchor}</div>}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h3 className="truncate text-body font-bold leading-tight text-text">{title}</h3>
+                <h3 className={`${wrapTitle ? 'line-clamp-2' : 'truncate'} text-body font-bold leading-tight text-text`}>{title}</h3>
                 {badge}
               </div>
               {context && <p className="mt-1 truncate text-meta text-subtle">{context}</p>}

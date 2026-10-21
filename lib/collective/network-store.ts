@@ -63,3 +63,23 @@ export async function loadCollectiveNetworkWindow(parent: NetworkParent, ownName
   const items = await spaceEventRowsToItems(ordered.map(entry => entry.row))
   return items.map((item, i) => ({ ...item, sourceLabel: [...ordered[i].names].join(' · ') }))
 }
+
+export interface ChapterCardExtras { coverUrl: string | null; tagline: string | null; city: string | null }
+/** Display-only extras for cards of Spaces `listPublicCollectiveMembers` already cleared. Callers pass
+ * only those ids; the public projection (and its pinned keys) stays as it was. */
+export async function loadChapterCardExtras(ids: readonly string[]): Promise<Map<string, ChapterCardExtras>> {
+  const out = new Map<string, ChapterCardExtras>()
+  if (!ids.length) return out
+  const { data } = await createAdminClient().from('spaces').select('id, cover_image_url, tagline, city').in('id', [...ids])
+  for (const row of (data ?? []) as { id: string; cover_image_url: string | null; tagline: string | null; city: string | null }[])
+    out.set(row.id, { coverUrl: row.cover_image_url, tagline: row.tagline?.trim() || null, city: row.city?.trim() || null })
+  return out
+}
+
+/** Which of these events the viewer is going to (a confirmed RSVP), for the Going pill. */
+export async function viewerGoingEventIds(profileId: string | null, eventIds: readonly (string | null | undefined)[]): Promise<Set<string>> {
+  const ids = eventIds.filter((id): id is string => !!id)
+  if (!profileId || !ids.length) return new Set()
+  const { data } = await createAdminClient().from('event_rsvps').select('event_id').in('event_id', ids).eq('profile_id', profileId).eq('status', 'going')
+  return new Set(((data ?? []) as { event_id: string }[]).map(r => r.event_id))
+}
