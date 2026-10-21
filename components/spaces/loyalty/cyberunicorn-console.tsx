@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react'
 import { useRouter } from 'next/navigation'
-import { Press_Start_2P, VT323 } from 'next/font/google'
+import localFont from 'next/font/local'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, CornerUpLeft, Download, EyeOff, IdCard, Nfc, RefreshCw, ScanLine, Wifi, type LucideIcon } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -78,8 +78,8 @@ import { startBootScene } from '@/lib/theme/cu-boot-scene'
 // motion. Copy follows the system's two registers: plain for anything to act on, playful only at idle.
 // No em dashes, no emoji.
 
-const display = Press_Start_2P({ weight: '400', subsets: ['latin'], display: 'swap', preload: false, variable: '--cu-font-display' })
-const body = VT323({ weight: '400', subsets: ['latin'], display: 'swap', preload: false, variable: '--cu-font-body' })
+const display = localFont({ src: '../../../app/fonts/press-start-2p/press-start-2p.woff2', weight: '400', display: 'swap', preload: false, variable: '--cu-font-display' })
+const body = localFont({ src: '../../../app/fonts/vt323/vt323.woff2', weight: '400', display: 'swap', preload: false, variable: '--cu-font-body' })
 
 /** How long the device waits for a card, and how long the page waits for the device's answer. */
 const TAP_MS = 30000
