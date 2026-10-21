@@ -7,7 +7,7 @@
 const SHIPPED: Record<string, string> = {
   'core-team': '50% 38%',
   'courtyard-group': '50% 42%',
-  'founder-june-an': '55% 28%',
+  'founder-june-an': '55% 6%',
   'hall-selfie': '50% 55%',
   'hero-group': '50% 55%',
   'hero-market': '50% 45%',
