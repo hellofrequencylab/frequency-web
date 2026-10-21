@@ -40,6 +40,7 @@ import { withImageOrder } from './media-order'
 import { composeMarketingLayout } from './compose'
 import { buildSourceExcerpt } from './excerpt'
 import { addSpaceMember } from '@/lib/spaces/membership'
+import { isSpaceClaimed } from '@/lib/spaces/claim'
 import { spaceBirthConfig, finishSpaceBirth } from '@/lib/spaces/provision-core'
 import { DEFAULT_SPACE_SKIN } from '@/lib/spaces/profile-config'
 import { normalizeWindow } from '@/lib/spaces/booking'
@@ -226,6 +227,11 @@ export async function materializeBusiness(
   } else {
     const existing = await getSpaceById(target.spaceId)
     if (!existing) return { ok: false, error: 'Target space not found.' }
+    // A claimed Space belongs to its owner now. Re-applying would delete and rewrite their hours, FAQs
+    // and profile, and edit-wins only protects four identity fields, so refuse before any write.
+    if (await isSpaceClaimed(existing.id)) {
+      return { ok: false, error: 'This Space has been claimed by its owner, so it cannot be re-seeded. Ask them to edit it.' }
+    }
     spaceId = existing.id
     ownerProfileId = existing.ownerProfileId
 
