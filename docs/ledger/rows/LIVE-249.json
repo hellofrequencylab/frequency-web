@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-249",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const F=['lib/pricing/bundles.ts','lib/studio/entities/space.ts','lib/spaces/provision.ts','lib/spaces/provision-core.ts'];for(const f of F)if(!fs.existsSync(f))process.exit(79);const b=fs.readFileSync(F[0],'utf8'),m=fs.readFileSync(F[1],'utf8'),p=fs.readFileSync(F[2],'utf8'),k=fs.readFileSync(F[3],'utf8');const bad=[];const paid=['crm','email','shop','program'];for(const id of ['studio','practice','venue','nonprofit']){const row=(b.match(new RegExp('id: .'+id+'.[^}]*'))||[])[0];if(!row){bad.push('no preset row for '+id);continue}if(!/CORE_SPACE_FUNCTION_KEYS/.test(row)){bad.push(id+' does not keep the core set on');continue}const on=paid.filter(function(k){return new RegExp('[^a-z]'+k+'[^a-z]').test(row.slice(row.indexOf('functions:')))});if(on.length)bad.push(id+' names paid tool(s) on: '+on.join('/'))}if(!/SETUP_PRESETS/.test(b)||!/setupPresetForMode/.test(b))bad.push('bundles.ts exports no setup-preset seam');const fld=(m.match(/path: .preset.[\\s\\S]{0,400}/)||[])[0]||'';if(!fld)bad.push('the Space manifest declares no preset field');else if(!/placement: .spark./.test(fld))bad.push('the manifest preset field is not on the Spark');if(!/resolveSetupPreset\\(opts\\.preset\\)/.test(k))bad.push('provision ignores an explicit preset choice');if(!/setupPresetForMode/.test(k))bad.push('provision derives no preset from the Mode');if(!/setSpaceBundle\\(spaceId, config\\.presetId\\)/.test(k))bad.push('provision never applies the preset');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\"",
+      "note": "Measures the CONSEQUENCE, in the three places the work had to land, and never the title: (1) all four preset rows exist in the registry, each keeps CORE_SPACE_FUNCTION_KEYS, and none names a tier-marked tool inside its own `functions` list, so a preset that started granting paid capability fails here; (2) the Space manifest declares the `preset` field on the Spark; (3) provision reads an explicit choice, derives one from the Mode, and applies it through setSpaceBundle. Fails on origin/main with all nine findings. Pure node, no test runner (LIVE-034)."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-21 LIVE-1210: preset resolution and application moved into lib/spaces/provision-core.ts (spaceBirthConfig, finishSpaceBirth), shared with the Business Seeder. The probe reads them there; the consequence it measures is unchanged."
+  }
+}

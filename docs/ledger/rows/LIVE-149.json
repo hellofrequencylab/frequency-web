@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-149",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const R='lib/pricing/bundles.ts',P='lib/spaces/provision.ts',C='lib/spaces/provision-core.ts';if(!fs.existsSync(R)||!fs.existsSync(P)||!fs.existsSync(C))process.exit(79);const r=fs.readFileSync(R,'utf8');const curated=(r.match(/id: '/g)||[]).length>1;if(!curated)process.exit(1);process.exit(/setSpaceBundle/.test(fs.readFileSync(C,'utf8'))&&/finishSpaceBirth\\(spaceId, type, birth\\)/.test(fs.readFileSync(P,'utf8'))?0:1)\"",
+      "note": "Passes when a curated bundle is registered AND the shared birth steps (provision-core.ts) apply one and createSpace ends through them."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-21 LIVE-1210: createSpace now applies the bundle through finishSpaceBirth in lib/spaces/provision-core.ts, the same step the Business Seeder uses. The probe reads the call there; the consequence it measures is unchanged."
+  }
+}
