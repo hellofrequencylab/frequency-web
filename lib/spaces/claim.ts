@@ -74,6 +74,22 @@ export async function mintSpaceClaimToken(spaceId: string): Promise<string | nul
 }
 
 /**
+ * Whether the Space's real owner has claimed it (`claimed_at` stamped). The Business Seeder asks before
+ * a re-apply: once an owner has claimed a seeded Space it is theirs, and a staff re-seed must never
+ * overwrite what they wrote. FAIL-CLOSED: a read that errors or finds no row answers "claimed", so a
+ * database hiccup can only ever withhold a re-seed, never clobber an owner's edits.
+ */
+export async function isSpaceClaimed(spaceId: string): Promise<boolean> {
+  try {
+    const { data, error } = await spacesTable().select('claimed_at').eq('id', spaceId).maybeSingle()
+    if (error || !data) return true
+    return !!(data as { claimed_at?: string | null }).claimed_at
+  } catch {
+    return true
+  }
+}
+
+/**
  * The still-live claim token for a Space, or null when claimed / never minted. Reads the secret
  * directly, so the CALLER must gate this to platform staff before surfacing it (it builds the shareable
  * claim link an operator sends the real owner).
