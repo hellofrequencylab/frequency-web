@@ -71,7 +71,7 @@ function PillarGauge({ pillar }: { pillar: PillarProgress }) {
             <path
               d="M 10 40 A 30 30 0 0 1 70 40"
               fill="none"
-              stroke="var(--color-primary)"
+              stroke="var(--color-primary-strong)"
               strokeWidth="7"
               strokeLinecap="round"
               strokeDasharray={C}

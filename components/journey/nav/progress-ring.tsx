@@ -45,7 +45,7 @@ export function ProgressRing({
           strokeDasharray={c}
           // Never fully empty: a sliver at 0% says "this is a gauge" (endowed progress, JOURNEYS-DESIGN §1).
           strokeDashoffset={c - (c * Math.max(pct, 2)) / 100}
-          className={tone === 'current' ? 'stroke-current' : pct >= 100 ? 'stroke-success' : 'stroke-primary'}
+          className={tone === 'current' ? 'stroke-current' : pct >= 100 ? 'stroke-success' : 'stroke-primary-strong'}
         />
       </svg>
       {children !== undefined && <span className="absolute inset-0 flex items-center justify-center">{children}</span>}
