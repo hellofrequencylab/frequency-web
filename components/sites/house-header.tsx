@@ -50,6 +50,7 @@ export function HouseHeader({
   skinned,
   fadeOnPause = true,
   member = null,
+  tools = null,
   brandMark = null,
 }: {
   brandName: string
@@ -67,6 +68,9 @@ export function HouseHeader({
   /** The reader's own membership in this Space (components/sites/site-member-badge.tsx), beside the
    *  button. An island, so the cached header stays the same for everyone (LIVE-699). */
   member?: ReactNode
+  /** A skin's own tools ahead of the button: the Network site's search and account cluster. Islands, so the
+   *  cached header stays the same for everyone. */
+  tools?: ReactNode
   /** A skin's own drawing of the mark for the logo slot (the Wildheart LogoMark), in place of the logo image
    *  and the name. The server draws it; this island only places it. */
   brandMark?: ReactNode
@@ -206,6 +210,7 @@ export function HouseHeader({
           </nav>
         )}
         <div className="hs-header-actions">
+          {tools}
           {member}
           {cta && (
             <a

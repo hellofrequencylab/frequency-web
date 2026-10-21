@@ -12,6 +12,7 @@
 
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
+import { siteTheme } from '@/lib/theme/site-style'
 
 /** One themed section, in page order. `ids` are the block ids it renders from (and so absorbs). */
 export type HouseSection =
@@ -119,6 +120,13 @@ export function siteHasContactPage(preferences: unknown): boolean {
   const rows = Array.isArray(layout?.rows) ? layout.rows : []
   if (Array.isArray(layout?.hidden) && layout.hidden.includes('contactForm')) return false
   return rows.some((r) => Array.isArray(r.cells) && r.cells.some((c) => Array.isArray(c) && c.includes('contactForm')))
+}
+
+/** Is the website's Contact page served? A placed Contact form offers it (siteHasContactPage), and a Network
+ *  website always does: its Contact page is the Contact form block on its Home page (components/page-editor/
+ *  blocks/network.tsx), so there is nothing to place first. */
+export function siteServesContactPage(preferences: unknown): boolean {
+  return siteHasContactPage(preferences) || siteTheme(preferences) === 'network'
 }
 
 /** The Book page's path on a website (LIVE-835). `book` is a reserved page slug (lib/spaces/profile-pages), so
