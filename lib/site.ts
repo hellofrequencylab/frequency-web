@@ -243,8 +243,12 @@ export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
 export const OPERATOR_START_HREF = `${OPERATOR_CTA_HREF}?next=/spaces/new`;
 /** The same door with the plan the visitor clicked riding along as `?plan=<id>` on Create a Space (ids: free,
  *  business, collective, nonprofit, network). Create a Space may read it; nothing may depend on it. */
-export function operatorStartHref(plan: string): string {
-  return `${OPERATOR_CTA_HREF}?next=${encodeURIComponent(`/spaces/new?plan=${plan}`)}`
+export function operatorStartHref(plan: string, extra: Record<string, string> = {}): string {
+  const query = new URLSearchParams({ plan })
+  // Hints the pricing calculator collects (the Space's name, what it will do). Create a Space reads them as
+  // starting values only; an empty one is dropped so the link stays as short as the plain plan link.
+  for (const [k, v] of Object.entries(extra)) if (v) query.set(k, v)
+  return `${OPERATOR_CTA_HREF}?next=${encodeURIComponent(`/spaces/new?${query.toString()}`)}`
 }
 
 /** THE NARROW-HEADER FORM, and the reason it exists (ADR-1197).

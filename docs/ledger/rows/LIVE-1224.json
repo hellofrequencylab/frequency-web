@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1224",
+  "title": "Pricing page walks Visitor to Network as a scroll-through storyline, lists every add-on, and hands the Space name and goals to Create a Space",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "components/frequency/site/pages/pricing/pricing-calculator.tsx",
+    "ref": "Owner 2026-10-21: lay the tiers out as a storyline (member, Crew, free Space, Business, Collective, Network), list the add-ons, and replace the confusing sales section with the scroll-through pricing calculator from the design handoff."
+  },
+  "detail": "FILED AND CLOSED 2026-10-21. /pricing gains PricingCalculator, a scroll-through of seven steps (Visitor, Member, Crew, Free Space, Business, Collective, Network) with a Monthly/Yearly switch, a Non Profit switch, and a last step that takes a Space name and goals into Create a Space (?plan=, ?name=, ?intents=). Every figure is read from the Offering model, the catalog and NETWORK_PLAN (calculator-model.ts), never from the design file. A new Add-ons section (lib/pricing/pricing-addons.ts) lists custom domain, Vera AI, extra Collective Spaces, extra chapters, the chapter package, the Network website ladder with badge removal, and Independent Network, plus what comes with a plan (QR, Boost, Crew, seats, tips). The old What you pay on sales figure is replaced by a plain fee list that keeps the introduction-only rule beside card processing. Not built from the design: the email capture and the how-often/where/email questions, since no endpoint exists for them.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('components/frequency/site/pages/pricing/frequency-pricing.tsx','utf8');const m=fs.readFileSync('components/frequency/site/pages/pricing/calculator-model.ts','utf8');const bad=[];if(!p.includes('<PricingCalculator')||!p.includes('<PricingAddOns'))bad.push('pricing page lacks the calculator or add-ons');if(/\\\\$\\\\d/.test(m.split('\\\\n').filter(l=>!/^\\\\s*(\\\\/\\\\/|\\\\/\\\\*|\\\\*)/.test(l)).join('\\\\n')))bad.push('typed money in the calculator model');if(!fs.existsSync('lib/pricing/pricing-addons.ts'))bad.push('no add-on list');if(!fs.readFileSync('lib/spaces/create-wizard.ts','utf8').includes('parseWizardHints'))bad.push('Create a Space ignores the name and goals');if(bad.length){console.error('LIVE-1224: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the page loses the calculator or add-ons, the model types a dollar figure, or Create a Space stops reading the hand-off."
+  },
+  "closed": "2026-10-21",
+  "wave": "W7"
+}

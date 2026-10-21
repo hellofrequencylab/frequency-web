@@ -1,6 +1,6 @@
 import { asSpacePlan, NETWORK_PLAN, type SpacePlan } from '@/lib/pricing/plans'
 
-const INCLUDED_MEMBER_SPACES = 5
+export const INCLUDED_MEMBER_SPACES = 5
 export function isCollectivePlan(plan: string | null | undefined): boolean {
   return plan === 'collective' || plan === 'nonprofit_collective'
 }

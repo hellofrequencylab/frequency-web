@@ -5,6 +5,8 @@ import { catalogConfigByKey, defaultCatalogConfig } from '@/lib/pricing/catalog-
 import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 import { memberOfferings, spaceFeatureGrid, spaceOfferings, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { pricingFaq } from '@/app/(marketing)/pricing/pricing-faq'
+import { pricingAddOns } from '@/lib/pricing/pricing-addons'
+import { calculatorModel, intentsForPicks } from './calculator-model'
 import { FrequencyPricing, splitPrice } from './frequency-pricing'
 
 // THE /pricing BODY ON FREQUENCY. A full-page capture showed "Every feature, every plan." and the FAQ
@@ -21,6 +23,8 @@ function render() {
       grid={spaceFeatureGrid(input)}
       faq={pricingFaq(input)}
       yearlyNote="Yearly is two months free."
+      calculator={calculatorModel(memberOfferings(input), spaceOfferings(input), input.catalog, 'Yearly is two months free.')}
+      addOns={pricingAddOns(input)}
     />,
   )
 }
@@ -32,7 +36,7 @@ describe('the Frequency pricing body', () => {
     const html = render()
     expect(count(html, 'Every feature, every plan.</h2>')).toBe(1)
     expect(count(html, 'Before you ask.</h2>')).toBe(1)
-    expect(count(html, 'Everything for people is free.</h2>')).toBe(1)
+    expect(count(html, 'Join free. Host more with Crew.</h2>')).toBe(1)
     expect(count(html, '<table')).toBe(1)
   })
 
@@ -73,6 +77,61 @@ describe('the motion graphics', () => {
   })
 })
 
+describe('the scroll-through calculator', () => {
+  const html = render()
+  it('walks seven tiers and a picker, each with its own panel', () => {
+    expect(html).toContain('id="path"')
+    expect(count(html, 'pc-panel')).toBe(8)
+    for (const tier of ['Visitor', 'Member', 'Crew', 'Free Space', 'Business', 'Collective', 'Network', 'Your turn'])
+      expect(html).toContain(`>${tier}</p>`)
+  })
+  it('prices every step off the catalog, never the design file', () => {
+    expect(html).toContain('<b>$49</b>')
+    expect(html).toContain('<b>$99</b>')
+    expect(html).toContain('<b>$149</b><em>/mo + $59 a chapter</em>')
+    expect(html).toContain('<b>$4.99</b>')
+    expect(html).not.toContain('$599')
+    const calc = html.slice(html.indexOf('id="path"'), html.indexOf('</section>', html.indexOf('id="path"')))
+    expect(calc).not.toMatch(/beta/i)
+  })
+  it('sends each button to a real door', () => {
+    expect(html).toContain('href="/discover"')
+    expect(html).toContain('href="/upgrade"')
+    expect(html).toContain('href="/join"')
+  })
+  it('turns the picks into the goals Create a Space understands', () => {
+    expect(intentsForPicks(['Classes', 'Circles', 'Retreats', 'Events'])).toBe('classes,community,events')
+    expect(intentsForPicks([])).toBe('')
+  })
+})
+
+describe('the add-ons', () => {
+  const html = render()
+  const rows = pricingAddOns(input)
+  it('lists every extra with its catalog price', () => {
+    expect(rows.paid.map((r) => r.key)).toEqual([
+      'custom_domain',
+      'vera_ai',
+      'collective_space',
+      'network_chapter',
+      'network_package',
+      'network_sites',
+      'independent_network',
+    ])
+    expect(html).toContain('Custom domain')
+    expect(html).toContain('$19')
+    expect(html).toContain('$29')
+    expect(html).toContain('$6,210')
+    expect(html).toContain('$15 a site')
+    expect(html).toContain('$5,000 once for setup')
+  })
+  it('says what comes with the plan, and the fee only on introductions', () => {
+    expect(rows.included.map((r) => r.key)).toEqual(['qr', 'boost', 'crew', 'seats', 'tips'])
+    expect(html).toContain('We only earn on a customer we introduce.')
+    expect(html).toContain('0% on a customer Frequency introduces, plus card processing')
+  })
+})
+
 describe('splitPrice', () => {
   it('splits the figure from its period, and keeps a lead word', () => {
     expect(splitPrice('$49/mo')).toEqual({ lead: undefined, amount: '$49', per: '/mo' })
@@ -97,7 +156,8 @@ describe('the pricing sheet', () => {
 
   it('gives every paid plan a yearly price behind the Monthly / Yearly switch', () => {
     const html = render()
-    expect(count(html, 'role="radiogroup"')).toBe(2)
+    // The calculator's own Monthly / Yearly switch makes a third.
+    expect(count(html, 'role="radiogroup"')).toBe(3)
     expect(html).toContain('aria-label="Billing period"')
     expect(html).toContain('data-period="month"')
     for (const o of spaceOfferings(input).filter((x) => x.monthlyCents > 0)) {
