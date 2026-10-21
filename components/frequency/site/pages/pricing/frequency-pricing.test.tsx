@@ -64,7 +64,7 @@ describe('the motion graphics', () => {
   it('reads every figure off the catalog and links the right doors', () => {
     const html = render()
     expect(count(html, 'class="pm-fig"')).toBe(1)
-    expect(html).toContain('$149 + $59 a chapter, 3 to start, from $326')
+    expect(html).toContain('$299 + $59 a chapter, 3 at the least, from $476')
     expect(html).toContain('$30,000 a year plus a $5,000 setup')
     expect(html).toContain('href="/join?next=%2Fspaces%2Fnew%3Fplan%3Dbusiness"')
     expect(html).not.toMatch(/class="btn[^"]*" href="\/spaces"/)
@@ -97,7 +97,7 @@ describe('the scroll-through calculator', () => {
   it('prices every step off the catalog, never the design file', () => {
     expect(html).toContain('<b>$49</b>')
     expect(html).toContain('<b>$99</b>')
-    expect(html).toContain('<b>$149</b><em>/mo + $59 a chapter</em>')
+    expect(html).toContain('<b>from $476</b><em>/mo, 3 chapters, then $59 each</em>')
     expect(html).toContain('<b>$4.99</b>')
     expect(html).not.toContain('$599')
     const calc = html.slice(html.indexOf('id="path"'), html.indexOf('</section>', html.indexOf('id="path"')))
@@ -130,7 +130,7 @@ describe('the add-ons', () => {
     expect(html).toContain('Custom domain')
     expect(html).toContain('$19')
     expect(html).toContain('$29')
-    expect(html).toContain('$6,210')
+    expect(html).toContain('$7,710')
     expect(html).toContain('$15 a site')
     expect(html).toContain('$5,000 once for setup')
   })

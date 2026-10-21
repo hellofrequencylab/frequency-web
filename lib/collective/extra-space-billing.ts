@@ -15,7 +15,7 @@ import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 /** The per-unit item a parent Space buys past what its plan includes: a Collective's extra member
- *  Spaces (collective_space, five included) or a Network's extra chapters (network_chapter, three
+ *  Spaces (collective_space, three included) or a Network's extra chapters (network_chapter, three
  *  included, SCAN-1008, repriced 2026-10-20). `maxQuantity` is null when the plan has no self-serve ceiling; a Network
  *  stops at NETWORK_PLAN.maxChapters and past that is a quote. */
 type ExtraItemKey = 'collective_space' | 'network_chapter'
@@ -24,7 +24,7 @@ export interface ExtraSpaceQuote {
   priceId: string; unitCents: number; interval: BillingInterval
 }
 const BASE_ITEM_KEYS = ['collective', 'nonprofit_collective', 'network']
-const INCLUDED_MEMBER_SPACES = 5
+const INCLUDED_MEMBER_SPACES = 3
 function extraItemFor(plan: string): { itemKey: ExtraItemKey; included: number; maxQuantity: number | null } {
   return isNetworkPlan(plan)
     ? { itemKey: 'network_chapter', included: NETWORK_PLAN.includedChapters, maxQuantity: NETWORK_PLAN.maxChapters - NETWORK_PLAN.includedChapters }

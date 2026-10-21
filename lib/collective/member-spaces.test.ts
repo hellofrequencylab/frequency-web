@@ -4,8 +4,8 @@ import { isChapterParentPlan, memberSpaceCapacity, memberSpacePlan } from './mem
 const relation = { childOwnerId: 'owner', parentOwnerId: 'owner', childStatus: 'active', childType: 'business', parentType: 'business', parentParentId: null }
 
 describe('Collective member Space entitlement', () => {
-  it('starts at five, adding only live purchased extra Space quantity', () => {
-    expect(memberSpaceCapacity([])).toBe(5)
+  it('starts at three, adding only live purchased extra Space quantity', () => {
+    expect(memberSpaceCapacity([])).toBe(3)
     expect(memberSpaceCapacity([
       { item_key: 'collective_space', quantity: 3, status: 'active' },
       { item_key: 'collective_space', quantity: 2, status: 'trialing' },
@@ -15,7 +15,7 @@ describe('Collective member Space entitlement', () => {
       { item_key: 'operator_seat', quantity: 50, status: 'active' },
       { item_key: 'collective_space', quantity: -2, status: 'active' },
       { item_key: 'collective_space', quantity: NaN, status: 'active' },
-    ])).toBe(11)
+    ])).toBe(9)
   })
   it('grants Business to a free child of either active Collective plan', () => {
     for (const plan of ['collective', 'nonprofit_collective']) {
@@ -48,13 +48,13 @@ describe('Network chapters (SCAN-960)', () => {
   it('holds three included chapters and ignores extra Collective Space quantity', () => {
     expect(memberSpaceCapacity([], 'network')).toBe(3)
     expect(memberSpaceCapacity([{ item_key: 'collective_space', quantity: 3, status: 'active' }], 'network')).toBe(3)
-    expect(memberSpaceCapacity([], 'collective')).toBe(5)
+    expect(memberSpaceCapacity([], 'collective')).toBe(3)
   })
   it('adds live purchased chapters up to 25 and never counts them for a Collective (SCAN-1008)', () => {
     expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'active' }], 'network')).toBe(6)
     expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'canceled' }], 'network')).toBe(3)
     expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 40, status: 'active' }], 'network')).toBe(25)
-    expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'active' }], 'collective')).toBe(5)
+    expect(memberSpaceCapacity([{ item_key: 'network_chapter', quantity: 3, status: 'active' }], 'collective')).toBe(3)
   })
   it('grants Business to a free same-owner chapter of an active Network', () => {
     expect(memberSpacePlan('free', { plan: 'network', status: 'active' }, relation)).toBe('business')

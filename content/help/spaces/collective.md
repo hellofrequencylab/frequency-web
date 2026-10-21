@@ -49,7 +49,7 @@ Open **Plan and usage** on your Collective, then find **Member Spaces**. Choose 
 and select **Attach Space**. You must own both Spaces. A Space already attached elsewhere or
 containing other Spaces cannot be attached as a member.
 
-Five member Spaces are included. In **Member Spaces**, set **Extra Spaces beyond the five included**
+Three member Spaces are included. In **Member Spaces**, set **Extra Spaces beyond the three included**
 and select **Save extra Spaces**. You see the exact monthly or yearly price before saving, on the
 same billing interval as your Collective. The change is prorated on your next invoice. Detach
 member Spaces first if you want to pay for fewer extras.

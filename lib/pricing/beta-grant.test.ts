@@ -231,11 +231,11 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(labels).toEqual([
       '$1,490', // Collective list, the struck yearly anchor over the open Founding intro (ADR-1760)
       '$149', // Collective list, the struck monthly anchor
-      '$3,260', // Network list, the struck yearly anchor over the open Founding year
       '$39', // Non Profit, flat, never had a beta rate
       '$39/mo',
       '$390',
       '$390/yr',
+      '$4,760', // Network list, the struck yearly anchor over the open Founding year
       '$49', // Business — the list price, and the ONLY Business number a visitor sees
       '$49/mo',
       '$490',
@@ -245,11 +245,11 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
       '$990',
       '$990/yr',
       'Free',
-      'from $2,934/yr', // Network Founding first year: nine months for the year (ADR-1815)
-      'from $3,260/yr', // Network (repriced 2026-10-20): the "from" year, two months free, and its month
-      'from $326/mo',
+      'from $4,284/yr', // Network Founding first year: nine months for the year (ADR-1815)
+      'from $4,760/yr', // Network (repriced 2026-10-21): the "from" year, two months free, and its month
+      'from $476/mo',
     ])
-    expect(cents).toEqual([0, 3900, 4900, 9900, 14900, 32600, 39000, 49000, 99000])
+    expect(cents).toEqual([0, 3900, 4900, 9900, 14900, 39000, 47600, 49000, 99000])
     // The founding amounts a GRANTED Space might be charged, absent from both sets when flat.
     for (const amount of ['$29/mo', '$290/yr', '$79/mo', '$790/yr', '$29', '$79']) {
       expect(labels, `${amount} is quoted on a public surface`).not.toContain(amount)

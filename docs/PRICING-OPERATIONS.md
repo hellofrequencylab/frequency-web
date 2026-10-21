@@ -20,7 +20,7 @@ amounts the owner ruled are recorded in [PRICING.md](PRICING.md), top banner. St
 | **Crew** | a member | **Contribute what you want** above a floor. Backing the community plus a host kit |
 | **Space** (free) | any member | Every hosting tool with launch limits, tips at 0%. Does not sell |
 | **Business** | a Space | Selling opens here. Higher limits, 2 operator seats |
-| **Collective** | a Space | Business for a group of groups: 5 member Spaces included, more at the extra-Space price, Vera AI included, a lower network fee |
+| **Collective** | a Space | Business for a group of groups: 3 member Spaces included, more at the extra-Space price, Vera AI included, a lower network fee |
 | **Non Profit** | a verified 501(c)(3) Space | Everything Business does, with no network fee. Non Profit Collective is the Collective version |
 | **Independent** | a Space going white-label, off the network | Hand-sold, never on a public surface |
 

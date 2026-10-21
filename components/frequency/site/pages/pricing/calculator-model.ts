@@ -67,13 +67,13 @@ function byId(list: readonly Offering[], id: string): Offering {
   return found
 }
 
-/** The Network's price as the design shows a base plus a chapter price: "$149 /mo + $59 a chapter". */
+/** The Network's price as the real minimum, never the bare base: "from $476 /mo, 3 chapters, then $59 each". */
 function networkPrice(period: 'month' | 'year', nonprofit: boolean): CalcPrice {
-  const base = nonprofit ? NETWORK_PLAN.nonprofitBaseCents : NETWORK_PLAN.baseCents
+  const monthly = nonprofit ? NETWORK_PLAN.nonprofitMonthlyCents : NETWORK_PLAN.monthlyCents
   const chapter = nonprofit ? NETWORK_PLAN.nonprofitChapterCents : NETWORK_PLAN.chapterCents
   const unit = period === 'year' ? '/yr' : '/mo'
   const scale = (c: number) => (period === 'year' ? yearlyFromMonthly(c) : c)
-  return { pre: '', amount: formatCents(scale(base)), per: `${unit} + ${formatCents(scale(chapter))} a chapter`, was: '' }
+  return { pre: 'from ', amount: formatCents(scale(monthly)), per: `${unit}, ${NETWORK_PLAN.includedChapters} chapters, then ${formatCents(scale(chapter))} each`, was: '' }
 }
 
 /** Build the seven steps from the models the page already holds. PURE. */
@@ -228,7 +228,7 @@ export function calculatorModel(
       idea: 'One thing, in many places.',
       line: 'Every chapter runs as one organization, with one membership that works everywhere and a chapter leader for each.',
       who: ['Multi-site studios', 'Franchises', 'National nonprofits'],
-      badge: `Starts with ${NETWORK_PLAN.includedChapters} chapters`,
+      badge: `${NETWORK_PLAN.includedChapters} chapters at the least`,
       price: {
         month: networkPrice('month', false),
         year: networkPrice('year', false),
@@ -237,7 +237,7 @@ export function calculatorModel(
       },
       ctaLabel: networkCheckoutOpen() ? 'Start a Network' : network.cta.label,
       pitch: 'Run every chapter as one organization.',
-      note: `Starts with ${NETWORK_PLAN.includedChapters} chapters, up to ${NETWORK_PLAN.maxChapters}. ${trial} One membership everywhere.`.replace(/\s+/g, ' ').trim(),
+      note: `${NETWORK_PLAN.includedChapters} chapters at the least, up to ${NETWORK_PLAN.maxChapters}. ${trial} One membership everywhere.`.replace(/\s+/g, ' ').trim(),
       href: networkCheckoutOpen() ? null : network.cta.href,
       plan: networkCheckoutOpen() ? 'network' : null,
       npPlan: networkCheckoutOpen() ? 'network' : null,

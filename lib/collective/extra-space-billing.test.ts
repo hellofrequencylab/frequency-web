@@ -142,10 +142,10 @@ describe('a Network buys extra chapters on network_chapter, up to 25 chapters (S
     expect(state.update.mock.calls[0][1].items).toEqual([{ price: 'price_extra', quantity: 3 }])
     expect(state.rpc.mock.calls.map(c => c[0])).toEqual(['begin_collective_space_change', 'finish_collective_space_change'])
   })
-  it('a Collective still quotes collective_space with five included and no ceiling', async () => {
+  it('a Collective still quotes collective_space with three included and no ceiling', async () => {
     state.plan = 'collective'
     state.sub.items.data = [line('collective_base', 'si_base')]
     state.price.mockResolvedValue({ id: 'price_extra', active: true, currency: 'usd', unit_amount: 2900, recurring: { interval: 'month' }, metadata: { frequency_pricing_key: 'collective_space_month' } })
-    expect(await loadExtraSpaceQuote('parent')).toEqual(expect.objectContaining({ itemKey: 'collective_space', included: 5, maxQuantity: null }))
+    expect(await loadExtraSpaceQuote('parent')).toEqual(expect.objectContaining({ itemKey: 'collective_space', included: 3, maxQuantity: null }))
   })
 })

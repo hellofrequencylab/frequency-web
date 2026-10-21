@@ -39,17 +39,17 @@ select throws_ok($$select public.set_collective_member_space('00000000-0000-4000
 update public.spaces set parent_id = '00000000-0000-4000-c763-000000000011' where id = '00000000-0000-4000-c763-000000000000';
 select throws_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000001', '00000000-0000-4000-b763-000000000001', true)$$, 'P0001', 'collective_invalid', 'a nested containing Space cannot acquire members');
 update public.spaces set parent_id = null where id = '00000000-0000-4000-c763-000000000000';
-select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', ('00000000-0000-4000-c763-' || lpad(n::text,12,'0'))::uuid, '00000000-0000-4000-b763-000000000001', true) from generate_series(1, 5) n;
-select is((select count(*)::int from public.spaces where parent_id = '00000000-0000-4000-c763-000000000000'), 5, 'five member Spaces attach');
+select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', ('00000000-0000-4000-c763-' || lpad(n::text,12,'0'))::uuid, '00000000-0000-4000-b763-000000000001', true) from generate_series(1, 3) n;
+select is((select count(*)::int from public.spaces where parent_id = '00000000-0000-4000-c763-000000000000'), 3, 'three member Spaces attach');
 select lives_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000001', '00000000-0000-4000-b763-000000000001', true)$$, 'attaching an existing member is idempotent even at capacity');
-select throws_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000006', '00000000-0000-4000-b763-000000000001', true)$$, 'P0001', 'collective_full', 'a sixth Space is refused without purchased capacity');
+select throws_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000004', '00000000-0000-4000-b763-000000000001', true)$$, 'P0001', 'collective_full', 'a fourth Space is refused without purchased capacity');
 insert into public.space_subscription_items (space_id, item_key, quantity, status)
 values ('00000000-0000-4000-c763-000000000000', 'collective_space', 2, 'canceled');
-select throws_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000006', '00000000-0000-4000-b763-000000000001', true)$$, 'P0001', 'collective_full', 'canceled extras grant no capacity');
+select throws_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000004', '00000000-0000-4000-b763-000000000001', true)$$, 'P0001', 'collective_full', 'canceled extras grant no capacity');
 update public.space_subscription_items set status = 'active' where space_id = '00000000-0000-4000-c763-000000000000';
-select lives_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000006', '00000000-0000-4000-b763-000000000001', true)$$, 'active purchased quantity admits another Space');
+select lives_ok($$select public.set_collective_member_space('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-c763-000000000004', '00000000-0000-4000-b763-000000000001', true)$$, 'active purchased quantity admits another Space');
 update public.space_subscription_items set status = 'canceled' where space_id = '00000000-0000-4000-c763-000000000000';
-select is((select count(*)::int from public.spaces where parent_id = '00000000-0000-4000-c763-000000000000'), 6, 'capacity reduction preserves existing attachments');
+select is((select count(*)::int from public.spaces where parent_id = '00000000-0000-4000-c763-000000000000'), 4, 'capacity reduction preserves existing attachments');
 select is((select plan::text from public.spaces where id = '00000000-0000-4000-c763-000000000001'), 'free', 'inheritance never overwrites the stored child plan');
 select throws_ok($$select public.begin_collective_space_change('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-b763-000000000001', 0, '00000000-0000-4000-d763-000000000001')$$, 'P0001', 'collective_quantity_floor', 'quantity cannot drop below the attached-Space floor');
 select is(public.begin_collective_space_change('00000000-0000-4000-c763-000000000000', '00000000-0000-4000-b763-000000000001', 1, '00000000-0000-4000-d763-000000000001'), true, 'first quantity change gets the parent reservation');

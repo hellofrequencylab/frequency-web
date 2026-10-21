@@ -125,7 +125,7 @@ export function FrequencyNetworks() {
             </div>
             <h2 className="h-l">{`From ${formatCents(NETWORK_PLAN.monthlyCents)} a month.`}</h2>
             <p className="pb-note">
-              {`${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, with ${NETWORK_PLAN.includedChapters} chapters to start, up to ${NETWORK_PLAN.maxChapters}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free. ${trialDays}-day free trial.`}
+              {`${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, ${NETWORK_PLAN.includedChapters} chapters at the least and up to ${NETWORK_PLAN.maxChapters}, so a Network starts at ${formatCents(NETWORK_PLAN.monthlyCents)}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free. ${trialDays}-day free trial.`}
             </p>
           </div>
           <div className="tg-row two">
