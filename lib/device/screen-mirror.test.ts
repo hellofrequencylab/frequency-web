@@ -42,6 +42,20 @@ describe('ScreenDemux', () => {
     expect(out.packets).toEqual([])
   })
 
+  it('treats 0xAA with a valid fn but the wrong size as text, then finds the next real packet', () => {
+    const d = new ScreenDemux()
+    // A colour byte 0xAA followed by what looks like fn 2 with size 40: not a fillRect (13 bytes).
+    const out = d.push(join([0xaa, 40, 2], enc('@rpc {}\n'), FILL_RECT))
+    expect(dec(out.text.slice(3))).toBe('@rpc {}\n')
+    expect(out.packets).toEqual([Uint8Array.from(FILL_RECT)])
+  })
+
+  it('accepts a text packet within its size range', () => {
+    const d = new ScreenDemux()
+    const str = [0xaa, 16, 16, 0, 1, 0, 2, 0, 1, 0xff, 0xff, 0, 0, 0x48, 0x69, 0x21]
+    expect(d.push(Uint8Array.from(str)).packets).toEqual([Uint8Array.from(str)])
+  })
+
   it('flush hands back carried bytes', () => {
     const d = new ScreenDemux()
     d.push(Uint8Array.from(FILL_RECT.slice(0, 4)))

@@ -18,8 +18,22 @@ const SCREEN_INFO = 99
 // A packet's size is one byte, so a real partial packet never carries more than 254 bytes.
 const MAX_CARRY = 256
 
-function validFn(fn: number): boolean {
-  return (fn >= 0 && fn <= 21) || fn === SCREEN_INFO
+// The exact size of every fixed-length packet, and the range of the ones with a text tail (tftLogger.cpp:
+// checkAndLog writes each arg as a uint16, screen info ends in one rotation byte, drawImage in one fs byte
+// then the path, and no entry is longer than MAX_LOG_SIZE = 64 on a board without PSRAM). Checking the
+// size, not just the fn, keeps a stray 0xAA inside a colour from being read as a packet: one lost byte
+// would otherwise put the demux out of step and swallow the text after it, RPC replies included.
+const FIXED_SIZE: Record<number, number> = {
+  0: 5, 1: 13, 2: 13, 3: 15, 4: 15, 5: 11, 6: 11, 7: 17, 8: 17, 9: 13, 10: 13, 11: 13, 12: 19, 13: 17,
+  19: 9, 20: 11, 21: 11, 99: 8,
+}
+const TAIL_MIN: Record<number, number> = { 14: 13, 15: 13, 16: 13, 17: 13, 18: 12 }
+const MAX_PACKET = 128
+
+function validPacket(fn: number, size: number): boolean {
+  if (fn in FIXED_SIZE) return size === FIXED_SIZE[fn]
+  if (fn in TAIL_MIN) return size >= TAIL_MIN[fn] && size <= MAX_PACKET
+  return false
 }
 
 /** Splits a serial byte stream into plain text and screen packets. Keeps a partial packet across chunks. */
@@ -44,7 +58,7 @@ export class ScreenDemux {
       if (i + 3 > buf.length) break // need size + fn
       const size = buf[i + 1]
       const fn = buf[i + 2]
-      if (size < 3 || !validFn(fn)) {
+      if (!validPacket(fn, size)) {
         text.push(buf[i++]) // not a packet after all
         continue
       }
