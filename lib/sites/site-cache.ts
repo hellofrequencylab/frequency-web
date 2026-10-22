@@ -3,7 +3,6 @@ import { revalidatePath } from 'next/cache'
 import { crossRequestCached, invalidateCacheTag, siteCacheTag } from '@/lib/cross-request-cache'
 import { getPublicSpaceBySlugOrThrow, getSpaceHostRow } from '@/lib/spaces/store'
 import { isNetworkPlan } from '@/lib/collective/member-spaces'
-import { inheritFromNetwork } from '@/lib/sites/network-inheritance'
 import type { Space } from '@/lib/spaces/types'
 
 // A SPACE WEBSITE IS CACHED, AND ITS OWNER'S SAVE REFRESHES IT (PROG-E10 phase 5, LIVE-784).
@@ -26,8 +25,9 @@ import type { Space } from '@/lib/spaces/types'
 // A write that does not call it (an operator's SQL, a surface outside the Page panel) is bounded by
 // the seam's ten-minute ceiling, which also caps the page's own ISR window.
 
-async function readSiteSpace(slug: string): Promise<Space | null> {
-  return crossRequestCached(getPublicSpaceBySlugOrThrow, ['site-space'], { tags: [siteCacheTag(slug)] })(slug)
+async function readSiteSpace(norm: string): Promise<Space | null> {
+  const read = crossRequestCached(getPublicSpaceBySlugOrThrow, ['site-space'], { tags: [siteCacheTag(norm)] })
+  return read(norm)
 }
 
 /** The Space behind a website, as an anonymous visitor sees it (active and network-visible), cached
@@ -39,10 +39,13 @@ export async function getSiteSpace(slug: string): Promise<Space | null> {
   if (!norm) return null
   const space = await readSiteSpace(norm)
   if (!space?.parentId) return space
-  const parent = await crossRequestCached(getSpaceHostRow, ['site-parent'], { tags: [siteCacheTag(norm)] })(space.parentId)
+  const parent = await getSpaceHostRow(space.parentId)
   if (!parent || parent.status !== 'active' || !isNetworkPlan(parent.plan) || parent.owner_profile_id !== space.ownerProfileId) return space
   const network = await readSiteSpace(parent.slug)
-  return network ? inheritFromNetwork(space, network) : space
+  if (!network) return space
+  // Loaded here, not at the top: only a chapter pays for the inheritance module's page-model imports.
+  const { inheritFromNetwork } = await import('@/lib/sites/network-inheritance')
+  return inheritFromNetwork(space, network)
 }
 
 /** Expire a Space website's cached row and pages. Call it beside any owner write the site shows. */
