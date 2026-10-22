@@ -51,7 +51,7 @@ export function CardLinkPicker({ onPick, disabled }: { onPick: (url: string) => 
             <li key={p.url}>
               <button
                 type="button"
-                className="flex w-full items-start gap-2 rounded-control px-2 py-1.5 text-left hover:bg-surface-elevated focus-visible:bg-surface-elevated"
+                className="flex w-full items-start gap-2 rounded-control-nested px-2 py-1.5 text-left hover:bg-surface-elevated focus-visible:bg-surface-elevated"
                 onClick={() => {
                   onPick(p.url)
                   setQuery('')
