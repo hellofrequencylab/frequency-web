@@ -127,6 +127,8 @@
 [data-design="frequency"] [data-kit="site"] .fn-rows .fn-price{text-align:left}}
 /* ── The induction's first beat (components/frequency/site/pages/funnel/induction-welcome.tsx): the promise
    on the left, the choices and the email on the right, all in the first screen. One column on a phone. ── */
+[data-design="frequency"] [data-kit="site"] .iw-stage, [data-design="frequency"] [data-kit="site"] .iw-step{isolation:isolate;overflow:clip;background:radial-gradient(ellipse 60% 55% at 78% 40%,color-mix(in srgb,var(--fq-side) 16%,transparent),transparent 70%),radial-gradient(ellipse 45% 50% at 12% 85%,color-mix(in srgb,var(--fq-x-aqua-neon) 10%,transparent),transparent 70%)}
+[data-design="frequency"] [data-kit="site"] .iw-stage .rings, [data-design="frequency"] [data-kit="site"] .iw-step .rings{right:-18%;opacity:.8}
 [data-design="frequency"] [data-kit="site"] .iw-stage{position:relative;box-sizing:border-box;min-height:calc(100svh - var(--fq-site-nav-rest,84px));display:flex;align-items:center;padding:clamp(96px,12vh,124px) clamp(16px,4vw,64px) 40px}
 [data-design="frequency"] [data-kit="site"] .iw{text-align:left;position:relative;z-index:1;width:100%;max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:center;gap:clamp(32px,5vw,72px)}
 [data-design="frequency"] [data-kit="site"] .iw-copy .label{margin-bottom:18px}
@@ -140,6 +142,7 @@
 [data-design="frequency"] [data-kit="site"] .iw-prompt b{font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-side);margin-right:6px}
 [data-design="frequency"] [data-kit="site"] .iw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 [data-design="frequency"] [data-kit="site"] .iw-card{flex-direction:row;align-items:center;gap:12px;padding:14px;font:inherit;text-align:left;cursor:pointer;border:0;width:100%;color:inherit}
+[data-design="frequency"] [data-kit="site"] .iw-card:last-child:nth-child(odd){grid-column:1/-1}
 [data-design="frequency"] [data-kit="site"] .iw-card .ic{flex:none;width:40px;height:40px;border-radius:var(--fq-radius-m)}
 [data-design="frequency"] [data-kit="site"] .iw-card .ic svg{width:20px;height:20px}
 [data-design="frequency"] [data-kit="site"] .iw-card[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 28px -12px var(--fq-side)}
