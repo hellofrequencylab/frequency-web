@@ -14,6 +14,7 @@ import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
 import { monthGridWindow, operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
+import { CalendarSeo } from './calendar-seo'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { getSpaceCapabilities, resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -43,11 +44,13 @@ import {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  return spaceProfileMetadata(slug, {
+  const base = await spaceProfileMetadata(slug, {
     segment: 'calendar',
     label: 'Calendar & Events',
-    describe: (brandName) => `Every upcoming event at ${brandName}, on one calendar you can subscribe to.`,
+    describe: (brandName) => `What's happening at ${brandName}: upcoming events with dates and times, on one calendar you can add to Google or Apple Calendar.`,
   })
+  // The feed is the machine-readable twin of this page; point calendar apps and crawlers at it.
+  return { ...base, alternates: { ...base.alternates, types: { 'text/calendar': `${SITE_URL}/spaces/${slug}/calendar.ics` } } }
 }
 
 export default async function SpaceCalendarPage({
@@ -145,6 +148,8 @@ export default async function SpaceCalendarPage({
 
   if (!adminAllowed) {
     return (
+      <>
+      <CalendarSeo slug={slug} brandName={brandName} timeZone={space.timeZone} rows={upcomingRows} />
       <CalendarWorkspace
         slug={slug}
         spaceId={space.id}
@@ -167,6 +172,7 @@ export default async function SpaceCalendarPage({
         skyMarkers={skyMarkers}
         loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
       />
+      </>
     )
   }
 
@@ -184,6 +190,8 @@ export default async function SpaceCalendarPage({
   })
 
   return (
+    <>
+    <CalendarSeo slug={slug} brandName={brandName} timeZone={space.timeZone} rows={upcomingRows} />
     <CalendarWorkspace
       slug={slug}
       spaceId={space.id}
@@ -208,5 +216,6 @@ export default async function SpaceCalendarPage({
       skyMarkers={skyMarkers}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
     />
+    </>
   )
 }
