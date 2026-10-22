@@ -213,6 +213,7 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
       'billing-renewals',
       'signup-lead-recovery',
       'onboarding-throughput',
+      'indexnow',
       'storage-backup',
     ],
     why: 'renewals, retention, lifecycle, embeddings, the daily readings, the nightly storage copy',
