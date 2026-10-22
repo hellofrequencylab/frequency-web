@@ -1,9 +1,10 @@
-import { permanentRedirect } from 'next/navigation'
+import { permanentRedirect, redirect } from 'next/navigation'
 import { getSpaceByDomain } from '@/lib/spaces/store'
-import { chapterHostParts, normalizeHost, siteSlugFromSubdomain, spotlightHostDomain, subdomainSiteRedirect } from '@/lib/sites/host'
+import { appOrigin, chapterHostParts, normalizeHost, siteSlugFromSubdomain, spotlightHostDomain, subdomainSiteRedirect } from '@/lib/sites/host'
 import { isNetworkPlan } from '@/lib/collective/member-spaces'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { liveSiteDomain } from '@/lib/sites/site-domain'
+import { readWebsitePublished } from '@/lib/spaces/website'
 import type { Space } from '@/lib/spaces/types'
 
 // THE HOSTED SITE RESOLVE (PROG-E10 phase 2). proxy.ts rewrites a site host to /hosted/<host>[/<page>]
@@ -58,4 +59,17 @@ export async function redirectSubdomainToLiveDomain(hostParam: string, space: Sp
   if (!siteSlugFromSubdomain(host)) return
   const target = subdomainSiteRedirect(host, pathname, '', await liveSiteDomain(space))
   if (target) permanentRedirect(target)
+}
+
+/** A CHAPTER'S ADDRESS IS ITS SPACE PAGE (owner 2026-10-22: "It's a Space page for the sub group"). On
+ *  `<chapter>.<the Network's domain>` a chapter that has not published a website of its own sends the visitor
+ *  to its Space page on Frequency, rather than a Coming soon site; one that has published a website serves
+ *  it. A 307, not a 308, because publishing a website changes the answer. Called from the site's page routes
+ *  like redirectSubdomainToLiveDomain, so the pages stay ISR and the `site:<slug>` tag re-decides it. */
+export async function redirectChapterToSpacePage(hostParam: string, space: Space, pathname: string): Promise<void> {
+  const host = normalizeHost(decodeURIComponent(hostParam))
+  if (!space.parentId || !chapterHostParts(host) || siteSlugFromSubdomain(host) || space.domain === host) return
+  if (readWebsitePublished(space.preferences)) return
+  const rest = pathname === '/' ? '' : pathname
+  redirect(`${appOrigin()}/spaces/${space.slug}${rest}`)
 }

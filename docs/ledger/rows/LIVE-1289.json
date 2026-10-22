@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1289",
+  "title": "A chapter's address shows its Space page, not Coming soon (LIVE-1289)",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/sites/hosted.ts",
+    "ref": "Owner 2026-10-22: \"The subdomain isn't a white label site. It's a Space page for the sub group.\""
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. encinitas.thegrouplocal.com showed a Coming soon website because the chapter had not published one. A chapter's address now sends the visitor to the chapter's Space page on Frequency (redirectChapterToSpacePage, a 307) until the chapter publishes a website of its own, in which case the website is served. Attaching a chapter no longer publishes anything: it only attaches the address (startChapterSite).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const h=fs.readFileSync('lib/sites/hosted.ts','utf8');const p=fs.readFileSync('app/hosted/[host]/page.tsx','utf8');const bad=[];if(!h.includes('redirectChapterToSpacePage'))bad.push('the redirect is gone');if(!p.includes('redirectChapterToSpacePage'))bad.push('the home route no longer calls it');if(bad.length){console.error('LIVE-1289: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a chapter address stops sending the visitor to its Space page."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}

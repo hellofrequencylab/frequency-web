@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { notFound } from 'next/navigation'
 import { SitePage, siteMetadata } from '@/components/sites/site-page'
-import { redirectSubdomainToLiveDomain, resolveHostedSpace } from '@/lib/sites/hosted'
+import { redirectChapterToSpacePage, redirectSubdomainToLiveDomain, resolveHostedSpace } from '@/lib/sites/hosted'
 import { SPOTLIGHT_PAGE } from '@/lib/sites/host'
 import { HostedSpotlightPage, hostedSpotlightMetadata } from '@/components/spotlight/hosted-spotlight'
 
@@ -43,6 +43,8 @@ export default async function HostedSitePage({
   if (!space) notFound()
   // SCAN-896: a subdomain whose site lives on its own domain sends the visitor to the same page there.
   await redirectSubdomainToLiveDomain(host, space, `/${page}`)
+  // A chapter's address is its Space page until it publishes a website of its own.
+  await redirectChapterToSpacePage(host, space, `/${page}`)
   if (page === SPOTLIGHT_PAGE) {
     const spotlight = await HostedSpotlightPage({ host, space })
     if (spotlight) return spotlight
