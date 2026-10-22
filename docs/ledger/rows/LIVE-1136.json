@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1136",
+  "title": "Google and Bing verification tags can be set from env, so verifying by tag is possible without DNS access",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "metadata.verification in app/layout.tsx reads GOOGLE_SITE_VERIFICATION and BING_SITE_VERIFICATION (blank by default, listed in .env.example with a one-line gate). Optional: OWN-098 and OWN-099 can also use DNS. Context: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/off-site-seo.mjs verification"
+  },
+  "wave": "W7"
+}

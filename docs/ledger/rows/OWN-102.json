@@ -1,0 +1,20 @@
+{
+  "id": "OWN-102",
+  "title": "List Frequency on Capterra, G2, AlternativeTo and Crunchbase, and set up a Product Hunt launch for the first week of December",
+  "lane": "owner",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Worksheet items 5, 17 and 18. Free listings only; decline paid ad offers. Quote prices only from the pricing page, with plus card processing beside any 0% claim. Steps and links: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Checked 2026-10-22: no listing referenced in the repo.",
+    "checked": "2026-10-22"
+  },
+  "wave": "W7"
+}
