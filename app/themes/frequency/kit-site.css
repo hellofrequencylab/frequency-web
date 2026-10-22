@@ -596,6 +596,21 @@
 @media (max-width:560px){[data-design="frequency"] [data-kit="site"] .pkgs, [data-design="frequency"] [data-kit="site"] .g5{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="site"] .dock .k{display:none}
 [data-design="frequency"] [data-kit="site"] .sw.big button{padding:0 14px;font-size:15px}}
+/* Feature card grids never leave an orphan. Four cards sit 2 x 2; five sit 3 over 2 on a six-track grid. */
+@media (min-width:861px){
+[data-design="frequency"] [data-kit="site"] .g3:has(>:nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .g3:has(>:nth-child(5):last-child){grid-template-columns:repeat(6,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .g3:has(>:nth-child(5):last-child)>*{grid-column:span 2}
+[data-design="frequency"] [data-kit="site"] .g3:has(>:nth-child(5):last-child)>:nth-child(n+4){grid-column:span 3}
+}
+@media (min-width:861px) and (max-width:1080px){
+[data-design="frequency"] [data-kit="site"] .g5{grid-template-columns:repeat(6,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .g5>*{grid-column:span 2}
+[data-design="frequency"] [data-kit="site"] .g5>:nth-child(n+4):last-child, [data-design="frequency"] [data-kit="site"] .g5>:nth-child(4):nth-last-child(2){grid-column:span 3}
+}
+@media (min-width:561px) and (max-width:860px){
+[data-design="frequency"] [data-kit="site"] .g5>:last-child:nth-child(odd){grid-column:1/-1}
+}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pop{opacity:1!important;transform:none!important}
 [data-design="frequency"] [data-kit="site"] .pop>.pglow{animation:none!important;opacity:.2!important}}
 [data-design="frequency"] [data-kit="site"] .g4f{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
