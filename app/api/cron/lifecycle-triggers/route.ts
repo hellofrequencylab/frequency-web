@@ -28,6 +28,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
+import { sendOperatorLifecycle } from '@/lib/marketing/operator-lifecycle'
 
 export const dynamic = 'force-dynamic'
 
@@ -155,8 +156,15 @@ async function handler(req: NextRequest) {
   }
   })
 
+  // The operator emails for new Space owners (LIVE-1141) ride this cron. A failure here is logged and counted but never
+  // touches the member check-ins above, which are already stamped.
+  const operator = await sendOperatorLifecycle(admin, { limit: 200 }).catch((e) => {
+    log.error('cron.lifecycle_triggers.operator_failed', { error: e instanceof Error ? e.message : String(e) })
+    return { sent: 0, skipped: 0, failed: 1 }
+  })
+
   const summary = budget.summary((memberships?.length ?? 0) - remaining, remaining)
-  const counts = { day1: day1Count, day3: day3Count, day7: day7Count, superseded, failed, ...summary }
+  const counts = { day1: day1Count, day3: day3Count, day7: day7Count, superseded, failed, operator, ...summary }
   log.info('cron.lifecycle_triggers.counts', counts)
 
   // failed > 0 is a job failure the heartbeat must see (withCronHeartbeat fail-pings on a 5xx).
@@ -167,6 +175,7 @@ async function handler(req: NextRequest) {
     sent: { day1: day1Count, day3: day3Count, day7: day7Count },
     superseded,
     failed,
+    operator,
     budget: summary,
   }, { status: failed === 0 ? 200 : 500 })
 }
