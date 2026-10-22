@@ -31,6 +31,7 @@ function admin(spaces: unknown[]): SupabaseClient {
   return {
     from: () => chain,
     auth: { admin: { getUserById: async () => ({ data: { user: { email: 'sam@example.com' } } }) } },
+  // eslint-disable-next-line no-restricted-syntax -- a hand-built mock client for a function that takes the injected client
   } as unknown as SupabaseClient
 }
 
