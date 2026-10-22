@@ -94,8 +94,8 @@ const TEMPLE_VARS = `
 --tp-d1:0 1px 1px rgba(74,53,39,.04),0 2px 6px -2px rgba(74,53,39,.09);
 --tp-d2:0 1px 2px rgba(74,53,39,.05),0 10px 24px -12px rgba(112,66,40,.20);
 --tp-d3:0 2px 4px rgba(74,53,39,.05),0 26px 48px -24px rgba(112,66,40,.30);
---tp-shadow-xs:0 1px 2px rgba(74,53,39,.06);--tp-shadow-sm:0 2px 6px rgba(74,53,39,.07);--tp-shadow-md:0 10px 24px -8px rgba(112,66,40,.18);
---tp-shadow-lg:0 24px 54px -20px rgba(112,66,40,.26);--tp-shadow-xl:0 40px 80px -32px rgba(35,23,16,.28);
+--tp-elev-xs:0 1px 2px rgba(74,53,39,.06);--tp-elev-sm:0 2px 6px rgba(74,53,39,.07);--tp-elev-md:0 10px 24px -8px rgba(112,66,40,.18);
+--tp-elev-lg:0 24px 54px -20px rgba(112,66,40,.26);--tp-elev-xl:0 40px 80px -32px rgba(35,23,16,.28);
 --tp-inset:inset 0 1px 2px rgba(74,53,39,.10);--tp-inset-deep:inset 0 2px 6px rgba(74,53,39,.16);--tp-sunk-edge:inset 0 14px 22px -20px rgba(74,53,39,.22),inset 0 -14px 22px -20px rgba(74,53,39,.22);
 --tp-btn-clay:0 1px 0 var(--tp-gloss) inset,0 2px 5px -1px rgba(112,66,40,.28),0 6px 14px -8px rgba(112,66,40,.30);
 --tp-btn-clay-hover:0 1px 0 var(--tp-gloss) inset,0 3px 8px -2px rgba(112,66,40,.32),0 10px 20px -10px rgba(112,66,40,.34);
@@ -114,8 +114,8 @@ const TEMPLE_VARS = `
 --tp-sand:url("${T}/textures/sand-fine.svg");--tp-grit:url("${T}/textures/grit-speck.svg");--tp-stucco:url("${T}/textures/stucco-wash.svg");
 --tp-palm-fan:url("${T}/textures/palm-fan.svg");--tp-rays:url("${T}/textures/ray-fan.svg");
 --tp-o-grain:.055;--tp-o-sand:.09;--tp-o-grit:.16;--tp-o-stucco:.08;--tp-o-line:.11;--tp-o-tile:.09;--tp-o-motif:.2;
---tp-text-2xs:12px;--tp-text-xs:13px;--tp-text-sm:15px;--tp-text-base:clamp(16px,1.05vw,19px);--tp-text-md:clamp(18px,1.2vw,21px);--tp-text-lg:clamp(21px,1.5vw,26px);--tp-text-xl:clamp(25px,1.9vw,32px);
---tp-text-2xl:clamp(30px,2.4vw,42px);--tp-text-3xl:clamp(36px,3vw,52px);--tp-text-4xl:clamp(42px,3.8vw,66px);--tp-text-5xl:clamp(48px,5vw,86px);--tp-text-6xl:clamp(60px,6.4vw,110px);
+--tp-size-2xs:12px;--tp-size-xs:13px;--tp-size-sm:15px;--tp-size-base:clamp(16px,1.05vw,19px);--tp-size-md:clamp(18px,1.2vw,21px);--tp-size-lg:clamp(21px,1.5vw,26px);--tp-size-xl:clamp(25px,1.9vw,32px);
+--tp-size-2xl:clamp(30px,2.4vw,42px);--tp-size-3xl:clamp(36px,3vw,52px);--tp-size-4xl:clamp(42px,3.8vw,66px);--tp-size-5xl:clamp(48px,5vw,86px);--tp-size-6xl:clamp(60px,6.4vw,110px);
 --tp-leading-tight:1.04;--tp-leading-display:1.12;--tp-leading-snug:1.3;--tp-leading-body:1.62;--tp-leading-loose:1.8;
 --tp-tracking-display:-.015em;--tp-tracking-wide:.06em;--tp-tracking-label:.18em;--tp-tracking-eyebrow:.28em;
 --tp-weight-light:300;--tp-weight-regular:400;--tp-weight-medium:500;

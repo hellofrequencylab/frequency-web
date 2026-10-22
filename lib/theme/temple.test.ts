@@ -33,7 +33,7 @@ describe('the Temple theme tokens', () => {
   })
 
   it('carries every token family the design system names', () => {
-    for (const token of ['--tp-plaster-100', '--tp-umber-900', '--tp-clay-500', '--tp-saffron-500', '--tp-olive-500', '--tp-aegean-800', '--tp-fig-700', '--tp-text-6xl', '--tp-tracking-eyebrow', '--tp-s40', '--tp-gutter', '--tp-container', '--tp-r-arch', '--tp-r-arch-soft', '--tp-r-keyhole', '--tp-r-lozenge', '--tp-d1', '--tp-d3', '--tp-shadow-xl', '--tp-ring', '--tp-wash-sun', '--tp-wash-night', '--tp-ease', '--tp-dur-veil', '--tp-press', '--tp-lift', '--tp-sand', '--tp-grit', '--tp-stucco', '--tp-palm-fan', '--tp-rays']) {
+    for (const token of ['--tp-plaster-100', '--tp-umber-900', '--tp-clay-500', '--tp-saffron-500', '--tp-olive-500', '--tp-aegean-800', '--tp-fig-700', '--tp-size-6xl', '--tp-tracking-eyebrow', '--tp-s40', '--tp-gutter', '--tp-container', '--tp-r-arch', '--tp-r-arch-soft', '--tp-r-keyhole', '--tp-r-lozenge', '--tp-d1', '--tp-d3', '--tp-elev-xl', '--tp-ring', '--tp-wash-sun', '--tp-wash-night', '--tp-ease', '--tp-dur-veil', '--tp-press', '--tp-lift', '--tp-sand', '--tp-grit', '--tp-stucco', '--tp-palm-fan', '--tp-rays']) {
       expect(TEMPLE_TOKENS_CSS, token).toContain(`${token}:`)
     }
   })

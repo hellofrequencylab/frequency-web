@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1283",
+  "title": "The Temple site theme: a fully tokened stock theme for Royal Temple, linked to every block",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/temple-theme.mjs"
+  },
+  "detail": "Owner ask 2026-10-22: create a website theme called The Temple, to be worn first by Royal Temple, reflecting the Royal Temple design system line by line, fully tokened, and linked with every block and feature. ADR-1875. lib/theme/temple.ts holds the palette, the accent and every --tp-* token (colors, alpha lines, warm shadows, washes, textures, type scale, spacing, the arch radii family, drift motion), re-pointing the DAWN --color-* set under [data-house-theme=\"temple\"]. components/sites/temple-css.ts is the skin over the house sections and the mw-* page sections, with no raw color. The four faces (Branch, Marcellus, Jost, Cormorant Garamond italic) load only on the site page through components/sites/temple-fonts.ts, never from the root layout. Registered as SiteThemeId temple, the editor WebsiteTheme Temple and its theme-contract entry. test/temple-site.render.test.tsx renders the house Home and every website-surface block under the skin. Not built yet, for a follow-up: the remaining textures, icons and utility classes from the design system, the night-band tier cards, the hero fact row and date stamp, the signed-in member menu with first name, the Your house account page, the RSVP island and the week-strip arches. Two contrast deviations from the design: muted text is #7C624D and on-accent is #FFFFFF. Branch's web licence is the client's to confirm.",
+  "wave": "W7"
+}
