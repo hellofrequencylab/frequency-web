@@ -319,3 +319,17 @@ export const SOCIAL_PROFILES = [
   "https://www.instagram.com/frequencylocal",
   "https://www.tiktok.com/@frequencylocal",
 ];
+
+/** The name a visitor reads for a profile URL in a footer link (LIVE-1135). A host this map does not
+ *  know falls back to the bare hostname, so a newly added profile still renders, just unprettified. */
+const SOCIAL_LABELS: Record<string, string> = {
+  "instagram.com": "Instagram",
+  "tiktok.com": "TikTok",
+  "linkedin.com": "LinkedIn",
+  "youtube.com": "YouTube",
+  "facebook.com": "Facebook",
+};
+export function socialLabel(url: string): string {
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  return SOCIAL_LABELS[host] ?? host;
+}
