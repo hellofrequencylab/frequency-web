@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { existsSync } from 'node:fs'
 import { contrastRatio } from '@/lib/spaces/accent'
 import contract from '@/lib/sites/editor/theme-contract.json'
 import { TEMPLE_ACCENT, TEMPLE_PALETTE as P, TEMPLE_SEASONS, TEMPLE_TOKENS_CSS, templeAccentVars } from './temple'
@@ -45,5 +46,11 @@ describe('the Temple theme tokens', () => {
     expect(contract.themes.Temple.seasons).toEqual(TEMPLE_SEASONS)
     expect(WEBSITE_THEME_FONT_VARS.Temple).toEqual(['tp-branch', 'tp-jost', 'tp-marcellus'])
     expect((websiteThemeVars('Temple', '#1D4451') as Record<string, string>)['--th-accent']).toBe('#1D4451')
+  })
+
+  it('points every texture, pattern, motif, shape and icon token at a shipped file, with no metadata', () => {
+    const urls = [...TEMPLE_TOKENS_CSS.matchAll(/url\("([^"]+)"\)/g)].map((m) => m[1])
+    expect(urls.length).toBeGreaterThanOrEqual(30)
+    for (const u of urls) expect(existsSync(`public${u}`), u).toBe(true)
   })
 })
