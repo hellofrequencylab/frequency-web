@@ -78,11 +78,20 @@ export function siteSubdomainHost(slug: string, baseDomain: string = SITE_BASE_D
  *  sends any non-Frequency host to the site route, so only the resolve changes (lib/sites/hosted.ts).
  *  The host for a chapter slug, or null when the slug cannot be a label (reserved, invalid) or the
  *  domain is one of Frequency's own. */
-export function networkChapterHost(slug: string, networkDomain: string | null | undefined): string | null {
-  const label = slug.trim().toLowerCase()
+export function networkChapterHost(slug: string, networkDomain: string | null | undefined, networkSlug?: string | null): string | null {
+  const label = chapterLabel(slug, networkSlug)
   const domain = normalizeHost(networkDomain)
   if (!domain || !domain.includes('.') || isAppHost(domain) || label === 'spotlight' || !siteLabelOk(label)) return null
   return `${label}.${domain}`
+}
+
+/** A chapter's label on its Network's domain: its slug without the Network's own prefix, so
+ *  `the-group-encinitas` under `the-group` is `encinitas`. A slug that does not start with the prefix
+ *  (or is only the prefix) is its own label. */
+function chapterLabel(slug: string, networkSlug?: string | null): string {
+  const s = slug.trim().toLowerCase()
+  const prefix = `${(networkSlug ?? '').trim().toLowerCase()}-`
+  return prefix.length > 1 && s.startsWith(prefix) && s.length > prefix.length ? s.slice(prefix.length) : s
 }
 
 /** The chapter label and Network domain a host could mean (`encinitas.thegrouplocal.com` is `encinitas` of

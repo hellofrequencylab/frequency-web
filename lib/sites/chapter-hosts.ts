@@ -24,7 +24,7 @@ export async function attachChapterHosts(networkId: string): Promise<void> {
     if (!network?.domain || network.status !== 'active' || !isNetworkPlan(network.plan)) return
     for (const row of await listChapterHostRows(network.id)) {
       if (row.owner_profile_id !== network.owner_profile_id) continue
-      const host = networkChapterHost(row.slug, network.domain)
+      const host = networkChapterHost(row.slug, network.domain, network.slug)
       if (host) await attach(host, 'network-domain')
     }
   } catch (err) {

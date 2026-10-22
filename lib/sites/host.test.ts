@@ -321,6 +321,12 @@ describe('chapter subdomains on a Network domain', () => {
     expect(networkChapterHost(' Oceanside ', 'TheGroupLocal.com')).toBe('oceanside.thegrouplocal.com')
   })
 
+  it('drops the Network slug prefix from a chapter label', () => {
+    expect(networkChapterHost('the-group-la-jolla', 'thegrouplocal.com', 'the-group')).toBe('la-jolla.thegrouplocal.com')
+    expect(networkChapterHost('the-group-north-county', 'thegrouplocal.com', 'the-group')).toBe('north-county.thegrouplocal.com')
+    expect(networkChapterHost('encinitas', 'thegrouplocal.com', 'the-group')).toBe('encinitas.thegrouplocal.com')
+  })
+
   it('refuses a reserved or invalid slug, a missing domain and a Frequency domain', () => {
     expect(networkChapterHost('www', 'thegrouplocal.com')).toBeNull()
     expect(networkChapterHost('spotlight', 'thegrouplocal.com')).toBeNull()
