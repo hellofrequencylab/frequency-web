@@ -13,6 +13,8 @@ import { CheckinRoster } from '@/components/spaces/checkin-roster'
 import { RegularsSection } from './regulars-section'
 import { ScannersSection } from './scanners-section'
 import { MemberCardsSection } from './member-cards-section'
+import { CheckinViews } from './checkin-views'
+import { asCheckinView } from '@/lib/spaces/offerings'
 import { Users } from 'lucide-react'
 import { MyCardSection } from '@/components/member-cards/my-card-section'
 import { memberCardsEnabled } from '@/lib/member-cards/store'
@@ -36,10 +38,13 @@ export async function CheckinSection({
   space,
   viewerProfileId,
   staffViewing,
+  view,
 }: {
   space: Space
   viewerProfileId: string | null
   staffViewing: boolean
+  /** `?view=`: `door` (the default) or `card`, the cards on their own page (LIVE-1297). */
+  view?: string
 }) {
   const brandName = space.brandName ?? space.name
 
@@ -59,6 +64,30 @@ export async function CheckinSection({
     )
   }
 
+  // THE CARDS VIEW (LIVE-1297): the viewer's one Crew card and the Space's own card, on their own page
+  // under Check in. Neither needs the door node, so this renders before one is ensured. Role based: only
+  // a real manager (not a staff preview) sees their own Crew card; the Space card follows its owner gate.
+  if (asCheckinView(view) === 'card') {
+    const ownCard = viewerProfileId && !staffViewing && memberCardsEnabled()
+    return (
+      <div className="space-y-8">
+        <CheckinViews active="card" />
+        {ownCard ? (
+          <section className="space-y-3">
+            <SectionHeader title="Your Crew card" />
+            <p className="text-body-sm text-muted">The same card as on your profile.</p>
+            <Suspense fallback={<RosterSkeleton />}>
+              <MyCardSection profileId={viewerProfileId} />
+            </Suspense>
+          </section>
+        ) : null}
+        <Suspense fallback={<RosterSkeleton />}>
+          <MemberCardsSection space={space} staffViewing={staffViewing} />
+        </Suspense>
+      </div>
+    )
+  }
+
   // Ensure (create-or-get) the Space's one check-in node, then render its QR with the EXISTING helpers
   // (read-only: signedNodeUrl builds the signed /n/<id> destination; renderQrSvg paints it inline). A staff
   // previewer reads an existing node but never mints one, so the card may be absent for them.
@@ -72,21 +101,9 @@ export async function CheckinSection({
   // saturates at the 500-row roster cap and would re-fetch the roster the CheckinRoster below already reads.
   const checkinCount = await countCheckins(space.id)
 
-  // THE ONE CREW CARD: the viewer's own card, the same screen as My card. Role based: only a real manager
-  // (not a staff preview) sees it, beside the Space's own business tools below.
-  const ownCard = viewerProfileId && !staffViewing && memberCardsEnabled()
-
   return (
     <div className="space-y-8">
-      {ownCard ? (
-        <section className="space-y-3">
-          <SectionHeader title="Your Crew card" />
-          <p className="text-body-sm text-muted">The same card as on your profile. Your Space tools are below.</p>
-          <Suspense fallback={<RosterSkeleton />}>
-            <MyCardSection profileId={viewerProfileId} />
-          </Suspense>
-        </section>
-      ) : null}
+      <CheckinViews active="door" />
 
       {/* The analytics number, plain and honest: total check-ins on this Space's code. */}
       <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
@@ -123,11 +140,6 @@ export async function CheckinSection({
       {/* COUNTER SCANNERS (LIVE-1125): NFC card readers that check members in on this same door node. */}
       <Suspense fallback={<RosterSkeleton />}>
         <ScannersSection space={space} staffViewing={staffViewing} />
-      </Suspense>
-
-      {/* MEMBER CARDS (LIVE-1282): the Space's card face and the cards registered to it. */}
-      <Suspense fallback={<RosterSkeleton />}>
-        <MemberCardsSection space={space} staffViewing={staffViewing} />
       </Suspense>
     </div>
   )

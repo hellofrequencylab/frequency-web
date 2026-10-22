@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Nfc } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { formatCardNumber } from '@/lib/member-cards/face'
-import { setMyCardOn } from '@/lib/member-cards/actions'
+import { setMyCardOn, setSpaceCardOn } from '@/lib/member-cards/actions'
 import type { OwnedCard } from '@/lib/member-cards/store'
 
 // The member's own cards on /crew/card (LIVE-1282): the printed number, the edition and a per-card
 // on/off. Off is the lost-card switch for ONE card (member_cards.active), apart from the face's Pause,
 // which covers every card at once. Optimistic: the switch flips, dims while the write is in flight,
-// and flips back with the error line if it fails. Copy obeys CONTENT-VOICE.
+// and flips back with the error line if it fails. The Space card view under Check in renders the same
+// list with `spaceId`, so a Space owner gets the same switches for its cards (LIVE-1297). Copy obeys
+// CONTENT-VOICE.
 
 const EDITION = { founders: 'Founders edition', crew: 'Crew edition' } as const
 
@@ -19,17 +21,17 @@ function day(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function MyCardsList({ cards }: { cards: OwnedCard[] }) {
+export function MyCardsList({ cards, spaceId }: { cards: OwnedCard[]; spaceId?: string }) {
   return (
     <ul className="space-y-2">
       {cards.map((c) => (
-        <CardRow key={c.id} card={c} />
+        <CardRow key={c.id} card={c} spaceId={spaceId} />
       ))}
     </ul>
   )
 }
 
-function CardRow({ card }: { card: OwnedCard }) {
+function CardRow({ card, spaceId }: { card: OwnedCard; spaceId?: string }) {
   const router = useRouter()
   const [on, setOn] = useState(card.active)
   const [pending, start] = useTransition()
@@ -41,7 +43,7 @@ function CardRow({ card }: { card: OwnedCard }) {
     setOn(next)
     setError(null)
     start(async () => {
-      const r = await setMyCardOn(card.id, next)
+      const r = spaceId ? await setSpaceCardOn(spaceId, card.id, next) : await setMyCardOn(card.id, next)
       if ('error' in r) {
         setOn(!next)
         setError(r.error)

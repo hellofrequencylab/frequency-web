@@ -6,7 +6,7 @@
 
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeFaceInput, type CardFace } from './face'
-import { setMyCardActive, writeMyFace, writeSpaceFace } from './store'
+import { setMyCardActive, setSpaceCardActive, writeMyFace, writeSpaceFace } from './store'
 
 export async function saveMyCardFace(raw: unknown): Promise<ActionResult<CardFace>> {
   const parsed = normalizeFaceInput(raw, false)
@@ -26,4 +26,9 @@ export async function saveSpaceCardFace(spaceId: string, raw: unknown): Promise<
 export async function setMyCardOn(cardId: string, on: boolean): Promise<ActionResult> {
   if (typeof cardId !== 'string' || !cardId) return fail('Could not change that card.')
   return (await setMyCardActive(cardId, on === true)) ? ok() : fail('Could not change that card.')
+}
+
+export async function setSpaceCardOn(spaceId: string, cardId: string, on: boolean): Promise<ActionResult> {
+  if (typeof spaceId !== 'string' || !spaceId || typeof cardId !== 'string' || !cardId) return fail('Could not change that card.')
+  return (await setSpaceCardActive(spaceId, cardId, on === true)) ? ok() : fail('Could not change that card.')
 }

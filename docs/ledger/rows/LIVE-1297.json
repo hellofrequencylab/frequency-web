@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1297",
+  "title": "The cards get their own view under Check in, and the Space's cards get My card's on/off switches",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-card-view.mjs"
+  },
+  "detail": "Owner ask 2026-10-22: move the Card section to its own sub menu item under Check in, with the same controls as the Crew card. Menu nesting is one level (ADR-846), so Check in gains an in-page view bar (`?view=door` default, `?view=card` labelled Cards), the pattern Membership uses. The Cards view holds the viewer's one Crew card (MyCardSection, from #3860) and the Space's own card; the door view no longer mounts either. The Space's registered cards render through the shared MyCardsList with a spaceId, so each has the same on/off switch; setSpaceCardOn writes behind the loyalty owner gate, scoped by face_space_id. Follows LIVE-1282 and ADR-1874; no migration.",
+  "wave": "W7"
+}
