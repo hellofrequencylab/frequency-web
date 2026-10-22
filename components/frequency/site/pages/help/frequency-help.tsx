@@ -61,11 +61,11 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
               <article className="pc">
                 <span className="v">Accessibility</span>
                 <p>
-                  We build to WCAG 2.2 AA: keyboard navigation, readable contrast and reduced motion when you ask
-                  for it. Tell us when we miss.
+                  We aim for WCAG 2.2 AA: keyboard navigation, readable contrast and reduced motion when you ask
+                  for it. The full statement lists what we know falls short.
                 </p>
                 <p>
-                  <a href="#contact">Tell us →</a>
+                  <Link href="/accessibility">Read the statement →</Link>
                 </p>
               </article>
             </div>
