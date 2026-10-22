@@ -27,7 +27,7 @@ export async function chapterSiteHost(space: Pick<Space, 'domain'> & ChapterFiel
     const parent = await getSpaceHostRow(space.parentId)
     if (!parent || parent.status !== 'active' || !parent.domain || !isNetworkPlan(parent.plan)) return null
     if (space.ownerProfileId && parent.owner_profile_id !== space.ownerProfileId) return null
-    return networkChapterHost(space.slug, await boundSiteDomain({ id: parent.id, domain: parent.domain }))
+    return networkChapterHost(space.slug, await boundSiteDomain({ id: parent.id, domain: parent.domain }), parent.slug)
   } catch (err) {
     log.warn('chapter_site_host_failed', { slug: space.slug, message: briefError(err) })
     return null

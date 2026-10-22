@@ -40,7 +40,8 @@ async function resolveChapterSpace(host: string): Promise<Space | null> {
   if (!parts) return null
   const network = await getSpaceByDomain(parts.networkDomain)
   if (!network || !isNetworkPlan(network.plan)) return null
-  const chapter = await getSiteSpace(parts.label)
+  // The chapter's slug is usually the Network's slug plus the label (`the-group-encinitas` for `encinitas`).
+  const chapter = (await getSiteSpace(`${network.slug}-${parts.label}`)) ?? (await getSiteSpace(parts.label))
   if (!chapter || chapter.parentId !== network.id || chapter.ownerProfileId !== network.ownerProfileId) return null
   return chapter
 }

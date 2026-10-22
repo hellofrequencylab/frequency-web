@@ -1,14 +1,20 @@
 {
   "id": "LIVE-1276",
-  "title": "Every paid add-on on /pricing has a button to where it is added",
-  "lane": "live",
-  "priority": "P1",
-  "size": "S",
-  "wave": "W7",
+  "title": "A chapter's subdomain drops the Network's slug prefix (LIVE-1276)",
   "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/sites/host.ts",
+    "ref": "Owner 2026-10-22: chapters at encinitas.thegrouplocal.com, but the chapter slugs are the-group-encinitas (LIVE-1275)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. The Group's chapters are slugged the-group-encinitas, the-group-la-jolla and so on, so LIVE-1275 would have spelled the-group-encinitas.thegrouplocal.com. The chapter label now drops the Network's own slug prefix (chapterLabel), and the resolve tries the Network slug plus the label first, then the bare label, so encinitas.thegrouplocal.com reaches the-group-encinitas.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const m=[];for(const f of ['lib/pricing/addon-links.ts','app/(marketing)/pricing/add/[key]/route.ts','lib/pricing/addon-links.test.ts'])if(!fs.existsSync(f))m.push(f+' missing');const c=fs.readFileSync('components/frequency/site/pages/pricing/pricing-addons.tsx','utf8');if(!c.includes('addOnHref'))m.push('AddOnCard lost its button');if(m.length){console.error('LIVE-1276: '+m.join('; '));process.exit(1)}\""
+    "cmd": "node -e \"const fs=require('fs');const h=fs.readFileSync('lib/sites/host.ts','utf8');const r=fs.readFileSync('lib/sites/hosted.ts','utf8');const bad=[];if(!h.includes('function chapterLabel'))bad.push('chapter label keeps the Network prefix');if(!r.includes('network.slug}-'))bad.push('resolve ignores the prefixed slug');if(bad.length){console.error('LIVE-1276: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a chapter host stops dropping the Network slug prefix or the resolve stops trying the prefixed slug."
   },
-  "detail": "Owner 2026-10-22: the add-on cards need linked paths to add or buy. Each card gets a button to /pricing/add/<key>, a redirect route that sends a signed-out visitor to sign-up and back, a member with no Space to Create a Space, one Space to the page inside it (billing, chapters, websites, manage/layout), several Spaces to Spaces you run, Crew to /upgrade, and the Independent Network to email. OPEN: Vera AI and the custom domain have no standalone purchase screen; their buttons land on the Space's billing and layout pages where the plan and domain are set."
+  "closed": "2026-10-22",
+  "wave": "W7"
 }
