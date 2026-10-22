@@ -36,6 +36,7 @@ import { beginFeatureFunnelSignup } from './feature-actions'
 import { signInWithMagicLink } from '@/app/sign-in/actions'
 import { safeImageSrc } from '@/lib/safe-image-src'
 import { Input } from '@/components/ui/field'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Avatar is too big for a cookie, so the deferred flow parks it in localStorage and
 // /join/complete uploads it. Same key the finalizer reads.
@@ -125,16 +126,19 @@ export default function FeatureFunnel({
     trackClient('onboarding.funnel_entered', { seq: sequence, style: 'feature' })
   }, [sequence])
 
+  // The Frequency design wraps this page in the site shell (header, footer), which owns <main> and the wordmark.
+  const fq = SITE_DESIGN === 'frequency'
+  const Root = fq ? 'div' : 'main'
   const total = 3
   const labels = ['Try the timer', 'Your streak', 'Join']
 
   return (
     // theme-light-lock: hold the warm cream palette even when the visitor's device is in dark mode
     // (owner: mobile must match the web scheme). Same lock the cinematic induction uses.
-    <main className="theme-light-lock relative min-h-screen overflow-hidden bg-canvas">
-      <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-10">
-        <span className="brandmark mb-8 block h-10" aria-hidden />
+    <Root className={fq ? 'relative' : 'theme-light-lock relative min-h-screen overflow-hidden bg-canvas'}>
+      {!fq && <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />}
+      <div className={fq ? 'relative z-10 flex flex-col items-center px-6 pb-12 pt-28' : 'relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-10'}>
+        {!fq && <span className="brandmark mb-8 block h-10" aria-hidden />}
 
         <div className="w-full max-w-4xl">
           {step === 1 && (
@@ -173,7 +177,7 @@ export default function FeatureFunnel({
           <WizardProgress current={step} total={total} label={labels[step - 1]} variant="dots" />
         </div>
       </div>
-    </main>
+    </Root>
   )
 }
 
