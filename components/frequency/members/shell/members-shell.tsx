@@ -342,7 +342,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
               )
             }
             return (
-              <RailFold key={g.label} label={g.label} icon={icon} defaultOpen={g.label === 'Your Spaces'}>
+              <RailFold key={g.label} label={g.label} icon={icon}>
                 {g.rows.map((r) => (
                   <Link key={r.key} href={r.href ?? '#'} className="rl-sub">
                     {r.label}
