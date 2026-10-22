@@ -1,20 +1,11 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CreditCard, Nfc } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
-import { SectionHeader } from '@/components/ui/section-header'
-import { Button } from '@/components/ui/button'
-import { CardFaceEditor } from '@/components/member-cards/card-face-editor'
 import { requireProfileId } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { readCardStage } from '@/lib/member-cards/stage'
-import { isCrewMember, listMyCards, memberCardsEnabled, readCardStats, readMemberFace } from '@/lib/member-cards/store'
-import { readBadgeState } from '@/lib/devices/badges'
-import { loadRootSpaceId } from '@/lib/spaces/store'
-import { parseVcard } from '@/lib/vcard'
-import { MyCardsList } from './my-cards-list'
-import { RequestCardButton } from './request-card-button'
+import { memberCardsEnabled } from '@/lib/member-cards/store'
+import { MyCardSection } from '@/components/member-cards/my-card-section'
 import { SpaceTools } from './space-tools'
 
 export const dynamic = 'force-dynamic'
@@ -47,52 +38,13 @@ export default async function MyCardPage() {
   }
 
   const supabase = await createClient()
-  const { data: me } = await supabase
-    .from('profiles')
-    .select('handle, display_name, avatar_url, vcard')
-    .eq('id', profileId)
-    .maybeSingle()
+  const { data: me } = await supabase.from('profiles').select('handle').eq('id', profileId).maybeSingle()
   if (!me?.handle) notFound()
-
-  const [face, stats, cards, stageLabel] = await Promise.all([
-    readMemberFace(profileId),
-    readCardStats({ kind: 'member', profileId }),
-    listMyCards(profileId),
-    readCardStage(profileId),
-  ])
-  const vcard = parseVcard(me.vcard)
-  const name = me.display_name || me.handle
-  // The preview draws the newest card that is on, or the newest at all.
-  const shown = cards.find((c) => c.active) ?? cards[0] ?? null
 
   return (
     <Shell>
       <div className="space-y-8">
-        <CardFaceEditor
-          owner={{ kind: 'member', handle: me.handle }}
-          name={name}
-          avatarUrl={me.avatar_url}
-          stageLabel={stageLabel}
-          cardNumber={shown?.cardNumber ?? null}
-          initialFace={face}
-          stats={stats}
-          contact={{ title: vcard.title, phone: vcard.phone, email: vcard.email, website: vcard.website }}
-        />
-
-        <section>
-          <SectionHeader title="Your cards" count={cards.length} />
-          {cards.length > 0 ? (
-            <>
-              <p className="mb-3 text-body-sm text-muted">
-                Switch a card off if you lose it. Pause above covers every card at once.
-              </p>
-              <MyCardsList cards={cards} />
-            </>
-          ) : (
-            <GetYourCard profileId={profileId} />
-          )}
-        </section>
-
+        <MyCardSection profileId={profileId} />
         <SpaceTools profileId={profileId} />
       </div>
     </Shell>
@@ -113,34 +65,5 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       {children}
     </FocusTemplate>
-  )
-}
-
-/** No card yet: Crew asks for one; everyone else learns cards come with Crew. */
-async function GetYourCard({ profileId }: { profileId: string }) {
-  if (!(await isCrewMember(profileId))) {
-    return (
-      <div className="rounded-card border border-border bg-surface-elevated/60 p-4">
-        <p className="text-body-sm text-text">Member cards come with Crew.</p>
-        <p className="mt-1 text-meta text-muted">You can set up your card above now, and it is ready the day it is written.</p>
-        <Button asChild size="sm" className="mt-3">
-          <Link href="/upgrade">See Crew</Link>
-        </Button>
-      </div>
-    )
-  }
-  const rootId = await loadRootSpaceId()
-  const requested = rootId ? (await readBadgeState(rootId, profileId)) === 'requested' : false
-  return (
-    <div className="rounded-card border border-border bg-surface p-4 lift-1">
-      <h3 className="text-body font-bold text-text">Get your card</h3>
-      <p className="mt-1 text-body-sm text-muted">
-        Your card is part of Crew. Frequency staff write it for you at a Frequency event or a visit. Ask now and it is on the list
-        when you get there. Set it up above and it opens what you chose from the first tap.
-      </p>
-      <div className="mt-3">
-        <RequestCardButton requested={requested} />
-      </div>
-    </div>
   )
 }

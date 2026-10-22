@@ -14,6 +14,8 @@ import { RegularsSection } from './regulars-section'
 import { ScannersSection } from './scanners-section'
 import { MemberCardsSection } from './member-cards-section'
 import { Users } from 'lucide-react'
+import { MyCardSection } from '@/components/member-cards/my-card-section'
+import { memberCardsEnabled } from '@/lib/member-cards/store'
 import type { Space } from '@/lib/spaces/types'
 
 // CHECK-IN section BODY. Its ONE caller is ./checkin-body.tsx, the `?panel=checkin` workspace. Offerings
@@ -70,8 +72,22 @@ export async function CheckinSection({
   // saturates at the 500-row roster cap and would re-fetch the roster the CheckinRoster below already reads.
   const checkinCount = await countCheckins(space.id)
 
+  // THE ONE CREW CARD: the viewer's own card, the same screen as My card. Role based: only a real manager
+  // (not a staff preview) sees it, beside the Space's own business tools below.
+  const ownCard = viewerProfileId && !staffViewing && memberCardsEnabled()
+
   return (
     <div className="space-y-8">
+      {ownCard ? (
+        <section className="space-y-3">
+          <SectionHeader title="Your Crew card" />
+          <p className="text-body-sm text-muted">The same card as on your profile. Your Space tools are below.</p>
+          <Suspense fallback={<RosterSkeleton />}>
+            <MyCardSection profileId={viewerProfileId} />
+          </Suspense>
+        </section>
+      ) : null}
+
       {/* The analytics number, plain and honest: total check-ins on this Space's code. */}
       <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
         <StatCard bordered label="Checked in" value={checkinCount} icon={Users} />

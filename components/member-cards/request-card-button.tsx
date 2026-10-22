@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { requestMemberCard } from './actions'
+import { requestMemberCard } from '@/app/(main)/crew/card/actions'
 
 // "Ask for my card" on /crew/card (LIVE-1282). Files one pending request for the staff who write
 // cards; a second press while one is pending is a no-op server side, so the button simply shows
