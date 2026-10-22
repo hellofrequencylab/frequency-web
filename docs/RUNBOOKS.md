@@ -756,6 +756,16 @@ Then set `SMS_PROVISIONING_ENABLED` to `1`, `true` or `on` and redeploy. The fir
 
 **Turn it off.** Unset. Every `sendSms()` returns `not_provisioned`. In-flight Twilio posts that already left are not recalled.
 
+## IndexNow ping
+
+`INDEXNOW_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`). The `indexnow` cron (`/api/cron/indexnow`, daily 14:00 UTC) reads `app/sitemap.ts`, keeps the URLs whose `lastModified` is inside the last 26 hours and posts them once to `api.indexnow.org` with the key in `lib/seo/indexnow.ts`. It can only name URLs the sitemap already advertises. The key is public by protocol; the proof is `public/<key>.txt` at the site root.
+
+**Gate before turning it on.** Bing Webmaster Tools verified for frequencylocal.com (OWN-099), and `https://frequencylocal.com/<key>.txt` returns the key as plain text on production. Then set `INDEXNOW_ENABLED` to `1` and redeploy. Try `?dry=1` first: it builds the list and reports the count without posting.
+
+**Reading it.** The cron logs `cron.indexnow` with `submitted` and `status` (200 or 202 is accepted). A skipped run logs `cron.indexnow.skipped`, so an off switch is never silent. A non-2xx status returns 502 and logs an error.
+
+**Turn it off.** Unset the flag. The cron returns `skipped` and posts nothing.
+
 ## Local public-site draft projection
 
 For an explicitly reviewed local Group preview, `LOCAL_SITE_CONTENT_PROJECTION` may point to an absolute local JSON manifest. The read seam activates only when `VERCEL_ENV=development` and `NEXT_PUBLIC_SITE_URL` names `localhost`, `127.0.0.1`, or `[::1]`. The Group's exact Space ID and slug, current public-document hash, reviewed-operations hash, authored names, replacement values and permitted public document paths must all match. A refusal stops that local render instead of silently applying drifted edits.
