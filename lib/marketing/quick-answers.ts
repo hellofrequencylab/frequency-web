@@ -8,7 +8,7 @@
 // Default or Bold (ADR-1726, ADR-1748), and tips carry no platform fee, plus card processing (LIVE-913).
 // No em dashes (CONTENT-VOICE). PURE: no Supabase, no React, no Next.
 
-import { CATEGORY_LINE, FOUNDING_PLACE, SITE_NAME, SITE_TAGLINE } from '@/lib/site'
+import { CATEGORY_LINE, FOUNDING_PLACE, OPENING_DATE_LABEL, SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { HOME_TZ } from '@/lib/time/zone'
 
@@ -54,7 +54,7 @@ export function quickAnswers(opts: {
     },
     {
       q: `Where is ${SITE_NAME} available?`,
-      a: `${SITE_NAME} is local-first and taking root in ${FOUNDING_PLACE}. Anyone can join from anywhere: Circles and Events appear wherever hosts start them, and a city gets its own page (${abs('/discover/cities')}) once enough is happening there. Each Event is shown in its own local time; the community's home time zone is Pacific time (${HOME_TZ}).`,
+      a: `${SITE_NAME} opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. Open your Space free before then. It is local-first, and anyone can join from anywhere: Circles and Events appear wherever hosts start them, and a city gets its own page (${abs('/discover/cities')}) once enough is happening there. Each Event is shown in its own local time; the community's home time zone is Pacific time (${HOME_TZ}).`,
     },
   ]
 }

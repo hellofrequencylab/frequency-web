@@ -4,7 +4,7 @@
 // location is CITY-LEVEL ONLY (addressLocality), never a precise venue. When a
 // city isn't known we describe the location generically rather than leak it.
 
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE, SITE_OG_IMAGE } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE, SITE_OG_IMAGE, FOUNDING_CITIES } from '@/lib/site'
 import { eventIsoWithOffset } from '@/lib/time/zone'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
@@ -48,6 +48,10 @@ export function organizationSchema(opts?: {
     ...(sameAs.length ? { sameAs } : {}),
     ...(opts?.foundingLocation
       ? {
+          areaServed: [
+            { '@type': 'AdministrativeArea', name: opts.foundingLocation },
+            ...FOUNDING_CITIES.map((name) => ({ '@type': 'City', name })),
+          ],
           foundingLocation: {
             '@type': 'Place',
             name: opts.foundingLocation,

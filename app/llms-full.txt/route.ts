@@ -1,5 +1,5 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE, OPENING_DATE_LABEL } from '@/lib/site'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
@@ -97,7 +97,7 @@ export async function GET() {
   const out: string[] = [
     `# ${SITE_NAME}: full content for language models`,
     '',
-    `> ${SITE_DESCRIPTION} ${SITE_TAGLINE}. Taking root in ${FOUNDING_PLACE}. Contact: ${CONTACT_EMAIL}.`,
+    `> ${SITE_DESCRIPTION} ${SITE_TAGLINE}. Opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. Contact: ${CONTACT_EMAIL}.`,
     '',
     `Curated short version: ${SITE_URL}/llms.txt`,
     '',

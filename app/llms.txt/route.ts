@@ -5,6 +5,7 @@ import {
   CATEGORY_LINE,
   CONTACT_EMAIL,
   FOUNDING_PLACE,
+  OPENING_DATE_LABEL,
   SOCIAL_PROOF_FLOOR,
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -272,7 +273,7 @@ export async function GET() {
     `> physical third space, is planned for 2028 and is not open yet. You keep 100% of your own bookings after card processing; Frequency earns a share only`,
     `> of the business the network sends you. The Quest is a light, transparent game that rewards`,
     `> showing up in person, not scrolling. ${SITE_TAGLINE}.`,
-    `> ${PLAN_STORY.lines} Taking root in ${FOUNDING_PLACE}.`,
+    `> ${PLAN_STORY.lines} Opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}.`,
     '',
     ...stats,
     // Who Frequency is for (ADR-1715): one list, shared with /llms-full.txt and What is Frequency.
