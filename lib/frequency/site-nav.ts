@@ -344,15 +344,6 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: '/discover/cities', label: 'Cities' },
     ],
   },
-  {
-    heading: 'Marketplace',
-    links: [
-      { href: '/market', label: 'Market' },
-      { href: '/classifieds', label: 'Classifieds' },
-      { href: '/housing', label: 'Housing' },
-      { href: '/store', label: 'Frequency Store' },
-    ],
-  },
   // The guides (SCAN-1017): the pillar pages had no site-wide link before this column, so the cluster
   // CONTENT-VOICE §7 describes was reachable only from inside itself.
   {
@@ -362,6 +353,8 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: '/friendship-as-an-adult', label: 'Friends as an adult' },
       { href: '/how-to-start-a-circle', label: 'Start a Circle' },
       { href: '/how-to-build-community', label: 'Build community' },
+      { href: '/how-to-be-more-social', label: 'Be more social' },
+      { href: '/calm-down-fast', label: 'Calm down fast' },
       { href: '/vs', label: 'Frequency vs the rest' },
     ],
   },

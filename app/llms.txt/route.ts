@@ -104,14 +104,9 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
 // The live public directories — every indexable entity surface the sitemap advertises,
 // so an engine citing "what is on Frequency" can walk the real catalog instead of only
 // the brand pages. Same voice rules as `pages`.
-// The marketplace and the legal set (LIVE-1030). The legal list is lib/nav/legal-links.ts, the one every footer
-// reads, so a policy added there is cited here with no second edit.
-const MARKETPLACE: { path: string; label: string; desc: string }[] = [
-  { path: '/market', label: 'Market', desc: 'Local makers and sellers: goods and services from people near you.' },
-  { path: '/classifieds', label: 'Classifieds', desc: 'Community classifieds: things for sale, free, wanted and offered nearby.' },
-  { path: '/housing', label: 'Housing', desc: 'Rooms, rentals and shared housing posted by community members.' },
-  { path: '/store', label: 'Frequency Store', desc: 'The Frequency Store.' },
-]
+// The legal set (LIVE-1030). The legal list is lib/nav/legal-links.ts, the one every footer reads, so a policy added
+// there is cited here with no second edit. The marketplace indexes are members-only today (an anonymous
+// visitor is redirected), so they are not listed here until they are public.
 const LEGAL_DESC: Record<string, string> = {
   privacy: 'How Frequency collects, uses and protects personal data.',
   terms: 'The terms of use for Frequency.',
@@ -292,9 +287,6 @@ export async function GET() {
     '',
     '## Live directories',
     ...DIRECTORIES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
-    '',
-    '## Marketplace',
-    ...MARKETPLACE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## Legal, policies and contact',
     ...LEGAL_LINKS.map((l) => `- [${l.label}](${abs(l.href)}): ${LEGAL_DESC[l.id] ?? l.label}`),
