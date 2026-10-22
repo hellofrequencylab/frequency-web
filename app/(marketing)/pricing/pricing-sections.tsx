@@ -253,7 +253,8 @@ export function PricingExtras({ extras }: { extras: PlanExtra[] }) {
         title="Seats, AI, and your own domain, priced in the open."
         kicker="A few things ride on top of a plan instead of being one. None is a surprise line item, and each shows up in the comparison above."
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Two add-ons sit side by side; three sit three across. Never a third column left empty. */}
+      <div className={extras.length === 2 ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
         {extras.map((extra) => (
           <ExtraCard key={extra.key} extra={extra} />
         ))}
