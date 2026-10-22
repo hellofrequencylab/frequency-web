@@ -6,7 +6,7 @@ describe('who Frequency is for (ADR-1715)', () => {
   const all = [...WHO_FREQUENCY_IS_FOR].join('\n')
 
   it('names every family in plain words', () => {
-    for (const x of [/calm down fast/i, /just moved/i, /run club/i, /breathing timer/i, /bring others together/i, /Crew/, /teacher/i, /studio/i, /small groups/i]) {
+    for (const x of [/calm down fast/i, /just moved/i, /run club/i, /breathing timer/i, /bring others together/i, /Crew/, /instructors/i, /studio/i, /small groups/i]) {
       expect(all, String(x)).toMatch(x)
     }
   })
