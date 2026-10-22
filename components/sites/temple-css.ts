@@ -1,4 +1,5 @@
 import { TEMPLE_TOKENS_CSS } from '@/lib/theme/temple'
+import { TEMPLE_BLOCKS_CSS } from '@/components/sites/temple-blocks-css'
 
 // THE TEMPLE WEBSITE SKIN (lib/theme/temple.ts, from the Royal Temple design system). Layered AFTER HOUSE_CSS
 // and FREQUENCY_PAGE_CSS on a website whose Space wears the Temple theme, and scoped under
@@ -379,4 +380,4 @@ ${N} .tp-icon--sun-crescent{--tp-icon:var(--tp-icon-sun-crescent)}
 ${N} .tp-icon--water-ripple{--tp-icon:var(--tp-icon-water-ripple)}
 
 @media (prefers-reduced-motion:reduce){${N} .hs-btn,${N} .hs-btn svg,${N} .hs-card,${N} .hs-tier,${N} .hs-start,${N} .hs-step-n,${N} .hs-photo img,${N} .hs-logo-image{transition:none}${N} .hs-btn:hover,${N} .hs-btn:active,${N} .hs-btn:hover svg,${N} .hs-card:hover,${N} .hs-tier:hover,${N} .hs-start:hover{transform:none}${N} .hs-header{animation:none}}
-`
+${TEMPLE_BLOCKS_CSS}`

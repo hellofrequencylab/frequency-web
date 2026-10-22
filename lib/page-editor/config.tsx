@@ -27,6 +27,7 @@ import { profileComponents } from '@/components/page-editor/blocks/profile'
 import { designComponents } from '@/components/page-editor/blocks/design'
 import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
 import { networkComponents, NETWORK_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network'
+import { templeComponents, TEMPLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteBlocks } from '@/components/page-editor/site-blocks'
@@ -68,6 +69,7 @@ export const config: Config = {
     ...designComponents,
     ...wildheartComponents,
     ...networkComponents,
+    ...templeComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -161,6 +163,11 @@ export const config: Config = {
     network: {
       title: 'Network sections',
       components: [...NETWORK_CATEGORY_COMPONENTS],
+    },
+    // The Temple theme's section family (the Royal Temple design system's Home): website pages only.
+    temple: {
+      title: 'Temple sections',
+      components: [...TEMPLE_CATEGORY_COMPONENTS],
     },
   },
 }

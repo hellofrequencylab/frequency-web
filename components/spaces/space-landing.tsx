@@ -145,7 +145,7 @@ export async function SpaceLanding({
   // back to its stored/manual entries.
   // A block that draws a whole year (the Wildheart wheel) expands the Space's recurring series itself
   // (LIVE-905), so it also gets the live series rows; any other page pays no read.
-  const drawsYear = (data.content ?? []).some((b) => typeof b?.type === 'string' && b.type.startsWith('Wildheart'))
+  const drawsYear = (data.content ?? []).some((b) => typeof b?.type === 'string' && (b.type.startsWith('Wildheart') || b.type.startsWith('Temple')))
   const [teamPicks, series] = await Promise.all([resolveTeamPicksForDoc(data), drawsYear ? getSpaceSeriesRows(space.id) : Promise.resolve(undefined)])
   spaceContent.teamPicks = teamPicks
   spaceContent.series = series

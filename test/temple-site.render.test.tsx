@@ -12,6 +12,7 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { categoryKeysForSurface } from '@/lib/page-editor/palette-scope'
 import { TEMPLE_CSS } from '@/components/sites/temple-css'
+import { templeHomeBlocks } from '@/lib/sites/temple-home'
 
 vi.mock('@/components/sites/site-admin-gate', () => ({
   useSiteAdmin: () => true,
@@ -191,5 +192,43 @@ describe('the Temple site, rendered through the real chrome and sections', () =>
     }
     expect(failures).toEqual([])
     if (out) write(out, 'blocks', all.join('\n'))
+  })
+  it('renders the design Home from its blocks: the seven sections in order, then the follow band, with live events', () => {
+    const day = (d: string, t: string) => `2026-${d}T${t}:00.000Z`
+    const row = (id: string, title: string, d: string, t: string, e: string, extra: Record<string, unknown> = {}) => ({ id, slug: id, title, startsAt: day(d, t), endsAt: day(d, e), priceLabel: '$22', description: 'A gathering at the house.', ...extra })
+    const series = [
+      { ...row('craft', 'Craft Night', '10-27', '18:00', '21:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('circles', 'Circles Night', '11-03', '18:00', '21:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('meld', 'Meld', '10-28', '10:00', '17:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('dinner', 'Community Dinner', '10-25', '17:00', '19:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('concert', 'Concert', '10-25', '19:00', '21:00'), recurrenceType: 'weekly', recurrenceRule: null },
+    ]
+    const events = [row('e-rh', 'Returning Home, A Sacred Embodiment Experience', '10-23', '15:00', '18:00', { priceLabel: null }), ...series]
+    const withEvents = { ...metadata, space: { ...metadata.space, events, series } }
+    const blocksIn = templeHomeBlocks() as MwBlock[]
+    const plan = planMensworkPage(blocksIn)
+    expect(plan.every((p) => p.kind === 'own')).toBe(true)
+    const html = renderToStaticMarkup(
+      chrome(
+        <MensworkPage
+          blocks={blocksIn}
+          plan={plan}
+          live={live}
+          links={links}
+          origin={ORIGIN}
+          pageTitle="Home"
+          now={NOW}
+          renderOther={(b) => <BlockRender config={config} data={{ root: {}, content: [b] }} metadata={withEvents} />}
+        />,
+      ),
+    )
+    if (out) write(out, 'home-blocks', html)
+    const order = ['data-tt="hero"', 'data-tt="sessions"', 'data-tt="steps"', 'data-tt="community"', 'data-tt="seasonal"', 'data-tt="story"', 'data-tt="faq"', 'data-tt="follow"']
+    const main = html.slice(html.indexOf('<main'))
+    const at = order.map((o) => main.indexOf(o))
+    expect(at.every((i) => i > 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+    for (const s of ['A house for', 'Next at the house', 'tt-ev-title', 'Same slots, all year.', 'tt-day--hold', 'Follow, belong, hold.', 'Four seasonal events.', 'Fridays and Saturdays are held.', 'Before you come.', 'tt-follow-form']) expect(html).toContain(s)
+    expect(html).not.toMatch(/—/)
   })
 })

@@ -1,4 +1,5 @@
 import type { WebsiteTheme } from './state'
+import { templeHomeBlocks } from '@/lib/sites/temple-home'
 
 export const WEBSITE_PAGE_TEMPLATES = [
   { name: 'Program', description: 'Hero, member path, offerings and FAQ' },
@@ -20,6 +21,8 @@ export function websiteTemplateSections(theme: WebsiteTheme, name: string): { ty
   const heroSection = { type: hero, props: sections ? { content: 'below' } : { variant: theme === 'DAWN' ? 'split' : 'image' } }
   const storySection = { type: story, props: sections ? { body: 'prose', media: 'right' } : { side: theme === 'DAWN' ? 'left' : 'right' } }
   const wild = (type: string) => (theme === 'Wildheart' ? [{ type }] : [])
+  // The Temple's Program is its Home: the design's seven sections and the follow band, in the design's order.
+  if (theme === 'Temple' && name === 'Program') return templeHomeBlocks()
   switch (name) {
     case 'Program': return [...wild('WildheartNowLine'), heroSection, { type: cards }, { type: 'FeatureGrid', props: { source: 'offerings', title: 'Offerings' } }, { type: 'SpaceFAQ' }]
     case 'Season': return [heroSection, ...wild('WildheartYearJourney'), { type: 'SpacePractices' }, { type: 'SpaceEvents' }, ...wild('WildheartSkyMap')]
