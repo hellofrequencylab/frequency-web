@@ -96,6 +96,12 @@
     padding-top: calc(84px + env(safe-area-inset-top));
   }
 
+  /* The page is at least a screen tall, so a route that is still streaming never lets the footer ride up
+     under the header: the shell paints header, then footer below the fold, and the page fills between. */
+  [data-design="frequency"] [data-kit="site"] main.fq-main:not(.fq-bare) {
+    min-height: 100dvh;
+  }
+
   /* Keep going, "row" variant: the inline style Vision's prototype carried. */
   [data-design="frequency"] [data-kit="site"] .next .fq-kg-body {
     margin: 10px 0 0;
