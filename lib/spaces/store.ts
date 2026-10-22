@@ -221,7 +221,7 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
 }
 
 /** The columns the chapter-subdomain code reads (lib/sites/site-domain.ts, lib/sites/chapter-hosts.ts). */
-export interface SpaceHostRow {
+interface SpaceHostRow {
   id: string
   slug: string
   domain: string | null
