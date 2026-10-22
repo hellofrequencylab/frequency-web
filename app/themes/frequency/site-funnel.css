@@ -142,6 +142,7 @@
 [data-design="frequency"] [data-kit="site"] .iw-prompt b{font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-side);margin-right:6px}
 [data-design="frequency"] [data-kit="site"] .iw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 [data-design="frequency"] [data-kit="site"] .iw-card{flex-direction:row;align-items:center;gap:12px;padding:14px;font:inherit;text-align:left;cursor:pointer;border:0;width:100%;color:inherit}
+[data-design="frequency"] [data-kit="site"] .iw-card:last-child:nth-child(odd){grid-column:1/-1}
 [data-design="frequency"] [data-kit="site"] .iw-card .ic{flex:none;width:40px;height:40px;border-radius:var(--fq-radius-m)}
 [data-design="frequency"] [data-kit="site"] .iw-card .ic svg{width:20px;height:20px}
 [data-design="frequency"] [data-kit="site"] .iw-card[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 28px -12px var(--fq-side)}
