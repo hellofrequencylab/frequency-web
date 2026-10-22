@@ -10,6 +10,7 @@ import {
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
+import { NICHE_DESIGN } from '@/lib/marketing/funnel-design'
 import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import {
@@ -308,7 +309,9 @@ export async function GET() {
     '## Frequency by who you are (operator funnel doors)',
     ...funnelSlugs().map((slug) => {
       const c = getFunnelConfig(slug, input)!
-      return `- [${c.hero.h1}](${abs(`/for/${slug}`)}): ${c.hero.eyebrow}. ${c.hero.subhead}`
+      // The door's own name leads, so an assistant can answer "which door am I"; the hero line follows.
+      const label = NICHE_DESIGN[slug]?.short ?? c.hero.h1
+      return `- [${label}](${abs(`/for/${slug}`)}): ${c.hero.h1}. ${c.hero.eyebrow}. ${c.hero.subhead}`
     }),
     '',
     '## How it fits together',
