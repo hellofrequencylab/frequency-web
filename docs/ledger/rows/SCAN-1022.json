@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1022",
+  "title": "Discover event rows and the header search field show a keyboard focus ring (SCAN-1022)",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/themes/frequency/site-discover.css",
+    "ref": "Public site audit 2026-10-22, finding 1 (/mnt/project-files/audits/site-seo-geo-a11y-2026-10-22.md)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. --fq-focus-ring is a colour, so box-shadow:var(--fq-focus-ring) computed to none and .dx-ev:focus-visible had removed the outline too: keyboard users saw no indicator on Discover event rows or the Discover search field. Both now draw a 2px outline; .fq-sin:focus-within gives the header search field a ring. scripts/frequency-focus-ring.test.ts fails on a bare box-shadow focus colour. The audit's finding 2 (Commons muted and faint contrast) was already fixed in app/themes/frequency.css (the :not(.dark) override), so no token change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d=fs.readFileSync('app/themes/frequency/site-discover.css','utf8');const k=fs.readFileSync('app/themes/frequency/kit-site.css','utf8');const bad=[];if(/box-shadow\\s*:\\s*var\\(--fq-focus-ring\\)/.test(d))bad.push('discover uses the focus colour as a shadow');if(!k.includes('.fq-sin:focus-within'))bad.push('header search has no focus ring');if(bad.length){console.error('SCAN-1022: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a Discover control paints its focus colour as a box-shadow, or the header search loses its ring."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
