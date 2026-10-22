@@ -78,9 +78,9 @@ export function spaceNavItems(slug: string, editor: boolean): AdminNavItem[] {
   // SPOTLIGHT (LIVE-851): the link page you share. It is one of the two pages the public sees, so it sits
   // beside the page editor near the top instead of inside a tab. Open to a staff preview too (read only).
   const spotlight: AdminNavItem = { key: 'spotlight', label: 'Spotlight', href: `${base}/manage/spotlight`, icon: 'link', group: NAV_GROUP.public }
-  // CHECK IN (LIVE-1177): the door has its own row, right after the Money tab it lives under, so it is never
-  // a search. No phone slot, so under 960px it sits at the top of the More sheet's Console list.
-  const checkin: AdminNavItem = { key: 'checkin', label: 'Check in', href: `${base}/settings/offerings?tab=checkin`, icon: 'checkin', group: NAV_GROUP.grow }
+  // CHECK IN (LIVE-1177): the door and card programming have their own row, under Your Space right above
+  // Profile & Settings, so it is never a search. No phone slot, so under 960px it sits in the More sheet.
+  const checkin: AdminNavItem = { key: 'checkin', label: 'Check in', href: `${base}/settings/offerings?tab=checkin`, icon: 'checkin', group: NAV_GROUP.space }
   const editorDoor: AdminNavItem[] = editor
     ? [{ key: 'editor', label: 'Page editor', href: siteAdminHandoffPath(slug, 'editor'), icon: 'page', external: true, group: NAV_GROUP.public }]
     : []
@@ -91,8 +91,8 @@ export function spaceNavItems(slug: string, editor: boolean): AdminNavItem[] {
     row('resonance', NAV_GROUP.run),
     row('programs', NAV_GROUP.run),
     row('offerings', NAV_GROUP.grow),
-    checkin,
     row('marketing', NAV_GROUP.grow),
+    checkin,
     row('settings', NAV_GROUP.space),
   ]
 }
