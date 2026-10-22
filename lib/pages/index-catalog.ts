@@ -137,6 +137,7 @@ const SYSTEM: IndexedPage[] = [
   { label: 'Terms', path: '/terms', editor: 'fixed' },
   { label: 'Community guidelines', path: '/guidelines', editor: 'fixed' },
   { label: 'Space email policy', path: '/space-email-policy', editor: 'fixed' },
+  { label: 'Accessibility', path: '/accessibility', editor: 'fixed' },
   { label: 'Site map', path: '/site-map', editor: 'fixed', note: 'Members only. Built from the menus.' },
   { label: 'Manage emails', path: '/manage-emails', editor: 'fixed' },
   { label: 'Unsubscribe', path: '/unsubscribe', editor: 'fixed' },
