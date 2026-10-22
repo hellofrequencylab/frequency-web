@@ -395,11 +395,11 @@ export function PricingFaq({ faq }: { faq: { q: string; a: string }[] }) {
 /** The "who it's for" doors. Copy and routes only; each door prices itself from the catalog. */
 const WHO_ITS_FOR: readonly { title: string; body: string; href: string }[] = [
   {
-    title: 'Coaches and healers',
+    title: 'Coaches and guides',
     body: 'Sessions, packages and a client list that remembers who to follow up with.',
     href: '/for/coaches-and-healers',
   },
-  { title: 'Studios', body: 'Classes, memberships and check-in at the door.', href: '/for/studios' },
+  { title: 'Studios and instructors', body: 'Classes, memberships and check-in, whether you run the room or teach in several.', href: '/for/studios' },
   { title: 'Event hosts', body: 'Events, tickets and a way to reach everyone who came.', href: '/for/event-hosts' },
   { title: 'Venues', body: 'Your calendar, the groups that use your room, and the people who come.', href: '/for/venues' },
   { title: 'Networks', body: 'Many chapters, one home, and one view of all of them.', href: '/for/networks' },

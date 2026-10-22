@@ -409,8 +409,8 @@ interface PersonaLoadout {
  *  never hardcoded, so a catalog change reflows every figure — the figures here moved on their own when
  *  the owner closed the beta window (ADR-1060) and the strip flipped to list. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
-  { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
-  { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },
+  { slug: 'coaches-and-healers', label: 'Coaches and guides', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
+  { slug: 'studios', label: 'Studios and instructors', addons: [], note: 'Classes, memberships, and check-in, whether you run the room or teach in several.' },
   { slug: 'event-hosts', label: 'Event hosts', addons: [], note: 'Tickets, check-in, and a message to everyone who has one.' },
   { slug: 'venues', label: 'Venues', addons: [], note: 'Your calendar, the groups that use your room, and the people who come.' },
   { slug: 'nonprofits', label: 'Nonprofits', addons: [], note: 'Donations, supporters, and programs.', perSeat: true },

@@ -10,7 +10,7 @@ if (/slug: 'community-builders'|slug: 'teachers'/.test(cfg)) bad.push('a retired
 for (const d of ['venues', 'networks']) if (!new RegExp(`slug: '${d}'`).test(cfg)) bad.push(`the ${d} door is missing`)
 const next = r('next.config.ts')
 if (!/source: '\/for\/community-builders', destination: '\/for\/venues'/.test(next)) bad.push('/for/community-builders no longer redirects to venues')
-if (!/source: '\/for\/teachers', destination: '\/for\/coaches-and-healers'/.test(next)) bad.push('/for/teachers no longer redirects to coaches and healers')
+if (!/source: '\/for\/teachers', destination: '\/for\/studios'/.test(next)) bad.push('/for/teachers no longer redirects to studios and instructors')
 if (!/Decide later/.test(r('app/join/(induction)/induction.tsx'))) bad.push('sign-up has no "Decide later"')
 if (!/Decide later/.test(r('app/(main)/spaces/new/create-space-wizard.tsx'))) bad.push('Create a Space has no "Decide later"')
 if (bad.length) {
