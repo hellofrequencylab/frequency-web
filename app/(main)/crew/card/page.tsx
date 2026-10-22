@@ -15,6 +15,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { parseVcard } from '@/lib/vcard'
 import { MyCardsList } from './my-cards-list'
 import { RequestCardButton } from './request-card-button'
+import { SpaceTools } from './space-tools'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,6 +92,8 @@ export default async function MyCardPage() {
             <GetYourCard profileId={profileId} />
           )}
         </section>
+
+        <SpaceTools profileId={profileId} />
       </div>
     </Shell>
   )
